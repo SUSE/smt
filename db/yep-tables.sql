@@ -83,10 +83,10 @@ create table ProductCatalogs(ProductID   integer NOT NULL,
                             );
 
 -- copy of NNW_PRODUCT_DEPENDENCIES where PARENT_PARTNUMBER is NULL
-create table ProductDependencies(ParentProductID integer NOT NULL,
-                                 ChildProductID  integer NOT NULL,
-                                 Condition       text,             -- not sure about this.
-                                 PRIMARY KEY(ParentProductID, ChildProductID, Condition)
+create table ProductDependencies(Parent_Product_ID integer NOT NULL,
+                                 Child_Product_ID  integer NOT NULL,
+                                 -- Condition       text,             -- not sure about this.
+                                 PRIMARY KEY(Parent_Product_ID, Child_Product_ID)
                                 );
 
 -----------------------------------------------------------------------------------

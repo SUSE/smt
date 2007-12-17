@@ -1,3 +1,9 @@
+---------------------------------------------------------------------------------------------------------------
+-- select PRODUCTDATAID, PRODUCT, VERSION, RELEASE, ARCH, FRIENDLY, PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST
+-- from activator.NNW_PRODUCT_DATA where PRODUCT_LIST = 'Y'
+--------------------------------------------------------------------------------------------------------------- 
+-- result export as insert statements
+---------------------------------------------------------------------------------------------------------------
 INSERT INTO Products(PRODUCTDATAID, PRODUCT, VERSION, RELEASE, ARCH, FRIENDLY, PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST)
   VALUES(424, 'SUSE-Linux-Enterprise-Server-SP1-migration', '10', NULL, 'i386', 'SUSE Linux Enterprise Server 10 SP1 Migration', '<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="">
 	<guid description="" class="mandatory"/>
