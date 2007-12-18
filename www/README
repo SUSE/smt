@@ -3,5 +3,22 @@ Required packages:
 * apache2
 * apache2-mod_perl
 * perl-HTML-Parser
-* perl-Apache-DBI
 * sqlite
+* perl-DBI
+* perl-DBD-SQLite
+
+Setup
+-----
+
+enhance /etc/sysconfig/apache2 APACHE_MODULES with "perl"
+
+copy <SVN>trunk/apache2/mod_perl-startup.pl /etc/apache2/
+copy <SVN>trunk/apache2/conf.d/mod_perl.conf /etc/apache2/conf.d/
+
+copy <SVN>trunk/www/perl-lib/* /srv/www/perl-lib/
+
+Read the README in <SVN>trunk/db/ , create the database and copy it
+to /srv/www/  (we are searching for a better place)
+
+rcapache2 start
+
