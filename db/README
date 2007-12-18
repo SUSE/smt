@@ -5,5 +5,6 @@ How to setup the sqlite3 database
 sqlite3 -init yep-tables.sql yep.db
 sqlite> .read products.sql
 sqlite> .read product_dependencies.sql
+sqlite> .read targets.sql
 
 

@@ -6,6 +6,7 @@ drop table IF EXISTS ProductCatalogs;
 drop table IF EXISTS ProductDependencies;
 drop table IF EXISTS Registration;
 drop table IF EXISTS MachineData;
+drop table IF EXISTS Targets;
 
 -- temporary for mirror only solution
 
@@ -79,6 +80,7 @@ CREATE TABLE Products (
 
 create table ProductCatalogs(ProductID   integer NOT NULL,
                              CatalogID   integer NOT NULL,
+                             Optional    text DEFAULT 'N',
                              PRIMARY KEY(ProductID, CatalogID)
                             );
 
@@ -88,6 +90,12 @@ create table ProductDependencies(Parent_Product_ID integer NOT NULL,
                                  -- Condition       text,             -- not sure about this.
                                  PRIMARY KEY(Parent_Product_ID, Child_Product_ID)
                                 );
+
+-- copy of NNW_ZLM66_TARGETS
+create table Targets (OS      text NOT NULL PRIMARY KEY,
+                      Target  text NOT NULL
+                     );
+
 
 -----------------------------------------------------------------------------------
 
