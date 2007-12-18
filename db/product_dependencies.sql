@@ -1,3 +1,10 @@
+--------------------------------------------------------------------
+-- Product_Dependencies
+--------------------------------------------------------------------
+-- select PARENT_PRODUCT_ID, CHILD_PRODUCT_ID
+-- from activator.NNW_PRODUCT_DEPENDENCIES 
+-- where PARENT_PARTNUMBER is NULL
+--------------------------------------------------------------------
 INSERT INTO ProductDependencies(PARENT_PRODUCT_ID, CHILD_PRODUCT_ID)
   VALUES(21, 141);
 INSERT INTO ProductDependencies(PARENT_PRODUCT_ID, CHILD_PRODUCT_ID)
