@@ -1,0 +1,7 @@
+Required packages:
+------------------
+* apache2
+* apache2-mod_perl
+* perl-HTML-Parser
+* perl-Apache-DBI
+* sqlite

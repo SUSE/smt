@@ -16,6 +16,7 @@ use constant IOBUFSIZE => 8192;
 
 use Data::Dumper;
 use DBI;
+use HTML::Entities;
 
 sub handler {
     my $r = shift;
@@ -86,18 +87,21 @@ sub listproducts
     $r->warn("listproducts called: ".Data::Dumper->Dump([$r]).",".Data::Dumper->Dump([$hargs]));
     
     # FIXME: find better path to the Database
+    # for instance /var/lib/YEP/...
+    # Anyway, this information should be in a configuration file, e.g., /etc/yep/...
     my $dbh = DBI->connect("dbi:SQLite:dbname=/srv/www/yep.db","","");
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
     $sth->execute();
     
     print '<?xml version="1.0" encoding="UTF-8"?>'."\n";
-    print '<productlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="en">';
+    print '<productlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="en">'."\n";
     while ( my @row = $sth->fetchrow_array ) 
     {
-        print '<product>'.$row[0].'</product>';
+	# See http://www.perl.com/pub/a/2002/02/20/css.html
+        print '<product>'.HTML::Entities::encode($row[0]).'</product>'."\n";
     }
-    print '</productlist>';
+    print '</productlist>'."\n";
     
     $dbh->disconnect();
     
