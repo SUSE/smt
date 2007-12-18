@@ -1,0 +1,50 @@
+From: Michael Calmer <mc@suse.de>
+To: Eric Layton <elayton@novell.com>
+Subject: Questions about the Breakout API
+Date: Tue, 18 Dec 2007 15:12:48 +0100
+Cc: Stanislav Visnovsky <visnov@suse.cz>,
+ "Duncan Mac-Vicar Prett" <DMacVicar@suse.de>
+
+Hi Eric,
+
+some Questions about the Breakout API:
+
+> Managed devices will not be handled within NCC the same way that regular
+> systems. Instead, they will show up as managed devices under the
+> ZLM satellite (which is a regular system in NCC).
+> Managed devices will not be tied to a subscription, nor will they have an
+> install user. Their update level will most likely read "locally managed."
+
+Q 1: Is a customer able to put entitlements to managed devices?
+     We need a way that a customer can easily get an overview of
+     his systems, his entitlements and if he has enough entitlements
+     for his systems.
+
+     E.g. Customer has 10 SLES and 50 SLED systems but only 9 SLES
+     and 35 SLED entitlements. Is the customer able to see that he
+     has to buy some additional licenses?
+   =20
+     Will NCC inform the customer that he has to buy additional entitlement=
+s?
+     E.g. via email.
+
+Q 2: Is it possible to see/show the installed products on the managed
+     devices?
+     The "info" structure does not look like that it is able to carry
+     different products.
+
+
+
+=2D-=20
+MFG
+
+	Michael Calmer
+
+=2D-------------------------------------------------------------------------
+Michael Calmer
+SUSE LINUX Products GmbH, Maxfeldstr. 5, D-90409 Nuernberg
+T: +49 (0) 911 74053 0
+=46: +49 (0) 911 74053575  - e-mail: Michael.Calmer@suse.com
+=2D-------------------------------------------------------------------------
+SUSE LINUX Products GmbH, GF: Markus Rex, HRB 16746 (AG N=C3=BCrnberg)
+

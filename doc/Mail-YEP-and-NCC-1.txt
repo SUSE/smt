@@ -1,0 +1,221 @@
+Date: Tue, 11 Dec 2007 10:56:08 -0700
+From: Eric Layton <elayton@novell.com>
+Organization: Novell, Inc.
+User-Agent: Thunderbird 2.0.0.4 (X11/20070613)
+MIME-Version: 1.0
+To: Michael Calmer <mc@suse.de>
+Subject: Re: YEP and NCC
+
+It's a somewhat complicated process, and I guess I'm not sure why you're
+asking, but I'd be happy to explain it.  This is a summary, not the
+queries actually used by the code.
+
+First the product is identified.
+
+SELECT productdataid FROM nnw_product_data
+WHERE product='SUSE-Linux-Enterprise-Desktop-SP1'
+
+SLED SP1 for example is has IDs 431 to 435 and 446 to 450 -- I will
+choose 431 as an example.
+
+Next the registration code entered by the user is looked up in the LAS
+database.  Products without registration codes (openSUSE) take a
+different road.  But, for example suppose the user entered the
+registration code F4B019A862F168.
+
+SELECT poolid FROM lic_licenses WHERE key_value='F4B019A862F168'
+
+This returns pool 250.  Each pool has a set of roles that define update
+data:
+
+SELECT role_xml FROM lic_roles WHERE poolid=250 AND system_name='ZLM'
+
+This XML string is parsed to get the mirror ID, instance, and catalog
+groups.  In this example, we get the XML block:
+
+<rolexml>
+<value name="mirror">nu_novell_com</value>
+<value name="instance">rogue_ext_prod</value>
+<value name="keyattributes" personal="true" deletefirst="true"/>
+<value name="group">sled10</value>
+<value name="group" subscribe="off">sle10-opt</value>
+<for pdid="416,417,418,419,420">
+<value name="mirror">nu_novell_com</value>
+<value name="instance">rogue_ext_prod</value>
+<value name="group">sled10-sp1-migration</value>
+</for>
+<for pdid="431,432,433,434,435">
+<value name="mirror">nu_novell_com</value>
+<value name="instance">rogue_ext_prod</value>
+<value name="group">sled10-sp1</value>
+<value name="group" subscribe="off">sle10-sp1-opt</value>
+</for>
+<for pdid="446,447,448,449,450">
+<value name="mirror">nu_novell_com</value>
+<value name="instance">rogue_ext_prod</value>
+<value name="group">sled10-sp1-online</value>
+<value name="group" subscribe="off">sle10-sp1-opt</value>
+</for>
+</rolexml>
+
+Remember our example product ID was 431, so the <for> block including
+pdid 431 is used.  This means we activate against nu_novell_com using
+instance rogue_ext_prod and assign catalogs in groups sled10-sp1 and
+sle10-sp1-opt.
+
+First check to make sure the mirror is active and has content.
+
+SELECT * FROM nnw_mirror_instances WHERE mirrorid='nu_novell_com'
+AND instance='rogue_ext_prod'
+
+Gather mirror data.
+
+SELECT * FROM nnw_mirrors WHERE id='nu_novell_com'
+
+Some of this mirror data is returned in <zmdconfig>.
+
+SELECT * FROM nnw_install_instances WHERE instance='rogue_ext_prod'
+
+Genre 'rogue' tells us to look in the rogue tables for the groups.  For
+other genres, other sources are used.
+
+SELECT catalogname FROM nnw_rogue_groups
+WHERE groupname IN ('sled10-sp1', 'sle10-sp1-opt')
+/
+
+The sle10-sp1-opt group in the role XML has subscribe="off", so its
+catalogs are activated, but not returned in <zmdconfig>.
+
+I hope this help, let me know if you have questions or if I explained in
+too much detail.
+
+NCC has not been transitioned completely to the new team, so there is
+currently not a new contact to replace me.
+
+Eric Layton
+Novell, Inc.
+
+
+Michael Calmer wrote:
+> Hi Eric,
+> 
+> for the YEP project I try to find out how NCC find out which product get which 
+> repositories and catalogs. 
+> 
+> Would you explain it to me please?
+> 
+> The best way would be to do this with an example. E.g. the SLED SP1 (because 
+> it has also ATI and NVidia repositories)
+> 
+> Which tables do you query to produce the <zmdconfig> result for suse_register?
+> Is this only the Oracle database or are there other information stores 
+> involved (is there something only in the sourcecode?)
+> 
+> Many thanks in advance.
+> 
+> Btw: Stano told me that you are now working on future NCC and somebody else is 
+> resposible for the current code. Would you tell me who my new contact is, 
+> please?
+> 
+
+
+Date: Wed, 12 Dec 2007 09:43:28 -0700
+From: Eric Layton <elayton@novell.com>
+Organization: Novell, Inc.
+User-Agent: Thunderbird 2.0.0.4 (X11/20070613)
+MIME-Version: 1.0
+To: Michael Calmer <mc@suse.de>
+Subject: Re: YEP and NCC
+
+Ah yes, I forgot about that.
+
+Every code pool has a part number associated with it.
+
+SELECT part_number FROM lic_part_numbers WHERE poolid=250
+
+Products like SLED have other dependencies based on this part number,
+and also default dependencies with null part numbers.
+
+SELECT child_product_id FROM nnw_product_dependencies
+WHERE parent_product_id=431
+AND (
+  parent_partnumber IN (
+    SELECT part_number FROM lic_part_numbers WHERE poolid=250
+  )
+  OR parent_partnumber IS NULL
+)
+
+This returns product IDs 498 and 499.  The same process I described for
+product 431 is also done for these, except these products do not require
+registration codes so the process is slightly different.  There is no
+role XML, so the instance and mirror are gotten from:
+
+SELECT instance FROM nnw_product_data_parts
+WHERE pdid IN (498, 499)
+
+Gives us instances ati-sp1 and nvidia-sp1.
+
+SELECT * FROM nnw_install_instances
+WHERE instance IN ('ati-sp1', 'nvidia-sp1')
+
+These are of genre 'you', so they are treated differently than 'nu'.
+
+SELECT mirrorid FROM nnw_mirror_instances
+WHERE instance IN ('ati-sp1', 'nvidia-sp1')
+
+This gives us the mirror data.  Since these instances are of genre 'you'
+ there are no catalog groups.  The XML returned in the <zmdconfig> is from:
+
+SELECT service FROM nnw_product_data WHERE productdataid IN (498, 499)
+
+
+Eric Layton
+Novell, Inc.
+
+
+Michael Calmer wrote:
+> Hi,
+> 
+> one more question: Where is defined that product 431 get the ATI and Nvidia 
+> YUM sources?
+> 
+> Am Dienstag, 11. Dezember 2007 schrieben Sie:
+> 
+>> SELECT role_xml FROM lic_roles WHERE poolid=250 AND system_name='ZLM'
+>>
+>> This XML string is parsed to get the mirror ID, instance, and catalog
+>> groups.  In this example, we get the XML block:
+>>
+>> <rolexml>
+>> <value name="mirror">nu_novell_com</value>
+>> <value name="instance">rogue_ext_prod</value>
+>> <value name="keyattributes" personal="true" deletefirst="true"/>
+>> <value name="group">sled10</value>
+>> <value name="group" subscribe="off">sle10-opt</value>
+>> <for pdid="416,417,418,419,420">
+>> <value name="mirror">nu_novell_com</value>
+>> <value name="instance">rogue_ext_prod</value>
+>> <value name="group">sled10-sp1-migration</value>
+>> </for>
+>> <for pdid="431,432,433,434,435">
+>> <value name="mirror">nu_novell_com</value>
+>> <value name="instance">rogue_ext_prod</value>
+>> <value name="group">sled10-sp1</value>
+>> <value name="group" subscribe="off">sle10-sp1-opt</value>
+>> </for>
+>> <for pdid="446,447,448,449,450">
+>> <value name="mirror">nu_novell_com</value>
+>> <value name="instance">rogue_ext_prod</value>
+>> <value name="group">sled10-sp1-online</value>
+>> <value name="group" subscribe="off">sle10-sp1-opt</value>
+>> </for>
+>> </rolexml>
+>>
+>> Remember our example product ID was 431, so the <for> block including
+>> pdid 431 is used.  This means we activate against nu_novell_com using
+>> instance rogue_ext_prod and assign catalogs in groups sled10-sp1 and
+>> sle10-sp1-opt.
+> 
+> 
+> 
+

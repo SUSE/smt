@@ -1,0 +1,174 @@
+From: Michael Calmer <mc@suse.de>
+To: Eric Layton <elayton@novell.com>
+Subject: Re: YEP and NCC
+Date: Tue, 18 Dec 2007 14:17:45 +0100
+Cc: Stanislav Visnovsky <visnov@suse.cz>,
+ "Duncan Mac-Vicar Prett" <DMacVicar@suse.de>
+
+Hi Eric,
+
+Am Dienstag, 11. Dezember 2007 schrieben Sie:
+> It's a somewhat complicated process, and I guess I'm not sure why you're
+> asking, but I'd be happy to explain it. =20
+
+YEP should provide a registration server. This mean that suse_register
+should be able to register against YEP and the YEP registration
+server should be able to return the the correct <zmdconfig> with the
+local mirrored repositories.
+
+To be able to do this, YEP needs the dependencies between products and=20
+repositories/catalogs. We need to download the data from NCC.=20
+I wanted to know this, because I think it is easier to describe what we
+need, if I know how NCC works. And I get a feeling about how complex=20
+this task is.=20
+
+
+What should the registration server on YEP do:
+
+Client side (suse_register <=3D> YEP)
+=2D----------------------------------
+* accept <register> request
+* accept and answer <paramlist> requests
+* ask for automatic detectable data (<needinfo> with command=3D...)
+* return correct <zmdconfig> with URLs to the local mirror
+
+NCC side (YEP <=3D> NCC)
+=2D---------------------
+* download all required data which are needed to work correctly=20
+  on the "Client Side" and keep them up-to-date.
+
+* register the clients at NCC (administrator can turn this functionality of=
+f)
+
+
+I am now trying to figure out which data YEP needs from NCC to fulfill
+this requirements.
+
+
+
+=46irst YEP need the list of products (NNW_PRODUCT_DATA) . Probably we do n=
+ot=20
+need all columns and maybe not every product.
+I started here with the content of the following request:
+
+select PRODUCTDATAID, PRODUCT, VERSION, RELEASE, ARCH,=20
+       FRIENDLY, PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST
+from activator.NNW_PRODUCT_DATA where PRODUCT_LIST =3D 'Y'
+
+maybe we need also the "LOWER" columns.
+
+
+
+Second YEP need the NNW_PRODUCT_DEPENDENCIES table but only the
+"default" dependencies
+
+select PARENT_PRODUCT_ID, CHILD_PRODUCT_ID
+from activator.NNW_PRODUCT_DEPENDENCIES=20
+where PARENT_PARTNUMBER is NULL
+
+I think the "default" is where PARENT_PARTNUMBER is NULL, correct?
+
+
+
+Additionally YEP needs a 1:1 copy of NNW_ZLM66_TARGETS.
+
+
+
+And now the more complicated things:
+
+YEP needs a list of repositories(zypp, like ATI and Nvidia)
+and catalogs(NU, SLES10-SP1-Updates, etc.) with unique ids or names.
+
+I think about the possibility to store this into one table.=20
+
+create table Catalogs
+    (CatalogID   integer PRIMARY KEY,  -- maybe a text?
+     Name        text NOT NULL,
+     Alias       text,
+     Description text,
+     Target      text,           -- null in case of zypp source
+     LocalPath   text NOT NULL,  -- not from NCC
+     ExtUrl      text NOT NULL,  -- where to mirror from from NCC
+     CatalogType text NOT NULL,  -- NU or zypp
+     mirror      text            -- 'Y' or 'N' not from NCC
+     UNIQUE(Name, Target)
+    );
+
+
+Some examples about the data from NCC:
+
+CatalogID:   <some unique id or unique name>
+Name:        ATI-Drivers
+Alias:       ATI-Drivers
+Description: ATI Video Drivers (SP1)
+Target:      null
+ExtUrl:      http://www2.ati.com/suse/sle10sp1/
+CatalogType: zypp
+
+CatalogID:   <some unique id or unique name>
+Name:        SLES10-SP1-Updates
+Alias:       SLES10-SP1-Updates
+Description: SLES10-SP1-Updates for sles-10-i586
+Target:      sles-10-i586
+ExtUrl:      https://nu.novell.com/repo/$RCE/SLES10-SP1-Updates/sles-10-i58=
+6/
+CatalogType: nu=20
+
+(Is Name and Alias always the same? If yes, we can drop Alias.)
+
+I think the tricky part here is the CatalogID. NCC does not have such an ID,
+because it has several ways to find the repositories and catalogs.
+
+If Name + Target is unique, we can connect both to a new string and can use=
+=20
+this
+as unique ID. But maybe you have a better idea.
+
+
+
+The last information YEP needs is, which catalogs should be returned if=20
+a product is registered. I think about the following table design:
+
+create table ProductCatalogs
+  (ProductID   integer NOT NULL,
+   CatalogID   integer NOT NULL, -- or text, if Catalogs.CatalogID is text
+   Optional    text DEFAULT 'N',
+   PRIMARY KEY(ProductID, CatalogID)
+  );
+
+I think collecting these informations will be a hard thing, because they ar=
+e=20
+widespread across the NCC Database.=20
+
+
+Some Questions at the end:
+
+Do you think these informations are sufficient for the YEP registration
+server, or do you see missing informations?
+
+Is it possible for you to provide these informations, or do you see
+something which is not possible?
+
+How to download these data from NCC? Some additional XML protocol like we h=
+ave
+for suse_register, or do you have a better idea?=20
+To keep these data up-to-date it should be sufficient to sync once a day.
+
+
+I will send another mail about the Breakout API in a separate mail.
+This mail is long enough :-)
+
+=2D-=20
+MFG
+
+	Michael Calmer
+
+=2D-------------------------------------------------------------------------
+Michael Calmer
+SUSE LINUX Products GmbH, Maxfeldstr. 5, D-90409 Nuernberg
+T: +49 (0) 911 74053 0
+=46: +49 (0) 911 74053575  - e-mail: Michael.Calmer@suse.com
+=2D-------------------------------------------------------------------------
+SUSE LINUX Products GmbH, GF: Markus Rex, HRB 16746 (AG N=FCrnberg)
+
+
