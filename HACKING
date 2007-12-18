@@ -1,0 +1,22 @@
+
+= Development conventions =
+
+== Test oriented development ==
+
+Don't commit code which does not have it test.
+
+This is a good read for everyone:
+
+Start by reading this:
+
+* http://petdance.com/perl/automated-testing/
+
+Note: Test::Simple and Test::More are included in perl.
+
+Reference card pdf:
+http://pub.langworth.com/perl_test_refcard.pdf
+
+This one goes a little bit further but nice to read
+http://www.extremeperl.org/bk/unit-testing
+
+- Code conventions
