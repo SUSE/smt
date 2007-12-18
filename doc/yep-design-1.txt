@@ -1,0 +1,82 @@
+
+YEP Design
+==============================
+mc@suse.de - dmacvicar@suse.de
+
+For reference to the product, see YEP PRD or contact
+visnov@suse.cz
+
+1. Functionality:
+
+This software is able to mirror a selection of individual catalogs
+coming from NU services and yum repositories, and allows for grouping
+of catalogs under name, and assignement of devices to certain group.
+
+The catalog exposes a url which serves a dynamic repoindex.xml for
+consumption. The repoindex lists the catalogs belonging to the group
+where this device is assigned.
+
+In addition, a device could subscribe to catalogs directly.
+
+2. Components:
+
+2.1 Configuration
+
+Configuration and state data overlap. Decision to be
+made what belongs to the database and what to configuration.
+
+- repositories and catalogs to mirror
+- groups of catalogs
+
+Example (rails yml):
+
+-------------------------------------
+mirror.yml
+
+nu.novell:
+  url: https://user:pass@nu.novell.com
+  type: nu
+  catalogs: SLED10-SP1-Updates,SLE10-SP1-Debuginfo-Updates
+
+10.3-update:
+  url: http://download.opensuse.org/update/10.3
+  path: /foo
+
+-------------------------------------
+groups.yml
+
+group1: SLED10-SP1-Updates,SLE10-SP1-Debuginfo-Updates,10.3-update
+
+-------------------------------------
+
+Catalogs coming from NU repositories need a query to the NU server to get their
+paths and targets. This information needs to be cached somehow.
+
+Listing of available catalogs for a set of mirroring credentials can be
+retrieved requesting https://nu.novell.com with basic authentication.
+
+<repoindex>
+  <repo name="SLE10-SDK-Updates" alias="SLE10-SDK-Updates" description="SLE10-SDK-Updates for sles-10-i586" distro_target="sles-10-i586" priority="0" pub="0" path="$RCE/SLE10-SDK-Updates/sles-10-i586"/>
+  .. more ..
+</repoindex>
+
+2.2 Repository Server
+
+Web service that when called as:
+
+http://guuid@serverurl
+
+returns a repoindex with the appropiate catalogs for the group where that
+machine belongs.
+
+2.3 Mirroring
+
+This component takes the configuration and downloads the selected catalogs from configured NU
+servers.
+
+The mirror component should read the repoindex of each NU service, and then read the
+repomd.xml of each catalog. It should download all metadata files and recursiverly also
+read metadata files which contains reference to other resources which have to be
+downloaded.
+
+

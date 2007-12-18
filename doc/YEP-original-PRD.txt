@@ -1,0 +1,137 @@
+1. Yast Enterprise Proxy (YEP) Product Requirements (0.6)
+
+Concept: the product is aiming to be a local replacement for NCC and NU
+functionality. The customer need not face per-machine downloads and the 
+bandwidth charges that go with it, nor needs to open the firewall for
+outbound communication to permit these downloads.
+
+The product is used as integral part of our renewal strategy, by enabling 
+customers (or a Novell auditing team) to easily run reports on how many 
+entitlements they are currently using and need renewal.
+
+The product is to ship concurrenty to Code 10 SP2, but it is a separate
+deliverable, packaged as an add-on product.
+
+The product will support the following clients: 
+code 10 Sp2 GA and subsequent releases, all architectures, all NU/NCC-based
+products.
+
+The product will not support the following clients:
+code 9
+code 10 GA
+code 10 Sp1
+
++ The rationale for not supporting platform releases preceding sp2 is twofold:
++ firstly, wish to reduce engineering cost impact. Secondly, customers need
++ not such a product for code 9, where Yast incorporates a mirroring component
++ and where it would be an unlikely scenario for the proxy to be deployed in 
++ an sp4 or sp5 timeline, where customers are already set in their mode of 
++ operation and should be looking at migrating to code 10 instead.
++ The objective is for customers to look at deployment of YEP synchronously 
++ with their deployment os SLE 10 Sp2, which renders support for code 10 GA and
++ Sp1 redundant and a zero-return preposition.
+
+However, it is intended that starting with Sp2, any tool used to interact 
+with NCC/NU (ZMD/zypp and clients, zypper, suse_register, etc) will work 
+locally with the proxy where possible. The product provides a package 
+repository and a registration target on a locally-based host, and facilities
+to parse the accounting data and configure the repository as necessary.
+
+Furthermore, as generically management products (ZMD server, tivoli, etc) 
+enable bypassing of open source entitlement systems (NCC, RHN, etc), we wish 
+to facilitate customer compliance by providing an easy way for the customer
+to count how many entitlements of Novell products are being used locally. 
+This is an _accounting_ facilitation, to help both the customer and/or a
+Novell consulting team on-site determine quickly these numbers. It is _not_
+an enforcement tool.
+
+We additionally wish to preserve a default behavior that syncs-up to NCC both 
+entitlement data and hardware information.
+
+-----[SLE 10 SP2 timeframe] 
+
+    0       (M) : The overall design criterion is to provide an endpoint as
+                  similar to having a local copy of NCC/NU as possible _for
+                  tools making use of their interfaces_ (clarification: 
+                  providing a local NCC webUI is NOT in scope, providing the
+                  NCC interfaces for suse_register is).
+
+    1.1     (M) : YEP is to provide a local registration target for a 
+                  suse_register invocation explicitly requesting contact
+                  with it (by hostname or IP address).
+                  
+    1.2     (M) : YEP is to provide a local administrator with tallies of how
+                  many systems are registered against it. Registration date, 
+                  Last check-in (used to detect no longer existing systems), 
++                 IP address, and systemID are the minimally necessary data 
+                  that an administrator is to be provided.
+                  
+    1.3     (M) : Default behavior is to collect systemIDs and all information
+                  that suse-register commonly delivers to NCC and forward this 
+                  information back to NCC server ("syncing with NCC"). This
+                  functionality is not cached but it is pass-through: if the
+                  functionality is not disabled (see 1.4), the information is
+                  immediately synced, otherwise, appropriate accounting data is
+                  collected locally and no NCC sync-up of the transaction will 
+                  ever occur.
+                  
++                 Clarification: if the sync-up is disabled, registration 
++                 transactions occuring during that time will *never* be reported
++                 back to NCC ("no caching"). In the event sync-up is then enabled,
++                 only registrations *subsequent* to said enabling will be synced. 
+                  
+    1.4     (M) : 1.3 can be disabled by a privacy-conscious customer for
++                 reasons solely at the customer's discretion. 1.2 functionality
++                 cannot be disabled.
+                  
+    1.5     (M) : YEP is to provide a local package repository regularly 
+                  syncing to NU.novell.com via an included mirroring tool 
+                  and expose the updates that the customer has access to 
+                  in NU in a tree structure mirroring that of NU, but pruned
+                  of those architecture or product branches that the customer 
+                  has no entitlement to.
+                  
+    1.6     (I) : Running suse_register against the proxy should return the 
+                  appropriate channels for the product registering (as it does
+                  in a registration against NCC). Default behavior. (implementation
+                  note: hard?).
+                  
+    1.7     (M) : The local admin should be able to configure what channels 
+                  registering a product via running suse_register against the 
+                  proxy should return. (scenario: the local admin wants to 
+                  add her own local tools channel). This overrides the default 
+                  specified at 1.6 when used.
+                  
+    1.8     (I) : A Yast configuration UI for the Enterprise Proxy is 
+                  to supplement unix-style file-based configuration.
+
+    1.9     (M) : Add-on product for SLES 10 sp2, x86 and x86_64. No Power, 
+                  Itanium or s390 will host the server. 
+                 
+    1.9     (M) : Clients can connect from all supported SLE architectures 
+                  and products.
+
++   1.10    (I) : Yep Should retrieve the currently valid entitlement counts
++                 from NCC per-product (SLES, SLED, ...) and send e-mail alerts
++                 to locally configured e-mail addresses (administrative contact,
++                 operations contact) indicating when those totals were exceeded
++                 by devices (by ID) checking in during a configurable time window
++                 (which defaults to 24 hours).
+                  
+-----[SLE 11 timeframe]    
+
+    1.1     (M) : patchlevel support as provided by the 11 update stack is to
+                  sync-up to NCC as hardware and systemID information.
+                  
+
+    
+	
+----- reference use cases:
+(1) Customers who have bandwidth concerns
+(2) Customers who have outbound firewall piercing concerns
+
+
+------ legend:
+(M) : Mandatory    |   rank = number in [0-5] indicating precedence. In staffing, schedule discussion with Engineering, PM
+(R) : Rejected     |   will cut rank 5 before rank 4, and so on. 2 is default. Rank is used exclusively by PM during PRD 
+(I) : Important    |   drafting, Engineering is bound by M, R, I in finalized PRD.
