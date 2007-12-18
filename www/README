@@ -20,5 +20,7 @@ copy <SVN>trunk/www/perl-lib/* /srv/www/perl-lib/
 Read the README in <SVN>trunk/db/ , create the database and copy it
 to /srv/www/  (we are searching for a better place)
 
+copy <SVN>trunk/config/yep.conf /etc/
+
 rcapache2 start
 
