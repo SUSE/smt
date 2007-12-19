@@ -7,6 +7,7 @@ sqlite> .read products.sql
 sqlite> .read product_dependencies.sql
 sqlite> .read targets.sql
 sqlite> .read tmp-catalogs.sql
+sqlite> .read tmp-productcatalogs.sql
 
 
 
