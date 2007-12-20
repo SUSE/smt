@@ -70,6 +70,9 @@ sub mirrorTo()
     $job->uri( $self->{URI} );
     $job->resource( "/repodata/repomd.xml" );
     $job->local( $repodest );
+    
+    # get the file
+    $job->mirror();
 
     # parse it and find more resources
     $self->_parseXmlResource( $destfile );
