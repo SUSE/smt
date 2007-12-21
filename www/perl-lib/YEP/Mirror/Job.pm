@@ -93,7 +93,6 @@ sub mirror
 }
 
 # remote modification timestamp
-# FIXME Do no use ::Simple here because https proxy
 sub modified
 {
     my $self = shift;
@@ -155,6 +154,10 @@ or if it needs refresh and to transfer it.
 =head1 CONSTRUCTION
 
 =head2 new()
+
+=head1 AUTHOR
+
+dmacvicar@suse.de
 
 =cut
 
