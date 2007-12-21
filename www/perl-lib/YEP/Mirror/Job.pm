@@ -2,15 +2,15 @@ package YEP::Mirror::Job;
 use strict;
 
 use LWP;
-use LWP::Simple;
 use File::Path;
 use File::Basename;
+use Date::Parse;
 
 sub new
 {
     my $self  = {};
     $self->{URI}   = undef;
-    $self->{LOCAL}   = undef;
+    $self->{LOCALDIR}   = undef;
     $self->{RESOURCE}   = undef;
     $self->{CHECKSUM}   = undef;
     bless($self);
@@ -25,12 +25,28 @@ sub uri
     return $self->{URI};
 }
 
-# local path property
+# local resource container
+sub localdir
+{
+    my $self = shift;
+    if (@_) { $self->{LOCALDIR} = shift }
+    return $self->{LOCALDIR};
+}
+
+# local full path
 sub local
 {
     my $self = shift;
-    if (@_) { $self->{LOCAL} = shift }
-    return $self->{LOCAL};
+    my $local = join( "/", ( $self->{LOCALDIR}, $self->{RESOURCE} ) );
+    return $local;
+}
+
+# local full path
+sub remote
+{
+    my $self = shift;
+    my $remote = join( "/", ( $self->{URI}, $self->{RESOURCE} ) );
+    return $remote;
 }
 
 # resource property
@@ -50,18 +66,28 @@ sub checksum()
 }
 
 # mirror the resource to the local destination
-sub mirror()
+sub mirror
 {
     my $self = shift;
-    my $remote = join( "/", ( $self->{URI}, $self->{RESOURCE} ) );
-    my $local = join( "/", ( $self->{LOCAL}, $self->{RESOURCE} ) );
+
+    if ( not $self->outdated() )
+    {
+      print "----> ", $self->{RESOURCE}, " is up to date\n";
+      # no need to mirror
+      return 2;
+    }
     # make sure the container destination exists
-    &File::Path::mkpath( dirname($local) );
+    &File::Path::mkpath( dirname($self->local()) );
 
     use LWP::UserAgent;
     my $ua = LWP::UserAgent->new;
-    my $response = $ua->get( $remote, ':content_file' => $local );
+    my $response = $ua->get( $self->remote(), ':content_file' => $self->local() );
   
+    if ( $response->is_redirect )
+    {
+      print "Redirected", "\n";
+    }
+
     $response->is_success or
     die "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
 }
@@ -71,25 +97,37 @@ sub mirror()
 sub modified
 {
     my $self = shift;
-    my $remote = join( "/", ( $self->{URI}, $self->{RESOURCE} ) );
+    
+    use LWP::UserAgent;
+    my $ua = LWP::UserAgent->new;
+    my $response = $ua->head( $self->remote() );
+  
+    $response->is_success or
+    die "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
 
+    return Date::Parse::str2time($response->header( "Last-Modified" ));
+}
 
-    my $content_type;
-    my $document_length;
-    my $modified_time;
-    my $expires;
-    my $server;
+# true if remote is newer than local version
+# or if local does not exists
+sub outdated
+{
+  my $self = shift;
+ 
+  if ( not -e $self->local() )
+  {
+    return 1;
+  }
 
-    ($content_type, $document_length, $modified_time, $expires, $server) = LWP::Simple::head($remote);
-
-    return $modified_time;
+  open(HANDLE, $self->local());
+  my $date = (stat HANDLE)[9];
+  return ($date < $self->modified);
 }
 
 sub print
 {
   my $self = shift;
-  my $remote = join( "/", ( $self->{URI}, $self->{RESOURCE} ) );
-  print "[$remote]";
+  print "[", $self->resource(), "]\n";
 }
 
 =head1 NAME
@@ -102,7 +140,10 @@ $job = YEP::Mirror::Job->new();
 $job->uri("http://foo.com/");
 $job->local("/tmp");
 $job->resource("/file.txt");
+# when was it last time modified remotely
 print $job->modified()
+# is the local version outdated?
+print $job->outdated()
 $job->mirror();
 
 =head1 DESCRIPTION

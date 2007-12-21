@@ -10,9 +10,7 @@ use YEP::Mirror::Job;
 
 #@ISA = qw(Math::BigFloat);
 
-# self pointer for XML callback
-my $_xmlSelf;
-
+# constructor
 sub new
 {
     my $self  = {};
@@ -32,14 +30,15 @@ sub uri
     return $self->{URI};
 }
 
-sub localRepoPath()
+# creates a path from a url
+sub localUrlPath()
 {
   my $self = shift;
   my $uri;
   my $repodest;
 
   $uri = URI->new($self->{URI});
-  $repodest = join( "/", ( $self->{LOCALPATH}, $uri->host, $uri->path ) );
+  $repodest = join( "/", ( $uri->host, $uri->path ) );
   return $repodest;
 }
 
@@ -48,28 +47,34 @@ sub mirrorTo()
 {
     my $self = shift;
     my $dest = shift;
+    my $options = shift;
   
-    #URI->new($self->[$URI])
-
     if ( not -e $dest )
     { die $dest . " does not exist"; }
-
-    $self->{LOCALPATH} = $dest;
 
     # extract the url components to create
     # the destination directory
     # so we save the repo to:
     # $destdir/hostname.com/path
     my $uri = URI->new($self->{URI});
-    my $repodest = join( "/", ( $dest, $uri->host, $uri->path ) );
 
-    my $destfile = join( "/", ( $repodest, "repodata/repomd.xml" ) );
+    if ( $$options{ urltree } eq 1 )
+    {
+      $self->{LOCALPATH} = join( "/", ( $dest, $self->localUrlPath() ) );
+    }
+    else
+    {
+      $self->{LOCALPATH} = $dest;
+    }
+    print "Target: ", $self->{LOCALPATH}, "\n";
+
+    my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
     # get the repository index
     my $job = YEP::Mirror::Job->new();
     $job->uri( $self->{URI} );
     $job->resource( "/repodata/repomd.xml" );
-    $job->local( $repodest );
+    $job->localdir( $self->{LOCALPATH} );
     
     # get the file
     $job->mirror();
@@ -77,19 +82,27 @@ sub mirrorTo()
     # parse it and find more resources
     $self->_parseXmlResource( $destfile );
 
-    #print @#{$self->{JOBS}}; exit;
-
+    print  "Mirroring ", $self->{URI}, "\n";
     foreach ( @{$self->{JOBS}} )
     {
-      $_->print(); print "\n";
+      $_->print();
+      $_->mirror();
     }
+}
+
+# deletes all files not referenced in
+# the rpmmd resource chain
+sub clean()
+{
+    my $self = shift;
+
+    # algorithm
+    
 }
 
 # parses a xml resource
 sub _parseXmlResource()
 {
-    #$_xmlSelf = $self;
-
     my $self = shift;
     my $path = shift;
 
@@ -123,7 +136,7 @@ sub handle_start_tag()
         # get the repository index
         my $job = YEP::Mirror::Job->new();
         $job->resource( $attrs{"href"} );
-        $job->local( $self->localRepoPath() );
+        $job->localdir( $self->{LOCALPATH} );
         $job->uri( $self->{URI} );
 
         push @{$self->{JOBS}}, $job;
@@ -132,8 +145,9 @@ sub handle_start_tag()
         # process it
         if (  $job->resource =~ /(.+)\.xml(.+)/ )
         {
+          # mirror it first, so we can parse it
           $job->mirror();
-          $self->_parseXmlResource( join( "/", ($job->local, $job->resource) ));
+          $self->_parseXmlResource( $job->local() );
         }
 
     }
@@ -146,17 +160,38 @@ sub handle_end_tag()
 
 =head1 NAME
 
-YYEP::Mirror::RpmMd - mirroring of a rpm metadata repository
+YEP::Mirror::RpmMd - mirroring of a rpm metadata repository
 
 =head1 SYNOPSIS
 
-... todo
+use YEP::Mirror::RpmMd;
 
-=head1 DESCRIPTION
+$mirror = YEP::Mirror::RpmMd->new();
+$mirror->uri( "http://repo.com/10.3" );
+
+The option urltree of the mirror method controls 
+how the repo is mirrored. If urltree is true, then subdirectories
+with the hostname and path of the repo url are created inside the
+target directory.
+If urltree is false, then the repo is mirrored right below the target
+directory.
+
+$mirror->mirrorTo( "/somedir", { urltree => 1 });
+
+The mirror function will not download the same files twice.
+
+In order to clean the repository, that is removing all files
+which are not mentioned in the metadata, you can use the clean method:
+
+$mirror->clean();
 
 =head1 CONSTRUCTION
 
 =head2 new()
+
+=head1 AUTHOR
+
+dmacvicar@suse.de
 
 =cut
 
