@@ -114,11 +114,25 @@ sub _parseXmlResource()
     {
       use IO::Zlib;
       my $fh = IO::Zlib->new($path, "rb");
-      $parser->parse( $fh );
+      eval {
+          $parser->parse( $fh );
+      };
+      if($@) {
+          # ignore the errors, but print them
+          chomp($@);
+          print "Error: $@\n";
+      }
     }
     else
     {
-      $parser->parsefile( $path );
+      eval {
+          $parser->parsefile( $path );
+      };
+      if($@) {
+          # ignore the errors, but print them
+          chomp($@);
+          print "Error: $@\n";
+      }
     }
 }
 
