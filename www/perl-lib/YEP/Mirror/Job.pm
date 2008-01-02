@@ -1,7 +1,7 @@
 package YEP::Mirror::Job;
 use strict;
 
-use LWP;
+use LWP::UserAgent;
 use File::Path;
 use File::Basename;
 use Date::Parse;
@@ -9,7 +9,7 @@ use Date::Parse;
 sub new
 {
     my $self  = {};
-    $self->{URI}   = undef;
+    $self->{URI}        = undef;
     $self->{LOCALDIR}   = undef;
     $self->{RESOURCE}   = undef;
     $self->{CHECKSUM}   = undef;
@@ -22,6 +22,7 @@ sub uri
 {
     my $self = shift;
     if (@_) { $self->{URI} = shift }
+    
     return $self->{URI};
 }
 
@@ -79,10 +80,9 @@ sub mirror
     # make sure the container destination exists
     &File::Path::mkpath( dirname($self->local()) );
 
-    use LWP::UserAgent;
     my $ua = LWP::UserAgent->new;
     my $response = $ua->get( $self->remote(), ':content_file' => $self->local() );
-  
+    
     if ( $response->is_redirect )
     {
       print "Redirected", "\n";
@@ -97,10 +97,10 @@ sub modified
 {
     my $self = shift;
     
-    use LWP::UserAgent;
     my $ua = LWP::UserAgent->new;
+
     my $response = $ua->head( $self->remote() );
-  
+    
     $response->is_success or
     die "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
 
@@ -112,7 +112,7 @@ sub modified
 sub outdated
 {
   my $self = shift;
- 
+
   if ( not -e $self->local() )
   {
     return 1;
