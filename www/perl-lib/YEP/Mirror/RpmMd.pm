@@ -157,7 +157,7 @@ sub handle_start_tag()
 
         # if it is an xml file we have to download it now and
         # process it
-        if (  $job->resource =~ /(.+)\.xml(.+)/ )
+        if (  $job->resource =~ /(.+)\.xml(.*)/ )
         {
           # mirror it first, so we can parse it
           $job->mirror();
