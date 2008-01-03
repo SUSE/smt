@@ -2,13 +2,16 @@
 -- drop table IF EXISTS CredentialGroup;
 -- drop table IF EXISTS RepositoryGroup;
 
-drop table IF EXISTS Catalogs;
-drop table IF EXISTS Products;
-drop table IF EXISTS ProductCatalogs;
-drop table IF EXISTS ProductDependencies;
-drop table IF EXISTS Registration;
-drop table IF EXISTS MachineData;
-drop table IF EXISTS Targets;
+-- IF EXISTS was added in version 3.3.X
+-- on SLES10 we have 3.1.X :-(
+
+drop table Catalogs;
+drop table Products;
+drop table ProductCatalogs;
+drop table ProductDependencies;
+drop table Registration;
+drop table MachineData;
+drop table Targets;
 
 -- temporary for mirror only solution - bad idea we should work with the final once
 
