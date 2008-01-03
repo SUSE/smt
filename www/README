@@ -2,10 +2,16 @@ Required packages:
 ------------------
 * apache2
 * apache2-mod_perl
-* perl-HTML-Parser
 * sqlite
 * perl-DBI
 * perl-DBD-SQLite
+* perl-Crypt-SSLeay
+* perl-Config-IniFiles
+* perl-XML-Parser
+* perl-XML-Writer
+* perl-libwww-perl
+* perl-IO-Zlib
+* perl-URI
 
 Setup
 -----
