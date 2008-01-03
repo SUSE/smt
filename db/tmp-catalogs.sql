@@ -1,6 +1,6 @@
 
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
- Values("SLES10-SP1-Online", "SLES10-SP1-Online", "SLES10-SP1-Online for sles-10-i586", "sles-10-i586", "$RCE/SLES10-SP1-Online/sles-10-i586/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Online/sles-10-i586/", "nu");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
+ Values("SLES10-SP1-Online", "SLES10-SP1-Online", "SLES10-SP1-Online for sles-10-i586", "sles-10-i586", "$RCE/SLES10-SP1-Online/sles-10-i586/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Online/sles-10-i586/", "nu", "Y");
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
  Values("SLES10-SP1-Online", "SLES10-SP1-Online", "SLES10-SP1-Online for sles-10-ia64", "sles-10-ia64", "$RCE/SLES10-SP1-Online/sles-10-ia64/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Online/sles-10-ia64/", "nu");
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
@@ -10,14 +10,14 @@ insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, Catalo
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
  Values("SLES10-SP1-Online", "SLES10-SP1-Online", "SLES10-SP1-Online for sles-10-x86_64", "sles-10-x86_64", "$RCE/SLES10-SP1-Online/sles-10-x86_64/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Online/sles-10-x86_64/", "nu");
 
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
- Values("SLED10-SP1-Online", "SLED10-SP1-Online", "SLED10-SP1-Online for sled-10-i586", "sled-10-i586", "$RCE/SLED10-SP1-Online/sled-10-i586/", "https://nu.novell.com/repo/$RCE/SLED10-SP1-Online/sled-10-i586/", "nu");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
+ Values("SLED10-SP1-Online", "SLED10-SP1-Online", "SLED10-SP1-Online for sled-10-i586", "sled-10-i586", "$RCE/SLED10-SP1-Online/sled-10-i586/", "https://nu.novell.com/repo/$RCE/SLED10-SP1-Online/sled-10-i586/", "nu", "Y");
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
  Values("SLED10-SP1-Online", "SLED10-SP1-Online", "SLED10-SP1-Online for sled-10-x86_64", "sled-10-x86_64", "$RCE/SLED10-SP1-Online/sled-10-x86_64/", "https://nu.novell.com/repo/$RCE/SLED10-SP1-Online/sled-10-x86_64/", "nu");
 
 
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
- Values("SLES10-SP1-Updates", "SLES10-SP1-Updates", "SLES10-SP1-Updates for sles-10-i586", "sles-10-i586", "$RCE/SLES10-SP1-Updates/sles-10-i586/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Updates/sles-10-i586/", "nu");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
+ Values("SLES10-SP1-Updates", "SLES10-SP1-Updates", "SLES10-SP1-Updates for sles-10-i586", "sles-10-i586", "$RCE/SLES10-SP1-Updates/sles-10-i586/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Updates/sles-10-i586/", "nu", "Y");
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
  Values("SLES10-SP1-Updates", "SLES10-SP1-Updates", "SLES10-SP1-Updates for sles-10-ia64", "sles-10-ia64", "$RCE/SLES10-SP1-Updates/sles-10-ia64/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Updates/sles-10-ia64/", "nu");
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
@@ -27,8 +27,8 @@ insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, Catalo
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
  Values("SLES10-SP1-Updates", "SLES10-SP1-Updates", "SLES10-SP1-Updates for sles-10-x86_64", "sles-10-x86_64", "$RCE/SLES10-SP1-Updates/sles-10-x86_64/", "https://nu.novell.com/repo/$RCE/SLES10-SP1-Updates/sles-10-x86_64/", "nu");
 
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
- Values("SLED10-SP1-Updates", "SLED10-SP1-Updates", "SLED10-SP1-Updates for sled-10-i586", "sled-10-i586", "$RCE/SLED10-SP1-Updates/sled-10-i586/", "https://nu.novell.com/repo/$RCE/SLED10-SP1-Updates/sled-10-i586/", "nu");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
+ Values("SLED10-SP1-Updates", "SLED10-SP1-Updates", "SLED10-SP1-Updates for sled-10-i586", "sled-10-i586", "$RCE/SLED10-SP1-Updates/sled-10-i586/", "https://nu.novell.com/repo/$RCE/SLED10-SP1-Updates/sled-10-i586/", "nu", "Y");
 insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
  Values("SLED10-SP1-Updates", "SLED10-SP1-Updates", "SLED10-SP1-Updates for sled-10-x86_64", "sled-10-x86_64", "$RCE/SLED10-SP1-Updates/sled-10-x86_64/", "https://nu.novell.com/repo/$RCE/SLED10-SP1-Updates/sled-10-x86_64/", "nu");
 

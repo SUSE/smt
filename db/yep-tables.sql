@@ -46,6 +46,8 @@ create table Catalogs(CatalogID   integer PRIMARY KEY AUTOINCREMENT,
                       LocalPath   text NOT NULL,
                       ExtUrl      text NOT NULL,  -- where to mirror from
                       CatalogType text NOT NULL,
+		      DoMirror    text DEFAULT 'N',
+		      Mirrorable  text DEFAULT 'N',
                       UNIQUE(Name, Target)
                      );
 

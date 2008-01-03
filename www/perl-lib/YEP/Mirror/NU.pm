@@ -9,6 +9,9 @@ use File::Path;
 
 use YEP::Mirror::Job;
 use YEP::Mirror::RpmMd;
+use YEP::Utils;
+
+use Data::Dumper;
 
 =head1 NAME
 
@@ -100,6 +103,16 @@ sub mirrorTo()
     # get the file
     $job->mirror();
 
+    # set MirrorAble of all NU Catalogs to 'N'
+    my $dbh = YEP::Utils::db_connect();
+    if(!$dbh)
+    {
+        die "cannot connect to database";
+    }
+    $dbh->do("UPDATE Catalogs SET Mirrorable = 'N' where CatalogType='nu'");
+    $dbh->disconnect;
+    
+
     # parse it and find more resources
     $self->_parseXmlResource( $destfile );
 }
@@ -161,16 +174,34 @@ sub handle_start_tag()
     # we are looking for <repo .../>
     if ( $element eq "repo" )
     {
-        # get the repository index
-        my $mirror = YEP::Mirror::RpmMd->new();
+        # check if we want to mirror this repo
+        my $dbh = YEP::Utils::db_connect();
+        if(!$dbh)
+        {
+            # FIXME: Is "die" correct here ? 
+            die "cannot connect to database";
+        }
+        
+        # Set Mirrorable flag of this catalog to "Y"
+        $dbh->do(sprintf("UPDATE Catalogs SET Mirrorable = 'Y' where CatalogType='nu' and Name=%s and Target=%s", 
+                         $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
+        my $res = $dbh->selectall_arrayref( sprintf("select DoMirror from Catalogs where CatalogType='nu' and Name=%s and Target=%s", 
+                                                    $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
+        $dbh->disconnect;
 
-        my $catalogURI = join("/", $self->{URI}, "/repo", $attrs{"path"});
-        my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};
-
-        &File::Path::mkpath( $localPath );
-
-        $mirror->uri( $catalogURI );
-        $mirror->mirrorTo( $localPath );
+        if($res->[0]->[0] eq "Y")
+        {
+            # get the repository index
+            my $mirror = YEP::Mirror::RpmMd->new();
+            
+            my $catalogURI = join("/", $self->{URI}, "/repo", $attrs{"path"});
+            my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};
+            
+            &File::Path::mkpath( $localPath );
+            
+            $mirror->uri( $catalogURI );
+            $mirror->mirrorTo( $localPath );
+        }
     }
 }
 
