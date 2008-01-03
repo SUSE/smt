@@ -5,14 +5,34 @@ use LWP::UserAgent;
 use File::Path;
 use File::Basename;
 use Date::Parse;
+use Crypt::SSLeay;
+
+BEGIN 
+{
+    if(exists $ENV{https_proxy})
+    {
+        # required for Crypt::SSLeay HTTPS Proxy support
+        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
+    }
+}
 
 sub new
 {
+    my $pkgname = shift;
+
+    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
+    my $ua      = shift || LWP::UserAgent->new(keep_alive => 1);
+    if(exists $ENV{http_proxy})
+    {
+        $ua->proxy("http",  $ENV{http_proxy});
+    }
+        
     my $self  = {};
     $self->{URI}        = undef;
     $self->{LOCALDIR}   = undef;
     $self->{RESOURCE}   = undef;
     $self->{CHECKSUM}   = undef;
+    $self->{USERAGENT}  = $ua;
     bless($self);
     return $self;
 }
@@ -80,8 +100,7 @@ sub mirror
     # make sure the container destination exists
     &File::Path::mkpath( dirname($self->local()) );
 
-    my $ua = LWP::UserAgent->new;
-    my $response = $ua->get( $self->remote(), ':content_file' => $self->local() );
+    my $response = $self->{USERAGENT}->get( $self->remote(), ':content_file' => $self->local() );
     
     if ( $response->is_redirect )
     {
@@ -97,9 +116,7 @@ sub modified
 {
     my $self = shift;
     
-    my $ua = LWP::UserAgent->new;
-
-    my $response = $ua->head( $self->remote() );
+    my $response = $self->{USERAGENT}->head( $self->remote() );
     
     $response->is_success or
     die "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
@@ -112,7 +129,7 @@ sub modified
 sub outdated
 {
   my $self = shift;
-
+    
   if ( not -e $self->local() )
   {
     return 1;

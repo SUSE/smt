@@ -1,14 +1,22 @@
 package YEP::Mirror::RpmMd;
 use strict;
 
-use LWP;
+use LWP::UserAgent;
 use URI;
 use XML::Parser;
 use File::Path;
+use Crypt::SSLeay;
 
 use YEP::Mirror::Job;
 
-#@ISA = qw(Math::BigFloat);
+BEGIN 
+{
+    if(exists $ENV{https_proxy})
+    {
+        # required for Crypt::SSLeay HTTPS Proxy support
+        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
+    }
+}
 
 # constructor
 sub new
@@ -18,6 +26,14 @@ sub new
     # local destination ie: /var/repo/download.suse.org/foo/10.3
     $self->{LOCALPATH}   = undef;
     $self->{JOBS}   = [];
+
+    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
+    $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
+    if(exists $ENV{http_proxy})
+    {
+        $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});
+    }
+
     bless($self);
     return $self;
 }
@@ -71,7 +87,7 @@ sub mirrorTo()
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
     # get the repository index
-    my $job = YEP::Mirror::Job->new();
+    my $job = YEP::Mirror::Job->new($self->{USERAGENT});
     $job->uri( $self->{URI} );
     $job->resource( "/repodata/repomd.xml" );
     $job->localdir( $self->{LOCALPATH} );
@@ -148,7 +164,7 @@ sub handle_start_tag()
     if ( $element eq "location" )
     {
         # get the repository index
-        my $job = YEP::Mirror::Job->new();
+        my $job = YEP::Mirror::Job->new($self->{USERAGENT});
         $job->resource( $attrs{"href"} );
         $job->localdir( $self->{LOCALPATH} );
         $job->uri( $self->{URI} );
