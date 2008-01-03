@@ -58,11 +58,21 @@ sub read_post {
 sub db_connect
 {
     my $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
-
+    if(!defined $cfg)
+    {
+        # FIXME: is die correct here?
+        die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
+    }
+    
     my $config = $cfg->val('DB', 'config');
     my $user   = $cfg->val('DB', 'user');
     my $pass   = $cfg->val('DB', 'pass');
-
+    if(!defined $config || $config eq "")
+    {
+        # FIXME: is die correct here?
+        die "Invalid Database configuration. Missing value for DB/config.";
+    }
+     
     my $dbh    = DBI->connect($config, $user, $pass);
 
     return $dbh;
