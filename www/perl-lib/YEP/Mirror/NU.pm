@@ -2,7 +2,6 @@ package YEP::Mirror::NU;
 
 use strict;
 
-use LWP;
 use URI;
 use XML::Parser;
 use File::Path;
