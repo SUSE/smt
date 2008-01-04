@@ -5,6 +5,8 @@ PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
 install:
 	@cp apache2/mod_perl-startup.pl /etc/apache2/
 	@cp apache2/conf.d/*.conf /etc/apache2/conf.d/
+	@mkdir -p /srv/www/htdocs/repo
+	@mkdir -p /srv/www/htdocs/YUM
 	@mkdir -p /srv/www/perl-lib/NU
 	@mkdir -p $(PERLMODDIR)/YEP/Mirror
 	@cp www/perl-lib/yep-mirror.pl /usr/bin/
