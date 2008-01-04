@@ -12,6 +12,7 @@ Required packages:
 * perl-libwww-perl
 * perl-IO-Zlib
 * perl-URI
+* perl-TimeDate
 
 Setup
 -----
