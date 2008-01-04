@@ -19,20 +19,27 @@ BEGIN
 sub new
 {
     my $pkgname = shift;
-
-    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    my $ua      = shift || LWP::UserAgent->new(keep_alive => 1);
-    if(exists $ENV{http_proxy})
-    {
-        $ua->proxy("http",  $ENV{http_proxy});
-    }
-        
+    my %opt   = @_;
+    
     my $self  = {};
     $self->{URI}        = undef;
     $self->{LOCALDIR}   = undef;
     $self->{RESOURCE}   = undef;
     $self->{CHECKSUM}   = undef;
-    $self->{USERAGENT}  = $ua;
+    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
+    $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:LWP::UserAgent->new(keep_alive => 1);
+    $self->{DEBUG}      = 0;
+
+    if(exists $ENV{http_proxy})
+    {
+        $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});
+    }
+    
+    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
+    {
+        $self->{DEBUG} = 1;
+    }
+
     bless($self);
     return $self;
 }
@@ -93,10 +100,19 @@ sub mirror
 
     if ( not $self->outdated() )
     {
-      print "----> ", $self->{RESOURCE}, " is up to date\n";
+      print "----> ", $self->{RESOURCE}, " is up to date\n" if($self->{DEBUG});
       # no need to mirror
       return 2;
     }
+    else
+    {
+        if($self->{DEBUG})
+        {
+            print "Fetch ";
+            $self->print();
+        }
+    }
+    
     # make sure the container destination exists
     &File::Path::mkpath( dirname($self->local()) );
 
@@ -104,11 +120,20 @@ sub mirror
     
     if ( $response->is_redirect )
     {
-      print "Redirected", "\n";
+      print "Redirected", "\n" if($self->{DEBUG});
+      return 1;
     }
 
-    $response->is_success or
-    die "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
+    if( $response->is_success )
+    {
+        return 0;
+    }
+    else
+    {
+        # FIXME: was 'die'; check if we should stop if a download failed
+        print STDERR "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
+        return 1;
+    }
 }
 
 # remote modification timestamp
@@ -135,8 +160,8 @@ sub outdated
     return 1;
   }
 
-  open(HANDLE, $self->local());
-  my $date = (stat HANDLE)[9];
+  #open(HANDLE, $self->local());
+  my $date = (stat $self->local())[9];
   return ($date < $self->modified);
 }
 
@@ -152,15 +177,15 @@ YEP::Mirror::Job - represents a single resource mirror job
 
 =head1 SYNOPSIS
 
-$job = YEP::Mirror::Job->new();
-$job->uri("http://foo.com/");
-$job->local("/tmp");
-$job->resource("/file.txt");
-# when was it last time modified remotely
-print $job->modified()
-# is the local version outdated?
-print $job->outdated()
-$job->mirror();
+  $job = YEP::Mirror::Job->new();
+  $job->uri("http://foo.com/");
+  $job->local("/tmp");
+  $job->resource("/file.txt");
+  # when was it last time modified remotely
+  print $job->modified()
+  # is the local version outdated?
+  print $job->outdated()
+  $job->mirror();
 
 =head1 DESCRIPTION
 
@@ -168,13 +193,43 @@ Represents a remote resource mirror job and provice
 useful mehods to check if the resource exists local
 or if it needs refresh and to transfer it.
 
-=head1 CONSTRUCTION
+=head1 METHODS
 
-=head2 new()
+=over 4
+
+=item new([$params])
+
+Create a new YEP::Mirror::Job object:
+
+  my $mirror = YEP::Mirror::Job->new(debug => 1);
+
+Arguments are an anonymous hash array of parameters:
+
+=over 4
+
+=item debug
+
+Set to 1 to enable debug. 
+
+=item UserAgent
+
+LWP::UserAgent object to use for this job. Usefull for keep_alive. 
+
+=back
+
+=item mirror()
+
+Returns 0 on success, 1 on error and 2 if the file is up to date
+
+=back
 
 =head1 AUTHOR
 
 dmacvicar@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 =cut
 

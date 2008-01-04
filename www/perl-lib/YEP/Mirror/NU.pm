@@ -18,29 +18,98 @@ YEP::Mirror::NU - mirroring of a Novell Update repository
 
 =head1 SYNOPSIS
 
-use YEP::Mirror::NU;
+  use YEP::Mirror::NU;
 
-$mirror = YEP::Mirror::NU->new();
-$mirror->uri( 'https://username:password@nu.novell.com');
-$mirror->mirrorTo( "/srv/www/htdocs/");
-
+  $mirror = YEP::Mirror::NU->new();
+  $mirror->uri( 'https://username:password@nu.novell.com');
+  $mirror->mirrorTo( "/srv/www/htdocs/");
 
 =head1 DESCRIPTION
 
-=head1 CONSTRUCTION
+Mirroring of a Novell Update repository.
 
-=head2 new()
+The mirror function will not download the same files twice.
+
+In order to clean the repository, that is removing all files
+which are not mentioned in the metadata, you can use the clean method:
+
+ $mirror->clean();
+
+=head1 METHODS
+
+=over 4
+
+=item new([$params])
+
+Create a new YEP::Mirror::RpmMd object:
+
+  my $mirror = YEP::Mirror::RpmMd->new(debug => 1);
+
+Arguments are an anonymous hash array of parameters:
+
+=over 4
+
+=item debug
+
+Set to 1 to enable debug. 
+
+=back
+
+=item uri()
+
+ $mirror->uri( 'https://user:pass@nu.novell.com/' );
+
+ Specify the NU source where to mirror from.
+
+=item mirrorTo()
+
+ $mirror->mirrorTo( "/somedir", { urltree => 1 });
+
+ Sepecify the target directory where to place the mirrored files.
+
+=over 4
+
+=item urltree
+
+The option urltree of the mirror method controls 
+how the repo is mirrored. If urltree is true, then subdirectories
+with the hostname and path of the repo url are created inside the
+target directory.
+If urltree is false, then the repo is mirrored right below the target
+directory.
+
+=back
+
+=back
+
+=head1 AUTHOR
+
+mc@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 =cut
 
 # constructor
 sub new
 {
+    my $pkgname = shift;
+    my %opt   = @_;
+    
     my $self  = {};
     $self->{URI}   = undef;
     # local destination ie: /var/repo/download.suse.org/foo/10.3
     $self->{LOCALPATH}   = undef;
     $self->{JOBS}   = [];
+    $self->{DEBUG}  = 0;
+    
+    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
+    {
+        $self->{DEBUG} = 1;
+    }
+
     bless($self);
     return $self;
 }
@@ -89,12 +158,13 @@ sub mirrorTo()
     {
       $self->{LOCALPATH} = $dest;
     }
-    print "Target: ", $self->{LOCALPATH}, "\n";
+    print "Mirroring: ", $self->{URI}, "\n";
+    print "Target:    ", $self->{LOCALPATH}, "\n";
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repo/repoindex.xml" ) );
 
     # get the repository index
-    my $job = YEP::Mirror::Job->new();
+    my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG});
     $job->uri( $self->{URI} );
     $job->resource( "/repo/repoindex.xml" );
     $job->localdir( $self->{LOCALPATH} );
@@ -141,12 +211,14 @@ sub _parseXmlResource()
       use IO::Zlib;
       my $fh = IO::Zlib->new($path, "rb");
       eval {
-          $parser->parse( $fh );
+          # using ->parse( $fh ) result in errors
+          my @cont = $fh->getlines();
+          $parser->parse( join("", @cont ));
       };
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print "Error: $@\n";
+          print STDERR "Error: $@\n";
       }
     }
     else
@@ -157,7 +229,7 @@ sub _parseXmlResource()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print "Error: $@\n";
+          print STDERR "Error: $@\n";
       }
     }
 }
@@ -191,7 +263,7 @@ sub handle_start_tag()
         if($res->[0]->[0] eq "Y")
         {
             # get the repository index
-            my $mirror = YEP::Mirror::RpmMd->new();
+            my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
             
             my $catalogURI = join("/", $self->{URI}, "/repo", $attrs{"path"});
             my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};

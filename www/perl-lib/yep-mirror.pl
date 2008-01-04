@@ -1,13 +1,36 @@
 #!/usr/bin/env perl
 
+###########################################################################
+## Copyright (c) 2007 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###########################################################################
+
 use YEP::Mirror::NU;
 use YEP::Mirror::RpmMd;
 use YEP::Utils;
 use Config::IniFiles;
 use File::Path;
 use URI;
+use Getopt::Long;
 
 #use Data::Dumper;
+
+my $debug = 0;
+my $help  = 0;
+
+my $result = GetOptions ("debug|d"     => \$debug,
+                         "help|h"      => \$help
+                        );
+
+
+if($help)
+{
+    print "yep-mirror.pl [OPTIONS]\n";
+    print "\n";
+    print "Options:\n";
+    print "--debug -d     enable debug mode\n";
+    print "--help -h      show this message\n";
+    exit 0;
+}
 
 
 my $dbh = YEP::Utils::db_connect();
@@ -61,7 +84,7 @@ foreach my $id (keys %{$hash})
         my $fullpath = $LocalBasePath."/".$hash->{$id}->{LocalPath};
         &File::Path::mkpath( $fullpath );
 
-        my $yumMirror = YEP::Mirror::RpmMd->new();
+        my $yumMirror = YEP::Mirror::RpmMd->new(debug => $debug);
         $yumMirror->uri( $hash->{$id}->{ExtUrl} );
         $yumMirror->mirrorTo( $fullpath, { urltree => 0 } );
     }
@@ -70,7 +93,7 @@ foreach my $id (keys %{$hash})
 #
 # Now mirror the NU catalogs
 #
-my $mirror = YEP::Mirror::NU->new();
+my $mirror = YEP::Mirror::NU->new(debug => $debug);
 $mirror->uri( $uri->as_string );
 $mirror->mirrorTo( $LocalBasePath, { urltree => 0 } );
 
