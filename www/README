@@ -21,8 +21,12 @@ enhance /etc/sysconfig/apache2 APACHE_MODULES with "perl"
 
 copy <SVN>trunk/apache2/mod_perl-startup.pl /etc/apache2/
 copy <SVN>trunk/apache2/conf.d/mod_perl.conf /etc/apache2/conf.d/
+copy <SVN>trunk/apache2/conf.d/nu_server.conf /etc/apache2/conf.d/
 
 copy <SVN>trunk/www/perl-lib/* /srv/www/perl-lib/
+
+mkdir /srv/www/htdocs/repo
+mkdir /srv/www/htdocs/YUM
 
 Read the README in <SVN>trunk/db/ , create the database and copy it
 to /srv/www/  (we are searching for a better place)
