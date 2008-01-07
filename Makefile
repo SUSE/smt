@@ -1,22 +1,27 @@
+NAME         = yep
+VERSION      = 0.0.1
+DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
 
 
 install:
-	@cp apache2/mod_perl-startup.pl /etc/apache2/
-	@cp apache2/conf.d/*.conf /etc/apache2/conf.d/
-	@mkdir -p /srv/www/htdocs/repo
-	@mkdir -p /srv/www/htdocs/YUM
-	@mkdir -p /srv/www/perl-lib/NU
-	@mkdir -p $(PERLMODDIR)/YEP/Mirror
-	@cp www/perl-lib/yep-mirror.pl /usr/bin/
-	@chmod 0755 /usr/bin/yep-mirror.pl
-	@cp www/perl-lib/NU/*.pm /srv/www/perl-lib/NU/
-	@cp www/perl-lib/YEP/*.pm $(PERLMODDIR)/YEP/
-	@cp www/perl-lib/YEP/Mirror/*.pm /$(PERLMODDIR)/YEP/Mirror/
-	@cp config/yep.conf /etc/
+	@mkdir -p $(DESTDIR)/usr/bin/
+	@mkdir -p $(DESTDIR)/etc/apache2/conf.d/
+	@mkdir -p $(DESTDIR)/srv/www/htdocs/repo
+	@mkdir -p $(DESTDIR)/srv/www/htdocs/YUM
+	@mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
+	@mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
+	@cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/
+	@cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
+	@cp www/perl-lib/yep-mirror.pl $(DESTDIR)/usr/bin/
+	@chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
+	@cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
+	@cp www/perl-lib/YEP/*.pm $(DESTDIR)$(PERLMODDIR)/YEP/
+	@cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
+	@cp config/yep.conf $(DESTDIR)/etc/
 
-	cd db; sqlite3 -init setupdb.init /srv/www/yep.db '.exit'; cd -
+	cd db; sqlite3 -init setupdb.init $(DESTDIR)/srv/www/yep.db '.exit'; cd -
 
 	@echo "==========================================================="
 	@echo "Append 'perl' to APACHE_MODULES in /etc/sysconfig/apache2 ."
@@ -37,3 +42,34 @@ install:
 	@echo " "
 	@echo "Finaly start the web server with 'rcapache2 start'"
 	@echo "==========================================================="
+
+
+dist:
+	rm -rf $(NAME)-$(VERSION)/
+	@mkdir -p $(NAME)-$(VERSION)/usr/bin/
+	@mkdir -p $(NAME)-$(VERSION)/apache2/conf.d/
+	@mkdir -p $(NAME)-$(VERSION)/config
+	@mkdir -p $(NAME)-$(VERSION)/db
+	@mkdir -p $(NAME)-$(VERSION)/doc
+	@mkdir -p $(NAME)-$(VERSION)/tests/YEP/Mirror
+	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/NU
+	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror
+
+	@cp apache2/*.pl $(NAME)-$(VERSION)/apache2/
+	@cp apache2/conf.d/*.conf $(NAME)-$(VERSION)/apache2/conf.d/
+	@cp config/*.conf $(NAME)-$(VERSION)/config/
+	@cp db/*.sql $(NAME)-$(VERSION)/db/
+	@cp db/*.init $(NAME)-$(VERSION)/db/
+	@cp db/README $(NAME)-$(VERSION)/db/
+	@cp doc/* $(NAME)-$(VERSION)/doc/
+	rm -f $(NAME)-$(VERSION)/doc/*~
+	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
+	@cp tests/YEP/Mirror/*.pl $(NAME)-$(VERSION)/tests/YEP/Mirror/
+	@cp www/README $(NAME)-$(VERSION)/www/
+	@cp www/perl-lib/*.pl $(NAME)-$(VERSION)/www/perl-lib/
+	@cp www/perl-lib/NU/*.pm $(NAME)-$(VERSION)/www/perl-lib/NU/
+	@cp www/perl-lib/YEP/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/
+	@cp www/perl-lib/YEP/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror/
+	@cp HACKING Makefile $(NAME)-$(VERSION)/
+
+	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/
