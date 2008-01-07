@@ -5,6 +5,7 @@ use LWP::UserAgent;
 use URI;
 use XML::Parser;
 use File::Path;
+use File::Find;
 use Crypt::SSLeay;
 use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -34,6 +35,7 @@ sub new
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
+    $self->{CLEANLIST} = {};
     $self->{DEBUG} = 0;
     
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
@@ -48,7 +50,6 @@ sub new
         $self->{DEBUG} = 1;
     }
     
-
     bless($self);
     return $self;
 }
@@ -200,21 +201,70 @@ sub mirrorTo()
 sub clean()
 {
     my $self = shift;
+    my $dest = shift;
+    
+    if ( not -e $dest )
+    { die "Destination '$dest' does not exist"; }
+
+    $self->{LOCALPATH} = $dest;
+
+    print "Cleaning:         ", $self->{LOCALPATH}, "\n";
 
     # algorithm
     
+    find ( { wanted =>
+             sub
+             {
+                 if ( -f $File::Find::name )
+                 { $self->{CLEANLIST}->{$File::Find::name} = 1; }
+             }
+             , no_chdir => 1 }, $self->{LOCALPATH} );
+
+    
+    my $path = $self->{LOCALPATH}."/repodata/repomd.xml";
+    $self->_parseXmlResource( $path, 1);
+    # strip out /./ and //
+    $path =~ s/\/\.?\//\//g;
+
+    delete $self->{CLEANLIST}->{$path} if (exists $self->{CLEANLIST}->{$path});
+    delete $self->{CLEANLIST}->{$path.".asc"} if (exists $self->{CLEANLIST}->{$path.".asc"});;
+    delete $self->{CLEANLIST}->{$path.".key"} if (exists $self->{CLEANLIST}->{$path.".key"});;
+
+    my $cnt = 0;
+    foreach my $file ( keys %{$self->{CLEANLIST}} )
+    {
+        print "Delete: $file\n" if ($self->{DEBUG});
+        $cnt += unlink $file;
+    }
+
+    print "Finished cleaning ", $self->{LOCALPATH}, "\n";
+    print "Removed files:    $cnt\n";
+    print "\n";
 }
 
 # parses a xml resource
 sub _parseXmlResource()
 {
-    my $self = shift;
-    my $path = shift;
-
-    my $parser = XML::Parser->new( Handlers =>
-                                   { Start=> sub { handle_start_tag($self, @_) },
-                                     End=>\&handle_end_tag,
-                                   });
+    my $self     = shift;
+    my $path     = shift;
+    my $forClean = shift || 0;
+    my $parser   = undef;    
+    
+    if(!$forClean)
+    {
+        $parser = XML::Parser->new( Handlers =>
+                                    { Start=> sub { handle_start_tag($self, @_) },
+                                      End=>\&handle_end_tag,
+                                    });
+    }
+    else
+    {
+        $parser = XML::Parser->new( Handlers =>
+                                    { Start=> sub { handle_start_tag_clean($self, @_) },
+                                      End=>\&handle_end_tag,
+                                    });
+    }
+    
     if ( $path =~ /(.+)\.gz/ )
     {
       my $fh = IO::Zlib->new($path, "rb");
@@ -242,7 +292,7 @@ sub _parseXmlResource()
     }
 }
 
-# handles XML reader start tag events
+# handles XML reader start tag events for mirror
 sub handle_start_tag()
 {
     my $self = shift;
@@ -284,6 +334,34 @@ sub handle_start_tag()
         {
             # download it later
             push @{$self->{JOBS}}, $job;
+        }
+    }
+}
+
+# handles XML reader start tag events for clean
+sub handle_start_tag_clean()
+{
+    my $self = shift;
+    my( $expat, $element, %attrs ) = @_;
+    # ask the expat object about our position
+    my $line = $expat->current_line;
+
+    # we are looking for <location href="foo"/>
+    if ( $element eq "location" )
+    {
+        # get the repository index
+        my $resource = $self->{LOCALPATH}."/".$attrs{"href"};
+        # strip out /./ and //
+        $resource =~ s/\/\.?\//\//g;
+
+        # if this path is in the CLEANLIST, delete it
+        delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
+
+        # if it is an xml file we have to download it now and
+        # process it
+        if (  $resource =~ /(.+)\.xml(.*)/ )
+        {
+            $self->_parseXmlResource( $resource, 1);
         }
     }
 }

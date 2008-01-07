@@ -14,10 +14,12 @@ use Getopt::Long;
 
 #use Data::Dumper;
 
-my $debug = 0;
-my $help  = 0;
+my $debug    = 0;
+my $clean    = 0;
+my $help     = 0;
 
 my $result = GetOptions ("debug|d"     => \$debug,
+                         "cleanup|c"   => \$clean,
                          "help|h"      => \$help
                         );
 
@@ -28,6 +30,9 @@ if($help)
     print "\n";
     print "Options:\n";
     print "--debug -d     enable debug mode\n";
+    print "--clean -c     cleanup all mirrored repositories.\n";
+    print "               Remove all files not longer mention in the metadata.\n";
+    print "               This mode do no mirror before cleanup.\n";
     print "--help -h      show this message\n";
     exit 0;
 }
@@ -85,8 +90,15 @@ foreach my $id (keys %{$hash})
         &File::Path::mkpath( $fullpath );
 
         my $yumMirror = YEP::Mirror::RpmMd->new(debug => $debug);
-        $yumMirror->uri( $hash->{$id}->{ExtUrl} );
-        $yumMirror->mirrorTo( $fullpath, { urltree => 0 } );
+        if($clean)
+        {
+            $yumMirror->clean( $fullpath );
+        }
+        else
+        {
+            $yumMirror->uri( $hash->{$id}->{ExtUrl} );
+            $yumMirror->mirrorTo( $fullpath, { urltree => 0 } );
+        }
     }
 }
 
@@ -94,6 +106,13 @@ foreach my $id (keys %{$hash})
 # Now mirror the NU catalogs
 #
 my $mirror = YEP::Mirror::NU->new(debug => $debug);
-$mirror->uri( $uri->as_string );
-$mirror->mirrorTo( $LocalBasePath, { urltree => 0 } );
+if($clean)
+{
+    $mirror->clean( $LocalBasePath );
+}
+else
+{
+    $mirror->uri( $uri->as_string );
+    $mirror->mirrorTo( $LocalBasePath, { urltree => 0 } );
+}
 

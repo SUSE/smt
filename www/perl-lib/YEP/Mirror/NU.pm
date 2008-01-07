@@ -191,21 +191,44 @@ sub mirrorTo()
 sub clean()
 {
     my $self = shift;
+    my $dest = shift;
 
     # algorithm
     
+    if ( not -e $dest )
+    { die "Destination '$dest' does not exist"; }
+
+    $self->{LOCALPATH} = $dest;
+
+    my $path = $self->{LOCALPATH}."/repo/repoindex.xml";
+    $self->_parseXmlResource( $path, 1);
+
 }
 
 # parses a xml resource
 sub _parseXmlResource()
 {
-    my $self = shift;
-    my $path = shift;
-
-    my $parser = XML::Parser->new( Handlers =>
-                                   { Start=> sub { handle_start_tag($self, @_) },
-                                     End=>\&handle_end_tag,
-                                   });
+    my $self     = shift;
+    my $path     = shift;
+    my $forClean = shift || 0;
+    
+    my $parser; 
+    
+    if(!$forClean)
+    {
+        $parser = XML::Parser->new( Handlers =>
+                                    { Start=> sub { handle_start_tag($self, @_) },
+                                      End=>\&handle_end_tag,
+                                    });
+    }
+    else
+    {
+        $parser = XML::Parser->new( Handlers =>
+                                    { Start=> sub { handle_start_tag_clean($self, @_) },
+                                      End=>\&handle_end_tag,
+                                    });
+    }
+    
     if ( $path =~ /(.+)\.gz/ )
     {
       use IO::Zlib;
@@ -272,6 +295,44 @@ sub handle_start_tag()
             
             $mirror->uri( $catalogURI );
             $mirror->mirrorTo( $localPath );
+        }
+    }
+}
+
+# handles XML reader start tag events for Clean
+sub handle_start_tag_clean()
+{
+    my $self = shift;
+    my( $expat, $element, %attrs ) = @_;
+    # ask the expat object about our position
+    my $line = $expat->current_line;
+
+    # we are looking for <repo .../>
+    if ( $element eq "repo" )
+    {
+        # check if we want to mirror this repo
+        my $dbh = YEP::Utils::db_connect();
+        if(!$dbh)
+        {
+            # FIXME: Is "die" correct here ? 
+            die "cannot connect to database";
+        }
+        
+        # Set Mirrorable flag of this catalog to "Y"
+        $dbh->do(sprintf("UPDATE Catalogs SET Mirrorable = 'Y' where CatalogType='nu' and Name=%s and Target=%s", 
+                         $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
+        my $res = $dbh->selectall_arrayref( sprintf("select DoMirror from Catalogs where CatalogType='nu' and Name=%s and Target=%s", 
+                                                    $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
+        $dbh->disconnect;
+
+        if($res->[0]->[0] eq "Y")
+        {
+            my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
+            
+            my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};
+            $localPath =~ s/\/\.?\//\//g;
+            
+            $rpmmd->clean( $localPath );
         }
     }
 }
