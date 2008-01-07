@@ -108,9 +108,41 @@ sub mirrorTo()
     $job->uri( $self->{URI} );
     $job->resource( "/repodata/repomd.xml" );
     $job->localdir( $self->{LOCALPATH} );
+
+    $job->resource( "/repodata/repomd.xml.asc" );
+    my $result = $job->mirror();
+    if( $result == 1 )
+    {
+        $self->{STATISTIC}->{ERROR} += 1;
+    }
+    elsif( $result == 2 )
+    {
+        $self->{STATISTIC}->{UPTODATE} += 1;
+    }
+    else
+    {
+        $self->{STATISTIC}->{DOWNLOAD} += 1;
+    }
+
+    $job->resource( "/repodata/repomd.xml.key" );
+    $result = $job->mirror();
+    if( $result == 1 )
+    {
+        $self->{STATISTIC}->{ERROR} += 1;
+    }
+    elsif( $result == 2 )
+    {
+        $self->{STATISTIC}->{UPTODATE} += 1;
+    }
+    else
+    {
+        $self->{STATISTIC}->{DOWNLOAD} += 1;
+    }
+
     
     # get the file
-    my $result = $job->mirror();
+    $job->resource( "/repodata/repomd.xml" );
+    $result = $job->mirror();
     if( $result == 1 )
     {
         $self->{STATISTIC}->{ERROR} += 1;
