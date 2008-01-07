@@ -44,12 +44,17 @@ install:
 	@echo "==========================================================="
 
 
-test::
-	rm -rf tests/testdata/rpmmdtest/
-	mkdir -p tests/testdata/rpmmdtest/
+test: clean
 	cd tests; perl tests.pl && cd -
 
-dist:
+clean:
+	find . -name "*~" -print0 | xargs -0 rm -f
+	rm -rf tests/testdata/rpmmdtest/*
+	rm -rf $(NAME)-$(VERSION)/
+	rm -rf $(NAME)-$(VERSION).tar.bz2
+
+
+dist: clean
 	rm -rf $(NAME)-$(VERSION)/
 	@mkdir -p $(NAME)-$(VERSION)/usr/bin/
 	@mkdir -p $(NAME)-$(VERSION)/apache2/conf.d/
