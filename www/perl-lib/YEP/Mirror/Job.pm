@@ -143,8 +143,12 @@ sub modified
     
     my $response = $self->{USERAGENT}->head( $self->remote() );
     
-    $response->is_success or
-    die "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
+    $response->is_success or do 
+    {
+        # FIXME: was 'die'; check if we should stop if a download failed
+        print STDERR "Failed to GET '$self->{RESOURCE}': ".$response->status_line."\n";
+        return undef;
+    };
 
     return Date::Parse::str2time($response->header( "Last-Modified" ));
 }
@@ -160,9 +164,10 @@ sub outdated
     return 1;
   }
 
-  #open(HANDLE, $self->local());
   my $date = (stat $self->local())[9];
-  return ($date < $self->modified);
+  my $modifiedAt = $self->modified();
+  
+  return (!defined $modifiedAt || $date < $modifiedAt);
 }
 
 sub print
