@@ -30,7 +30,7 @@ Requires:     perl-URI
 Requires:     perl-TimeDate
 
 Autoreqprov:  on
-Group:        Development/Libraries/Perl
+Group:        Productivity/Networking/Web/Proxy
 License:      Artistic License
 Summary:      YaST Enterprise Proxy
 Source:       %{name}-%{version}.tar.bz2
