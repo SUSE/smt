@@ -131,7 +131,7 @@ sub mirror
     else
     {
         # FIXME: was 'die'; check if we should stop if a download failed
-        print STDERR "Failed to GET '$self->{RESOURCE}': ", $response->status_line;
+        print STDERR "Failed to GET '$self->{RESOURCE}': ".$response->status_line."\n";
         return 1;
     }
 }

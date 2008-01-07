@@ -44,6 +44,11 @@ install:
 	@echo "==========================================================="
 
 
+test::
+	rm -rf tests/testdata/rpmmdtest/
+	mkdir -p tests/testdata/rpmmdtest/
+	cd tests; perl tests.pl && cd -
+
 dist:
 	rm -rf $(NAME)-$(VERSION)/
 	@mkdir -p $(NAME)-$(VERSION)/usr/bin/
@@ -52,6 +57,8 @@ dist:
 	@mkdir -p $(NAME)-$(VERSION)/db
 	@mkdir -p $(NAME)-$(VERSION)/doc
 	@mkdir -p $(NAME)-$(VERSION)/tests/YEP/Mirror
+	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/jobtest
+	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/rpmmdtest
 	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/NU
 	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror
 

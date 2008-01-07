@@ -11,7 +11,7 @@ my @tests;
 find ( { wanted => 
   sub
   {
-    if ( $_ =~ /\.pl/ )
+    if ( $_ =~ /\.pl$/ && $_ !~ /tests\.pl$/ )
     { push( @tests, $_); }
   }
   , no_chdir => 1 }, ".");

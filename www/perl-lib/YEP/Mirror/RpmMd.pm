@@ -90,7 +90,7 @@ sub mirrorTo()
     # $destdir/hostname.com/path
     my $uri = URI->new($self->{URI});
 
-    if ( $$options{ urltree } eq 1 )
+    if ( defined $options && exists $options->{ urltree } && $options->{ urltree } eq 1 )
     {
       $self->{LOCALPATH} = join( "/", ( $dest, $self->localUrlPath() ) );
     }
@@ -106,7 +106,6 @@ sub mirrorTo()
     # get the repository index
     my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
     $job->uri( $self->{URI} );
-    $job->resource( "/repodata/repomd.xml" );
     $job->localdir( $self->{LOCALPATH} );
 
     $job->resource( "/repodata/repomd.xml.asc" );
@@ -192,6 +191,8 @@ sub mirrorTo()
     print "=> Download Errors : ".$self->{STATISTIC}->{ERROR}."\n";
     print "=> Mirror Time:      ".(tv_interval($t0))." seconds\n";
     print "\n";
+
+    return $self->{STATISTIC}->{ERROR};
 }
 
 # deletes all files not referenced in
