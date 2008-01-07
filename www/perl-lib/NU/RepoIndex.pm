@@ -34,7 +34,6 @@ sub getUsernameFromRequest($)
     my $username = $r->user;
     return undef unless defined $username;
 
-    return "sledsp1i586online";  # static return for testing
     return $username;
 }
 
