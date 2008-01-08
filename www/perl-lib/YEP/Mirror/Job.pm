@@ -184,7 +184,7 @@ YEP::Mirror::Job - represents a single resource mirror job
 
   $job = YEP::Mirror::Job->new();
   $job->uri("http://foo.com/");
-  $job->local("/tmp");
+  $job->localdir("/tmp");
   $job->resource("/file.txt");
   # when was it last time modified remotely
   print $job->modified()
