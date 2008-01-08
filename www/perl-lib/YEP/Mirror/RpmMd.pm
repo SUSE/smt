@@ -9,7 +9,7 @@ use File::Find;
 use Crypt::SSLeay;
 use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
-use Digest::SHA1  qw(sha1);
+use Digest::SHA1  qw(sha1 sha1_hex);
 
 use YEP::Mirror::Job;
 
@@ -271,15 +271,15 @@ sub _parseXmlResource()
     if(!$forClean)
     {
         $parser = XML::Parser->new( Handlers =>
-                                    { Start=> sub { handle_start_tag($self, @_) },
-                                      End=>\&handle_end_tag,
+                                    { Start=> sub { mirror_handle_start_tag($self, @_) },
+                                      End=>\&mirror_handle_end_tag,
                                     });
     }
     else
     {
         $parser = XML::Parser->new( Handlers =>
                                     { Start=> sub { handle_start_tag_clean($self, @_) },
-                                      End=>\&handle_end_tag,
+                                      End=>\& mirror_handle_end_tag,
                                     });
     }
 
@@ -351,27 +351,27 @@ sub _verifyXmlResource()
     if ( $path =~ /(.+)\.gz/ )
     {
       my $fh = IO::Zlib->new($path, "rb");
-      eval {
+      #eval {
           # using ->parse( $fh ) result in errors
           my @cont = $fh->getlines();
           $parser->parse( join("", @cont ));
-      };
-      if($@) {
+      #};
+      #if($@) {
           # ignore the errors, but print them
-          chomp($@);
-          print STDERR "Error: $@\n";
-      }
+      #    chomp($@);
+      #    print STDERR "Error: $@\n";
+      #}
     }
     else
     {
-      eval {
+      #eval {
           $parser->parsefile( $path );
-      };
-      if($@) {
+      #};
+      #if($@) {
           # ignore the errors, but print them
-          chomp($@);
-          print STDERR "Error: $@\n";
-      }
+      #    chomp($@);
+      #    print STDERR "Error: $@\n";
+      #}
     }
 }
 
@@ -471,7 +471,7 @@ sub verify_handle_start_tag()
 
         # at the start of a new resource, the current job
         # should be null
-        if ( defined $self->{VERIFY}->{CURRENT} )
+        if ( ( not exists $self->{VERIFY}->{CURRENT}) && ( not defined $self->{VERIFY}->{CURRENT}) )
         {
           print STDERR "Unexpected tag '$element' at line $line\n";
           $self->{STATISTIC}->{ERROR} += 1;
@@ -488,7 +488,7 @@ sub verify_handle_start_tag()
     {
         # should had been defined at beginin of the
         # resource start tag
-        if ( not defined $self->{VERIFY}->{CURRENT}  )
+        if ( ( not exists $self->{VERIFY}->{CURRENT}) && ( not defined $self->{VERIFY}->{CURRENT}) )
         {
             print STDERR "Unexpected tag '$element' at line $line\n";
             $self->{STATISTIC}->{ERROR} += 1;
@@ -504,7 +504,7 @@ sub verify_handle_start_tag()
         $self->{VERIFY}->{STATE} = 2;
         # should had been defined at beginin of the
         # resource start tag
-        if ( not defined $self->{VERIFY}->{CURRENT}  )
+        if ( ( not exists $self->{VERIFY}->{CURRENT}) && ( not defined $self->{VERIFY}->{CURRENT}) )
         {
           print STDERR "Unexpected tag 'checksum' at line: " . $line . "\n";
           $self->{STATISTIC}->{ERROR} += 1;
@@ -564,9 +564,11 @@ sub verify_handle_end_tag()
       my $sha1;
       my $digest;
       open FILE, $filename or die $!;
+      #print STDERR $filename . "\n";
       $sha1 = Digest::SHA1->new;
+      #$sha1->add($data);
       $sha1->addfile(*FILE);
-      $digest = $sha1->digest;
+      $digest = $sha1->hexdigest();
 
       if ( not ( $digest eq $self->{VERIFY}->{CURRENT}->checksum ) )
       {
@@ -578,8 +580,11 @@ sub verify_handle_end_tag()
       # check if we have to process sub jobs
       if (  $self->{VERIFY}->{CURRENT}->resource =~ /(.+)\.xml(.*)/ )
       {
-        print " we should sub process the job " . $self->{VERIFY}->{CURRENT}->resource . "\n" ;
+        #print STDERR " Ver " . $self->{VERIFY}->{CURRENT}->resource . "\n" ;
+        $self->_verifyXmlResource( $filename );
       }
+
+      $self->{VERIFY}->{CURRENT} = undef;
     }
     else
     {
@@ -599,7 +604,13 @@ YEP::Mirror::RpmMd - mirroring of a rpm metadata repository
 
   $mirror = YEP::Mirror::RpmMd->new();
   $mirror->uri( "http://repo.com/10.3" );
+
   $mirror->mirrorTo( "/somedir", { urltree => 1 });
+  $mirror->verify("/somedir/www.foo.com/repo");
+
+  $mirror->mirrorTo( "/somedir", { urltree => 0 });
+  $mirror->verify("/somedir");
+
 
 =head1 DESCRIPTION
 
