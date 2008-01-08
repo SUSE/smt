@@ -586,11 +586,12 @@ sub verify_handle_end_tag()
 
       $self->{VERIFY}->{CURRENT} = undef;
     }
-    else
-    {
-        print("error unexpected end of tag");
-        $self->{STATISTIC}->{ERROR} += 1;
-    }
+    # this is not an error !
+    #else
+    #{
+    #    print("error unexpected end of tag");
+    #    $self->{STATISTIC}->{ERROR} += 1;
+    #}
 }
 
 

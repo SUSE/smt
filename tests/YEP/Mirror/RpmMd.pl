@@ -2,11 +2,12 @@
 use File::Temp;
 
 BEGIN {
-    push @INC, "/space/git/suse/yep/www/perl-lib";
+    push @INC, "../../../www/perl-lib";
 }
 
 use YEP::Mirror::RpmMd;
-use Test::Simple tests => 2;
+use IO::Zlib;
+use Test::Simple tests => 3;
 
 my $url = 'http://download.opensuse.org/repositories/home:/dmacvicar/openSUSE_10.3/';
 my $tempdir = File::Temp::tempdir(CLEANUP => 1);
@@ -20,9 +21,16 @@ ok($mirror->mirrorTo( $tempdir ) == 0);
 ok($mirror->verify($tempdir) == 0);
 
 # now lets corrupt the directory
-open (FILEH, ">$tempdir/repodata/other.xml.gz") or die $!;
-print FILEH "fooo";
-close FILEH;
+$fh = new IO::Zlib("$tempdir/repodata/other.xml.gz", "ab9");
+if(defined $fh)
+{
+    print $fh "     ";
+    $fh->close();
+}
+else
+{
+    die "Cannot open file $tempdir/repodata/other.xml.gz: $!";
+}
 
 # now it should not verify
 ok( $mirror->verify($tempdir) > 0 );
