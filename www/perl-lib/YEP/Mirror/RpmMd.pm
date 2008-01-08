@@ -9,6 +9,7 @@ use File::Find;
 use Crypt::SSLeay;
 use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
+use Digest::SHA1  qw(sha1);
 
 use YEP::Mirror::Job;
 
@@ -38,6 +39,23 @@ sub new
     $self->{CLEANLIST} = {};
     $self->{DEBUG} = 0;
     
+    # stores the verifiy state
+    # when verify task is running
+
+    # current job
+    $self->{VERIFY}->{CURRENT}  = undef;
+    # State of the resource
+    # 0 out the tag
+    # 1 inside the resource
+    # 2 inside checksum
+    # 3 inside open-checksum
+    # 4 inside timestamp
+    # 5 inside location
+    #
+    # as only checksums have text data, the others
+    # will not probably be used.
+    $self->{VERIFY}->{STATE} = 0;
+
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
     if(exists $ENV{http_proxy})
@@ -264,7 +282,7 @@ sub _parseXmlResource()
                                       End=>\&handle_end_tag,
                                     });
     }
-    
+
     if ( $path =~ /(.+)\.gz/ )
     {
       my $fh = IO::Zlib->new($path, "rb");
@@ -292,8 +310,74 @@ sub _parseXmlResource()
     }
 }
 
-# handles XML reader start tag events for mirror
-sub handle_start_tag()
+# verifies the repository on path
+sub verify()
+{
+    my $self = shift;
+    
+    if ( not -e $self->{LOCALPATH} )
+    { die $self->{LOCALPATH} . " does not exist"; }
+    my $t0 = [gettimeofday] ;
+
+    print "Verifying:    ", $self->{LOCALPATH}, "\n";
+
+    my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
+
+    $self->{STATISTIC}->{ERROR} = 0;
+    
+    # parse it and find more resources
+    $self->_verifyXmlResource( $destfile );
+
+    print "=> Finished verifying: ".$self->{LOCALPATH}."\n";
+    print "=> Errors            : ".$self->{STATISTIC}->{ERROR}."\n";
+    print "=> Verify Time       : ".(tv_interval($t0))." seconds\n";
+    print "\n";
+
+    return $self->{STATISTIC}->{ERROR};
+}
+
+
+# parses a xml resource
+sub _verifyXmlResource()
+{
+    my $self = shift;
+    my $path = shift;
+
+    my $parser = XML::Parser->new( Handlers =>
+                                   { Start=> sub { verify_handle_start_tag($self, @_) },
+                                     End=>=> sub { verify_handle_end_tag($self, @_) },
+                                     Char => sub { verify_handle_char($self, @_) }
+                                   });
+    if ( $path =~ /(.+)\.gz/ )
+    {
+      my $fh = IO::Zlib->new($path, "rb");
+      eval {
+          # using ->parse( $fh ) result in errors
+          my @cont = $fh->getlines();
+          $parser->parse( join("", @cont ));
+      };
+      if($@) {
+          # ignore the errors, but print them
+          chomp($@);
+          print STDERR "Error: $@\n";
+      }
+    }
+    else
+    {
+      eval {
+          $parser->parsefile( $path );
+      };
+      if($@) {
+          # ignore the errors, but print them
+          chomp($@);
+          print STDERR "Error: $@\n";
+      }
+    }
+}
+
+
+# handles XML reader start tag events
+sub mirror_handle_start_tag()
 {
     my $self = shift;
     my( $expat, $element, %attrs ) = @_;
@@ -366,10 +450,144 @@ sub handle_start_tag_clean()
     }
 }
 
-sub handle_end_tag()
+sub mirror_handle_end_tag()
 {
   my( $expat, $element, %attrs ) = @_;
 }
+
+# handles XML reader start tag events
+# for verification
+sub verify_handle_start_tag()
+{
+    my $self = shift;
+    my( $expat, $element, %attrs ) = @_;
+    # ask the expat object about our position
+    my $line = $expat->current_line;
+
+    if ( ( ( $element eq "data" ) || ( $element eq "patch" ) ) &&
+         ( $self->{VERIFY}->{STATE} eq 0 ) )
+    {
+        $self->{VERIFY}->{STATE} = 1;
+
+        # at the start of a new resource, the current job
+        # should be null
+        if ( defined $self->{VERIFY}->{CURRENT} )
+        {
+          print STDERR "Unexpected tag '$element' at line $line\n";
+          $self->{STATISTIC}->{ERROR} += 1;
+          return 0;
+        }
+
+        $self->{VERIFY}->{CURRENT} = YEP::Mirror::Job->new();
+        $self->{VERIFY}->{CURRENT}->localdir( $self->{LOCALPATH} );
+        return 1;
+    }
+
+    # we are looking for <location href="foo"/>
+    if ( ( $element eq "location" ) && ( $self->{VERIFY}->{STATE} eq 1 ) )
+    {
+        # should had been defined at beginin of the
+        # resource start tag
+        if ( not defined $self->{VERIFY}->{CURRENT}  )
+        {
+            print STDERR "Unexpected tag '$element' at line $line\n";
+            $self->{STATISTIC}->{ERROR} += 1;
+            return 0;
+        }
+
+        $self->{VERIFY}->{CURRENT}->resource( $attrs{"href"} );
+        return 1;
+    }
+
+    if ( ( $element eq "checksum") && ( $self->{VERIFY}->{STATE} eq 1 ) )
+    {
+        $self->{VERIFY}->{STATE} = 2;
+        # should had been defined at beginin of the
+        # resource start tag
+        if ( not defined $self->{VERIFY}->{CURRENT}  )
+        {
+          print STDERR "Unexpected tag 'checksum' at line: " . $line . "\n";
+          $self->{STATISTIC}->{ERROR} += 1;
+          return 0;
+        }
+
+        $self->{VERIFY}->{CURRENT}->checksum( $attrs{"href"} );
+        return 1;
+    }
+
+    if ( ( $element eq "open-checksum") && ( $self->{VERIFY}->{STATE} eq 1 ) )
+    {
+      $self->{VERIFY}->{STATE} = 3;
+    }
+
+    if ( ( $element eq "timestamp") && ( $self->{VERIFY}->{STATE} eq 1 ) )
+    {
+      $self->{VERIFY}->{STATE} = 4;
+    }
+}
+
+sub verify_handle_char()
+{
+    my $self = shift;
+    my( $expat, $text ) = @_;
+
+    # checksum state
+    # capture the checksum itself
+    if ( $self->{VERIFY}->{STATE} eq 2 )
+    {
+      $self->{VERIFY}->{CURRENT}->checksum( $text );
+    }
+}
+
+sub verify_handle_end_tag()
+{
+    my $self = shift;
+    my( $expat, $element, %attrs ) = @_;
+
+    if ( ( ( $element eq "checksum"      ) ||
+           ( $element eq "location"      ) ||
+           ( $element eq "timestamp"     ) ||
+           ( $element eq "open-checksum" ) ) &&
+         ( $self->{VERIFY}->{STATE} > 1 ) )
+    {
+        # back to state 1
+        $self->{VERIFY}->{STATE} = 1;
+    }
+    elsif ( ( ( $element eq "data"    ) ||
+              ( $element eq "patch"   ) ||
+              ( $element eq "pattern" )    ) &&
+            ( $self->{VERIFY}->{STATE} eq 1 ) )
+    {
+      $self->{VERIFY}->{STATE} = 0;
+      # check the job file checksum
+      my $filename = join( "/", ( $self->{LOCALPATH}, $self->{VERIFY}->{CURRENT}->resource ) );
+      my $sha1;
+      my $digest;
+      open FILE, $filename or die $!;
+      $sha1 = Digest::SHA1->new;
+      $sha1->addfile(*FILE);
+      $digest = $sha1->digest;
+
+      if ( not ( $digest eq $self->{VERIFY}->{CURRENT}->checksum ) )
+      {
+        print STDERR $self->{VERIFY}->{CURRENT}->resource . " has wrong checksum\n";
+        print STDERR "  -> '" . $digest . "' vs '" . $self->{VERIFY}->{CURRENT}->checksum . "'";
+        $self->{STATISTIC}->{ERROR} += 1;
+      }
+
+      # check if we have to process sub jobs
+      if (  $self->{VERIFY}->{CURRENT}->resource =~ /(.+)\.xml(.*)/ )
+      {
+        print " we should sub process the job " . $self->{VERIFY}->{CURRENT}->resource . "\n" ;
+      }
+    }
+    else
+    {
+        print("error unexpected end of tag");
+        $self->{STATISTIC}->{ERROR} += 1;
+    }
+}
+
 
 =head1 NAME
 
