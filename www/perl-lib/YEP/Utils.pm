@@ -73,7 +73,7 @@ sub db_connect
         die "Invalid Database configuration. Missing value for DB/config.";
     }
      
-    my $dbh    = DBI->connect($config, $user, $pass);
+    my $dbh    = DBI->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});
 
     return $dbh;
 }
