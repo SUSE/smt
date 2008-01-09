@@ -38,7 +38,8 @@ sub new
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{CLEANLIST} = {};
     $self->{DEBUG} = 0;
-    
+    $self->{LASTUPTODATE} = 0;
+
     # stores the verifiy state
     # when verify task is running
 
@@ -92,6 +93,12 @@ sub localUrlPath()
   return $repodest;
 }
 
+sub lastUpToDate()
+{
+    my $self = shift;
+    return $self->{LASTUPTODATE};
+}
+
 # mirrors the repository to destination
 sub mirrorTo()
 {
@@ -127,8 +134,46 @@ sub mirrorTo()
     $job->uri( $self->{URI} );
     $job->localdir( $self->{LOCALPATH} );
 
-    $job->resource( "/repodata/repomd.xml.asc" );
+    # get the file
+    $job->resource( "/repodata/repomd.xml" );
+
+    # check if we need to mirror first
+    if ( not $job->outdated() )
+    {
+      # repomd is the same
+      # check if the local repository is valid
+      if ( $self->verify($destfile) )
+      {
+          $self->{LASTUPTODATE} = 1;
+          return 0;
+      }
+      else
+      {
+        return $self->{STATISTIC}->{ERROR};
+      }
+    }
+
     my $result = $job->mirror();
+    if( $result == 1 )
+    {
+        $self->{STATISTIC}->{ERROR} += 1;
+    }
+    elsif( $result == 2 )
+    {
+        # FIXME: Question: If repomd.xml is "up to date" and the
+        #                  local repo is valid, can we skip the 
+        #                  rest and directly return with success?
+
+        $self->{STATISTIC}->{UPTODATE} += 1;
+    }
+    else
+    {
+        $self->{STATISTIC}->{DOWNLOAD} += 1;
+    }
+    
+
+    $job->resource( "/repodata/repomd.xml.asc" );
+    $result = $job->mirror();
     if( $result == 1 )
     {
         $self->{STATISTIC}->{ERROR} += 1;
@@ -156,28 +201,6 @@ sub mirrorTo()
     {
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
-
-    
-    # get the file
-    $job->resource( "/repodata/repomd.xml" );
-    $result = $job->mirror();
-    if( $result == 1 )
-    {
-        $self->{STATISTIC}->{ERROR} += 1;
-    }
-    elsif( $result == 2 )
-    {
-        # FIXME: Question: If repomd.xml is "up to date" and the
-        #                  local repo is valid, can we skip the 
-        #                  rest and directly return with success?
-
-        $self->{STATISTIC}->{UPTODATE} += 1;
-    }
-    else
-    {
-        $self->{STATISTIC}->{DOWNLOAD} += 1;
-    }
-    
 
     # parse it and find more resources
     $self->_parseXmlResource( $destfile );
@@ -611,6 +634,11 @@ YEP::Mirror::RpmMd - mirroring of a rpm metadata repository
 
   $mirror->mirrorTo( "/somedir", { urltree => 0 });
   $mirror->verify("/somedir");
+
+  # this is true if the last mirror call determined
+  # the reposiotory was up to date.
+  # if no mirror was run, then it is false
+  $mirror->lastUpToDate()
 
 
 =head1 DESCRIPTION

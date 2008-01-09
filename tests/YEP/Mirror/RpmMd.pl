@@ -7,7 +7,7 @@ BEGIN {
 
 use YEP::Mirror::RpmMd;
 use IO::Zlib;
-use Test::Simple tests => 3;
+use Test::Simple tests => 6;
 
 my $url = 'http://download.opensuse.org/repositories/home:/dmacvicar/openSUSE_10.3/';
 my $tempdir = File::Temp::tempdir(CLEANUP => 1);
@@ -15,10 +15,13 @@ print STDERR "Saving $url to $tempdir\n";
 
 $mirror = YEP::Mirror::RpmMd->new();
 $mirror->uri( $url );
-ok($mirror->mirrorTo( $tempdir ) == 0);
+ok($mirror->mirrorTo( $tempdir ) == 0, "should mirror ok");
+
+# last should have been a full mirror
+ok($mirror->lastUpToDate() == 0, "first mirror should be full");
 
 # verify
-ok($mirror->verify($tempdir) == 0);
+ok($mirror->verify($tempdir) == 0, "mirror should verify");
 
 # now lets corrupt the directory
 $fh = new IO::Zlib("$tempdir/repodata/other.xml.gz", "ab9");
@@ -33,4 +36,10 @@ else
 }
 
 # now it should not verify
-ok( $mirror->verify($tempdir) > 0 );
+ok( $mirror->verify($tempdir) > 0 , "should not verify after corrupted");
+
+# mirror again, we should be uptodate
+ok($mirror->mirrorTo( $tempdir ) == 0, "second mirror should work");
+ok($mirror->lastUpToDate() == 1, "second mirror should be fast");
+
+
