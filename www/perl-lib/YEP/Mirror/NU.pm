@@ -283,7 +283,8 @@ sub handle_start_tag()
                                                     $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
         $dbh->disconnect;
 
-        if($res->[0]->[0] eq "Y")
+        if(defined $res && exists $res->[0]->[0] && 
+           defined $res->[0]->[0] && $res->[0]->[0] eq "Y")
         {
             # get the repository index
             my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
@@ -325,7 +326,8 @@ sub handle_start_tag_clean()
                                                     $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
         $dbh->disconnect;
 
-        if($res->[0]->[0] eq "Y")
+        if(defined $res && exists $res->[0]->[0] &&
+           defined $res->[0]->[0] && $res->[0]->[0] eq "Y")
         {
             my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
             
