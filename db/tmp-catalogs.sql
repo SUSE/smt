@@ -128,14 +128,14 @@ insert into Catalogs (Name,Alias,Description,Target,LocalPath, ExtURL, CatalogTy
 
 
 
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
-  Values("www2_ati_com_sp1", "www2_ati_com_sp1", "ATI Video Drivers (SP1)", NULL, "YUM/www2_ati_com_sp1", "http://www2.ati.com/suse/sle10sp1", "yum", "Y");
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
-  Values("www2_ati_com", "www2_ati_com", "ATI Video Drivers", NULL, "YUM/www2_ati_com", "http://www2.ati.com/suse/sle10", "yum", "Y");
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
-  Values("download_nvidia_com", "download_nvidia_com", "nVidia Video Drivers", NULL, "YUM/download_nvidia_com", "http://download.nvidia.com/novell/sle10", "yum", "Y");
-insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, DoMirror)
-  Values("download_nvidia_com_sp1", "download_nvidia_com_sp1", "nVidia Video Drivers (SP1)", NULL, "YUM/download_nvidia_com_sp1", "http://download.nvidia.com/novell/sle10sp1", "yum", "Y");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, Mirrorable, DoMirror)
+  Values("www2_ati_com_sp1", "www2_ati_com_sp1", "ATI Video Drivers (SP1)", NULL, "YUM/www2_ati_com_sp1", "http://www2.ati.com/suse/sle10sp1", "yum", "Y", "Y");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, Mirrorable, DoMirror)
+  Values("www2_ati_com", "www2_ati_com", "ATI Video Drivers", NULL, "YUM/www2_ati_com", "http://www2.ati.com/suse/sle10", "yum", "Y", "Y");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, Mirrorable, DoMirror)
+  Values("download_nvidia_com", "download_nvidia_com", "nVidia Video Drivers", NULL, "YUM/download_nvidia_com", "http://download.nvidia.com/novell/sle10", "yum", "Y", "Y");
+insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType, Mirrorable, DoMirror)
+  Values("download_nvidia_com_sp1", "download_nvidia_com_sp1", "nVidia Video Drivers (SP1)", NULL, "YUM/download_nvidia_com_sp1", "http://download.nvidia.com/novell/sle10sp1", "yum", "Y", "Y");
 
 -- insert into Catalogs(Name, Alias, Description, Target, LocalPath, ExtUrl, CatalogType)
 --  Values("", "", "", "", "$RCE///", "https://nu.novell.com/repo/$RCE/", "nu");
