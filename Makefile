@@ -4,25 +4,7 @@ DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
 
-
-install:
-	@mkdir -p $(DESTDIR)/usr/bin/
-	@mkdir -p $(DESTDIR)/etc/apache2/conf.d/
-	@mkdir -p $(DESTDIR)/srv/www/htdocs/repo
-	@mkdir -p $(DESTDIR)/srv/www/htdocs/YUM
-	@mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
-	@mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
-	@cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/
-	@cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
-	@cp www/perl-lib/yep-mirror.pl $(DESTDIR)/usr/bin/
-	@chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
-	@cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
-	@cp www/perl-lib/YEP/*.pm $(DESTDIR)$(PERLMODDIR)/YEP/
-	@cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
-	@cp config/yep.conf $(DESTDIR)/etc/
-
-	cd db; sqlite3 -init setupdb.init $(DESTDIR)/srv/www/yep.db '.exit'; cd -
-
+install_all: install install_conf install_db
 	@echo "==========================================================="
 	@echo "Append 'perl' to APACHE_MODULES in /etc/sysconfig/apache2 ."
 	@echo "Required packages:"
@@ -42,6 +24,29 @@ install:
 	@echo " "
 	@echo "Finaly start the web server with 'rcapache2 start'"
 	@echo "==========================================================="
+
+install_db:
+	mkdir -p $(DESTDIR)/srv/www/
+	cd db; sqlite3 -init setupdb.init $(DESTDIR)/srv/www/yep.db '.exit'; cd -
+
+install_conf:
+	mkdir -p $(DESTDIR)/etc/
+	cp config/yep.conf $(DESTDIR)/etc/
+
+install:
+	mkdir -p $(DESTDIR)/usr/bin/
+	mkdir -p $(DESTDIR)/etc/apache2/conf.d/
+	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
+	mkdir -p $(DESTDIR)/srv/www/htdocs/YUM
+	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
+	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
+	cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/
+	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
+	cp www/perl-lib/yep-mirror.pl $(DESTDIR)/usr/bin/
+	chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
+	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
+	cp www/perl-lib/YEP/*.pm $(DESTDIR)$(PERLMODDIR)/YEP/
+	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
 
 
 test: clean
