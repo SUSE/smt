@@ -110,6 +110,11 @@ sub mirrorTo()
     { die $dest . " does not exist"; }
     my $t0 = [gettimeofday] ;
     
+    # reset the counter
+    $self->{STATISTIC}->{ERROR}    = 0;
+    $self->{STATISTIC}->{UPTODATE} = 0;
+    $self->{STATISTIC}->{DOWNLOAD} = 0;
+
     # extract the url components to create
     # the destination directory
     # so we save the repo to:
@@ -144,16 +149,20 @@ sub mirrorTo()
       # check if the local repository is valid
       if ( $self->verify($destfile) )
       {
-          print "=> Finished mirroring ".$self->{URI}." All files are up-to-date.\n";
+          print "=> Finished mirroring ".$self->{URI}." All files are up-to-date.\n\n";
           $self->{LASTUPTODATE} = 1;
           return 0;
       }
       else
       {
           # we should continue here
-          print "repomd.xml is the same, but repo is not valid." if $self->{DEBUG};
+          print "repomd.xml is the same, but repo is not valid.\n" if $self->{DEBUG};
           # just in case
           $self->{LASTUPTODATE} = 0;
+          # reset the counter
+          $self->{STATISTIC}->{ERROR}    = 0;
+          $self->{STATISTIC}->{UPTODATE} = 0;
+          $self->{STATISTIC}->{DOWNLOAD} = 0;
       }
     }
 
@@ -164,10 +173,6 @@ sub mirrorTo()
     }
     elsif( $result == 2 )
     {
-        # FIXME: Question: If repomd.xml is "up to date" and the
-        #                  local repo is valid, can we skip the 
-        #                  rest and directly return with success?
-
         $self->{STATISTIC}->{UPTODATE} += 1;
     }
     else
@@ -175,7 +180,6 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
     
-
     $job->resource( "/repodata/repomd.xml.asc" );
     $result = $job->mirror();
     if( $result == 1 )
@@ -361,7 +365,7 @@ sub verify()
     print "=> Verify Time       : ".(tv_interval($t0))." seconds\n";
     print "\n";
 
-    return $self->{STATISTIC}->{ERROR};
+    return ($self->{STATISTIC}->{ERROR} == 0);
 }
 
 
@@ -493,7 +497,7 @@ sub verify_handle_start_tag()
     # ask the expat object about our position
     my $line = $expat->current_line;
 
-    if ( ( ( $element eq "data" ) || ( $element eq "patch" ) ) &&
+    if ( ( ( $element eq "data" ) || ( $element eq "patch" ) || ( $element eq "package" ) ) &&
          ( $self->{VERIFY}->{STATE} eq 0 ) )
     {
         $self->{VERIFY}->{STATE} = 1;
@@ -523,7 +527,7 @@ sub verify_handle_start_tag()
             $self->{STATISTIC}->{ERROR} += 1;
             return 0;
         }
-
+ 
         $self->{VERIFY}->{CURRENT}->resource( $attrs{"href"} );
         return 1;
     }
@@ -564,7 +568,19 @@ sub verify_handle_char()
     # capture the checksum itself
     if ( $self->{VERIFY}->{STATE} eq 2 )
     {
-      $self->{VERIFY}->{CURRENT}->checksum( $text );
+        my $checksum = $self->{VERIFY}->{CURRENT}->checksum;
+        
+        if(defined $checksum && $checksum ne "")
+        {
+            # sometimes we got not the complete checksum in once
+            $checksum .= $text;
+        }
+        else
+        {
+            $checksum = $text;
+        }
+        
+        $self->{VERIFY}->{CURRENT}->checksum( $checksum );
     }
 }
 
@@ -584,43 +600,51 @@ sub verify_handle_end_tag()
     }
     elsif ( ( ( $element eq "data"    ) ||
               ( $element eq "patch"   ) ||
+              ( $element eq "package" ) ||
               ( $element eq "pattern" )    ) &&
             ( $self->{VERIFY}->{STATE} eq 1 ) )
     {
       $self->{VERIFY}->{STATE} = 0;
+
+      # FIXME: This is only a temporary workaround!
+      if( $self->{VERIFY}->{CURRENT}->resource eq "")
+      {
+          $self->{VERIFY}->{CURRENT} = undef;
+          return;
+      }
+      
       # check the job file checksum
       my $filename = join( "/", ( $self->{LOCALPATH}, $self->{VERIFY}->{CURRENT}->resource ) );
       my $sha1;
       my $digest;
-      open(FILE, "< $filename") or die "Cannot open '$filename': $!";
-      #print STDERR "CHECK: $filename \n";
+      open(FILE, "< $filename") or do {
+          print STDERR "Cannot open '$filename': $!";
+          # if the file cannot be opend (maybe does not exists), increase the error
+          $self->{STATISTIC}->{ERROR} += 1;
+      };
+      
       $sha1 = Digest::SHA1->new;
       #$sha1->add($data);
       $sha1->addfile(*FILE);
       $digest = $sha1->hexdigest();
 
+      
       if ( not ( $digest eq $self->{VERIFY}->{CURRENT}->checksum ) )
       {
         print STDERR $self->{VERIFY}->{CURRENT}->resource . " has wrong checksum\n";
-        print STDERR "  -> '" . $digest . "' vs '" . $self->{VERIFY}->{CURRENT}->checksum . "'";
+        print STDERR "  -> '" . $digest . "' vs '" . $self->{VERIFY}->{CURRENT}->checksum . "'\n";
         $self->{STATISTIC}->{ERROR} += 1;
       }
 
       # check if we have to process sub jobs
       if (  $self->{VERIFY}->{CURRENT}->resource =~ /(.+)\.xml(.*)/ )
       {
-        #print STDERR " Ver " . $self->{VERIFY}->{CURRENT}->resource . "\n" ;
+          #print STDERR " Ver " . $self->{VERIFY}->{CURRENT}->resource . "\n" ;
         $self->_verifyXmlResource( $filename );
       }
 
       $self->{VERIFY}->{CURRENT} = undef;
     }
-    # this is not an error !
-    #else
-    #{
-    #    print("error unexpected end of tag");
-    #    $self->{STATISTIC}->{ERROR} += 1;
-    #}
 }
 
 
@@ -689,6 +713,7 @@ Set to 1 to enable debug.
  $mirror->mirrorTo( "/somedir", { urltree => 1 });
 
  Sepecify the target directory where to place the mirrored files.
+ Returns the count of errors.
 
 =over 4
 
@@ -702,6 +727,12 @@ If urltree is false, then the repo is mirrored right below the target
 directory.
 
 =back
+
+=item verify()
+
+ $mirror->verify();
+
+ Returns true, if the repo is valid, otherwise false
 
 =back
 
