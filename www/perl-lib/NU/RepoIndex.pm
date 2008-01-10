@@ -11,7 +11,7 @@ use Apache2::RequestUtil;
 use XML::Writer;
 
 use YEP::Utils;
-#use Data::Dumper;  # for jdsn tests
+use Data::Dumper;  # for jdsn tests
 
 
 sub getCatalogsByGUID($$)
@@ -22,7 +22,7 @@ sub getCatalogsByGUID($$)
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
 
-    return $dbh->selectall_hashref( sprintf("select c.CatalogID, c.Name, c.Description, c.Target, c.LocalPath, c.CatalogType from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.ProductID=pc.ProductID and c.CatalogID=pc.CatalogID and c.DoMirror like 'Y'", $dbh->quote($guid) ), "CatalogID" );
+    return $dbh->selectall_hashref( sprintf("select c.CatalogID, c.Name, c.Description, c.Target, c.LocalPath, c.CatalogType from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y'", $dbh->quote($guid) ), "CATALOGID" );
 }
 
 sub getUsernameFromRequest($)
@@ -54,25 +54,30 @@ sub handler {
     return Apache2::Const::SERVER_ERROR unless defined $username;
     my $catalogs = getCatalogsByGUID($dbh, $username);
 
-
-    my $writer = new XML::Writer(NEWLINES => 1);
+    my $writer = new XML::Writer(NEWLINES => 0);
     $writer->xmlDecl();
 
     # start tag
     $writer->startTag("repoindex");
 
+    # don't laugh, zmd requires a special look of the XML :-(
+    print "\n";
+    
     # create repos
     foreach my $val (values %{$catalogs})
     {
          $writer->emptyTag('repo',
-                           'name' => ${$val}{'Name'},
-                           'alias' => ${$val}{'Name'},                 # Alias == Name
-                           'description' => ${$val}{'Description'},
-                           'distro_target' => ${$val}{'Target'},
-                           'path' => ${$val}{'LocalPath'},
+                           'name' => ${$val}{'NAME'},
+                           'alias' => ${$val}{'NAME'},                 # Alias == Name
+                           'description' => ${$val}{'DESCRIPTION'},
+                           'distro_target' => ${$val}{'TARGET'},
+                           'path' => ${$val}{'LOCALPATH'},
                            'priority' => 0,                            # TODO are these parameters needed?
                            'pub' => 0                                  # TODO are these parameters needed?
                          );
+         # don't laugh, zmd requires a special look of the XML :-(
+         print "\n";
+
     }
 
     $writer->endTag("repoindex");
