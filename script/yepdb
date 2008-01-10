@@ -42,7 +42,7 @@ my %TABLES = ( 'catalogs'            =>  { 'catalogid'   => 0,
                                            'service'       => 0,
                                            'product_list'  => 0
                                          },
-               'productcatalogs'     =>  { 'productid' => 11,
+               'productcatalogs'     =>  { 'productdataid' => 11,
                                            'catalogid' => 11,
                                            'productid-QUERY' => 'products:productdataid:product',
                                            'catalogid-QUERY' => 'catalogs:catalogid:name'
@@ -62,7 +62,8 @@ my %TABLES = ( 'catalogs'            =>  { 'catalogid'   => 0,
                                            'value' => 1
                                          },
                'targets'             =>  { 'os'     => 1,
-                                           'target' => 1
+                                           'target' => 1,
+                                           'arch'   => 1
                                          }
              );
 ## Explanation:
