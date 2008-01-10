@@ -78,7 +78,7 @@ $uri->userinfo("$nuUser:$nuPass");
 #
 # search for all YUM repositories we need to mirror and start the mirror process
 #
-my $hash = $dbh->selectall_hashref( "select CatalogID, LocalPath, ExtUrl from Catalogs where CatalogType='yum' and Mirrorable='Y' and DoMirror='Y'", "CatalogID" );
+my $hash = $dbh->selectall_hashref( "select CatalogID, LocalPath, ExtUrl from Catalogs where CatalogType='yum' and Mirrorable='Y' and DoMirror='Y'", "CATALOGID" );
 
 #print Data::Dumper->Dump([$hash]);
 
