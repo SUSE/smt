@@ -41,17 +41,16 @@ create table MachineData(GUID          text NOT NULL,
                         );
 
 -- used for NU catalogs and single YUM sources
-create table Catalogs(CatalogID   integer PRIMARY KEY AUTOINCREMENT, 
-                      Name        text NOT NULL, 
-                      Alias       text, 
-                      Description text, 
-                      Target      text,           -- null in case of YUM source
-                      LocalPath   text NOT NULL,
-                      ExtUrl      text NOT NULL,  -- where to mirror from
-                      CatalogType text NOT NULL,
-		      DoMirror    text DEFAULT 'N',
-		      Mirrorable  text DEFAULT 'N',
-                      UNIQUE(Name, Target)
+create table Catalogs(CATALOGID   text PRIMARY KEY, 
+                      NAME        text NOT NULL, 
+                      DESCRIPTION text, 
+                      TARGET      text,           -- null in case of YUM source
+                      LOCALPATH   text NOT NULL,
+                      EXTURL      text NOT NULL,  -- where to mirror from
+                      CATALOGTYPE text NOT NULL,
+                      DOMIRROR    text DEFAULT 'N',
+                      MIRRORABLE  text DEFAULT 'N',
+                      UNIQUE(NAME, TARGET)
                      );
 
 
@@ -75,22 +74,23 @@ CREATE TABLE Products (
                 );
 
 
-create table ProductCatalogs(ProductID   integer NOT NULL,
-                             CatalogID   integer NOT NULL,
-                             Optional    text DEFAULT 'N',
-                             PRIMARY KEY(ProductID, CatalogID)
+create table ProductCatalogs(PRODUCTDATAID integer NOT NULL,
+                             CATALOGID     text NOT NULL,
+                             Optional      text DEFAULT 'N',
+                             PRIMARY KEY(PRODUCTDATAID, CATALOGID)
                             );
 
 -- copy of NNW_PRODUCT_DEPENDENCIES where PARENT_PARTNUMBER is NULL
-create table ProductDependencies(Parent_Product_ID integer NOT NULL,
-                                 Child_Product_ID  integer NOT NULL,
+create table ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
+                                 CHILD_PRODUCT_ID  integer NOT NULL,
                                  -- Condition       text,             -- not sure about this.
-                                 PRIMARY KEY(Parent_Product_ID, Child_Product_ID)
+                                 PRIMARY KEY(PARENT_PRODUCT_ID, CHILD_PRODUCT_ID)
                                 );
 
 -- copy of NNW_ZLM66_TARGETS
 create table Targets (OS      text NOT NULL PRIMARY KEY,
-                      Target  text NOT NULL
+                      TARGET  text NOT NULL,
+		      ARCH    text NOT NULL
                      );
 
 
