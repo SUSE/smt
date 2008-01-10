@@ -67,13 +67,14 @@ make DESTDIR=$RPM_BUILD_ROOT install_all
 %defattr(-,root,root)
 %dir %{perl_vendorlib}/YEP/
 %dir %{perl_vendorlib}/YEP/Mirror
+%dir /var/lib/YaST2
 %{perl_vendorlib}/YEP/*.pm
 %{perl_vendorlib}/YEP/Mirror/*.pm
 %dir /srv/www/htdocs/repo/
 %dir /srv/www/htdocs/YUM/
 %dir /srv/www/perl-lib/NU/
 /srv/www/perl-lib/NU/*.pm
-/srv/www/yep.db
+/var/lib/YaST2/yep.db
 %config(noreplace) /etc/yep.conf
 %config /etc/apache2/*.pl
 %config /etc/apache2/conf.d/*.conf

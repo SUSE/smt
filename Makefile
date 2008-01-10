@@ -26,8 +26,8 @@ install_all: install install_conf install_db
 	@echo "==========================================================="
 
 install_db:
-	mkdir -p $(DESTDIR)/srv/www/
-	cd db; sqlite3 -init setupdb.init $(DESTDIR)/srv/www/yep.db '.exit'; cd -
+	mkdir -p $(DESTDIR)/var/lib/YaST2/
+	cd db; sqlite3 -init setupdb.init $(DESTDIR)/var/lib/YaST2/yep.db '.exit'; cd -
 
 install_conf:
 	mkdir -p $(DESTDIR)/etc/
