@@ -20,193 +20,6 @@ BEGIN
     }
 }
 
-
-###############################################################################
-## TEST DATA
-###############################################################################
-
-my $testdata_products = '<?xml version="1.0" encoding="UTF-8"?>
-<product xmlns="http://www.novell.com/xml/center/regsvc-1_0">
-<row>
-  <col name="PRODUCTDATAID">436</col>
-  <col name="PRODUCT">SUSE-Linux-Enterprise-Server-SP1</col>
-  <col name="VERSION">10</col>
-  <col name="RELEASE" />
-  <col name="ARCH">i686</col>
-  <col name="PRODUCTLOWER">suse-linux-enterprise-server-sp1</col>
-  <col name="VERSIONLOWER">10</col>
-  <col name="RELEASELOWER" />
-  <col name="ARCHLOWER">i686</col>
-  <col name="FRIENDLY">SUSE Linux Enterprise Server 10 SP1</col>
-  <col name="PARAMLIST"><![CDATA[<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="">
-        <guid description="" class="mandatory"/>
-        <param id="secret" description="" command="zmd-secret" class="mandatory"/>
-        <host description=""/>
-        <product description="" class="mandatory"/>
-        <param id="ostarget" description="" command="zmd-ostarget" class="mandatory"/>
-        <param id="ostarget-bak" description="" command="lsb_release -sd" class="mandatory"/>
-        <param id="email" description="" class="mandatory"/>
-        <param id="regcode-sles" description=""/>
-        <param id="moniker" description=""/>
-        <param id="processor" description="" command="uname -p"/>
-        <param id="platform" description="" command="uname -i"/>
-        <param id="hostname" description="" command="uname -n"/>
-        <param id="cpu" description="" command="hwinfo --cpu"/>
-        <param id="disk" description="" command="hwinfo --disk"/>
-        <param id="dsl" description="" command="hwinfo --dsl"/>
-        <param id="gfxcard" description="" command="hwinfo --gfxcard"/>
-        <param id="isdn" description="" command="hwinfo --isdn"/>
-        <param id="memory" description="" command="hwinfo --memory"/>
-        <param id="netcard" description="" command="hwinfo --netcard --nowpa"/>
-        <param id="scsi" description="" command="hwinfo --scsi"/>
-        <param id="sound" description="" command="hwinfo --sound"/>
-        <param id="sys" description="" command="hwinfo --sys"/>
-        <param id="tape" description="" command="hwinfo --tape"/>
-</paramlist>]]></col>
-  <col name="NEEDINFO"><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<needinfo xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="" href="">
-        <guid description="" class="mandatory"/>
-        <param id="secret" description="" command="zmd-secret" class="mandatory"/>
-        <host description=""/>
-        <product description="" class="mandatory"/>
-        <param id="ostarget" description="" command="zmd-ostarget" class="mandatory"/>
-        <param id="ostarget-bak" description="" command="lsb_release -sd" class="mandatory"/>
-        <param id="identification" description="" page="reg.jsp?guid={guid}&amp;lang={lang}" class="mandatory">
-                <param id="email" description=""/>
-        </param>
-        <param id="regcode-sles" description="" page="reg.jsp?guid={guid}&amp;lang={lang}"/>
-        <param id="moniker" description="" page="reg.jsp?guid={guid}&amp;lang={lang}"/>
-        <param id="sysident" description="">
-                <param id="processor" description="" command="uname -p"/>
-                <param id="platform" description="" command="uname -i"/>
-                <param id="hostname" description="" command="uname -n"/>
-        </param>
-        <param id="hw_inventory" description="">
-                <param id="cpu" description="" command="hwinfo --cpu"/>
-                <param id="disk" description="" command="hwinfo --disk"/>
-                <param id="dsl" description="" command="hwinfo --dsl"/>
-                <param id="gfxcard" description="" command="hwinfo --gfxcard"/>
-                <param id="isdn" description="" command="hwinfo --isdn"/>
-                <param id="memory" description="" command="hwinfo --memory"/>
-                <param id="netcard" description="" command="hwinfo --netcard --nowpa"/>
-                <param id="scsi" description="" command="hwinfo --scsi"/>
-                <param id="sound" description="" command="hwinfo --sound"/>
-                <param id="sys" description="" command="hwinfo --sys"/>
-                <param id="tape" description="" command="hwinfo --tape"/>
-        </param>
-        <privacy url="http://www.novell.com/company/policies/privacy/textonly.html" description="" class="informative"/>
-</needinfo>
-]]></col>
-  <col name="SERVICE"><![CDATA[<service xmlns="http://www.novell.com/xml/center/regsvc-1_0" id="${mirror:id}" description="${mirror:name}" type="${mirror:type}">
-        <param id="url">${mirror:url}</param>
-        <group-catalogs/>
-</service>
-]]></col>
-  <col name="PRODUCT_LIST">Y</col>
-</row>
-<row>
-  <col name="PRODUCTDATAID">437</col>
-  <col name="PRODUCT">SUSE-Linux-Enterprise-Server-SP1</col>
-  <col name="VERSION">10</col>
-  <col name="RELEASE" />
-  <col name="ARCH">i586</col>
-  <col name="PRODUCTLOWER">suse-linux-enterprise-server-sp1</col>
-  <col name="VERSIONLOWER">10</col>
-  <col name="RELEASELOWER" />
-  <col name="ARCHLOWER">i586</col>
-  <col name="FRIENDLY">SUSE Linux Enterprise Server 10 SP1</col>
-  <col name="PARAMLIST"><![CDATA[<paramlist xmlns="http://something"/>  ]]></col>
-  <col name="NEEDINFO"><![CDATA[ ... ]]></col>
-  <col name="SERVICE"><![CDATA[ ... ]]></col>
-  <col name="PRODUCT_LIST">Y</col>
-</row>
-<row>
-  <col name="PRODUCTDATAID">9999</col>
-  <col name="PRODUCT">SUSE-Linux-Enterprise-Server-SP2</col>
-  <col name="VERSION">10</col>
-  <col name="RELEASE" />
-  <col name="ARCH">i686</col>
-  <col name="PRODUCTLOWER">suse-linux-enterprise-server-sp2</col>
-  <col name="VERSIONLOWER">10</col>
-  <col name="RELEASELOWER" />
-  <col name="ARCHLOWER">i686</col>
-  <col name="FRIENDLY">SUSE Linux Enterprise Server 10 SP2</col>
-  <col name="PARAMLIST"><![CDATA[<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="">
-        <guid description="" class="mandatory"/>
-        <param id="secret" description="" command="zmd-secret" class="mandatory"/>
-        <host description=""/>
-        <product description="" class="mandatory"/>
-        <param id="ostarget" description="" command="zmd-ostarget" class="mandatory"/>
-        <param id="ostarget-bak" description="" command="lsb_release -sd" class="mandatory"/>
-        <param id="email" description="" class="mandatory"/>
-        <param id="regcode-sles" description=""/>
-        <param id="moniker" description=""/>
-        <param id="processor" description="" command="uname -p"/>
-        <param id="platform" description="" command="uname -i"/>
-        <param id="hostname" description="" command="uname -n"/>
-        <param id="cpu" description="" command="hwinfo --cpu"/>
-        <param id="disk" description="" command="hwinfo --disk"/>
-        <param id="dsl" description="" command="hwinfo --dsl"/>
-        <param id="gfxcard" description="" command="hwinfo --gfxcard"/>
-        <param id="isdn" description="" command="hwinfo --isdn"/>
-        <param id="memory" description="" command="hwinfo --memory"/>
-        <param id="netcard" description="" command="hwinfo --netcard --nowpa"/>
-        <param id="scsi" description="" command="hwinfo --scsi"/>
-        <param id="sound" description="" command="hwinfo --sound"/>
-        <param id="sys" description="" command="hwinfo --sys"/>
-        <param id="tape" description="" command="hwinfo --tape"/>
-</paramlist>]]></col>
-  <col name="NEEDINFO"><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<needinfo xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="" href="">
-        <guid description="" class="mandatory"/>
-        <param id="secret" description="" command="zmd-secret" class="mandatory"/>
-        <host description=""/>
-        <product description="" class="mandatory"/>
-        <param id="ostarget" description="" command="zmd-ostarget" class="mandatory"/>
-        <param id="ostarget-bak" description="" command="lsb_release -sd" class="mandatory"/>
-        <param id="identification" description="" page="reg.jsp?guid={guid}&amp;lang={lang}" class="mandatory">
-                <param id="email" description=""/>
-        </param>
-        <param id="regcode-sles" description="" page="reg.jsp?guid={guid}&amp;lang={lang}"/>
-        <param id="moniker" description="" page="reg.jsp?guid={guid}&amp;lang={lang}"/>
-        <param id="sysident" description="">
-                <param id="processor" description="" command="uname -p"/>
-                <param id="platform" description="" command="uname -i"/>
-                <param id="hostname" description="" command="uname -n"/>
-        </param>
-        <param id="hw_inventory" description="">
-                <param id="cpu" description="" command="hwinfo --cpu"/>
-                <param id="disk" description="" command="hwinfo --disk"/>
-                <param id="dsl" description="" command="hwinfo --dsl"/>
-                <param id="gfxcard" description="" command="hwinfo --gfxcard"/>
-                <param id="isdn" description="" command="hwinfo --isdn"/>
-                <param id="memory" description="" command="hwinfo --memory"/>
-                <param id="netcard" description="" command="hwinfo --netcard --nowpa"/>
-                <param id="scsi" description="" command="hwinfo --scsi"/>
-                <param id="sound" description="" command="hwinfo --sound"/>
-                <param id="sys" description="" command="hwinfo --sys"/>
-                <param id="tape" description="" command="hwinfo --tape"/>
-        </param>
-        <privacy url="http://www.novell.com/company/policies/privacy/textonly.html" description="" class="informative"/>
-</needinfo>
-]]></col>
-  <col name="SERVICE"><![CDATA[<service xmlns="http://www.novell.com/xml/center/regsvc-1_0" id="${mirror:id}" description="${mirror:name}" type="${mirror:type}">
-        <param id="url">${mirror:url}</param>
-        <group-catalogs/>
-</service>
-]]></col>
-  <col name="PRODUCT_LIST">Y</col>
-</row>
-</product>';
-
-
-###############################################################################
-## END TEST DATA
-###############################################################################
-
-
-
-
 # constructor
 sub new
 {
@@ -214,14 +27,6 @@ sub new
     my %opt   = @_;
 
     my $self  = {};
-
-    #
-    # FIXME: This is for testing without server!
-    #
-    $self->{TEST} = 1;
-    
-
-
 
     $self->{URI}   = undef;
     $self->{DEBUG} = 0;
@@ -236,7 +41,7 @@ sub new
 
     $self->{ELEMENT} = "";
     $self->{TABLE}   = "";
-    $self->{KEY}     = "";
+    $self->{KEY}     = [];
     
     $self->{XML}->{ROWNUM}  = 0;
     $self->{XML}->{ROOT}    = undef;
@@ -264,11 +69,7 @@ sub new
         $self->{TABLE} = $opt{table};
     }
 
-    if(exists $opt{key} && defined $opt{key} && $opt{key} ne "")
-    {
-        $self->{KEY} = $opt{key};
-    }
-
+  
     # get the URI from /etc/suseRegister.conf
 
     open(FH, "< /etc/suseRegister.conf") and do
@@ -310,6 +111,12 @@ sub new
     }    
     
     bless($self);
+
+    if(exists $opt{key} && defined $opt{key})
+    {
+        $self->key($opt{key});
+    }
+    
     return $self;
 }
 
@@ -335,8 +142,18 @@ sub table
 sub key
 {
     my $self = shift;
-    if (@_) { $self->{KEY} = shift }
-
+    if (@_) 
+    { 
+        my $data = shift;
+        if(ref($data) eq "ARRAY")
+        {
+            $self->{KEY} = $data;
+        }
+        elsif(ref($data) eq "")
+        {
+            $self->{KEY} = [$data];
+        }
+    }
     return $self->{KEY};
 }
 
@@ -370,43 +187,25 @@ sub _requestData
     $writer->xmlDecl();
     $writer->emptyTag($self->{ELEMENT}, xmlns => "http://www.novell.com/center/xml/regsvc10");
     
-    if(!$self->{TEST})
+    my $response = $self->{USERAGENT}->post( $uri->as_string(), 
+                                             ':content_file' => $self->{TEMPDIR}."/".$self->{ELEMENT}.".xml",
+                                             'Content' => $content);
+    
+    if ( $response->is_redirect )
     {
-        my $response = $self->{USERAGENT}->post( $uri->as_string(), 
-                                                 ':content_file' => $self->{TEMPDIR}."/".$self->{ELEMENT}.".xml",
-                                                 'Content' => $content);
-
-        if ( $response->is_redirect )
-        {
-            print "Redirected", "\n" if($self->{DEBUG});
-            return undef;
-        }
-        
-        if( $response->is_success )
-        {
-            return $self->{TEMPDIR}."/".$self->{ELEMENT}.".xml";
-        }
-        else
-        {
-            # FIXME: was 'die'; check if we should stop if a download failed
-            print STDERR "Failed to POST '$uri->as_string()': ".$response->status_line."\n";
-            return undef;
-        }
+        print "Redirected", "\n" if($self->{DEBUG});
+        return undef;
+    }
+    
+    if( $response->is_success )
+    {
+        return $self->{TEMPDIR}."/".$self->{ELEMENT}.".xml";
     }
     else
     {
-        # for TESTING only!
-        print "SENDING POST to ".$uri->as_string()."\n";
-        print "Content: $content\n";
-        
-        if($self->{ELEMENT} eq "product")
-        {
-            open(P, "> ".$self->{TEMPDIR}."/".$self->{ELEMENT}.".xml") or die "Cannot open file: $!";
-            print P "$testdata_products \n";
-            close P;
-            print "Write file: ".$self->{TEMPDIR}."/".$self->{ELEMENT}.".xml\n";
-            return $self->{TEMPDIR}."/".$self->{ELEMENT}.".xml";
-        }
+        # FIXME: was 'die'; check if we should stop if a download failed
+        print STDERR "Failed to POST '$uri->as_string()': ".$response->status_line."\n";
+        return undef;
     }
 }
 
@@ -448,9 +247,9 @@ sub _updateDB
     {
         die "Invalid table name";
     }
-    if(!defined $key || $key eq "")
+    if(!defined $key || ref($key) ne "ARRAY")
     {
-        die "Invalid key element";
+        die "Invalid key element.";
     }
     
     if(! exists $self->{XML}->{DATA}->{$self->{ELEMENT}})
@@ -466,33 +265,67 @@ sub _updateDB
         die "Cannot connect to database.";
     }
     
-    my $sth_select = $dbh->prepare(sprintf("SELECT %s FROM %s WHERE %s=?", $key, $table, $key));
-    
     foreach my $row (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
     {
-        # does the key exists in the db?
-        $sth_select->execute( $row->{$key} );
-        my $all = $sth_select->fetchall_arrayref;
+        my @primkeys_where = ();
+        foreach (@$key) 
+        {
+            push @primkeys_where, "$_=".$dbh->quote($row->{$_});
+        }
 
-        # if yes, do update
+        # does the key exists in the db?
+        my $st = sprintf("SELECT %s FROM %s WHERE %s", 
+                         join(',', @$key), $table, join(' AND ', @primkeys_where));
+        
+        print "STATEMENT: $st\n" if($self->{DEBUG});
+                    
+        my $all = $dbh->selectall_arrayref($st);
+
+        print Data::Dumper->Dump([$all])  if($self->{DEBUG});
+
+        # special handling for catalogs table
+        # LOCALPATH is required
+        if(lc($table) eq "catalogs")
+        {
+            if(lc($row->{CATALOGTYPE}) eq "nu")
+            {
+                $row->{LOCALPATH} = '$RCE/'.$row->{NAME}."/".$row->{TARGET};
+            }
+            else
+            {
+                $row->{LOCALPATH} = 'YUM/'.$row->{NAME};
+            }
+        }
+
+        
+
+        # PRIMARY KEY exists in DB, do update
         if(@$all == 1)
         {
             my $statement = "UPDATE $table SET ";
             my @pairs = ();
             foreach my $cn (keys %$row)
             {
-                next if( $cn eq $key );
+                next if( grep( ($_ eq $cn), @$key ) );
+
                 push @pairs, "$cn = ".$dbh->quote($row->{$cn});
             }
+            
+            # if all columns of a table are part of the primary key 
+            # no update is needed. We found this with the select above.
+            # This row is up-to-date.
+            next if(@pairs == 0);
+            
             $statement .= join(', ', @pairs);
-            $statement .= " WHERE $key=".$dbh->quote($row->{$key});
+
+            $statement .= " WHERE ".join(' AND ', @primkeys_where);
             
             print "STATEMENT: $statement\n" if($self->{DEBUG});
 
             $dbh->do($statement);
             
         }
-        # if no, do insert
+        # PRIMARY KEY does not exists in DB, do insert
         elsif(@$all == 0)
         {
             my $statement = "INSERT INTO $table (";
@@ -503,6 +336,7 @@ sub _updateDB
                 push @k, $cn;
                 push @v, $dbh->quote($row->{$cn});
             }
+
             $statement .= join(',', @k);
             $statement .= ") VALUES (";
             $statement .= join(',', @v);
@@ -532,7 +366,7 @@ sub handle_start_tag
 
     $self->{XML}->{CURELEM} = lc($element);
 
-    if($self->{XML}->{CURELEM} eq "col" && exists $attrs{name} &&
+    if(lc($self->{XML}->{CURELEM}) eq "col" && exists $attrs{name} &&
        defined $attrs{name} && $attrs{name} ne "")
     {
         $self->{XML}->{ATTR} = $attrs{name};
@@ -559,7 +393,7 @@ sub handle_end_tag
   #print "End $element\n";
   $self->{XML}->{ATTR} = undef;
 
-  if(lc($element) eq $self->{XML}->{ROOT})
+  if(lc($element) eq lc($self->{XML}->{ROOT}))
   {
       $self->{XML}->{ROOT}= undef;
   }
@@ -570,21 +404,30 @@ sub handle_char
     my $self = shift;
     my( $expat, $string) = @_;
 
-    #print "String: $string\n";
+    chomp($string);
 
-    if($self->{XML}->{CURELEM} eq "col" && defined $self->{XML}->{ATTR} && $self->{XML}->{ATTR} ne "")
+    return if($string =~ /^\s*$/);    
+
+    if(lc($self->{XML}->{CURELEM}) eq "col" && defined $self->{XML}->{ATTR} && $self->{XML}->{ATTR} ne "")
     {
+        if(uc($self->{XML}->{ATTR}) eq "EXTURL")
+        {
+            $string =~ s/^\s*//g;
+            $string =~ s/\s*$//g;
+        }
+        
         if( !defined $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} )
         {
             $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} = $string;
         }
         else
         {
-            $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} .= $string;
+            $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} .= "\n$string";
         }
     }
 }
 
+1;
 
 
 
