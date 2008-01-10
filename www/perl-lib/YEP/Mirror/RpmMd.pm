@@ -144,6 +144,7 @@ sub mirrorTo()
       # check if the local repository is valid
       if ( $self->verify($destfile) )
       {
+          print "=> Finished mirroring ".$self->{URI}." All files are up-to-date.\n";
           $self->{LASTUPTODATE} = 1;
           return 0;
       }
@@ -314,8 +315,9 @@ sub _parseXmlResource()
       my $fh = IO::Zlib->new($path, "rb");
       eval {
           # using ->parse( $fh ) result in errors
-          my @cont = $fh->getlines();
-          $parser->parse( join("", @cont ));
+          #my @cont = $fh->getlines();
+          #$parser->parse( join("", @cont ));
+          $parser->parse( $fh );
       };
       if($@) {
           # ignore the errors, but print them
@@ -377,27 +379,28 @@ sub _verifyXmlResource()
     if ( $path =~ /(.+)\.gz/ )
     {
       my $fh = IO::Zlib->new($path, "rb");
-      #eval {
+      eval {
           # using ->parse( $fh ) result in errors
-          my @cont = $fh->getlines();
-          $parser->parse( join("", @cont ));
-      #};
-      #if($@) {
+          #my @cont = $fh->getlines();
+          #$parser->parse( join("", @cont ));
+          $parser->parse( $fh );
+      };
+      if($@) {
           # ignore the errors, but print them
-      #    chomp($@);
-      #    print STDERR "Error: $@\n";
-      #}
+          chomp($@);
+          print STDERR "Error: $@\n";
+      }
     }
     else
     {
-      #eval {
-          $parser->parsefile( $path );
-      #};
-      #if($@) {
-          # ignore the errors, but print them
-      #    chomp($@);
-      #    print STDERR "Error: $@\n";
-      #}
+        eval {
+            $parser->parsefile( $path );
+        };
+        if($@) {
+            # ignore the errors, but print them
+            chomp($@);
+            print STDERR "Error: $@\n";
+        }
     }
 }
 
@@ -589,8 +592,8 @@ sub verify_handle_end_tag()
       my $filename = join( "/", ( $self->{LOCALPATH}, $self->{VERIFY}->{CURRENT}->resource ) );
       my $sha1;
       my $digest;
-      open FILE, $filename or die $!;
-      #print STDERR $filename . "\n";
+      open(FILE, "< $filename") or die "Cannot open '$filename': $!";
+      #print STDERR "CHECK: $filename \n";
       $sha1 = Digest::SHA1->new;
       #$sha1->add($data);
       $sha1->addfile(*FILE);
