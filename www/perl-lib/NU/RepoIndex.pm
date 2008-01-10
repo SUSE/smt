@@ -22,7 +22,7 @@ sub getCatalogsByGUID($$)
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
 
-    return $dbh->selectall_hashref( sprintf("select c.CatalogID, c.Name, c.Alias, c.Description, c.Target, c.LocalPath, c.CatalogType from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.ProductID=pc.ProductID and c.CatalogID=pc.CatalogID and c.DoMirror like 'Y'", $dbh->quote($guid) ), "CatalogID" );
+    return $dbh->selectall_hashref( sprintf("select c.CatalogID, c.Name, c.Description, c.Target, c.LocalPath, c.CatalogType from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.ProductID=pc.ProductID and c.CatalogID=pc.CatalogID and c.DoMirror like 'Y'", $dbh->quote($guid) ), "CatalogID" );
 }
 
 sub getUsernameFromRequest($)
@@ -66,7 +66,7 @@ sub handler {
     {
          $writer->emptyTag('repo',
                            'name' => ${$val}{'Name'},
-                           'alias' => ${$val}{'Alias'},
+                           'alias' => ${$val}{'Name'},                 # Alias == Name
                            'description' => ${$val}{'Description'},
                            'distro_target' => ${$val}{'Target'},
                            'path' => ${$val}{'LocalPath'},
