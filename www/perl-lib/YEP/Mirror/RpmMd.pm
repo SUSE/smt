@@ -149,7 +149,10 @@ sub mirrorTo()
       }
       else
       {
-        return $self->{STATISTIC}->{ERROR};
+          # we should continue here
+          print "repomd.xml is the same, but repo is not valid." if $self->{DEBUG};
+          # just in case
+          $self->{LASTUPTODATE} = 0;
       }
     }
 
