@@ -78,15 +78,15 @@ $uri->userinfo("$nuUser:$nuPass");
 #
 # search for all YUM repositories we need to mirror and start the mirror process
 #
-my $hash = $dbh->selectall_hashref( "select CatalogID, LocalPath, ExtUrl from Catalogs where CatalogType='yum' and Mirrorable='Y' and DoMirror='Y'", "CATALOGID" );
+my $hash = $dbh->selectall_hashref( "select CATALOGID, LOCALPATH, EXTURL from Catalogs where CATALOGTYPE='yum' and MIRRORABLE='Y' and DOMIRROR='Y'", "CATALOGID" );
 
 #print Data::Dumper->Dump([$hash]);
 
 foreach my $id (keys %{$hash})
 {
-    if( $hash->{$id}->{ExtUrl} ne "" && $hash->{$id}->{LocalPath} ne "" )
+    if( $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
     {
-        my $fullpath = $LocalBasePath."/".$hash->{$id}->{LocalPath};
+        my $fullpath = $LocalBasePath."/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
         my $yumMirror = YEP::Mirror::RpmMd->new(debug => $debug);
@@ -96,7 +96,7 @@ foreach my $id (keys %{$hash})
         }
         else
         {
-            $yumMirror->uri( $hash->{$id}->{ExtUrl} );
+            $yumMirror->uri( $hash->{$id}->{EXTURL} );
             $yumMirror->mirrorTo( $fullpath, { urltree => 0 } );
         }
     }

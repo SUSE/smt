@@ -22,7 +22,7 @@ sub getCatalogsByGUID($$)
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
 
-    return $dbh->selectall_hashref( sprintf("select c.CatalogID, c.Name, c.Description, c.Target, c.LocalPath, c.CatalogType from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y'", $dbh->quote($guid) ), "CATALOGID" );
+    return $dbh->selectall_hashref( sprintf("select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y'", $dbh->quote($guid) ), "CATALOGID" );
 }
 
 sub getUsernameFromRequest($)

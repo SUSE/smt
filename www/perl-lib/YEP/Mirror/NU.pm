@@ -178,7 +178,7 @@ sub mirrorTo()
     {
         die "cannot connect to database";
     }
-    $dbh->do("UPDATE Catalogs SET Mirrorable = 'N' where CatalogType='nu'");
+    $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     $dbh->disconnect;
     
 
@@ -277,9 +277,9 @@ sub handle_start_tag()
         }
         
         # Set Mirrorable flag of this catalog to "Y"
-        $dbh->do(sprintf("UPDATE Catalogs SET Mirrorable = 'Y' where CatalogType='nu' and Name=%s and Target=%s", 
+        $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                          $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
-        my $res = $dbh->selectall_arrayref( sprintf("select DoMirror from Catalogs where CatalogType='nu' and Name=%s and Target=%s", 
+        my $res = $dbh->selectall_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                                                     $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
         $dbh->disconnect;
 
@@ -320,9 +320,9 @@ sub handle_start_tag_clean()
         }
         
         # Set Mirrorable flag of this catalog to "Y"
-        $dbh->do(sprintf("UPDATE Catalogs SET Mirrorable = 'Y' where CatalogType='nu' and Name=%s and Target=%s", 
+        $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                          $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
-        my $res = $dbh->selectall_arrayref( sprintf("select DoMirror from Catalogs where CatalogType='nu' and Name=%s and Target=%s", 
+        my $res = $dbh->selectall_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                                                     $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
         $dbh->disconnect;
 

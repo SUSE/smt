@@ -13,20 +13,10 @@ drop table Registration;
 drop table MachineData;
 drop table Targets;
 
--- temporary for mirror only solution - bad idea we should work with the final once
 
--- create table CredentialGroup(GUID      text NOT NULL PRIMARY KEY, 
---                              Groupname text NOT NULL);
-
--- create table RepositoryGroup(Groupname  text    NOT NULL,
---                              CatalogID  integer NOT NULL,
---                              PRIMARY KEY(Groupname, CatalogID)
---                             );
--- end temporary
-
-create table Registration(RegID        integer PRIMARY KEY AUTOINCREMENT,
+create table Registration(REGID        integer PRIMARY KEY AUTOINCREMENT,
                           GUID         text    NOT NULL,
-                          ProductID    integer NOT NULL,
+                          PRODUCTID    integer NOT NULL,
                        -- InstallDate  date             -- date is not supported by sqlite3
                        -- LastContact  date             -- date is not supported by sqlite3
                           UNIQUE(GUID, ProductID)
@@ -34,8 +24,8 @@ create table Registration(RegID        integer PRIMARY KEY AUTOINCREMENT,
                          );
 
 create table MachineData(GUID          text NOT NULL,
-                         Key           text NOT NULL,
-                         Value         text,
+                         KEY           text NOT NULL,
+                         VALUE         text,
                          PRIMARY KEY(GUID, Key)
                       -- FOREIGN KEY (GUID) REFERENCES Registration (GUID) ON DELETE CASCADE -- FOREIGN KEY not supported by sqlite3
                         );
@@ -76,7 +66,7 @@ CREATE TABLE Products (
 
 create table ProductCatalogs(PRODUCTDATAID integer NOT NULL,
                              CATALOGID     text NOT NULL,
-                             Optional      text DEFAULT 'N',
+                             OPTIONAL      text DEFAULT 'N',
                              PRIMARY KEY(PRODUCTDATAID, CATALOGID)
                             );
 
@@ -90,7 +80,7 @@ create table ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
 -- copy of NNW_ZLM66_TARGETS
 create table Targets (OS      text NOT NULL PRIMARY KEY,
                       TARGET  text NOT NULL,
-		      ARCH    text NOT NULL
+                      ARCH    text NOT NULL
                      );
 
 
