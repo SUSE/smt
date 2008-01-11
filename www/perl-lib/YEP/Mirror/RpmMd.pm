@@ -156,7 +156,7 @@ sub mirrorTo()
       else
       {
           # we should continue here
-          print "repomd.xml is the same, but repo is not valid.\n" if $self->{DEBUG};
+          print "repomd.xml is the same, but repo is not valid. Start mirroring.\n";
           # just in case
           $self->{LASTUPTODATE} = 0;
           # reset the counter
