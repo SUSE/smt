@@ -1,8 +1,7 @@
 [NU]
 NUUrl=https://nu.novell.com/
-# use these for testing
-NUUser=MIRRORUSER
-NUPass=MIRRIRPASSWORD
+NUUser=
+NUPass=
 LocalBasePath=/srv/www/htdocs
 
 [DB]

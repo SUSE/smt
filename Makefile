@@ -77,7 +77,7 @@ dist: clean
 
 	@cp apache2/*.pl $(NAME)-$(VERSION)/apache2/
 	@cp apache2/conf.d/*.conf $(NAME)-$(VERSION)/apache2/conf.d/
-	@cp config/*.conf $(NAME)-$(VERSION)/config/
+	@cp config/yep.conf.production $(NAME)-$(VERSION)/config/yep.conf
 	@cp db/*.sql $(NAME)-$(VERSION)/db/
 	@cp db/*.init $(NAME)-$(VERSION)/db/
 	@cp db/README $(NAME)-$(VERSION)/db/
