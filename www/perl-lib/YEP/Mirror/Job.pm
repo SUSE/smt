@@ -6,6 +6,7 @@ use File::Path;
 use File::Basename;
 use Date::Parse;
 use Crypt::SSLeay;
+use Digest::SHA1  qw(sha1 sha1_hex);
 
 BEGIN 
 {
@@ -29,6 +30,7 @@ sub new
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:LWP::UserAgent->new(keep_alive => 1);
     $self->{DEBUG}      = 0;
+    $self->{JOBTYPE}    = undef;
 
     if(exists $ENV{http_proxy})
     {
@@ -51,6 +53,15 @@ sub uri
     if (@_) { $self->{URI} = shift }
     
     return $self->{URI};
+}
+
+# job type
+sub type
+{
+    my $self = shift;
+    if (@_) { $self->{JOBTYPE} = shift }
+    
+    return $self->{JOBTYPE};
 }
 
 # local resource container
@@ -91,6 +102,35 @@ sub checksum()
     my $self = shift;
     if (@_) { $self->{CHECKSUM} = shift }
     return $self->{CHECKSUM};
+}
+
+# verify the local copy of the job with the known
+# checksum without accesing the network
+sub verify()
+{
+    my $self = shift;
+    
+    return 0 if ( not $self->checksum() eq  $self->realchecksum() );
+    return 1;
+}
+
+sub realchecksum()
+{
+    my $self = shift;
+    
+    my $sha1;
+    my $digest;
+    my $filename = $self->local;
+    open(FILE, "< $filename") or do {
+        print STDERR "Cannot open '$filename': $!";
+        return "";
+    };
+      
+    $sha1 = Digest::SHA1->new;
+    #$sha1->add($data);
+    $sha1->addfile(*FILE);
+    $digest = $sha1->hexdigest();
+    return $digest;
 }
 
 # mirror the resource to the local destination

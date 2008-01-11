@@ -33,12 +33,14 @@ sub new
     # local destination ie: /var/repo/download.suse.org/foo/10.3
     $self->{LOCALPATH}   = undef;
     $self->{JOBS}   = [];
+    $self->{VERIFYJOBS}   = [];
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{CLEANLIST} = {};
     $self->{DEBUG} = 0;
     $self->{LASTUPTODATE} = 0;
+    $self->{REMOVEINVALID} = 0;
 
     # stores the verifiy state
     # when verify task is running
@@ -52,10 +54,19 @@ sub new
     # 3 inside open-checksum
     # 4 inside timestamp
     # 5 inside location
+    # -1 other
     #
     # as only checksums have text data, the others
     # will not probably be used.
     $self->{VERIFY}->{STATE} = 0;
+
+    # state of the type of resource we are in
+    # 0 repomd.xml data
+    # 1 patches list patch
+    # 2 pattern list pattern
+    # 3 a patch definition
+    # -1 other
+    $self->{VERIFY}->{CURRENTFILE} = undef;
 
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
@@ -121,7 +132,7 @@ sub mirrorTo()
     # $destdir/hostname.com/path
     my $uri = URI->new($self->{URI});
 
-    if ( defined $options && exists $options->{ urltree } && $options->{ urltree } eq 1 )
+    if ( defined $options && exists $options->{ urltree } && $options->{ urltree } == 1 )
     {
       $self->{LOCALPATH} = join( "/", ( $dest, $self->localUrlPath() ) );
     }
@@ -147,7 +158,7 @@ sub mirrorTo()
     {
       # repomd is the same
       # check if the local repository is valid
-      if ( $self->verify($destfile) )
+      if ( $self->verify() )
       {
           print "=> Finished mirroring ".$self->{URI}." All files are up-to-date.\n\n";
           $self->{LASTUPTODATE} = 1;
@@ -346,9 +357,25 @@ sub _parseXmlResource()
 sub verify()
 {
     my $self = shift;
-    
+    my $path = shift;
+    my $options = shift;
+
+    # if path was not defined, we can use last
+    # mirror destination dir
+    if ( $path )
+    {
+        $self->{LOCALPATH} = $path;
+    }
+
+    # remove invalid packages?
+    if ( defined $options && exists $options->{removeinvalid} && $options->{removeinvalid} == 1 )
+    {
+        $self->{REMOVEINVALID}  = 1;
+    }
+
     if ( not -e $self->{LOCALPATH} )
     { die $self->{LOCALPATH} . " does not exist"; }
+
     my $t0 = [gettimeofday] ;
 
     print "Verifying:    ", $self->{LOCALPATH}, "\n";
@@ -360,11 +387,38 @@ sub verify()
     # parse it and find more resources
     $self->_verifyXmlResource( $destfile );
 
+    my $job;
+    foreach ( sort {$a->resource cmp $b->resource} @{$self->{VERIFYJOBS}} )
+    {
+        # skip duplicates
+        next if( !$job or ( $job->resource eq $_->resource ) );
+        $job = $_;
+
+        print "Verify: $job->resource : " if ($self->{DEBUG});
+        my $ok = $job->verify();
+        if ($ok && (not $job->resource eq "/repodata/repomd.xml") )
+        {
+          print "OK\n" if ($self->{DEBUG});
+        }
+        else
+        {
+          #print "FAILED ( $job->checksum vs $job->realchecksum )\n" if ($self->{DEBUG});
+          print STDERR "FAILED ( $job->checksum vs $job->realchecksum )\n";
+          $self->{STATISTIC}->{ERROR} += 1;
+          if ($self->{REMOVEINVALID} == 1)
+          {
+            print STDERR "Deleting $job->resource\n"  if ($self->{DEBUG});
+            unlink($job->local) ;
+          }
+        }
+    }
+
     print "=> Finished verifying: ".$self->{LOCALPATH}."\n";
     print "=> Errors            : ".$self->{STATISTIC}->{ERROR}."\n";
     print "=> Verify Time       : ".(tv_interval($t0))." seconds\n";
     print "\n";
 
+    $self->{REMOVEINVALID}  = 0;
     return ($self->{STATISTIC}->{ERROR} == 0);
 }
 
@@ -374,6 +428,9 @@ sub _verifyXmlResource()
 {
     my $self = shift;
     my $path = shift;
+
+    my $oldfile = $self->{VERIFY}->{CURRENTFILE};
+    $self->{VERIFY}->{CURRENTFILE} = $path;
 
     my $parser = XML::Parser->new( Handlers =>
                                    { Start=> sub { verify_handle_start_tag($self, @_) },
@@ -406,6 +463,7 @@ sub _verifyXmlResource()
             print STDERR "Error: $@\n";
         }
     }
+    $self->{VERIFY}->{CURRENTFILE} = $oldfile;
 }
 
 
@@ -450,7 +508,14 @@ sub mirror_handle_start_tag()
         else
         {
             # download it later
-            push @{$self->{JOBS}}, $job;
+            if ( $job->resource )
+            {
+              push @{$self->{JOBS}}, $job;
+            }
+            else
+            {
+              print STDERR "no resource on $job->local";
+            }
         }
     }
 }
@@ -606,43 +671,27 @@ sub verify_handle_end_tag()
     {
       $self->{VERIFY}->{STATE} = 0;
 
-      # FIXME: This is only a temporary workaround!
-      if( $self->{VERIFY}->{CURRENT}->resource eq "")
+      # verify it later
+      my $job = $self->{VERIFY}->{CURRENT};
+      
+      if ( not ( $self->{VERIFY}->{CURRENTFILE} =~ /^(.+)patch-(.+)\.xml(.*)/ && $element eq "patch" ) )
       {
+        push @{$self->{VERIFYJOBS}}, $job;
+      }
+
+      #print STDERR $self->{VERIFY}->{CURRENTFILE} . "\n";
+
+      if ($self->{VERIFY}->{CURRENT}->resource =~ /(.+)\.xml(.*)/)
+      {
+        if ( (not $self->{VERIFY}->{CURRENT}->resource =~ /(.*)\/filelists\.xml(.*)/ ) &&
+             (not $self->{VERIFY}->{CURRENT}->resource =~ /(.*)\/other\.xml(.*)/ ) )
+        {
           $self->{VERIFY}->{CURRENT} = undef;
-          return;
-      }
-      
-      # check the job file checksum
-      my $filename = join( "/", ( $self->{LOCALPATH}, $self->{VERIFY}->{CURRENT}->resource ) );
-      my $sha1;
-      my $digest;
-      open(FILE, "< $filename") or do {
-          print STDERR "Cannot open '$filename': $!";
-          # if the file cannot be opend (maybe does not exists), increase the error
-          $self->{STATISTIC}->{ERROR} += 1;
-      };
-      
-      $sha1 = Digest::SHA1->new;
-      #$sha1->add($data);
-      $sha1->addfile(*FILE);
-      $digest = $sha1->hexdigest();
-
-      
-      if ( not ( $digest eq $self->{VERIFY}->{CURRENT}->checksum ) )
-      {
-        print STDERR $self->{VERIFY}->{CURRENT}->resource . " has wrong checksum\n";
-        print STDERR "  -> '" . $digest . "' vs '" . $self->{VERIFY}->{CURRENT}->checksum . "'\n";
-        $self->{STATISTIC}->{ERROR} += 1;
-      }
-
-      # check if we have to process sub jobs
-      if (  $self->{VERIFY}->{CURRENT}->resource =~ /(.+)\.xml(.*)/ )
-      {
           #print STDERR " Ver " . $self->{VERIFY}->{CURRENT}->resource . "\n" ;
-        $self->_verifyXmlResource( $filename );
+          $self->_verifyXmlResource( $job->local );
+        }
       }
-
+      
       $self->{VERIFY}->{CURRENT} = undef;
     }
 }
