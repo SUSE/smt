@@ -1,8 +1,13 @@
 
-- verify checksum of /repodata/repomd.xml
+{
+  - verify checksum of /repodata/repomd.xml
 
-- Do we need to provide a keyring and accept new keys? 
-  Talk to security-team about this.
+  - Do we need to provide a keyring and accept new keys? 
+    Talk to security-team about this.
+
+  Talked to security-team: This is nice to have but no requirement
+  because the client are checking the repomd too.
+}
 
 - client tool for setting/initializing the "Mirrorable" flag
   in the Catalogs table:
