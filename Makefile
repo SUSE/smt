@@ -37,7 +37,6 @@ install:
 	mkdir -p $(DESTDIR)/usr/bin/
 	mkdir -p $(DESTDIR)/etc/apache2/conf.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
-	mkdir -p $(DESTDIR)/srv/www/htdocs/YUM
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
 	cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/

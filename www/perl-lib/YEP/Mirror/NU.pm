@@ -289,7 +289,7 @@ sub handle_start_tag()
             # get the repository index
             my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
             
-            my $catalogURI = join("/", $self->{URI}, "/repo", $attrs{"path"});
+            my $catalogURI = join("/", $self->{URI}, "repo", $attrs{"path"});
             my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};
             
             &File::Path::mkpath( $localPath );

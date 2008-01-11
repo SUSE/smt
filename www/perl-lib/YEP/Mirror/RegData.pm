@@ -298,7 +298,6 @@ sub _updateDB
         }
 
         
-
         # PRIMARY KEY exists in DB, do update
         if(@$all == 1)
         {

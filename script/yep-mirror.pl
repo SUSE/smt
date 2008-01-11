@@ -86,7 +86,7 @@ foreach my $id (keys %{$hash})
 {
     if( $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
     {
-        my $fullpath = $LocalBasePath."/".$hash->{$id}->{LOCALPATH};
+        my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
         my $yumMirror = YEP::Mirror::RpmMd->new(debug => $debug);
