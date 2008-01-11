@@ -21,7 +21,11 @@ ok($mirror->mirrorTo( $tempdir ) == 0, "should mirror ok");
 ok($mirror->lastUpToDate() == 0, "first mirror should be full");
 
 # verify
-ok($mirror->verify($tempdir) == 0, "mirror should verify");
+ok($mirror->verify($tempdir), "mirror should verify");
+
+# mirror again, we should be uptodate
+ok($mirror->mirrorTo( $tempdir ) == 0, "second mirror should work");
+ok($mirror->lastUpToDate() == 1, "second mirror should be fast");
 
 # now lets corrupt the directory
 $fh = new IO::Zlib("$tempdir/repodata/other.xml.gz", "ab9");
@@ -36,10 +40,7 @@ else
 }
 
 # now it should not verify
-ok( $mirror->verify($tempdir) > 0 , "should not verify after corrupted");
+ok( $mirror->verify($tempdir) == 0, "should not verify after corrupted");
 
-# mirror again, we should be uptodate
-ok($mirror->mirrorTo( $tempdir ) == 0, "second mirror should work");
-ok($mirror->lastUpToDate() == 1, "second mirror should be fast");
 
 

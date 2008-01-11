@@ -168,6 +168,7 @@ sub mirrorTo()
       {
           # we should continue here
           print "repomd.xml is the same, but repo is not valid. Start mirroring.\n";
+
           # just in case
           $self->{LASTUPTODATE} = 0;
           # reset the counter
@@ -391,23 +392,27 @@ sub verify()
     foreach ( sort {$a->resource cmp $b->resource} @{$self->{VERIFYJOBS}} )
     {
         # skip duplicates
-        next if( !$job or ( $job->resource eq $_->resource ) );
+        $job = $_ if ! $job;
+        next if( $job->resource eq $_->resource );
         $job = $_;
 
-        print "Verify: $job->resource : " if ($self->{DEBUG});
+        #print STDERR "Verify: " . $job->resource . " : ";
+        print "Verify: ". $job->resource . ": " if ($self->{DEBUG});
         my $ok = $job->verify();
-        if ($ok && (not $job->resource eq "/repodata/repomd.xml") )
+        if ($ok || ($job->resource eq "/repodata/repomd.xml") )
         {
-          print "OK\n" if ($self->{DEBUG});
+            print "OK\n" if ($self->{DEBUG});
+            #print STDERR "OK\n";
         }
         else
         {
-          #print "FAILED ( $job->checksum vs $job->realchecksum )\n" if ($self->{DEBUG});
-          print STDERR "FAILED ( $job->checksum vs $job->realchecksum )\n";
+          #print STDERR "FAILED: " . $job->resource . ": \n";
+          print "FAILED ( ".$job->checksum." vs ".$job->realchecksum ." )\n" if ($self->{DEBUG});
+          #print STDERR "FAILED ( " .$job->checksum. " vs " . $job->realchecksum . ")\n";
           $self->{STATISTIC}->{ERROR} += 1;
           if ($self->{REMOVEINVALID} == 1)
           {
-            print STDERR "Deleting $job->resource\n"  if ($self->{DEBUG});
+            print STDERR "Deleting ".$job->resource."\n"  if ($self->{DEBUG});
             unlink($job->local) ;
           }
         }
