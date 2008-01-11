@@ -91,6 +91,6 @@ dist: clean
 	@cp www/perl-lib/NU/*.pm $(NAME)-$(VERSION)/www/perl-lib/NU/
 	@cp www/perl-lib/YEP/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/
 	@cp www/perl-lib/YEP/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror/
-	@cp HACKING Makefile $(NAME)-$(VERSION)/
+	@cp HACKING Makefile README COPYING $(NAME)-$(VERSION)/
 
 	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/

@@ -82,6 +82,6 @@ make DESTDIR=$RPM_BUILD_ROOT install_all
 /usr/bin/yep-mirror.pl
 /usr/bin/yepdb
 
-#%doc MANIFEST README ChangeLog
+%doc README COPYING 
 
 %changelog 
