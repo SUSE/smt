@@ -44,7 +44,7 @@ my %TABLES = ( 'catalogs'            =>  { 'catalogid'   => 0,
                                          },
                'productcatalogs'     =>  { 'productdataid' => 11,
                                            'catalogid' => 11,
-                                           'productid-QUERY' => 'products:productdataid:product',
+                                           'productdataid-QUERY' => 'products:productdataid:product',
                                            'catalogid-QUERY' => 'catalogs:catalogid:name'
                                          },
                'productdependencies' =>  { 'parent_product_id' => 11,
