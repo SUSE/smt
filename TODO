@@ -22,3 +22,7 @@
   * insserv apache
   * start database initialization (ncc-mirror.pl)
   * NiceToHave: configuration of a cronjob vor yep-mirror.pl
+
+- support HTTPS - the suse_register will only connect via https
+
+
