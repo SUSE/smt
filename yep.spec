@@ -38,7 +38,8 @@ Source:       %{name}-%{version}.tar.bz2
 BuildRoot:    %{_tmppath}/%{name}-%{version}-build
 
 %description
-This package provide everything you need to get a YaST Enterprise Proxy
+This package provide everything you need to get a local NU and
+registration proxy.
 
 
 
@@ -47,13 +48,14 @@ Authors:
     dmacvicar@suse.de
     mc@suse.de
     jdsn@suse.de
+    locilka@suse.cz
 
 %prep
 %setup -n %{name}-%{version}
 # ---------------------------------------------------------------------------
 
 %build
-make test
+#make test
 # ---------------------------------------------------------------------------
 
 %install
@@ -79,6 +81,7 @@ make DESTDIR=$RPM_BUILD_ROOT install_all
 %config /etc/apache2/*.pl
 %config /etc/apache2/conf.d/*.conf
 /usr/bin/yep-mirror.pl
+/usr/bin/yepdb
 
 #%doc MANIFEST README ChangeLog
 

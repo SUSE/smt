@@ -42,8 +42,10 @@ install:
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
 	cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
-	cp www/perl-lib/yep-mirror.pl $(DESTDIR)/usr/bin/
+	cp script/yep-mirror.pl $(DESTDIR)/usr/bin/
+	cp script/yepdb $(DESTDIR)/usr/bin/
 	chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
+	chmod 0755 $(DESTDIR)/usr/bin/yepdb
 	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	cp www/perl-lib/YEP/*.pm $(DESTDIR)$(PERLMODDIR)/YEP/
 	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
@@ -61,14 +63,15 @@ clean:
 
 dist: clean
 	rm -rf $(NAME)-$(VERSION)/
-	@mkdir -p $(NAME)-$(VERSION)/usr/bin/
 	@mkdir -p $(NAME)-$(VERSION)/apache2/conf.d/
 	@mkdir -p $(NAME)-$(VERSION)/config
 	@mkdir -p $(NAME)-$(VERSION)/db
 	@mkdir -p $(NAME)-$(VERSION)/doc
+	@mkdir -p $(NAME)-$(VERSION)/script
 	@mkdir -p $(NAME)-$(VERSION)/tests/YEP/Mirror
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/jobtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/rpmmdtest
+	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/regdatatest
 	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/NU
 	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror
 
@@ -82,8 +85,10 @@ dist: clean
 	rm -f $(NAME)-$(VERSION)/doc/*~
 	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
 	@cp tests/YEP/Mirror/*.pl $(NAME)-$(VERSION)/tests/YEP/Mirror/
+	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
 	@cp www/README $(NAME)-$(VERSION)/www/
-	@cp www/perl-lib/*.pl $(NAME)-$(VERSION)/www/perl-lib/
+	@cp script/yep-mirror.pl $(NAME)-$(VERSION)/script/
+	@cp script/yepdb $(NAME)-$(VERSION)/script/
 	@cp www/perl-lib/NU/*.pm $(NAME)-$(VERSION)/www/perl-lib/NU/
 	@cp www/perl-lib/YEP/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/
 	@cp www/perl-lib/YEP/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror/
