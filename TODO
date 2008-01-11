@@ -1,0 +1,24 @@
+
+- verify checksum of /repodata/repomd.xml
+
+- Do we need to provide a keyring and accept new keys? 
+  Talk to security-team about this.
+
+- client tool for setting/initializing the "Mirrorable" flag
+  in the Catalogs table:
+  * update Catalogs SET Mirrorable='N'
+  * download repo/repoindex.xml, parse it and set the
+    available catalogs to 'Y' again.
+  * try to access repomd.xml of all YUM catalogs and set
+    the "Mirroable" flags to 'Y' again
+
+- client tool to view all mirrorable catalogs and change the
+  "DoMirror" Flag on demand.
+
+- write yast module for initial setup
+  * ask for Mirror Credentials
+  * append "perl" to /etc/sysconfig/apache2 APACHE_MODULES
+  * start apache
+  * insserv apache
+  * start database initialization (ncc-mirror.pl)
+  * NiceToHave: configuration of a cronjob vor yep-mirror.pl
