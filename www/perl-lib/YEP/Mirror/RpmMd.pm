@@ -158,7 +158,7 @@ sub mirrorTo()
     {
       # repomd is the same
       # check if the local repository is valid
-      if ( $self->verify() )
+      if ( $self->verify($self->{LOCALPATH}, {removeinvalid => 1}) )
       {
           print "=> Finished mirroring ".$self->{URI}." All files are up-to-date.\n\n";
           $self->{LASTUPTODATE} = 1;
@@ -407,12 +407,12 @@ sub verify()
         else
         {
           #print STDERR "FAILED: " . $job->resource . ": \n";
-          print "FAILED ( ".$job->checksum." vs ".$job->realchecksum ." )\n" if ($self->{DEBUG});
+          print "FAILED ( ".$job->checksum." vs ".$job->realchecksum ." )\n";
           #print STDERR "FAILED ( " .$job->checksum. " vs " . $job->realchecksum . ")\n";
           $self->{STATISTIC}->{ERROR} += 1;
           if ($self->{REMOVEINVALID} == 1)
           {
-            print STDERR "Deleting ".$job->resource."\n"  if ($self->{DEBUG});
+            print "Deleting ".$job->resource."\n";
             unlink($job->local) ;
           }
         }
