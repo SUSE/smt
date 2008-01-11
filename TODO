@@ -30,4 +30,6 @@
 
 - support HTTPS - the suse_register will only connect via https
 
-
+- yup has a hardlink feature. Would be nice if we could have it too.
+  It searches for same files (SLES <=> SLED as example) and
+  create a hardlink to safe some disk space.
