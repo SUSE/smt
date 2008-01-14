@@ -1,4 +1,7 @@
 
+TODO:
+=====
+
 {
   - verify checksum of /repodata/repomd.xml
 
@@ -27,20 +30,27 @@
 - write yast module for initial setup
   * ask for Mirror Credentials
   * append "perl" to /etc/sysconfig/apache2 APACHE_MODULES
+  * append "SSL" to /etc/sysconfig/apache2 APACHE_SERVER_FLAGS
   * start apache
   * insserv apache
   * start database initialization (ncc-mirror.pl)
   * NiceToHave: configuration of a cronjob vor yep-mirror.pl
 
-- support HTTPS - the suse_register will only connect via https
 
 - yup has a hardlink feature. Would be nice if we could have it too.
   It searches for same files (SLES <=> SLED as example) and
   create a hardlink to safe some disk space.
 
 
-Idea:
+DONE:
+=====
 
+- support HTTPS - the suse_register will only connect via https
+
+
+
+Ideas:
+======
 - provide test and production enviroment. 
   A restricted area to test patches and if tests are ok move them
   to production so that they can used by everyone.
