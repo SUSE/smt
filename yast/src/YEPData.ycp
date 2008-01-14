@@ -1,0 +1,57 @@
+/**
+ * File:	modules/YEPData.ycp
+ * Package:	Configuration of yep
+ * Summary:	YEP global data and functions
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id: YEPData.ycp 27914 2006-02-13 14:32:08Z locilka $
+ */
+
+{
+    textdomain "yep";
+
+    module "YEPData";
+
+    map <string, string> NU_credentials = $[];
+
+    global boolean ReadCredentials () {
+	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
+	    NU_credentials[one_entry] = (string) SCR::Read (add (.yep_conf, one_entry));
+	});
+
+	return true;
+    }
+
+    global boolean WriteCredentials () {
+	boolean failed = false;
+
+	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
+	    if (! (boolean) SCR::Write (add (.yep_conf, one_entry), NU_credentials[one_entry]:"")) {
+		y2error ("Cannot write to yep.conf:%1", one_entry);
+		failed = true;
+	    }
+	});
+
+	if (failed == false) {
+	    if (! (boolean) SCR::Write (.yep_conf, nil)) {
+		y2error ("Cannot write to yep.conf");
+		failed = true;
+	    }
+	}
+
+	return (failed == false);
+    }
+
+    global string GetCredentials (string entry_name) {
+	if (! haskey (NU_credentials, entry_name)) {
+	    y2warning ("Key %1 not defined", entry_name);
+	    return "";
+	}
+
+	return NU_credentials[entry_name]:"";
+    }
+
+    global void SetCredentials (string entry_name, string value) {
+	NU_credentials[entry_name] = value;
+    }
+}
