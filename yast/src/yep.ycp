@@ -1,0 +1,128 @@
+/**
+ * File:	clients/yep.ycp
+ * Package:	Configuration of yep
+ * Summary:	Main file
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id: yep.ycp 27914 2006-02-13 14:32:08Z locilka $
+ *
+ * Main file for yep configuration. Uses all other files.
+ */
+
+{
+    textdomain "yep";
+
+    import "CommandLine";
+    import "Mode";
+    import "GetInstArgs";
+    import "CWMTab";
+    import "CWM";
+    import "Wizard";
+    import "Label";
+    import "Sequencer";
+
+    include "yep/dialogs.ycp";
+    include "yep/helps.ycp";
+
+    if (size (GetInstArgs::argmap()) == 0 && size (WFM::Args()) > 0) {
+	Mode::SetUI ("commandline");
+	y2milestone ("Mode CommandLine not supported, exiting...");
+	// TRANSLATORS: error message - the module does not provide command line interface
+	CommandLine::Print(_("There is no user interface available for this module."));
+	return `auto;
+    }
+
+    any MainSequence() {
+	map <string, map <string, any> > widgets = $[
+	    "cr" : $[
+		"widget"	: `custom,
+		"help"		: HELPS["credentials"]:"",
+		"custom_widget"	: `Empty(),
+		"handle"	: HandleCredentialsDialog,
+		"init"		: InitCredentialsDialog,
+		"store"		: StoreCredentialsDialog,
+	    ],
+	    "sd" : $[
+		"widget"	: `custom,
+		"help"		: HELPS["scheduled_downloads"]:"",
+		"custom_widget"	: `Empty(),
+		"handle"	: HandleScheduledDownloadsDialog,
+		"init"		: InitScheduledDownloadsDialog,
+		"store"		: StoreScheduledDownloadsDialog,
+	    ],
+	];
+
+	map <string, any> tabs = $[
+	    "credentials" : $[
+		"header"	: _("NU Credentials"),
+		"widget_names"	: ["cr"],
+		"contents"	: CredentialsDialogContent(),
+	    ],
+	    "scheduled_downloads" : $[
+		"header"	: _("Scheduled Downloads"),
+		"widget_names"	: ["sd"],
+		"contents"	: ScheduledDownloadsDialogContent(),
+	    ],
+	];
+
+	map <string, any> wd = $[
+	    "tab" : CWMTab::CreateWidget ($[
+		"tab_order"	: ["credentials", "scheduled_downloads"],
+		"tabs"		: tabs,
+		"widget_descr"	: widgets,
+		"initial_tab"	: "credentials",
+	    ])
+	];
+
+	term contents = `VBox("tab");
+	list <map <string, any> > w = CWM::CreateWidgets (["tab"], (map <string, map <string, any> >) wd);
+	string caption = _("NU Configuration");
+	contents = CWM::PrepareDialog (contents, w);
+
+	Wizard::SetContentsButtons (
+	    caption,
+	    contents,
+	    "",
+	    Label::BackButton (),
+	    Label::FinishButton()
+	);
+	Wizard::DisableBackButton ();
+	Wizard::SetTitleIcon("yast");
+
+	return CWM::Run (w, $[`abort : ReallyExit]);
+    }
+
+    any YEPSequence () {
+	map aliases = $[
+	    "read"  : [ ``( ReadDialog() ), true ],
+	    "main"  :   ``( MainSequence() ),
+	    "write" : [ ``( WriteDialog() ), true ]
+	];
+
+	map sequence = $[
+	    "ws_start" : "read",
+	    "read" : $[
+		`abort      : `abort,
+		`next       : "main"
+	    ],
+	    "main" : $[
+		`abort      : `abort,
+		`next       : "write"
+	    ],
+	    "write" : $[
+		`abort      : `abort,
+		`next       : `next
+	    ],
+	];
+
+	Wizard::CreateDialog();
+	Wizard::SetTitleIcon ("yast");
+
+	any ret = Sequencer::Run(aliases, sequence);
+	Wizard::CloseDialog();
+
+	return ret;
+    }
+
+    YEPSequence();
+}

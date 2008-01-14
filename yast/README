@@ -1,0 +1,4 @@
+How to install this YaST module?
+> make -f Makefile.cvs
+> make
+> make install

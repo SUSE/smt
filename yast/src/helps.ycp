@@ -1,0 +1,16 @@
+/**
+ * File:	include/yep/helps.ycp
+ * Package:	Configuration of yep
+ * Summary:	Help texts of all the dialogs
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id: helps.ycp 27914 2006-02-13 14:32:08Z locilka $
+ */
+
+{
+    textdomain "yep";
+
+    map <string, string> HELPS = $[
+	"credentials" : _("<p>FIXME: ...</p>"),
+    ];
+}

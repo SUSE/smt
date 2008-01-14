@@ -1,0 +1,91 @@
+/**
+ * File:	include/yep/dialogs.ycp
+ * Package:	Configuration of yep
+ * Summary:	Dialogs definitions
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id: dialogs.ycp 27914 2006-02-13 14:32:08Z locilka $
+ */
+
+{
+    textdomain "yep";
+
+    include "yep/helps.ycp";
+
+    import "Wizard";
+    import "Popup";
+
+    term CredentialsDialogContent () {
+	return `VBox (
+	    `VStretch(),
+	    `HBox (
+		`HStretch(),
+		`Label (_("FIXME: ... ")),
+		`HStretch()
+	    ),
+	    `VStretch()
+	);
+    }
+
+    term ScheduledDownloadsDialogContent () {
+	return `VBox (
+	    `VStretch(),
+	    `HBox (
+		`HStretch(),
+		`Label (_("FIXME: ... ")),
+		`HStretch()
+	    ),
+	    `VStretch()
+	);
+    }
+
+    symbol ReadDialog() {
+	Wizard::RestoreHelp(HELPS["read"]:"");
+	Wizard::SetTitleIcon("yast");
+	// FIXME: ...
+	sleep (3000);
+	return `next;
+    }
+
+    symbol WriteDialog() {
+	Wizard::RestoreHelp(HELPS["write"]:"");
+	Wizard::SetTitleIcon("yast");
+	// FIXME: ...
+	sleep (3000);
+	return `next;
+    }
+
+    void InitCredentialsDialog (string id) {
+	// FIXME: ...
+    }
+
+    symbol HandleCredentialsDialog (string id, map event) {
+	any action = event["ID"]:nil;
+	// FIXME: ...
+	return nil;
+    }
+
+    void StoreCredentialsDialog (string id, map event) {
+	// FIXME: ...
+    }
+
+    void InitScheduledDownloadsDialog (string id) {
+	// FIXME: ...
+    }
+
+    symbol HandleScheduledDownloadsDialog (string id, map event) {
+	any action = event["ID"]:nil;
+	// FIXME: ...
+	return nil;
+    }
+
+    void StoreScheduledDownloadsDialog (string id, map event) {
+	// FIXME: ...
+    }
+
+    boolean ReallyExit () {
+	// yes-no popup
+	return Popup::YesNo (_("Really exit?
+All changes will be lost."));
+    }
+}
