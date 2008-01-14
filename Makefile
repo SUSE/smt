@@ -40,6 +40,7 @@ install:
 	mkdir -p $(DESTDIR)/etc/apache2/vhosts.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
+	mkdir -p $(DESTDIR)/srv/www/perl-lib/YEP
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
 	cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
@@ -49,7 +50,8 @@ install:
 	chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
 	chmod 0755 $(DESTDIR)/usr/bin/yepdb
 	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
-	cp www/perl-lib/YEP/*.pm $(DESTDIR)$(PERLMODDIR)/YEP/
+	cp www/perl-lib/YEP/Utils.pm $(DESTDIR)$(PERLMODDIR)/YEP/
+	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)$(PERLMODDIR)/YEP/
 	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
 
 
