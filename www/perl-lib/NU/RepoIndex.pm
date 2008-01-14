@@ -55,7 +55,7 @@ sub handler {
     my $catalogs = getCatalogsByGUID($dbh, $username);
 
     my $writer = new XML::Writer(NEWLINES => 0);
-    $writer->xmlDecl();
+    $writer->xmlDecl("UTF-8");
 
     # start tag
     $writer->startTag("repoindex");
