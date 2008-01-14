@@ -6,7 +6,8 @@ PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
 
 install_all: install install_conf install_db
 	@echo "==========================================================="
-	@echo "Append 'perl' to APACHE_MODULES in /etc/sysconfig/apache2 ."
+	@echo "Append 'perl' to APACHE_MODULES an 'SSL' to APACHE_SERVER_FLAGS
+	@echo "in /etc/sysconfig/apache2 ."
 	@echo "Required packages:"
 	@echo "* apache2"
 	@echo "* apache2-mod_perl"
@@ -36,11 +37,13 @@ install_conf:
 install:
 	mkdir -p $(DESTDIR)/usr/bin/
 	mkdir -p $(DESTDIR)/etc/apache2/conf.d/
+	mkdir -p $(DESTDIR)/etc/apache2/vhosts.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
 	cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
+	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
 	cp script/yep-mirror.pl $(DESTDIR)/usr/bin/
 	cp script/yepdb $(DESTDIR)/usr/bin/
 	chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
@@ -63,6 +66,7 @@ clean:
 dist: clean
 	rm -rf $(NAME)-$(VERSION)/
 	@mkdir -p $(NAME)-$(VERSION)/apache2/conf.d/
+	@mkdir -p $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@mkdir -p $(NAME)-$(VERSION)/config
 	@mkdir -p $(NAME)-$(VERSION)/db
 	@mkdir -p $(NAME)-$(VERSION)/doc
@@ -76,6 +80,7 @@ dist: clean
 
 	@cp apache2/*.pl $(NAME)-$(VERSION)/apache2/
 	@cp apache2/conf.d/*.conf $(NAME)-$(VERSION)/apache2/conf.d/
+	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/yep.conf.production $(NAME)-$(VERSION)/config/yep.conf
 	@cp db/*.sql $(NAME)-$(VERSION)/db/
 	@cp db/*.init $(NAME)-$(VERSION)/db/

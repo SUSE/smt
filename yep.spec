@@ -79,6 +79,7 @@ make DESTDIR=$RPM_BUILD_ROOT install_all
 %config(noreplace) /etc/yep.conf
 %config /etc/apache2/*.pl
 %config /etc/apache2/conf.d/*.conf
+%config /etc/apache2/vhosts.d/*.conf
 /usr/bin/yep-mirror.pl
 /usr/bin/yepdb
 
