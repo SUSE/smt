@@ -1,0 +1,29 @@
+/**
+ * File:
+ *   yep_conf.scr
+ * Summary:
+ *   SCR Agent for reading/writing /etc/yep.conf
+ *   using the ini-agent
+ * Access:
+ *   read/write
+ * Authors:
+ *   Lukas Ocilka <locilka@suse.cz>
+ * See:
+ *   yast2-agent-ini/ini.html
+ *   libscr
+ * Example:
+ *   Read(.yep_conf.NUUser)
+ *   ("john_the_fish")
+ **
+ *   Write(.yep_conf.NUUser, "Howard")
+ *   (true)
+ *
+ * $Id: $
+ *
+ * Read/Sets the values defined in /etc/yep.conf.
+ */
+.yep_conf
+
+`ag_ini(
+  `SysConfigFile("/etc/yep.conf")
+)

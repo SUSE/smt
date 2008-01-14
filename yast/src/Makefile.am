@@ -11,8 +11,7 @@ ynclude_DATA = \
 
 desktop_DATA = $(wildcard *.desktop)
 
-module_DATA =
-# $(wildcard [A-Z]*.ycp)
+module_DATA = $(wildcard [A-Z]*.ycp)
 
 # create a symlink for local build, #145327
 yep:

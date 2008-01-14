@@ -14,17 +14,29 @@
 
     import "Wizard";
     import "Popup";
+    import "YEPData";
 
     term CredentialsDialogContent () {
-	return `VBox (
-	    `VStretch(),
-	    `HBox (
+	return `HBox (
 		`HStretch(),
-		`Label (_("FIXME: ... ")),
+		`VBox (
+		    `VStretch(),
+		    `Left (`HSquash (`MinWidth (
+			45,
+			`TextEntry (`id ("NUUrl"), _("NU URL"), YEPData::GetCredentials("NUUrl"))
+		    ))),
+		    `Left (`HSquash (`MinWidth (
+			20,
+			`TextEntry (`id ("NUUser"), _("NU User"), YEPData::GetCredentials("NUUser"))
+		    ))),
+		    `Left (`HSquash (`MinWidth (
+			20,
+			`Password (`id ("NUPass"), _("NU Password"), YEPData::GetCredentials("NUPass"))
+		    ))),
+		    `VStretch()
+		),
 		`HStretch()
-	    ),
-	    `VStretch()
-	);
+	    );
     }
 
     term ScheduledDownloadsDialogContent () {
@@ -42,16 +54,18 @@
     symbol ReadDialog() {
 	Wizard::RestoreHelp(HELPS["read"]:"");
 	Wizard::SetTitleIcon("yast");
-	// FIXME: ...
-	sleep (3000);
+
+	YEPData::ReadCredentials();
+
 	return `next;
     }
 
     symbol WriteDialog() {
 	Wizard::RestoreHelp(HELPS["write"]:"");
 	Wizard::SetTitleIcon("yast");
-	// FIXME: ...
-	sleep (3000);
+
+	YEPData::WriteCredentials();
+
 	return `next;
     }
 
@@ -66,7 +80,9 @@
     }
 
     void StoreCredentialsDialog (string id, map event) {
-	// FIXME: ...
+	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
+	    YEPData::SetCredentials (one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
+	});
     }
 
     void InitScheduledDownloadsDialog (string id) {
