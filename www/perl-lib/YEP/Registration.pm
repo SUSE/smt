@@ -13,7 +13,10 @@ use YEP::Utils;
 
 use Data::Dumper;
 use DBI;
-use HTML::Entities;
+#use HTML::Entities;
+use XML::Writer;
+use XML::Parser;
+use XML::Bare;
 
 sub handler {
     my $r = shift;
@@ -69,6 +72,8 @@ sub register
     my $r     = shift;
     my $hargs = shift;
 
+    $r->warn("register called: ".Data::Dumper->Dump([$r]).",".Data::Dumper->Dump([$hargs]));
+
     return;
 }
 
@@ -87,15 +92,21 @@ sub listproducts
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
     $sth->execute();
+
+    my $writer = new XML::Writer(NEWLINES => 1);
+    $writer->xmlDecl('UTF-8');
+
+    $writer->startTag("productlist",
+                      "xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                      "lang"  => "en");
     
-    print '<?xml version="1.0" encoding="UTF-8"?>'."\n";
-    print '<productlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="en">'."\n";
     while ( my @row = $sth->fetchrow_array ) 
     {
-	# See http://www.perl.com/pub/a/2002/02/20/css.html
-        print '<product>'.HTML::Entities::encode($row[0]).'</product>'."\n";
+        $writer->startTag("product");
+        $writer->characters($row[0]);
+        $writer->endTag("product");
     }
-    print '</productlist>'."\n";
+    $writer->endTag("productlist");
     
     $dbh->disconnect();
     
@@ -115,41 +126,191 @@ sub listparams
     
     my $data = YEP::Utils::read_post($r);
     
-    #print '<?xml version="1.0" encoding="UTF-8"?>'."\n";
-    #print "<data>\n";
-    #print "$data";
-    #print "</data>\n";
+    my $products = YEP::Registration::parseListparams($r, $data);
     
+    my $dbh = YEP::Utils::db_connect();
 
-    # FIXME: find better path to the Database
-    my $dbh = DBI->connect("dbi:SQLite:dbname=/srv/www/yep.db","","");
+    my @paramlist = ();
+    foreach my $product (keys %{$products})
+    {
+        foreach my $cnt (1..3)
+        {
+            my $statement = "SELECT PARAMLIST FROM Products where ";
+
+            $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($product))." AND ";
+
+            $statement .= "VERSIONLOWER ";
+
+            if(!defined $products->{$product}->{version})
+            {
+                $statement .= "IS NULL AND ";
+            }
+            else
+            {
+                $statement .= "= ".$dbh->quote(lc($products->{$product}->{version}))." AND ";
+            }
+            
+            $statement .= "ARCHLOWER ";
+            
+            if(!defined $products->{$product}->{arch})
+            {
+                $statement .= "IS NULL AND ";
+            }
+            else
+            {
+                $statement .= "= ".$dbh->quote(lc($products->{$product}->{arch}))." AND ";
+            }
+            
+            $statement .= "RELEASELOWER ";
+
+            if(!defined $products->{$product}->{release})
+            {
+                $statement .= "IS NULL";
+            }
+            else
+            {
+                $statement .= "= ".$dbh->quote(lc($products->{$product}->{release}));
+            }
+                        
+            #$r->log_error("STATEMENT: $statement");
+            
+            my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
+            
+            #$r->log_error("RESULT: ".Data::Dumper->Dump([$pl]));
+            #$r->log_error("RESULT: not defined ") if(!defined $pl);
+            #$r->log_error("RESULT: empty ") if(@$pl == 0);
+
+            if(@$pl == 0 && $cnt == 1)
+            {
+                $products->{$product}->{release} = undef;
+            }
+            elsif(@$pl == 0 && $cnt == 2)
+            {
+                $products->{$product}->{arch} = undef;
+            }
+            elsif(@$pl == 0 && $cnt == 3)
+            {
+                $products->{$product}->{version} = undef;
+            }
+            elsif(@$pl == 1 && exists $pl->[0]->{PARAMLIST})
+            {
+                push @paramlist, $pl->[0]->{PARAMLIST};
+                last;
+            }
+        }
+    }
     
-    my @pr = (["openSUSE-10.3-retail", "10.3", "0", "i686"], ["openSUSE-10.3-FTP",  "10.3", "0", "i686"]);
+    my $xml = YEP::Registration::joinParamlist($r, \@paramlist);
 
-    my $statement = "SELECT PARAMLIST FROM Products where ";
+    #$r->log_error("XML: $xml");
 
-    #foreach my $row (@pr)
-    #{
-    #    $statement .= "(PRODUCT = '$row[0]' and";
-    #    $statement .= "VERSION = '$row[1]' and";
-    #    $statement .= "RELEASE = '$row[2]' and";
-    #    $statement .= "ARCH    = '$row[3]' )";
-    #}
-    
-#    my $sth = $dbh->prepare($statement);
-#    $sth->execute();
-#    
-#    print '<?xml version="1.0" encoding="UTF-8"?>'."\n";
-#    print '<productlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="en">';
-#    while ( my @row = $sth->fetchrow_array ) 
-#    {
-#        print '<product>'.$row[0].'</product>';
-#    }
-#    print '</productlist>';
-
+    print $xml;
 
     return;
 }
+
+sub parseListparams
+{
+    my $r     = shift;
+    my $xml   = shift;
+    my $data  = {STATE => 0, PRODUCTS => {}};
+    
+    my $parser = XML::Parser->new( Handlers =>
+                                   { Start=> sub { lp_handle_start_tag($data, @_) },
+                                     Char => sub { lp_handle_char($data, @_) },
+                                     End=>\&lp_handle_end_tag,
+                                   });
+    $parser->parse( $xml );
+    return $data->{PRODUCTS};
+}
+
+sub lp_handle_start_tag
+{
+    my $data = shift;
+    my( $expat, $element, %attrs ) = @_;
+
+    if(lc($element) eq "product")
+    {
+        $data->{STATE} = 1;
+        foreach (keys %attrs)
+        {
+            $data->{CURRENT}->{lc($_)} = $attrs{$_};
+        }
+    }
+}
+
+sub lp_handle_char
+{
+    my $data = shift;
+    my( $expat, $string) = @_;
+
+    if($data->{STATE} == 1)
+    {
+        chomp($string);
+        foreach (keys %{$data->{CURRENT}})
+        {
+            $data->{PRODUCTS}->{$string}->{$_} = $data->{CURRENT}->{$_};
+        }
+        delete $data->{CURRENT};
+        $data->{STATE} = 0;
+    }
+}
+
+sub lp_handle_end_tag
+{
+    my( $expat, $element, %attrs ) = @_;
+}
+
+
+sub joinParamlist
+{
+    my $r         = shift;
+    my $paramlist = shift;
+    
+    if(@$paramlist == 1)
+    {
+        return $paramlist->[0];
+    }
+    
+    my $basedoc = shift @$paramlist;
+    
+    my $parser = new XML::Bare( text => $basedoc );
+    my $root   = $parser->parse( );
+
+    foreach my $other (@$paramlist)
+    {
+        my $po = new XML::Bare( text => $other );
+        my $do = $po->parse( );
+        
+        foreach my $node (keys %{$do->{paramlist}})
+        {
+            if($node ne "param" && exists $root->{paramlist}->{$node})
+            {
+                next;
+            }
+            elsif($node ne "param" && !exists $root->{paramlist}->{$node})
+            {
+                # FIXME: is not save to do it this way
+                $root->{paramlist}->{$node} = $do->{paramlist}->{$node};
+                next;
+            }
+            # now we have the param node
+            
+            foreach my $par (@{$do->{paramlist}->{param}})
+            {
+                if(!$parser->find_node($root->{paramlist}, "param", id => $par->{id}->{value}))
+                {
+                    #$r->log_error("PARAMNODE: id $par->{id}->{value} does not exist. Add it");
+
+                    # FIXME: is not save to do it this way
+                    push @{$root->{paramlist}->{param}}, $par;
+                }
+            }
+        }
+    }
+    return $parser->xml( $root );
+}
+
 
 
 
