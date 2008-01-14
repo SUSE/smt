@@ -16,10 +16,14 @@ use Getopt::Long;
 
 my $debug    = 0;
 my $clean    = 0;
+
+my $LocalBasePath = "";
+
 my $help     = 0;
 
 my $result = GetOptions ("debug|d"     => \$debug,
                          "cleanup|c"   => \$clean,
+			 "directory=s" => \$LocalBasePath,
                          "help|h"      => \$help
                         );
 
@@ -33,6 +37,8 @@ if($help)
     print "--clean -c     cleanup all mirrored repositories.\n";
     print "               Remove all files not longer mention in the metadata.\n";
     print "               This mode do no mirror before cleanup.\n";
+    print "--directory    The directory to work on. Using this option ignores the configured\n";
+    print "               default value in yep.conf\n";
     print "--help -h      show this message\n";
     exit 0;
 }
@@ -57,10 +63,13 @@ if(!defined $NUUrl || $NUUrl eq "")
     die "Cannot read NU Url";
 }
 
-my $LocalBasePath = $cfg->val("NU", "LocalBasePath");
-if(!defined $LocalBasePath || $LocalBasePath eq "")
+if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
 {
-    die "Cannot read the local base path";
+    $LocalBasePath = $cfg->val("NU", "LocalBasePath");
+    if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
+    {
+        die "Cannot read the local base path";
+    }
 }
 
 my $nuUser = $cfg->val("NU", "NUUser");
