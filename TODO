@@ -20,6 +20,10 @@
 - client tool to view all mirrorable catalogs and change the
   "DoMirror" Flag on demand.
 
+- client tool to view :
+  * the registrations
+  * used products
+
 - write yast module for initial setup
   * ask for Mirror Credentials
   * append "perl" to /etc/sysconfig/apache2 APACHE_MODULES
@@ -33,3 +37,12 @@
 - yup has a hardlink feature. Would be nice if we could have it too.
   It searches for same files (SLES <=> SLED as example) and
   create a hardlink to safe some disk space.
+
+
+Idea:
+
+- provide test and production enviroment. 
+  A restricted area to test patches and if tests are ok move them
+  to production so that they can used by everyone.
+
+
