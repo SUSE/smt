@@ -36,6 +36,8 @@ TODO:
   It searches for same files (SLES <=> SLED as example) and
   create a hardlink to safe some disk space.
 
+- add a logfile option to yep-mirror.pl and prepare the YEP::Mirror::... 
+  modules to print in a logfile
 
 DONE:
 =====
