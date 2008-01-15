@@ -11,15 +11,17 @@
     textdomain "yep";
 
     include "yep/helps.ycp";
+    include "yep/complex.ycp";
 
     import "Wizard";
     import "Popup";
     import "YEPData";
+    import "Label";
 
     term CredentialsDialogContent () {
 	return `HBox (
 		`HStretch(),
-		`VBox (
+		`HSquash (`VBox (
 		    `VStretch(),
 		    `Left (`HSquash (`MinWidth (
 			45,
@@ -33,8 +35,10 @@
 			20,
 			`Password (`id ("NUPass"), _("NU Password"), YEPData::GetCredentials("NUPass"))
 		    ))),
+		    `VSpacing (1),
+		    `PushButton (`id ("test_NU_credentials"), _("Test...")),
 		    `VStretch()
-		),
+		)),
 		`HStretch()
 	    );
     }
@@ -70,12 +74,6 @@
     }
 
     void InitCredentialsDialog (string id) {
-	// FIXME: ...
-    }
-
-    symbol HandleCredentialsDialog (string id, map event) {
-	any action = event["ID"]:nil;
-	// FIXME: ...
 	return nil;
     }
 
@@ -85,18 +83,51 @@
 	});
     }
 
+    boolean TestCredentials () {
+	UI::OpenDialog (`MinSize (52, 12, `VBox (
+	    `LogView (`id ("test_log"), _("&Details"), 5, 100),
+	    `VSpacing (1),
+	    `PushButton (`id (`ok), Label::OKButton())
+	)));
+
+	// complex.ycp
+	boolean ret = CredentialsTest ("test_log");
+
+	if (ret == true) {
+	    UI::ChangeWidget (`id ("test_log"), `LastLine, "\n" + _("Test result: success") + "\n");
+	} else {
+	    UI::ChangeWidget (`id ("test_log"), `LastLine, "\n" + _("Test result: failed") + "\n");
+	}
+
+	UI::UserInput();
+	UI::CloseDialog();
+
+	return ret;
+    }
+
+    symbol HandleCredentialsDialog (string id, map event) {
+	any action = event["ID"]:nil;
+
+	if (action == "test_NU_credentials") {
+	    StoreCredentialsDialog (id, event);
+	    TestCredentials();
+	}
+
+	return nil;
+    }
+
     void InitScheduledDownloadsDialog (string id) {
-	// FIXME: ...
+	return nil;
     }
 
     symbol HandleScheduledDownloadsDialog (string id, map event) {
 	any action = event["ID"]:nil;
-	// FIXME: ...
+
 	return nil;
     }
 
     void StoreScheduledDownloadsDialog (string id, map event) {
-	// FIXME: ...
+	return nil;
     }
 
     boolean ReallyExit () {

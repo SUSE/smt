@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jan 15 11:22:48 CET 2008 - locilka@suse.cz
+
+- Added functionality to test the entered credentials.
+- Requires: grep & curl
+
+-------------------------------------------------------------------
 Mon Jan 14 15:45:38 2008 - locilka@suse.cz
 
-- initial version
+- Initial version (framework, basic UI).

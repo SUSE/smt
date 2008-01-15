@@ -1,0 +1,112 @@
+/**
+ * File:	include/yep/complex.ycp
+ * Package:	Configuration of yep
+ * Summary:	
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id: complex.ycp 27914 2006-02-13 14:32:08Z locilka $
+ */
+
+{
+    textdomain "yep";
+
+    import "YEPData";
+    import "Directory";
+    import "String";
+
+    any log_view_ID = nil;
+
+    void LogThis (string text) {
+	UI::ChangeWidget (`id (log_view_ID), `LastLine, text + "\n");
+    }
+
+    boolean CredentialsTest (any log_view) {
+	log_view_ID = log_view;
+
+	string user = YEPData::GetCredentials ("NUUser");
+	string pass = YEPData::GetCredentials ("NUPass");
+	string url  = YEPData::GetCredentials ("NUUrl");
+
+	string test_file = Directory::tmpdir + "/curl_input_file";
+	string out_file  = Directory::tmpdir + "/curl_output_file";
+
+	LogThis (_("Creating a temporary file..."));
+
+	integer cmd_exit = (integer) SCR::Execute (.target.bash, sformat ("echo \"# URL for downloading repos/patches
+url=\\\"\\\"
+# user:pass to be used for downloading
+user=\\\"\\\"\" > '%1'", String::Quote (test_file)));
+
+	if (cmd_exit != 0) {
+	    LogThis (sformat (_("Unable to create a temporary file %1."), test_file));
+	    return false;
+	}
+
+	LogThis (_("Writing credentials to a temporary file..."));
+	if (! (boolean) SCR::RegisterAgent (.curlTempFile, `ag_ini (`SysConfigFile (test_file)))) {
+	    y2error ("Cannot register agent");
+	    LogThis (sformat(_("Cannot write to a temporary file %1."), test_file));
+	    return false;
+	}
+
+	SCR::Read (add(.curlTempFile, "url"));
+	SCR::Read (add(.curlTempFile, "user"));
+
+	if (! (boolean) SCR::Write (add (.curlTempFile, "url"), sformat ("%1/repo/repoindex.xml", url)))
+	    y2error ("Writing url failed");
+	// user:pass, all ":" in user or pass need to be escaped
+	string userpass = sformat (
+		"%1:%2",
+		mergestring (splitstring (user, ":"), "\\:"),
+		mergestring (splitstring (pass, ":"), "\\:")
+	);
+	if (! (boolean) SCR::Write (add (.curlTempFile, "user"), userpass))
+	    y2error ("Writing user failed");
+
+	if (! (boolean) SCR::Write (.curlTempFile, nil)) {
+	    y2error ("Cannot write credentials");
+	    LogThis (sformat(_("Cannot write to a temporary file %1."), test_file));
+	    return false;
+	}
+
+	if (! (boolean) SCR::UnregisterAgent (.curlTempFile)) {
+	    y2error ("Cannot unregister agent");
+	}
+
+	LogThis (_("Downloading list of available repositories..."));
+	map cmd = (map) SCR::Execute (
+	    .target.bash_output,
+	    sformat ("/usr/bin/curl --silent --config '%1' > '%2'", String::Quote (test_file), String::Quote (out_file))
+	);
+
+	if (cmd["exit"]:-1 != 0) {
+	    LogThis (_("Unable to download list of repositories."));
+	    LogThis (sformat (_("Reason: %1"), cmd["stderr"]:""));
+
+	    return false;
+	}
+
+	LogThis (_("Checking list of downloaded repositories..."));
+	cmd = (map) SCR::Execute (
+	    .target.bash_output,
+	    sformat ("/usr/bin/grep '<[\t ]*repo[\t ]' '%1'", String::Quote (out_file))
+	);
+
+	if (cmd["exit"]:-1 != 0) {
+	    LogThis (_("Unable to check the list of repositories"));
+
+	    return false;
+	}
+
+	list <string> list_of_repos = splitstring (cmd["stdout"]:"", "\n");
+	if (list_of_repos == nil || size (list_of_repos) == 0) {
+	    LogThis (_("No repositories were found."));
+
+	    return false;
+	}
+
+	LogThis (_("Some repositories were found."));
+
+	return true;
+    }
+}

@@ -2,6 +2,8 @@
 
 @HEADER@
 Requires:	yast2
+Requires:	/usr/bin/curl
+Requires:	/usr/bin/grep
 BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite
 
 BuildArchitectures:	noarch
