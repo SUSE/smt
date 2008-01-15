@@ -59,6 +59,16 @@ Authors:
 %setup -n %{name}-%{version}
 # ---------------------------------------------------------------------------
 
+# See http://forgeftp.novell.com//library/SUSE%20Package%20Conventions/spc.pdf
+# 3.7 %fillup_only, example 3
+%post
+echo -n > /var/adm/fillup-templates/sysconfig.apache2-yep
+echo "APACHE_MODULES=\"perl\"" >> /var/adm/fillup-templates/sysconfig.apache2-yep
+echo "APACHE_SERVER_FLAGS=\"SSL\"" >> /var/adm/fillup-templates/sysconfig.apache2-yep
+%{fillup_only -ans apache2 yep}
+exit 0
+# ---------------------------------------------------------------------------
+
 %build
 #make test
 # ---------------------------------------------------------------------------
