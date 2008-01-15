@@ -76,6 +76,7 @@
 
 	term contents = `VBox("tab");
 	list <map <string, any> > w = CWM::CreateWidgets (["tab"], (map <string, map <string, any> >) wd);
+	// TRANSLATORS: dialog caption
 	string caption = _("NU Configuration");
 	contents = CWM::PrepareDialog (contents, w);
 

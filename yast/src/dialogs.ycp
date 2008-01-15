@@ -106,11 +106,13 @@
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjust YEP configuration"),
+		// TRANSLATORS: Progress step
 		_("Adjust Web-server configuration"),
 	    ],
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjusting YEP configuration..."),
+		// TRANSLATORS: Progress step
 		_("Adjust Web-server configuration"),
 		Message::Finished(),
 	    ],
@@ -149,7 +151,8 @@
 
     boolean TestCredentials () {
 	UI::OpenDialog (`MinSize (52, 12, `VBox (
-	    `LogView (`id ("test_log"), _("&Details"), 5, 100),
+	    // TRANSLATORS: LogView label
+	    `LogView (`id ("test_log"), _("&Test Details"), 5, 100),
 	    `VSpacing (1),
 	    `PushButton (`id (`ok), Label::OKButton())
 	)));
@@ -158,8 +161,10 @@
 	boolean ret = CredentialsTest ("test_log");
 
 	if (ret == true) {
+	    // TRANSLATORS: LogView line
 	    UI::ChangeWidget (`id ("test_log"), `LastLine, "\n" + _("Test result: success") + "\n");
 	} else {
+	    // TRANSLATORS: LogView line
 	    UI::ChangeWidget (`id ("test_log"), `LastLine, "\n" + _("Test result: failed") + "\n");
 	}
 
@@ -195,7 +200,7 @@
     }
 
     boolean ReallyExit () {
-	// yes-no popup
+	// TRANSLATORS: yes-no popup
 	return Popup::YesNo (_("Really exit?
 All changes will be lost."));
     }

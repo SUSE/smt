@@ -10,6 +10,7 @@
 {
     textdomain "yep";
 
+    // FIXME: no helps are defined so far
     map <string, string> HELPS = $[
 	"credentials" : _("<p>FIXME: ...</p>"),
     ];

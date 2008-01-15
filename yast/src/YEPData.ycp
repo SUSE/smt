@@ -18,6 +18,11 @@
 
     map <string, string> NU_credentials = $[];
 
+    /**
+     * Reads the current YEP credentials into the memory
+     *
+     * @return boolean if successful
+     */
     global boolean ReadCredentials () {
 	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
 	    NU_credentials[one_entry] = (string) SCR::Read (add (.yep_conf, one_entry));
@@ -26,6 +31,11 @@
 	return true;
     }
 
+    /**
+     * Writes the current credentials to the YEP configuration file.
+     *
+     * @return boolean if successful
+     */
     global boolean WriteCredentials () {
 	boolean failed = false;
 
@@ -46,6 +56,14 @@
 	return (failed == false);
     }
 
+    /**
+     * Returns value for credentials entry.
+     *
+     * @see SetCredentials
+     *
+     * @param string entry_name
+     * @return string value
+     */
     global string GetCredentials (string entry_name) {
 	if (! haskey (NU_credentials, entry_name)) {
 	    y2warning ("Key %1 not defined", entry_name);
@@ -55,10 +73,24 @@
 	return NU_credentials[entry_name]:"";
     }
 
+    /**
+     * Sets name/value credential pairs.
+     *
+     * @see GetCredentials
+     *
+     * @param string entry_name
+     * @param string value
+     */
     global void SetCredentials (string entry_name, string value) {
 	NU_credentials[entry_name] = value;
     }
 
+    /**
+     * Function checks and adjusts the apache configuration
+     * to be usable by YEP.
+     *
+     * @return boolean if successful
+     */
     global boolean CheckAndAdjustApacheConfiguration () {
 	string apache_conf_file = "/etc/sysconfig/apache2";
 
@@ -104,11 +136,20 @@
 	    apache_conf_changed = true;
 	}
 
+	// Something has been changed
+	// Apache conf needs writing
+	// and Apache service needs restarting
 	if (apache_conf_changed) {
 	    y2milestone ("Writing sysconfig/apache conf");
 	    if (! (boolean) SCR::Write (.http_server_conf, nil)) {
 		y2error ("Cannot write apache2 conf");
 		Message::CannotWriteSettingsTo (apache_conf_file);
+		return false;
+	    }
+
+	    if (! Service::Reload ("apache2")) {
+		y2error ("Reloading apache2 failed");
+		Report::Error (sformat (_("Reloading service %1 failed."), "apache2"));
 		return false;
 	    }
 	}
@@ -117,14 +158,7 @@
 	    y2error ("Cannot unregister agent");
 	}
 
-	if (apache_conf_changed) {
-	    if (! Service::Reload ("apache2")) {
-		y2error ("Reloading apache2 failed");
-		Report::Error (sformat (_("Reloading service %1 failed."), "apache2"));
-		return false;
-	    }
-	}
-
+	// Enabling the Apache service
 	if (! Service::Enabled ("apache2")) {
 	    Service::Enable ("apache2");
 	} else {
