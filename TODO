@@ -28,13 +28,8 @@ TODO:
   * used products
 
 - write yast module for initial setup
-  * ask for Mirror Credentials
-  * append "perl" to /etc/sysconfig/apache2 APACHE_MODULES
-  * append "SSL" to /etc/sysconfig/apache2 APACHE_SERVER_FLAGS
-  * start apache
-  * insserv apache
   * start database initialization (ncc-mirror.pl)
-  * NiceToHave: configuration of a cronjob vor yep-mirror.pl
+  * NiceToHave: configuration of a cronjob for yep-mirror.pl
 
 
 - yup has a hardlink feature. Would be nice if we could have it too.
@@ -47,6 +42,11 @@ DONE:
 
 - support HTTPS - the suse_register will only connect via https
 
+- yast module
+  * credentials and their testing
+  * adjusting /etc/sysconfig/apache2
+  * reloading apache2 when configuration changed
+  * insserving apache2 if needed
 
 
 Ideas:

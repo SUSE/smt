@@ -11,7 +11,7 @@
 # norootforbuild
 
 Name:         yep
-BuildRequires: sqlite apache2 apache2-mod_perl perl-Crypt-SSLeay perl-DBD-SQLite
+BuildRequires: sqlite apache2 apache2-mod_perl perl-Crypt-SSLeay perl-DBD-SQLite yast2 yast2-devtools
 BuildRequires: perl-Config-IniFiles perl-XML-Parser perl-libwww-perl perl-IO-Zlib perl-URI perl-TimeDate
 Version:      0.0.1
 Release:      0
@@ -29,6 +29,11 @@ Requires:     perl-libwww-perl
 Requires:     perl-IO-Zlib
 Requires:     perl-URI
 Requires:     perl-TimeDate
+
+Requires:     yast2
+# For testing entered cedentials in YaST
+Requires:     grep
+Requires:     curl
 
 Autoreqprov:  on
 Group:        Productivity/Networking/Web/Proxy
