@@ -17,6 +17,11 @@
     import "Popup";
     import "YEPData";
     import "Label";
+    import "Confirm";
+    import "Progress";
+    import "Message";
+
+    integer sl = 800;
 
     term CredentialsDialogContent () {
 	return `HBox (
@@ -56,19 +61,78 @@
     }
 
     symbol ReadDialog() {
-	Wizard::RestoreHelp(HELPS["read"]:"");
+	// Checking for root's permissions
+	if (!Confirm::MustBeRoot())
+	    return `abort;
+
+	Progress::New (
+	    // TRANSLATORS: Dialog caption
+	    _("Initializing YEP Configuration"),
+	    " ",
+	    1,
+	    [
+		// TRANSLATORS: Progress step
+		_("Read YEP configuration"),
+	    ],
+	    [
+		// TRANSLATORS: Progress step
+		_("Reading YEP configuration..."),
+		Message::Finished(),
+	    ],
+	    ""
+	);
 	Wizard::SetTitleIcon("yast");
+	Wizard::RestoreHelp(HELPS["read"]:"");
+
+	Progress::NextStage();
+	sleep (sl);
 
 	YEPData::ReadCredentials();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	Progress::Finish();
 
 	return `next;
     }
 
     symbol WriteDialog() {
-	Wizard::RestoreHelp(HELPS["write"]:"");
+	Progress::New (
+	    // TRANSLATORS: Dialog caption
+	    _("Writing YEP Configuration"),
+	    " ",
+	    2,
+	    [
+		// TRANSLATORS: Progress step
+		_("Adjust YEP configuration"),
+		_("Adjust Web-server configuration"),
+	    ],
+	    [
+		// TRANSLATORS: Progress step
+		_("Adjusting YEP configuration..."),
+		_("Adjust Web-server configuration"),
+		Message::Finished(),
+	    ],
+	    ""
+	);
 	Wizard::SetTitleIcon("yast");
+	Wizard::RestoreHelp(HELPS["write"]:"");
+
+	Progress::NextStage();
+	sleep (sl);
 
 	YEPData::WriteCredentials();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	YEPData::CheckAndAdjustApacheConfiguration();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	Progress::Finish();
 
 	return `next;
     }

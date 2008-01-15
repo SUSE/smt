@@ -109,4 +109,9 @@ user=\\\"\\\"\" > '%1'", String::Quote (test_file)));
 
 	return true;
     }
+
+//    boolean InstallRequiredPackages () {
+//	import "PackageSystem";
+//	PackageSystem::CheckAndInstallPackagesInteractive (["apache2", "sqlite3"]);
+//    }
 }

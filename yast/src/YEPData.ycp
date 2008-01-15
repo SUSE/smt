@@ -12,6 +12,10 @@
 
     module "YEPData";
 
+    import "Message";
+    import "Service";
+    import "Report";
+
     map <string, string> NU_credentials = $[];
 
     global boolean ReadCredentials () {
@@ -53,5 +57,80 @@
 
     global void SetCredentials (string entry_name, string value) {
 	NU_credentials[entry_name] = value;
+    }
+
+    global boolean CheckAndAdjustApacheConfiguration () {
+	string apache_conf_file = "/etc/sysconfig/apache2";
+
+	boolean apache_conf_changed = false;
+
+	if (! (boolean) SCR::RegisterAgent (.http_server_conf, `ag_ini (`SysConfigFile (apache_conf_file)))) {
+	    y2error ("Cannot register agent");
+	    Message::CannotWriteSettingsTo (apache_conf_file);
+	    return false;
+	}
+
+	// "perl" in /etc/sysconfig/apache2:APACHE_MODULES
+	string ap_modules = (string) SCR::Read (.http_server_conf.APACHE_MODULES);
+	string ap_modules_old = ap_modules;
+
+	list <string> ap_modules_l = splitstring (ap_modules, " \t");
+	ap_modules_l = filter (string one_ap_module, ap_modules_l, {
+	    return (one_ap_module != nil && one_ap_module != "");
+	});
+	ap_modules_l = toset ((list <string>) union (ap_modules_l, ["perl"]));
+	ap_modules = mergestring (ap_modules_l, " ");
+
+	if (ap_modules != ap_modules_old) {
+	    y2milestone ("Writing APACHE_MODULES");
+	    SCR::Write (.http_server_conf.APACHE_MODULES, ap_modules);
+	    apache_conf_changed = true;
+	}
+
+	// SSL in /etc/sysconfig/apache2:APACHE_SERVER_FLAGS
+	string ap_serflag = (string) SCR::Read (.http_server_conf.APACHE_SERVER_FLAGS);
+	string ap_serflag_old = ap_serflag;
+
+	list <string> ap_serflag_l = splitstring (ap_serflag, " \t");
+	ap_serflag_l = filter (string one_ap_serflag, ap_serflag_l, {
+	    return (one_ap_serflag != nil && one_ap_serflag != "");
+	});
+	ap_serflag_l = toset ((list <string>) union (ap_serflag_l, ["SSL"]));
+	ap_serflag = mergestring (ap_serflag_l, " ");
+
+	if (ap_serflag != ap_serflag_old) {
+	    y2milestone ("Writing APACHE_SERVER_FLAGS");
+	    SCR::Write (.http_server_conf.APACHE_SERVER_FLAGS, ap_serflag);
+	    apache_conf_changed = true;
+	}
+
+	if (apache_conf_changed) {
+	    y2milestone ("Writing sysconfig/apache conf");
+	    if (! (boolean) SCR::Write (.http_server_conf, nil)) {
+		y2error ("Cannot write apache2 conf");
+		Message::CannotWriteSettingsTo (apache_conf_file);
+		return false;
+	    }
+	}
+
+	if (! (boolean) SCR::UnregisterAgent (.http_server_conf)) {
+	    y2error ("Cannot unregister agent");
+	}
+
+	if (apache_conf_changed) {
+	    if (! Service::Reload ("apache2")) {
+		y2error ("Reloading apache2 failed");
+		Report::Error (sformat (_("Reloading service %1 failed."), "apache2"));
+		return false;
+	    }
+	}
+
+	if (! Service::Enabled ("apache2")) {
+	    Service::Enable ("apache2");
+	} else {
+	    y2milestone ("Service already enabled, skipping ...");
+	}
+
+	return true;
     }
 }
