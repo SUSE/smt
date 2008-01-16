@@ -41,6 +41,11 @@ TODO:
 
 - YEP::Registration listparam has to check for "accept=''" option
 
+- yep.db must be owned by user "wwwrun"
+
+- test what happens if two processes what to write yep.db
+  How can we solve concutrrent access with DBI?
+
 DONE:
 =====
 
