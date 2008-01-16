@@ -1,0 +1,8 @@
+Creating the Add-On Product
+---------------------------
+Run `make dist` to create y2update.tgz
+
+An add-on product contains (also)
+    * RPMs (in /suse/ directory)
+    * /y2update.tgz (which contains the inst-sys update)
+    * installation.xml (that defines the add-on workflow)
