@@ -8,7 +8,8 @@ client_DATA = \
 ynclude_DATA = \
 	dialogs.ycp \
 	helps.ycp \
-	complex.ycp
+	complex.ycp \
+	wizard.ycp
 
 desktop_DATA = $(wildcard *.desktop)
 

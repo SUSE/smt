@@ -1,0 +1,18 @@
+/**
+ * File:	clients/yep.ycp
+ * Package:	Configuration of yep
+ * Summary:	Main file
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id: yep.ycp 27914 2006-02-13 14:32:08Z locilka $
+ *
+ * Main file for yep configuration. Uses all other files.
+ */
+
+{
+    textdomain "yep";
+
+    include "yep/wizard.ycp";
+
+    return YEPInstallSequence();
+}
