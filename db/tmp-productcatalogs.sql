@@ -138,3 +138,13 @@ insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
  values(459, "afaca8096dd339bb612fb656c046ba08b9fab7b3", 'N');
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
  values(460, "afaca8096dd339bb612fb656c046ba08b9fab7b3", 'N');
+
+-- ATI / NVIDIA
+
+insert into ProductCatalogs (PRODUCTDATAID, CATALOGID, OPTIONAL)
+ VALUES(498, "17fb9ff090b5d60ae0d2acf2160090f1485b9ea2", "N");
+
+insert into ProductCatalogs (PRODUCTDATAID, CATALOGID, OPTIONAL)
+ VALUES(499, "f141229cdd31a8d2e2a5db06d5c6b290f6c77e3f", "N");
+
+
