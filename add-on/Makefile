@@ -1,6 +1,3 @@
-NAME         = yep-add-on
-VERSION      = 0.0.1
-
 clean:
 	rm -rf usr
 	rm -rf y2update.tgz

@@ -27,6 +27,11 @@ TODO:
   * the registrations
   * used products
 
+- YEP Add-On Product (server)
+  * someone needs to build and sign the add-on periodically
+  * add-on contains all server RPMs
+  * ... (maybe to be discussed with POS team)
+
 - write yast module for initial setup
   * start database initialization (ncc-mirror) at the end
     of the YaST run.
