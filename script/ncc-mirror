@@ -3,8 +3,75 @@
 use strict;
 use warnings;
 
+use YEP::Utils;
+
+my $dbh = undef;
+my $sth = undef;
+
+sub listProducts()
+{
+    my $sth = $dbh->prepare(qq{select * from Products});
+    $sth->execute();
+    while (my ( $PRODUCTDATAD,
+                $PRODUCT,
+                $VERSION,
+                $RELEASE,
+                $ARCH,
+                $PRODUCTLOWER,
+                $VERSIONLOWER,
+                $RELEASELOWER,
+                $ARCHLOWER,
+                $FRIENDLY,
+                $PARAMLIST,
+                $NEEDINFO,
+                $SERVICE,
+                $PRODUCT_LIST ) =
+                $sth->fetchrow_array())  # keep fetching until 
+                                         # there's nothing left
+    {
+        #print "$nickname, $favorite_number\n";
+        print "$PRODUCT\n";
+    }
+    $sth->finish();
+}
+
+sub listRegistrations()
+{
+    my $sth = $dbh->prepare(qq{select r.GUID,p.PRODUCT from Registration r, Products p where r.PRODUCTID=p.PRODUCTDATAID});
+    $sth->execute();
+     while (my @values =
+                 $sth->fetchrow_array())  # keep fetching until 
+                                          # there's nothing left
+    {
+        #print "$nickname, $favorite_number\n";
+        print "[" . $values[0] . "]" . " => " . $values[1] . "\n";
+    }
+    $sth->finish();
+}
+
+if ( not $dbh=YEP::Utils::db_connect() )
+{
+    print "ERROR: Could not connect to the database";
+    return 1;
+}
+
 
 if (defined $ARGV[0]  && $ARGV[0] eq "failing") 
-{ exit 1 }
+{
+  exit 1
+}
 
-exit 0;
+if ( defined $ARGV[0]  && $ARGV[0] eq "list-products" )
+{
+  listProducts();
+}
+elsif ( defined $ARGV[0]  && $ARGV[0] eq "list-registrations" )
+{
+  listRegistrations()
+}
+else
+{
+  print "$0 list-products => Show products\n";
+  print "Nothing to do\n";
+  exit 0;
+}
