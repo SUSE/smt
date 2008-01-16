@@ -42,6 +42,8 @@ TODO:
 - YEP::Registration listparam has to check for "accept=''" option
 
 - yep.db must be owned by user "wwwrun"
+  Found out that sqlite must have write access to the directory too.
+  We should think about to move the DB to /var/lib/wwwrun/
 
 - test what happens if two processes what to write yep.db
   How can we solve concutrrent access with DBI?
