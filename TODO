@@ -30,6 +30,8 @@ TODO:
 - YEP Add-On Product (server)
   * someone needs to build and sign the add-on periodically
   * add-on contains all server RPMs
+  * new packages (e.g.) skelcd-control-YEP and skelcd-YEP
+    (internal ones, for building the add-on)
   * ... (maybe to be discussed with POS team)
 
 - write yast module for initial setup
