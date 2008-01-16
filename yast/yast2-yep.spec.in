@@ -26,8 +26,7 @@ Summary:	Configuration of YAST Enterprise Proxy
 %dir @yncludedir@/yep
 @yncludedir@/yep/*
 @clientdir@/yep.ycp
-@clientdir@/yep_*.ycp
-@moduledir@/Yep.*
-@moduledir@/Yep2.*
+@moduledir@/YEP*.*
 @desktopdir@/yep.desktop
+@scrconfdir@/yep*.scr
 %doc @docdir@
