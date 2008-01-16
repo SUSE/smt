@@ -39,6 +39,8 @@ TODO:
 - add a logfile option to yep-mirror.pl and prepare the YEP::Mirror::... 
   modules to print in a logfile
 
+- YEP::Registration listparam has to check for "accept=''" option
+
 DONE:
 =====
 
@@ -56,5 +58,7 @@ Ideas:
 - provide test and production enviroment. 
   A restricted area to test patches and if tests are ok move them
   to production so that they can used by everyone.
-
+  * register the testing enviroment can be done by providing a special
+    URL parameter. Such a parameter can be configured on the clients in
+    /etc/suseRegister.conf 
 
