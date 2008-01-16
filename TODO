@@ -28,9 +28,9 @@ TODO:
   * used products
 
 - write yast module for initial setup
-  * start database initialization (ncc-mirror.pl)
+  * start database initialization (ncc-mirror) at the end
+    of the YaST run.
   * NiceToHave: configuration of a cronjob for yep-mirror.pl
-
 
 - yup has a hardlink feature. Would be nice if we could have it too.
   It searches for same files (SLES <=> SLED as example) and
