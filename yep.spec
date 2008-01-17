@@ -89,6 +89,7 @@ exit 0
 %dir /var/lib/YEP
 %dir %attr(-, wwwrun, www)/var/lib/YEP/db
 %dir /srv/www/htdocs/repo/
+%dir /srv/www/htdocs/testing/repo/
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/YEP/
 %config(noreplace) /etc/yep.conf

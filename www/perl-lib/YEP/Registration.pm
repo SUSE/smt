@@ -67,11 +67,18 @@ sub handler {
 #
 sub register
 {
-    my $r     = shift;
-    my $hargs = shift;
+    my $r          = shift;
+    my $hargs      = shift;
 
+    my $usetestenv = 0;
+    
     $r->warn("register called.");
 
+    if(exists $hargs->{testenv} && $hargs->{testenv})
+    {
+        $usetestenv = 1;
+    }
+    
     my $data = YEP::Utils::read_post($r);
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
@@ -135,7 +142,7 @@ sub register
 
         # send new <zmdconfig>
 
-        my $zmdconfig = YEP::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs);
+        my $zmdconfig = YEP::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $usetestenv);
 
         $r->warn("Return ZMDCONFIG: $zmdconfig");
 
@@ -950,7 +957,7 @@ sub findCatalogs
         return $result;
     }
 
-    $statement .= " AND pc.OPTIONAL='N' c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID";
+    $statement .= " AND pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID";
     
     $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                    APR::Const::SUCCESS,"STATEMENT: $statement");
@@ -965,10 +972,11 @@ sub findCatalogs
 
 sub buildZmdConfig
 {
-    my $r         = shift;
-    my $guid      = shift;
-    my $catalogs  = shift;
-
+    my $r          = shift;
+    my $guid       = shift;
+    my $catalogs   = shift;
+    my $usetestenv = shift || 0;
+    
     my $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
     if(!defined $cfg)
     {
@@ -977,7 +985,11 @@ sub buildZmdConfig
     }
     
     my $LocalNUUrl = $cfg->val('REG', 'url');
-
+    if($usetestenv)
+    {
+        $LocalNUUrl .= "/testing/";
+    }
+    
     my $output = "";
     my $writer = new XML::Writer(OUTPUT => \$output);
 
