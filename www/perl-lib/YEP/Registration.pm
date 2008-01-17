@@ -931,17 +931,17 @@ sub findCatalogs
         }
     }
     
-    # get product catalogs
+    # get catalog values (only for the once we DOMIRROR)
 
-    $statement = "SELECT CATALOGID from ProductCatalogs WHERE OPTIONAL='N' AND PRODUCTDATAID ";
-    
+    $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc WHERE ";
+
     if(keys %{$pidhash} > 1)
     {
-        $statement .= "IN (".join(",", keys %{$pidhash}).")";
+        $statement .= "pc.PRODUCTDATAID IN (".join(",", keys %{$pidhash}).") ";
     }
     elsif(keys %{$pidhash} == 1)
     {
-        $statement .= "= '".join("", keys %{$pidhash})."'";
+        $statement .= "pc.PRODUCTDATAID = ".join("", keys %{$pidhash})." ";
     }
     else
     {
@@ -949,29 +949,8 @@ sub findCatalogs
         $r->log_error("No productids found");
         return $result;
     }
-    
-    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                   APR::Const::SUCCESS,"STATEMENT: $statement");
-    
-    my $catalogs = $dbh->selectcol_arrayref($statement);
 
-    # get catalog values (only for the once we DOMIRROR)
-
-    $statement = "SELECT CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, CATALOGTYPE from Catalogs WHERE CATALOGID ";
-
-    if(@{$catalogs} > 1)
-    {
-        $statement .= "IN ('".join("','", @{$catalogs})."')";
-    }
-    elsif(@{$catalogs} == 1)
-    {
-        $statement .= "= '".$catalogs->[0]."'";
-    }
-    else
-    {
-        $r->log_error("No catalogs for these products");
-        return $result;
-    }
+    $statement .= " AND pc.OPTIONAL='N' c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID";
     
     $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                    APR::Const::SUCCESS,"STATEMENT: $statement");
