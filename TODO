@@ -55,6 +55,9 @@ TODO:
 - test what happens if two processes what to write yep.db
   How can we solve concutrrent access with DBI?
 
+- call verify (yep-mirror.pl) after syncing a repo and restart syncing 
+  if verify failed (e.g. 3 times before stopping)
+
 DONE:
 =====
 
