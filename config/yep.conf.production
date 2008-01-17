@@ -5,8 +5,11 @@ NUPass=
 LocalBasePath=/srv/www/htdocs
 
 [DB]
-config=dbi:SQLite:dbname=/var/lib/YaST2/yep.db
+config=dbi:SQLite:dbname=/var/lib/YEP/db/yep.db
 user=
 pass=
 
+[REG]
+# Default should be http://server.domain.top/
+url=
 

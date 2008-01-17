@@ -1,12 +1,12 @@
 NAME         = yep
-VERSION      = 0.0.1
+VERSION      = 0.0.2
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
 
 install_all: install install_conf install_db
 	@echo "==========================================================="
-	@echo "Append 'perl' to APACHE_MODULES an 'SSL' to APACHE_SERVER_FLAGS
+	@echo "Append 'perl' to APACHE_MODULES an 'SSL' to APACHE_SERVER_FLAGS"
 	@echo "in /etc/sysconfig/apache2 ."
 	@echo "Required packages:"
 	@echo "* apache2"
@@ -23,12 +23,15 @@ install_all: install install_conf install_db
 	@echo "* perl-URI"
 	@echo "* perl-TimeDate"
 	@echo " "
+	@echo "chown wwwrun.www /var/lib/YEP/db/"
+	@echo "chown wwwrun.www $(DESTDIR)/var/lib/YEP/db/yep.db"
+	@echo " "
 	@echo "Finaly start the web server with 'rcapache2 start'"
 	@echo "==========================================================="
 
 install_db:
-	mkdir -p $(DESTDIR)/var/lib/YaST2/
-	cd db; sqlite3 -init setupdb.init $(DESTDIR)/var/lib/YaST2/yep.db '.exit'; cd -
+	mkdir -p $(DESTDIR)/var/lib/YEP/db/
+	cd db; sqlite3 -init setupdb.init $(DESTDIR)/var/lib/YEP/db/yep.db '.exit'; cd -
 
 install_conf:
 	mkdir -p $(DESTDIR)/etc/
@@ -42,7 +45,7 @@ install:
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/YEP
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
-	cp apache2/mod_perl-startup.pl $(DESTDIR)/etc/apache2/
+	cp apache2/yep-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
 	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
 	cp script/yep-mirror.pl $(DESTDIR)/usr/bin/
@@ -50,8 +53,8 @@ install:
 	chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
 	chmod 0755 $(DESTDIR)/usr/bin/yepdb
 	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
+	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)/srv/www/perl-lib/YEP/
 	cp www/perl-lib/YEP/Utils.pm $(DESTDIR)$(PERLMODDIR)/YEP/
-	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)$(PERLMODDIR)/YEP/
 	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
 
 
