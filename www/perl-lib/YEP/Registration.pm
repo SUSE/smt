@@ -30,7 +30,7 @@ sub handler {
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
     }
-    $r->warn("Registration called with args: ".Data::Dumper->Dump([$hargs]));
+    $r->warn("Registration called with command: ".$hargs->{command});
     
     if(exists $hargs->{command} && defined $hargs->{command})
     {
@@ -70,7 +70,7 @@ sub register
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn("register called: ".Data::Dumper->Dump([$r]).",".Data::Dumper->Dump([$hargs]));
+    $r->warn("register called.");
 
     my $data = YEP::Utils::read_post($r);
     my $dbh = YEP::Utils::db_connect();
@@ -90,7 +90,7 @@ sub register
 
     my $needinfo = YEP::Registration::parseFromProducts($r, $dbh, $data, "NEEDINFO");
 
-    $r->log_error("REGROOT:".Data::Dumper->Dump([$regroot]));
+    #$r->log_error("REGROOT:".Data::Dumper->Dump([$regroot]));
 
     my $dat = { NEWINFO => "", 
                 CACHE => [],
@@ -108,10 +108,12 @@ sub register
                                    });
     $parser->parse( $needinfo );
 
-    $r->log_error("INFOCOUNT: ".$dat->{INFOCOUNT});
+    #$r->log_error("INFOCOUNT: ".$dat->{INFOCOUNT});
 
     if($dat->{INFOCOUNT} > 0)
     {
+        $r->warn("Return NEEDINFO: $dat->{NEWINFO}");
+        
         # we need to send the <needinfo>
         print $dat->{NEWINFO};
     }
@@ -135,11 +137,12 @@ sub register
 
         my $zmdconfig = YEP::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs);
 
-        $r->log_error("ZMDCONFIG: $zmdconfig");
+        $r->warn("Return ZMDCONFIG: $zmdconfig");
 
         print $zmdconfig;
     }
-    
+    $dbh->disconnect();
+
     return;
 }
 
@@ -389,11 +392,11 @@ sub nif_handle_end_tag
     if(lc($element) eq "param" || lc($element) eq "select")
     {
         $data->{PARAMDEPTH} -= 1;
-        $data->{R}->log_error("CACHE: ".@{$data->{CACHE}});
+        #$data->{R}->log_error("CACHE: ".@{$data->{CACHE}});
         
         if($data->{CACHE}->[(@{$data->{CACHE}}-1)]->{SKIP})
         {
-            $data->{R}->log_error("SKIP CACHE element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
+            #$data->{R}->log_error("SKIP CACHE element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
             pop @{$data->{CACHE}};
             return;
         }
@@ -407,7 +410,7 @@ sub nif_handle_end_tag
         if(!$mustwrite)
         {
             # skip last 
-            $data->{R}->log_error("SKIP CACHE (No MUST) element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
+            #$data->{R}->log_error("SKIP CACHE (No MUST) element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
             pop @{$data->{CACHE}};
             return;
         }
@@ -416,7 +419,7 @@ sub nif_handle_end_tag
         {
             if(!$data->{CACHE}->[$i]->{WRITTEN})
             {
-                $data->{R}->log_error("Write CACHE START element:".$data->{CACHE}->[$i]->{START}."   SKIP:".$data->{CACHE}->[$i]->{SKIP});
+                #$data->{R}->log_error("Write CACHE START element:".$data->{CACHE}->[$i]->{START}."   SKIP:".$data->{CACHE}->[$i]->{SKIP});
                 $data->{NEWINFO} .= $data->{CACHE}->[$i]->{START};
                 $data->{CACHE}->[$i]->{WRITTEN} = 1;
                 $data->{CACHE}->[$i]->{MUST} = 1;
@@ -428,7 +431,7 @@ sub nif_handle_end_tag
         
         if($d->{WRITTEN})
         {
-            $data->{R}->log_error("Write CACHE END element:".$d->{END});
+            #$data->{R}->log_error("Write CACHE END element:".$d->{END});
             $data->{NEWINFO} .= $d->{END};
         }
         
@@ -455,14 +458,19 @@ sub listproducts
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn("listproducts called: ".Data::Dumper->Dump([$r]).",".Data::Dumper->Dump([$hargs]));
+    $r->warn("listproducts called.");
     
     my $dbh = YEP::Utils::db_connect();
+    if(!$dbh)
+    {
+        die "Cannot connect to database";
+    }
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
     $sth->execute();
 
-    my $writer = new XML::Writer(NEWLINES => 1);
+    my $output = "";
+    my $writer = new XML::Writer(NEWLINES => 1, OUTPUT => \$output);
     $writer->xmlDecl('UTF-8');
 
     $writer->startTag("productlist",
@@ -477,8 +485,12 @@ sub listproducts
     }
     $writer->endTag("productlist");
     
+    $r->warn("Return PRODUCTLIST: $output");
+
+    print $output;
+
     $dbh->disconnect();
-    
+
     return;
 }
 
@@ -491,16 +503,18 @@ sub listparams
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn("listparams called: ".Data::Dumper->Dump([$r]).",".Data::Dumper->Dump([$hargs]));
+    $r->warn("listparams called.");
     
     my $data = YEP::Utils::read_post($r);
     my $dbh = YEP::Utils::db_connect();
     
     my $xml = YEP::Registration::parseFromProducts($r, $dbh, $data, "PARAMLIST");
     
-    #$r->log_error("XML: $xml");
+    $r->warn("Return PARAMLIST: $xml");
 
     print $xml;
+
+    $dbh->disconnect();
 
     return;
 }
@@ -757,11 +771,13 @@ sub cleanOldRegistration
     if(!$dbh)
     {
         $r->log_error("Something is wrong with the database handle");
+        return;
     }
     
 
     my $statement = sprintf("DELETE from MachineData where GUID=%s", $dbh->quote($guid));
-    $r->log_error("STATEMENT: $statement");
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS, "STATEMENT: $statement");
     eval {
         $dbh->do($statement);
     };
@@ -772,7 +788,8 @@ sub cleanOldRegistration
     
 
     $statement = sprintf("DELETE from Registration where GUID=%s", $dbh->quote($guid));
-    $r->log_error("STATEMENT: $statement");
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS,"STATEMENT: $statement");
     $dbh->do($statement);
 
     return;
@@ -826,7 +843,8 @@ sub insertRegistration
                 $statement .= "= ".$dbh->quote(lc($phash->{release}));
             }
                         
-            #$r->log_error("STATEMENT: $statement");
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS, "STATEMENT: $statement");
             
             my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
             
@@ -858,7 +876,8 @@ sub insertRegistration
     {
         my $statement = sprintf("INSERT into Registration (GUID, PRODUCTID) VALUES (%s, %s)", 
                                 $dbh->quote($regdata->{register}->{guid}), $pnum);
-        $r->log_error("STATEMENT: $statement");
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"STATEMENT: $statement");
         $dbh->do($statement);
     }
     
@@ -870,7 +889,8 @@ sub insertRegistration
                                 $dbh->quote($regdata->{register}->{guid}), 
                                 $dbh->quote($key),
                                 $dbh->quote($regdata->{register}->{$key}));
-        $r->log_error("STATEMENT: $statement");
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"STATEMENT: $statement");
         $dbh->do($statement);
     }
     return;
@@ -887,7 +907,8 @@ sub findCatalogs
     # get productid for this guid
 
     my $statement = sprintf("SELECT PRODUCTID from Registration WHERE GUID=%s", $dbh->quote($guid));
-    $r->log_error("STATEMENT: $statement");
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS,"STATEMENT: $statement");
     
     my $productids = $dbh->selectcol_arrayref($statement);
     
@@ -900,7 +921,8 @@ sub findCatalogs
         $pidhash->{$parent} = 1;
         
         $statement = "SELECT CHILD_PRODUCT_ID from ProductDependencies WHERE PARENT_PRODUCT_ID=$parent";
-        $r->log_error("STATEMENT: $statement");
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"STATEMENT: $statement");
 
         my $childs = $dbh->selectcol_arrayref($statement);
         foreach my $child (@{$childs})
@@ -928,7 +950,8 @@ sub findCatalogs
         return $result;
     }
     
-    $r->log_error("STATEMENT: $statement");
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS,"STATEMENT: $statement");
     
     my $catalogs = $dbh->selectcol_arrayref($statement);
 
@@ -950,11 +973,13 @@ sub findCatalogs
         return $result;
     }
     
-    $r->log_error("STATEMENT: $statement");
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS,"STATEMENT: $statement");
 
     $result = $dbh->selectall_hashref($statement, "CATALOGID");
 
-    $r->log_error("RESULT: ".Data::Dumper->Dump([$result]));
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS, "RESULT: ".Data::Dumper->Dump([$result]));
 
     return $result;
 }
