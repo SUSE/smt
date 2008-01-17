@@ -14,14 +14,34 @@ TODO:
 
 - client tool for setting/initializing the "Mirrorable" flag
   in the Catalogs table:
+       Comment: initialize database itself 
   * update Catalogs SET Mirrorable='N'
+       Comment: set Mirrorable='N' everywhere (part of basic initialization)
   * download repo/repoindex.xml, parse it and set the
     available catalogs to 'Y' again.
+       Comment: download "repo/repoindex.xml" and for all available catalogs in there
+                set the Mirrorable flag to 'Y'
   * try to access repomd.xml of all YUM catalogs and set
     the "Mirroable" flags to 'Y' again
+       Comment: download "repomd.xml" and for all available catalogs in there
+                set the Mirrorable flag to 'Y'
+       All three jobs should be run by:  yep initialize
 
 - client tool to view all mirrorable catalogs and change the
   "DoMirror" Flag on demand.
+      Comment: should support "list all catalogs" for Mirrorable and All catalog
+                   yep list catalogs      (list Mirrorable)
+                   yep list -a catalogs   (list all)
+                   yep list products      (here we need the products list)
+               List required fields (at least id, name, version, arch) to easyly activate them like this:
+                   yep activate <catalog_id>
+                   yep activate <catalog_name>
+                   yep activate --product <product_name>    (resolves internally what catalogs this product has)
+                   yep activate --version <verision_name>   (does this make sense?)
+                   yep activate --arch <arch_name>          (does this make sense?)
+               Only Mirroable catalogs can be activated!
+
+
 
 - client tool to view :
   * the registrations
