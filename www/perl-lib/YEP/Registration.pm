@@ -15,7 +15,6 @@ use Data::Dumper;
 use DBI;
 use XML::Writer;
 use XML::Parser;
-use XML::Bare;
 
 sub handler {
     my $r = shift;
@@ -594,11 +593,14 @@ sub parseFromProducts
 
     if(uc($column) eq "PARAMLIST")
     {
-        return YEP::Registration::joinParamlist($r, \@list);
+        #return YEP::Registration::joinParamlist($r, \@list);
+        return YEP::Registration::mergeDocuments($r, \@list);
+        
     }
     elsif(uc($column) eq "NEEDINFO")
     {
-        return YEP::Registration::joinNeedinfolist($r, \@list);
+        #return YEP::Registration::joinNeedinfolist($r, \@list);
+        return YEP::Registration::mergeDocuments($r, \@list);
     }
     
     return "";
@@ -642,153 +644,108 @@ sub handle_end_tag
 }
 
 
-sub joinParamlist
+sub writeXML
 {
-    my $r         = shift;
-    my $paramlist = shift;
+    my $node = shift;
+    my $writer = shift;
+
+    my $element = ref($node);
+    $element =~ s/^yep:://;
     
-    if(@$paramlist == 1)
+    return if($element eq "Characters");
+
+    my %attr = %{$node};
+    delete $attr{Kids};
+    
+    $writer->startTag($element, %attr);
+    
+    foreach my $child (@{$node->{Kids}})
     {
-        return $paramlist->[0];
+        writeXML($child, $writer);
     }
     
-    my $basedoc = shift @$paramlist;
+    $writer->endTag($element);
+}
+
+
+sub mergeXML
+{
+    my $node1 = shift;
+    my $node2 = shift;
     
-    my $parser = new XML::Bare( text => $basedoc );
-    my $root   = $parser->parse( );
-
-    foreach my $other (@$paramlist)
+    foreach my $child2 (@{$node2->{Kids}})
     {
-        my $po = new XML::Bare( text => $other );
-        my $do = $po->parse( );
+        my $found = 0;
         
-        foreach my $node (keys %{$do->{paramlist}})
+        foreach my $child1 (@{$node1->{Kids}})
         {
-            if($node ne "param" && exists $root->{paramlist}->{$node})
-            {
-                next;
-            }
-            elsif($node ne "param" && !exists $root->{paramlist}->{$node})
-            {
-                # FIXME: is not save to do it this way
-                $root->{paramlist}->{$node} = $do->{paramlist}->{$node};
-                next;
-            }
-            # now we have the param node
             
-            foreach my $par (@{$do->{paramlist}->{param}})
+            if(ref($child2) eq ref($child1))
             {
-                if(!$parser->find_node($root->{paramlist}, "param", id => $par->{id}->{value}))
+                if(ref($child2) eq "yep::param")
                 {
-                    #$r->log_error("PARAMNODE: id $par->{id}->{value} does not exist. Add it");
-
-                    if(!exists $root->{paramlist}->{param})
+                    # we have to match the id
+                    if($child2->{id} eq $child1->{id})
                     {
-                        $root->{list}->{paramparam} = $par
+                        $found = 1;
+                        merge($child1, $child2);
                     }
-                    elsif(exists $root->{paramlist}->{param} && ref($root->{paramlist}->{param}) eq "HASH")
-                    {
-                        my $d = $root->{paramlist}->{param};
-                        $root->{paramlist}->{param} = [$d];
-                        push @{$root->{paramlist}->{param}}, $par;
-                    }
-                    elsif(exists $root->{paramlist}->{param} && ref($root->{paramlist}->{param}) eq "ARRAY")
-                    {
-                        # FIXME: is not save to do it this way
-                        push @{$root->{paramlist}->{param}}, $par;
-                    }
+                }
+                else
+                {
+                    $found = 1;
+                    merge($child1, $child2);
                 }
             }
         }
+        if(!$found)
+        {
+            # found something new in child2 - put it in child 1
+            push @{$node1->{Kids}}, $child2;
+        }
     }
-    return $parser->xml( $root );
 }
 
-sub joinNeedinfolist
+sub mergeDocuments
 {
-    my $r         = shift;
+    my $r    = shift;
     my $list = shift;
     
     if(@$list == 1)
     {
         return $list->[0];
     }
-    
+
     my $basedoc = shift @$list;
+    my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
+    my $root1 = $p1->parse( $basedoc );
+    my $node1;
     
-    my $parser = new XML::Bare( text => $basedoc );
-    my $root   = $parser->parse( );
 
     foreach my $other (@$list)
     {
-        my $po = new XML::Bare( text => $other );
-        my $do = $po->parse( );
+        next if($basedoc eq $other);
         
-        foreach my $node (keys %{$do->{list}})
+        my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
+        my $root2 = $p2->parse( $other );
+        my $node2;
+        
+        if(ref($root1->[0]) eq ref($root2->[0]))
         {
-            if($node ne "param" && $node ne "select" && exists $root->{list}->{$node})
-            {
-                next;
-            }
-            elsif($node ne "param" && $node ne "select" && !exists $root->{list}->{$node})
-            {
-                # FIXME: is not save to do it this way
-                $root->{list}->{$node} = $do->{list}->{$node};
-                next;
-            }
-            # now we have the param/select node
-            
-            foreach my $par (@{$do->{list}->{param}})
-            {
-                my $pnode = $parser->find_node($root->{list}, "param", id => $par->{id}->{value});
-                if(!$pnode)
-                {
-                    #$r->log_error("PARAMNODE: id $par->{id}->{value} does not exist. Add it");
+            $node1 = $root1->[0];
+            $node2 = $root2->[0];
 
-                    if(!exists $root->{list}->{param})
-                    {
-                        $root->{list}->{param} = $par
-                    }
-                    elsif(exists $root->{list}->{param} && ref($root->{list}->{param}) eq "HASH")
-                    {
-                        my $d = $root->{list}->{param};
-                        $root->{list}->{param} = [$d];
-                        push @{$root->{list}->{param}}, $par;
-                    }
-                    elsif(exists $root->{list}->{param} && ref($root->{list}->{param}) eq "ARRAY")
-                    {
-                        # FIXME: is not save to do it this way
-                        push @{$root->{list}->{param}}, $par;
-                    }
-                }
-                elsif($pnode && exists $pnode->{param})
-                {
-                    my $pnode2 = $parser->find_node($root->{list}->{param}, "param", id => $par->{param}->{id}->{value});
-                    if(!$pnode2)
-                    {
-                        #$r->log_error("PARAMNODE: id $par->{id}->{value} does not exist. Add it");
-                        
-                        if(!exists $root->{list}->{param}->{param})
-                        {
-                            $root->{list}->{param}->{param} = $par->{param};
-                        }
-                        elsif(exists $root->{list}->{param}->{param} && ref($root->{list}->{param}->{param}) eq "HASH")
-                        {
-                            my $d = $root->{list}->{param}->{param};
-                            $root->{list}->{param}->{param} = [$d];
-                            push @{$root->{list}->{param}->{param}}, $par->{param};
-                        }
-                        elsif(exists $root->{list}->{param}->{param} && ref($root->{list}->{param}->{param}) eq "ARRAY")
-                        {
-                            # FIXME: is not save to do it this way
-                            push @{$root->{list}->{param}->{param}}, $par->{param};
-                        }
-                    }
-                }
-            }
+            merge($node1, $node2);
         }
     }
-    return $parser->xml( $root );
+    
+    my $output = "";
+    my $w = XML::Writer->new(NEWLINES => 0, OUTPUT => \$output);
+    $w->xmlDecl("UTF-8");
+    
+    writeXML($node1, $w);
+
+    return $output;
 }
 
 sub cleanOldRegistration
