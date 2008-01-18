@@ -306,6 +306,8 @@ sub nif_handle_start_tag
     }
     elsif(lc($element) eq "param")
     {
+        my $resetmandhere = 0;
+        
         $data->{PARAMDEPTH} += 1;
 
         if($#{$data->{CACHE}} >= 0)
@@ -317,23 +319,17 @@ sub nif_handle_start_tag
         if(exists $attrs{class} && defined $attrs{class} && lc($attrs{class}) eq "mandatory")
         {
             $data->{PARAMISMAND} = 1;
+            $resetmandhere = 1;
         }
         
         if(exists $attrs{id} && defined $attrs{id})
         {
-            #my $pnode = $data->{PARSER}->find_node($data->{REGISTER}->{register}, "param", id => $attrs{id});
-            #if($pnode)
-            #{
-            #    # skip this, it is already there
-            #}
-
             if(exists $data->{REGISTER}->{register}->{$attrs{id}})
             {
                 # skip this, it is already there
             }
             elsif(exists $attrs{command} && defined $attrs{command})
             {
-                
                 if($data->{REGISTER}->{ACCEPTOPT} || (!$data->{REGISTER}->{ACCEPTOPT} && $data->{PARAMISMAND}))
                 {
                     # we do not have a value for this command
@@ -346,7 +342,8 @@ sub nif_handle_start_tag
                                               MUST    => 1,
                                               START   =>  writeElement(lc($element), 0, %attrs),
                                               WRITTEN => 0,
-                                              END     => '</'.lc($element).">"
+                                              END     => '</'.lc($element).">",
+                                              RESETMAND => $resetmandhere
                                             };
                     $data->{WRITECACHE} = 1;
                     $data->{INFOCOUNT} += 1;
@@ -361,7 +358,8 @@ sub nif_handle_start_tag
                                           MUST    => 0,
                                           START => writeElement(lc($element), 0, %attrs),
                                           WRITTEN => 0,
-                                          END     => '</'.lc($element).">"
+                                          END     => '</'.lc($element).">",
+                                          RESETMAND => $resetmandhere
                                         };
                 return;
             }
@@ -370,22 +368,27 @@ sub nif_handle_start_tag
                                   MUST    => 0,
                                   START => writeElement(lc($element), 0, %attrs),
                                   WRITTEN => 0,
-                                  END     => '</'.lc($element).">"
+                                  END     => '</'.lc($element).">",
+                                  RESETMAND => $resetmandhere
                                 };
     }
     elsif(lc($element) eq "select")
     {
+        my $resetmandhere = 0;
+        
         $data->{PARAMDEPTH} += 1;
         
         if(exists $attrs{class} && defined $attrs{class} && lc($attrs{class}) eq "mandatory")
         {
             $data->{PARAMISMAND} = 1;
+            $resetmandhere = 1;
         }
         push @{$data->{CACHE}}, { SKIP    => 0, 
                                   MUST    => 0,
                                   START => writeElement(lc($element), 0, %attrs),
                                   WRITTEN => 0,
-                                  END     => '</'.lc($element).">"
+                                  END     => '</'.lc($element).">",
+                                  RESETMAND => $resetmandhere
                                 };
     }
     
@@ -399,12 +402,16 @@ sub nif_handle_end_tag
     if(lc($element) eq "param" || lc($element) eq "select")
     {
         $data->{PARAMDEPTH} -= 1;
-        #$data->{R}->log_error("CACHE: ".@{$data->{CACHE}});
         
         if($data->{CACHE}->[(@{$data->{CACHE}}-1)]->{SKIP})
         {
-            #$data->{R}->log_error("SKIP CACHE element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
-            pop @{$data->{CACHE}};
+            $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                                   APR::Const::SUCCESS, "SKIP CACHE element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
+            my $entry = pop @{$data->{CACHE}};
+            if($entry->{RESETMAND})
+            {
+                $data->{PARAMISMAND} = 0;
+            }
             return;
         }
 
@@ -417,8 +424,13 @@ sub nif_handle_end_tag
         if(!$mustwrite)
         {
             # skip last 
-            #$data->{R}->log_error("SKIP CACHE (No MUST) element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
-            pop @{$data->{CACHE}};
+            $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                                   APR::Const::SUCCESS, "SKIP CACHE (No MUST) element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
+            my $entry = pop @{$data->{CACHE}};
+            if($entry->{RESETMAND})
+            {
+                $data->{PARAMISMAND} = 0;
+            }
             return;
         }
         
@@ -426,7 +438,8 @@ sub nif_handle_end_tag
         {
             if(!$data->{CACHE}->[$i]->{WRITTEN})
             {
-                #$data->{R}->log_error("Write CACHE START element:".$data->{CACHE}->[$i]->{START}."   SKIP:".$data->{CACHE}->[$i]->{SKIP});
+                $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                                       APR::Const::SUCCESS, "Write CACHE START element:".$data->{CACHE}->[$i]->{START}."   SKIP:".$data->{CACHE}->[$i]->{SKIP});
                 $data->{NEWINFO} .= $data->{CACHE}->[$i]->{START};
                 $data->{CACHE}->[$i]->{WRITTEN} = 1;
                 $data->{CACHE}->[$i]->{MUST} = 1;
@@ -438,13 +451,17 @@ sub nif_handle_end_tag
         
         if($d->{WRITTEN})
         {
-            #$data->{R}->log_error("Write CACHE END element:".$d->{END});
+            $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                                   APR::Const::SUCCESS, "Write CACHE END element:".$d->{END});
             $data->{NEWINFO} .= $d->{END};
+        }
+        if($d->{RESETMAND})
+        {
+            $data->{PARAMISMAND} = 0;
         }
         
         if($data->{PARAMDEPTH} <= 0)
         {
-            $data->{PARAMISMAND} = 0;
             $data->{PARAMDEPTH}  = 0;
             $data->{CACHE} = [];
         }
