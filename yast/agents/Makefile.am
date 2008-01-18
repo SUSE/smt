@@ -2,6 +2,6 @@
 
 agent_SCRIPTS =
 
-scrconf_DATA = yep_conf.scr
+scrconf_DATA = $(wildcard *.scr)
 
 EXTRA_DIST = $(agent_SCRIPTS) $(scrconf_DATA)

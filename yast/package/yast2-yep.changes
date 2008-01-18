@@ -1,9 +1,14 @@
 -------------------------------------------------------------------
+Fri Jan 18 17:50:52 CET 2008 - locilka@suse.cz
+
+- Added new agent for reading /etc/cron.d/yast2-yep (YEP cron 
+  entries).
+
+-------------------------------------------------------------------
 Fri Jan 18 15:12:33 CET 2008 - locilka@suse.cz
 
 - Added help text
 - Changed SCR agent to support sections (NU, DB, ...)
-- 2.13.1
 
 -------------------------------------------------------------------
 Wed Jan 16 11:03:29 CET 2008 - locilka@suse.cz

@@ -1,7 +1,7 @@
 /**
  * File:	include/yep/complex.ycp
  * Package:	Configuration of yep
- * Summary:	
+ * Summary:	Complex functions
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
  * $Id: complex.ycp 27914 2006-02-13 14:32:08Z locilka $

@@ -1,0 +1,42 @@
+/**
+ * File:
+ *   yep_cron.scr
+ * Summary:
+ *   SCR Agent for reading/writing /etc/cron.d/yast2-yep
+ *   using the any-agent
+ * Access:
+ *   read/write
+ * Authors:
+ *   Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id:$
+ *
+ * Read/Sets the values defined in /etc/cron.d/yast2-yep
+ */
+.yep_cron
+
+`ag_anyagent (
+    `Description (
+	(`File ("/etc/cron.d/yast2-yep")),	// read this file
+	"#\n",					// comments
+	true,					// read/write
+	(`List (
+	    `Tuple (
+		`minute (`String ("^ \t")),
+		`Whitespace(),
+		`hour (`String ("^ \t")),
+		`Whitespace(),
+		`day_of_month (`String ("^ \t")),
+		`Whitespace(),
+		`month (`String ("^ \t")),
+		`Whitespace(),
+		`day_of_week (`String ("^ \t")),
+		`Whitespace(),
+		`user (`String ("^ \t")),
+		`Whitespace(),
+		`command (`String ("^\n"))
+	    ),
+	    "\n"
+	))
+    )
+)

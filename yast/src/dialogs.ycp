@@ -69,14 +69,18 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Initializing YEP Configuration"),
 	    " ",
-	    1,
+	    2,
 	    [
 		// TRANSLATORS: Progress step
 		_("Read YEP configuration"),
+		// TRANSLATORS: Progress step
+		_("Read cron settings"),
 	    ],
 	    [
 		// TRANSLATORS: Progress step
 		_("Reading YEP configuration..."),
+		// TRANSLATORS: Progress step
+		_("Reading cron settings..."),
 		Message::Finished(),
 	    ],
 	    ""
@@ -88,6 +92,11 @@
 	sleep (sl);
 
 	YEPData::ReadCredentials();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	YEPData::ReadCronSettings();
 
 	Progress::NextStage();
 	sleep (sl);
