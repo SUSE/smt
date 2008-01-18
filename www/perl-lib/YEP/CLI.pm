@@ -8,7 +8,7 @@ use File::Temp;
 use YEP::Parser::NU;
 use YEP::Mirror::Job;
 
-use vars qw($cfg $dbh);
+use vars qw($cfg $dbh $nuri);
 
 #print "hello CLI2\n";
 
@@ -26,6 +26,25 @@ BEGIN
     {
         die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
     }
+
+    # TODO move the url assembling code out
+    my $NUUrl = $cfg->val("NU", "NUUrl");
+    if(!defined $NUUrl || $NUUrl eq "")
+    {
+      die "Cannot read NU Url";
+    }
+
+    my $nuUser = $cfg->val("NU", "NUUser");
+    my $nuPass = $cfg->val("NU", "NUPass");
+    
+    if(!defined $nuUser || $nuUser eq "" ||
+      !defined $nuPass || $nuPass eq "")
+    {
+        die "Cannot read the Mirror Credentials";
+    }
+
+    $nuri = URI->new($NUUrl);
+    $nuri->userinfo("$nuUser:$nuPass");
 }
 
 sub listProducts()
@@ -71,37 +90,18 @@ sub listRegistrations()
 
 sub resetCatalogsStatus()
 {
-  my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE 1});
+  my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
   $sth->execute();
 }
 
 sub setMirrorableCatalogs()
 {
-    # TODO move the url assembling code out
-    my $NUUrl = $cfg->val("NU", "NUUrl");
-    if(!defined $NUUrl || $NUUrl eq "")
-    {
-      die "Cannot read NU Url";
-    }
-
-    my $nuUser = $cfg->val("NU", "NUUser");
-    my $nuPass = $cfg->val("NU", "NUPass");
-    
-    if(!defined $nuUser || $nuUser eq "" ||
-      !defined $nuPass || $nuPass eq "")
-    {
-        die "Cannot read the Mirror Credentials";
-    }
-
-    my $uri = URI->new($NUUrl);
-    $uri->userinfo("$nuUser:$nuPass");
-
     # create a tmpdir to store repoindex.xml
     my $tempdir = File::Temp::tempdir(CLEANUP => 1);
 
     # get the file
     my $job = YEP::Mirror::Job->new();
-    $job->uri($uri);
+    $job->uri($nuri);
     $job->localdir($tempdir);
     $job->resource("/repo/repoindex.xml");
     
@@ -110,9 +110,35 @@ sub setMirrorableCatalogs()
     my $parser = YEP::Parser::NU->new();
     $parser->parse($job->local(), sub {
                                       my $repodata = shift;
-                                      print $repodata->{NAME} . " from " . $job->{URI} ."\n";
+                                      print "* set [" . $repodata->{NAME} . "] [" . $repodata->{DISTRO_TARGET} . "] as mirrorable.\n";
+                                      my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                                   }
     );
+
+    my $sth = $dbh->prepare(qq{select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='yum'});
+    $sth->execute();
+    while (my @values = $sth->fetchrow_array())
+    { 
+        my $catName = $values[1];
+        my $catLocal = $values[2];
+        my $catUrl = $values[3];
+        my $catTarget = $values[4];
+        if( $catUrl ne "" && $catLocal ne "" )
+        {
+            my $tempdir = File::Temp::tempdir(CLEANUP => 1);
+            my $job = YEP::Mirror::Job->new();
+            $job->uri($catUrl);
+            $job->localdir($tempdir);
+            $job->resource("/repodata/repomd.xml");
+          
+            # if no error
+            my $ret = $job->mirror();
+            
+            print "* set [" . $catName . "] as " . ( ($ret == 0) ? '' : ' not ' ) . " mirrorable.\n";
+            my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND TARGET=%s", ( ($ret == 0) ? 'Y' : 'N' ), $dbh->quote($catName), $dbh->quote($catTarget) ) );
+        }
+    }
+
 }
 
 1;
