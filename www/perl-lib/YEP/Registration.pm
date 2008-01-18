@@ -99,14 +99,18 @@ sub register
 
     #$r->log_error("REGROOT:".Data::Dumper->Dump([$regroot]));
 
-    my $dat = { NEWINFO => "", 
-                CACHE => [],
+    my $output = "";
+    my $writer = XML::Writer->new(NEWLINES => 0, OUTPUT => \$output);
+    $writer->xmlDecl("UTF-8");
+    
+    my $dat = { CACHE => [],
                 WRITECACHE => 0,
                 INFOCOUNT => 0, 
                 REGISTER => $regroot,
                 PARAMDEPTH => 0,
                 PARAMISMAND => 0,
-                R => $r
+                R => $r,
+                WRITER => $writer
                };
     
     my $parser = XML::Parser->new( Handlers =>
@@ -119,10 +123,10 @@ sub register
 
     if($dat->{INFOCOUNT} > 0)
     {
-        $r->warn("Return NEEDINFO: $dat->{NEWINFO}");
+        $r->warn("Return NEEDINFO: $output");
         
         # we need to send the <needinfo>
-        print $dat->{NEWINFO};
+        print $output;
     }
     else
     {
@@ -239,31 +243,6 @@ sub reg_handle_end_tag
     }
 }
 
-
-sub writeElement
-{
-    my $element = shift;
-    my $empty   = shift;
-    my %attr  = @_;
-    my $txt     = "";
-    
-    $txt .= "<$element ";
-    foreach (keys %attr)
-    {
-        $txt .= "$_='$attr{$_}' ";
-    }
-    if($empty)
-    {
-        $txt .= "/>";
-    }
-    else
-    {
-        $txt .= ">";
-    }
-    return $txt;
-}
-
-
 sub nif_handle_start_tag
 {
     my $data = shift;
@@ -271,13 +250,13 @@ sub nif_handle_start_tag
     
     if(lc($element) eq "needinfo")
     {
-        $data->{NEWINFO} .= writeElement(lc($element), 0, %attrs);
+        $data->{WRITER}->startTag(lc($element), %attrs);
     }
     elsif(lc($element) eq "guid")
     {
         if(!exists $data->{REGISTER}->{register}->{lc($element)})
         {
-            $data->{NEWINFO} .= writeElement(lc($element), 1, %attrs);
+            $data->{WRITER}->emptyTag(lc($element), %attrs);
             $data->{INFOCOUNT} += 1;
         }           
     }
@@ -285,7 +264,7 @@ sub nif_handle_start_tag
     {
         if(!exists $data->{REGISTER}->{register}->{lc($element)})
         {
-            $data->{NEWINFO} .= writeElement(lc($element), 1, %attrs);
+            $data->{WRITER}->emptyTag(lc($element), %attrs);
             $data->{INFOCOUNT} += 1;
         }              
     }
@@ -293,7 +272,7 @@ sub nif_handle_start_tag
     {
         if(!exists $data->{REGISTER}->{register}->{lc($element)})
         {
-            $data->{NEWINFO} .= writeElement(lc($element), 1, %attrs);
+            $data->{WRITER}->emptyTag(lc($element), %attrs);
             $data->{INFOCOUNT} += 1;
         }
     }
@@ -301,7 +280,7 @@ sub nif_handle_start_tag
     {
         if(!exists $data->{REGISTER}->{register}->{lc($element)})
         {
-            $data->{NEWINFO} .= writeElement(lc($element), 1, %attrs);
+            $data->{WRITER}->emptyTag(lc($element), %attrs);
         }
     }
     elsif(lc($element) eq "param")
@@ -338,11 +317,11 @@ sub nif_handle_start_tag
                     # if the param is mandatory
 
        
-                    push @{$data->{CACHE}}, { SKIP    => 0, 
-                                              MUST    => 1,
-                                              START   =>  writeElement(lc($element), 0, %attrs),
-                                              WRITTEN => 0,
-                                              END     => '</'.lc($element).">",
+                    push @{$data->{CACHE}}, { SKIP      => 0, 
+                                              MUST      => 1,
+                                              ELEMENT   => lc($element),
+                                              ATTRS     => \%attrs,
+                                              WRITTEN   => 0,
                                               RESETMAND => $resetmandhere
                                             };
                     $data->{WRITECACHE} = 1;
@@ -354,21 +333,21 @@ sub nif_handle_start_tag
             {
                 # Hmmm, maybe we need this later. We need to switch SKIP to 0 if the next
                 # element is a start element
-                push @{$data->{CACHE}}, { SKIP    => 1,
-                                          MUST    => 0,
-                                          START => writeElement(lc($element), 0, %attrs),
-                                          WRITTEN => 0,
-                                          END     => '</'.lc($element).">",
+                push @{$data->{CACHE}}, { SKIP      => 1,
+                                          MUST      => 0,
+                                          ELEMENT   => lc($element),
+                                          ATTRS     => \%attrs,
+                                          WRITTEN   => 0,
                                           RESETMAND => $resetmandhere
                                         };
                 return;
             }
         }
-        push @{$data->{CACHE}}, { SKIP    => 1, 
-                                  MUST    => 0,
-                                  START => writeElement(lc($element), 0, %attrs),
-                                  WRITTEN => 0,
-                                  END     => '</'.lc($element).">",
+        push @{$data->{CACHE}}, { SKIP      => 1, 
+                                  MUST      => 0,
+                                  ELEMENT   => lc($element),
+                                  ATTRS     => \%attrs,
+                                  WRITTEN   => 0,
                                   RESETMAND => $resetmandhere
                                 };
     }
@@ -383,11 +362,11 @@ sub nif_handle_start_tag
             $data->{PARAMISMAND} = 1;
             $resetmandhere = 1;
         }
-        push @{$data->{CACHE}}, { SKIP    => 0, 
-                                  MUST    => 0,
-                                  START => writeElement(lc($element), 0, %attrs),
-                                  WRITTEN => 0,
-                                  END     => '</'.lc($element).">",
+        push @{$data->{CACHE}}, { SKIP      => 0, 
+                                  MUST      => 0,
+                                  ELEMENT   => lc($element),
+                                  ATTRS     => \%attrs,
+                                  WRITTEN   => 0,
                                   RESETMAND => $resetmandhere
                                 };
     }
@@ -405,8 +384,13 @@ sub nif_handle_end_tag
         
         if($data->{CACHE}->[(@{$data->{CACHE}}-1)]->{SKIP})
         {
+            my $msg = "SKIP CACHE element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ELEMENT};
+            if(exists $data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id})
+            {
+                $msg .= " id=".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id}
+            }
             $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                   APR::Const::SUCCESS, "SKIP CACHE element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
+                                   APR::Const::SUCCESS, $msg);
             my $entry = pop @{$data->{CACHE}};
             if($entry->{RESETMAND})
             {
@@ -424,8 +408,13 @@ sub nif_handle_end_tag
         if(!$mustwrite)
         {
             # skip last 
+            my $msg = "SKIP CACHE (No MUST) element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ELEMENT};
+            if(exists $data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id})
+            {
+                $msg .= " id=".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id}
+            }
             $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                   APR::Const::SUCCESS, "SKIP CACHE (No MUST) element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{START});
+                                   APR::Const::SUCCESS, $msg);
             my $entry = pop @{$data->{CACHE}};
             if($entry->{RESETMAND})
             {
@@ -438,9 +427,15 @@ sub nif_handle_end_tag
         {
             if(!$data->{CACHE}->[$i]->{WRITTEN})
             {
+                my $msg = "Write CACHE START element:".$data->{CACHE}->[$i]->{ELEMENT};
+                if(exists $data->{CACHE}->[$i]->{ATTRS}->{id})
+                {
+                    $msg .= " id=".$data->{CACHE}->[$i]->{ATTRS}->{id}
+                }
+                                
                 $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                       APR::Const::SUCCESS, "Write CACHE START element:".$data->{CACHE}->[$i]->{START}."   SKIP:".$data->{CACHE}->[$i]->{SKIP});
-                $data->{NEWINFO} .= $data->{CACHE}->[$i]->{START};
+                                       APR::Const::SUCCESS, $msg);
+                $data->{WRITER}->startTag($data->{CACHE}->[$i]->{ELEMENT}, %{$data->{CACHE}->[$i]->{ATTRS}});
                 $data->{CACHE}->[$i]->{WRITTEN} = 1;
                 $data->{CACHE}->[$i]->{MUST} = 1;
             }
@@ -452,8 +447,8 @@ sub nif_handle_end_tag
         if($d->{WRITTEN})
         {
             $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                   APR::Const::SUCCESS, "Write CACHE END element:".$d->{END});
-            $data->{NEWINFO} .= $d->{END};
+                                   APR::Const::SUCCESS, "Write CACHE END element:".$d->{ELEMENT});
+            $data->{WRITER}->endTag($d->{ELEMENT});
         }
         if($d->{RESETMAND})
         {
@@ -469,7 +464,7 @@ sub nif_handle_end_tag
     }
     elsif(lc($element) eq "needinfo")
     {
-        $data->{NEWINFO} .= "</$element>";
+        $data->{WRITER}->endTag(lc($element));
     }
 }
 
