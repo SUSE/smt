@@ -8,14 +8,11 @@
  *   read/write
  * Authors:
  *   Lukas Ocilka <locilka@suse.cz>
- * See:
- *   yast2-agent-ini/ini.html
- *   libscr
+ *
  * Example:
- *   Read(.yep_conf.NUUser)
+ *   Read (.yep_conf.value.NU.NUUser)
  *   ("john_the_fish")
- **
- *   Write(.yep_conf.NUUser, "Howard")
+ *   Write (.yep_conf.value.NU.NUUser, "Howard")
  *   (true)
  *
  * $Id: $
@@ -25,5 +22,21 @@
 .yep_conf
 
 `ag_ini(
-  `SysConfigFile("/etc/yep.conf")
+  `IniAgent(
+    "/etc/yep.conf",
+    $[
+      "comments": [ "^[ \t]*#.*", "#.*", "^[ \t]*$" ],
+      "sections" : [
+        $[
+        "begin" : [ "^[ \t]*\\[[ \t]*(.*[^ \t])[ \t]*\\][ \t]*", "[%s]" ],
+        ],
+      ],
+      "params" : [
+        $[
+        "match" : [ "^[ \t]*([^=]*[^ \t=])[ \t]*=[ \t]*(.*[^ \t]|)[ \t]*$",
+                    "%s = %s"],
+        ],
+      ],
+    ]
+  )
 )

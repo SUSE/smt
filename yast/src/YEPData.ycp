@@ -25,7 +25,7 @@
      */
     global boolean ReadCredentials () {
 	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
-	    NU_credentials[one_entry] = (string) SCR::Read (add (.yep_conf, one_entry));
+	    NU_credentials[one_entry] = (string) SCR::Read (add (.yep_conf.value.NU, one_entry));
 	});
 
 	return true;
@@ -40,7 +40,7 @@
 	boolean failed = false;
 
 	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
-	    if (! (boolean) SCR::Write (add (.yep_conf, one_entry), NU_credentials[one_entry]:"")) {
+	    if (! (boolean) SCR::Write (add (.yep_conf.value.NU, one_entry), NU_credentials[one_entry]:"")) {
 		y2error ("Cannot write to yep.conf:%1", one_entry);
 		failed = true;
 	    }

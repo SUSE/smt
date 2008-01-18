@@ -30,18 +30,18 @@
 		    `VStretch(),
 		    `Left (`HSquash (`MinWidth (
 			45,
-			`TextEntry (`id ("NUUrl"), _("NU URL"), YEPData::GetCredentials("NUUrl"))
+			`TextEntry (`id ("NUUrl"), _("NU UR&L"))
 		    ))),
 		    `Left (`HSquash (`MinWidth (
 			20,
-			`TextEntry (`id ("NUUser"), _("NU User"), YEPData::GetCredentials("NUUser"))
+			`TextEntry (`id ("NUUser"), _("NU &User"))
 		    ))),
 		    `Left (`HSquash (`MinWidth (
 			20,
-			`Password (`id ("NUPass"), _("NU Password"), YEPData::GetCredentials("NUPass"))
+			`Password (`id ("NUPass"), _("NU &Password"))
 		    ))),
 		    `VSpacing (1),
-		    `PushButton (`id ("test_NU_credentials"), _("Test...")),
+		    `PushButton (`id ("test_NU_credentials"), `opt(`key_F6), _("&Test...")),
 		    `VStretch()
 		)),
 		`HStretch()
@@ -140,7 +140,11 @@
     }
 
     void InitCredentialsDialog (string id) {
-	return nil;
+	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
+	    string value = YEPData::GetCredentials (one_entry);
+	    if (value == nil) value = "";
+	    UI::ChangeWidget (`id (one_entry), `Value, value);
+	});
     }
 
     void StoreCredentialsDialog (string id, map event) {
@@ -154,7 +158,7 @@
 	    // TRANSLATORS: LogView label
 	    `LogView (`id ("test_log"), _("&Test Details"), 5, 100),
 	    `VSpacing (1),
-	    `PushButton (`id (`ok), Label::OKButton())
+	    `PushButton (`id (`ok), `opt (`default), Label::OKButton())
 	)));
 
 	// complex.ycp

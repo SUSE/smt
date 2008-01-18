@@ -10,8 +10,13 @@
 {
     textdomain "yep";
 
-    // FIXME: no helps are defined so far
     map <string, string> HELPS = $[
-	"credentials" : _("<p>FIXME: ...</p>"),
+	"credentials" :
+	    // TRANSLATORS: help 1/x
+	    _("<p>Here enter the NU credentials.</p>") +
+	    // TRANSLATORS: help 2/x
+	    _("<p><b>URL</b> is used to download the list of repositories and their content.</p>") +
+	    // TRANSLATORS: help 3/x
+	    _("<p><b>User</b> and <b>Password</b> is used for the URL when authentication is required there.</p>"),
     ];
 }
