@@ -23,7 +23,7 @@ my $help     = 0;
 
 my $result = GetOptions ("debug|d"     => \$debug,
                          "cleanup|c"   => \$clean,
-			 "directory=s" => \$LocalBasePath,
+                         "directory=s" => \$LocalBasePath,
                          "help|h"      => \$help
                         );
 
@@ -65,7 +65,7 @@ if(!defined $NUUrl || $NUUrl eq "")
 
 if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
 {
-    $LocalBasePath = $cfg->val("NU", "LocalBasePath");
+    $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
     if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     {
         die "Cannot read the local base path";

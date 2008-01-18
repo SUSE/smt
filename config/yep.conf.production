@@ -2,14 +2,14 @@
 NUUrl=https://nu.novell.com/
 NUUser=
 NUPass=
-LocalBasePath=/srv/www/htdocs
 
 [DB]
 config=dbi:SQLite:dbname=/var/lib/YEP/db/yep.db
 user=
 pass=
 
-[REG]
+[LOCAL]
 # Default should be http://server.domain.top/
 url=
+MirrorTo=/srv/www/htdocs
 

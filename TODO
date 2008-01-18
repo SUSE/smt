@@ -59,6 +59,15 @@ TODO:
     of the YaST run.
   * NiceToHave: configuration of a cronjob for yep-mirror.pl
 
+- yast module:
+  - check if a common server certificate is available 
+  - copy the CA (or the server certificate) to
+    /srv/www/htdocs/yep.crt
+  - Write parameter in yep.conf 
+    [LOCAL]
+    url=...
+    https://<local.full.quallified.domain.name>/ 
+
 - yup has a hardlink feature. Would be nice if we could have it too.
   It searches for same files (SLES <=> SLED as example) and
   create a hardlink to safe some disk space.

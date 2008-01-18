@@ -984,7 +984,7 @@ sub buildZmdConfig
         die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
     }
     
-    my $LocalNUUrl = $cfg->val('REG', 'url');
+    my $LocalNUUrl = $cfg->val('LOCAL', 'url');
     if($usetestenv)
     {
         $LocalNUUrl .= "/testing/";
