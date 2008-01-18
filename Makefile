@@ -86,6 +86,7 @@ dist: clean
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/regdatatest
 	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/NU
 	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror
+	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/YEP/Parser
 
 	@cp apache2/*.pl $(NAME)-$(VERSION)/apache2/
 	@cp apache2/conf.d/*.conf $(NAME)-$(VERSION)/apache2/conf.d/
@@ -105,6 +106,7 @@ dist: clean
 	@cp www/perl-lib/NU/*.pm $(NAME)-$(VERSION)/www/perl-lib/NU/
 	@cp www/perl-lib/YEP/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/
 	@cp www/perl-lib/YEP/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror/
+	@cp www/perl-lib/YEP/Parser/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Parser/
 	@cp HACKING Makefile README COPYING $(NAME)-$(VERSION)/
 
 	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/

@@ -86,6 +86,7 @@ exit 0
 %defattr(-,root,root)
 %dir %{perl_vendorlib}/YEP/
 %dir %{perl_vendorlib}/YEP/Mirror
+%dir %{perl_vendorlib}/YEP/Parser
 %dir /var/lib/YEP
 %dir %attr(-, wwwrun, www)/var/lib/YEP/db
 %dir /srv/www/htdocs/repo/
@@ -100,6 +101,7 @@ exit 0
 
 %{perl_vendorlib}/YEP/*.pm
 %{perl_vendorlib}/YEP/Mirror/*.pm
+%{perl_vendorlib}/YEP/Parser/*.pm
 
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/YEP/*.pm
