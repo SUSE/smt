@@ -46,6 +46,7 @@ install:
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/YEP
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
+	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Parser
 	cp apache2/yep-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
 	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
@@ -57,6 +58,8 @@ install:
 	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)/srv/www/perl-lib/YEP/
 	cp www/perl-lib/YEP/Utils.pm $(DESTDIR)$(PERLMODDIR)/YEP/
 	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
+	cp www/perl-lib/YEP/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Parser/
+	cp www/perl-lib/YEP/CLI.pm /$(DESTDIR)$(PERLMODDIR)/YEP/
 
 
 test: clean
