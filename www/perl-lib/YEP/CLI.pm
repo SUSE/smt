@@ -1,6 +1,50 @@
 package YEP::CLI;
 use strict;
 use warnings;
+
+=head1 NAME
+
+ YEP::CLI - YEP common actions for command line programs
+
+=head1 SYNOPSIS
+
+  YEP::listProducts();
+  YEP::listCatalogs();
+
+=head1 DESCRIPTION
+
+Common actions used in command line utilities that administer the
+YEP system.
+
+=head1 METHODS
+
+=over 4
+
+=item listProducts
+
+Shows products. Pass mirrorable => 1 to get only mirrorable
+products. 0 for non-mirrorable products, or nothing to get all
+products.
+
+=item listRegistrations
+
+Shows active registrations on the system.
+
+=back
+
+=back
+
+=head1 AUTHOR
+
+dmacvicar@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
+
+
 use URI;
 use YEP::Utils;
 use Config::IniFiles;
@@ -45,6 +89,46 @@ BEGIN
 
     $nuri = URI->new($NUUrl);
     $nuri->userinfo("$nuUser:$nuPass");
+}
+
+sub listCatalogs()
+{
+    my $options = @_;
+    my $sql = "select * from Catalogs";
+
+    $sql = $sql . " where 1";
+
+    if ( defined $options && exists $options->{ mirrorable } )
+    {
+          if (  $options->{ mirrorable } == 1 )
+          {
+            $sql = $sql . " and MIRRORABLE='Y'";
+          }
+          else
+          {
+            $sql = $sql . " and MIRRORABLE='N'";
+          }
+    }
+    
+    if ( defined $options && exists $options->{ domirror } )
+    {
+          if (  $options->{ domirror } == 1 )
+          {
+            $sql = $sql . " where DOMIRROR='Y'";
+          }
+          else
+          {
+            $sql = $sql . " where DOMIRROR='N'";
+          }
+    }
+
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
+    while (my @values = $sth->fetchrow_array())  
+    {
+        print "[" . $values[0] . "]" . " => " . $values[1] . "\n";
+    }
+    $sth->finish();
 }
 
 sub listProducts()

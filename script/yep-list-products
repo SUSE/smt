@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib ("/srv/www/perl-lib/");
+use YEP::CLI;
+
+my $mirrorable;
+my $domirror;
+my $help;
+
+use Getopt::Long;
+&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
+&Getopt::Long::GetOptions(
+         'mirrorable|m'         => \$mirrorable,
+         'domirror|d'        => \$domirror,
+         'help|h' => \$help
+);
+
+if ( defined $help and ( $help == 1 ) )
+{
+
+  return 0;
+}
+
+my %opts = ('mirrorable' => $mirrorable, 'domirror' => $domirror);
+YEP::CLI::listProducts( %opts );
+#YEP::CLI::listProducts(%opts);

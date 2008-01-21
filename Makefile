@@ -50,10 +50,12 @@ install:
 	cp apache2/yep-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
 	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
-	cp script/yep-mirror.pl $(DESTDIR)/usr/bin/
 	cp script/yepdb $(DESTDIR)/usr/bin/
-	chmod 0755 $(DESTDIR)/usr/bin/yep-mirror.pl
+	cp script/yep $(DESTDIR)/usr/bin/
+	cp script/yep-* $(DESTDIR)/usr/bin/
+	chmod 0755 $(DESTDIR)/usr/bin/yep
 	chmod 0755 $(DESTDIR)/usr/bin/yepdb
+	chmod 0755 $(DESTDIR)/usr/bin/yep-*
 	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)/srv/www/perl-lib/YEP/
 	cp www/perl-lib/YEP/Utils.pm $(DESTDIR)$(PERLMODDIR)/YEP/
