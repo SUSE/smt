@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
-use File::Basename;
 
 my $mirrorable;
 my $domirror;
@@ -18,8 +17,11 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : List known products\n";
+  print "Reset all catalogs mirrorable flag. Syncs with NCC and check for mirrorable catalogs\n";
   exit 0;
 }
 
-YEP::CLI::listProducts();
+YEP::CLI::resetCatalogsStatus();
+YEP::CLI::setMirrorableCatalogs();
+
+

@@ -14,7 +14,7 @@ my $sth = undef;
 
 if ( not $dbh=YEP::Utils::db_connect() )
 {
-    print "ERROR: Could not connect to the database";
+    print "ERROR: Could not connect to the database\n";
     return 1;
 }
 
@@ -255,7 +255,7 @@ if ($target eq '')
 
 if ($target eq '')
 {
-    print "ERROR: No action defined";
+    print "ERROR: No action defined\n";
     exit 1;
     #FIXME: print usage
 }
@@ -273,7 +273,7 @@ if ($action eq 'create')
 }
 elsif ($action eq 'delete')
 {
-    print "Delete not implemented yet";
+    print "Delete not implemented yet\n";
     exit 1;
 }
 

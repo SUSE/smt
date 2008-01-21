@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
+use File::Basename;
 
 my $mirrorable;
 my $domirror;
@@ -19,10 +20,11 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-
-  return 0;
+  print basename($0) . " : List known catalogs\n";
+  print "    -mirrorable / -m : only mirrorable catalogs\n";
+  print "    -domirror /   -d : only catalogs set to be mirrored\n";
+  exit 0;
 }
 
 my %opts = ( );
-#YEP::CLI::listCatalogs(-mirrorable => $mirrorable, -domirror => $domirror);
-YEP::CLI::listProducts();
+YEP::CLI::listCatalogs(mirrorable => $mirrorable, domirror => $domirror);

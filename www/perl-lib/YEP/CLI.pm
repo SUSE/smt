@@ -91,16 +91,16 @@ BEGIN
     $nuri->userinfo("$nuUser:$nuPass");
 }
 
-sub listCatalogs()
+sub listCatalogs
 {
-    my $options = @_;
+    my %options = @_;
     my $sql = "select * from Catalogs";
 
     $sql = $sql . " where 1";
 
-    if ( defined $options && exists $options->{ mirrorable } )
+    if ( exists $options{ mirrorable } && defined $options{mirrorable} )
     {
-          if (  $options->{ mirrorable } == 1 )
+          if (  $options{ mirrorable } == 1 )
           {
             $sql = $sql . " and MIRRORABLE='Y'";
           }
@@ -110,15 +110,15 @@ sub listCatalogs()
           }
     }
     
-    if ( defined $options && exists $options->{ domirror } )
+    if ( exists $options{ domirror } && defined  $options{ domirror } )
     {
-          if (  $options->{ domirror } == 1 )
+          if (  $options{ domirror } == 1 )
           {
-            $sql = $sql . " where DOMIRROR='Y'";
+            $sql = $sql . " and DOMIRROR='Y'";
           }
           else
           {
-            $sql = $sql . " where DOMIRROR='N'";
+            $sql = $sql . " and DOMIRROR='N'";
           }
     }
 
@@ -131,7 +131,7 @@ sub listCatalogs()
     $sth->finish();
 }
 
-sub listProducts()
+sub listProducts
 {
     my $sth = $dbh->prepare(qq{select * from Products});
     $sth->execute();
@@ -158,7 +158,7 @@ sub listProducts()
     $sth->finish();
 }
 
-sub listRegistrations()
+sub listRegistrations
 {
     my $sth = $dbh->prepare(qq{select r.GUID,p.PRODUCT from Registration r, Products p where r.PRODUCTID=p.PRODUCTDATAID});
     $sth->execute();
@@ -172,13 +172,13 @@ sub listRegistrations()
     $sth->finish();
 }
 
-sub resetCatalogsStatus()
+sub resetCatalogsStatus
 {
   my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
   $sth->execute();
 }
 
-sub setMirrorableCatalogs()
+sub setMirrorableCatalogs
 {
     # create a tmpdir to store repoindex.xml
     my $tempdir = File::Temp::tempdir(CLEANUP => 1);

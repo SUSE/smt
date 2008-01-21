@@ -1,0 +1,55 @@
+#!/usr/bin/perl
+###########################################################################
+## Copyright (c) 2007 Novell Inc.
+###########################################################################
+
+use strict;
+use warnings;
+use lib ("/srv/www/perl-lib/");
+use YEP::CLI;
+
+sub help
+{
+    print "show help\n";
+    exit 0;
+}
+
+sub executeCommand
+{
+  my $name = shift;
+  my @options = @_;
+
+  my $exec = "/usr/bin/yep-$name";
+  my $cmd = "$exec " . join(" ", @options);
+  #print "execute '$cmd'\n";
+  if ( -e $exec )
+  {
+      print `$cmd`;
+  }
+  else
+  {
+    die "$cmd command not installed\n";
+  }
+}
+
+if (defined $ARGV[0] ) 
+{
+    my $cmd = shift(@ARGV);
+    #print "cmd: $cmd\n";
+    if ( $cmd eq "help" )
+    {
+        #print "2foo\n";
+        my $targethelp = shift(@ARGV);
+        executeCommand($targethelp,"-h");
+    }
+    else
+    {
+      executeCommand($cmd, @ARGV)
+    }
+}
+else
+{
+    help();
+}
+
+exit 0;
