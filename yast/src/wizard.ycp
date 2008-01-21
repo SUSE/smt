@@ -46,7 +46,7 @@
 		"contents"	: CredentialsDialogContent(),
 	    ],
 	    "scheduled_downloads" : $[
-		"header"	: _("Scheduled Downloads"),
+		"header"	: _("Scheduled NU Mirroring"),
 		"widget_names"	: ["sd"],
 		"contents"	: ScheduledDownloadsDialogContent(),
 	    ],

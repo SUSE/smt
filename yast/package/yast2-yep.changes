@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jan 21 16:49:07 CET 2008 - locilka@suse.cz
+
+- Added Scheduled Mirroring (cron) processing functions and UI.
+
+-------------------------------------------------------------------
 Fri Jan 18 17:50:52 CET 2008 - locilka@suse.cz
 
 - Added new agent for reading /etc/cron.d/yast2-yep (YEP cron 

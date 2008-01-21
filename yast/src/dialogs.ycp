@@ -50,13 +50,29 @@
 
     term ScheduledDownloadsDialogContent () {
 	return `VBox (
-	    `VStretch(),
-	    `HBox (
-		`HStretch(),
-		`Label (_("FIXME: ... ")),
-		`HStretch()
+	    `Left(`Label (_("List of Scheduled NU Mirroring"))),
+	    `Table (
+		`id ("scheduled_NU_mirroring"),
+		`opt (`vstretch),
+		`header (
+		    // TRANSLATORS: table header item
+		    _("Frequency"),
+		    // TRANSLATORS: table header item
+		    _("Day of the Week"),
+		    // TRANSLATORS: table header item
+		    _("Day of the Month"),
+		    // TRANSLATORS: table header item
+		    _("Hour"),
+		    // TRANSLATORS: table header item
+		    _("Minute")
+		),
+		[]
 	    ),
-	    `VStretch()
+	    `Left (`HBox (
+		`PushButton (`id (`add),	`opt(`key_F3), _("&Add...")),
+		`PushButton (`id (`edit),	`opt(`key_F4), _("&Edit...")),
+		`PushButton (`id (`delete),	`opt(`key_F5), Label::DeleteButton())
+	    ))
 	);
     }
 
@@ -198,12 +214,71 @@
 	return nil;
     }
 
+    map <string, string> nrdays_to_names = $[
+	"1" : _("Sunday"),
+	"2" : _("Monday"),
+	"3" : _("Tuesday"),
+	"4" : _("Wednesday"),
+	"5" : _("Thursday"),
+	"6" : _("Friday"),
+	"7" : _("Saturday"),
+    ];
+
+    /**
+     * Redraws the table of currently scheduled NU mirrorings.
+     */
+    void RedrawScheduledMirroringTable () {
+	list <term> items = [];
+
+	foreach (map one_entry, YEPData::GetCronSettings(), {
+	    if (one_entry == nil || one_entry == $[])
+		return;
+	    term item = `item();
+
+	    // Monthly
+	    if (one_entry["day_of_month"]:"*" != "*") {
+		item = add (item, _("Monthly"));
+		item = add (item, "--");
+		item = add (item, one_entry["day_of_month"]:_("Undefined"));
+	    // Weekly
+	    } else if (one_entry["day_of_week"]:"*" != "*") {
+		item = add (item, _("Weekly"));
+		item = add (item, nrdays_to_names[one_entry["day_of_week"]:""]:_("Undefined"));
+		item = add (item, "--");
+	    // Daily
+	    } else {
+		item = add (item, _("Daily"));
+		item = add (item, "--");
+		item = add (item, "--");
+	    }
+
+	    item = add (item, one_entry["hour"]:_("Undefined"));
+	    item = add (item, one_entry["minute"]:_("Undefined"));
+
+	    items = add (items, item);
+	});
+
+	UI::ChangeWidget (`id ("scheduled_NU_mirroring"), `Items, items);
+
+	boolean buttons_enabled = (items != nil && size (items) != 0);
+	UI::ChangeWidget (`id (`add), `Enabled, buttons_enabled);
+	UI::ChangeWidget (`id (`edit), `Enabled, buttons_enabled);
+    }
+
     void InitScheduledDownloadsDialog (string id) {
-	return nil;
+	RedrawScheduledMirroringTable();
     }
 
     symbol HandleScheduledDownloadsDialog (string id, map event) {
 	any action = event["ID"]:nil;
+
+	if (action == `add) {
+	    y2milestone ("Adding new scheduled mirroring...");
+	} else if (action == `edit) {
+	    y2milestone ("Editing a scheduled mirroring...");
+	} else if (action == `delete) {
+	    y2milestone ("Removing...");
+	}
 
 	return nil;
     }
