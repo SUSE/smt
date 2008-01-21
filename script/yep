@@ -7,10 +7,24 @@ use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
+use File::Basename;
+use File::Find;
 
 sub help
 {
     print "show help\n";
+    my @files;
+    find( sub { push(@files, $1) if $_ =~ /yep\-(.+)/; }, "/usr/sbin");
+    
+
+    print "YaST Enterprise Proxy. (c)2007 Novell Inc.\n\n";
+
+    foreach my $cmd (@files)
+    {
+      print basename($0) . " $cmd\n";
+    }
+
+    print "\nUse yep help <command> for more help\n";
     exit 0;
 }
 
