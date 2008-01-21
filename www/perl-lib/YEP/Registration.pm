@@ -140,9 +140,13 @@ sub register
 
         YEP::Registration::insertRegistration($r, $dbh, $regroot);
 
+        # get the os-target
+
+        my $target = YEP::Registration::findTarget($r, $dbh, $regroot);
+
         # get the catalogs
 
-        my $catalogs = YEP::Registration::findCatalogs($r, $dbh, $regroot->{register}->{guid});
+        my $catalogs = YEP::Registration::findCatalogs($r, $dbh, $target, $regroot->{register}->{guid});
 
         # send new <zmdconfig>
 
@@ -915,11 +919,51 @@ sub insertRegistration
     return;
 }
 
+sub findTarget
+{
+    my $r       = shift;
+    my $dbh     = shift;
+    my $regroot = shift;
+
+    my $result  = undef;
+    
+    if(exists $regroot->{register}->{ostarget} && defined $regroot->{register}->{ostarget} &&
+       $regroot->{register}->{ostarget} ne "")
+    {
+        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($regroot->{register}->{ostarget})) ;
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"STATEMENT: $statement");
+
+        my $target = $dbh->selectcol_arrayref($statement);
+        
+        if(exists $target->[0])
+        {
+            $result = $target->[0];
+        }
+    }
+    elsif(exists $regroot->{register}->{"ostarget-bak"} && defined $regroot->{register}->{"ostarget-bak"} &&
+          $regroot->{register}->{"ostarget-bak"} ne "")
+    {
+        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($regroot->{register}->{"ostarget-bak"})) ;
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"STATEMENT: $statement");
+
+        my $target = $dbh->selectcol_arrayref($statement);
+        
+        if(exists $target->[0])
+        {
+            $result = $target->[0];
+        }
+    }
+    return $result;
+}
+
 sub findCatalogs
 {
-    my $r    = shift;
-    my $dbh  = shift;
-    my $guid = shift;
+    my $r      = shift;
+    my $dbh    = shift;
+    my $target = shift;
+    my $guid   = shift;
 
     my $result = {};
 
@@ -954,6 +998,15 @@ sub findCatalogs
 
     $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc WHERE ";
 
+    $statement .= "pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID ";
+    $statement .= "AND (c.TARGET IS NULL ";
+    if(defined $target && $target ne "")
+    {
+        $statement .= sprintf("OR c.TARGET=%s", $dbh->quote($target));
+    }
+    $statement .= ") AND ";
+
+
     if(keys %{$pidhash} > 1)
     {
         $statement .= "pc.PRODUCTDATAID IN (".join(",", keys %{$pidhash}).") ";
@@ -968,8 +1021,7 @@ sub findCatalogs
         $r->log_error("No productids found");
         return $result;
     }
-
-    $statement .= " AND pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID";
+    
     
     $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                    APR::Const::SUCCESS,"STATEMENT: $statement");
