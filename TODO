@@ -81,6 +81,13 @@ TODO:
 - call verify (yep-mirror.pl) after syncing a repo and restart syncing 
   if verify failed (e.g. 3 times before stopping)
 
+- yep-mirror.pl: After mirror check if there are catalogs where the
+  DOMIRROR flag is set to "Y" but the MIRRORABLE flag is set to "N".
+  This can happen if an entitlement is expired on NCC. 
+  In such a case we should print a warning message to inform the
+  administrator that a catalog cannot be mirrored. He should check
+  in NCC if he has an entitlement for this product.
+
 DONE:
 =====
 
