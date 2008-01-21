@@ -21,7 +21,7 @@
     import "Progress";
     import "Message";
 
-    integer sl = 800;
+    integer sl = 200;
 
     term CredentialsDialogContent () {
 	return `HBox (
@@ -127,18 +127,22 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Writing YEP Configuration"),
 	    " ",
-	    2,
+	    3,
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjust YEP configuration"),
 		// TRANSLATORS: Progress step
 		_("Adjust Web-server configuration"),
+		// TRANSLATORS: Progress step
+		_("Run synchronization check"),
 	    ],
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjusting YEP configuration..."),
 		// TRANSLATORS: Progress step
 		_("Adjust Web-server configuration"),
+		// TRANSLATORS: Progress step
+		_("Running synchronization check..."),
 		Message::Finished(),
 	    ],
 	    ""
@@ -155,6 +159,11 @@
 	sleep (sl);
 
 	YEPData::CheckAndAdjustApacheConfiguration();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	YEPData::RunSmallSync();
 
 	Progress::NextStage();
 	sleep (sl);

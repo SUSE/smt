@@ -17,6 +17,7 @@
     import "Report";
     import "FileUtils";
     import "String";
+    import "Label";
 
     map <string, string> NU_credentials = $[];
 
@@ -24,6 +25,8 @@
     string cron_mirror_script = "/usr/bin/yep-mirror.pl";
     // cron 
     string path_to_cron = "/etc/cron.d/yast2-yep";
+
+    string path_to_sync_script = "/usr/sbin/yep-ncc-sync";
 
     list <map> yep_cron_settings = [];
 
@@ -194,6 +197,40 @@
 	    Service::Enable ("apache2");
 	} else {
 	    y2milestone ("Service already enabled, skipping ...");
+	}
+
+	return true;
+    }
+
+    global boolean RunSmallSync () {
+	if (! FileUtils::Exists (path_to_sync_script)) {
+	    y2error ("Sync script doesn't exist");
+	    Report::Error (sformat (_("Synchronization script %1 does not exist.
+
+Please, check your YEP installation."), path_to_sync_script));
+	    return false;
+	}
+
+	map cmd_out = (map) SCR::Execute (.target.bash_output, path_to_sync_script);
+	if (cmd_out["exit"]:-1 != 0) {
+	    UI::OpenDialog (
+		`HBox (
+		    `VSpacing (19),
+		    `VBox (
+			`HSpacing (70),
+			`Left (`Label (_("Running the synchronization script failed."))),
+			`RichText (
+			    `opt (`hstretch, `vstretch),
+			    sformat (_("<p><b>Details:</b></p>
+<p><b>stdout:</b> %1</p>
+<p><b>stderr:</b> %2</p>"), cmd_out["stdout"]:"", cmd_out["stderr"]:"")
+			),
+			`PushButton (`id (`ok), `opt(`default), Label::OKButton())
+		    )
+		)
+	    );
+	    UI::UserInput();
+	    UI::CloseDialog();
 	}
 
 	return true;

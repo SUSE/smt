@@ -2,6 +2,7 @@
 Mon Jan 21 16:49:07 CET 2008 - locilka@suse.cz
 
 - Added Scheduled Mirroring (cron) processing functions and UI.
+- Running /usr/sbin/yep-ncc-sync at the end of the configuration.
 
 -------------------------------------------------------------------
 Fri Jan 18 17:50:52 CET 2008 - locilka@suse.cz
