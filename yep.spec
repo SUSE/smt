@@ -110,7 +110,6 @@ exit 0
 
 %attr(-, wwwrun, www)/var/lib/YEP/db/yep.db
 
-/usr/bin/yepdb
 /use/bin/yep-*
 /use/bin/yep
 
