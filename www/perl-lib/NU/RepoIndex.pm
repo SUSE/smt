@@ -50,6 +50,9 @@ sub handler {
     $r->content_type('text/xml');
     # $r->content_type('text/plain');  # for testing
 
+    $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
+    $r->err_headers_out->add('Pragma' => "no-cache");
+
     my $username = getUsernameFromRequest($r);
     return Apache2::Const::SERVER_ERROR unless defined $username;
     my $catalogs = getCatalogsByGUID($dbh, $username);
@@ -66,6 +69,9 @@ sub handler {
     # create repos
     foreach my $val (values %{$catalogs})
     {
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"repoindex return $username: ".${$val}{'NAME'}." - ".${$val}{'TARGET'});
+
          $writer->emptyTag('repo',
                            'name' => ${$val}{'NAME'},
                            'alias' => ${$val}{'NAME'},                 # Alias == Name
