@@ -2,6 +2,7 @@ package YEP::Parser::NU;
 use strict;
 use URI;
 use XML::Parser;
+use IO::Zlib;
 
 =head1 NAME
 
@@ -83,12 +84,9 @@ sub parse()
     
     if ( $path =~ /(.+)\.gz/ )
     {
-      use IO::Zlib;
       my $fh = IO::Zlib->new($path, "rb");
       eval {
-          # using ->parse( $fh ) result in errors
-          my @cont = $fh->getlines();
-          $parser->parse( join("", @cont ));
+          $parser->parse( $fh );
       };
       if($@) {
           # ignore the errors, but print them
@@ -106,7 +104,7 @@ sub parse()
           chomp($@);
           print STDERR "Error: $@\n";
       }
-    }
+   }
 }
 
 # handles XML reader start tag events
