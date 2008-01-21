@@ -1,5 +1,5 @@
 NAME         = yep
-VERSION      = 0.0.2
+VERSION      = 0.0.3
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -38,7 +38,7 @@ install_conf:
 	cp config/yep.conf $(DESTDIR)/etc/
 
 install:
-	mkdir -p $(DESTDIR)/usr/bin/
+	mkdir -p $(DESTDIR)/usr/sbin/
 	mkdir -p $(DESTDIR)/etc/apache2/conf.d/
 	mkdir -p $(DESTDIR)/etc/apache2/vhosts.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
@@ -50,10 +50,10 @@ install:
 	cp apache2/yep-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
 	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
-	cp script/yep $(DESTDIR)/usr/bin/
-	cp script/yep-* $(DESTDIR)/usr/bin/
-	chmod 0755 $(DESTDIR)/usr/bin/yep
-	chmod 0755 $(DESTDIR)/usr/bin/yep-*
+	cp script/yep $(DESTDIR)/usr/sbin/
+	cp script/yep-* $(DESTDIR)/usr/sbin/
+	chmod 0755 $(DESTDIR)/usr/sbin/yep
+	chmod 0755 $(DESTDIR)/usr/sbin/yep-*
 	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)/srv/www/perl-lib/YEP/
 	cp www/perl-lib/YEP/Utils.pm $(DESTDIR)$(PERLMODDIR)/YEP/
@@ -101,8 +101,7 @@ dist: clean
 	@cp tests/YEP/Mirror/*.pl $(NAME)-$(VERSION)/tests/YEP/Mirror/
 	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
 	@cp www/README $(NAME)-$(VERSION)/www/
-	@cp script/yep-mirror.pl $(NAME)-$(VERSION)/script/
-	@cp script/yepdb $(NAME)-$(VERSION)/script/
+	@cp script/* $(NAME)-$(VERSION)/script/
 	@cp www/perl-lib/NU/*.pm $(NAME)-$(VERSION)/www/perl-lib/NU/
 	@cp www/perl-lib/YEP/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/
 	@cp www/perl-lib/YEP/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror/

@@ -1,5 +1,5 @@
 #
-# spec file for package yep (Version 0.0.2)
+# spec file for package yep (Version 0.0.3)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -13,7 +13,7 @@
 Name:         yep
 BuildRequires: sqlite apache2 apache2-mod_perl perl-Crypt-SSLeay perl-DBD-SQLite yast2 yast2-devtools
 BuildRequires: perl-Config-IniFiles perl-XML-Parser perl-libwww-perl perl-IO-Zlib perl-URI perl-TimeDate
-Version:      0.0.2
+Version:      0.0.3
 Release:      0
 Requires:     perl = %{perl_version}
 Requires:     apache2
@@ -110,8 +110,8 @@ exit 0
 
 %attr(-, wwwrun, www)/var/lib/YEP/db/yep.db
 
-/use/bin/yep-*
-/use/bin/yep
+/usr/sbin/yep-*
+/usr/sbin/yep
 
 /var/adm/fillup-templates/sysconfig.apache2-yep
 
