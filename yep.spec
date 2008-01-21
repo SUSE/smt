@@ -29,7 +29,7 @@ Requires:     perl-libwww-perl
 Requires:     perl-IO-Zlib
 Requires:     perl-URI
 Requires:     perl-TimeDate
-PreReq:       %insserv_prereq %fillup_prereq
+PreReq:       %fillup_prereq apache2 apache2-mod_perl
 
 Requires:     yast2
 # For testing entered cedentials in YaST
@@ -81,6 +81,8 @@ install -m 644 sysconfig.apache2-yep   $RPM_BUILD_ROOT/var/adm/fillup-templates/
 %{fillup_only -ans apache2 yep}
 exit 0
 
+%postun
+%restart_on_update apache2
 
 %files
 %defattr(-,root,root)
