@@ -283,10 +283,22 @@
 
 	if (action == `add) {
 	    y2milestone ("Adding new scheduled mirroring...");
+Report::Message ("Everybody stay cool!
+
+This functionality hasn't been implemented yet.
+Still work in progress...");
 	} else if (action == `edit) {
 	    y2milestone ("Editing a scheduled mirroring...");
+Report::Message ("Everybody stay cool!
+
+This functionality hasn't been implemented yet.
+Still work in progress...");
 	} else if (action == `delete) {
 	    y2milestone ("Removing...");
+Report::Message ("Everybody stay cool!
+
+This functionality hasn't been implemented yet.
+Still work in progress...");
 	}
 
 	return nil;
