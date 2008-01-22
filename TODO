@@ -82,16 +82,6 @@ TODO:
 - test what happens if two processes what to write yep.db
   How can we solve concutrrent access with DBI?
 
-- call verify (yep-mirror.pl) after syncing a repo and restart syncing 
-  if verify failed (e.g. 3 times before stopping)
-
-- yep-mirror.pl: After mirror check if there are catalogs where the
-  DOMIRROR flag is set to "Y" but the MIRRORABLE flag is set to "N".
-  This can happen if an entitlement is expired on NCC. 
-  In such a case we should print a warning message to inform the
-  administrator that a catalog cannot be mirrored. He should check
-  in NCC if he has an entitlement for this product.
-
 - tool to setup custom catalogs?
 
 
@@ -114,6 +104,18 @@ DONE:
   Found out that sqlite must have write access to the directory too.
   We should think about to move the DB to /var/lib/wwwrun/
   [Is now at /var/lib/YEP/db/]
+
+- call verify (yep-mirror.pl) after syncing a repo and restart syncing 
+  if verify failed (e.g. 3 times before stopping)
+
+- yep-mirror.pl: After mirror check if there are catalogs where the
+  DOMIRROR flag is set to "Y" but the MIRRORABLE flag is set to "N".
+  This can happen if an entitlement is expired on NCC. 
+  In such a case we should print a warning message to inform the
+  administrator that a catalog cannot be mirrored. He should check
+  in NCC if he has an entitlement for this product.
+
+
 
 Ideas:
 ======
