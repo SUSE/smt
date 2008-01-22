@@ -109,7 +109,7 @@ sub checksum()
 sub verify()
 {
     my $self = shift;
-    
+     
     return 0 if ( not $self->checksum() eq  $self->realchecksum() );
     return 1;
 }
@@ -122,7 +122,7 @@ sub realchecksum()
     my $digest;
     my $filename = $self->local;
     open(FILE, "< $filename") or do {
-        print STDERR "Cannot open '$filename': $!";
+        print STDERR "Cannot open '$filename': $!\n";
         return "";
     };
       
