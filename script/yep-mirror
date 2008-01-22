@@ -16,6 +16,7 @@ use Getopt::Long;
 
 my $debug    = 0;
 my $clean    = 0;
+my $deepverify = 0;
 
 my $LocalBasePath = "";
 
@@ -24,6 +25,7 @@ my $help     = 0;
 my $result = GetOptions ("debug|d"     => \$debug,
                          "cleanup|c"   => \$clean,
                          "directory=s" => \$LocalBasePath,
+                         "deepverify"  => \$deepverify,
                          "help|h"      => \$help
                         );
 
@@ -39,6 +41,7 @@ if($help)
     print "               This mode do no mirror before cleanup.\n";
     print "--directory    The directory to work on. Using this option ignores the configured\n";
     print "               default value in yep.conf\n";
+    print "--deepverify   Verify all checksums \n";
     print "--help -h      show this message\n";
     exit 0;
 }
@@ -106,6 +109,7 @@ foreach my $id (keys %{$hash})
         else
         {
             $yumMirror->uri( $hash->{$id}->{EXTURL} );
+            $yumMirror->deepverify($deepverify);
             $yumMirror->mirrorTo( $fullpath, { urltree => 0 } );
         }
     }
@@ -115,6 +119,7 @@ foreach my $id (keys %{$hash})
 # Now mirror the NU catalogs
 #
 my $mirror = YEP::Mirror::NU->new(debug => $debug);
+$mirror->deepverify($deepverify);
 if($clean)
 {
     $mirror->clean( $LocalBasePath );
