@@ -20,8 +20,9 @@
     import "Confirm";
     import "Progress";
     import "Message";
+    import "Confirm";
 
-    integer sl = 200;
+    integer sl = 100;
 
     term CredentialsDialogContent () {
 	return `HBox (
@@ -127,12 +128,14 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Writing YEP Configuration"),
 	    " ",
-	    3,
+	    4,
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjust YEP configuration"),
 		// TRANSLATORS: Progress step
 		_("Adjust Web-server configuration"),
+		// TRANSLATORS: Progress step
+		_("Write cron settings"),
 		// TRANSLATORS: Progress step
 		_("Run synchronization check"),
 	    ],
@@ -140,7 +143,9 @@
 		// TRANSLATORS: Progress step
 		_("Adjusting YEP configuration..."),
 		// TRANSLATORS: Progress step
-		_("Adjust Web-server configuration"),
+		_("Adjusting Web-server configuration"),
+		// TRANSLATORS: Progress step
+		_("Writing cron settings..."),
 		// TRANSLATORS: Progress step
 		_("Running synchronization check..."),
 		Message::Finished(),
@@ -159,6 +164,11 @@
 	sleep (sl);
 
 	YEPData::CheckAndAdjustApacheConfiguration();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	YEPData::WriteCronSettings();
 
 	Progress::NextStage();
 	sleep (sl);
@@ -224,13 +234,13 @@
     }
 
     map <string, string> nrdays_to_names = $[
-	"1" : _("Sunday"),
-	"2" : _("Monday"),
-	"3" : _("Tuesday"),
-	"4" : _("Wednesday"),
-	"5" : _("Thursday"),
-	"6" : _("Friday"),
-	"7" : _("Saturday"),
+	"0" : _("Sunday"),
+	"1" : _("Monday"),
+	"2" : _("Tuesday"),
+	"3" : _("Wednesday"),
+	"4" : _("Thursday"),
+	"5" : _("Friday"),
+	"6" : _("Saturday"),
     ];
 
     /**
@@ -239,10 +249,19 @@
     void RedrawScheduledMirroringTable () {
 	list <term> items = [];
 
+	integer counter = -1;
 	foreach (map one_entry, YEPData::GetCronSettings(), {
+	    counter = counter + 1;
+
 	    if (one_entry == nil || one_entry == $[])
 		return;
-	    term item = `item();
+
+	    foreach (string key, ["day_of_month", "day_of_week", "hour", "minute", "month"], {
+		if (one_entry[key]:nil == nil)
+		    one_entry[key] = "*";
+	    });
+
+	    term item = `item (`id (counter));
 
 	    // Monthly
 	    if (one_entry["day_of_month"]:"*" != "*") {
@@ -267,38 +286,232 @@
 	    items = add (items, item);
 	});
 
+	if (items == nil) {
+	    items = [];
+	    y2error ("Erroneous items!");
+	}
 	UI::ChangeWidget (`id ("scheduled_NU_mirroring"), `Items, items);
 
 	boolean buttons_enabled = (items != nil && size (items) != 0);
-	UI::ChangeWidget (`id (`add), `Enabled, buttons_enabled);
 	UI::ChangeWidget (`id (`edit), `Enabled, buttons_enabled);
+	UI::ChangeWidget (`id (`delete), `Enabled, buttons_enabled);
     }
 
     void InitScheduledDownloadsDialog (string id) {
 	RedrawScheduledMirroringTable();
     }
 
+    void AdjustAddEditDialogToFrequency () {
+	symbol current_freq = (symbol) UI::QueryWidget (`id (`frequency), `Value);
+
+	boolean day_of_week_available  = false;
+	boolean day_of_month_available = false;
+
+	if (current_freq == `weekly) {
+	    day_of_week_available = true;
+	} else if (current_freq == `monthly) {
+	    day_of_month_available = true;
+	}
+
+	UI::ChangeWidget (`id ("day_of_week"),  `Enabled, day_of_week_available);
+	UI::ChangeWidget (`id ("day_of_month"), `Enabled, day_of_month_available);
+    }
+
+    /**
+     * Validates and saves the cron entry.
+     */
+    boolean ValidateAndSaveScheduledMirroring (integer schd_id) {
+	map settings = $[
+	    "day_of_month"	: "*",
+	    "day_of_week"	: "*",
+	    "hour"		: "*",
+	    "minute"		: "*",
+	    "month"		: "*",
+	];
+
+	symbol current_freq = (symbol) UI::QueryWidget (`id (`frequency), `Value);
+
+	string hour = tostring (UI::QueryWidget (`id ("hour"), `Value));
+	string minute = tostring (UI::QueryWidget (`id ("minute"), `Value));
+	string day_of_month = tostring (UI::QueryWidget (`id ("day_of_month"), `Value));
+	string day_of_week = tostring (UI::QueryWidget (`id ("day_of_week"), `Value));
+
+	settings["hour"] = hour;
+	settings["minute"] = minute;
+
+	if (current_freq == `weekly) {
+	    settings["day_of_week"] = day_of_week;
+	} else if (current_freq == `monthly) {
+	    settings["day_of_month"] = day_of_month;
+	}
+
+	if (schd_id != nil && schd_id > -1) {
+	    YEPData::ReplaceCronJob (schd_id, settings);
+	} else {
+	    YEPData::AddNewCronJob (settings);
+	}
+
+	return true;
+    }
+
+    string CutZeros (string with_zeros) {
+	if (regexpmatch (with_zeros, "^0.+")) {
+	    with_zeros = regexpsub (with_zeros, "^0(.+)", "\\1");
+	}
+
+	return with_zeros;
+    }
+
+    /**
+     * Opens up dialog for adding or editing a cron-job entry.
+     *
+     * @param integer schd_id offset ID in the list of current jobs
+     *        -1 for adding a new entry
+     */
+    boolean AddEditScheduledMirroring (integer schd_id) {
+	map settings = $[];
+	boolean editing = false;
+	boolean dialog_ret = false;
+
+	if (schd_id != nil && schd_id > -1) {
+	    settings = YEPData::GetCronSettings()[schd_id]:$[];
+	    if (settings == nil) {
+		y2error ("Wrong settings on offset %1: %2", schd_id, YEPData::GetCronSettings());
+	    }
+	    editing = true;
+	}
+
+	list <term> day_of_week = maplist (string dof_id, string dof_name, nrdays_to_names, {
+	    return `item (`id (dof_id), dof_name, (settings["day_of_week"]:nil == dof_id));
+	});
+
+	symbol freqency_sel = `daily;
+	// Monthly
+	if (settings["day_of_month"]:"*" != "*") {
+	    freqency_sel = `monthly;
+	// Weekly
+	} else if (settings["day_of_week"]:"*" != "*") {
+	    freqency_sel = `weekly;
+	}
+
+	if (settings["hour"]:nil == "*")
+	    settings["hour"] = "0";
+
+	if (settings["minute"]:nil == "*")
+	    settings["minute"] = "0";
+
+	if (settings["day_of_month"]:nil == "*")
+	    settings["day_of_month"] = "0";
+
+	integer hour		= tointeger (CutZeros (settings["hour"]:"0"));
+	integer minute		= tointeger (CutZeros (settings["minute"]:"0"));
+	integer day_of_month	= tointeger (CutZeros (settings["day_of_month"]:"0"));
+
+	UI::OpenDialog (
+	    `VBox (
+		`HSpacing (30),
+		`Left (`Heading ((editing ? _("Editing a Scheduled Mirroring"):_("Adding New Scheduled Mirroring")))),
+		`VSpacing (1),
+		`Left(`ComboBox (
+		    `id (`frequency),
+		    `opt (`notify),
+		    _("&Frequency"),
+		    [
+			`item (`id (`daily), _("Daily"), (freqency_sel == `daily)),
+			`item (`id (`weekly), _("Weekly"), (freqency_sel == `weekly)),
+			`item (`id (`monthly), _("Monthly"), (freqency_sel == `monthly))
+		    ]
+		)),
+		`VSpacing (1),
+		`Frame (
+		    _("Mirroring Start Time"),
+		    `HBox (
+			`HSpacing (2),
+			`VBox (
+			    `ComboBox (`id ("day_of_week"), _("Day of the &Week"), day_of_week),
+			    `IntField (`id ("hour"), _("&Hour"), 0, 24, hour)
+			),
+			`HSpacing (2),
+			`VBox (
+			    `IntField (`id ("day_of_month"), _("&Day of the Month"), 1, 31, day_of_month),
+			    `IntField (`id ("minute"), _("&Minute"), 0, 59, minute)
+			),
+			`HSpacing (2)
+		    )
+		),
+		`VSpacing (1),
+		`HBox (
+		    `PushButton (`id (`ok), (editing ? Label::OKButton():Label::AddButton())),
+		    `PushButton (`id (`cancel), Label::CancelButton())
+		)
+	    )
+	);
+
+	AdjustAddEditDialogToFrequency();
+
+	any ret = nil;
+
+	while (true) {
+	    ret = UI::UserInput();
+
+	    if (ret == `frequency) {
+		AdjustAddEditDialogToFrequency();
+	    } else if (ret == `ok || ret == `next) {
+		if (! ValidateAndSaveScheduledMirroring (schd_id)) {
+		    continue;
+		} else {
+		    dialog_ret = true;
+		    break;
+		}
+	    } else if (ret == `cancel) {
+		dialog_ret = false;
+		break;
+	    } else {
+		y2error ("Unhandled ret: %1", ret);
+	    }
+	}
+
+	UI::CloseDialog();
+
+	return dialog_ret;
+    }
+
+    void SetFocusTable () {
+	UI::SetFocus (`id ("scheduled_NU_mirroring"));
+    }
+
     symbol HandleScheduledDownloadsDialog (string id, map event) {
 	any action = event["ID"]:nil;
 
+	boolean changed = false;
+
+	// Add
 	if (action == `add) {
-	    y2milestone ("Adding new scheduled mirroring...");
-Report::Message ("Everybody stay cool!
+	    changed = AddEditScheduledMirroring (-1);
+	    SetFocusTable();
 
-This functionality hasn't been implemented yet.
-Still work in progress...");
+	// Edit
 	} else if (action == `edit) {
-	    y2milestone ("Editing a scheduled mirroring...");
-Report::Message ("Everybody stay cool!
+	    integer current_item = (integer) UI::QueryWidget (`id ("scheduled_NU_mirroring"), `CurrentItem);
+	    changed = AddEditScheduledMirroring (current_item);
+	    SetFocusTable();
 
-This functionality hasn't been implemented yet.
-Still work in progress...");
+	// Delete
 	} else if (action == `delete) {
-	    y2milestone ("Removing...");
-Report::Message ("Everybody stay cool!
+	    integer current_item = (integer) UI::QueryWidget (`id ("scheduled_NU_mirroring"), `CurrentItem);
 
-This functionality hasn't been implemented yet.
-Still work in progress...");
+	    if (! Confirm::DeleteSelected()) {
+		SetFocusTable();
+		return nil;
+	    }
+
+	    YEPData::RemoveCronJob (current_item);
+	    changed = true;
+	    SetFocusTable();
+	}
+
+	if (changed) {
+	    RedrawScheduledMirroringTable();
 	}
 
 	return nil;

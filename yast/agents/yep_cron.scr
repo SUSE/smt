@@ -19,7 +19,7 @@
     `Description (
 	(`File ("/etc/cron.d/yast2-yep")),	// read this file
 	"#\n",					// comments
-	true,					// read/write
+	false,					// read/write
 	(`List (
 	    `Tuple (
 		`minute (`String ("^ \t")),

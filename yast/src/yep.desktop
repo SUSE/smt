@@ -19,6 +19,6 @@ X-SuSE-YaST-AutoInstResource=yep
 Icon=yast
 Exec=/sbin/yast2 yep 
 
-Name=Yep
-GenericName=yep
+Name=YEP Configuration
+GenericName=YEP Configuration
 X-KDE-SubstituteUID=true

@@ -27,6 +27,7 @@
     string path_to_cron = "/etc/cron.d/yast2-yep";
 
     string path_to_sync_script = "/usr/sbin/yep-ncc-sync";
+    string user_for_sync_script = "root";
 
     list <map> yep_cron_settings = [];
 
@@ -50,6 +51,56 @@
      */
     global list <map> GetCronSettings () {
 	return yep_cron_settings;
+    }
+
+    /**
+     * Adds new cron job.
+     *
+     * @param map new_cron_job
+     *
+     * @see GetCronSettings()
+     */
+    global void AddNewCronJob (map new_cron_job) {
+	new_cron_job["user"] = user_for_sync_script;
+	new_cron_job["command"] = path_to_sync_script;
+
+	yep_cron_settings = add (yep_cron_settings, new_cron_job);
+    }
+
+    /**
+     * Replaces the current cron job settings with new ones.
+     *
+     * @param integer cron_job_id (offset)
+     * @param map new_settings
+     *
+     * @see GetCronSettings()
+     */
+    global void ReplaceCronJob (integer cron_job_id, map new_settings) {
+	if (cron_job_id == nil || cron_job_id < 0) {
+	    y2error ("Undefined offset: %1", cron_job_id);
+	    return;
+	}
+
+	new_settings["user"] = user_for_sync_script;
+	new_settings["command"] = path_to_sync_script;
+
+	yep_cron_settings[cron_job_id] = new_settings;
+    }
+
+    /**
+     * Removes a current cron job.
+     *
+     * @param integer cron_job_id (offset)
+     *
+     * @see GetCronSettings()
+     */
+    global void RemoveCronJob (integer cron_job_id) {
+	if (cron_job_id == nil || cron_job_id < 0) {
+	    y2error ("Undefined offset: %1", cron_job_id);
+	    return;
+	}
+
+	yep_cron_settings = remove (yep_cron_settings, cron_job_id);
     }
 
     /**
@@ -237,12 +288,25 @@ Please, check your YEP installation."), path_to_sync_script));
     }
 
     global void ReadCronSettings () {
-	// FIXME: move to Write()
 	if (! FileUtils::Exists (path_to_cron)) {
 	    y2milestone ("Creating file %1", path_to_cron);
-	    SCR::Execute (.bin.bash, sformat ("touch '%1'", String::Quote (path_to_cron)));
+	    map cmd = (map) SCR::Execute (.target.bash_output, sformat ("touch '%1'", String::Quote (path_to_cron)));
+
+	    if (cmd["exit"]:-1 != 0) {
+		y2error ("Cannot create file %1: %2", path_to_cron, cmd);
+	    }
 	}
 
 	yep_cron_settings = (list <map>) SCR::Read (.yep_cron);
+    }
+
+    global boolean WriteCronSettings () {
+	if (! (boolean) SCR::Write (.yep_cron, yep_cron_settings)) {
+	    y2error ("Writing cron failed");
+	    Report::Error (_("Cannot write cron settings."));
+	    return false;
+	}
+
+	return true;
     }
 }

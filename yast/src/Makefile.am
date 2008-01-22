@@ -13,13 +13,13 @@ ynclude_DATA = \
 
 desktop_DATA = $(wildcard *.desktop)
 
-module_DATA = $(wildcard [A-Z]*.ycp)
+module_DATA = $(wildcard YEP*.ycp)
 
 # create a symlink for local build, #145327
 yep:
 	ln -sf . $@
 ycpchook = yep
 
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(module_DATA) $(desktop_DATA)
+EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(desktop_DATA)
 
 include $(top_srcdir)/Makefile.am.common
