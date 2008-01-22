@@ -3,6 +3,7 @@ Tue Jan 22 15:46:42 CET 2008 - locilka@suse.cz
 
 - Added possibility to add, edit and remove Scheduled Mirroring
   cron jobs.
+- Enabling and restarting cron when needed.
 
 -------------------------------------------------------------------
 Mon Jan 21 16:49:07 CET 2008 - locilka@suse.cz

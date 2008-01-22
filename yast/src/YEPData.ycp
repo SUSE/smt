@@ -234,7 +234,8 @@
 
 	    if (! Service::Reload ("apache2")) {
 		y2error ("Reloading apache2 failed");
-		Report::Error (sformat (_("Reloading service %1 failed."), "apache2"));
+		// TRANSLATORS: error message, %1 is replaced with a service-name
+		Report::Error (sformat (_("Reloading service has %1 failed."), "apache2"));
 		return false;
 	    }
 	}
@@ -301,9 +302,26 @@ Please, check your YEP installation."), path_to_sync_script));
     }
 
     global boolean WriteCronSettings () {
+	string service_name = "cron";
+
 	if (! (boolean) SCR::Write (.yep_cron, yep_cron_settings)) {
 	    y2error ("Writing cron failed");
 	    Report::Error (_("Cannot write cron settings."));
+	    return false;
+	}
+
+	if (size (yep_cron_settings) > 0) {
+	    if (! Service::Enabled (service_name)) {
+		Service::Enable (service_name);
+	    } else {
+		y2milestone ("Service cron already enabled, skipping ...");
+	    }
+	}
+
+	if (! Service::Restart (service_name)) {
+	    y2error ("Reloading %1 failed", service_name);
+	    // TRANSLATORS: error message, %1 is replaced with a service-name
+	    Report::Error (sformat (_("Reloading service has %1 failed."), service_name));
 	    return false;
 	}
 
