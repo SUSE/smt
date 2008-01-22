@@ -95,6 +95,9 @@ DONE:
   * adjusting /etc/sysconfig/apache2
   * reloading apache2 when configuration changed
   * insserving apache2 if needed
+  * configures cron to run /usr/bin/yep-mirror.pl periodically
+  * insserving cron if needed
+  * restarting cron if needed
 
 - YEP::Registration listparam has to check for "accept=''" option
   [Not needed, a stripped result is produced by the client (suse_register)
