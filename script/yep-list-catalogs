@@ -8,6 +8,7 @@ use File::Basename;
 
 my $mirrorable;
 my $domirror;
+my $verbose;
 my $help;
 
 use Getopt::Long;
@@ -15,16 +16,18 @@ use Getopt::Long;
 &Getopt::Long::GetOptions(
          'mirrorable|m'         => \$mirrorable,
          'domirror|d'        => \$domirror,
+         'verbose|v'        => \$verbose,
          'help|h' => \$help
 );
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : List known catalogs\n";
-  print "    -mirrorable / -m : only mirrorable catalogs\n";
-  print "    -domirror /   -d : only catalogs set to be mirrored\n";
+  print basename($0) . " : list known catalogs\n";
+  print "    -mirrorable (-m) : only mirrorable catalogs\n";
+  print "    -domirror   (-d) : only catalogs set to be mirrored\n";
+  print "    -verbose    (-v) : show detailed catalog information\n";
   exit 0;
 }
 
 my %opts = ( );
-YEP::CLI::listCatalogs(mirrorable => $mirrorable, domirror => $domirror);
+YEP::CLI::listCatalogs(mirrorable => $mirrorable, domirror => $domirror, verbose => $verbose);

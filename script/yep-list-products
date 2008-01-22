@@ -18,7 +18,7 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : List known products\n";
+  print basename($0) . " : list known products\n";
   exit 0;
 }
 

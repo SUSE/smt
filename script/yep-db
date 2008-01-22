@@ -7,7 +7,7 @@ use lib ("/srv/www/perl-lib/");
 use YEP::Utils;
 use Getopt::Long qw(:config pass_through no_auto_abbrev);
 use Data::Dumper;
-
+use File::Basename;
 
 my $dbh = undef;
 my $sth = undef;
@@ -188,7 +188,7 @@ sub createItem($)
 sub usage()
 {
 
-print "Usage:   $0 --<action> <target> [--<parameter>  <value>]...
+print "Usage:   " . basename($0) . " --<action> <target> [--<parameter>  <value>]...
 
   action
      create|c  -  create new entry

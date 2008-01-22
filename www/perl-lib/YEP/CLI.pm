@@ -126,7 +126,15 @@ sub listCatalogs
     $sth->execute();
     while (my @values = $sth->fetchrow_array())  
     {
-        print "[" . $values[0] . "]" . " => " . $values[1] . "\n";
+        print "[" . $values[1] . "] " . $values[2] . "\n";
+        if ( exists $options{ verbose } && defined $options{verbose} )
+        {
+          print "|\\-local-path => " . $values[4] . "\n";
+          print "| -url        => " . $values[5] . "\n";
+          print "| -type       => " . $values[6] . "\n";
+          print "| -mirrorable => " . $values[7] . "\n";
+          print "| -mirror?    => " . $values[8] . "\n";
+        }
     }
     $sth->finish();
 }

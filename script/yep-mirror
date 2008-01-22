@@ -11,6 +11,7 @@ use Config::IniFiles;
 use File::Path;
 use URI;
 use Getopt::Long;
+use File::Basename;
 
 #use Data::Dumper;
 
@@ -32,7 +33,7 @@ my $result = GetOptions ("debug|d"     => \$debug,
 
 if($help)
 {
-    print "yep-mirror.pl [OPTIONS]\n";
+    print basename($0) . " [OPTIONS]\n";
     print "\n";
     print "Options:\n";
     print "--debug -d     enable debug mode\n";
