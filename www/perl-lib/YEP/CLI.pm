@@ -213,14 +213,17 @@ sub setMirrorableCatalogs
                                   }
     );
 
-    my $sth = $dbh->prepare(qq{select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='yum'});
-    $sth->execute();
-    while (my @values = $sth->fetchrow_array())
+    my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='yum'";
+    #my $sth = $dbh->prepare($sql);
+    #$sth->execute();
+    #while (my @values = $sth->fetchrow_array())
+    my $values = $dbh->selectall_arrayref($sql);
+    foreach my $v (@{$values})
     { 
-        my $catName = $values[1];
-        my $catLocal = $values[2];
-        my $catUrl = $values[3];
-        my $catTarget = $values[4];
+        my $catName = $v->[1];
+        my $catLocal = $v->[2];
+        my $catUrl = $v->[3];
+        my $catTarget = $v->[4];
         if( $catUrl ne "" && $catLocal ne "" )
         {
             my $tempdir = File::Temp::tempdir(CLEANUP => 1);
