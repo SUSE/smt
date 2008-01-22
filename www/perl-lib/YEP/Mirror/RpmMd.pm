@@ -12,6 +12,7 @@ use Time::HiRes qw(gettimeofday tv_interval);
 use Digest::SHA1  qw(sha1 sha1_hex);
 
 use YEP::Mirror::Job;
+use YEP::Parser::RpmMd;
 
 BEGIN 
 {
@@ -32,8 +33,9 @@ sub new
     $self->{URI}   = undef;
     # local destination ie: /var/repo/download.suse.org/foo/10.3
     $self->{LOCALPATH}   = undef;
-    $self->{JOBS}   = [];
-    $self->{VERIFYJOBS}   = [];
+    $self->{JOBS}   = {};
+    $self->{VERIFYJOBS}   = {};
+    $self->{DEEPVERIFY}   = 0;
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
@@ -41,32 +43,6 @@ sub new
     $self->{DEBUG} = 0;
     $self->{LASTUPTODATE} = 0;
     $self->{REMOVEINVALID} = 0;
-
-    # stores the verifiy state
-    # when verify task is running
-
-    # current job
-    $self->{VERIFY}->{CURRENT}  = undef;
-    # State of the resource
-    # 0 out the tag
-    # 1 inside the resource
-    # 2 inside checksum
-    # 3 inside open-checksum
-    # 4 inside timestamp
-    # 5 inside location
-    # -1 other
-    #
-    # as only checksums have text data, the others
-    # will not probably be used.
-    $self->{VERIFY}->{STATE} = 0;
-
-    # state of the type of resource we are in
-    # 0 repomd.xml data
-    # 1 patches list patch
-    # 2 pattern list pattern
-    # 3 a patch definition
-    # -1 other
-    $self->{VERIFY}->{CURRENTFILE} = undef;
 
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
@@ -90,6 +66,13 @@ sub uri
     my $self = shift;
     if (@_) { $self->{URI} = shift }
     return $self->{URI};
+}
+
+sub deepverify
+{
+    my $self = shift;
+    if (@_) { $self->{DEEPVERIFY} = shift }
+    return $self->{DEEPVERIFY};
 }
 
 # creates a path from a url
@@ -116,7 +99,9 @@ sub mirrorTo()
     my $self = shift;
     my $dest = shift;
     my $options = shift;
-  
+    
+    my $force = 0;
+    
     if ( not -e $dest )
     { die $dest . " does not exist"; }
     my $t0 = [gettimeofday] ;
@@ -140,6 +125,12 @@ sub mirrorTo()
     {
       $self->{LOCALPATH} = $dest;
     }
+
+    if ( defined $options && exists $options->{ force } && $options->{ force } == 1 )
+    {
+        $force = 1;
+    }
+
     print "Mirroring: ", $self->{URI}, "\n";
     print "Target:    ", $self->{LOCALPATH}, "\n";
 
@@ -154,7 +145,7 @@ sub mirrorTo()
     $job->resource( "/repodata/repomd.xml" );
 
     # check if we need to mirror first
-    if ( not $job->outdated() )
+    if (!$force &&  ! $job->outdated() )
     {
       # repomd is the same
       # check if the local repository is valid
@@ -223,28 +214,54 @@ sub mirrorTo()
     }
 
     # parse it and find more resources
-    $self->_parseXmlResource( $destfile );
-
-    my $lastresource = "";
-    foreach ( sort {$a->resource cmp $b->resource} @{$self->{JOBS}} )
+    my $parser = YEP::Parser::RpmMd->new();
+    $parser->resource($self->{LOCALPATH});
+    $parser->parse("repodata/repomd.xml", sub { download_handler($self, @_)});
+ 
+    foreach my $r ( keys %{$self->{JOBS}})
     {
-        # skip duplicates
-        next if( $lastresource eq $_->resource() );
-        $lastresource = $_->resource();
-        
-        my $mres = $_->mirror();
-        if( $mres == 1 )
+        my $tries = 3;
+        do
         {
-            $self->{STATISTIC}->{ERROR} += 1;
-        }
-        elsif( $mres == 2 )
-        {
-            $self->{STATISTIC}->{UPTODATE} += 1;
-        }
-        else
-        {
-            $self->{STATISTIC}->{DOWNLOAD} += 1;
-        }
+            my $mres = $self->{JOBS}->{$r}->mirror();
+            if( $mres == 1 )
+            {
+                $tries--;
+                if($tries > 0)
+                {
+                    unlink($self->{JOBS}->{$r}->local());
+                }
+                else
+                {
+                    $self->{STATISTIC}->{ERROR} += 1;
+                }
+            }
+            elsif( $mres == 2 )
+            {
+                $self->{STATISTIC}->{UPTODATE} += 1;
+                $tries = 0;
+            }
+            else
+            {
+                if($self->{JOBS}->{$r}->verify())
+                {
+                    $tries = 0;
+                    $self->{STATISTIC}->{DOWNLOAD} += 1;
+                }
+                else
+                {
+                    $tries--;
+                    if($tries > 0)
+                    {
+                        unlink($self->{JOBS}->{$r}->local());
+                    }
+                    else
+                    {
+                        $self->{STATISTIC}->{ERROR} += 1;
+                    }
+                }
+            }
+        } while $tries > 0;
     }
 
     print "=> Finished mirroring ".$self->{URI}."\n";
@@ -264,6 +281,8 @@ sub clean()
     my $self = shift;
     my $dest = shift;
     
+    my $t0 = [gettimeofday] ;
+
     if ( not -e $dest )
     { die "Destination '$dest' does not exist"; }
 
@@ -277,16 +296,22 @@ sub clean()
              sub
              {
                  if ( -f $File::Find::name )
-                 { $self->{CLEANLIST}->{$File::Find::name} = 1; }
+                 { 
+                     my $name = $File::Find::name;
+                     $name =~ s/\/\.?\//\//g;
+                     $self->{CLEANLIST}->{$name} = 1; 
+                 }
              }
              , no_chdir => 1 }, $self->{LOCALPATH} );
 
+    my $parser = YEP::Parser::RpmMd->new();
+    $parser->resource($self->{LOCALPATH});
+    $parser->parse("/repodata/repomd.xml", sub { clean_handler($self, @_)});
     
     my $path = $self->{LOCALPATH}."/repodata/repomd.xml";
-    $self->_parseXmlResource( $path, 1);
     # strip out /./ and //
     $path =~ s/\/\.?\//\//g;
-
+    
     delete $self->{CLEANLIST}->{$path} if (exists $self->{CLEANLIST}->{$path});
     delete $self->{CLEANLIST}->{$path.".asc"} if (exists $self->{CLEANLIST}->{$path.".asc"});;
     delete $self->{CLEANLIST}->{$path.".key"} if (exists $self->{CLEANLIST}->{$path.".key"});;
@@ -299,59 +324,9 @@ sub clean()
     }
 
     print "Finished cleaning ", $self->{LOCALPATH}, "\n";
-    print "Removed files:    $cnt\n";
+    print "=> Removed files : $cnt\n";
+    print "=> Clean Time    : ".(tv_interval($t0))." seconds\n";
     print "\n";
-}
-
-# parses a xml resource
-sub _parseXmlResource()
-{
-    my $self     = shift;
-    my $path     = shift;
-    my $forClean = shift || 0;
-    my $parser   = undef;    
-    
-    if(!$forClean)
-    {
-        $parser = XML::Parser->new( Handlers =>
-                                    { Start=> sub { mirror_handle_start_tag($self, @_) },
-                                      End=>\&mirror_handle_end_tag,
-                                    });
-    }
-    else
-    {
-        $parser = XML::Parser->new( Handlers =>
-                                    { Start=> sub { handle_start_tag_clean($self, @_) },
-                                      End=>\& mirror_handle_end_tag,
-                                    });
-    }
-
-    if ( $path =~ /(.+)\.gz/ )
-    {
-      my $fh = IO::Zlib->new($path, "rb");
-      eval {
-          # using ->parse( $fh ) result in errors
-          #my @cont = $fh->getlines();
-          #$parser->parse( join("", @cont ));
-          $parser->parse( $fh );
-      };
-      if($@) {
-          # ignore the errors, but print them
-          chomp($@);
-          print STDERR "Error: $@\n";
-      }
-    }
-    else
-    {
-      eval {
-          $parser->parsefile( $path );
-      };
-      if($@) {
-          # ignore the errors, but print them
-          chomp($@);
-          print STDERR "Error: $@\n";
-      }
-    }
 }
 
 # verifies the repository on path
@@ -360,6 +335,8 @@ sub verify()
     my $self = shift;
     my $path = shift;
     my $options = shift;
+
+    my $t0 = [gettimeofday] ;
 
     # if path was not defined, we can use last
     # mirror destination dir
@@ -377,7 +354,6 @@ sub verify()
     if ( not -e $self->{LOCALPATH} )
     { die $self->{LOCALPATH} . " does not exist"; }
 
-    my $t0 = [gettimeofday] ;
 
     print "Verifying:    ", $self->{LOCALPATH}, "\n";
 
@@ -386,19 +362,20 @@ sub verify()
     $self->{STATISTIC}->{ERROR} = 0;
     
     # parse it and find more resources
-    $self->_verifyXmlResource( $destfile );
+    my $parser = YEP::Parser::RpmMd->new();
+    $parser->resource($self->{LOCALPATH});
+    $parser->parse("repodata/repomd.xml", sub { verify_handler($self, @_)});
 
     my $job;
-    foreach ( sort {$a->resource cmp $b->resource} @{$self->{VERIFYJOBS}} )
+    my $cnt = 0;
+    foreach (sort keys %{$self->{VERIFYJOBS}} )
     {
-        # skip duplicates
-        $job = $_ if ! $job;
-        next if( $job->resource eq $_->resource );
-        $job = $_;
-
+        $job = $self->{VERIFYJOBS}->{$_};
+        
         #print STDERR "Verify: " . $job->resource . " : ";
         print "Verify: ". $job->resource . ": " if ($self->{DEBUG});
         my $ok = $job->verify();
+        $cnt++;
         if ($ok || ($job->resource eq "/repodata/repomd.xml") )
         {
             print "OK\n" if ($self->{DEBUG});
@@ -418,7 +395,7 @@ sub verify()
         }
     }
 
-    print "=> Finished verifying: ".$self->{LOCALPATH}."\n";
+    print "=> Finished verifying: ".$self->{LOCALPATH}." $cnt files\n";
     print "=> Errors            : ".$self->{STATISTIC}->{ERROR}."\n";
     print "=> Verify Time       : ".(tv_interval($t0))." seconds\n";
     print "\n";
@@ -428,276 +405,144 @@ sub verify()
 }
 
 
-# parses a xml resource
-sub _verifyXmlResource()
+sub clean_handler
 {
     my $self = shift;
-    my $path = shift;
+    my $data = shift;
 
-    my $oldfile = $self->{VERIFY}->{CURRENTFILE};
-    $self->{VERIFY}->{CURRENTFILE} = $path;
+    if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
+       $data->{LOCATION} ne "" )
+    {
+        # get the repository index
+        my $resource = $self->{LOCALPATH}."/".$data->{LOCATION};
+        # strip out /./ and //
+        $resource =~ s/\/\.?\//\//g;
 
-    my $parser = XML::Parser->new( Handlers =>
-                                   { Start=> sub { verify_handle_start_tag($self, @_) },
-                                     End=>=> sub { verify_handle_end_tag($self, @_) },
-                                     Char => sub { verify_handle_char($self, @_) }
-                                   });
-    if ( $path =~ /(.+)\.gz/ )
-    {
-      my $fh = IO::Zlib->new($path, "rb");
-      eval {
-          # using ->parse( $fh ) result in errors
-          #my @cont = $fh->getlines();
-          #$parser->parse( join("", @cont ));
-          $parser->parse( $fh );
-      };
-      if($@) {
-          # ignore the errors, but print them
-          chomp($@);
-          print STDERR "Error: $@\n";
-      }
+        # if this path is in the CLEANLIST, delete it
+        delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
     }
-    else
-    {
-        eval {
-            $parser->parsefile( $path );
-        };
-        if($@) {
-            # ignore the errors, but print them
-            chomp($@);
-            print STDERR "Error: $@\n";
-        }
-    }
-    $self->{VERIFY}->{CURRENTFILE} = $oldfile;
 }
 
 
-# handles XML reader start tag events
-sub mirror_handle_start_tag()
+sub download_handler
 {
     my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
-    # ask the expat object about our position
-    my $line = $expat->current_line;
+    my $data = shift;
 
-    # we are looking for <location href="foo"/>
-    if ( $element eq "location" )
+    
+    if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
+       $data->{LOCATION} ne "" && !exists $self->{JOBS}->{$data->{LOCATION}})
     {
         # get the repository index
         my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
-        $job->resource( $attrs{"href"} );
+        $job->resource( $data->{LOCATION} );
+        $job->checksum( $data->{CHECKSUM} );
         $job->localdir( $self->{LOCALPATH} );
         $job->uri( $self->{URI} );
-
+    
         # if it is an xml file we have to download it now and
         # process it
         if (  $job->resource =~ /(.+)\.xml(.*)/ )
         {
-          # mirror it first, so we can parse it
-            my $mres = $job->mirror();
-            if( $mres == 1 )
+            my $tries = 3;
+            do 
             {
-                $self->{STATISTIC}->{ERROR} += 1;
-            }
-            elsif( $mres == 2 )
-            {
-                $self->{STATISTIC}->{UPTODATE} += 1;
-            }
-            else
-            {
-                $self->{STATISTIC}->{DOWNLOAD} += 1;
-            }
-            
-            $self->_parseXmlResource( $job->local() );
+                # mirror it first, so we can parse it
+                my $mres = $job->mirror();
+                if( $mres == 1 )
+                {
+                    $tries--;
+                    if($tries > 0)
+                    {
+                        unlink($job->local());
+                    }
+                    else
+                    {
+                        $self->{STATISTIC}->{ERROR} += 1;
+                    }
+                }
+                elsif( $mres == 2 )
+                {
+                    $self->{STATISTIC}->{UPTODATE} += 1;
+                    $tries = 0;
+                }
+                else
+                {
+                    if($job->verify())
+                    {
+                        $tries = 0;
+                        $self->{STATISTIC}->{DOWNLOAD} += 1;
+                    }
+                    else
+                    {
+                        $tries--;
+                        if($tries > 0)
+                        {
+                            unlink($job->local());
+                        }
+                        else
+                        {
+                            $self->{STATISTIC}->{ERROR} += 1;
+                        }
+                    }
+                }
+            } while $tries > 0;
         }
         else
         {
             # download it later
             if ( $job->resource )
             {
-              push @{$self->{JOBS}}, $job;
+                if(!exists $self->{JOBS}->{$data->{LOCATION}})
+                {
+                    $self->{JOBS}->{$data->{LOCATION}} = $job;
+                }
             }
             else
             {
-              print STDERR "no resource on $job->local";
+                print STDERR "no resource on $job->local";
+            }
+        }
+    }
+    elsif(exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
+    {
+        foreach my $file (@{$data->{PKGFILES}})
+        {
+            if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
+               $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
+            {
+                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+                $job->resource( $file->{LOCATION} );
+                $job->checksum( $file->{CHECKSUM} );
+                $job->localdir( $self->{LOCALPATH} );
+                $job->uri( $self->{URI} );
+
+                $self->{JOBS}->{$file->{LOCATION}} = $job;
             }
         }
     }
 }
 
-# handles XML reader start tag events for clean
-sub handle_start_tag_clean()
+sub verify_handler
 {
     my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
-    # ask the expat object about our position
-    my $line = $expat->current_line;
+    my $data = shift;
 
-    # we are looking for <location href="foo"/>
-    if ( $element eq "location" )
+    if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
+       $data->{LOCATION} ne "")
     {
-        # get the repository index
-        my $resource = $self->{LOCALPATH}."/".$attrs{"href"};
-        # strip out /./ and //
-        $resource =~ s/\/\.?\//\//g;
-
-        # if this path is in the CLEANLIST, delete it
-        delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
-
-        # if it is an xml file we have to download it now and
-        # process it
-        if (  $resource =~ /(.+)\.xml(.*)/ )
+        if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            $self->_parseXmlResource( $resource, 1);
+            my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+            $job->resource( $data->{LOCATION} );
+            $job->checksum( $data->{CHECKSUM} );
+            $job->localdir( $self->{LOCALPATH} );
+            
+            if(!exists $self->{VERIFYJOBS}->{$job->local()})
+            {
+                $self->{VERIFYJOBS}->{$job->local()} = $job;
+            }
         }
-    }
-}
-
-sub mirror_handle_end_tag()
-{
-  my( $expat, $element, %attrs ) = @_;
-}
-
-# handles XML reader start tag events
-# for verification
-sub verify_handle_start_tag()
-{
-    my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
-    # ask the expat object about our position
-    my $line = $expat->current_line;
-
-    if ( ( ( $element eq "data" ) || ( $element eq "patch" ) || ( $element eq "package" ) ) &&
-         ( $self->{VERIFY}->{STATE} eq 0 ) )
-    {
-        $self->{VERIFY}->{STATE} = 1;
-
-        # at the start of a new resource, the current job
-        # should be null
-        if ( ( not exists $self->{VERIFY}->{CURRENT}) && ( not defined $self->{VERIFY}->{CURRENT}) )
-        {
-          print STDERR "Unexpected tag '$element' at line $line\n";
-          $self->{STATISTIC}->{ERROR} += 1;
-          return 0;
-        }
-
-        $self->{VERIFY}->{CURRENT} = YEP::Mirror::Job->new();
-        $self->{VERIFY}->{CURRENT}->localdir( $self->{LOCALPATH} );
-        return 1;
-    }
-
-    # we are looking for <location href="foo"/>
-    if ( ( $element eq "location" ) && ( $self->{VERIFY}->{STATE} eq 1 ) )
-    {
-        # should had been defined at beginin of the
-        # resource start tag
-        if ( ( not exists $self->{VERIFY}->{CURRENT}) && ( not defined $self->{VERIFY}->{CURRENT}) )
-        {
-            print STDERR "Unexpected tag '$element' at line $line\n";
-            $self->{STATISTIC}->{ERROR} += 1;
-            return 0;
-        }
- 
-        $self->{VERIFY}->{CURRENT}->resource( $attrs{"href"} );
-        return 1;
-    }
-
-    if ( ( $element eq "checksum") && ( $self->{VERIFY}->{STATE} eq 1 ) )
-    {
-        $self->{VERIFY}->{STATE} = 2;
-        # should had been defined at beginin of the
-        # resource start tag
-        if ( ( not exists $self->{VERIFY}->{CURRENT}) && ( not defined $self->{VERIFY}->{CURRENT}) )
-        {
-          print STDERR "Unexpected tag 'checksum' at line: " . $line . "\n";
-          $self->{STATISTIC}->{ERROR} += 1;
-          return 0;
-        }
-
-        $self->{VERIFY}->{CURRENT}->checksum( $attrs{"href"} );
-        return 1;
-    }
-
-    if ( ( $element eq "open-checksum") && ( $self->{VERIFY}->{STATE} eq 1 ) )
-    {
-      $self->{VERIFY}->{STATE} = 3;
-    }
-
-    if ( ( $element eq "timestamp") && ( $self->{VERIFY}->{STATE} eq 1 ) )
-    {
-      $self->{VERIFY}->{STATE} = 4;
-    }
-}
-
-sub verify_handle_char()
-{
-    my $self = shift;
-    my( $expat, $text ) = @_;
-
-    # checksum state
-    # capture the checksum itself
-    if ( $self->{VERIFY}->{STATE} eq 2 )
-    {
-        my $checksum = $self->{VERIFY}->{CURRENT}->checksum;
-        
-        if(defined $checksum && $checksum ne "")
-        {
-            # sometimes we got not the complete checksum in once
-            $checksum .= $text;
-        }
-        else
-        {
-            $checksum = $text;
-        }
-        
-        $self->{VERIFY}->{CURRENT}->checksum( $checksum );
-    }
-}
-
-sub verify_handle_end_tag()
-{
-    my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
-
-    if ( ( ( $element eq "checksum"      ) ||
-           ( $element eq "location"      ) ||
-           ( $element eq "timestamp"     ) ||
-           ( $element eq "open-checksum" ) ) &&
-         ( $self->{VERIFY}->{STATE} > 1 ) )
-    {
-        # back to state 1
-        $self->{VERIFY}->{STATE} = 1;
-    }
-    elsif ( ( ( $element eq "data"    ) ||
-              ( $element eq "patch"   ) ||
-              ( $element eq "package" ) ||
-              ( $element eq "pattern" )    ) &&
-            ( $self->{VERIFY}->{STATE} eq 1 ) )
-    {
-      $self->{VERIFY}->{STATE} = 0;
-
-      # verify it later
-      my $job = $self->{VERIFY}->{CURRENT};
-      
-      if ( not ( $self->{VERIFY}->{CURRENTFILE} =~ /^(.+)patch-(.+)\.xml(.*)/ && $element eq "patch" ) )
-      {
-        push @{$self->{VERIFYJOBS}}, $job;
-      }
-
-      #print STDERR $self->{VERIFY}->{CURRENTFILE} . "\n";
-
-      if ($self->{VERIFY}->{CURRENT}->resource =~ /(.+)\.xml(.*)/)
-      {
-        if ( (not $self->{VERIFY}->{CURRENT}->resource =~ /(.*)\/filelists\.xml(.*)/ ) &&
-             (not $self->{VERIFY}->{CURRENT}->resource =~ /(.*)\/other\.xml(.*)/ ) )
-        {
-          $self->{VERIFY}->{CURRENT} = undef;
-          #print STDERR " Ver " . $self->{VERIFY}->{CURRENT}->resource . "\n" ;
-          $self->_verifyXmlResource( $job->local );
-        }
-      }
-      
-      $self->{VERIFY}->{CURRENT} = undef;
     }
 }
 
