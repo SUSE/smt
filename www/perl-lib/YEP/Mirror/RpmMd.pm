@@ -3,7 +3,6 @@ use strict;
 
 use LWP::UserAgent;
 use URI;
-use XML::Parser;
 use File::Path;
 use File::Find;
 use Crypt::SSLeay;
