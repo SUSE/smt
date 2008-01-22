@@ -3,9 +3,9 @@ package YEP::Mirror::NU;
 use strict;
 
 use URI;
-use XML::Parser;
 use File::Path;
 
+use YEP::Parser::NU;
 use YEP::Mirror::Job;
 use YEP::Mirror::RpmMd;
 use YEP::Utils;
@@ -102,7 +102,6 @@ sub new
     $self->{URI}   = undef;
     # local destination ie: /var/repo/download.suse.org/foo/10.3
     $self->{LOCALPATH}   = undef;
-    $self->{JOBS}   = [];
     $self->{DEBUG}  = 0;
     $self->{DEEPVERIFY} = 0;
     
@@ -187,11 +186,11 @@ sub mirrorTo()
         die "cannot connect to database";
     }
     $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
-    $dbh->disconnect;
     
-
-    # parse it and find more resources
-    $self->_parseXmlResource( $destfile );
+    my $parser = YEP::Parser::NU->new();
+    $parser->parse($destfile, sub{ mirror_handler($self, $dbh, @_) });
+    
+    $dbh->disconnect;
 }
 
 # deletes all files not referenced in
@@ -209,149 +208,74 @@ sub clean()
     $self->{LOCALPATH} = $dest;
 
     my $path = $self->{LOCALPATH}."/repo/repoindex.xml";
-    $self->_parseXmlResource( $path, 1);
+
+    my $dbh = YEP::Utils::db_connect();
+    if(!$dbh)
+    {
+        die "cannot connect to database";
+    }
+
+    my $parser = YEP::Parser::NU->new();
+    $parser->parse($path, sub{ clean_handler($self, $dbh, @_) });
+    
+    $dbh->disconnect;
 
 }
 
-# parses a xml resource
-sub _parseXmlResource()
-{
-    my $self     = shift;
-    my $path     = shift;
-    my $forClean = shift || 0;
-    
-    my $parser; 
-    
-    if(!$forClean)
-    {
-        $parser = XML::Parser->new( Handlers =>
-                                    { Start=> sub { handle_start_tag($self, @_) },
-                                      End=>\&handle_end_tag,
-                                    });
-    }
-    else
-    {
-        $parser = XML::Parser->new( Handlers =>
-                                    { Start=> sub { handle_start_tag_clean($self, @_) },
-                                      End=>\&handle_end_tag,
-                                    });
-    }
-    
-    if ( $path =~ /(.+)\.gz/ )
-    {
-      use IO::Zlib;
-      my $fh = IO::Zlib->new($path, "rb");
-      eval {
-          # using ->parse( $fh ) result in errors
-          my @cont = $fh->getlines();
-          $parser->parse( join("", @cont ));
-      };
-      if($@) {
-          # ignore the errors, but print them
-          chomp($@);
-          print STDERR "Error: $@\n";
-      }
-    }
-    else
-    {
-      eval {
-          $parser->parsefile( $path );
-      };
-      if($@) {
-          # ignore the errors, but print them
-          chomp($@);
-          print STDERR "Error: $@\n";
-      }
-    }
-}
-
-# handles XML reader start tag events
-sub handle_start_tag()
+sub mirror_handler
 {
     my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
-    # ask the expat object about our position
-    my $line = $expat->current_line;
+    my $dbh  = shift;
+    my $data = shift;
+    
+    # Set Mirrorable flag of this catalog to "Y"
+    $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+                     $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ));
+    my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+                                                $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ) );
+    
 
-    # we are looking for <repo .../>
-    if ( $element eq "repo" )
+    if(defined $res && exists $res->[0] && 
+       defined $res->[0] && $res->[0] eq "Y")
     {
-        # check if we want to mirror this repo
-        my $dbh = YEP::Utils::db_connect();
-        if(!$dbh)
-        {
-            # FIXME: Is "die" correct here ? 
-            die "cannot connect to database";
-        }
+        # get the repository index
+        my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
         
-        # Set Mirrorable flag of this catalog to "Y"
-        $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-                         $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
-        my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-                                                    $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
-        $dbh->disconnect;
-
-        if(defined $res && exists $res->[0] && 
-           defined $res->[0] && $res->[0] eq "Y")
-        {
-            # get the repository index
-            my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
-            
-            my $catalogURI = join("/", $self->{URI}, "repo", $attrs{"path"});
-            my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};
-            
-            &File::Path::mkpath( $localPath );
-            
-            $mirror->uri( $catalogURI );
-            $mirror->deepverify($self->{DEEPVERIFY});
-            $mirror->mirrorTo( $localPath );
-        }
+        my $catalogURI = join("/", $self->{URI}, "repo", $data->{PATH});
+        my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
+        
+        &File::Path::mkpath( $localPath );
+        
+        $mirror->uri( $catalogURI );
+        $mirror->deepverify($self->{DEEPVERIFY});
+        $mirror->mirrorTo( $localPath );
     }
 }
 
-# handles XML reader start tag events for Clean
-sub handle_start_tag_clean()
+
+sub clean_handler
 {
     my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
-    # ask the expat object about our position
-    my $line = $expat->current_line;
+    my $dbh  = shift;
+    my $data = shift;
 
-    # we are looking for <repo .../>
-    if ( $element eq "repo" )
+    # Set Mirrorable flag of this catalog to "Y"
+    $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+                     $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ));
+    my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+                                                $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ) );
+    
+    if(defined $res && exists $res->[0] &&
+       defined $res->[0] && $res->[0] eq "Y")
     {
-        # check if we want to mirror this repo
-        my $dbh = YEP::Utils::db_connect();
-        if(!$dbh)
-        {
-            # FIXME: Is "die" correct here ? 
-            die "cannot connect to database";
-        }
+        my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
         
-        # Set Mirrorable flag of this catalog to "Y"
-        $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-                         $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
-        my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-                                                    $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
-        $dbh->disconnect;
-
-        if(defined $res && exists $res->[0] &&
-           defined $res->[0] && $res->[0] eq "Y")
-        {
-            my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
-            
-            my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};
-            $localPath =~ s/\/\.?\//\//g;
-            $rpmmd->deepverify($self->{DEEPVERIFY});
-            
-            $rpmmd->clean( $localPath );
-        }
+        my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
+        $localPath =~ s/\/\.?\//\//g;
+        $rpmmd->deepverify($self->{DEEPVERIFY});
+        
+        $rpmmd->clean( $localPath );
     }
-}
-
-sub handle_end_tag()
-{
-  my( $expat, $element, %attrs ) = @_;
 }
 
 1;
