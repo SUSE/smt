@@ -20,9 +20,9 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : list known products\n";
-  print "    -verbose    (-v) : show detailed product information\n";
+  print basename($0) . " : list active registrations\n";
+  print "    -verbose    (-v) : show detailed registration information\n";
   exit 0;
 }
 
-YEP::CLI::listProducts(verbose => $verbose);
+YEP::CLI::listRegistrations(verbose => $verbose);

@@ -141,6 +141,8 @@ sub listCatalogs
 
 sub listProducts
 {
+    my %options = @_;
+
     my $sth = $dbh->prepare(qq{select * from Products});
     $sth->execute();
     while (my ( $PRODUCTDATAD,
@@ -161,7 +163,11 @@ sub listProducts
                                          # there's nothing left
     {
         #print "$nickname, $favorite_number\n";
-        print "$PRODUCT\n";
+        print "$PRODUCT $VERSION $ARCH\n";
+        if ( exists $options{ verbose } && defined $options{verbose} )
+        {
+          #print "$PARAMLIST\n";
+        }
     }
     $sth->finish();
 }
