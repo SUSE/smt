@@ -155,8 +155,9 @@ sub mirrorTo()
     # the destination directory
     # so we save the repo to:
     # $destdir/hostname.com/path
-    my $uri = URI->new($self->{URI});
-
+    my $saveuri = URI->new($self->{URI});
+    $saveuri->userinfo(undef);
+    
     if ( $$options{ urltree } eq 1 )
     {
       $self->{LOCALPATH} = join( "/", ( $dest, $self->localUrlPath() ) );
@@ -165,7 +166,7 @@ sub mirrorTo()
     {
       $self->{LOCALPATH} = $dest;
     }
-    print "Mirroring: ", $self->{URI}, "\n";
+    print "Mirroring: ", $saveuri->as_string, "\n";
     print "Target:    ", $self->{LOCALPATH}, "\n";
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repo/repoindex.xml" ) );

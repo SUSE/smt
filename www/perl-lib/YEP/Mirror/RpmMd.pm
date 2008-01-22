@@ -114,8 +114,9 @@ sub mirrorTo()
     # the destination directory
     # so we save the repo to:
     # $destdir/hostname.com/path
-    my $uri = URI->new($self->{URI});
-
+    my $saveuri = URI->new($self->{URI});
+    $saveuri->userinfo(undef);
+    
     if ( defined $options && exists $options->{ urltree } && $options->{ urltree } == 1 )
     {
       $self->{LOCALPATH} = join( "/", ( $dest, $self->localUrlPath() ) );
@@ -130,7 +131,7 @@ sub mirrorTo()
         $force = 1;
     }
 
-    print "Mirroring: ", $self->{URI}, "\n";
+    print "Mirroring: ", $saveuri->as_string, "\n";
     print "Target:    ", $self->{LOCALPATH}, "\n";
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
@@ -150,7 +151,7 @@ sub mirrorTo()
       # check if the local repository is valid
       if ( $self->verify($self->{LOCALPATH}, {removeinvalid => 1}) )
       {
-          print "=> Finished mirroring ".$self->{URI}." All files are up-to-date.\n\n";
+          print "=> Finished mirroring ".$saveuri->as_string." All files are up-to-date.\n\n";
           $self->{LASTUPTODATE} = 1;
           return 0;
       }
@@ -263,7 +264,7 @@ sub mirrorTo()
         } while $tries > 0;
     }
 
-    print "=> Finished mirroring ".$self->{URI}."\n";
+    print "=> Finished mirroring ".$saveuri->as_string."\n";
     print "=> Downloaded Files: ".$self->{STATISTIC}->{DOWNLOAD}."\n";
     print "=> Up to date Files: ".$self->{STATISTIC}->{UPTODATE}."\n";
     print "=> Download Errors : ".$self->{STATISTIC}->{ERROR}."\n";
