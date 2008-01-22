@@ -130,3 +130,21 @@ else
     $mirror->mirrorTo( $LocalBasePath, { urltree => 0 } );
 }
 
+# search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
+
+$hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE from Catalogs where MIRRORABLE='N' and DOMIRROR='Y'", "CATALOGID" );
+
+if(keys %{$hash} == 0)
+{
+    exit 0;
+}
+
+my $warning = "WARNING: The following Catalogs cannot be mirrored.\n";
+$warning   .= "         Maybe you have not enough permissions to download these Catalogs?\n\n";
+
+foreach my $id (keys %{$hash})
+{
+    $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
+}
+
+print $warning;
