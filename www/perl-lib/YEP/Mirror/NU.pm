@@ -104,6 +104,7 @@ sub new
     $self->{LOCALPATH}   = undef;
     $self->{JOBS}   = [];
     $self->{DEBUG}  = 0;
+    $self->{DEEPVERIFY} = 0;
     
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
@@ -120,6 +121,13 @@ sub uri
     my $self = shift;
     if (@_) { $self->{URI} = shift }
     return $self->{URI};
+}
+
+sub deepverify
+{
+    my $self = shift;
+    if (@_) { $self->{DEEPVERIFY} = shift }
+    return $self->{DEEPVERIFY};
 }
 
 # creates a path from a url
@@ -279,12 +287,12 @@ sub handle_start_tag()
         # Set Mirrorable flag of this catalog to "Y"
         $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                          $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
-        my $res = $dbh->selectall_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+        my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                                                     $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
         $dbh->disconnect;
 
-        if(defined $res && exists $res->[0]->[0] && 
-           defined $res->[0]->[0] && $res->[0]->[0] eq "Y")
+        if(defined $res && exists $res->[0] && 
+           defined $res->[0] && $res->[0] eq "Y")
         {
             # get the repository index
             my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
@@ -295,6 +303,7 @@ sub handle_start_tag()
             &File::Path::mkpath( $localPath );
             
             $mirror->uri( $catalogURI );
+            $mirror->deepverify($self->{DEEPVERIFY});
             $mirror->mirrorTo( $localPath );
         }
     }
@@ -322,17 +331,18 @@ sub handle_start_tag_clean()
         # Set Mirrorable flag of this catalog to "Y"
         $dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                          $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ));
-        my $res = $dbh->selectall_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+        my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                                                     $dbh->quote($attrs{"name"}), $dbh->quote($attrs{"distro_target"}) ) );
         $dbh->disconnect;
 
-        if(defined $res && exists $res->[0]->[0] &&
-           defined $res->[0]->[0] && $res->[0]->[0] eq "Y")
+        if(defined $res && exists $res->[0] &&
+           defined $res->[0] && $res->[0] eq "Y")
         {
             my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
             
             my $localPath = $self->{LOCALPATH}."/repo/".$attrs{"path"};
             $localPath =~ s/\/\.?\//\//g;
+            $rpmmd->deepverify($self->{DEEPVERIFY});
             
             $rpmmd->clean( $localPath );
         }
