@@ -29,11 +29,8 @@ Requires:       perl-libwww-perl
 Requires:       perl-IO-Zlib
 Requires:       perl-URI
 Requires:       perl-TimeDate
+Recommends:	yast2-yep
 PreReq:         %fillup_prereq apache2 apache2-mod_perl
-Requires:       yast2
-# For testing entered cedentials in YaST
-Requires:       grep
-Requires:       curl
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
 License:        GPL v2 or later

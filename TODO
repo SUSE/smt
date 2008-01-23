@@ -60,14 +60,7 @@ TODO:
   * NiceToHave: configuration of a cronjob for yep-mirror.pl
 
 - yast module:
-  - check if a common server certificate is available
-    exists /etc/ssl/servercerts/servercert.pem ? 
-  - copy the CA (or the server certificate) to
-    /srv/www/htdocs/yep.crt
-
-    let us start with the server certificate
-    cp /etc/ssl/servercerts/servercert.pem /srv/www/htdocs/yep.crt
-  - Write parameter in yep.conf 
+  - Write parameter in yep.conf (what does this mean?)
     [LOCAL]
     url=...
     https://<local.full.quallified.domain.name>/ 
@@ -98,6 +91,13 @@ DONE:
   * configures cron to run /usr/bin/yep-mirror.pl periodically
   * insserving cron if needed
   * restarting cron if needed
+  * checks and installs cron package if needed, otherwise
+    are cron-relaetd functions disabled
+  * check if a common server certificate is available
+    exists /etc/ssl/servercerts/servercert.pem
+    if it doesn't, offers to call a service proposal (CA proposal)
+  * copies the CA (or the server certificate) to
+    /srv/www/htdocs/yep.crt
 
 - YEP::Registration listparam has to check for "accept=''" option
   [Not needed, a stripped result is produced by the client (suse_register)
