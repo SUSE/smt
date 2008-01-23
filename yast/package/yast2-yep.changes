@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Wed Jan 23 14:54:00 CET 2008 - locilka@suse.cz
+
+- Added checking whether cron package is installed. If not, package
+  can be installed via YaST itself otherwise are cron settings
+  (Scheduled mirroring) disabled.
+- Checking for a common CA and copying it to the apache2
+  configuration.
+- Added a possibility to run CA management (proposal) if the
+  certificate does not exist.
+
+-------------------------------------------------------------------
 Tue Jan 22 15:46:42 CET 2008 - locilka@suse.cz
 
 - Added possibility to add, edit and remove Scheduled Mirroring

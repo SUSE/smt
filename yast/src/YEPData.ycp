@@ -18,6 +18,10 @@
     import "FileUtils";
     import "String";
     import "Label";
+    import "Popup";
+    import "PackageSystem";
+    import "Wizard";
+    import "Progress";
 
     map <string, string> NU_credentials = $[];
 
@@ -28,6 +32,9 @@
 
     string path_to_sync_script = "/usr/sbin/yep-ncc-sync";
     string user_for_sync_script = "root";
+
+    string server_cert = "/etc/ssl/servercerts/servercert.pem";
+    string apache_cert = "/srv/www/htdocs/yep.crt";
 
     list <map> yep_cron_settings = [];
 
@@ -326,5 +333,97 @@ Please, check your YEP installation."), path_to_sync_script));
 	}
 
 	return true;
+    }
+
+    boolean ca_already_called = false;
+
+    /**
+     * Handles a missing CA certificate.
+     * Returns boolean value whether CA checking should be finished.
+     *
+     * @return boolean whether to finish the CA checking
+     */
+    boolean HandleMissingCACert () {
+	y2milestone ("CA file %1 doesn't exist", server_cert);
+	string ca_mgm_package = "yast2-ca-management";
+
+	if (Popup::AnyQuestion (
+	    // TRANSLATORS: Pop-up question headline
+	    _("Missing Server Certificate"),
+	    // TRANSLATORS: Pop-up question, %1 is replaced with a file name
+	    sformat (_("Server certificate %1 doesn't exist.
+Would you like to run CA management to create one?
+
+Server certificate is vitally important for NU server to support SSL."),
+		server_cert),
+		_("&Run CA management"),
+		_("&Skip"),
+		(ca_already_called ? `focus_no : `focus_yes))
+	) {
+	    // Package needs to be installed
+	    if (PackageSystem::CheckAndInstallPackagesInteractive ([ca_mgm_package])) {
+		y2milestone ("Running ca_mgm");
+		ca_already_called = true;
+
+		Wizard::OpenNextBackDialog();
+		boolean progress_orig = Progress::set (false);
+		any ret = WFM::call ("inst_proposal", [$["proposal":"service"]]);
+		y2milestone ("Service proposal returned: %1", ret);
+		Progress::set (progress_orig);
+		Wizard::CloseDialog();
+
+		return false;
+	    // Package is not installed and couldn't be installed
+	    } else {
+		Report::Error (sformat (
+		    _("Cannot run CA management bacause package %1 is not installed."),
+		    ca_mgm_package
+		));
+		    return true;
+	    }
+	} else {
+	    y2warning ("User doesn't want to run CA management.");
+	    return true;
+	}
+    }
+
+    /**
+     * Function checks whether a server certificate exists and copies it
+     * to the apache directory. If a server certificate doesn't exist,
+     * user is offered to run the CA management.
+     *
+     * @return boolean if successful
+     */
+    global boolean WriteCASettings () {
+	boolean ret = false;
+
+	// check the existence of file and offer to run CA managament
+	// if it doesn't then check the existence again... and again...
+	while (true) {
+	    // Server certificate is missing
+	    if (! FileUtils::Exists (server_cert)) {
+		if (HandleMissingCACert()) {
+		    break;
+		}
+
+	    // Server certificate exists
+	    } else {
+		// Copy the certificate to an apache configuration
+		string cmd = sformat ("/bin/cp --force '%1' '%2'", String::Quote (server_cert), String::Quote (apache_cert));
+		map cmd_out = (map) SCR::Execute (.target.bash_output, cmd);
+
+		if (cmd_out["exit"]:-1 != 0) {
+		    y2error ("Cannot copy server certificate >%1<: %2", cmd, cmd_out);
+		    Report::Error (sformat (_("Copying server certificate %1 to %2 failed.
+Server will not support HTTPS"), server_cert, apache_cert));
+		} else {
+		    ret = true;
+		}
+
+		break;
+	    }
+	}
+
+	return ret;
     }
 }

@@ -21,6 +21,7 @@
     import "Progress";
     import "Message";
     import "Confirm";
+    import "PackageSystem";
 
     integer sl = 100;
 
@@ -128,10 +129,12 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Writing YEP Configuration"),
 	    " ",
-	    4,
+	    5,
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjust YEP configuration"),
+		// TRANSLATORS: Progress step
+		_("Check and install server certificate"),
 		// TRANSLATORS: Progress step
 		_("Adjust Web-server configuration"),
 		// TRANSLATORS: Progress step
@@ -142,6 +145,8 @@
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjusting YEP configuration..."),
+		// TRANSLATORS: Progress step
+		_("Checking and installing server certificate..."),
 		// TRANSLATORS: Progress step
 		_("Adjusting Web-server configuration"),
 		// TRANSLATORS: Progress step
@@ -159,6 +164,11 @@
 	sleep (sl);
 
 	YEPData::WriteCredentials();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	YEPData::WriteCASettings();
 
 	Progress::NextStage();
 	sleep (sl);
@@ -297,7 +307,33 @@
 	UI::ChangeWidget (`id (`delete), `Enabled, buttons_enabled);
     }
 
+    void DisableScheduledMirroringTable () {
+	UI::ChangeWidget (`id ("scheduled_NU_mirroring"), `Enabled, false);
+	UI::ChangeWidget (`id (`add), `Enabled, false);
+	UI::ChangeWidget (`id (`edit), `Enabled, false);
+	UI::ChangeWidget (`id (`delete), `Enabled, false);
+    }
+
+    boolean cron_rpms_checked = false;
+    boolean cron_rpms_installed = nil;
+
     void InitScheduledDownloadsDialog (string id) {
+	// Lazy check for cron but only once
+	if (cron_rpms_checked != true) {
+	    cron_rpms_checked = true;
+	    cron_rpms_installed = PackageSystem::CheckAndInstallPackagesInteractive (["cron"]);
+	    y2milestone ("cron RPM is installed: %1", cron_rpms_installed);
+	}
+
+	// 
+	if (cron_rpms_installed != true) {
+	    DisableScheduledMirroringTable();
+	    // TRANSLATORS: informational message
+	    Report::Message (_("Scheduled mirroring has been disabled due to a missing packages.
+Should you want to set it up, rerun the current YaST configuration module."));
+	    return;
+	}
+
 	RedrawScheduledMirroringTable();
     }
 

@@ -4,6 +4,12 @@
 Requires:	yast2
 Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
+
+# This YaST tool configures YEP (cron, apache2)
+Recommends:	yep
+Recommends:	cron
+Recommends:	apache2
+
 BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite
 
 BuildArchitectures:	noarch
