@@ -971,8 +971,10 @@ sub getProducts
     {
         print STDERR "query pool command: $ctx->{querypool} products \@system \n" if($ctx->{debug} >= 1);
         
-        $result = `$ctx->{querypool} products \@system`;
-        $code = ($?>>8);
+	#$result = `$ctx->{querypool} products \@system`;
+	$result = "i|product|SUSE_SLES_SP1|10.1-0|x86_64|SUSE-Linux-Enterprise-Server-SP1|10-SP1|base|SLES 10 SP1|SUSE Linux Enterprise Server 10 SP1\ni|product|SLE_10_SP1_SDK|10.1-0|x86_64|SUSE-Linux-Enterprise-SDK-SP1|10-SP1|add-on||SUSE Linux Enterprise Software Development Kit 10 SP1";
+	#$code = ($?>>8);
+        $code = 0;
         
         if($code != 0) 
         {
