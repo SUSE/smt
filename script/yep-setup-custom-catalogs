@@ -1,0 +1,169 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib ("/srv/www/perl-lib/");
+#use YEP::CLI;
+use File::Basename;
+use YEP::Utils;
+use Digest::SHA1  qw(sha1 sha1_hex);
+
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+
+my $help;
+
+
+my @productids = ();
+my $catalogid = "";
+my $name = "";
+my $description = "";
+#my $target = "";
+my $localpath = "";
+my $exturl = "";
+my $catalogtype = "yum";
+my $domirror = "Y";
+my $mirrorable = "Y";
+
+
+use Getopt::Long;
+&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
+&Getopt::Long::GetOptions(
+                          'productid=i' => \@productids,
+                          'name=s'      => \$name,
+                          'description=s' => \$description,
+                          #'target=s'      => \$target,
+                          #'localpath=s'   => \$localpath,
+                          'exturl=s'      => \$exturl,
+                          'help|h' => \$help
+                         );
+
+if ( defined $help and ( $help == 1 ) )
+{
+    print basename($0) . __(" : setup a custom catalog\n");
+    print __("    --productid       product ids. You can use this option multiple times\n");
+    print __("                      To assign a catalog to multiple products \n");
+    print __("    --name            The name of this catalog.\n");
+    print __("    --description     A description\n");
+    print __("    --exturl          The URL where this catalog can be mirrored from\n");
+    
+#  print "    --target          product ids \n";
+#  print "    --localpath       product ids \n";
+  
+    exit 0;
+}
+
+my $dbh = YEP::Utils::db_connect();
+if(!$dbh)
+{
+    die "Cannot connect the database";
+}
+
+
+while($name !~ /^[a-zA-Z\d_-]+$/)
+{
+    print __("Invalid catalog name. Allowed characters are characters, numbers, - and _\n");
+    
+    print __("Catalog Name:");
+    $name = <STDIN>;
+}
+chomp($name);
+
+while($exturl !~ /^https?:\/\//)
+{
+    print __("Invalid URL. A http or https url is required.\n");
+    
+    print __("URL:");
+    
+    $exturl = <STDIN>;
+}
+chomp($exturl);
+
+if($description eq "")
+{
+    print __("Catalog description:");
+    
+    $description = <STDIN>;
+}
+chomp($description);
+
+my $array = $dbh->selectall_arrayref("SELECT PRODUCTDATAID, PRODUCT, VERSION, RELEASE, ARCH from Products where PRODUCT_LIST='Y' group by product,version,release,arch",
+                                     {Slice => {}});
+my @validProductIds = ();
+my $anotherone = 0;
+
+if(@productids == 0 )
+{
+    print __("Select a product where this catalog belong to.\n\n");
+
+    foreach my $item (@{$array})
+    {
+        print $item->{PRODUCTDATAID}."\t";
+        print $item->{PRODUCT}." ";
+        print $item->{VERSION}." " if(defined $item->{VERSION});
+        print $item->{RELEASE}." " if(defined $item->{RELEASE});
+        print $item->{ARCH}." " if(defined $item->{ARCH});
+        print "\n";
+
+        push @validProductIds, $item->{PRODUCTDATAID};
+    }
+    print "\n";
+}
+
+while(@productids == 0 || $anotherone)
+{
+    print __("Product Number:");
+    
+    my $pid = <STDIN>;
+    chomp($pid);
+    
+    if( !grep( ($_ eq $pid), @validProductIds) )
+    {
+        print __("Invalid Product Number.\n");
+        next;
+    }
+    push @productids, $pid;
+    
+    print __("Select an additional product for this catalog(y/n)?");
+    my $yn = <STDIN>;
+    chomp($yn);
+    
+    if(lc($yn) eq __("y"))
+    {
+        $anotherone = 1;
+    }
+    else
+    {
+        $anotherone = 0;
+    }
+}
+$catalogid = sha1_hex($name);
+
+$dbh->do(sprintf("INSERT INTO Catalogs VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                 $dbh->quote($catalogid),
+                 $dbh->quote($name),
+                 $dbh->quote($description),
+                 "NULL",
+                 $dbh->quote("/YUM/$name"),
+                 $dbh->quote($exturl),
+                 $dbh->quote("yum"),
+                 $dbh->quote("Y"),
+                 $dbh->quote("Y")));
+foreach my $pid (@productids)
+{
+    $dbh->do(sprintf("INSERT INTO ProductCatalogs VALUES(%s, %s, %s)",
+                     $pid,
+                     $dbh->quote($catalogid),
+                     $dbh->quote("N")));
+}
+         
+
+sub __ {
+    my $msgid = shift;
+    my $package = caller;
+    my $domain = "yep";
+    return Locale::gettext::dgettext ($domain, $msgid);
+}
