@@ -748,19 +748,23 @@ sub mergeDocuments
     my $r    = shift;
     my $list = shift;
     
-    if(@$list == 1)
-    {
-        return $list->[0];
-    }
+    my $basedoc = "";
 
-    my $basedoc = shift @$list;
-    my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
-    my $root1 = $p1->parse( $basedoc );
+    my $root1;
     my $node1;
     
 
     foreach my $other (@$list)
     {
+        next if(!defined $other || $other eq "");
+        if($basedoc eq "")
+        {
+            $basedoc = $other;
+            my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
+            $root1 = $p1->parse( $basedoc );
+            $node1 = $root1->[0];
+            next;
+        }
         next if($basedoc eq $other);
         
         my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
