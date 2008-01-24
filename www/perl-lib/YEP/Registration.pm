@@ -1051,9 +1051,10 @@ sub buildZmdConfig
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
     if($usetestenv)
     {
-        $LocalNUUrl .= "/testing/";
+        $LocalNUUrl    .= "/testing/";
     }
     
+
     my $output = "";
     my $writer = new XML::Writer(OUTPUT => \$output);
 
@@ -1078,11 +1079,12 @@ sub buildZmdConfig
     
     foreach my $cat (keys %{$catalogs})
     {
-        next if($catalogs->{$cat}->{CATALOGTYPE} ne "nu");
-        
+        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
+    
         $writer->startTag("param", 
                           "name" => "catalog",
-                          "url"  => "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH});
+                          "url"  => "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH}
+                         );
         $writer->characters($catalogs->{$cat}->{NAME});
         $writer->endTag("param");
     }
