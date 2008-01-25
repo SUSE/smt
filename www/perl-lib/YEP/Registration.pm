@@ -3,11 +3,17 @@ package YEP::Registration;
 use strict;
 use warnings;
 
+use APR::Brigade ();
+use APR::Bucket ();
+use Apache2::Filter ();
+
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR :log);
-use APR::Const    -compile => qw(:error SUCCESS);
+use Apache2::Const -compile => qw(OK SERVER_ERROR :log MODE_READBYTES);
+use APR::Const    -compile => qw(:error SUCCESS BLOCK_READ);
+
+use constant IOBUFSIZE => 8192;
 
 use YEP::Utils;
 
@@ -79,7 +85,7 @@ sub register
         $usetestenv = 1;
     }
     
-    my $data = YEP::Utils::read_post($r);
+    my $data = read_post($r);
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
     {
@@ -528,7 +534,7 @@ sub listparams
 
     $r->warn("listparams called.");
     
-    my $data = YEP::Utils::read_post($r);
+    my $data = read_post($r);
     my $dbh = YEP::Utils::db_connect();
     
     my $xml = YEP::Registration::parseFromProducts($r, $dbh, $data, "PARAMLIST");
@@ -1121,6 +1127,40 @@ sub buildZmdConfig
     return $output;
 }
 
+#
+# read the content of a POST and return the data
+#
+sub read_post {
+    my $r = shift;
+    
+    my $bb = APR::Brigade->new($r->pool,
+                               $r->connection->bucket_alloc);
+    
+    my $data = '';
+    my $seen_eos = 0;
+    do {
+        $r->input_filters->get_brigade($bb, Apache2::Const::MODE_READBYTES,
+                                       APR::Const::BLOCK_READ, IOBUFSIZE);
+        
+        for (my $b = $bb->first; $b; $b = $bb->next($b)) {
+            if ($b->is_eos) {
+                $seen_eos++;
+                last;
+            }
+            
+            if ($b->read(my $buf)) {
+                $data .= $buf;
+            }
+            
+            $b->remove; # optimization to reuse memory
+        }
+        
+    } while (!$seen_eos);
+    
+    $bb->destroy;
+    
+    return $data;
+}
 
 1;
 
