@@ -3,7 +3,7 @@ use strict;
 
 use LWP::UserAgent;
 use URI;
-use XML::Parser;
+use YEP::Parser::RegData;
 use XML::Writer;
 use Crypt::SSLeay;
 use YEP::Utils;
@@ -219,22 +219,24 @@ sub _parseXML
         die "File '$xmlfile' does not exist.";
     }
 
-    my $parser = XML::Parser->new( Handlers =>
-                                   { Start => sub { handle_start_tag($self, @_) },
-                                     End   => sub { handle_end_tag($self, @_) },
-                                     Char  => sub { handle_char($self, @_) }
-                                   });
- 
-    eval {
-        $parser->parsefile( $xmlfile );
-    };
-    if($@) {
-        # ignore the errors, but print them
-        chomp($@);
-        print STDERR "Error: $@\n";
-    }
+    my $parser = YEP::Parser::RegData->new();
+    $parser->parse($xmlfile, sub { ncc_handler($self, @_); });
+
     return 0;
 }
+
+sub ncc_handler
+{
+    my $self = shift;
+    my $data = shift;
+
+    my $root = $data->{MAINELEMENT};
+    delete $data->{MAINELEMENT};
+    
+    push @{$self->{XML}->{DATA}->{$root}}, $data; 
+}
+
+
 
 sub _updateDB
 {
@@ -353,77 +355,6 @@ sub _updateDB
     }
     $dbh->disconnect;
     return 0;
-}
-
-
-sub handle_start_tag
-{
-    my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
-
-    #print "Element '$element' Start: ".Data::Dumper->Dump([\%attrs])."\n";
-
-    $self->{XML}->{CURELEM} = lc($element);
-
-    if(lc($self->{XML}->{CURELEM}) eq "col" && exists $attrs{name} &&
-       defined $attrs{name} && $attrs{name} ne "")
-    {
-        $self->{XML}->{ATTR} = $attrs{name};
-        $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} = undef;
-    }
-    elsif(lc($element) eq "row")
-    {
-        push @{$self->{XML}->{DATA}->{$self->{XML}->{ROOT}}}, {};
-        $self->{XML}->{ROWNUM} = $#{$self->{XML}->{DATA}->{$self->{XML}->{ROOT}}};
-    }
-    elsif(!defined $self->{XML}->{ROOT})
-    {
-        $self->{XML}->{ROOT} = $self->{XML}->{CURELEM};
-        $self->{XML}->{DATA}->{$self->{XML}->{ROOT}} = [];
-        #print "ROOT: ".$self->{XML}->{ROOT}."\n";
-    }
-
-}
-
-sub handle_end_tag
-{
-  my( $self, $expat, $element ) = @_;
-
-  #print "End $element\n";
-  $self->{XML}->{ATTR} = undef;
-
-  if(lc($element) eq lc($self->{XML}->{ROOT}))
-  {
-      $self->{XML}->{ROOT}= undef;
-  }
-}
-
-sub handle_char
-{
-    my $self = shift;
-    my( $expat, $string) = @_;
-
-    chomp($string);
-
-    return if($string =~ /^\s*$/);    
-
-    if(lc($self->{XML}->{CURELEM}) eq "col" && defined $self->{XML}->{ATTR} && $self->{XML}->{ATTR} ne "")
-    {
-        if(uc($self->{XML}->{ATTR}) eq "EXTURL")
-        {
-            $string =~ s/^\s*//g;
-            $string =~ s/\s*$//g;
-        }
-        
-        if( !defined $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} )
-        {
-            $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} = $string;
-        }
-        else
-        {
-            $self->{XML}->{DATA}->{$self->{XML}->{ROOT}}->[$self->{XML}->{ROWNUM}]->{$self->{XML}->{ATTR}} .= "\n$string";
-        }
-    }
 }
 
 1;
