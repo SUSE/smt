@@ -41,7 +41,7 @@ sub new
 
     $self->{ELEMENT} = "";
     $self->{TABLE}   = "";
-    $self->{KEY}     = [];
+    $self->{KEYNAME}     = [];
     
     $self->{XML}->{ROWNUM}  = 0;
     $self->{XML}->{ROOT}    = undef;
@@ -147,14 +147,14 @@ sub key
         my $data = shift;
         if(ref($data) eq "ARRAY")
         {
-            $self->{KEY} = $data;
+            $self->{KEYNAME} = $data;
         }
         elsif(ref($data) eq "")
         {
-            $self->{KEY} = [$data];
+            $self->{KEYNAME} = [$data];
         }
     }
-    return $self->{KEY};
+    return $self->{KEYNAME};
 }
 
 
@@ -243,7 +243,7 @@ sub _updateDB
     my $self  = shift;
 
     my $table = $self->{TABLE};
-    my $key   = $self->{KEY};
+    my $key   = $self->{KEYNAME};
     
     if(!defined $table || $table eq "")
     {

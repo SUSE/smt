@@ -3,6 +3,7 @@ VERSION      = 0.0.3
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
+YEP_SQLITE_DB = $(DESTDIR)/var/lib/YEP/db/yep.db
 
 install_all: install install_conf install_db
 	@echo "==========================================================="
@@ -24,14 +25,36 @@ install_all: install install_conf install_db
 	@echo "* perl-TimeDate"
 	@echo " "
 	@echo "chown wwwrun.www /var/lib/YEP/db/"
-	@echo "chown wwwrun.www $(DESTDIR)/var/lib/YEP/db/yep.db"
+	@echo "chown wwwrun.www YEP_SQLITE_DB"
 	@echo " "
 	@echo "Finaly start the web server with 'rcapache2 start'"
 	@echo "==========================================================="
 
-install_db:
+install_db: install_db_sqlite
+
+install_db_sqlite:
 	mkdir -p $(DESTDIR)/var/lib/YEP/db/
-	cd db; sqlite3 -init setupdb.init $(DESTDIR)/var/lib/YEP/db/yep.db '.exit'; cd -
+	cd db/
+	cat db/yep-tables.sql | sed "s/AUTO_INCREMENT/AUTOINCREMENT/g" | sed "s/drop table if exists/drop table/g" | sqlite3 YEP_SQLITE_DB
+
+	cat db/yep-tables.sql | sqlite3 YEP_SQLITE_DB
+	cat db/products.sql | sqlite3 YEP_SQLITE_DB
+	cat db/product_dependencies.sql | sqlite3 YEP_SQLITE_DB
+	cat db/targets.sql | sqlite3 YEP_SQLITE_DB
+	cat db/tmp-catalogs.sql | sqlite3 YEP_SQLITE_DB
+	cat db/tmp-productcatalogs.sql | sqlite3 YEP_SQLITE_DB
+	cat db/tmp-register.sql | sqlite3 YEP_SQLITE_DB
+
+install_db_mysql:
+	echo "drop database if exists yep;" | mysql -u root
+	echo "create database if not exists yep;" | mysql -u root
+	cat db/yep-tables.sql | mysql -u root yep
+	cat db/products.sql | mysql -u root yep
+	cat db/product_dependencies.sql | mysql -u root yep
+	cat db/targets.sql | mysql -u root yep
+	cat db/tmp-catalogs.sql | mysql -u root yep
+	cat db/tmp-productcatalogs.sql | mysql -u root yep
+	cat db/tmp-register.sql | mysql -u root yep
 
 install_conf:
 	mkdir -p $(DESTDIR)/etc/

@@ -1,9 +1,0 @@
-.read yep-tables.sql
-.read products.sql
-.read product_dependencies.sql
-.read targets.sql
-.read tmp-catalogs.sql
-.read tmp-productcatalogs.sql
-.read tmp-register.sql
-.exit
-

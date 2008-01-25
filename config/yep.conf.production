@@ -4,8 +4,9 @@ NUUser=
 NUPass=
 
 [DB]
-config=dbi:SQLite:dbname=/var/lib/YEP/db/yep.db
-user=
+config=dbi:mysql:database=yep;host=localhost
+#config=dbi:SQLite:dbname=/var/lib/YEP/db/yep.db
+user=root
 pass=
 
 [LOCAL]

@@ -595,7 +595,7 @@ sub parseFromProducts
                 $statement .= "= ".$dbh->quote(lc($data->{PRODUCTS}->{$product}->{arch}))." AND ";
             }
             
-            $statement .= "RELEASELOWER ";
+            $statement .= "RELLOWER ";
 
             if(!defined $data->{PRODUCTS}->{$product}->{release})
             {
@@ -865,7 +865,7 @@ sub insertRegistration
                 $statement .= "= ".$dbh->quote(lc($phash->{arch}))." AND ";
             }
             
-            $statement .= "RELEASELOWER ";
+            $statement .= "RELLOWER ";
 
             if(!defined $phash->{release})
             {
@@ -918,7 +918,7 @@ sub insertRegistration
     {
         next if($key eq "guid" || $key eq "product" || $key eq "mirrors");
         
-        my $statement = sprintf("INSERT into MachineData (GUID, KEY, VALUE) VALUES (%s, %s, %s)",
+        my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                                 $dbh->quote($regdata->{register}->{guid}), 
                                 $dbh->quote($key),
                                 $dbh->quote($regdata->{register}->{$key}));
