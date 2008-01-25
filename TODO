@@ -75,8 +75,6 @@ TODO:
 - test what happens if two processes what to write yep.db
   How can we solve concutrrent access with DBI?
 
-- tool to setup custom catalogs?
-
 - localization of the client tools
 
 DONE:
@@ -119,6 +117,7 @@ DONE:
   administrator that a catalog cannot be mirrored. He should check
   in NCC if he has an entitlement for this product.
 
+- tool to setup custom catalogs?
 
 
 Ideas:
