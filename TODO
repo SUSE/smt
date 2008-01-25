@@ -60,6 +60,12 @@ TODO:
   * NiceToHave: configuration of a cronjob for yep-mirror.pl
 
 - yast module:
+  * found out that the server certificate does not work.
+    we need to copy the ca-certificate to /srv/www/htdocs/yep.crt
+    The ca can be found at:
+    /etc/ssl/certs/YaST-CA.pem
+
+- yast module:
   - Write parameter in yep.conf (what does this mean?)
     [LOCAL]
     url=...
