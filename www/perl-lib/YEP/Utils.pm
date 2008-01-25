@@ -15,6 +15,9 @@ use constant IOBUFSIZE => 8192;
 use Config::IniFiles;
 use DBI;
 
+our @ISA = qw(Exporter);
+our @EXPORT = qw(__);
+
 
 #
 # read the content of a POST and return the data
@@ -78,5 +81,14 @@ sub db_connect
     return $dbh;
 }
 
+#
+# localization function
+#
+sub __ {
+    my $msgid = shift;
+    my $package = caller;
+    my $domain = "yep";
+    return Locale::gettext::dgettext ($domain, $msgid);
+}
 
 1;
