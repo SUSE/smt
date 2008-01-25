@@ -2,8 +2,7 @@
 
 use strict;
 use warnings;
-use lib ("/srv/www/perl-lib/");
-#use YEP::CLI;
+use YEP::CLI;
 use File::Basename;
 use YEP::Utils;
 use Digest::SHA1  qw(sha1 sha1_hex);
@@ -21,40 +20,61 @@ my @productids = ();
 my $catalogid = "";
 my $name = "";
 my $description = "";
-#my $target = "";
-my $localpath = "";
 my $exturl = "";
-my $catalogtype = "yum";
-my $domirror = "Y";
-my $mirrorable = "Y";
-
+my $delete = "";
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
-                          'productid=i' => \@productids,
-                          'name=s'      => \$name,
+                          'productid=i'   => \@productids,
+                          'name=s'        => \$name,
                           'description=s' => \$description,
-                          #'target=s'      => \$target,
-                          #'localpath=s'   => \$localpath,
                           'exturl=s'      => \$exturl,
-                          'help|h' => \$help
+                          'delete=s'      => \$delete,
+                          'help|h'        => \$help
                          );
 
 if ( defined $help and ( $help == 1 ) )
 {
     print basename($0) . __(" : setup a custom catalog\n");
-    print __("    --productid       product ids. You can use this option multiple times\n");
-    print __("                      To assign a catalog to multiple products \n");
-    print __("    --name            The name of this catalog.\n");
-    print __("    --description     A description\n");
-    print __("    --exturl          The URL where this catalog can be mirrored from\n");
+    print __("    --productid arg     Product id where this catalog belong to.\n");
+    print __("                        You can use this option multiple times\n");
+    print __("                        to assign a catalog to multiple products \n");
+    print __("    --name  arg         The name of this catalog.\n");
+    print __("    --description arg   A description\n");
+    print __("    --exturl arg        The URL where this catalog can be mirrored from\n");
+    print __("    --delete arg        Remove a custom catalog with the given ID\n");
+    print "\n\n";
+    print __("Examples:\n\n");
+    print "  yep-setup-custom-catalogs --productid 434 --name 'My_Catalog' --exturl 'http://my.domain.top/My_Catalog'\n";
+    print "  yep-setup-custom-catalogs --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc\n";
     
-#  print "    --target          product ids \n";
-#  print "    --localpath       product ids \n";
-  
     exit 0;
 }
+
+if($delete ne "")
+{
+    print __(sprintf("Realy delete the catalog with ID '%s' (y/n)?", $delete));
+
+    my $yn = <STDIN>;
+    chomp($yn);
+    
+    if(lc($yn) eq __("y"))
+    {
+        my $removed = YEP::CLI::removeCustomCatalog(catalogid => $delete);
+        if(!$removed)
+        {
+            print __("No catalog removed.\n");
+            exit 1;
+        }
+        else
+        {
+            print __(sprintf("Catalog with ID '%s' removed.\n", $delete));
+        }
+    }
+    exit 0;
+}
+
 
 my $dbh = YEP::Utils::db_connect();
 if(!$dbh)
@@ -142,28 +162,25 @@ while(@productids == 0 || $anotherone)
 }
 $catalogid = sha1_hex($name);
 
-$dbh->do(sprintf("INSERT INTO Catalogs VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                 $dbh->quote($catalogid),
-                 $dbh->quote($name),
-                 $dbh->quote($description),
-                 "NULL",
-                 $dbh->quote("/YUM/$name"),
-                 $dbh->quote($exturl),
-                 $dbh->quote("yum"),
-                 $dbh->quote("Y"),
-                 $dbh->quote("Y")));
-foreach my $pid (@productids)
-{
-    $dbh->do(sprintf("INSERT INTO ProductCatalogs VALUES(%s, %s, %s)",
-                     $pid,
-                     $dbh->quote($catalogid),
-                     $dbh->quote("N")));
-}
-         
+my %options = (
+               productids  => \@productids,
+               catalogid   => $catalogid,
+               name        => $name,
+               description => $description,
+               exturl      => $exturl
+              );
 
-sub __ {
-    my $msgid = shift;
-    my $package = caller;
-    my $domain = "yep";
-    return Locale::gettext::dgettext ($domain, $msgid);
+my $success = YEP::CLI::setupCustomCatalogs( %options );
+if($success)
+{
+    print __("Catalog successfully added.\n");
+    exit 0;
 }
+else
+{
+    print __("Adding catalog failed.\n");
+    exit 1;
+}
+
+             
+

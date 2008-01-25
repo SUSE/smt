@@ -10,6 +10,7 @@ use warnings;
 
   YEP::listProducts();
   YEP::listCatalogs();
+  YEP::setupCustomCatalogs();
 
 =head1 DESCRIPTION
 
@@ -29,6 +30,11 @@ products.
 =item listRegistrations
 
 Shows active registrations on the system.
+
+
+=item setupCustomCatalogs
+
+modify the database to setup catalogs create by the customer
 
 =back
 
@@ -241,5 +247,48 @@ sub setMirrorableCatalogs
     }
 
 }
+
+sub removeCustomCatalog
+{
+    my %options = @_;
+
+    # delete existing catalogs with this id
+
+    my $affected1 = $dbh->do(sprintf("DELETE from Catalogs where CATALOGID=%s", $dbh->quote($options{catalogid})));
+    my $affected2 = $dbh->do(sprintf("DELETE from ProductCatalogs where CATALOGID=%s", $dbh->quote($options{catalogid})));
+
+    return ($affected1 || $affected2);
+}
+
+sub setupCustomCatalogs
+{
+    my %options = @_;
+    
+    # delete existing catalogs with this id
+    
+    removeCustomCatalog(%options);
+    
+    # now insert it again.
+    my $affected = $dbh->do(sprintf("INSERT INTO Catalogs VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                                     $dbh->quote($options{catalogid}),
+                                     $dbh->quote($options{name}),
+                                     $dbh->quote($options{description}),
+                                     "NULL",
+                                     $dbh->quote("/YUM/".$options{name}),
+                                     $dbh->quote($options{exturl}),
+                                     $dbh->quote("yum"),
+                                     $dbh->quote("Y"),
+                                     $dbh->quote("Y")));
+    foreach my $pid (@{$options{productids}})
+    {
+        $affected += $dbh->do(sprintf("INSERT INTO ProductCatalogs VALUES(%s, %s, %s)",
+                                      $pid,
+                                      $dbh->quote($options{catalogid}),
+                                      $dbh->quote("N")));
+    }
+    
+    return (($affected>0)?1:0);
+}
+
 
 1;
