@@ -731,13 +731,13 @@ sub mergeXML
                     if($child2->{id} eq $child1->{id})
                     {
                         $found = 1;
-                        merge($child1, $child2);
+                        mergeXML($child1, $child2);
                     }
                 }
                 else
                 {
                     $found = 1;
-                    merge($child1, $child2);
+                    mergeXML($child1, $child2);
                 }
             }
         }
@@ -782,7 +782,7 @@ sub mergeDocuments
             $node1 = $root1->[0];
             $node2 = $root2->[0];
 
-            merge($node1, $node2);
+            mergeXML($node1, $node2);
         }
     }
     
