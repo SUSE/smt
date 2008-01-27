@@ -200,7 +200,7 @@ sub catalog_handler
     my $data = shift;
     my $node = shift;
 
-    print "called ".Data::Dumper->Dump([$node])."\n";
+    #print "called ".Data::Dumper->Dump([$node])."\n";
 
     if(defined $node && ref($node) eq "HASH" && 
        exists $node->{MAINELEMENT} && defined $node->{MAINELEMENT} &&
@@ -211,7 +211,7 @@ sub catalog_handler
         {
             $catname .= "-".$node->{TARGET};
         }
-        print "Build Catalogname $catname\n";        
+	#print "Build Catalogname $catname\n";        
         $data->{$catname} = $node;
     }        
 }

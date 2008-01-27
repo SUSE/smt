@@ -55,16 +55,21 @@ use URI;
 use YEP::Utils;
 use Config::IniFiles;
 use File::Temp;
+use IO::File;
 use YEP::Parser::NU;
 use YEP::Mirror::Job;
+use XML::Writer;
 
-use vars qw($cfg $dbh $nuri);
+#use vars qw($cfg $dbh $nuri);
 
 #print "hello CLI2\n";
 
 
-BEGIN 
+sub init
 {
+    my $dbh;
+    my $cfg;
+    my $nuri;
     if ( not $dbh=YEP::Utils::db_connect() )
     {
         die "ERROR: Could not connect to the database";
@@ -95,11 +100,15 @@ BEGIN
 
     $nuri = URI->new($NUUrl);
     $nuri->userinfo("$nuUser:$nuPass");
+
+    return ($cfg, $dbh, $nuri);
 }
 
 sub listCatalogs
 {
     my %options = @_;
+
+    my ($cfg, $dbh, $nuri) = init();
     my $sql = "select * from Catalogs";
 
     $sql = $sql . " where 1";
@@ -148,6 +157,7 @@ sub listCatalogs
 sub listProducts
 {
     my %options = @_;
+    my ($cfg, $dbh, $nuri) = init();
 
     my $sth = $dbh->prepare(qq{select * from Products});
     $sth->execute();
@@ -180,6 +190,8 @@ sub listProducts
 
 sub listRegistrations
 {
+    my ($cfg, $dbh, $nuri) = init();
+
     my $sth = $dbh->prepare(qq{select r.GUID,p.PRODUCT from Registration r, Products p where r.PRODUCTID=p.PRODUCTDATAID});
     $sth->execute();
      while (my @values =
@@ -194,29 +206,53 @@ sub listRegistrations
 
 sub resetCatalogsStatus
 {
+  my ($cfg, $dbh, $nuri) = init();
+
   my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
   $sth->execute();
 }
 
 sub setMirrorableCatalogs
 {
-    # create a tmpdir to store repoindex.xml
-    my $tempdir = File::Temp::tempdir(CLEANUP => 1);
+    my %opt = @_;
+    my ($cfg, $dbh, $nuri) = init();
 
-    # get the file
-    my $job = YEP::Mirror::Job->new();
-    $job->uri($nuri);
-    $job->localdir($tempdir);
-    $job->resource("/repo/repoindex.xml");
+    # create a tmpdir to store repoindex.xml
+    my $destdir = File::Temp::tempdir(CLEANUP => 1);
+    my $indexfile = "";
+    if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
+    {
+        $destdir = $opt{todir};
+    }
+
+    if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
+    {
+        $indexfile = $opt{fromdir}."/repo/repoindex.xml";
+    }
+    else
+    {
+        # get the file
+        my $job = YEP::Mirror::Job->new();
+        $job->uri($nuri);
+        $job->localdir($destdir);
+        $job->resource("/repo/repoindex.xml");
     
-    $job->mirror();
+        $job->mirror();
+	$indexfile = $job->local();
+    }
+
+    if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
+    {
+        # with todir we only want to mirror repoindex to todir
+        return;
+    }
 
     my $parser = YEP::Parser::NU->new();
-    $parser->parse($job->local(), sub {
-                                      my $repodata = shift;
-                                      print "* set [" . $repodata->{NAME} . "] [" . $repodata->{DISTRO_TARGET} . "] as mirrorable.\n";
-                                      my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
-                                  }
+    $parser->parse($indexfile, sub {
+                                    my $repodata = shift;
+                                    print "* set [" . $repodata->{NAME} . "] [" . $repodata->{DISTRO_TARGET} . "] as mirrorable.\n";
+                                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
+                               }
     );
 
     my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='yum'";
@@ -232,15 +268,24 @@ sub setMirrorableCatalogs
         my $catTarget = $v->[4];
         if( $catUrl ne "" && $catLocal ne "" )
         {
-            my $tempdir = File::Temp::tempdir(CLEANUP => 1);
-            my $job = YEP::Mirror::Job->new();
-            $job->uri($catUrl);
-            $job->localdir($tempdir);
-            $job->resource("/repodata/repomd.xml");
+	    my $ret = 1;
+            if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
+            {
+		    # fromdir is used on a server without internet connection
+		    # we define that the catalogs are mirrorable
+		    $ret = 0;
+	    }
+	    else
+	    {
+    	        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
+                my $job = YEP::Mirror::Job->new();
+                $job->uri($catUrl);
+                $job->localdir($tempdir);
+                $job->resource("/repodata/repomd.xml");
           
-            # if no error
-            my $ret = $job->mirror();
-            
+                # if no error
+                $ret = $job->mirror();
+	    }
             print "* set [" . $catName . "] as " . ( ($ret == 0) ? '' : ' not ' ) . " mirrorable.\n";
             my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND TARGET=%s", ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), $dbh->quote($catName), $dbh->quote($catTarget) ) );
         }
@@ -251,6 +296,7 @@ sub setMirrorableCatalogs
 sub removeCustomCatalog
 {
     my %options = @_;
+    my ($cfg, $dbh, $nuri) = init();
 
     # delete existing catalogs with this id
 
@@ -263,7 +309,8 @@ sub removeCustomCatalog
 sub setupCustomCatalogs
 {
     my %options = @_;
-    
+    my ($cfg, $dbh, $nuri) = init();
+
     # delete existing catalogs with this id
     
     removeCustomCatalog(%options);
@@ -290,5 +337,35 @@ sub setupCustomCatalogs
     return (($affected>0)?1:0);
 }
 
+sub createDBReplacementFile
+{
+    my $xmlfile = shift;
+    my ($cfg, $dbh, $nuri) = init();
 
+    my $dbout = $dbh->selectall_hashref("SELECT CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE from Catalogs where DOMIRROR = 'Y'", 
+                                        "CATALOGID");
+
+    my $output = new IO::File(">$xmlfile");
+    my $writer = new XML::Writer(OUTPUT => $output);
+
+    $writer->xmlDecl("UTF-8");
+    $writer->startTag("catalogs", xmlns => "http://www.novell.com/xml/center/regsvc-1_0");
+
+    foreach my $row (keys %{$dbout})
+    {
+        $writer->startTag("row");
+	foreach my $col (keys %{$dbout->{$row}})
+	{
+            $writer->startTag("col", name => $col);
+	    $writer->characters($dbout->{$row}->{$col});
+	    $writer->endTag("col");
+	}
+	$writer->endTag("row");
+    }
+    $writer->endTag("catalogs");
+    $writer->end();
+    $output->close();
+
+    return ;
+}
 1;

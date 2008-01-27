@@ -2,27 +2,127 @@
 
 use strict;
 use warnings;
-use lib ("/srv/www/perl-lib/");
+#use lib ("/srv/www/perl-lib/");
+use lib ("www/perl-lib/");
 use YEP::CLI;
+use YEP::Mirror::RegData;
 use File::Basename;
 
 my $mirrorable;
 my $domirror;
-my $help;
+
+my $help    = 0;
+my $fromdir = "";
+my $todir   = "";
+my $createdbreplfile = "";
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
+	 'fromdir=s' => \$fromdir,
+	 'todir=s'   => \$todir,
+	 'createdbreplacementfile=s' => \$createdbreplfile,
          'help|h' => \$help
 );
 
 if ( defined $help and ( $help == 1 ) )
 {
-    print basename($0) . " : reset all catalogs mirrorable flag. Syncs with NCC and check for mirrorable catalogs\n";
+    print basename($0) . " : Get data from NCC and update the local database.\n\n";
+    print "Usage:\n";
+    print basename($0)." \n";
+    print basename($0)." --fromdir directory\n";
+    print basename($0)." --todir directory\n";
+    print basename($0)." --createdbreplacementfile filename\n\n";
+    print "Options:\n";
+    print "  --fromdir  -- read NCC informations from directory instead of downloading it from NCC\n";
+    print "                and update the database.\n";
+    print "  --todir    -- write NCC informations to directory without updating the database.\n";
+    print "  --createdbreplacementfile -- create a database replacement file for using yep-mirror without database.\n";
   exit 0;
 }
 
+if($createdbreplfile ne "")
+{
+    YEP::CLI::createDBReplacementFile($createdbreplfile);
+    exit 0;
+}
+
+if($fromdir ne "" && $todir ne "")
+{
+    # both options set == no option set
+    $fromdir = "";
+    $todir   = "";
+}
+
+if($fromdir ne "" && ! -d $fromdir)
+{
+	die "Directory '$fromdir' does not exist";
+}
+if($todir ne "" && ! -d $todir)
+{
+	die "Directory '$fromdir' does not exist";
+}
+
+my $rd= YEP::Mirror::RegData->new(debug   => 0,
+                                    element => "product",
+                                    table   => "Products",
+                                    key     => "PRODUCTDATAID",
+                                    fromdir => (($fromdir ne "")?$fromdir:undef),
+                                    todir   => (($todir ne "")?$todir:undef));
+my $res = $rd->sync();
+if($res)
+{
+    print STDERR "Error while fetching Products data.\n";
+}
+
+$rd->element("productdep");
+$rd->table("ProductDependencies");
+$rd->key([ 'PARENT_PRODUCT_ID', 'CHILD_PRODUCT_ID']);
+
+$res = $rd->sync();
+if($res)
+{
+    print STDERR "Error while fetching ProductDependencies data.\n";
+}
+
+$rd->element("targets");
+$rd->table("Targets");
+$rd->key("OS");
+
+$res = $rd->sync();
+if($res)
+{
+    print STDERR "Error while fetching Targets data.\n";
+}
+
+$rd->element("catalogs");
+$rd->table("Catalogs");
+$rd->key("CATALOGID");
+
+$res = $rd->sync();
+if($res)
+{
+    print STDERR "Error while fetching Catalogs data.\n";
+}
+
+$rd->element("productcatalogs");
+$rd->table("ProductCatalogs");
+$rd->key(['PRODUCTDATAID', 'CATALOGID']);
+
+$res = $rd->sync();
+if($res)
+{
+    print STDERR "Error while fetching ProductCatalogs data.\n";
+}
+
+if($todir ne "")
+{
+    YEP::CLI::setMirrorableCatalogs(todir => $todir);
+    # if todir parameter is set, we can stop here. Everything is done.
+    exit 0;
+}
+
 YEP::CLI::resetCatalogsStatus();
-YEP::CLI::setMirrorableCatalogs();
+YEP::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef);
 
 

@@ -77,8 +77,21 @@ sub handle_start_tag()
 
     if(lc($element) eq "col" && defined $attrs{name} && defined $attrs{name} ne "")
     {
-        $self->{COLNAME} = $attrs{name};
-        $self->{CURRENT}->{$attrs{name}} = "";
+        if($self->{MAINELEMENT} eq "product" && $attrs{name} eq "RELEASE")
+	{
+		$self->{COLNAME} = "REL";
+		$self->{CURRENT}->{REL} = "";
+	}
+	elsif($self->{MAINELEMENT} eq "product" && $attrs{name} eq "RELEASELOWER")
+	{
+		$self->{COLNAME} = "RELLOWER";
+		$self->{CURRENT}->{RELLOWER} = "";
+	}
+        else
+	{
+            $self->{COLNAME} = $attrs{name};
+            $self->{CURRENT}->{$attrs{name}} = "";
+        }
     }
     elsif(lc($element) eq "row")
     {

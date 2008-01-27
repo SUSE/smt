@@ -43,12 +43,11 @@ sub new
     $self->{TABLE}   = "";
     $self->{KEYNAME}     = [];
     
-    $self->{XML}->{ROWNUM}  = 0;
-    $self->{XML}->{ROOT}    = undef;
-    $self->{XML}->{CURELEM} = undef;
-    $self->{XML}->{ATTR}    = undef;
     $self->{XML}->{DATA}    = {};
-    
+
+    $self->{FROMDIR} = undef;
+    $self->{TODIR}   = undef;
+
     if(exists $ENV{http_proxy})
     {
         $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});
@@ -69,7 +68,15 @@ sub new
         $self->{TABLE} = $opt{table};
     }
 
-  
+    if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
+    {
+	    $self->{FROMDIR} = $opt{fromdir};
+    }
+    elsif(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
+    {
+	    $self->{TODIR} = $opt{todir};
+    }
+
     # get the URI from /etc/suseRegister.conf
 
     open(FH, "< /etc/suseRegister.conf") and do
@@ -161,22 +168,42 @@ sub key
 sub sync
 {
     my $self = shift;
-    
+    my $xmlfile = "";
 
-    my $xmlfile = $self->_requestData();
-    if(!$xmlfile)
+    if(defined $self->{FROMDIR} && -d $self->{FROMDIR})
     {
-        return 1;
+	    $xmlfile = $self->{FROMDIR}."/".$self->{ELEMENT}.".xml";
     }
-    
-    $self->_parseXML($xmlfile);
-    return $self->_updateDB();
+    else
+    {
+    	$xmlfile = $self->_requestData();
+    	if(!$xmlfile)
+    	{
+        	return 1;
+    	}
+    }
+
+    if(defined $self->{TODIR})
+    {
+	    return 0;
+    }
+    else
+    {
+    	$self->_parseXML($xmlfile);
+    	return $self->_updateDB();
+    }
 }
 
 
 sub _requestData
 {
     my $self    = shift;
+
+    my $destdir = $self->{TEMPDIR};
+    if(defined $self->{TODIR} && -d $self->{TODIR})
+    {
+         $destdir = $self->{TODIR};
+    }
 
     my $uri = URI->new($self->{URI});
     $uri->userinfo($self->{USERINFO});
@@ -188,7 +215,7 @@ sub _requestData
     $writer->emptyTag($self->{ELEMENT}, xmlns => "http://www.novell.com/center/xml/regsvc10");
     
     my $response = $self->{USERAGENT}->post( $uri->as_string(), 
-                                             ':content_file' => $self->{TEMPDIR}."/".$self->{ELEMENT}.".xml",
+                                             ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
                                              'Content' => $content);
     
     if ( $response->is_redirect )
@@ -199,7 +226,7 @@ sub _requestData
     
     if( $response->is_success )
     {
-        return $self->{TEMPDIR}."/".$self->{ELEMENT}.".xml";
+        return $destdir."/".$self->{ELEMENT}.".xml";
     }
     else
     {
