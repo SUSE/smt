@@ -311,6 +311,16 @@ Please, check your YEP installation."), path_to_sync_script));
     global boolean WriteCronSettings () {
 	string service_name = "cron";
 
+	if (yep_cron_settings == nil || size (yep_cron_settings) == 0) {
+	    if (FileUtils::Exists (path_to_cron) && ! (boolean) SCR::Execute (.target.remove, path_to_cron)) {
+		y2error ("Cannot remove %1 cron-file", path_to_cron);
+	    } else {
+		y2milestone ("No cron settings at all");
+		return true;
+	    }
+	}
+
+
 	if (! (boolean) SCR::Write (.yep_cron, yep_cron_settings)) {
 	    y2error ("Writing cron failed");
 	    Report::Error (_("Cannot write cron settings."));
