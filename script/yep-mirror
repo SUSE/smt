@@ -43,7 +43,7 @@ my $result = GetOptions ("debug|d"     => \$debug,
 
 if($help)
 {
-    print basename($0) . __" [OPTIONS]\n");
+    print basename($0) . __(" [OPTIONS]\n");
     print "\n";
     print __("Options:\n");
     print "--debug -d       " . __("enable debug mode\n");
