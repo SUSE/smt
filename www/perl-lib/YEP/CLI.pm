@@ -147,8 +147,8 @@ sub listCatalogs
           print "|\\-local-path => " . $values[4] . "\n";
           print "| -url        => " . $values[5] . "\n";
           print "| -type       => " . $values[6] . "\n";
-          print "| -mirrorable => " . $values[7] . "\n";
-          print "| -mirror?    => " . $values[8] . "\n";
+          print "| -mirrorable => " . $values[8] . "\n";
+          print "| -mirror?    => " . $values[7] . "\n";
         }
     }
     $sth->finish();
