@@ -6,6 +6,11 @@ use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
 use File::Basename;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 my $mirrorable;
 my $domirror;
 my $verbose;
@@ -20,8 +25,8 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : list active registrations\n";
-  print "    -verbose    (-v) : show detailed registration information\n";
+  print basename($0) . " : " . __("list active registrations\n");
+  print "    -verbose    (-v) : " . __("show detailed registration information\n");
   exit 0;
 }
 

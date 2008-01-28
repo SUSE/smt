@@ -6,6 +6,11 @@ use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
 use File::Basename;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 my $mirrorable;
 my $domirror;
 my $verbose;
@@ -22,10 +27,10 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : list known catalogs\n";
-  print "    -mirrorable (-m) : only mirrorable catalogs\n";
-  print "    -domirror   (-d) : only catalogs set to be mirrored\n";
-  print "    -verbose    (-v) : show detailed catalog information\n";
+  print basename($0) . " : " . __("list known catalogs\n");
+  print "    -mirrorable (-m) : " . __("only mirrorable catalogs\n");
+  print "    -domirror   (-d) : " . __("only catalogs set to be mirrored\n");
+  print "    -verbose    (-v) : " . __("show detailed catalog information\n");
   exit 0;
 }
 

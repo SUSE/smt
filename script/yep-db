@@ -9,12 +9,17 @@ use Getopt::Long qw(:config pass_through no_auto_abbrev);
 use Data::Dumper;
 use File::Basename;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 my $dbh = undef;
 my $sth = undef;
 
 if ( not $dbh=YEP::Utils::db_connect() )
 {
-    print "ERROR: Could not connect to the database\n";
+    print __("ERROR: Could not connect to the database\n");
     return 1;
 }
 
@@ -175,7 +180,7 @@ sub createItem($)
             my $ret = checkReference($t, $key, \%props);
             if ($ret != 0)
             {
-                print "ERROR: Reference $orig does not exist in target table\n";
+                print __(sprintf("ERROR: Reference %s does not exist in target table\n", $orig));
                 exit 11; 
             }
         }

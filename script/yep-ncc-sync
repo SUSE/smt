@@ -8,6 +8,11 @@ use YEP::CLI;
 use YEP::Mirror::RegData;
 use File::Basename;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 my $mirrorable;
 my $domirror;
 
@@ -27,17 +32,17 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-    print basename($0) . " : Get data from NCC and update the local database.\n\n";
-    print "Usage:\n";
+    print basename($0) . " : " . __("Get data from NCC and update the local database.\n\n");
+    print __("Usage:\n");
     print basename($0)." \n";
-    print basename($0)." --fromdir directory\n";
-    print basename($0)." --todir directory\n";
-    print basename($0)." --createdbreplacementfile filename\n\n";
-    print "Options:\n";
-    print "  --fromdir  -- read NCC informations from directory instead of downloading it from NCC\n";
-    print "                and update the database.\n";
-    print "  --todir    -- write NCC informations to directory without updating the database.\n";
-    print "  --createdbreplacementfile -- create a database replacement file for using yep-mirror without database.\n";
+    print basename($0).__(" --fromdir directory\n");
+    print basename($0).__(" --todir directory\n");
+    print basename($0).__(" --createdbreplacementfile filename\n\n");
+    print __("Options:\n");
+    print __("  --fromdir  -- read NCC informations from directory instead of downloading it from NCC\n");
+    print __("                and update the database.\n");
+    print __("  --todir    -- write NCC informations to directory without updating the database.\n");
+    print __("  --createdbreplacementfile -- create a database replacement file for using yep-mirror without database.\n");
   exit 0;
 }
 
@@ -75,7 +80,7 @@ my $rd= YEP::Mirror::RegData->new(debug   => 0,
 my $res = $rd->sync();
 if($res)
 {
-    print STDERR "Error while fetching Products data.\n";
+    print STDERR __("Error while fetching Products data.\n");
 }
 
 $rd->element("productdep");
@@ -85,7 +90,7 @@ $rd->key([ 'PARENT_PRODUCT_ID', 'CHILD_PRODUCT_ID']);
 $res = $rd->sync();
 if($res)
 {
-    print STDERR "Error while fetching ProductDependencies data.\n";
+    print STDERR __("Error while fetching ProductDependencies data.\n");
 }
 
 $rd->element("targets");
@@ -95,7 +100,7 @@ $rd->key("OS");
 $res = $rd->sync();
 if($res)
 {
-    print STDERR "Error while fetching Targets data.\n";
+    print STDERR __("Error while fetching Targets data.\n");
 }
 
 $rd->element("catalogs");
@@ -105,7 +110,7 @@ $rd->key("CATALOGID");
 $res = $rd->sync();
 if($res)
 {
-    print STDERR "Error while fetching Catalogs data.\n";
+    print STDERR __("Error while fetching Catalogs data.\n");
 }
 
 $rd->element("productcatalogs");
@@ -115,7 +120,7 @@ $rd->key(['PRODUCTDATAID', 'CATALOGID']);
 $res = $rd->sync();
 if($res)
 {
-    print STDERR "Error while fetching ProductCatalogs data.\n";
+    print STDERR __("Error while fetching ProductCatalogs data.\n");
 }
 }
 

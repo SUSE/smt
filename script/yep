@@ -10,9 +10,14 @@ use YEP::CLI;
 use File::Basename;
 use File::Find;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 sub help
 {
-    print "show help\n";
+    print __("show help\n");
     my @files;
     find( sub { push(@files, $1) if $_ =~ /yep\-(.+)/; }, "/usr/sbin");
     
@@ -24,7 +29,7 @@ sub help
       print basename($0) . " $cmd\n";
     }
 
-    print "\nUse yep help <command> for more help\n";
+    print __("\nUse yep help <command> for more help\n");
     exit 0;
 }
 

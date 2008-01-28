@@ -37,13 +37,13 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
     print basename($0) . __(" : setup a custom catalog\n");
-    print __("    --productid arg     Product id where this catalog belong to.\n");
-    print __("                        You can use this option multiple times\n");
-    print __("                        to assign a catalog to multiple products \n");
-    print __("    --name  arg         The name of this catalog.\n");
-    print __("    --description arg   A description\n");
-    print __("    --exturl arg        The URL where this catalog can be mirrored from\n");
-    print __("    --delete arg        Remove a custom catalog with the given ID\n");
+    print "    --productid arg     " . __("Product id where this catalog belong to.\n");
+    print "                        " .  __("You can use this option multiple times\n");
+    print "                        " . __("to assign a catalog to multiple products \n");
+    print "    --name  arg         " . __("The name of this catalog.\n");
+    print "    --description arg   " . __("A description\n");
+    print "    --exturl arg        " . __("The URL where this catalog can be mirrored from\n");
+    print "    --delete arg        " . __("Remove a custom catalog with the given ID\n");
     print "\n\n";
     print __("Examples:\n\n");
     print "  yep-setup-custom-catalogs --productid 434 --name 'My_Catalog' --exturl 'http://my.domain.top/My_Catalog'\n";

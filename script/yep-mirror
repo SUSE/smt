@@ -14,6 +14,11 @@ use URI;
 use Getopt::Long;
 use File::Basename;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 #use Data::Dumper;
 
 my $debug    = 0;
@@ -38,20 +43,20 @@ my $result = GetOptions ("debug|d"     => \$debug,
 
 if($help)
 {
-    print basename($0) . " [OPTIONS]\n";
+    print basename($0) . __" [OPTIONS]\n");
     print "\n";
-    print "Options:\n";
-    print "--debug -d       enable debug mode\n";
-    print "--clean -c       cleanup all mirrored repositories.\n";
-    print "                 Remove all files not longer mention in the metadata.\n";
-    print "                 This mode do no mirror before cleanup.\n";
-    print "--directory arg  The directory to work on. Using this option ignores the configured\n";
-    print "                 default value in yep.conf\n";
-    print "--deepverify     Verify all checksums \n";
-    print "--dbreplfile arg Path to XML file to use as database replacement. Such a file can be created with\n";
-    print "                 the sync-ncc command. This option is only usefull if the yep database is not on the \n";
-    print "                 same host as this script should run\n"; 
-    print "--help -h        show this message\n";
+    print __("Options:\n");
+    print "--debug -d       " . __("enable debug mode\n");
+    print "--clean -c       " . __("cleanup all mirrored repositories.\n");
+    print "                 " . __("Remove all files not longer mention in the metadata.\n");
+    print "                 " . __("This mode do no mirror before cleanup.\n");
+    print "--directory arg  " . __("The directory to work on. Using this option ignores the configured\n");
+    print "                 " . __("default value in yep.conf\n");
+    print "--deepverify     " . __("Verify all checksums \n");
+    print "--dbreplfile arg " . __("Path to XML file to use as database replacement. Such a file can be created with\n");
+    print "                 " . __("the sync-ncc command. This option is only usefull if the yep database is not on the \n");
+    print "                 " . __("same host as this script should run\n"); 
+    print "--help -h        " . __("show this message\n");
     exit 0;
 }
 
@@ -63,7 +68,7 @@ if(!defined $dbreplfile)
     
     if(!$dbh)
     {
-        die "Cannot connect to database";
+        die __("Cannot connect to database");
     }
 }
 else
@@ -182,8 +187,8 @@ if(!defined $dbreplfile)
         exit 0;
     }
     
-    my $warning = "WARNING: The following Catalogs cannot be mirrored.\n";
-    $warning   .= "         Maybe you have not enough permissions to download these Catalogs?\n\n";
+    my $warning = __("WARNING: The following Catalogs cannot be mirrored.\n");
+    $warning   .= __("         Maybe you have not enough permissions to download these Catalogs?\n\n");
     
     foreach my $id (keys %{$hash})
     {
