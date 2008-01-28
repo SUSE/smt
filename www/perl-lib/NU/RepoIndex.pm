@@ -6,12 +6,11 @@ use warnings;
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
   
-use Apache2::Const -compile => qw(OK SERVER_ERROR);
+use Apache2::Const -compile => qw(OK SERVER_ERROR :log);
 use Apache2::RequestUtil;
 use XML::Writer;
 
 use YEP::Utils;
-use Data::Dumper;  # for jdsn tests
 
 
 sub getCatalogsByGUID($$)
@@ -78,8 +77,8 @@ sub handler {
                            'description' => ${$val}{'DESCRIPTION'},
                            'distro_target' => ${$val}{'TARGET'},
                            'path' => ${$val}{'LOCALPATH'},
-                           'priority' => 0,                            # TODO are these parameters needed?
-                           'pub' => 0                                  # TODO are these parameters needed?
+                           'priority' => 0,
+                           'pub' => 0
                          );
          # don't laugh, zmd requires a special look of the XML :-(
          print "\n";
@@ -88,7 +87,6 @@ sub handler {
 
     $writer->endTag("repoindex");
 
-    # print Data::Dumper->Dump([$catalogs],["Catalogs: "]);
     return Apache2::Const::OK;
 }
 1;
