@@ -25,7 +25,7 @@ sub db_connect
     if(!defined $cfg)
     {
         # FIXME: is die correct here?
-        die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
+        die __("Cannot read the YEP configuration file: ").@Config::IniFiles::errors;
     }
     
     my $config = $cfg->val('DB', 'config');
@@ -34,7 +34,7 @@ sub db_connect
     if(!defined $config || $config eq "")
     {
         # FIXME: is die correct here?
-        die "Invalid Database configuration. Missing value for DB/config.";
+        die __("Invalid Database configuration. Missing value for DB/config.");
     }
      
     my $dbh    = DBI->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});

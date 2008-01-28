@@ -22,6 +22,11 @@ use DBI;
 use XML::Writer;
 use XML::Parser;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 sub handler {
     my $r = shift;
     
@@ -36,7 +41,7 @@ sub handler {
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
     }
-    $r->warn("Registration called with command: ".$hargs->{command});
+    $r->warn__("Registration called with command: ").$hargs->{command};
     
     if(exists $hargs->{command} && defined $hargs->{command})
     {
@@ -54,13 +59,13 @@ sub handler {
         }
         else
         {
-            $r->log_error("Unknown command: $hargs->{command}");
+            $r->log_error(__("Unknown command: ") . $hargs->{command});
             return Apache2::Const::SERVER_ERROR;
         }
     }
     else
     {
-        $r->log_error("Missing command");
+        $r->log_error(__("Missing command"));
         return Apache2::Const::SERVER_ERROR;
     }
     
@@ -78,7 +83,7 @@ sub register
 
     my $usetestenv = 0;
     
-    $r->warn("register called.");
+    $r->warn(__("register called."));
 
     if(exists $hargs->{testenv} && $hargs->{testenv})
     {
@@ -89,7 +94,7 @@ sub register
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
     {
-        die "Cannot open Database";
+        die __("Cannot open Database");
     }
     
     my $regroot = { ACCEPTOPT => 1, CURRENTELEMENT => "", PRODUCTATTR => {}, register => {}};
@@ -129,7 +134,7 @@ sub register
 
     if($dat->{INFOCOUNT} > 0)
     {
-        $r->warn("Return NEEDINFO: $output");
+        $r->warn(__("Return NEEDINFO: ") . $output);
         
         # we need to send the <needinfo>
         print $output;
@@ -158,7 +163,7 @@ sub register
 
         my $zmdconfig = YEP::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $usetestenv);
 
-        $r->warn("Return ZMDCONFIG: $zmdconfig");
+        $r->warn(__("Return ZMDCONFIG: ") . $zmdconfig);
 
         print $zmdconfig;
     }
@@ -487,12 +492,12 @@ sub listproducts
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn("listproducts called.");
+    $r->warn(__("listproducts called."));
     
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
     {
-        die "Cannot connect to database";
+        die __("Cannot connect to database");
     }
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
@@ -514,7 +519,7 @@ sub listproducts
     }
     $writer->endTag("productlist");
     
-    $r->warn("Return PRODUCTLIST: $output");
+    $r->warn(__("Return PRODUCTLIST: ") . $output);
 
     print $output;
 
@@ -532,14 +537,14 @@ sub listparams
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn("listparams called.");
+    $r->warn(__("listparams called."));
     
     my $data = read_post($r);
     my $dbh = YEP::Utils::db_connect();
     
     my $xml = YEP::Registration::parseFromProducts($r, $dbh, $data, "PARAMLIST");
     
-    $r->warn("Return PARAMLIST: $xml");
+    $r->warn(__("Return PARAMLIST:") . $xml);
 
     print $xml;
 
@@ -803,7 +808,7 @@ sub cleanOldRegistration
     
     if(!$dbh)
     {
-        $r->log_error("Something is wrong with the database handle");
+        $r->log_error(__("Something is wrong with the database handle"));
         return;
     }
     
@@ -1055,7 +1060,7 @@ sub buildZmdConfig
     if(!defined $cfg)
     {
         # FIXME: is die correct here?
-        die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
+        die __("Cannot read the YEP configuration file: ").@Config::IniFiles::errors;
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');

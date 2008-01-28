@@ -60,6 +60,11 @@ use YEP::Parser::NU;
 use YEP::Mirror::Job;
 use XML::Writer;
 
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
 #use vars qw($cfg $dbh $nuri);
 
 #print "hello CLI2\n";
@@ -72,21 +77,21 @@ sub init
     my $nuri;
     if ( not $dbh=YEP::Utils::db_connect() )
     {
-        die "ERROR: Could not connect to the database";
+        die __("ERROR: Could not connect to the database");
     }
 
     #print "hello CLI\n";
     $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
     if(!defined $cfg)
     {
-        die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
+        die __("Cannot read the YEP configuration file: ").@Config::IniFiles::errors;
     }
 
     # TODO move the url assembling code out
     my $NUUrl = $cfg->val("NU", "NUUrl");
     if(!defined $NUUrl || $NUUrl eq "")
     {
-      die "Cannot read NU Url";
+      die __("Cannot read NU Url");
     }
 
     my $nuUser = $cfg->val("NU", "NUUser");
@@ -95,7 +100,7 @@ sub init
     if(!defined $nuUser || $nuUser eq "" ||
       !defined $nuPass || $nuPass eq "")
     {
-        die "Cannot read the Mirror Credentials";
+        die __("Cannot read the Mirror Credentials");
     }
 
     $nuri = URI->new($NUUrl);
@@ -250,7 +255,7 @@ sub setMirrorableCatalogs
     my $parser = YEP::Parser::NU->new();
     $parser->parse($indexfile, sub {
                                     my $repodata = shift;
-                                    print "* set [" . $repodata->{NAME} . "] [" . $repodata->{DISTRO_TARGET} . "] as mirrorable.\n";
+                                    print __(sprintf("* set [" . $repodata->{NAME} . "] [" . $repodata->{DISTRO_TARGET} . "] as mirrorable.\n"));
                                     my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                                }
     );
@@ -286,7 +291,7 @@ sub setMirrorableCatalogs
                 # if no error
                 $ret = $job->mirror();
 	    }
-            print "* set [" . $catName . "] as " . ( ($ret == 0) ? '' : ' not ' ) . " mirrorable.\n";
+            print __(sprintf ("* set [" . $catName . "] as " . ( ($ret == 0) ? '' : ' not ' ) . " mirrorable.\n"));
             my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND TARGET=%s", ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), $dbh->quote($catName), $dbh->quote($catTarget) ) );
         }
     }
