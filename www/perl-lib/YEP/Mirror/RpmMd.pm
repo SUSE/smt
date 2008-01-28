@@ -218,7 +218,7 @@ sub mirrorTo()
     $parser->resource($self->{LOCALPATH});
     $parser->parse("repodata/repomd.xml", sub { download_handler($self, @_)});
  
-    foreach my $r ( keys %{$self->{JOBS}})
+    foreach my $r ( sort keys %{$self->{JOBS}})
     {
         my $tries = 3;
         do

@@ -59,6 +59,7 @@ sub new
     my $self  = {};
 
     $self->{CURRENT}   = undef;
+    $self->{CURRENTSUBPKG}   = undef;
     $self->{HANDLER}   = undef;
     $self->{RESOURCE}  = undef;
     bless($self);
@@ -144,127 +145,72 @@ sub handle_start_tag()
     # ask the expat object about our position
     my $line = $expat->current_line;
 
-    my $data;
-    my $subdata = undef;
-    
     if(! exists $self->{CURRENT}->{MAINELEMENT})
     {
-        $data->{MAINELEMENT} = undef;
-        $data->{SUBELEMENT} = undef;
-        $data->{NAME} = undef;
-        $data->{CHECKSUM} = undef;
-        $data->{LOCATION} = undef;
-        $data->{PKGFILES} = [];
-    }
-    else
-    {
-        $data = $self->{CURRENT};
+        $self->{CURRENT}->{MAINELEMENT} = undef;
+        $self->{CURRENT}->{SUBELEMENT} = undef;
+        $self->{CURRENT}->{NAME} = undef;
+        $self->{CURRENT}->{CHECKSUM} = undef;
+        $self->{CURRENT}->{LOCATION} = undef;
+        $self->{CURRENT}->{PKGFILES} = [];
     }
     
-    if(defined $data->{SUBELEMENT} && ($data->{SUBELEMENT} eq "patchrpm" || $data->{SUBELEMENT} eq "deltarpm"))
-    {
-        if(@{$data->{PKGFILES}} > 0)
-        {
-            $subdata = pop @{$data->{PKGFILES}};
-        }
-        else
-        {
-            $subdata->{SUBELEMENT} = undef;
-            $subdata->{CHECKSUM} = undef;
-            $subdata->{LOCATION} = undef;
-        }
-    }
-    
-
     if ( lc($element) eq "location" )
     {
-        if(!defined $subdata)
+        if(!defined $self->{CURRENTSUBPKG})
         {
-            $data->{LOCATION} = $attrs{href};
+            $self->{CURRENT}->{LOCATION} = $attrs{href};
         }
         else
         {
-            $subdata->{SUBELEMENT} = lc($element);
+            $self->{CURRENTSUBPKG}->{LOCATION}   = $attrs{href};
         }
     }
     elsif ( lc($element) eq "package" || lc($element) eq "patch" || lc($element) eq "data")
     {
-        $data->{MAINELEMENT} = lc($element);
+        $self->{CURRENT}->{MAINELEMENT} = lc($element);
     }
     elsif ( lc($element) eq "name" )
     {
-        $data->{SUBELEMENT} = lc($element);
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
     }
     elsif ( lc($element) eq "checksum" )
     {
         if(exists $attrs{type} && $attrs{type} eq "sha")
         {
-            if(!defined $subdata)
-            {
-                $data->{SUBELEMENT} = lc($element);
-            }
-            else
-            {
-                $subdata->{SUBELEMENT} = lc($element);
-            }
+            $self->{CURRENT}->{SUBELEMENT} = lc($element);
         }
     }
     elsif ( lc($element) eq "patchrpm" || lc($element) eq "deltarpm" )
     {
-        $data->{SUBELEMENT} = lc($element);
+        $self->{CURRENTSUBPKG}->{CHECKSUM} = "";
+        $self->{CURRENTSUBPKG}->{LOCATION} = "";
     }
-    
-    if(defined $subdata)
-    {
-        push @{$data->{PKGFILES}}, $subdata;
-    }
-    
-    $self->{CURRENT} = $data;
 }
 
 sub handle_char_tag
 {
-  my $self = shift;
-  my( $expat, $string ) = @_;
+    my $self = shift;
+    my( $expat, $string ) = @_;
 
-  my $subdata = undef;
-  if(defined $self->{CURRENT}->{SUBELEMENT} && ($self->{CURRENT}->{SUBELEMENT} eq "patchrpm" || $self->{CURRENT}->{SUBELEMENT} eq "deltarpm"))
-  {
-      if(@{$self->{CURRENT}->{PKGFILES}} > 0)
-      {
-          $subdata = pop @{$self->{CURRENT}->{PKGFILES}};
-      }
-      #else
-      #{
-      #    $subdata->{SUBELEMENT} = undef;
-      #    $subdata->{CHECKSUM} = undef;
-      #    $subdata->{LOCATION} = undef;
-      #}
-  }
-
-  if(defined $self->{CURRENT} && defined $self->{CURRENT}->{SUBELEMENT})
-  {
-      if($self->{CURRENT}->{SUBELEMENT} eq "name")
-      {
-          $self->{CURRENT}->{NAME} .= $string;
-      }
-      elsif($self->{CURRENT}->{SUBELEMENT} eq "checksum")
-      {
-          if(!defined $subdata)
-          {
-              $self->{CURRENT}->{CHECKSUM} .= $string;
-          }
-          else
-          {
-              $subdata->{CHECKSUM} .= $string;
-          }
-      }
-  }
-  
-  if(defined $subdata)
-  {
-      push @{$self->{CURRENT}->{PKGFILES}}, $subdata;
-  }
+    if (defined $self->{CURRENT} && defined $self->{CURRENT}->{SUBELEMENT})
+    {
+        if ($self->{CURRENT}->{SUBELEMENT} eq "name")
+        {
+            $self->{CURRENT}->{NAME} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "checksum")
+        {
+            if (!defined $self->{CURRENTSUBPKG})
+            {
+                $self->{CURRENT}->{CHECKSUM} .= $string;
+            }
+            else
+            {
+                $self->{CURRENTSUBPKG}->{CHECKSUM} .= $string;
+            }
+        }
+    }
 }
 
 
@@ -273,12 +219,17 @@ sub handle_end_tag()
     my $self = shift;
     my( $expat, $element ) = @_;
 
-    if (exists $self->{CURRENT}->{MAINELEMENT} && defined $self->{CURRENT}->{MAINELEMENT} &&
-        lc($element) eq $self->{CURRENT}->{MAINELEMENT} )
+    if ( lc($element) eq "patchrpm" || lc($element) eq "deltarpm" )
+    {
+        push @{$self->{CURRENT}->{PKGFILES}}, $self->{CURRENTSUBPKG};
+        $self->{CURRENTSUBPKG} = undef;
+    }
+    elsif (exists $self->{CURRENT}->{MAINELEMENT} && defined $self->{CURRENT}->{MAINELEMENT} &&
+           lc($element) eq $self->{CURRENT}->{MAINELEMENT} )
     {
         # first call the callback
         $self->{HANDLER}->($self->{CURRENT});
-
+        
         # second check location if we have other metadata files
         
         if(exists $self->{CURRENT}->{LOCATION} && defined $self->{CURRENT}->{LOCATION} &&
@@ -296,8 +247,6 @@ sub handle_end_tag()
     {
         $self->{CURRENT}->{SUBELEMENT} = undef;
     }
-    
-
 }
 
 1;
