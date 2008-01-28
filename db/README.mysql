@@ -1,0 +1,25 @@
+
+MySQL with YEP
+
+- install mysql from SUSE packages
+- make install_db_mysql will create a yep db and insert sample data
+
+- You can create the database manually in this way:
+
+mysql -uroot -p
+(enter)
+create database yep;
+exit
+cat db/yep-tables.sql | mysql -uroot -p
+
+And therefore the sample data is not inserted.
+
+Make sure the following db configuration is in your yep.conf
+[DB]
+config=dbi:mysql:database=yep;host=localhost
+user=root
+pass=
+
+replace the credentials if you did not used the default ones.
+
+
