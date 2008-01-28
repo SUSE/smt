@@ -33,7 +33,7 @@
     string path_to_sync_script = "/usr/sbin/yep-ncc-sync";
     string user_for_sync_script = "root";
 
-    string server_cert = "/etc/ssl/servercerts/servercert.pem";
+    string server_cert = "/etc/ssl/certs/YaST-CA.pem";
     string apache_cert = "/srv/www/htdocs/yep.crt";
 
     list <map> yep_cron_settings = [];
