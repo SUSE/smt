@@ -4,6 +4,7 @@ DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
 YEP_SQLITE_DB = $(DESTDIR)/var/lib/YEP/db/yep.db
+TEMPF = $(shell mktemp)
 
 install_all: install install_conf install_db
 	@echo "==========================================================="
@@ -35,15 +36,14 @@ install_db: install_db_sqlite
 install_db_sqlite:
 	mkdir -p $(DESTDIR)/var/lib/YEP/db/
 	cd db/
-	cat db/yep-tables.sql | sed "s/AUTO_INCREMENT/AUTOINCREMENT/g" | sed "s/drop table if exists/drop table/g" | sqlite3 YEP_SQLITE_DB
-
-	cat db/yep-tables.sql | sqlite3 YEP_SQLITE_DB
-	cat db/products.sql | sqlite3 YEP_SQLITE_DB
-	cat db/product_dependencies.sql | sqlite3 YEP_SQLITE_DB
-	cat db/targets.sql | sqlite3 YEP_SQLITE_DB
-	cat db/tmp-catalogs.sql | sqlite3 YEP_SQLITE_DB
-	cat db/tmp-productcatalogs.sql | sqlite3 YEP_SQLITE_DB
-	cat db/tmp-register.sql | sqlite3 YEP_SQLITE_DB
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/yep-tables_sqlite.sql"
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/products.sql"
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/product_dependencies.sql"
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/targets.sql"
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-catalogs.sql"
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-catalogs.sql"
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-productcatalogs.sql"
+	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-register.sql"
 
 install_db_mysql:
 	echo "drop database if exists yep;" | mysql -u root
