@@ -504,7 +504,7 @@ sub download_handler
             }
         }
     }
-    elsif(exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
+    if(exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
     {
         foreach my $file (@{$data->{PKGFILES}})
         {
@@ -540,6 +540,22 @@ sub verify_handler
             
             if(!exists $self->{VERIFYJOBS}->{$job->local()})
             {
+                $self->{VERIFYJOBS}->{$job->local()} = $job;
+            }
+        }
+    }
+    if($self->deepverify() && exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
+    {
+        foreach my $file (@{$data->{PKGFILES}})
+        {
+            if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
+               $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
+            {
+                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+                $job->resource( $file->{LOCATION} );
+                $job->checksum( $file->{CHECKSUM} );
+                $job->localdir( $self->{LOCALPATH} );
+
                 $self->{VERIFYJOBS}->{$job->local()} = $job;
             }
         }
