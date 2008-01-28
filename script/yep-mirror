@@ -131,8 +131,6 @@ else
     $hash = $dbreplacement;
 }
 
-print Data::Dumper->Dump([$hash]);
-
 foreach my $id (keys %{$hash})
 {
     next if(!exists $hash->{$id}->{CATALOGTYPE} || ! defined $hash->{$id}->{CATALOGTYPE} ||
