@@ -21,12 +21,6 @@ TODO:
   * ... (maybe to be discussed with POS team)
 
 - yast module:
-  * found out that the server certificate does not work.
-    we need to copy the ca-certificate to /srv/www/htdocs/yep.crt
-    The ca can be found at:
-    /etc/ssl/certs/YaST-CA.pem
-
-- yast module:
   - Write parameter in yep.conf (what does this mean?)
     [LOCAL]
     url=...
@@ -68,6 +62,12 @@ DONE:
     if it doesn't, offers to call a service proposal (CA proposal)
   * copies the CA (or the server certificate) to
     /srv/www/htdocs/yep.crt
+
+- yast module:
+  * found out that the server certificate does not work.
+    we need to copy the ca-certificate to /srv/www/htdocs/yep.crt
+    The ca can be found at:
+    /etc/ssl/certs/YaST-CA.pem
 
 - YEP::Registration listparam has to check for "accept=''" option
   [Not needed, a stripped result is produced by the client (suse_register)
