@@ -62,7 +62,10 @@ if($todir ne "" && ! -d $todir)
 {
 	die "Directory '$fromdir' does not exist";
 }
-
+if(0)
+{
+	# We have currently no NCC support for this, so comment out
+	
 my $rd= YEP::Mirror::RegData->new(debug   => 0,
                                     element => "product",
                                     table   => "Products",
@@ -113,6 +116,7 @@ $res = $rd->sync();
 if($res)
 {
     print STDERR "Error while fetching ProductCatalogs data.\n";
+}
 }
 
 if($todir ne "")
