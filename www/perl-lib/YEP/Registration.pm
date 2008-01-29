@@ -36,7 +36,7 @@ sub handler {
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
     }
-    $r->warn("Registration called with command: ").$hargs->{command};
+    $r->warn("Registration called with command: ".$hargs->{command});
     
     if(exists $hargs->{command} && defined $hargs->{command})
     {
