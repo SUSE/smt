@@ -2,6 +2,7 @@ package YEP::Parser::RegData;
 use strict;
 use URI;
 use XML::Parser;
+use IO::Zlib;
 
 
 # constructor
@@ -43,7 +44,6 @@ sub parse()
     
     if ( $file =~ /(.+)\.gz/ )
     {
-        use IO::Zlib;
         my $fh = IO::Zlib->new($file, "rb");
         eval {
             $parser->parse( $fh );
@@ -51,7 +51,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            print STDERR "Error: $@\n";
+            print STDERR "YEP::Parser::RegData Invalid XML in '$file': $@\n";
         }
     }
     else
@@ -62,7 +62,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            print STDERR "Error: $@\n";
+            print STDERR "YEP::Parser::RegData Invalid XML in '$file': $@\n";
         }
     }
 }

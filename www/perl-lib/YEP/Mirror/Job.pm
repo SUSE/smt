@@ -122,7 +122,7 @@ sub realchecksum()
     my $digest;
     my $filename = $self->local;
     open(FILE, "< $filename") or do {
-        print STDERR "Cannot open '$filename': $!\n";
+        print STDERR "Cannot open '$filename': $!\n" if($self->{DEBUG});
         return "";
     };
       

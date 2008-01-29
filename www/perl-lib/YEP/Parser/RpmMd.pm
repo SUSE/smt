@@ -2,6 +2,7 @@ package YEP::Parser::RpmMd;
 use strict;
 use URI;
 use XML::Parser;
+use IO::Zlib;
 
 =head1 NAME
 
@@ -113,7 +114,6 @@ sub parse()
     
     if ( $path =~ /(.+)\.gz/ )
     {
-      use IO::Zlib;
       my $fh = IO::Zlib->new($path, "rb");
       eval {
           $parser->parse( $fh );
@@ -121,7 +121,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "Error: $@\n";
+          print STDERR "YEP::Parser::RpmMd Invalid XML in '$path': $@\n";
       }
     }
     else
@@ -132,7 +132,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "Error: $@\n";
+          print STDERR "YEP::Parser::RpmMd Invalid XML in '$path': $@\n";
       }
     }
 }

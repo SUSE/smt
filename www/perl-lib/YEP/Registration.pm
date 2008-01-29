@@ -22,11 +22,6 @@ use DBI;
 use XML::Writer;
 use XML::Parser;
 
-use Locale::gettext ();
-use POSIX ();     # Needed for setlocale()
-
-POSIX::setlocale(&POSIX::LC_MESSAGES, "");
-
 sub handler {
     my $r = shift;
     
@@ -41,7 +36,7 @@ sub handler {
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
     }
-    $r->warn__("Registration called with command: ").$hargs->{command};
+    $r->warn("Registration called with command: ").$hargs->{command};
     
     if(exists $hargs->{command} && defined $hargs->{command})
     {
@@ -59,13 +54,13 @@ sub handler {
         }
         else
         {
-            $r->log_error(__("Unknown command: ") . $hargs->{command});
+            $r->log_error("Unknown command: ".$hargs->{command});
             return Apache2::Const::SERVER_ERROR;
         }
     }
     else
     {
-        $r->log_error(__("Missing command"));
+        $r->log_error("Missing command");
         return Apache2::Const::SERVER_ERROR;
     }
     
@@ -83,7 +78,7 @@ sub register
 
     my $usetestenv = 0;
     
-    $r->warn(__("register called."));
+    $r->warn("register called.");
 
     if(exists $hargs->{testenv} && $hargs->{testenv})
     {
@@ -94,7 +89,7 @@ sub register
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
     {
-        die __("Cannot open Database");
+        die "Cannot open Database";
     }
     
     my $regroot = { ACCEPTOPT => 1, CURRENTELEMENT => "", PRODUCTATTR => {}, register => {}};
@@ -104,7 +99,15 @@ sub register
                                         End   => sub { reg_handle_end_tag($regroot, @_) }
                                       });
 
-    $regparser->parse( $data );
+    eval {
+        $regparser->parse( $data );
+    };
+    if($@) {
+        # ignore the errors, but print them
+        chomp($@);
+        $r->log_error("YEP::Registration::register Invalid XML: $@");
+    }
+
 
     my $needinfo = YEP::Registration::parseFromProducts($r, $dbh, $data, "NEEDINFO");
 
@@ -128,13 +131,20 @@ sub register
                                    { Start=> sub { nif_handle_start_tag($dat, @_) },
                                      End=>   sub { nif_handle_end_tag($dat, @_) }
                                    });
-    $parser->parse( $needinfo );
+    eval {
+        $parser->parse( $needinfo );
+    };
+    if($@) {
+        # ignore the errors, but print them
+        chomp($@);
+        $r->log_error("YEP::Registration::register Invalid XML: $@");
+    }
 
     #$r->log_error("INFOCOUNT: ".$dat->{INFOCOUNT});
 
     if($dat->{INFOCOUNT} > 0)
     {
-        $r->warn(__("Return NEEDINFO: ") . $output);
+        $r->warn("Return NEEDINFO: ".$output);
         
         # we need to send the <needinfo>
         print $output;
@@ -163,7 +173,7 @@ sub register
 
         my $zmdconfig = YEP::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $usetestenv);
 
-        $r->warn(__("Return ZMDCONFIG: ") . $zmdconfig);
+        $r->warn("Return ZMDCONFIG: ".$zmdconfig);
 
         print $zmdconfig;
     }
@@ -492,12 +502,12 @@ sub listproducts
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn(__("listproducts called."));
+    $r->warn("listproducts called.");
     
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
     {
-        die __("Cannot connect to database");
+        die ("Cannot connect to database");
     }
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
@@ -519,7 +529,7 @@ sub listproducts
     }
     $writer->endTag("productlist");
     
-    $r->warn(__("Return PRODUCTLIST: ") . $output);
+    $r->warn("Return PRODUCTLIST: ".$output);
 
     print $output;
 
@@ -537,14 +547,14 @@ sub listparams
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn(__("listparams called."));
+    $r->warn("listparams called.");
     
     my $data = read_post($r);
     my $dbh = YEP::Utils::db_connect();
     
     my $xml = YEP::Registration::parseFromProducts($r, $dbh, $data, "PARAMLIST");
     
-    $r->warn(__("Return PARAMLIST:") . $xml);
+    $r->warn("Return PARAMLIST:".$xml);
 
     print $xml;
 
@@ -567,8 +577,15 @@ sub parseFromProducts
                                      Char => sub { handle_char($data, @_) },
                                      End=>\&handle_end_tag,
                                    });
-    $parser->parse( $xml );
-    
+    eval {
+        $parser->parse( $xml );
+    };
+    if($@) {
+        # ignore the errors, but print them
+        chomp($@);
+        $r->log_error("YEP::Registration::parseFromProducts Invalid XML: $@");
+    }
+
     my @list = ();
     foreach my $product (keys %{$data->{PRODUCTS}})
     {
@@ -772,22 +789,37 @@ sub mergeDocuments
         {
             $basedoc = $other;
             my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
-            $root1 = $p1->parse( $basedoc );
-            $node1 = $root1->[0];
+            eval {
+                $root1 = $p1->parse( $basedoc );
+                $node1 = $root1->[0];
+            };
+            if($@) {
+                # ignore the errors, but print them
+                chomp($@);
+                $r->log_error("YEP::Registration::mergeDocuments Invalid XML: $@");
+            }
+            
             next;
         }
         next if($basedoc eq $other);
         
         my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
-        my $root2 = $p2->parse( $other );
-        my $node2;
-        
-        if(ref($root1->[0]) eq ref($root2->[0]))
-        {
-            $node1 = $root1->[0];
-            $node2 = $root2->[0];
-
-            mergeXML($node1, $node2);
+        eval {
+            my $root2 = $p2->parse( $other );
+            my $node2;
+      
+            if(ref($root1->[0]) eq ref($root2->[0]))
+            {
+                $node1 = $root1->[0];
+                $node2 = $root2->[0];
+                
+                mergeXML($node1, $node2);
+            }
+        };
+        if($@) {
+            # ignore the errors, but print them
+            chomp($@);
+            $r->log_error("YEP::Registration::register Invalid XML: $@");
         }
     }
     
@@ -808,7 +840,7 @@ sub cleanOldRegistration
     
     if(!$dbh)
     {
-        $r->log_error(__("Something is wrong with the database handle"));
+        $r->log_error("Something is wrong with the database handle");
         return;
     }
     
@@ -1060,7 +1092,7 @@ sub buildZmdConfig
     if(!defined $cfg)
     {
         # FIXME: is die correct here?
-        die __("Cannot read the YEP configuration file: ").@Config::IniFiles::errors;
+        die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');

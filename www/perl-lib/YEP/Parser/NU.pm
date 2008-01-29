@@ -91,7 +91,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "Error: $@\n";
+          print STDERR "YEP::Parser::NU Invalid XML in '$path': $@\n";
       }
     }
     else
@@ -102,7 +102,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "Error: $@\n";
+          print STDERR "YEP::Parser::NU Invalid XML in '$path': $@\n";
       }
    }
 }
