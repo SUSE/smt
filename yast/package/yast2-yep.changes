@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jan 29 20:30:31 CET 2008 - mc@suse.de
+
+- Using /etc/ssl/certs/YaST-CA.pem instead of
+  /etc/ssl/servercerts/servercert.pem
+- 2.13.2
+
+-------------------------------------------------------------------
 Wed Jan 23 14:54:00 CET 2008 - locilka@suse.cz
 
 - Added checking whether cron package is installed. If not, package
