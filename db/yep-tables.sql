@@ -55,9 +55,9 @@ create table Products (
                 RELLOWER        VARCHAR(200),
                 ARCHLOWER       VARCHAR(200),
                 FRIENDLY        VARCHAR(200),
-                PARAMLIST       VARCHAR(200),
-                NEEDINFO        VARCHAR(200),
-                SERVICE         VARCHAR(200),
+                PARAMLIST       TEXT,
+                NEEDINFO        TEXT,
+                SERVICE         TEXT,
                 PRODUCT_LIST    VARCHAR(200),
                 UNIQUE(PRODUCT, VERSION, REL, ARCH)
                 );
