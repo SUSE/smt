@@ -2,6 +2,7 @@
 MySQL with YEP
 
 - install mysql from SUSE packages
+- start mysql with "rcmysql start"
 - make install_db_mysql will create a yep db and insert sample data
 
 - You can create the database manually in this way:
