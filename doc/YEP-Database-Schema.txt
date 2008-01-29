@@ -1,0 +1,187 @@
+
+YEP Database 
+============
+
+
+Registration(REGID        integer PRIMARY KEY AUTO_INCREMENT,
+             GUID         CHAR(50) NOT NULL,
+             PRODUCTID    integer NOT NULL,
+             UNIQUE(GUID, ProductID)
+            );
+
+GUID:      The ID of the client machine (/etc/zmd/deviceid)
+PRODUCTID: The ID of the Product which is installed on this client
+           This ID is a reference to the Products table, PRODUCTDATAID column
+
+This table is changed with every registration. 
+It happens DELETE and INSERT statements during registration.
+
+Expected table size: depends on how many clients are registered against YEP 
+                     and how many products they have installed.
+
+-------------------------------------------------------------------------------
+
+MachineData(GUID          CHAR(50) NOT NULL,
+            KEYNAME       CHAR(50) NOT NULL,
+            VALUE         BLOB,
+            PRIMARY KEY(GUID, KEYNAME)
+           );
+
+GUID:      The ID of the client machine (/etc/zmd/deviceid)
+           See also Registration.GUID
+KEYNAME:   Parameter name which are send from the client during registration
+           See Products.NEEDINFO (the <params> statements in the XML)
+VALUE:     The Parameter value for this KEYNAME (can be hwinfo output)
+
+
+This table is changed with every registration. 
+It happens DELETE and INSERT statements during registration.
+
+Expected table size: depends on how many clients are registered against YEP 
+                     Every GUID will have around 20 rows in this table.
+
+-------------------------------------------------------------------------------
+
+Products (
+          PRODUCTDATAID   integer NOT NULL PRIMARY KEY,
+          PRODUCT         CHAR(500) NOT NULL,
+          VERSION         CHAR(100),
+          REL             CHAR(100),
+          ARCH            CHAR(100),
+          PRODUCTLOWER    CHAR(100) NOT NULL,
+          VERSIONLOWER    CHAR(100),
+          RELLOWER        CHAR(100),
+          ARCHLOWER       CHAR(100),
+          FRIENDLY        CHAR(700),
+          PARAMLIST       TEXT,
+          NEEDINFO        TEXT,
+          SERVICE         TEXT,
+          PRODUCT_LIST    CHAR(1),
+          UNIQUE(PRODUCT, VERSION, REL, ARCH)
+         );
+
+PRODUCTDATAID: The ID of a product
+PRODUCT:       The product name
+VERSION:       The product version
+REL:           The product release
+ARCH:          The product architecture
+PRODUCTLOWER:  lowercase PRODUCT
+VERSIONLOWER:  lowercase VERSION
+RELLOWER:      lowercase REL
+ARCHLOWER:     lowercase ARCH
+FRIENDLY:      Human readable Product name (if you want to display it)
+PARAMLIST:     XML description of the requested parameters if you want
+               to register this product.
+NEEDINFO:      Similar to PARAMLIST but this is realy send during registration
+               of this product.
+SERVICE:       (currently not used in YEP)
+PRODUCT_LIST:  Y/N Should this product send on a listProducts request of
+               suse_register
+
+
+This table is changed during an ncc-sync (maybe once a day). 
+It happens UPDATE and INSERT statements during this operation.
+
+Expected table size: Current rows: 227 (198 with PRODUCT_LIST Y)
+
+-------------------------------------------------------------------------------
+
+ProductCatalogs(PRODUCTDATAID integer NOT NULL,
+                CATALOGID     CHAR(50) NOT NULL,
+                OPTIONAL      CHAR(1) DEFAULT 'N',
+                PRIMARY KEY(PRODUCTDATAID, CATALOGID)
+               );
+
+PRODUCTDATAID: See Products.PRODUCTDATAID
+CATALOGID:     See Catalogs.CATALOGID
+OPTIONAL:      Y/N If this catalog is optional with this product it is
+               not send back from the registration request.
+               Result: only zmd can see this catalog but it is not subscribed. 
+
+This table say which products gets which catalogs.
+
+This table is changed during an ncc-sync (maybe once a day). 
+It happens UPDATE and INSERT statements during this operation.
+
+Expected table size: ~ 2 * Products
+
+-------------------------------------------------------------------------------
+
+Catalogs(CATALOGID   CHAR(50) PRIMARY KEY, 
+         NAME        CHAR(200) NOT NULL, 
+         DESCRIPTION CHAR(500), 
+         TARGET      CHAR(100),           -- null in case of YUM source
+         LOCALPATH   CHAR(300) NOT NULL,
+         EXTURL      CHAR(300) NOT NULL,  -- where to mirror from
+         CATALOGTYPE CHAR(10) NOT NULL,
+         DOMIRROR    CHAR(1) DEFAULT 'N',
+         MIRRORABLE  CHAR(1) DEFAULT 'N',
+         UNIQUE(NAME, TARGET)
+        );
+
+CATALOGID:    The ID of this catalog (currently a sha1sum(<NAME>-<TARGET>) )
+              This may change.
+NAME:         The name of this catalog
+DESCRIPTION:  A catalog description
+TARGET:       The catalog target (NULL in case of a yum catalog)
+              The target is something zmd special. It tells zmd about 
+              interoperability for products(suse vs. rhat) and architectures.
+LOCALPATH:    Path on YEP where this catalog can be found
+              (this is not a full path! The full path can be build this way:
+               <BasePath>/repo/<LOCALPATH>/ 
+               where BasePath can be yep.con.LOCAL.mirrorTo or 
+               apache DocumentRoot)
+EXTURL:       URL where we can mirror this catalog from
+CATALOGTYPE:  yum/nu The catalog type
+DOMIRROR:     Y/N Do the customer want to mirror this catalog?
+MIRRORABLE:   Y/N Do we have access to EXTURL to mirror this catalog?
+
+
+This table is changed during an ncc-sync (maybe once a day). 
+It happens UPDATE and INSERT statements during this operation.
+
+Additionaly the DOMIRROR flag can be changed by the administrator.
+
+Expected table size: ~ 2 * Products
+
+-------------------------------------------------------------------------------
+
+ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
+                    CHILD_PRODUCT_ID  integer NOT NULL,
+                    PRIMARY KEY(PARENT_PRODUCT_ID, CHILD_PRODUCT_ID)
+                   );
+
+PARENT_PRODUCT_ID: See Products.PRODUCTDATAID 
+CHILD_PRODUCT_ID:  See Products.PRODUCTDATAID
+
+(maybe this table go away)
+
+This table tell the registration server about dependencies between products.
+In NCC this is used for the ATI and NVidia repositories.
+It exists a ATI_SP1 and an NVidia_SP1 product.
+SLED-SP1 has a dependency to both of them. 
+
+
+This table is changed during an ncc-sync (maybe once a day). 
+It happens UPDATE and INSERT statements during this operation.
+
+Expected table size: Current rows: 44 
+
+-------------------------------------------------------------------------------
+
+Targets (OS      CHAR(200) NOT NULL PRIMARY KEY,
+         TARGET  CHAR(100) NOT NULL,
+         ARCH    CHAR(200) NOT NULL
+        );
+
+OS:     The string you get if you call rug ping and return OSTarget.
+TARGET: internal representation (See also Catalog.TARGET)
+ARCH:   The architecture (maybe this go away)
+
+
+This table is changed during an ncc-sync (maybe once a day). 
+It happens UPDATE and INSERT statements during this operation.
+
+Expected table size: Current rows: 8
+
+-------------------------------------------------------------------------------
