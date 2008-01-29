@@ -33,7 +33,7 @@ TODO:
 - add a logfile option to yep-mirror.pl and prepare the YEP::Mirror::... 
   modules to print in a logfile
 
-- test what happens if two processes what to write yep.db
+- test what happens if two processes want to write yep.db
   How can we solve concutrrent access with DBI?
 
 - localization of the client tools
