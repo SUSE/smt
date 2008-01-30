@@ -40,13 +40,13 @@ modify the database to setup catalogs create by the customer
 
 set the catalog mirror flag to enabled or disabled
 
-Pass name => foo and target => bar to select the catalog.
+Pass id => foo to select the catalog.
 Pass enabled => 1 or enabled => 0
 disabled => 1 or disabled => 0 are supported as well
 
 =item catalogDoMirrorFlag
 
-Pass name => foo and target => bar to select the catalog.
+Pass id => foo to select the catalog.
 true if the catalog is ser to be mirrored, false otherwise
 
 =back
@@ -142,6 +142,11 @@ sub listCatalogs
             $sql = $sql . " and MIRRORABLE='N'";
           }
     }
+
+    if ( exists $options{ name } && defined $options{name} )
+    {
+          $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($options{name}));
+    }
     
     if ( exists $options{ domirror } && defined  $options{ domirror } )
     {
@@ -159,7 +164,7 @@ sub listCatalogs
     $sth->execute();
     while (my @values = $sth->fetchrow_array())  
     {
-        print "[" . $values[1] . "] " . $values[2] . "\n";
+        print $values[0] . " => [" . $values[1] . "] " . $values[2] . "\n";
         if ( exists $options{ verbose } && defined $options{verbose} )
         {
           print "|\\-local-path => " . $values[4] . "\n";
@@ -236,11 +241,42 @@ sub resetCatalogsStatus
 
 sub setCatalogDoMirror
 {
-  my %options = @_;
+  my %opt = @_;
   my ($cfg, $dbh, $nuri) = init();
 
-  #my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
-  #$sth->execute();
+  if(exists $opt{enabled} && defined $opt{enabled} )
+  {
+    my $sql = "update Catalogs";
+    $sql .= sprintf(" set Domirror=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
+
+    $sql .= " where 1";
+
+    $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+
+    if(exists $opt{name} && defined $opt{name} )
+    {
+      $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
+    }
+
+    if(exists $opt{target} && defined $opt{target} )
+    {
+      $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
+    }
+
+    if(exists $opt{id} && defined $opt{id} )
+    {
+      $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
+    }
+
+    print $sql . "\n";
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
+
+  }
+  else
+  {
+    die __("enabled option missing");
+  }
 }
 
 sub catalogDoMirrorFlag

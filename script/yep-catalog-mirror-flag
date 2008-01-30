@@ -16,64 +16,120 @@ my $enable;
 my $disable;
 my $verbose;
 my $help;
-my $name;
-my $target;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
          'enable|e'         => \$enable,
          'disable|d'        => \$disable,
-         'name|n=s'         => \$name,
-         'target|t=s'       => \$target,
          'verbose|v'        => \$verbose,
          'help|h' => \$help
 );
 
+
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : " . __("Enable or disable mirroring of a catalog\n");
+  print basename($0) . " name [target]: " . __("Enable or disable mirroring of a catalog\n");
   print "    -enable     (-m) arg : " . __("enable catalog mirorring for \$catalog\n");
   print "    -disable    (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
-  print "    -name       (-n) arg : " . __("Catalog name\n");
-  print "    -target     (-t) arg : " . __("Catalog Target\n");
   print "    -verbose    (-v) arg : " . __("show detailed catalog information\n");
   exit 0;
 }
 
-if ( ((not defined $name)) || (not defined($target)) )
-{
-  die __("Catalog name and target are required\n");
-}
+my $name = shift(@ARGV);
 
-my $domirror = YEP::CLI::catalogDoMirrorFlag(name=>$name, target=>$target);
-if ( $domirror )
-{
-  print  __(sprintf("catalog %s %s is set to be mirrored.\n", $name, $target));
-}
-else
-{
-  print  __(sprintf("catalog %s %s is disabled for mirroring.\n", $name, $target));
-}
+# if ( not defined $name )
+# {
+#   die __("Catalog name is required\n");
+# }
 
 if ( defined $disable && defined $enable )
 {
   die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
 }
 
-if ( defined $disable || defined $enable )
+my $bool;
+if ( defined $disable )
 {
-  my $bool;
-  if ( defined $disable )
-  {
-    $bool = ( $disable == 1 ? 0 : 1 );
-  }
-  
-  if ( defined $enable )
-  {
-    $bool = ( $enable == 1 ? 1 : 0 );
-  }
-  
-  YEP::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+  $bool = ( $disable == 1 ? 0 : 1 );
 }
+
+if ( defined $enable )
+{
+  $bool = ( $enable == 1 ? 1 : 0 );
+}
+
+my $target = shift(@ARGV);
+
+my ($cfg, $dbh, $nuri) = YEP::CLI::init();
+
+my $count = 0;
+my @catalogs;
+my $sql = "select * from Catalogs where 1";
+
+# only show mirrorables
+if (1)
+{
+  #$sql = $sql . sprintf(" and MIRRORABLE=%s", $dbh->quote("Y") );
+}
+if (defined $name )
+{
+  $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($name) );
+}
+# if target was given, limit the search even more
+if (defined $target )
+{
+  $sql = $sql . sprintf(" and TARGET=%s", $dbh->quote($target) );
+}
+
+# hash to associate order with id.
+my @idnumbers;
+my $sth = $dbh->prepare($sql);
+$sth->execute();
+while ( my @v = $sth->fetchrow_array() )
+{
+  $count++;
+  my $catId = $v[0];
+  push(@idnumbers, $catId);
+  my $catName = $v[1];
+  my $catTarget = $v[3];
+  my $catType = $v[6];
+
+  print "[" . (( $v[7] eq "Y" ) ? "*] " : " ] ") . "[" . $count . "] " . "(" . $catType . ") " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
+}
+
+if ( $count == 0 )
+{
+  die __(sprintf("no catalog named %s\n", $name));
+}
+elsif ( $count == 1 )
+{
+  # we are lucky, only one
+}
+else
+{
+  print __(sprintf("Select catalog number to activate, or all (0-". $count.",a) :") );
+
+  my $answer = <STDIN>;
+  chomp($answer);
+  
+  if(lc($answer) eq __("a"))
+  {
+    YEP::CLI::setCatalogDoMirror(enabled => $bool);
+    exit 0;
+  }
+  elsif ( $answer =~ /[0-9]+/ )
+  {
+    my $number = int($answer);
+    YEP::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
+    exit 0;
+  }
+  else
+  {
+    die __("canceled");
+  }
+}
+
+exit 0;
+
 0
