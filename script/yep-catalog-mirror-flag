@@ -1,0 +1,79 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib ("/srv/www/perl-lib/");
+use YEP::CLI;
+use File::Basename;
+use YEP::Utils;
+
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+my $enable;
+my $disable;
+my $verbose;
+my $help;
+my $name;
+my $target;
+
+use Getopt::Long;
+&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
+&Getopt::Long::GetOptions(
+         'enable|e'         => \$enable,
+         'disable|d'        => \$disable,
+         'name|n=s'         => \$name,
+         'target|t=s'       => \$target,
+         'verbose|v'        => \$verbose,
+         'help|h' => \$help
+);
+
+if ( defined $help and ( $help == 1 ) )
+{
+  print basename($0) . " : " . __("Enable or disable mirroring of a catalog\n");
+  print "    -enable     (-m) arg : " . __("enable catalog mirorring for \$catalog\n");
+  print "    -disable    (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
+  print "    -name       (-n) arg : " . __("Catalog name\n");
+  print "    -target     (-t) arg : " . __("Catalog Target\n");
+  print "    -verbose    (-v) arg : " . __("show detailed catalog information\n");
+  exit 0;
+}
+
+if ( ((not defined $name)) || (not defined($target)) )
+{
+  die __("Catalog name and target are required\n");
+}
+
+my $domirror = YEP::CLI::catalogDoMirrorFlag(name=>$name, target=>$target);
+if ( $domirror )
+{
+  print  __(sprintf("catalog %s %s is set to be mirrored.\n", $name, $target));
+}
+else
+{
+  print  __(sprintf("catalog %s %s is disabled for mirroring.\n", $name, $target));
+}
+
+if ( defined $disable && defined $enable )
+{
+  die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
+}
+
+if ( defined $disable || defined $enable )
+{
+  my $bool;
+  if ( defined $disable )
+  {
+    $bool = ( $disable == 1 ? 0 : 1 );
+  }
+  
+  if ( defined $enable )
+  {
+    $bool = ( $enable == 1 ? 1 : 0 );
+  }
+  
+  YEP::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+}
+0

@@ -36,6 +36,19 @@ Shows active registrations on the system.
 
 modify the database to setup catalogs create by the customer
 
+=item setCatalogDoMirror
+
+set the catalog mirror flag to enabled or disabled
+
+Pass name => foo and target => bar to select the catalog.
+Pass enabled => 1 or enabled => 0
+disabled => 1 or disabled => 0 are supported as well
+
+=item catalogDoMirrorFlag
+
+Pass name => foo and target => bar to select the catalog.
+true if the catalog is ser to be mirrored, false otherwise
+
 =back
 
 =back
@@ -219,6 +232,22 @@ sub resetCatalogsStatus
 
   my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
   $sth->execute();
+}
+
+sub setCatalogDoMirror
+{
+  my %options = @_;
+  my ($cfg, $dbh, $nuri) = init();
+
+  #my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
+  #$sth->execute();
+}
+
+sub catalogDoMirrorFlag
+{
+  my %options = @_;
+  my ($cfg, $dbh, $nuri) = init();
+  return 1;
 }
 
 sub setMirrorableCatalogs
