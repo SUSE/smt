@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
+use YEP::Utils;
 use File::Basename;
 
 use Locale::gettext ();
