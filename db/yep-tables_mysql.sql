@@ -31,11 +31,11 @@ create table MachineData(GUID          CHAR(50) NOT NULL,
 
 -- used for NU catalogs and single YUM sources
 create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY, 
-                      NAME        CHAR(200) NOT NULL, 
-                      DESCRIPTION CHAR(500), 
-                      TARGET      CHAR(100),           -- null in case of YUM source
-                      LOCALPATH   CHAR(300) NOT NULL,
-                      EXTURL      CHAR(300) NOT NULL,  -- where to mirror from
+                      NAME        VARCHAR(200) NOT NULL, 
+                      DESCRIPTION VARCHAR(500), 
+                      TARGET      VARCHAR(100),           -- null in case of YUM source
+                      LOCALPATH   VARCHAR(300) NOT NULL,
+                      EXTURL      VARCHAR(300) NOT NULL,  -- where to mirror from
                       CATALOGTYPE CHAR(10) NOT NULL,
                       DOMIRROR    CHAR(1) DEFAULT 'N',
                       MIRRORABLE  CHAR(1) DEFAULT 'N',
@@ -46,20 +46,20 @@ create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY,
 -- copy of NNW_PRODUCT_DATA
 create table Products (
                 PRODUCTDATAID   integer NOT NULL PRIMARY KEY,
-                PRODUCT         CHAR(500) NOT NULL,
-                VERSION         CHAR(100),
-                REL             CHAR(100),
-                ARCH            CHAR(100),
-                PRODUCTLOWER    CHAR(100) NOT NULL,
-                VERSIONLOWER    CHAR(100),
-                RELLOWER        CHAR(100),
-                ARCHLOWER       CHAR(100),
-                FRIENDLY        CHAR(700),
+                PRODUCT         VARCHAR(500) NOT NULL,
+                VERSION         VARCHAR(100),
+                REL             VARCHAR(100),
+                ARCH            VARCHAR(100),
+                PRODUCTLOWER    VARCHAR(100) NOT NULL,
+                VERSIONLOWER    VARCHAR(100),
+                RELLOWER        VARCHAR(100),
+                ARCHLOWER       VARCHAR(100),
+                FRIENDLY        VARCHAR(700),
                 PARAMLIST       TEXT,
                 NEEDINFO        TEXT,
                 SERVICE         TEXT,
                 PRODUCT_LIST    CHAR(1),
-                UNIQUE(PRODUCT, VERSION, REL, ARCH)
+                UNIQUE(PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER)
                 );
 
 
@@ -77,9 +77,9 @@ create table ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
                                 );
 
 -- copy of NNW_ZLM66_TARGETS
-create table Targets (OS      CHAR(200) NOT NULL PRIMARY KEY,
-                      TARGET  CHAR(100) NOT NULL,
-                      ARCH    CHAR(200) NOT NULL
+create table Targets (OS      VARCHAR(200) NOT NULL PRIMARY KEY,
+                      TARGET  VARCHAR(100) NOT NULL,
+                      ARCH    VARCHAR(200) NOT NULL
                      );
 
 
