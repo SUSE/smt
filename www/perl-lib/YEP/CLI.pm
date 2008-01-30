@@ -184,7 +184,11 @@ sub listProducts
                                          # there's nothing left
     {
         #print "$nickname, $favorite_number\n";
-        print "$PRODUCT $VERSION $ARCH\n";
+	#print "$PRODUCT $VERSION $ARCH\n";
+	my $productstr = $PRODUCT;
+	$productstr .= " $VERSION" if(defined $VERSION);
+	$productstr .= " $ARCH" if(defined $ARCH);
+	print "$productstr\n";
         if ( exists $options{ verbose } && defined $options{verbose} )
         {
           #print "$PARAMLIST\n";
