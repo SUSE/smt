@@ -14,31 +14,31 @@ drop table MachineData;
 drop table Targets;
 
 create table Registration(REGID        integer PRIMARY KEY AUTOINCREMENT,
-                          GUID         VARCHAR(200) NOT NULL,
+                          GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,
                        -- InstallDate  date             -- date is not supported by sqlite3
                        -- LastContact  date             -- date is not supported by sqlite3
-                          UNIQUE(GUID, ProductID)
+                          UNIQUE(GUID, PRODUCTID)
                        -- FOREIGN KEY (ProductID) REFERENCES Products  -- FOREIGN KEY not supported by sqlite3
                          );
 
-create table MachineData(GUID          VARCHAR(200) NOT NULL,
-                         KEYNAME       VARCHAR(200) NOT NULL,
+create table MachineData(GUID          CHAR(50) NOT NULL,
+                         KEYNAME       CHAR(50) NOT NULL,
                          VALUE         BLOB,
                          PRIMARY KEY(GUID, KEYNAME)
                       -- FOREIGN KEY (GUID) REFERENCES Registration (GUID) ON DELETE CASCADE -- FOREIGN KEY not supported by sqlite3
                         );
 
 -- used for NU catalogs and single YUM sources
-create table Catalogs(CATALOGID   VARCHAR(200) PRIMARY KEY, 
+create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY, 
                       NAME        VARCHAR(200) NOT NULL, 
-                      DESCRIPTION VARCHAR(200), 
-                      TARGET      VARCHAR(200),           -- null in case of YUM source
-                      LOCALPATH   VARCHAR(200) NOT NULL,
-                      EXTURL      VARCHAR(200) NOT NULL,  -- where to mirror from
-                      CATALOGTYPE VARCHAR(200) NOT NULL,
-                      DOMIRROR    VARCHAR(200) DEFAULT 'N',
-                      MIRRORABLE  VARCHAR(200) DEFAULT 'N',
+                      DESCRIPTION VARCHAR(500), 
+                      TARGET      VARCHAR(100),           -- null in case of YUM source
+                      LOCALPATH   VARCHAR(300) NOT NULL,
+                      EXTURL      VARCHAR(300) NOT NULL,  -- where to mirror from
+                      CATALOGTYPE CHAR(10) NOT NULL,
+                      DOMIRROR    CHAR(1) DEFAULT 'N',
+                      MIRRORABLE  CHAR(1) DEFAULT 'N',
                       UNIQUE(NAME, TARGET)
                      );
 
@@ -46,26 +46,26 @@ create table Catalogs(CATALOGID   VARCHAR(200) PRIMARY KEY,
 -- copy of NNW_PRODUCT_DATA
 create table Products (
                 PRODUCTDATAID   integer NOT NULL PRIMARY KEY,
-                PRODUCT         VARCHAR(200) NOT NULL,
-                VERSION         VARCHAR(200),
-                REL             VARCHAR(200),
-                ARCH            VARCHAR(200),
-                PRODUCTLOWER    VARCHAR(200) NOT NULL,
-                VERSIONLOWER    VARCHAR(200),
-                RELLOWER        VARCHAR(200),
-                ARCHLOWER       VARCHAR(200),
-                FRIENDLY        VARCHAR(200),
-                PARAMLIST       VARCHAR(200),
-                NEEDINFO        VARCHAR(200),
-                SERVICE         VARCHAR(200),
-                PRODUCT_LIST    VARCHAR(200),
-                UNIQUE(PRODUCT, VERSION, REL, ARCH)
-                );
+                PRODUCT         VARCHAR(500) NOT NULL,
+                VERSION         VARCHAR(100),
+                REL             VARCHAR(100),
+                ARCH            VARCHAR(100),
+                PRODUCTLOWER    VARCHAR(500) NOT NULL,
+                VERSIONLOWER    VARCHAR(100),
+                RELLOWER        VARCHAR(100),
+                ARCHLOWER       VARCHAR(100),
+                FRIENDLY        VARCHAR(700),
+                PARAMLIST       TEXT,
+                NEEDINFO        TEXT,
+                SERVICE         TEXT,
+                PRODUCT_LIST    CHAR(1),
+                UNIQUE(PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER)
+		);
 
 
 create table ProductCatalogs(PRODUCTDATAID integer NOT NULL,
-                             CATALOGID     VARCHAR(200) NOT NULL,
-                             OPTIONAL      VARCHAR(200) DEFAULT 'N',
+                             CATALOGID     CHAR(50) NOT NULL,
+                             OPTIONAL      CHAR(1) DEFAULT 'N',
                              PRIMARY KEY(PRODUCTDATAID, CATALOGID)
                             );
 
@@ -78,7 +78,7 @@ create table ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
 
 -- copy of NNW_ZLM66_TARGETS
 create table Targets (OS      VARCHAR(200) NOT NULL PRIMARY KEY,
-                      TARGET  VARCHAR(200) NOT NULL,
+                      TARGET  VARCHAR(100) NOT NULL,
                       ARCH    VARCHAR(200) NOT NULL
                      );
 

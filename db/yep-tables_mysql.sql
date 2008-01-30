@@ -18,7 +18,7 @@ create table Registration(REGID        integer PRIMARY KEY AUTO_INCREMENT,
                           PRODUCTID    integer NOT NULL,
                        -- InstallDate  date             -- date is not supported by sqlite3
                        -- LastContact  date             -- date is not supported by sqlite3
-                          UNIQUE(GUID, ProductID)
+                          UNIQUE(GUID, PRODUCTID)
                        -- FOREIGN KEY (ProductID) REFERENCES Products  -- FOREIGN KEY not supported by sqlite3
                          );
 
@@ -50,7 +50,7 @@ create table Products (
                 VERSION         VARCHAR(100),
                 REL             VARCHAR(100),
                 ARCH            VARCHAR(100),
-                PRODUCTLOWER    VARCHAR(100) NOT NULL,
+                PRODUCTLOWER    VARCHAR(500) NOT NULL,
                 VERSIONLOWER    VARCHAR(100),
                 RELLOWER        VARCHAR(100),
                 ARCHLOWER       VARCHAR(100),
