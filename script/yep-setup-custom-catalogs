@@ -79,7 +79,7 @@ if($delete ne "")
 my $dbh = YEP::Utils::db_connect();
 if(!$dbh)
 {
-    die "Cannot connect the database";
+    die __("Cannot connect the database\n");
 }
 
 
