@@ -36,14 +36,14 @@ TODO:
 - test what happens if two processes want to write yep.db
   How can we solve concutrrent access with DBI?
 
-- localization of the client tools
-
 - create, implement and test a strategy how we can update the database structure
   after release. (e.g. if we need to add some tables, or collumns in tables) 
 
 
 DONE:
 =====
+
+- localization of the client tools
 
 - support HTTPS - the suse_register will only connect via https
 
