@@ -41,14 +41,13 @@ install_db_sqlite:
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/product_dependencies.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/targets.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-catalogs.sql"
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-catalogs.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-productcatalogs.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-register.sql"
 
 install_db_mysql:
 	echo "drop database if exists yep;" | mysql -u root
 	echo "create database if not exists yep;" | mysql -u root
-	cat db/yep-tables.sql | mysql -u root yep
+	cat db/yep-tables_mysql.sql | mysql -u root yep
 	cat db/products.sql | mysql -u root yep
 	cat db/product_dependencies.sql | mysql -u root yep
 	cat db/targets.sql | mysql -u root yep
