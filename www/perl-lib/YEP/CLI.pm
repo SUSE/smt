@@ -268,7 +268,7 @@ sub setCatalogDoMirror
       $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
     }
 
-    print $sql . "\n";
+    #print $sql . "\n";
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 

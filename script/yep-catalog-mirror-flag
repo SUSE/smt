@@ -105,17 +105,19 @@ if ( $count == 0 )
 elsif ( $count == 1 )
 {
   # we are lucky, only one
+  YEP::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
+  exit 0;
 }
 else
 {
-  print __(sprintf("Select catalog number to activate, or all (0-". $count.",a) :") );
+  print __(sprintf("Select catalog number (or all) to change,  (0-". $count.",a) :") );
 
   my $answer = <STDIN>;
   chomp($answer);
   
   if(lc($answer) eq __("a"))
   {
-    YEP::CLI::setCatalogDoMirror(enabled => $bool);
+    YEP::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
     exit 0;
   }
   elsif ( $answer =~ /[0-9]+/ )
