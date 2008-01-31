@@ -31,7 +31,7 @@ install_all: install install_conf install_db
 	@echo "Finaly start the web server with 'rcapache2 start'"
 	@echo "==========================================================="
 
-install_db: install_db_sqlite
+install_db: install_db_mysql
 
 install_db_sqlite:
 	mkdir -p $(DESTDIR)/var/lib/YEP/db/
