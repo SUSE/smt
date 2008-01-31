@@ -112,6 +112,7 @@ Catalogs(CATALOGID   CHAR(50) PRIMARY KEY,
          DESCRIPTION VARCHAR(500), 
          TARGET      VARCHAR(100),           -- null in case of single RPMMD source
          LOCALPATH   VARCHAR(300) NOT NULL,
+         EXTHOST     VARCHAR(300) NOT NULL,
          EXTURL      VARCHAR(300) NOT NULL,  -- where to mirror from
          CATALOGTYPE CHAR(10) NOT NULL,
          DOMIRROR    CHAR(1) DEFAULT 'N',
@@ -131,6 +132,7 @@ LOCALPATH:    Path on YEP where this catalog can be found
                <BasePath>/repo/<LOCALPATH>/ 
                where BasePath can be yep.con.LOCAL.mirrorTo or 
                apache DocumentRoot)
+EXTURL:       scheme and host part of EXTURL
 EXTURL:       URL where we can mirror this catalog from
 CATALOGTYPE:  zypp/nu The catalog type
 DOMIRROR:     Y/N Do the customer want to mirror this catalog?

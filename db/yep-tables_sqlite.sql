@@ -35,6 +35,7 @@ create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY,
                       DESCRIPTION VARCHAR(500), 
                       TARGET      VARCHAR(100),           -- null in case of single RPMMD source
                       LOCALPATH   VARCHAR(300) NOT NULL,
+                      EXTHOST     VARCHAR(300) NOT NULL,  
                       EXTURL      VARCHAR(300) NOT NULL,  -- where to mirror from
                       CATALOGTYPE CHAR(10) NOT NULL,
                       DOMIRROR    CHAR(1) DEFAULT 'N',

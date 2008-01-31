@@ -30,7 +30,7 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
-  print "    -enable     (-m) arg : " . __("enable catalog mirorring for \$catalog\n");
+  print "    -enable     (-e) arg : " . __("enable catalog mirorring for \$catalog\n");
   print "    -disable    (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
   print "    -verbose    (-v) arg : " . __("show detailed catalog information\n");
   exit 0;
@@ -86,16 +86,16 @@ if (defined $target )
 my @idnumbers;
 my $sth = $dbh->prepare($sql);
 $sth->execute();
-while ( my @v = $sth->fetchrow_array() )
+while ( my $v = $sth->fetchrow_hashref() )
 {
   $count++;
-  my $catId = $v[0];
+  my $catId = $v->{CATALOGID};
   push(@idnumbers, $catId);
-  my $catName = $v[1];
-  my $catTarget = $v[3];
-  my $catType = $v[6];
+  my $catName = $v->{NAME};
+  my $catTarget = $v->{TARGET};
+  my $catType = $v->{CATALOGTYPE};
 
-  print "[" . (( $v[7] eq "Y" ) ? "*] " : " ] ") . "[" . $count . "] " . "(" . $catType . ") " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
+  print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . $count . "] " . "(" . $catType . ") " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
 }
 
 if ( $count == 0 )

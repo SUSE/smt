@@ -162,16 +162,16 @@ sub listCatalogs
 
     my $sth = $dbh->prepare($sql);
     $sth->execute();
-    while (my @values = $sth->fetchrow_array())  
+    while (my $values = $sth->fetchrow_hashref())  
     {
-        print $values[0] . " => [" . $values[1] . "] " . $values[2] . "\n";
+        print $values->{CATALOGID} . " => [" . $values->{NAME} . "] " . $values->{DESCRIPTION} . "\n";
         if ( exists $options{ verbose } && defined $options{verbose} )
         {
-          print "|\\-local-path => " . $values[4] . "\n";
-          print "| -url        => " . $values[5] . "\n";
-          print "| -type       => " . $values[6] . "\n";
-          print "| -mirrorable => " . $values[8] . "\n";
-          print "| -mirror?    => " . $values[7] . "\n";
+          print "|\\-local-path => " . $values->{LOCALPATH} . "\n";
+          print "| -url        => " . $values->{EXTURL} . "\n";
+          print "| -type       => " . $values->{CATALOGTYPE} . "\n";
+          print "| -mirrorable => " . $values->{MIRRORABLE} . "\n";
+          print "| -mirror?    => " . $values->{DOMIRROR} . "\n";
         }
     }
     $sth->finish();
@@ -184,28 +184,14 @@ sub listProducts
 
     my $sth = $dbh->prepare(qq{select * from Products});
     $sth->execute();
-    while (my ( $PRODUCTDATAD,
-                $PRODUCT,
-                $VERSION,
-                $REL,
-                $ARCH,
-                $PRODUCTLOWER,
-                $VERSIONLOWER,
-                $RELLOWER,
-                $ARCHLOWER,
-                $FRIENDLY,
-                $PARAMLIST,
-                $NEEDINFO,
-                $SERVICE,
-                $PRODUCT_LIST ) =
-                $sth->fetchrow_array())  # keep fetching until 
-                                         # there's nothing left
+    while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
+                                                   # there's nothing left
     {
         #print "$nickname, $favorite_number\n";
 	#print "$PRODUCT $VERSION $ARCH\n";
-	my $productstr = $PRODUCT;
-	$productstr .= " $VERSION" if(defined $VERSION);
-	$productstr .= " $ARCH" if(defined $ARCH);
+	my $productstr = $value->{PRODUCT};
+	$productstr .= " $value->{VERSION}" if(defined $value->{VERSION});
+	$productstr .= " $value->{ARCH}" if(defined $value->{ARCH});
 	print "$productstr\n";
         if ( exists $options{ verbose } && defined $options{verbose} )
         {
@@ -390,16 +376,21 @@ sub setupCustomCatalogs
     removeCustomCatalog(%options);
     
     # now insert it again.
-    my $affected = $dbh->do(sprintf("INSERT INTO Catalogs VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                                     $dbh->quote($options{catalogid}),
-                                     $dbh->quote($options{name}),
-                                     $dbh->quote($options{description}),
-                                     "NULL",
-                                     $dbh->quote("/RPMMD/".$options{name}),
-                                     $dbh->quote($options{exturl}),
-                                     $dbh->quote("zypp"),
-                                     $dbh->quote("Y"),
-                                     $dbh->quote("Y")));
+    my $exthost = $options{exturl};
+    $exthost =~ /^(https?:\/\/[^\/]\/)/;
+    $exthost = $1;
+
+    my $affected = $dbh->do(sprintf("INSERT INTO Catalogs VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                                    $dbh->quote($options{catalogid}),
+                                    $dbh->quote($options{name}),
+                                    $dbh->quote($options{description}),
+                                    "NULL",
+                                    $dbh->quote("/RPMMD/".$options{name}),
+                                    $dbh->quote($exthost),
+                                    $dbh->quote($options{exturl}),
+                                    $dbh->quote("zypp"),
+                                    $dbh->quote("Y"),
+                                    $dbh->quote("Y")));
     foreach my $pid (@{$options{productids}})
     {
         $affected += $dbh->do(sprintf("INSERT INTO ProductCatalogs VALUES(%s, %s, %s)",
@@ -428,13 +419,13 @@ sub createDBReplacementFile
     foreach my $row (keys %{$dbout})
     {
         $writer->startTag("row");
-	foreach my $col (keys %{$dbout->{$row}})
-	{
+        foreach my $col (keys %{$dbout->{$row}})
+        {
             $writer->startTag("col", name => $col);
-	    $writer->characters($dbout->{$row}->{$col});
-	    $writer->endTag("col");
-	}
-	$writer->endTag("row");
+            $writer->characters($dbout->{$row}->{$col});
+            $writer->endTag("col");
+        }
+        $writer->endTag("row");
     }
     $writer->endTag("catalogs");
     $writer->end();
