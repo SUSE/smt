@@ -169,6 +169,26 @@ sub mirrorTo()
       }
     }
 
+    # copy repodata to .repodata 
+    # we do not want to damage the repodata until we
+    # have them all
+
+    if( -d $job->localdir()."/.repodata" )
+    {
+        rmtree($job->localdir()."/.repodata", 0, 0);
+    }
+    
+    if( -d $job->localdir()."/repodata" )
+    {
+        my $cmd = "cp -a '".$job->localdir()."/repodata' '".$job->localdir()."/.repodata'";
+        print "$cmd \n" if($self->{DEBUG});
+        my $ret = `$cmd`;
+        my $resource = $job->resource();
+        $job->remoteresource($resource);
+        $resource =~ s/repodata/.repodata/;
+        $job->resource($resource);
+    }
+    
     my $result = $job->mirror();
     if( $result == 1 )
     {
@@ -183,7 +203,8 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
     
-    $job->resource( "/repodata/repomd.xml.asc" );
+    $job->remoteresource("/repodata/repomd.xml.asc");
+    $job->resource( "/.repodata/repomd.xml.asc" );
     $result = $job->mirror();
     if( $result == 1 )
     {
@@ -198,7 +219,8 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
-    $job->resource( "/repodata/repomd.xml.key" );
+    $job->remoteresource("/repodata/repomd.xml.key");
+    $job->resource( "/.repodata/repomd.xml.key" );
     $result = $job->mirror();
     if( $result == 1 )
     {
@@ -216,7 +238,8 @@ sub mirrorTo()
     # parse it and find more resources
     my $parser = YEP::Parser::RpmMd->new();
     $parser->resource($self->{LOCALPATH});
-    $parser->parse("repodata/repomd.xml", sub { download_handler($self, @_)});
+    $parser->specialmdlocation(1);
+    $parser->parse(".repodata/repomd.xml", sub { download_handler($self, @_)});
  
     foreach my $r ( sort keys %{$self->{JOBS}})
     {
@@ -264,6 +287,31 @@ sub mirrorTo()
         } while $tries > 0;
     }
 
+    # if no error happens copy .repodata to repodata
+
+    if($self->{STATISTIC}->{ERROR} == 0 && -d $job->localdir()."/.repodata")
+    {
+        if( -d $job->localdir()."/.old.repodata")
+        {
+            rmtree($job->localdir()."/.old.repodata", 0, 0);
+        }
+        my $success = rename( $job->localdir()."/repodata", $job->localdir()."/.old.repodata");
+        if(!$success)
+        {
+            print STDERR "Cannot rename directory ".$job->localdir()."/repodata \n";
+            $self->{STATISTIC}->{ERROR} += 1;
+        }
+        else
+        {
+            $success = rename( $job->localdir()."/.repodata", $job->localdir()."/repodata");
+            if(!$success)
+            {
+                print STDERR "Cannot rename directory ".$job->localdir()."/.repodata \n";
+                $self->{STATISTIC}->{ERROR} += 1;
+            }
+        }
+    }
+    
     print "=> Finished mirroring ".$saveuri->as_string."\n";
     print "=> Downloaded Files: ".$self->{STATISTIC}->{DOWNLOAD}."\n";
     print "=> Up to date Files: ".$self->{STATISTIC}->{UPTODATE}."\n";
@@ -421,6 +469,23 @@ sub clean_handler
         # if this path is in the CLEANLIST, delete it
         delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
     }
+    if(exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
+    {
+        foreach my $file (@{$data->{PKGFILES}})
+        {
+            if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
+               $file->{LOCATION} ne "" )
+            {
+                # get the repository index
+                my $resource = $self->{LOCALPATH}."/".$file->{LOCATION};
+                # strip out /./ and //
+                $resource =~ s/\/\.?\//\//g;
+                
+                # if this path is in the CLEANLIST, delete it
+                delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
+            }
+        }
+    }
 }
 
 
@@ -433,17 +498,26 @@ sub download_handler
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "" && !exists $self->{JOBS}->{$data->{LOCATION}})
     {
+
         # get the repository index
         my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
         $job->resource( $data->{LOCATION} );
         $job->checksum( $data->{CHECKSUM} );
         $job->localdir( $self->{LOCALPATH} );
         $job->uri( $self->{URI} );
-    
+        
         # if it is an xml file we have to download it now and
         # process it
         if (  $job->resource =~ /(.+)\.xml(.*)/ )
         {
+            # metadata! change the download area
+
+            my $localres = $data->{LOCATION};
+            
+            $localres =~ s/repodata/.repodata/;
+            $job->remoteresource($data->{LOCATION});
+            $job->resource( $localres );
+
             my $tries = 3;
             do 
             {

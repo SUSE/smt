@@ -63,6 +63,7 @@ sub new
     $self->{CURRENTSUBPKG}   = undef;
     $self->{HANDLER}   = undef;
     $self->{RESOURCE}  = undef;
+    $self->{LOCATIONHACK} = 0;
     bless($self);
     return $self;
 }
@@ -72,6 +73,13 @@ sub resource
     my $self = shift;
     if (@_) { $self->{RESOURCE} = shift }
     return $self->{RESOURCE};
+}
+
+sub specialmdlocation
+{
+    my $self = shift;
+    if (@_) { $self->{LOCATIONHACK} = shift }
+    return $self->{LOCATIONHACK};
 }
 
 
@@ -92,9 +100,10 @@ sub parse()
     }
     
     $path = $self->{RESOURCE}."/$repodata";
-
+    
     if(!-e $path)
     {
+        print STDERR "File not found $path\n";
         return;
     }
     
@@ -237,6 +246,11 @@ sub handle_end_tag()
         {
             my $location = $self->{CURRENT}->{LOCATION};
             $self->{CURRENT} = undef;
+            if($self->{LOCATIONHACK})
+            {
+                # rewrite directory
+                $location =~ s/repodata/.repodata/;
+            }
             $self->parse($location, $self->{HANDLER});
         }
         

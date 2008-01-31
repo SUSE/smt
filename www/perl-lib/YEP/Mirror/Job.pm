@@ -26,6 +26,7 @@ sub new
     $self->{URI}        = undef;
     $self->{LOCALDIR}   = undef;
     $self->{RESOURCE}   = undef;
+    $self->{RESOURCEEXT}   = undef;   # if we need to set a different resource remote and local
     $self->{CHECKSUM}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:LWP::UserAgent->new(keep_alive => 1);
@@ -72,6 +73,15 @@ sub localdir
     return $self->{LOCALDIR};
 }
 
+sub remoteresource
+{
+    my $self = shift;
+    
+    if(@_) { $self->{RESOURCEEXT} = shift }
+    return $self->{RESOURCEEXT};
+}
+    
+
 # local full path
 sub local
 {
@@ -84,8 +94,14 @@ sub local
 sub remote
 {
     my $self = shift;
-    my $remote = join( "/", ( $self->{URI}, $self->{RESOURCE} ) );
-    return $remote;
+    if(defined $self->{RESOURCEEXT} && $self->{RESOURCEEXT} ne "")
+    {
+        return $self->{URI}."/".$self->{RESOURCEEXT};
+    }
+    else
+    {
+        return $self->{URI}."/".$self->{RESOURCE};
+    }
 }
 
 # resource property
