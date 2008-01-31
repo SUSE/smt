@@ -63,7 +63,11 @@ open(PERF, ">> ./performance.log") or do
 print "GUID\t| Time\n";
 print PERF "GUID\t| Time\n";
 
-for( my $cnt = 0; $cnt < 10000; $cnt++)
+my ($start, $end);
+$start=shift or $start=0;
+$end=shift or $end=10000;
+
+for( my $cnt = $start; $cnt <= $end; $cnt++)
 {
     my $t0 = [gettimeofday];
 
