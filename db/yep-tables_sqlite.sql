@@ -16,8 +16,8 @@ drop table Targets;
 create table Registration(REGID        integer PRIMARY KEY AUTOINCREMENT,
                           GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,
-                       -- InstallDate  date             -- date is not supported by sqlite3
-                       -- LastContact  date             -- date is not supported by sqlite3
+                          REGDATE      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          NCCREGDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
                           UNIQUE(GUID, PRODUCTID)
                        -- FOREIGN KEY (ProductID) REFERENCES Products  -- FOREIGN KEY not supported by sqlite3
                          );

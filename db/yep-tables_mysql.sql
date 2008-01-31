@@ -16,6 +16,8 @@ drop table if exists Targets;
 create table Registration(REGID        integer PRIMARY KEY AUTO_INCREMENT,
                           GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,
+                          REGDATE      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          NCCREGDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
                        -- InstallDate  date             -- date is not supported by sqlite3
                        -- LastContact  date             -- date is not supported by sqlite3
                           UNIQUE(GUID, PRODUCTID)
