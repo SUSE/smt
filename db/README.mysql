@@ -1,17 +1,19 @@
 
 MySQL with YEP
+--------------
 
 - install mysql from SUSE packages
 - start mysql with "rcmysql start"
 - make install_db_mysql will create a yep db and insert sample data
 
-- You can create the database manually in this way:
+You can create the database manually in this way:
+-------------------------------------------------
 
 mysql -uroot -p
 (enter)
 create database yep;
 exit
-cat db/yep-tables.sql | mysql -uroot -p
+cat db/yep-tables_mysql.sql | mysql -uroot -p
 
 And therefore the sample data is not inserted.
 
