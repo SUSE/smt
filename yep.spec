@@ -18,7 +18,6 @@ Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       apache2
 Requires:       apache2-mod_perl
-Requires:       sqlite
 Requires:       perl-DBI
 Requires:       perl-DBD-SQLite
 Requires:       perl-Crypt-SSLeay
@@ -29,6 +28,7 @@ Requires:       perl-libwww-perl
 Requires:       perl-IO-Zlib
 Requires:       perl-URI
 Requires:       perl-TimeDate
+Recommends:     mysql
 Recommends:	yast2-yep
 PreReq:         %fillup_prereq apache2 apache2-mod_perl
 AutoReqProv:    on
