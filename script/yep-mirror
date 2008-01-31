@@ -124,7 +124,7 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $hash = $dbh->selectall_hashref( "select CATALOGID, LOCALPATH, EXTURL, CATALOGTYPE from Catalogs where CATALOGTYPE='yum' and MIRRORABLE='Y' and DOMIRROR='Y'", "CATALOGID" );
+    $hash = $dbh->selectall_hashref( "select CATALOGID, LOCALPATH, EXTURL, CATALOGTYPE from Catalogs where CATALOGTYPE='zypp' and MIRRORABLE='Y' and DOMIRROR='Y'", "CATALOGID" );
 }
 else
 {
@@ -134,23 +134,23 @@ else
 foreach my $id (keys %{$hash})
 {
     next if(!exists $hash->{$id}->{CATALOGTYPE} || ! defined $hash->{$id}->{CATALOGTYPE} ||
-            $hash->{$id}->{CATALOGTYPE} ne "yum");
+            lc($hash->{$id}->{CATALOGTYPE}) ne "zypp");
     
     if( $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
     {
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
-        my $yumMirror = YEP::Mirror::RpmMd->new(debug => $debug);
+        my $zyppMirror = YEP::Mirror::RpmMd->new(debug => $debug);
         if($clean)
         {
-            $yumMirror->clean( $fullpath );
+            $zyppMirror->clean( $fullpath );
         }
         else
         {
-            $yumMirror->uri( $hash->{$id}->{EXTURL} );
-            $yumMirror->deepverify($deepverify);
-            $yumMirror->mirrorTo( $fullpath, { urltree => 0 } );
+            $zyppMirror->uri( $hash->{$id}->{EXTURL} );
+            $zyppMirror->deepverify($deepverify);
+            $zyppMirror->mirrorTo( $fullpath, { urltree => 0 } );
         }
     }
 }

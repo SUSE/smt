@@ -656,7 +656,7 @@ sub buildZmdConfig
 
     foreach my $cat (keys %{$catalogs})
     {
-        next if($catalogs->{$cat}->{CATALOGTYPE} ne "yum");
+        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "zypp");
 
         $writer->startTag("service", 
                           "id"          => $catalogs->{$cat}->{NAME},

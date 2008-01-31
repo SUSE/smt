@@ -132,7 +132,7 @@ LOCALPATH:    Path on YEP where this catalog can be found
                where BasePath can be yep.con.LOCAL.mirrorTo or 
                apache DocumentRoot)
 EXTURL:       URL where we can mirror this catalog from
-CATALOGTYPE:  yum/nu The catalog type
+CATALOGTYPE:  zypp/nu The catalog type
 DOMIRROR:     Y/N Do the customer want to mirror this catalog?
 MIRRORABLE:   Y/N Do we have access to EXTURL to mirror this catalog?
 

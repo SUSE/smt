@@ -329,7 +329,7 @@ sub setMirrorableCatalogs
                                }
     );
 
-    my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='yum'";
+    my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
     #my $sth = $dbh->prepare($sql);
     #$sth->execute();
     #while (my @values = $sth->fetchrow_array())
@@ -397,7 +397,7 @@ sub setupCustomCatalogs
                                      "NULL",
                                      $dbh->quote("/RPMMD/".$options{name}),
                                      $dbh->quote($options{exturl}),
-                                     $dbh->quote("yum"),
+                                     $dbh->quote("zypp"),
                                      $dbh->quote("Y"),
                                      $dbh->quote("Y")));
     foreach my $pid (@{$options{productids}})

@@ -16,7 +16,7 @@
   <col name="DESCRIPTION">ATI Driver for SP1</col>
   <col name="TARGET" />
   <col name="EXTURL">http://www2.ati.com/suse/sle10sp1/</col>
-  <col name="CATALOGTYPE">yum</col>
+  <col name="CATALOGTYPE">zypp</col>
 </row>
 </catalogs>
 
