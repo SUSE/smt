@@ -110,7 +110,7 @@ Expected table size: ~ 2 * Products
 Catalogs(CATALOGID   CHAR(50) PRIMARY KEY, 
          NAME        VARCHAR(200) NOT NULL, 
          DESCRIPTION VARCHAR(500), 
-         TARGET      VARCHAR(100),           -- null in case of YUM source
+         TARGET      VARCHAR(100),           -- null in case of single RPMMD source
          LOCALPATH   VARCHAR(300) NOT NULL,
          EXTURL      VARCHAR(300) NOT NULL,  -- where to mirror from
          CATALOGTYPE CHAR(10) NOT NULL,
@@ -123,7 +123,7 @@ CATALOGID:    The ID of this catalog (currently a sha1sum(<NAME>-<TARGET>) )
               This may change.
 NAME:         The name of this catalog
 DESCRIPTION:  A catalog description
-TARGET:       The catalog target (NULL in case of a yum catalog)
+TARGET:       The catalog target (NULL in case of a single rpmmd catalog)
               The target is something zmd special. It tells zmd about 
               interoperability for products(suse vs. rhat) and architectures.
 LOCALPATH:    Path on YEP where this catalog can be found

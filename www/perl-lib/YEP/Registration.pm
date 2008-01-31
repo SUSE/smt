@@ -652,7 +652,7 @@ sub buildZmdConfig
     }
     $writer->endTag("service");
     
-    # and now the YUM Repositories
+    # and now the zypp Repositories
 
     foreach my $cat (keys %{$catalogs})
     {

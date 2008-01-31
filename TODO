@@ -99,7 +99,7 @@ DONE:
     available catalogs to 'Y' again.
        Comment: download "repo/repoindex.xml" and for all available catalogs in there
                 set the Mirrorable flag to 'Y'
-  * try to access repomd.xml of all YUM catalogs and set
+  * try to access repomd.xml of all zypp catalogs and set
     the "Mirroable" flags to 'Y' again
        Comment: download "repomd.xml" and for all available catalogs in there
                 set the Mirrorable flag to 'Y'

@@ -621,7 +621,7 @@ Set to 1 to enable debug.
 
  $mirror->uri( "http://repo.com/10.3" );
 
- Specify the YUM source where to mirror from.
+ Specify the RpmMd source where to mirror from.
 
 =item mirrorTo()
 

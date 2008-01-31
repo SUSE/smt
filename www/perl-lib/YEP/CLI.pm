@@ -395,7 +395,7 @@ sub setupCustomCatalogs
                                      $dbh->quote($options{name}),
                                      $dbh->quote($options{description}),
                                      "NULL",
-                                     $dbh->quote("/YUM/".$options{name}),
+                                     $dbh->quote("/RPMMD/".$options{name}),
                                      $dbh->quote($options{exturl}),
                                      $dbh->quote("yum"),
                                      $dbh->quote("Y"),

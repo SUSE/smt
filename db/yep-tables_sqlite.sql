@@ -29,11 +29,11 @@ create table MachineData(GUID          CHAR(50) NOT NULL,
                       -- FOREIGN KEY (GUID) REFERENCES Registration (GUID) ON DELETE CASCADE -- FOREIGN KEY not supported by sqlite3
                         );
 
--- used for NU catalogs and single YUM sources
+-- used for NU catalogs and single RPMMD sources
 create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY, 
                       NAME        VARCHAR(200) NOT NULL, 
                       DESCRIPTION VARCHAR(500), 
-                      TARGET      VARCHAR(100),           -- null in case of YUM source
+                      TARGET      VARCHAR(100),           -- null in case of single RPMMD source
                       LOCALPATH   VARCHAR(300) NOT NULL,
                       EXTURL      VARCHAR(300) NOT NULL,  -- where to mirror from
                       CATALOGTYPE CHAR(10) NOT NULL,

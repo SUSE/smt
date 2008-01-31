@@ -322,7 +322,7 @@ sub _updateDB
             }
             else
             {
-                $row->{LOCALPATH} = 'YUM/'.$row->{NAME};
+                $row->{LOCALPATH} = 'RPMMD/'.$row->{NAME};
             }
         }
 

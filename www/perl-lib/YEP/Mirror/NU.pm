@@ -265,7 +265,7 @@ sub mirror_handler
     }
     else
     {
-        # all catalogs in DBREPLACEMENT should be mirrored, but we have to strip out the "YUM" types
+        # all catalogs in DBREPLACEMENT should be mirrored, but we have to strip out the "RPMMD" types
         if(exists $self->{DBREPLACEMENT}->{$data->{NAME}."-".$data->{DISTRO_TARGET}}->{CATALOGTYPE} && 
            defined $self->{DBREPLACEMENT}->{$data->{NAME}."-".$data->{DISTRO_TARGET}}->{CATALOGTYPE} &&
            $self->{DBREPLACEMENT}->{$data->{NAME}."-".$data->{DISTRO_TARGET}}->{CATALOGTYPE} eq "nu")

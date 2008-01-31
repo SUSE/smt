@@ -91,13 +91,13 @@ insert into Catalogs (CATALOGID, NAME,DESCRIPTION,TARGET,LOCALPATH, ExtURL, CATA
 
 
 insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTURL, CATALOGTYPE, MIRRORABLE, DOMIRROR)
-  Values("17fb9ff090b5d60ae0d2acf2160090f1485b9ea2", "www2_ati_com_sp1", "ATI Video Drivers (SP1)", NULL, "YUM/www2_ati_com_sp1", "http://www2.ati.com/suse/sle10sp1", "yum", "Y", "Y");
+  Values("17fb9ff090b5d60ae0d2acf2160090f1485b9ea2", "www2_ati_com_sp1", "ATI Video Drivers (SP1)", NULL, "RPMMD/www2_ati_com_sp1", "http://www2.ati.com/suse/sle10sp1", "yum", "Y", "Y");
 insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTURL, CATALOGTYPE, MIRRORABLE, DOMIRROR)
-  Values("32a37b5e5242ac03e7ba6a6a338dc0d9afa0f6c6", "www2_ati_com", "ATI Video Drivers", NULL, "YUM/www2_ati_com", "http://www2.ati.com/suse/sle10", "yum", "Y", "Y");
+  Values("32a37b5e5242ac03e7ba6a6a338dc0d9afa0f6c6", "www2_ati_com", "ATI Video Drivers", NULL, "RPMMD/www2_ati_com", "http://www2.ati.com/suse/sle10", "yum", "Y", "Y");
 insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTURL, CATALOGTYPE, MIRRORABLE, DOMIRROR)
-  Values("b96a20490716e8ad4353e318d9ec2b5a62d23dda", "download_nvidia_com", "nVidia Video Drivers", NULL, "YUM/download_nvidia_com", "http://download.nvidia.com/novell/sle10", "yum", "Y", "Y");
+  Values("b96a20490716e8ad4353e318d9ec2b5a62d23dda", "download_nvidia_com", "nVidia Video Drivers", NULL, "RPMMD/download_nvidia_com", "http://download.nvidia.com/novell/sle10", "yum", "Y", "Y");
 insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTURL, CATALOGTYPE, MIRRORABLE, DOMIRROR)
-  Values("f141229cdd31a8d2e2a5db06d5c6b290f6c77e3f", "download_nvidia_com_sp1", "nVidia Video Drivers (SP1)", NULL, "YUM/download_nvidia_com_sp1", "http://download.nvidia.com/novell/sle10sp1", "yum", "Y", "Y");
+  Values("f141229cdd31a8d2e2a5db06d5c6b290f6c77e3f", "download_nvidia_com_sp1", "nVidia Video Drivers (SP1)", NULL, "RPMMD/download_nvidia_com_sp1", "http://download.nvidia.com/novell/sle10sp1", "yum", "Y", "Y");
 
 -- SP2
 
