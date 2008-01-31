@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<product xmlns="http://www.novell.com/xml/center/regsvc-1_0">
+<productdata xmlns="http://www.novell.com/xml/center/regsvc-1_0">
 <row>
   <col name="PRODUCTDATAID">436</col>
   <col name="PRODUCT">SUSE-Linux-Enterprise-Server-SP1</col>
   <col name="VERSION">10</col>
-  <col name="RELEASE" />
+  <col name="REL" />
   <col name="ARCH">i686</col>
   <col name="PRODUCTLOWER">suse-linux-enterprise-server-sp1</col>
   <col name="VERSIONLOWER">10</col>
-  <col name="RELEASELOWER" />
+  <col name="RELLOWER" />
   <col name="ARCHLOWER">i686</col>
   <col name="FRIENDLY">SUSE Linux Enterprise Server 10 SP1</col>
   <col name="PARAMLIST"><![CDATA[<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="">
@@ -81,11 +81,11 @@
   <col name="PRODUCTDATAID">437</col>
   <col name="PRODUCT">SUSE-Linux-Enterprise-Server-SP1</col>
   <col name="VERSION">10</col>
-  <col name="RELEASE" />
+  <col name="REL" />
   <col name="ARCH">i586</col>
   <col name="PRODUCTLOWER">suse-linux-enterprise-server-sp1</col>
   <col name="VERSIONLOWER">10</col>
-  <col name="RELEASELOWER" />
+  <col name="RELLOWER" />
   <col name="ARCHLOWER">i586</col>
   <col name="FRIENDLY">SUSE Linux Enterprise Server 10 SP1</col>
   <col name="PARAMLIST"><![CDATA[<paramlist xmlns="http://something"/>  ]]></col>
@@ -97,11 +97,11 @@
   <col name="PRODUCTDATAID">9999</col>
   <col name="PRODUCT">SUSE-Linux-Enterprise-Server-SP2</col>
   <col name="VERSION">10</col>
-  <col name="RELEASE" />
+  <col name="REL" />
   <col name="ARCH">i686</col>
   <col name="PRODUCTLOWER">suse-linux-enterprise-server-sp2</col>
   <col name="VERSIONLOWER">10</col>
-  <col name="RELEASELOWER" />
+  <col name="RELLOWER" />
   <col name="ARCHLOWER">i686</col>
   <col name="FRIENDLY">SUSE Linux Enterprise Server 10 SP2</col>
   <col name="PARAMLIST"><![CDATA[<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="">
@@ -170,5 +170,5 @@
 ]]></col>
   <col name="PRODUCT_LIST">Y</col>
 </row>
-</product>
+</productdata>
 

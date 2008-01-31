@@ -21,10 +21,10 @@ sub testsync
 
 
 my $rd = YEP::Mirror::RegData->new(debug   => 1,
-                                   element => "product",
+                                   element => "productdata",
                                    table   => "Products",
                                    key     => "PRODUCTDATAID");
-my $res = testsync($rd, "./testdata/regdatatest/products.xml");
+my $res = testsync($rd, "./testdata/regdatatest/productdata.xml");
 if($res)
 {
     print STDERR "Error while fetching Products data.\n";
