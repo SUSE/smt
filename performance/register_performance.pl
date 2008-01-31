@@ -7,6 +7,7 @@
 BEGIN 
 {
     unshift @INC, ".";
+    unshift @INC, "..";
 }
 
 use strict;
