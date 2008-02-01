@@ -1,5 +1,5 @@
 NAME         = yep
-VERSION      = 0.0.3
+VERSION      = 0.0.4
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -61,8 +61,8 @@ install_conf:
 
 install:
 	mkdir -p $(DESTDIR)/usr/sbin/
-	mkdir -p $(DESTDIR)/etc/apache2/conf.d/
-	mkdir -p $(DESTDIR)/etc/apache2/vhosts.d/
+	mkdir -p $(DESTDIR)/etc/apache2
+	mkdir -p $(DESTDIR)/etc/yep.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
 	mkdir -p $(DESTDIR)/srv/www/htdocs/testing/repo
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
@@ -70,8 +70,8 @@ install:
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Parser
 	cp apache2/yep-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
-	cp apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
-	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
+	cp apache2/conf.d/*.conf $(DESTDIR)/etc/yep.d/
+	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/yep.d/
 	cp script/yep $(DESTDIR)/usr/sbin/
 	cp script/yep-* $(DESTDIR)/usr/sbin/
 	chmod 0755 $(DESTDIR)/usr/sbin/yep
@@ -115,7 +115,7 @@ dist: clean
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/yep.conf.production $(NAME)-$(VERSION)/config/yep.conf
 	@cp db/*.sql $(NAME)-$(VERSION)/db/
-	@cp db/*.init $(NAME)-$(VERSION)/db/
+	@cp db/*.sh $(NAME)-$(VERSION)/db/
 	@cp db/README $(NAME)-$(VERSION)/db/
 	@cp doc/* $(NAME)-$(VERSION)/doc/
 	rm -f $(NAME)-$(VERSION)/doc/*~

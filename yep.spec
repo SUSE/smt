@@ -1,5 +1,5 @@
 #
-# spec file for package yep (Version 0.0.3)
+# spec file for package yep (Version 0.0.4)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -11,15 +11,13 @@
 # norootforbuild
 
 Name:           yep
-BuildRequires:  apache2 apache2-mod_perl perl-Crypt-SSLeay perl-DBD-SQLite sqlite yast2 yast2-devtools
-BuildRequires:  perl-Config-IniFiles perl-IO-Zlib perl-TimeDate perl-URI perl-XML-Parser perl-libwww-perl
-Version:        0.0.3
+BuildRequires:  apache2 apache2-mod_perl
+Version:        0.0.4
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       apache2
 Requires:       apache2-mod_perl
 Requires:       perl-DBI
-Requires:       perl-DBD-SQLite
 Requires:       perl-Crypt-SSLeay
 Requires:       perl-Config-IniFiles
 Requires:       perl-XML-Parser
@@ -29,7 +27,7 @@ Requires:       perl-IO-Zlib
 Requires:       perl-URI
 Requires:       perl-TimeDate
 Recommends:     mysql
-Recommends:	yast2-yep
+Recommends:	    yast2-yep
 PreReq:         %fillup_prereq apache2 apache2-mod_perl
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
@@ -65,9 +63,22 @@ cp -p %{S:1} .
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
-make DESTDIR=$RPM_BUILD_ROOT install_all
+make DESTDIR=$RPM_BUILD_ROOT install
+make DESTDIR=$RPM_BUILD_ROOT install_conf
+mkdir -p $RPM_BUILD_ROOT/var/lib/YEP/db
+install -m 644 db/*.sql $RPM_BUILD_ROOT/var/lib/YEP/db/
+install -m 755 db/setup_mysql.sh $RPM_BUILD_ROOT/var/lib/YEP/db/
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-yep   $RPM_BUILD_ROOT/var/adm/fillup-templates/
+
+# create apache config links
+mkdir -p $RPM_BUILD_ROOT/etc/apache2/conf.d/
+mkdir -p $RPM_BUILD_ROOT/etc/apache2/vhosts.d/
+
+ln -s /etc/yep.d/nu_server.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/nu_server.conf
+ln -s /etc/yep.d/yep_mod_perl.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/yep_mod_perl.conf
+ln -s /etc/yep.d/vhost-ssl.conf $RPM_BUILD_ROOT/etc/apache2/vhosts.d/vhost-ssl.conf
+
 # ---------------------------------------------------------------------------
 
 %clean
@@ -85,8 +96,9 @@ exit 0
 %dir %{perl_vendorlib}/YEP/
 %dir %{perl_vendorlib}/YEP/Mirror
 %dir %{perl_vendorlib}/YEP/Parser
+%dir /etc/yep.d
 %dir /var/lib/YEP
-%dir %attr(-, wwwrun, www)/var/lib/YEP/db
+%dir /var/lib/YEP/db
 %dir /srv/www/htdocs/repo/
 %dir /srv/www/htdocs/testing/
 %dir /srv/www/htdocs/testing/repo/
@@ -94,16 +106,17 @@ exit 0
 %dir /srv/www/perl-lib/YEP/
 %config(noreplace) /etc/yep.conf
 %config /etc/apache2/*.pl
-%config /etc/apache2/conf.d/*.conf
-%config /etc/apache2/vhosts.d/*.conf
+%config /etc/yep.d/*.conf
+/etc/apache2/conf.d/*.conf
+/etc/apache2/vhosts.d/*.conf
 %{perl_vendorlib}/YEP/*.pm
 %{perl_vendorlib}/YEP/Mirror/*.pm
 %{perl_vendorlib}/YEP/Parser/*.pm
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/YEP/*.pm
-%attr(-, wwwrun, www)/var/lib/YEP/db/yep.db
 /usr/sbin/yep-*
 /usr/sbin/yep
+/var/lib/YEP/db/*
 /var/adm/fillup-templates/sysconfig.apache2-yep
 %doc README COPYING 
 
