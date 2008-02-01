@@ -60,6 +60,15 @@ if($help)
     exit 0;
 }
 
+# get a lock
+
+if(!YEP::Utils::openLock("yep-mirror"))
+{
+    print __("Mirror process is still running.\n");
+    exit 0;
+}
+
+
 my $dbh = undef;
 
 if(!defined $dbreplfile)
@@ -68,6 +77,10 @@ if(!defined $dbreplfile)
     
     if(!$dbh)
     {
+        if(!YEP::Utils::unLock("yep-mirror"))
+        {
+            print STDERR __("Cannot remove lockfile.\n");
+        }
         die __("Cannot connect to database");
     }
 }
@@ -86,12 +99,20 @@ else
 my $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
 if(!defined $cfg)
 {
+    if(!YEP::Utils::unLock("yep-mirror"))
+    {
+        print STDERR __("Cannot remove lockfile.\n");
+    }
     die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
 }
 
 my $NUUrl = $cfg->val("NU", "NUUrl");
 if(!defined $NUUrl || $NUUrl eq "")
 {
+    if(!YEP::Utils::unLock("yep-mirror"))
+    {
+        print STDERR __("Cannot remove lockfile.\n");
+    }
     die "Cannot read NU Url";
 }
 
@@ -100,6 +121,10 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
     if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     {
+        if(!YEP::Utils::unLock("yep-mirror"))
+        {
+            print STDERR __("Cannot remove lockfile.\n");
+        }
         die "Cannot read the local base path";
     }
 }
@@ -110,6 +135,10 @@ my $nuPass = $cfg->val("NU", "NUPass");
 if(!defined $nuUser || $nuUser eq "" ||
    !defined $nuPass || $nuPass eq "")
 {
+    if(!YEP::Utils::unLock("yep-mirror"))
+    {
+        print STDERR __("Cannot remove lockfile.\n");
+    }
     die "Cannot read the Mirror Credentials";
 }
 
@@ -182,6 +211,11 @@ if(!defined $dbreplfile)
     
     if(keys %{$hash} == 0)
     {
+        if(!YEP::Utils::unLock("yep-mirror"))
+        {
+            print STDERR __("Cannot remove lockfile.\n");
+            exit 1;
+        }
         exit 0;
     }
     
@@ -194,6 +228,12 @@ if(!defined $dbreplfile)
     }
 
     print $warning;
+}
+
+if(!YEP::Utils::unLock("yep-mirror"))
+{
+    print STDERR __("Cannot remove lockfile.\n");
+    exit 1;
 }
 
 exit 0;
@@ -214,7 +254,7 @@ sub catalog_handler
         {
             $catname .= "-".$node->{TARGET};
         }
-	#print "Build Catalogname $catname\n";        
+        #print "Build Catalogname $catname\n";        
         $data->{$catname} = $node;
     }        
 }
