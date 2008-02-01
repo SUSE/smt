@@ -205,16 +205,29 @@ sub listRegistrations
 {
     my ($cfg, $dbh, $nuri) = init();
 
-    my $sth = $dbh->prepare(qq{select r.GUID,p.PRODUCT from Registration r, Products p where r.PRODUCTID=p.PRODUCTDATAID});
-    $sth->execute();
-     while (my @values =
-                 $sth->fetchrow_array())  # keep fetching until 
-                                          # there's nothing left
+    my $guids = $dbh->selectcol_arrayref("SELECT DISTINCT GUID from Registration");
+
+    print sprintf("%-35s %-10s     %s\n", __("Unique ID"), __("Hostname"), __("Product"));
+    print "---------------------------------------------------------------------------------------------------------\n";
+    foreach my $guid (@{$guids})
     {
-        #print "$nickname, $favorite_number\n";
-        print "[" . $values[0] . "]" . " => " . $values[1] . "\n";
+        my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", 
+                                                        $dbh->quote($guid)), {Slice => {}});
+        
+        my $hostname = $dbh->selectcol_arrayref(sprintf("SELECT VALUE from MachineData WHERE GUID=%s AND KEYNAME='hostname'", 
+                                                        $dbh->quote($guid)));
+        
+        foreach my $product (@{$products})
+        {
+            print sprintf("%-35s %-10s  => %s %s %s %s\n", $guid, 
+                          (defined $hostname->[0])?$hostname->[0]:"",
+                          (defined $product->{PRODUCT})?$product->{PRODUCT}:"",
+                          (defined $product->{VERSION})?$product->{VERSION}:"",
+                          (defined $product->{REL})?$product->{REL}:"",
+                          (defined $product->{ARCH})?$product->{ARCH}:"");
+        }
+        print "\n";
     }
-    $sth->finish();
 }
 
 sub resetCatalogsStatus
