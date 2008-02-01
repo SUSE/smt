@@ -39,7 +39,7 @@ TODO:
 - create, implement and test a strategy how we can update the database structure
   after release. (e.g. if we need to add some tables, or collumns in tables) 
 
-
+ 
 DONE:
 =====
 
