@@ -3,18 +3,21 @@ YEP Database
 ============
 
 
-Registration(REGID        integer PRIMARY KEY AUTO_INCREMENT,
-             GUID         CHAR(50) NOT NULL,
+Registration(GUID         CHAR(50) NOT NULL,
              PRODUCTID    integer NOT NULL,
-             UNIQUE(GUID, ProductID)
+             REGDATE      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+             NCCREGDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
+             PRIMARY KEY(GUID, ProductID)
             );
 
-GUID:      The ID of the client machine (/etc/zmd/deviceid)
-PRODUCTID: The ID of the Product which is installed on this client
-           This ID is a reference to the Products table, PRODUCTDATAID column
+GUID:       The ID of the client machine (/etc/zmd/deviceid)
+PRODUCTID:  The ID of the Product which is installed on this client
+            This ID is a reference to the Products table, PRODUCTDATAID column
+REGDATE:    Timestamp when a client registered
+NCCREGDATE: Timestamp when this registration was registered at NCC
 
 This table is changed with every registration. 
-It happens DELETE and INSERT statements during registration.
+It happens DELETE, UPDATE and INSERT statements during registration.
 
 Expected table size: depends on how many clients are registered against YEP 
                      and how many products they have installed.
@@ -42,8 +45,7 @@ Expected table size: depends on how many clients are registered against YEP
 
 -------------------------------------------------------------------------------
 
-Products (
-          PRODUCTDATAID   integer NOT NULL PRIMARY KEY,
+Products (PRODUCTDATAID   integer NOT NULL PRIMARY KEY,
           PRODUCT         VARCHAR(500) NOT NULL,
           VERSION         VARCHAR(100),
           REL             VARCHAR(100),
