@@ -414,40 +414,117 @@ sub insertRegistration
     my $regdata = shift;
 
     my $cnt     = 0;
+    my $existingpids = {};
+    my $regtimestring = "";
     
     my @list = findColumnsForProducts($r, $dbh, $regdata->{register}->{product}, "PRODUCTDATAID");
 
-    #
-    # clean old registrations
-    #
-    my $statement = sprintf("DELETE from Registration where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
+    my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS,"STATEMENT: $statement");
     eval {
-        $cnt = $dbh->do($statement);
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement  Affected rows: $cnt");
+        $existingpids = $dbh->selectall_hashref($statement, "PRODUCTID");
+        
     };
     if($@)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
-  
-    #
-    # insert new registrations
-    #
+
+    # store the regtime
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+    $year += 1900;
+    $mon +=1;
+    $regtimestring = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday, $hour,$min,$sec);
+    
+
+    my @insert = ();
+    my @update = ();
+
     foreach my $pnum (@list)
     {
-        $statement = sprintf("INSERT into Registration (GUID, PRODUCTID) VALUES (%s, %s)", 
-                                $dbh->quote($regdata->{register}->{guid}), $pnum);
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement");
+        if(exists $existingpids->{$pnum})
+        {
+            # reg exists, do update
+            push @update, $pnum;
+            delete $existingpids->{$pnum};
+        }
+        else
+        {
+            # reg does not exist, do insert
+            push @insert, $pnum;
+        }
+    }
+    
+    my @delete = keys %{$existingpids};
+    
+    if(@delete > 0)
+    {
+        $statement = sprintf("DELETE from Registration where GUID=%s AND PRODUCTID ", $dbh->quote($regdata->{register}->{guid}));
+        if(@delete > 1)
+        {
+            $statement .= "IN (".join(",", @delete).")";
+        }
+        else
+        {
+            $statement .= "= ".$delete[0];
+        }
+        
         eval {
-            $dbh->do($statement);
+            $cnt = $dbh->do($statement);
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS,"STATEMENT: $statement  Affected rows: $cnt");
         };
         if($@)
         {
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
     }
+
+    foreach my $id (@insert)
+    {
+        $statement = sprintf("INSERT into Registration (GUID, PRODUCTID, REGDATE) VALUES (%s, %s, %s) ", 
+                             $dbh->quote($regdata->{register}->{guid}),
+                             $id,
+                             $dbh->quote($regtimestring)
+                            );
+        eval {
+            $cnt = $dbh->do($statement);
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS,"STATEMENT: $statement  Affected rows: $cnt");
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+    }
+
+    if(@update > 0)
+    {
+        $statement = sprintf("UPDATE Registration SET REGDATE=%s WHERE GUID=%s AND PRODUCTID ", 
+                             $dbh->quote($regtimestring),
+                             $dbh->quote($regdata->{register}->{guid})
+                            );
+        if(@update > 1)
+        {
+            $statement .= "IN (".join(",", @update).")";
+        }
+        else
+        {
+            $statement .= "= ".$update[0];
+        }
+        
+        eval {
+            $cnt = $dbh->do($statement);
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS,"STATEMENT: $statement  Affected rows: $cnt");
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+    }
+    
     
     #
     # clean old machinedata

@@ -13,12 +13,11 @@ drop table Registration;
 drop table MachineData;
 drop table Targets;
 
-create table Registration(REGID        integer PRIMARY KEY AUTOINCREMENT,
-                          GUID         CHAR(50) NOT NULL,
+create table Registration(GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,
                           REGDATE      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                           NCCREGDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
-                          UNIQUE(GUID, PRODUCTID)
+                          PRIMARY KEY(GUID, PRODUCTID)
                        -- FOREIGN KEY (ProductID) REFERENCES Products  -- FOREIGN KEY not supported by sqlite3
                          );
 
