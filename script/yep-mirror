@@ -103,7 +103,7 @@ if(!defined $cfg)
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
-    die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
+    die sprintf(__("Cannot read the YEP configuration file: %s"), @Config::IniFiles::errors);
 }
 
 my $NUUrl = $cfg->val("NU", "NUUrl");
@@ -113,7 +113,7 @@ if(!defined $NUUrl || $NUUrl eq "")
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
-    die "Cannot read NU Url";
+    die __("Cannot read NU Url");
 }
 
 if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
@@ -125,7 +125,7 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
         {
             print STDERR __("Cannot remove lockfile.\n");
         }
-        die "Cannot read the local base path";
+        die __("Cannot read the local base path");
     }
 }
 
@@ -139,7 +139,7 @@ if(!defined $nuUser || $nuUser eq "" ||
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
-    die "Cannot read the Mirror Credentials";
+    die __("Cannot read the Mirror Credentials");
 }
 
 my $uri = URI->new($NUUrl);

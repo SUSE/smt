@@ -12,6 +12,7 @@ use Digest::SHA1  qw(sha1 sha1_hex);
 
 use YEP::Mirror::Job;
 use YEP::Parser::RpmMd;
+use YEP::Utils;
 
 BEGIN 
 {
@@ -131,8 +132,8 @@ sub mirrorTo()
         $force = 1;
     }
 
-    print "Mirroring: ", $saveuri->as_string, "\n";
-    print "Target:    ", $self->{LOCALPATH}, "\n";
+    print sprintf(__("Mirroring: %s\n"), $saveuri->as_string);
+    print sprintf(__("Target:    %s\n"), $self->{LOCALPATH});
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
@@ -151,14 +152,14 @@ sub mirrorTo()
       # check if the local repository is valid
       if ( $self->verify($self->{LOCALPATH}, {removeinvalid => 1}) )
       {
-          print "=> Finished mirroring ".$saveuri->as_string." All files are up-to-date.\n\n";
+          print sprintf(__("=> Finished mirroring '%s' All files are up-to-date.\n\n"), $saveuri->as_string);
           $self->{LASTUPTODATE} = 1;
           return 0;
       }
       else
       {
           # we should continue here
-          print "repomd.xml is the same, but repo is not valid. Start mirroring.\n";
+          print __("repomd.xml is the same, but repo is not valid. Start mirroring.\n");
 
           # just in case
           $self->{LASTUPTODATE} = 0;
@@ -298,7 +299,7 @@ sub mirrorTo()
         my $success = rename( $job->localdir()."/repodata", $job->localdir()."/.old.repodata");
         if(!$success)
         {
-            print STDERR "Cannot rename directory ".$job->localdir()."/repodata \n";
+            print STDERR sprintf(__("Cannot rename directory '%s'\n"), $job->localdir()."/repodata");
             $self->{STATISTIC}->{ERROR} += 1;
         }
         else
@@ -306,17 +307,17 @@ sub mirrorTo()
             $success = rename( $job->localdir()."/.repodata", $job->localdir()."/repodata");
             if(!$success)
             {
-                print STDERR "Cannot rename directory ".$job->localdir()."/.repodata \n";
+                print STDERR sprintf(__("Cannot rename directory '%s'\n"), $job->localdir()."/.repodata");
                 $self->{STATISTIC}->{ERROR} += 1;
             }
         }
     }
     
-    print "=> Finished mirroring ".$saveuri->as_string."\n";
-    print "=> Downloaded Files: ".$self->{STATISTIC}->{DOWNLOAD}."\n";
-    print "=> Up to date Files: ".$self->{STATISTIC}->{UPTODATE}."\n";
-    print "=> Download Errors : ".$self->{STATISTIC}->{ERROR}."\n";
-    print "=> Mirror Time:      ".(tv_interval($t0))." seconds\n";
+    print sprintf(__("=> Finished mirroring '%s'\n"), $saveuri->as_string);
+    print sprintf(__("=> Downloaded Files : %s\n"), $self->{STATISTIC}->{DOWNLOAD});
+    print sprintf(__("=> Up to date Files : %s\n"), $self->{STATISTIC}->{UPTODATE});
+    print sprintf(__("=> Errors           : %s\n"), $self->{STATISTIC}->{ERROR});
+    print sprintf(__("=> Mirror Time      : %s seconds\n"), (tv_interval($t0)));
     print "\n";
 
     return $self->{STATISTIC}->{ERROR};
@@ -332,11 +333,11 @@ sub clean()
     my $t0 = [gettimeofday] ;
 
     if ( not -e $dest )
-    { die "Destination '$dest' does not exist"; }
+    { die sprintf(__("Destination '%s' does not exist"),$dest); }
 
     $self->{LOCALPATH} = $dest;
 
-    print "Cleaning:         ", $self->{LOCALPATH}, "\n";
+    print sprintf(__("Cleaning:         %s\n"), $self->{LOCALPATH});
 
     # algorithm
     
@@ -371,9 +372,9 @@ sub clean()
         $cnt += unlink $file;
     }
 
-    print "Finished cleaning ", $self->{LOCALPATH}, "\n";
-    print "=> Removed files : $cnt\n";
-    print "=> Clean Time    : ".(tv_interval($t0))." seconds\n";
+    print sprintf(__("Finished cleaning: '%s'\n", $self->{LOCALPATH}));
+    print sprintf(__("=> Removed files : %s\n"), $cnt);
+    print sprintf(__("=> Clean Time    : %s seconds\n"), (tv_interval($t0)));
     print "\n";
 }
 
@@ -403,7 +404,7 @@ sub verify()
     { die $self->{LOCALPATH} . " does not exist"; }
 
 
-    print "Verifying:    ", $self->{LOCALPATH}, "\n";
+    print sprintf(__("Verifying: %s\n"), $self->{LOCALPATH});
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
@@ -431,23 +432,24 @@ sub verify()
         }
         else
         {
-          #print STDERR "FAILED: " . $job->resource . ": \n";
-          print "FAILED ( ".$job->checksum." vs ".$job->realchecksum ." )\n";
-          #print STDERR "FAILED ( " .$job->checksum. " vs " . $job->realchecksum . ")\n";
-          $self->{STATISTIC}->{ERROR} += 1;
-          if ($self->{REMOVEINVALID} == 1)
-          {
-            print "Deleting ".$job->resource."\n";
-            unlink($job->local) ;
-          }
+            #print STDERR "FAILED: " . $job->resource . ": \n";
+            print sprintf(__("FAILED ( %s vs %s )\n"), $job->checksum, $job->realchecksum);
+            #print STDERR "FAILED ( " .$job->checksum. " vs " . $job->realchecksum . ")\n";
+            $self->{STATISTIC}->{ERROR} += 1;
+            if ($self->{REMOVEINVALID} == 1)
+            {
+                print sprintf(__("Deleting %s\n"), $job->resource);
+                unlink($job->local);
+            }
         }
     }
 
-    print "=> Finished verifying: ".$self->{LOCALPATH}." $cnt files\n";
-    print "=> Errors            : ".$self->{STATISTIC}->{ERROR}."\n";
-    print "=> Verify Time       : ".(tv_interval($t0))." seconds\n";
+    print sprintf(__("=> Finished verifying: %s\n"), $self->{LOCALPATH});
+    print sprintf(__("=> Files             : %s\n"), $cnt);
+    print sprintf(__("=> Errors            : %s\n"), $self->{STATISTIC}->{ERROR});
+    print sprintf(__("=> Verify Time       : %s seconds\n"), (tv_interval($t0)));
     print "\n";
-
+    
     $self->{REMOVEINVALID}  = 0;
     return ($self->{STATISTIC}->{ERROR} == 0);
 }

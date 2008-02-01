@@ -131,3 +131,9 @@ dist: clean
 	@cp HACKING Makefile README COPYING $(NAME)-$(VERSION)/
 
 	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/
+
+pot:
+	find www/ -name "*.pm" > sourcefiles
+	find script/ -maxdepth 1 -name "yep*" >> sourcefiles
+	xgettext --default-domain=yep --directory=. --keyword=__ -o yep.pot --files-from sourcefiles
+	rm -f sourcefiles

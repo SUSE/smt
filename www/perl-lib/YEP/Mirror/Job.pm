@@ -7,6 +7,7 @@ use File::Basename;
 use Date::Parse;
 use Crypt::SSLeay;
 use Digest::SHA1  qw(sha1 sha1_hex);
+use YEP::Utils;
 
 BEGIN 
 {
@@ -186,8 +187,7 @@ sub mirror
     }
     else
     {
-        # FIXME: was 'die'; check if we should stop if a download failed
-        print STDERR "Failed to GET '$self->{RESOURCE}': ".$response->status_line."\n";
+        print STDERR sprintf(__("Failed to download '%s': %s\n"), $self->{RESOURCE}, $response->status_line);
         return 1;
     }
 }
@@ -201,8 +201,7 @@ sub modified
     
     $response->is_success or do 
     {
-        # FIXME: was 'die'; check if we should stop if a download failed
-        print STDERR "Failed to GET '$self->{RESOURCE}': ".$response->status_line."\n";
+        print STDERR sprintf(__("Failed to download '%s': %s\n"), $self->{RESOURCE}, $response->status_line);
         return undef;
     };
 

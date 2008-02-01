@@ -26,7 +26,7 @@ sub db_connect
     if(!defined $cfg)
     {
         # FIXME: is die correct here?
-        die __("Cannot read the YEP configuration file: ").@Config::IniFiles::errors;
+        die sprintf(__("Cannot read the YEP configuration file: %s"), @Config::IniFiles::errors);
     }
     
     my $config = $cfg->val('DB', 'config');
@@ -46,7 +46,8 @@ sub db_connect
 #
 # localization function
 #
-sub __ {
+sub __ 
+{
     my $msgid = shift;
     my $package = caller;
     my $domain = "yep";

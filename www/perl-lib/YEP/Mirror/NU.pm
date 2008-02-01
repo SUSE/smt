@@ -174,8 +174,8 @@ sub mirrorTo()
     {
       $self->{LOCALPATH} = $dest;
     }
-    print "Mirroring: ", $saveuri->as_string, "\n";
-    print "Target:    ", $self->{LOCALPATH}, "\n";
+    print sprintf(__("Mirroring: %s\n"), $saveuri->as_string);
+    print sprintf(__("Target:    %s\n"), $self->{LOCALPATH});
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repo/repoindex.xml" ) );
 
@@ -195,7 +195,7 @@ sub mirrorTo()
         $dbh = YEP::Utils::db_connect();
         if(!$dbh)
         {
-            die "cannot connect to database";
+            die __("Cannot connect to database");
         }
     }
     
@@ -221,7 +221,7 @@ sub clean()
     # algorithm
     
     if ( not -e $dest )
-    { die "Destination '$dest' does not exist"; }
+    { die sprintf(__("Destination '%s' does not exist"), $dest); }
 
     $self->{LOCALPATH} = $dest;
 
@@ -230,14 +230,13 @@ sub clean()
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
     {
-        die "cannot connect to database";
+        die __("Cannot connect to database");
     }
 
     my $parser = YEP::Parser::NU->new();
     $parser->parse($path, sub{ clean_handler($self, $dbh, @_) });
     
     $dbh->disconnect;
-
 }
 
 sub mirror_handler
@@ -250,10 +249,6 @@ sub mirror_handler
 
     if(defined $dbh && $dbh)
     {
-        # Set Mirrorable flag of this catalog to "Y"
-        # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
-        #$dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-        #                 $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ));
         my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                                                     $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ) );
 
@@ -297,10 +292,6 @@ sub clean_handler
     my $dbh  = shift;
     my $data = shift;
 
-    # Set Mirrorable flag of this catalog to "Y"
-    # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
-    #$dbh->do(sprintf("UPDATE Catalogs SET MIRRORABLE = 'Y' where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-    #                 $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ));
     my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                                                 $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ) );
     
