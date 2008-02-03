@@ -6,6 +6,7 @@ use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
 use File::Basename;
 use YEP::Utils;
+use YEP::ASCIITable;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -22,7 +23,7 @@ use Getopt::Long;
 &Getopt::Long::GetOptions(
          'enable|e'         => \$enable,
          'disable|d'        => \$disable,
-         'verbose|v'        => \$verbose,
+         #'verbose|v'        => \$verbose,
          'help|h' => \$help
 );
 
@@ -32,7 +33,7 @@ if ( defined $help and ( $help == 1 ) )
   print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
   print "    -enable     (-e) arg : " . __("enable catalog mirorring for \$catalog\n");
   print "    -disable    (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
-  print "    -verbose    (-v) arg : " . __("show detailed catalog information\n");
+  #print "    -verbose    (-v) arg : " . __("show detailed catalog information\n");
   exit 0;
 }
 
@@ -86,6 +87,10 @@ if (defined $target )
 my @idnumbers;
 my $sth = $dbh->prepare($sql);
 $sth->execute();
+
+my $t = new YEP::ASCIITable;
+$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"));
+
 while ( my $v = $sth->fetchrow_hashref() )
 {
   $count++;
@@ -94,9 +99,10 @@ while ( my $v = $sth->fetchrow_hashref() )
   my $catName = $v->{NAME};
   my $catTarget = $v->{TARGET};
   my $catType = $v->{CATALOGTYPE};
-
-  print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . $count . "] " . "(" . $catType . ") " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
+  $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? "*" : ""), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--") );
+  #print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . $count . "] " . "(" . $catType . ") " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
 }
+print $t->draw();
 
 if ( $count == 0 )
 {

@@ -1,6 +1,7 @@
 package YEP::CLI;
 use strict;
 use warnings;
+use YEP::ASCIITable;
 
 =head1 NAME
 
@@ -162,18 +163,44 @@ sub listCatalogs
 
     my $sth = $dbh->prepare($sql);
     $sth->execute();
+
+    my $t = new YEP::ASCIITable;
+
+    my @cols;
+    #push( @cols, "ID" );
+    push( @cols, "Name" );
+    push( @cols, "Description" );
+
+    push( @cols, "Mirrorable" );
+    push( @cols, "Mirror?" );
+
+    
+    $t->setCols(@cols);
+
+    my $counter = 1;
     while (my $values = $sth->fetchrow_hashref())  
     {
-        print $values->{CATALOGID} . " => [" . $values->{NAME} . "] " . $values->{DESCRIPTION} . "\n";
+        my @row;
+        #push( @row, $values->{CATALOGID} );
+        #push( @row, $counter );
+        push( @row, $values->{NAME} );
+        push( @row, $values->{DESCRIPTION} );
+        push( @row, $values->{MIRRORABLE} );
+        push( @row, $values->{DOMIRROR} );
+        #print $values->{CATALOGID} . " => [" . $values->{NAME} . "] " . $values->{DESCRIPTION} . "\n";
+        
+        $t->addRow(@row);
+
         if ( exists $options{ verbose } && defined $options{verbose} )
         {
-          print "|\\-local-path => " . $values->{LOCALPATH} . "\n";
-          print "| -url        => " . $values->{EXTURL} . "\n";
-          print "| -type       => " . $values->{CATALOGTYPE} . "\n";
-          print "| -mirrorable => " . $values->{MIRRORABLE} . "\n";
-          print "| -mirror?    => " . $values->{DOMIRROR} . "\n";
+          $t->addRow("", $values->{EXTURL}, "", "");
+          $t->addRow("", $values->{LOCALPATH}, "", "");
+          $t->addRow("", $values->{CATALOGTYPE}, "", "");
         }
+        
+        $counter++;
     }
+    print $t->draw();
     $sth->finish();
 }
 
@@ -182,22 +209,29 @@ sub listProducts
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
 
-    my $sth = $dbh->prepare(qq{select * from Products});
+    my $sth = $dbh->prepare(qq{select * from Products group by PRODUCT});
     $sth->execute();
+
+    my $t = new YEP::ASCIITable;
+    $t->setCols('Name','Version', 'Target');
+    
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
                                                    # there's nothing left
     {
         #print "$nickname, $favorite_number\n";
-	#print "$PRODUCT $VERSION $ARCH\n";
-	my $productstr = $value->{PRODUCT};
-	$productstr .= " $value->{VERSION}" if(defined $value->{VERSION});
-	$productstr .= " $value->{ARCH}" if(defined $value->{ARCH});
-	print "$productstr\n";
+        #print "$PRODUCT $VERSION $ARCH\n";
+        my $productstr = $value->{PRODUCT};
+        $productstr .= " $value->{VERSION}" if(defined $value->{VERSION});
+        $productstr .= " $value->{ARCH}" if(defined $value->{ARCH});
+        #print "$productstr\n";
+        $t->addRow($value->{PRODUCT}, defined($value->{VERSION}) ? $value->{VERSION} : "-", defined($value->{ARCH}) ? $value->{ARCH} : "-");
+
         if ( exists $options{ verbose } && defined $options{verbose} )
         {
           #print "$PARAMLIST\n";
         }
     }
+    print $t->draw();
     $sth->finish();
 }
 
