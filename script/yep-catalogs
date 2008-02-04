@@ -15,6 +15,8 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 my $enable;
 my $disable;
+my $mirrorable;
+my $domirror;
 my $verbose;
 my $help;
 
@@ -23,7 +25,9 @@ use Getopt::Long;
 &Getopt::Long::GetOptions(
          'enable-mirror|e'         => \$enable,
          'disable-mirror|d'        => \$disable,
-         #'verbose|v'        => \$verbose,
+         'only-mirrorable|m'         => \$mirrorable,
+         'only-enabled|o'        => \$domirror,
+         'verbose|v'        => \$verbose,
          'help|h' => \$help
 );
 
@@ -31,9 +35,11 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
-  print "    -enable-miror   (-e) arg : " . __("enable catalog mirorring for \$catalog\n");
-  print "    -disable-mirror (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
-  #print "    -verbose    (-v) arg : " . __("show detailed catalog information\n");
+  print "    -enable-miror    (-e) arg : " . __("enable catalog mirorring for \$catalog\n");
+  print "    -disable-mirror  (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
+  print "    -only-mirrorable (-m) : " . __("only show mirrorable catalogs\n");
+  print "    -only-enabled    (-o) : " . __("only show catalogs set to be mirrored\n");
+  print "    -verbose         (-v) arg : " . __("show detailed catalog information\n");
   exit 0;
 }
 
@@ -66,13 +72,34 @@ my ($cfg, $dbh, $nuri) = YEP::CLI::init();
 
 my $count = 0;
 my @catalogs;
-my $sql = "select * from Catalogs where 1";
+my $sql = "select * from Catalogs";
 
-# only show mirrorables
-if (1)
+$sql = $sql . " where 1";
+
+if ( defined($mirrorable) )
 {
-  #$sql = $sql . sprintf(" and MIRRORABLE=%s", $dbh->quote("Y") );
+      if (  $mirrorable == 1 )
+      {
+        $sql = $sql . " and MIRRORABLE='Y'";
+      }
+      else
+      {
+        $sql = $sql . " and MIRRORABLE='N'";
+      }
 }
+
+if ( defined($domirror) )
+{
+      if (  $domirror == 1 )
+      {
+        $sql = $sql . " and DOMIRROR='Y'";
+      }
+      else
+      {
+        $sql = $sql . " and DOMIRROR='N'";
+      }
+}
+
 if (defined $name )
 {
   $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($name) );
@@ -100,9 +127,18 @@ while ( my $v = $sth->fetchrow_hashref() )
   my $catTarget = $v->{TARGET};
   my $catType = $v->{CATALOGTYPE};
   $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? "*" : ""), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--") );
-  #print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . $count . "] " . "(" . $catType . ") " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
+  
+  if (defined($verbose))
+  {
+      print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
+      print "          (" . $v->{DESCRIPTION} .")\n";
+      print "          " . $v->{EXTURL} ."\n";
+      print "          " . $v->{LOCALPATH} ."\n";
+  }
+
 }
-print $t->draw();
+
+print $t->draw() if not defined($verbose);
 
 if ( (not defined $disable) && (not defined $enable) )
 {
