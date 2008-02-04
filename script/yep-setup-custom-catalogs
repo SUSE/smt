@@ -110,7 +110,7 @@ if($description eq "")
 }
 chomp($description);
 
-my $array = $dbh->selectall_arrayref("SELECT PRODUCTDATAID, PRODUCT, VERSION, RELEASE, ARCH from Products where PRODUCT_LIST='Y' group by product,version,release,arch",
+my $array = $dbh->selectall_arrayref("SELECT PRODUCTDATAID, PRODUCT, VERSION, REL, ARCH from Products where PRODUCT_LIST='Y' group by PRODUCT, VERSION, REL, ARCH",
                                      {Slice => {}});
 my @validProductIds = ();
 my $anotherone = 0;
@@ -124,7 +124,7 @@ if(@productids == 0 )
         print $item->{PRODUCTDATAID}."\t";
         print $item->{PRODUCT}." ";
         print $item->{VERSION}." " if(defined $item->{VERSION});
-        print $item->{RELEASE}." " if(defined $item->{RELEASE});
+        print $item->{REL}." " if(defined $item->{REL});
         print $item->{ARCH}." " if(defined $item->{ARCH});
         print "\n";
 
