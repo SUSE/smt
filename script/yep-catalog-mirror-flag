@@ -104,6 +104,12 @@ while ( my $v = $sth->fetchrow_hashref() )
 }
 print $t->draw();
 
+if ( (not defined $disable) && (not defined $enable) )
+{
+  # not do any action, display was enough
+  exit 0;
+}
+
 if ( $count == 0 )
 {
   die __(sprintf("no catalog named %s\n", $name));
