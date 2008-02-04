@@ -189,6 +189,13 @@ sub mirrorTo()
         $resource =~ s/repodata/.repodata/;
         $job->resource($resource);
     }
+    else
+    {
+        my $resource = $job->resource();
+        $job->remoteresource($resource);
+        $resource =~ s/repodata/.repodata/;
+        $job->resource($resource);
+    }
     
     my $result = $job->mirror();
     if( $result == 1 )
@@ -296,13 +303,17 @@ sub mirrorTo()
         {
             rmtree($job->localdir()."/.old.repodata", 0, 0);
         }
-        my $success = rename( $job->localdir()."/repodata", $job->localdir()."/.old.repodata");
-        if(!$success)
+        my $success = 1;
+        if( -d $job->localdir()."/repodata" )
         {
-            print STDERR sprintf(__("Cannot rename directory '%s'\n"), $job->localdir()."/repodata");
-            $self->{STATISTIC}->{ERROR} += 1;
+            $success = rename( $job->localdir()."/repodata", $job->localdir()."/.old.repodata");
+            if(!$success)
+            {
+                print STDERR sprintf(__("Cannot rename directory '%s'\n"), $job->localdir()."/repodata");
+                $self->{STATISTIC}->{ERROR} += 1;
+            }
         }
-        else
+        if($success)
         {
             $success = rename( $job->localdir()."/.repodata", $job->localdir()."/repodata");
             if(!$success)
