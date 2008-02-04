@@ -83,15 +83,17 @@ if($res)
     print STDERR __("Error while fetching Products data.\n");
 }
 
-$rd->element("productdep");
-$rd->table("ProductDependencies");
-$rd->key([ 'PARENT_PRODUCT_ID', 'CHILD_PRODUCT_ID']);
-
-$res = $rd->sync();
-if($res)
-{
-    print STDERR __("Error while fetching ProductDependencies data.\n");
-}
+# this tableis dropped
+#
+#$rd->element("productdep");
+#$rd->table("ProductDependencies");
+#$rd->key([ 'PARENT_PRODUCT_ID', 'CHILD_PRODUCT_ID']);
+#
+#$res = $rd->sync();
+#if($res)
+#{
+#    print STDERR __("Error while fetching ProductDependencies data.\n");
+#}
 
 $rd->element("targets");
 $rd->table("Targets");

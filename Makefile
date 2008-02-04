@@ -38,22 +38,24 @@ install_db_sqlite:
 	cd db/
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/yep-tables_sqlite.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/products.sql"
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/product_dependencies.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/targets.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-catalogs.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-productcatalogs.sql"
 	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-register.sql"
+# this table is dropped
+#	sqlite3 -line $(YEP_SQLITE_DB) ".read db/product_dependencies.sql"
 
 install_db_mysql:
 	echo "drop database if exists yep;" | mysql -u root
 	echo "create database if not exists yep;" | mysql -u root
 	cat db/yep-tables_mysql.sql | mysql -u root yep
 	cat db/products.sql | mysql -u root yep
-	cat db/product_dependencies.sql | mysql -u root yep
 	cat db/targets.sql | mysql -u root yep
 	cat db/tmp-catalogs.sql | mysql -u root yep
 	cat db/tmp-productcatalogs.sql | mysql -u root yep
 	cat db/tmp-register.sql | mysql -u root yep
+# this table is dropped
+#	cat db/product_dependencies.sql | mysql -u root yep
 
 install_conf:
 	mkdir -p $(DESTDIR)/etc/

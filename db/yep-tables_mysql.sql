@@ -8,10 +8,13 @@
 drop table if exists Catalogs;
 drop table if exists Products;
 drop table if exists ProductCatalogs;
-drop table if exists ProductDependencies;
 drop table if exists Registration;
 drop table if exists MachineData;
 drop table if exists Targets;
+
+-- this table is dropped.
+drop table if exists ProductDependencies;
+
 
 create table Registration(GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,
@@ -69,12 +72,14 @@ create table ProductCatalogs(PRODUCTDATAID integer NOT NULL,
                              PRIMARY KEY(PRODUCTDATAID, CATALOGID)
                             );
 
+-- this table is dropped
+--
 -- copy of NNW_PRODUCT_DEPENDENCIES where PARENT_PARTNUMBER is NULL
-create table ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
-                                 CHILD_PRODUCT_ID  integer NOT NULL,
-                                 -- Condition       VARCHAR(200),             -- not sure about this.
-                                 PRIMARY KEY(PARENT_PRODUCT_ID, CHILD_PRODUCT_ID)
-                                );
+-- create table ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
+--                                  CHILD_PRODUCT_ID  integer NOT NULL,
+--                                  -- Condition       VARCHAR(200),             -- not sure about this.
+--                                  PRIMARY KEY(PARENT_PRODUCT_ID, CHILD_PRODUCT_ID)
+--                                 );
 
 -- copy of NNW_ZLM66_TARGETS
 create table Targets (OS      VARCHAR(200) NOT NULL PRIMARY KEY,

@@ -31,16 +31,18 @@ if($res)
 }
 ok($res == 0);
 
-$rd->element("productdep");
-$rd->table("ProductDependencies");
-$rd->key([ 'PARENT_PRODUCT_ID', 'CHILD_PRODUCT_ID']);
+# this table is dropped
+#
+#$rd->element("productdep");
+#$rd->table("ProductDependencies");
+#$rd->key([ 'PARENT_PRODUCT_ID', 'CHILD_PRODUCT_ID']);
 
-$res = testsync($rd, "./testdata/regdatatest/productdep.xml");
-if($res)
-{
-    print STDERR "Error while fetching ProductDependencies data.\n";
-}
-ok($res == 0);
+#$res = testsync($rd, "./testdata/regdatatest/productdep.xml");
+#if($res)
+#{
+#    print STDERR "Error while fetching ProductDependencies data.\n";
+#}
+#ok($res == 0);
 
 $rd->element("targets");
 $rd->table("Targets");

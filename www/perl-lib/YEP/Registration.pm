@@ -614,24 +614,27 @@ sub findCatalogs
 
     my $result = {};
     my $statement ="";
-    my $pidhash = {};
+#    my $pidhash = {};
 
+    #
+    # This table is dropped -- with have this dependencies now in ProductCatalogs directly
+    #
     # get product dependencies
     
-    foreach my $parent (@{$productids})
-    {
-        $pidhash->{$parent} = 1;
+#     foreach my $parent (@{$productids})
+#     {
+#         $pidhash->{$parent} = 1;
         
-        $statement = "SELECT CHILD_PRODUCT_ID from ProductDependencies WHERE PARENT_PRODUCT_ID=$parent";
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement");
+#         $statement = "SELECT CHILD_PRODUCT_ID from ProductDependencies WHERE PARENT_PRODUCT_ID=$parent";
+#         $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+#                        APR::Const::SUCCESS,"STATEMENT: $statement");
 
-        my $childs = $dbh->selectcol_arrayref($statement);
-        foreach my $child (@{$childs})
-        {
-            $pidhash->{$child} = 1;
-        }
-    }
+#         my $childs = $dbh->selectcol_arrayref($statement);
+#         foreach my $child (@{$childs})
+#         {
+#             $pidhash->{$child} = 1;
+#         }
+#     }
     
     # get catalog values (only for the once we DOMIRROR)
 
@@ -645,14 +648,13 @@ sub findCatalogs
     }
     $statement .= ") AND ";
 
-
-    if(keys %{$pidhash} > 1)
+    if(@{$productids} > 1)
     {
-        $statement .= "pc.PRODUCTDATAID IN (".join(",", keys %{$pidhash}).") ";
+        $statement .= "pc.PRODUCTDATAID IN (".join(",", @{$productids}).") ";
     }
-    elsif(keys %{$pidhash} == 1)
+    elsif(@{$productids} == 1)
     {
-        $statement .= "pc.PRODUCTDATAID = ".join("", keys %{$pidhash})." ";
+        $statement .= "pc.PRODUCTDATAID = ".$productids->[0]." ";
     }
     else
     {
@@ -660,6 +662,22 @@ sub findCatalogs
         $r->log_error("No productids found");
         return $result;
     }
+
+
+#     if(keys %{$pidhash} > 1)
+#     {
+#         $statement .= "pc.PRODUCTDATAID IN (".join(",", keys %{$pidhash}).") ";
+#     }
+#     elsif(keys %{$pidhash} == 1)
+#     {
+#         $statement .= "pc.PRODUCTDATAID = ".join("", keys %{$pidhash})." ";
+#     }
+#     else
+#     {
+#         # This should not happen
+#         $r->log_error("No productids found");
+#         return $result;
+#     }
     
     
     $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,

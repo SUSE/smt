@@ -150,26 +150,9 @@ Expected table size: ~ 2 * Products
 
 -------------------------------------------------------------------------------
 
-ProductDependencies(PARENT_PRODUCT_ID integer NOT NULL,
-                    CHILD_PRODUCT_ID  integer NOT NULL,
-                    PRIMARY KEY(PARENT_PRODUCT_ID, CHILD_PRODUCT_ID)
-                   );
+ProductDependencies
 
-PARENT_PRODUCT_ID: See Products.PRODUCTDATAID 
-CHILD_PRODUCT_ID:  See Products.PRODUCTDATAID
-
-(maybe this table go away)
-
-This table tell the registration server about dependencies between products.
-In NCC this is used for the ATI and NVidia repositories.
-It exists a ATI_SP1 and an NVidia_SP1 product.
-SLED-SP1 has a dependency to both of them. 
-
-
-This table is changed during an ncc-sync (maybe once a day). 
-It happens UPDATE and INSERT statements during this operation.
-
-Expected table size: Current rows: 44 
+This table is dropped. NCC will deliver direct dependencies in ProductCatalogs.
 
 -------------------------------------------------------------------------------
 

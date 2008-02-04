@@ -28,7 +28,7 @@ Requires:       perl-URI
 Requires:       perl-TimeDate
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
-Recommends:	    yast2-yep
+Recommends:     yast2-yep
 PreReq:         %fillup_prereq apache2 apache2-mod_perl
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
