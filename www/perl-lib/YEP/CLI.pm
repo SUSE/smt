@@ -209,11 +209,11 @@ sub listProducts
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
 
-    my $sth = $dbh->prepare(qq{select * from Products group by PRODUCT});
+    my $sth = $dbh->prepare(qq{select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID=p.PRODUCTDATAID) AS registered_machines from Products p;});
     $sth->execute();
 
     my $t = new YEP::ASCIITable;
-    $t->setCols('Name','Version', 'Target');
+    $t->setCols(__('Name'),__('Version'), __('Target'), __('Usage'));
     
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
                                                    # there's nothing left
@@ -224,7 +224,7 @@ sub listProducts
         $productstr .= " $value->{VERSION}" if(defined $value->{VERSION});
         $productstr .= " $value->{ARCH}" if(defined $value->{ARCH});
         #print "$productstr\n";
-        $t->addRow($value->{PRODUCT}, defined($value->{VERSION}) ? $value->{VERSION} : "-", defined($value->{ARCH}) ? $value->{ARCH} : "-");
+        $t->addRow($value->{PRODUCT}, defined($value->{VERSION}) ? $value->{VERSION} : "-", defined($value->{ARCH}) ? $value->{ARCH} : "-", $value->{registered_machines});
 
         if ( exists $options{ verbose } && defined $options{verbose} )
         {
