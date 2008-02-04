@@ -21,8 +21,8 @@ my $help;
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
-         'enable|e'         => \$enable,
-         'disable|d'        => \$disable,
+         'enable-mirror|e'         => \$enable,
+         'disable-mirror|d'        => \$disable,
          #'verbose|v'        => \$verbose,
          'help|h' => \$help
 );
@@ -31,8 +31,8 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
-  print "    -enable     (-e) arg : " . __("enable catalog mirorring for \$catalog\n");
-  print "    -disable    (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
+  print "    -enable-miror   (-e) arg : " . __("enable catalog mirorring for \$catalog\n");
+  print "    -disable-mirror (-d) arg : " . __("disable catalog mirroring for \$catalog\n");
   #print "    -verbose    (-v) arg : " . __("show detailed catalog information\n");
   exit 0;
 }
