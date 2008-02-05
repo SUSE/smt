@@ -21,7 +21,7 @@ sub getCatalogsByGUID($$)
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
 
-    return $dbh->selectall_hashref( sprintf("select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y'", $dbh->quote($guid) ), "CATALOGID" );
+    return $dbh->selectall_hashref( sprintf("select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc, Registration r where r.GUID=%s and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.CATALOGTYPE='nu' and c.DOMIRROR like 'Y'", $dbh->quote($guid) ), "CATALOGID" );
 }
 
 sub getUsernameFromRequest($)
@@ -69,7 +69,7 @@ sub handler {
     foreach my $val (values %{$catalogs})
     {
         $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"repoindex return $username: ".${$val}{'NAME'}." - ".${$val}{'TARGET'});
+                       APR::Const::SUCCESS,"repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
          $writer->emptyTag('repo',
                            'name' => ${$val}{'NAME'},
