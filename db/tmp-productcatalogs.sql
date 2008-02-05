@@ -68,7 +68,7 @@ insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
  values(808, "a34dd8adbd08655932194d8ea1bce39a32940a4f", 'N');
 
--- SP2 final "online" i386
+-- SLES SP2 final "online" i386
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
  values(835, "a34dd8adbd08655932194d8ea1bce39a32940a4f", 'N');
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
@@ -86,6 +86,47 @@ insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
  values(837, "272d2a8f4388ca27e8a3a2aadde773c0bd293afb", 'N');
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
  values(838, "272d2a8f4388ca27e8a3a2aadde773c0bd293afb", 'N');
+
+
+-- SLED SP2 migration i386
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(800, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(801, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(802, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(803, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+
+-- SLED SP2 final i386 online
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(830, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(831, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(832, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(833, "ce25b61408ff9ce9d56cab909d22291f83b13ecb", 'N');
+
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(830, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(831, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(832, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(833, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+
+-- SLED SP2 final i386
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(815, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(816, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(817, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
+ values(818, "e31cdda78da201fbdc5df9a6e570ebc17ee520db", 'N');
+
 
 -- SP1 final i386
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
