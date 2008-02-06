@@ -2,7 +2,7 @@
 
 use strict;
 use YEP::Mirror::RegData;
-use Test::Simple tests => 5;
+use Test::Simple tests => 4;
 
 sub testsync
 {
