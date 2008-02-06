@@ -1,6 +1,3 @@
--- We should not use this
--- drop table IF EXISTS CredentialGroup;
--- drop table IF EXISTS RepositoryGroup;
 
 -- IF EXISTS was added in version 3.3.X
 -- on SLES10 we have 3.1.X :-(
@@ -11,9 +8,23 @@ drop table ProductCatalogs;
 drop table Registration;
 drop table MachineData;
 drop table Targets;
+drop table SubscriptionStatus;
 
 -- this table is dropped
 drop table ProductDependencies;
+
+
+create table SubscriptionStatus(GUID         CHAR(50),
+                                SUBSCRIPTION VARCHAR(100),
+                                SUBTYPE      CHAR(20)  DEFAULT "UNKNOWN",
+                                SUBSTATUS    CHAR(20)  DEFAULT "UNKNOWN",
+                                SUBSTARTDATE TIMESTAMP DEFAULT '0000-00-00 00:00:00',
+                                SUBENDDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
+                                SUBDURATION  BIGINT    DEFAULT 0,
+                                SERVERCLASS  CHAR(50)  DEFAULT '',
+                           --   LASTMODIFIED TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                PRIMARY KEY (GUID, SUBSCRIPTION)
+                               );
 
 create table Registration(GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,
@@ -61,6 +72,7 @@ create table Products (
                 NEEDINFO        TEXT,
                 SERVICE         TEXT,
                 PRODUCT_LIST    CHAR(1),
+                PRODUCT_CLASS   CHAR(50),
                 UNIQUE(PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER)
 		);
 
