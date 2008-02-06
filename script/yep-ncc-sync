@@ -5,6 +5,7 @@ use warnings;
 #use lib ("/srv/www/perl-lib/");
 use lib ("www/perl-lib/");
 use YEP::CLI;
+use YEP::Utils;
 use YEP::Mirror::RegData;
 use File::Basename;
 
@@ -67,9 +68,18 @@ if($todir ne "" && ! -d $todir)
 {
 	die "Directory '$fromdir' does not exist";
 }
-if(0)
+
+if(!YEP::Utils::openLock("yep-ncc-sync"))
 {
-	# We have currently no NCC support for this, so comment out
+    print __("Syncronization process is still running.\n");
+    exit 0;
+}
+
+eval
+{
+    if(0)
+    {
+    # We have currently no NCC support for this, so comment out
 	
 my $rd= YEP::Mirror::RegData->new(debug   => 0,
                                     element => "product",
@@ -83,17 +93,6 @@ if($res)
     print STDERR __("Error while fetching Products data.\n");
 }
 
-# this tableis dropped
-#
-#$rd->element("productdep");
-#$rd->table("ProductDependencies");
-#$rd->key([ 'PARENT_PRODUCT_ID', 'CHILD_PRODUCT_ID']);
-#
-#$res = $rd->sync();
-#if($res)
-#{
-#    print STDERR __("Error while fetching ProductDependencies data.\n");
-#}
 
 $rd->element("targets");
 $rd->table("Targets");
@@ -130,10 +129,32 @@ if($todir ne "")
 {
     YEP::CLI::setMirrorableCatalogs(todir => $todir);
     # if todir parameter is set, we can stop here. Everything is done.
+
+    if(!YEP::Utils::unLock("yep-ncc-sync"))
+    {
+        print STDERR __("Cannot remove lockfile.\n");
+    }
     exit 0;
 }
 
 YEP::CLI::resetCatalogsStatus();
 YEP::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef);
+
+};
+if(@_)
+{
+    if(!YEP::Utils::unLock("yep-ncc-sync"))
+    {
+        print STDERR __("Cannot remove lockfile.\n");
+    }
+    die @_;
+}
+
+if(!YEP::Utils::unLock("yep-ncc-sync"))
+{
+    print STDERR __("Cannot remove lockfile.\n");
+}
+
+exit 0;
 
 
