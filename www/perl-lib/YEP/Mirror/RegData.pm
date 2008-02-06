@@ -77,45 +77,10 @@ sub new
 	    $self->{TODIR} = $opt{todir};
     }
 
-    # get the URI from /etc/suseRegister.conf
+    my ($ruri, $rguid, $rsecret) = YEP::Utils::getLocalRegInfos();
 
-    open(FH, "< /etc/suseRegister.conf") and do
-    {
-        while(<FH>)
-        {
-            if($_ =~ /^url\s*=\s*(\S*)\s*/ && defined $1 && $1 ne "")
-            {
-                $self->{URI} = $1;
-                last;
-            }
-        }
-        close FH;
-    };
-
-    # get the USERINFO - /etc/zmd/deviceid, /etc/zmd/secret
-
-    open(FH, "< /etc/zmd/deviceid") and do
-    {
-        $self->{USERINFO} = <FH>;
-        chomp($self->{USERINFO});
-        close FH;
-    };
-    open(FH, "< /etc/zmd/secret") and do
-    {
-        my $s = <FH>;
-        chomp($s);
-        $self->{USERINFO} .= ":$s";
-        close FH;
-    };
-
-    if(!defined $self->{URI} || $self->{URI} eq "")
-    {
-        die "URL not found.";
-    }
-    if(!defined $self->{USERINFO} || $self->{USERINFO} !~ /^.+:.+$/)
-    {
-        die "Invalid user informations .".$self->{USERINFO};
-    }    
+    $self->{URI} = $ruri;
+    $self->{USERINFO} = $rguid.":".$rsecret;
     
     bless($self);
 

@@ -111,5 +111,49 @@ sub unLock
     return 0;
 }
 
+#
+# Return an array with ($url, $guid, $secret)
+#
+sub getLocalRegInfos
+{
+    my $uri    = "";
+    my $guid   = "";
+    my $secret = "";
+    
+    open(FH, "< /etc/suseRegister.conf") or die sprintf(__("Cannot open /etc/suseRegister.conf: %s"), $!);
+    while(<FH>)
+    {
+        if($_ =~ /^url\s*=\s*(\S*)\s*/ && defined $1 && $1 ne "")
+        {
+            $uri = $1;
+            last;
+        }
+    }
+    close FH;
+    
+    open(FH, "< /etc/zmd/deviceid") or die sprintf(__("Cannot open /etc/zmd/deviceid: %s"), $!);
+    
+    $guid = <FH>;
+    chomp($guid);
+    close FH;
+
+    open(FH, "< /etc/zmd/secret") or die sprintf(__("Cannot open /etc/zmd/secret: %s"), $!);
+    
+    $secret = <FH>;
+    chomp($secret);
+    close FH;
+
+    if($guid eq "" || $secret eq "")
+    {
+        die __("Cannot read credentials for registration\n");
+    }
+
+    if($uri eq "")
+    {
+        die __("Cannot read URL for registration\n");
+    }
+    return ($uri, $guid, $secret);  
+}
+
 
 1;
