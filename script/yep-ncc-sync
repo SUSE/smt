@@ -77,80 +77,80 @@ if(!YEP::Utils::openLock("yep-ncc-sync"))
 
 eval
 {
-    if(0)
+    if (0)
     {
-    # We have currently no NCC support for this, so comment out
+        # We have currently no NCC support for this, so comment out
 	
-my $rd= YEP::Mirror::RegData->new(debug   => 0,
-                                    element => "product",
-                                    table   => "Products",
-                                    key     => "PRODUCTDATAID",
-                                    fromdir => (($fromdir ne "")?$fromdir:undef),
-                                    todir   => (($todir ne "")?$todir:undef));
-my $res = $rd->sync();
-if($res)
-{
-    print STDERR __("Error while fetching Products data.\n");
-}
+        my $rd= YEP::Mirror::RegData->new(debug   => 0,
+                                          element => "product",
+                                          table   => "Products",
+                                          key     => "PRODUCTDATAID",
+                                          fromdir => (($fromdir ne "")?$fromdir:undef),
+                                          todir   => (($todir ne "")?$todir:undef));
+        my $res = $rd->sync();
+        if ($res)
+        {
+            print STDERR __("Error while fetching Products data.\n");
+        }
 
 
-$rd->element("targets");
-$rd->table("Targets");
-$rd->key("OS");
+        $rd->element("targets");
+        $rd->table("Targets");
+        $rd->key("OS");
 
-$res = $rd->sync();
-if($res)
-{
-    print STDERR __("Error while fetching Targets data.\n");
-}
+        $res = $rd->sync();
+        if ($res)
+        {
+            print STDERR __("Error while fetching Targets data.\n");
+        }
 
-$rd->element("catalogs");
-$rd->table("Catalogs");
-$rd->key("CATALOGID");
+        $rd->element("catalogs");
+        $rd->table("Catalogs");
+        $rd->key("CATALOGID");
 
-$res = $rd->sync();
-if($res)
-{
-    print STDERR __("Error while fetching Catalogs data.\n");
-}
+        $res = $rd->sync();
+        if ($res)
+        {
+            print STDERR __("Error while fetching Catalogs data.\n");
+        }
 
-$rd->element("productcatalogs");
-$rd->table("ProductCatalogs");
-$rd->key(['PRODUCTDATAID', 'CATALOGID']);
+        $rd->element("productcatalogs");
+        $rd->table("ProductCatalogs");
+        $rd->key(['PRODUCTDATAID', 'CATALOGID']);
 
-$res = $rd->sync();
-if($res)
-{
-    print STDERR __("Error while fetching ProductCatalogs data.\n");
-}
-}
-
-if($todir ne "")
-{
-    YEP::CLI::setMirrorableCatalogs(todir => $todir);
-    # if todir parameter is set, we can stop here. Everything is done.
-
-    if(!YEP::Utils::unLock("yep-ncc-sync"))
-    {
-        print STDERR __("Cannot remove lockfile.\n");
+        $res = $rd->sync();
+        if ($res)
+        {
+            print STDERR __("Error while fetching ProductCatalogs data.\n");
+        }
     }
-    exit 0;
-}
 
-YEP::CLI::resetCatalogsStatus();
-YEP::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef);
+    if ($todir ne "")
+    {
+        YEP::CLI::setMirrorableCatalogs(todir => $todir);
+        # if todir parameter is set, we can stop here. Everything is done.
+
+        if (!YEP::Utils::unLock("yep-ncc-sync"))
+        {
+            print STDERR __("Cannot remove lockfile.\n");
+        }
+        exit 0;
+    }
+
+    YEP::CLI::resetCatalogsStatus();
+    YEP::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef);
 
 };
-if(@_)
+if (@_)
 {
-    if(!YEP::Utils::unLock("yep-ncc-sync"))
+    if (!YEP::Utils::unLock("yep-ncc-sync"))
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
     die @_;
 }
 
-if(!YEP::Utils::unLock("yep-ncc-sync"))
+if (!YEP::Utils::unLock("yep-ncc-sync"))
 {
     print STDERR __("Cannot remove lockfile.\n");
 }
