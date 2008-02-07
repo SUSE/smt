@@ -9,10 +9,18 @@ drop table Registration;
 drop table MachineData;
 drop table Targets;
 drop table SubscriptionStatus;
+drop table Clients;
 
 -- this table is dropped
 drop table ProductDependencies;
 
+
+
+create table Clients(GUID        CHAR(50) PRIMARY KEY,
+                     HOSTNAME    VARCHAR(100) DEFAULT '',
+                     DESCRIPTION VARCHAR(500) DEFAULT '',
+                     LASTCONTACT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
 
 create table SubscriptionStatus(GUID         CHAR(50),
                                 SUBSCRIPTION VARCHAR(100),
