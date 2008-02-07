@@ -192,7 +192,7 @@ sub listCatalogs
         
         $t->addRow(@row);
 
-        if ( exists $options{ verbose } && defined $options{verbose} )
+        if ( exists $options{ used } && defined $options{used} )
         {
           $t->addRow("", $values->{EXTURL}, "", "");
           $t->addRow("", $values->{LOCALPATH}, "", "");
@@ -210,7 +210,9 @@ sub listProducts
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
 
-    my $sth = $dbh->prepare(qq{select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID=p.PRODUCTDATAID) AS registered_machines from Products p;});
+    my $sql = "select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID=p.PRODUCTDATAID) AS registered_machines from Products p where 1";
+
+    my $sth = $dbh->prepare($sql);
     $sth->execute();
 
     my $t = new YEP::ASCIITable;
@@ -225,12 +227,10 @@ sub listProducts
         $productstr .= " $value->{VERSION}" if(defined $value->{VERSION});
         $productstr .= " $value->{ARCH}" if(defined $value->{ARCH});
         #print "$productstr\n";
+        
+        next if ( exists($options{ used }) && defined($options{used}) && (int($value->{registered_machines}) < 1) );
+        
         $t->addRow($value->{PRODUCT}, defined($value->{VERSION}) ? $value->{VERSION} : "-", defined($value->{ARCH}) ? $value->{ARCH} : "-", $value->{registered_machines});
-
-        if ( exists $options{ verbose } && defined $options{verbose} )
-        {
-          #print "$PARAMLIST\n";
-        }
     }
     print $t->draw();
     $sth->finish();

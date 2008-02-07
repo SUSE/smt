@@ -15,11 +15,13 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 my $mirrorable;
 my $domirror;
 my $verbose;
+my $used;
 my $help;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
+         'used|u' => \$used,
          'verbose|v' => \$verbose,
          'help|h' => \$help
 );
@@ -27,8 +29,9 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " : " . __("list known products\n");
+  print "    -used       (-u) : " . __("show only used products\n");
   print "    -verbose    (-v) : " . __("show detailed product information\n");
   exit 0;
 }
 
-YEP::CLI::listProducts(verbose => $verbose);
+YEP::CLI::listProducts(verbose => $verbose, used => $used );
