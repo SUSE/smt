@@ -16,10 +16,11 @@ BEGIN
 
 use strict;
 use YEP::Utils;
+use YEP::NCCRegTools;
 use Getopt::Long;
 use LWP::UserAgent;
 use Crypt::SSLeay;
-use XML::Writer;
+#use XML::Writer;
 use File::Basename;
 use Data::Dumper;
 
@@ -59,10 +60,6 @@ $useragent->protocols_allowed( [ 'https' ] );
 $useragent->default_headers->push_header('Content-Type' => 'text/xml');
 push @{ $useragent->requests_redirectable }, 'POST';
 
-
-($uri, $yepguid, $yepsecret) = YEP::Utils::getLocalRegInfos();
-
-
 if(!YEP::Utils::openLock("yep-register"))
 {
     print __("Registration process is still running.\n");
@@ -82,46 +79,17 @@ if(!$dbh)
     die __("Cannot connect to database");
 }
 
-
-eval 
+eval
 {
-    my $guids = $dbh->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE");
-    
-    
-    foreach my $guid (@{$guids})
+    my $nccreg = YEP::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh);
+    my $err = $nccreg->NCCRegister();
+    if($err != 0)
     {
-        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-        $year += 1900;
-        $mon +=1;
-        my $regtimestring = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday, $hour,$min,$sec);
-        
-        my $products = $dbh->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", $dbh->quote($guid)), {Slice => {}});
-        
-        my $regdata =  $dbh->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s", $dbh->quote($guid)), {Slice => {}});
-        
-        if(defined $regdata && ref($regdata) eq "ARRAY")
+        if(!YEP::Utils::unLock("yep-register"))
         {
-            my $out = buildRegisterXML($guid, $products, $regdata);
-            
-            if(!defined $out || $out eq "")
-            {
-                print STDERR sprintf(__("Unable to generate XML for GUID: %s\n"). $guid);
-                next;
-            }
-            
-            my $ret = sendData($out);
-            if(!$ret)
-            {
-                next;
-            }
-            
-            $ret = updateRegistration($guid, $products, $regtimestring);
+            print STDERR __("Cannot remove lockfile.\n");
         }
-        else
-        {
-            print STDERR sprintf(__("Incomplete registration found. GUID:%s\n"), $guid);
-            next;
-        }
+        exit 1;
     }
 };
 if($@)
@@ -130,9 +98,8 @@ if($@)
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
-    die $@;
+    exit 1;
 }
-
 
 if(!YEP::Utils::unLock("yep-register"))
 {
@@ -140,204 +107,5 @@ if(!YEP::Utils::unLock("yep-register"))
 }
 exit 0;
 
-
-sub updateRegistration
-{
-    my $guid          = shift || undef;
-    my $products      = shift || undef;
-    my $regtimestring = shift || undef;
-    
-    if(!defined $guid)
-    {
-        print STDERR __("Invalid GUID\n");
-        return 0;
-    }
-    
-    if(!defined $products || ref($products) ne "ARRAY")
-    {
-        print STDERR __("Invalid Products\n");
-        return 0;
-    }
-    
-    if(!defined $regtimestring)
-    {
-        print STDERR __("Invalid time string\n");
-        return 0;
-    }
-    
-    my @productids = ();
-    foreach my $prod (@{$products})
-    {
-        if( exists $prod->{PRODUCTDATAID} && defined $prod->{PRODUCTDATAID} )
-        {
-            push @productids, $prod->{PRODUCTDATAID};
-        }
-    }
-    
-    my $statement = "UPDATE Registration SET NCCREGDATE=%s WHERE GUID=%s and ";
-    if(@productids > 1)
-    {
-        $statement .= "PRODUCTID IN (".join(",", @productids).")";
-    }
-    elsif(@productids == 1)
-    {
-        $statement .= "PRODUCTID = ".$productids[0];
-    }
-    else
-    {
-        # this should not happen
-        print STDERR __("No products found.\n");
-        return 0;
-    }
-    
-    return $dbh->do(sprintf($statement, $dbh->quote($regtimestring), $dbh->quote($guid)));
-}
-
-
-sub sendData
-{
-    my $data = shift || undef;
-
-    if (! defined $uri)
-    {
-        print STDERR __("Cannot send data to registration server. Missing URL.\n");
-        return 0;
-    }
-    if($uri =~ /^-/)
-    {
-        print STDERR sprintf(__("Invalid protocol(%s).\n"), $uri);
-        return 0;
-    }
-
-    my $regurl = URI->new($uri);
-    $regurl->query("command=register");
-
-    print "SEND TO: ".$regurl->as_string()."\n" if($debug);
-    print "XML:\n$data\n" if($debug);
-
-    my $response = $useragent->post( $regurl->as_string(),
-                                     'Content' => $data);
-    
-    if($response->is_success)
-    {
-        return 1;
-    }
-    else
-    {
-        print STDERR $response->status_line."\n";
-        return 0;
-    }
-}
-
-
-sub buildRegisterXML
-{
-    my $guid     = shift;
-    my $products = shift;
-    my $regdata  = shift;
-
-    my $output = "";
-
-    my $writer = new XML::Writer(OUTPUT => \$output);
-    $writer->xmlDecl("UTF-8");
-    
-    my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-             "client_version" => "1.2.3");
-
-#     if(!$ctx->{nooptional})
-#     {
-#         $a{accept} = "optional";
-#     }
-#     if($ctx->{acceptmand} || $ctx->{nooptional})
-#     {
-#         $a{accept} = "mandatory";
-#     }
-    $a{force} = "batch";
-    
-    $writer->startTag("register", %a);
-
-    $writer->startTag("guid");
-    $writer->characters($guid);
-    $writer->endTag("guid");
-
-    foreach my $pair (@{$regdata})
-    {
-        if($pair->{KEYNAME} eq "host")
-        {
-            if(defined $pair->{VALUE} && $pair->{VALUE} ne "")
-            {
-                $writer->startTag("host");
-                $writer->characters($pair->{VALUE});
-                $writer->endTag("host");
-            }
-            else
-            {
-                $writer->emptyTag("host");
-            }
-            last;
-        }
-    }
-    
-    $writer->startTag("yepguid");
-    $writer->characters($yepguid);
-    $writer->endTag("yepguid");
-
-    $writer->startTag("yepsecret");
-    $writer->characters($yepsecret);
-    $writer->endTag("yepsecret");
-    
-    foreach my $PHash (@{$products})
-    {
-        if(defined $PHash->{PRODUCT} && $PHash->{PRODUCT} ne "" &&
-           defined $PHash->{VERSION} && $PHash->{VERSION} ne "")
-        {
-            $writer->startTag("product",
-                              "version" => $PHash->{VERSION},
-                              "release" => (defined $PHash->{REL})?$PHash->{REL}:"",
-                              "arch"    => (defined $PHash->{ARCH})?$PHash->{ARCH}:"");
-            if ($PHash->{PRODUCT} =~ /\s+/)
-            {
-                $writer->cdata($PHash->{PRODUCT});
-            }
-            else
-            {
-                $writer->characters($PHash->{PRODUCT});
-            }
-            $writer->endTag("product");
-        }
-    }
-
-    foreach my $pair (@{$regdata})
-    {
-        next if($pair->{KEYNAME} eq "host");
-        if(!defined $pair->{VALUE})
-        {
-            $pair->{VALUE} = "";
-        }
-        
-        if($pair->{VALUE} eq "")
-        {
-            $writer->emptyTag("param", "id" => $pair->{KEYNAME});
-        }
-        else
-        {
-            $writer->startTag("param",
-                              "id" => $pair->{KEYNAME});
-            if ($pair->{VALUE} =~ /\s+/)
-            {
-                $writer->cdata($pair->{VALUE});
-            }
-            else
-            {
-                $writer->characters($pair->{VALUE});
-            }
-            $writer->endTag("param");
-        }
-    }
-
-    $writer->endTag("register");
-
-    return $output;
-}
 
 

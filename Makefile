@@ -81,6 +81,7 @@ install:
 	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)/srv/www/perl-lib/YEP/
 	cp www/perl-lib/YEP/Utils.pm $(DESTDIR)$(PERLMODDIR)/YEP/
+	cp www/perl-lib/YEP/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/YEP/
 	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
 	cp www/perl-lib/YEP/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Parser/
 	cp www/perl-lib/YEP/CLI.pm /$(DESTDIR)$(PERLMODDIR)/YEP/
