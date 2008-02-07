@@ -20,7 +20,10 @@ insert into Registration(GUID, PRODUCTID)
 insert into Registration(GUID, PRODUCTID)
  values("sledsp1x8664", 435);
 
-
+insert into Clients (GUID, HOSTNAME) VALUES('sledsp1i586online', 'test1');
+insert into Clients (GUID, HOSTNAME) VALUES('slessp1s390online', 'test2');
+insert into Clients (GUID, HOSTNAME) VALUES('slessp1i586', 'test3');
+insert into Clients (GUID, HOSTNAME) VALUES('sledsp1x8664', 'test4');
 
 -------------- some examples --------------------
 -- sqlite> select PRODUCTID from Registration where GUID = "sledsp1x8664";
