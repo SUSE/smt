@@ -67,6 +67,7 @@ Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 use URI;
 use YEP::Utils;
+use YEP::ASCIITable;
 use Config::IniFiles;
 use File::Temp;
 use IO::File;
@@ -239,29 +240,29 @@ sub listRegistrations
 {
     my ($cfg, $dbh, $nuri) = init();
 
-    my $guids = $dbh->selectcol_arrayref("SELECT DISTINCT GUID from Registration");
+    my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
-    print sprintf("%-35s %-10s     %s\n", __("Unique ID"), __("Hostname"), __("Product"));
-    print "---------------------------------------------------------------------------------------------------------\n";
-    foreach my $guid (@{$guids})
+    my $t = new YEP::ASCIITable;
+    $t->setOptions('drawRowLine',1);
+    $t->setCols(__('Unique ID'),__('Hostname'), __('Last Contact'), __('Product'));
+
+    foreach my $clnt (@{$clients})
     {
         my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", 
-                                                        $dbh->quote($guid)), {Slice => {}});
+                                                        $dbh->quote($clnt->{GUID})), {Slice => {}});
         
-        my $hostname = $dbh->selectcol_arrayref(sprintf("SELECT VALUE from MachineData WHERE GUID=%s AND KEYNAME='hostname'", 
-                                                        $dbh->quote($guid)));
-        
+        my $prdstr = "";
         foreach my $product (@{$products})
         {
-            print sprintf("%-35s %-10s  => %s %s %s %s\n", $guid, 
-                          (defined $hostname->[0])?$hostname->[0]:"",
-                          (defined $product->{PRODUCT})?$product->{PRODUCT}:"",
-                          (defined $product->{VERSION})?$product->{VERSION}:"",
-                          (defined $product->{REL})?$product->{REL}:"",
-                          (defined $product->{ARCH})?$product->{ARCH}:"");
+            $prdstr .= $product->{PRODUCT} if(defined $product->{PRODUCT});
+            $prdstr .= " ".$product->{VERSION} if(defined $product->{VERSION});
+            $prdstr .= " ".$product->{REL} if(defined $product->{REL});
+            $prdstr .= " ".$product->{ARCH} if(defined $product->{ARCH});
+            $prdstr .= "\n";
         }
-        print "\n";
+        $t->addRow($clnt->{GUID}, $clnt->{HOSTNAME}, $clnt->{LASTCONTACT}, $prdstr);
     }
+    print $t->draw();
 }
 
 sub resetCatalogsStatus

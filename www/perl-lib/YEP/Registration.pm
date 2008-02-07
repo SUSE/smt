@@ -11,7 +11,7 @@ use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 
 use Apache2::Const -compile => qw(OK SERVER_ERROR :log MODE_READBYTES);
-use APR::Const    -compile => qw(:error SUCCESS BLOCK_READ);
+use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
 
 use constant IOBUFSIZE => 8192;
 
@@ -416,6 +416,7 @@ sub insertRegistration
     my $cnt     = 0;
     my $existingpids = {};
     my $regtimestring = "";
+    my $hostname = "";
     
     my @list = findColumnsForProducts($r, $dbh, $regdata->{register}->{product}, "PRODUCTDATAID");
 
@@ -547,6 +548,10 @@ sub insertRegistration
     foreach my $key (keys %{$regdata->{register}})
     {
         next if($key eq "guid" || $key eq "product" || $key eq "mirrors");
+        if($key eq "hostname")
+        {
+            $hostname = $regdata->{register}->{$key};
+        }
         
         my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                                 $dbh->quote($regdata->{register}->{guid}), 
@@ -562,6 +567,82 @@ sub insertRegistration
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
     }
+
+    #
+    # update Clients table
+    #
+    my $aff = 0;
+    if($hostname ne "")
+    {
+        $statement = sprintf("UPDATE Clients SET HOSTNAME=%s, LASTCONTACT=%s WHERE GUID=%s", 
+                             $dbh->quote($hostname), 
+                             $dbh->quote($regtimestring),
+                             $dbh->quote($regdata->{register}->{guid}));
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"STATEMENT: $statement");
+        eval
+        {
+            $aff = $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+            $aff = 0;
+        }
+        if($aff == 0)
+        {
+            # New registration; we need an insert
+            $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME) VALUES (%s, %s)", 
+                                 $dbh->quote($regdata->{register}->{guid}),
+                                 $dbh->quote($hostname));
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS,"STATEMENT: $statement");
+            eval
+            {
+                $aff = $dbh->do($statement);
+            };
+            if($@)
+            {
+                $r->log_error("DBERROR: ".$dbh->errstr);
+                $aff = 0;
+            }
+        }
+    }
+    else
+    {
+        $statement = sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", 
+                             $dbh->quote($regtimestring),
+                             $dbh->quote($regdata->{register}->{guid}));
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS,"STATEMENT: $statement");
+        eval
+        {
+            $aff = $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+            $aff = 0;
+        }
+        if($aff == 0)
+        {
+            # New registration; we need an insert
+            $statement = sprintf("INSERT INTO Clients (GUID) VALUES (%s)", 
+                                 $dbh->quote($regdata->{register}->{guid}));
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS,"STATEMENT: $statement");
+            eval
+            {
+                $aff = $dbh->do($statement);
+            };
+            if($@)
+            {
+                $r->log_error("DBERROR: ".$dbh->errstr);
+                $aff = 0;
+            }
+        }
+    }
+    
     return \@list;
 }
 

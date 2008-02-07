@@ -42,12 +42,19 @@ sub handler {
     my $r = shift;
     my $dbh = undef;
 
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+    $year += 1900;
+    $mon +=1;
+    my $regtimestring = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday, $hour,$min,$sec);
+    
+    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                   APR::Const::SUCCESS,"repoindex.xml requested");
+    
     # try to connect to the database - else report server error
     if ( not $dbh=YEP::Utils::db_connect() ) 
     {  return Apache2::Const::SERVER_ERROR; }
 
     $r->content_type('text/xml');
-    # $r->content_type('text/plain');  # for testing
 
     $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
     $r->err_headers_out->add('Pragma' => "no-cache");
@@ -56,6 +63,16 @@ sub handler {
     return Apache2::Const::SERVER_ERROR unless defined $username;
     my $catalogs = getCatalogsByGUID($dbh, $username);
 
+    eval
+    {
+        $dbh->do(sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", $dbh->quote($regtimestring), $dbh->quote($username)));
+    };
+    if($@)
+    {
+        # we log an error, but nothing else
+        $r->log_error("Update Clients table failed: ".$@);
+    }
+    
     my $writer = new XML::Writer(NEWLINES => 0);
     $writer->xmlDecl("UTF-8");
 
