@@ -20,7 +20,6 @@ use YEP::NCCRegTools;
 use Getopt::Long;
 use LWP::UserAgent;
 use Crypt::SSLeay;
-#use XML::Writer;
 use File::Basename;
 use Data::Dumper;
 
@@ -33,21 +32,34 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 my $debug = 0;
 my $help  = 0;
 
-my $result = GetOptions ("debug|d"     => \$debug,
+my @guids = ();
+
+my $result = GetOptions ("guid|g=s"    => \@guids,
+                         "debug|d"     => \$debug,
                          "help|h"      => \$help
                         );
 
 if($help)
 {
     print basename($0) . __(" [OPTIONS]\n");
-    print __("Register all clients at NCC which are currently not registered\n");
-    print __("or which data changed since the last registration.\n");
+    print __("Delete one or more registration from NCC and YEP\n");
     print "\n";
     print __("Options:\n");
+    print "--guid -g        " . __("Unique ID of the client which should be deleted.\n");
+    print "                 " . __("This option can be used multiple times.\n");
     print "--debug -d       " . __("enable debug mode\n");
     print "--help -h        " . __("show this message\n");
     exit 0;
 }
+
+
+if(@guids == 0)
+{
+    print STDERR __("No Unique ID provided.\n");
+    exit 1;
+}
+
+print Data::Dumper->Dump([@guids]);
 
 
 my $useragent = LWP::UserAgent->new(keep_alive => 1);
@@ -55,9 +67,9 @@ $useragent->protocols_allowed( [ 'https' ] );
 $useragent->default_headers->push_header('Content-Type' => 'text/xml');
 push @{ $useragent->requests_redirectable }, 'POST';
 
-if(!YEP::Utils::openLock("yep-register"))
+if(!YEP::Utils::openLock("yep-delete-registration"))
 {
-    print __("Registration process is still running.\n");
+    print __("Delete registration process is still running.\n");
     exit 0;
 }
 
@@ -67,7 +79,7 @@ $dbh = YEP::Utils::db_connect();
 
 if(!$dbh)
 {
-    if(!YEP::Utils::unLock("yep-register"))
+    if(!YEP::Utils::unLock("yep-delete-registration"))
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
@@ -77,10 +89,10 @@ if(!$dbh)
 eval
 {
     my $nccreg = YEP::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh);
-    my $err = $nccreg->NCCRegister();
+    my $err = $nccreg->NCCDeleteRegistration(@guids);
     if($err != 0)
     {
-        if(!YEP::Utils::unLock("yep-register"))
+        if(!YEP::Utils::unLock("yep-delete-registration"))
         {
             print STDERR __("Cannot remove lockfile.\n");
         }
@@ -89,14 +101,14 @@ eval
 };
 if($@)
 {
-    if(!YEP::Utils::unLock("yep-register"))
+    if(!YEP::Utils::unLock("yep-delete-registration"))
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
     exit 1;
 }
 
-if(!YEP::Utils::unLock("yep-register"))
+if(!YEP::Utils::unLock("yep-delete-registration"))
 {
     print STDERR __("Cannot remove lockfile.\n");
 }

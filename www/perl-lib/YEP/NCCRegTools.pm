@@ -86,7 +86,7 @@ sub new
     
     my ($ruri, $rguid, $rsecret) = YEP::Utils::getLocalRegInfos();
     
-    $self->{URI} = $ruri;
+    $self->{URI}      = $ruri;
     $self->{YEPGUID}  = $rguid;
     $self->{YEPSECRET}= $rsecret;
     bless($self);
@@ -184,7 +184,17 @@ sub NCCListRegistrations
         
         my $writer = new XML::Writer(OUTPUT => \$output);
         $writer->xmlDecl("UTF-8");
-        $writer->emptyTag("listregistrations", %a);
+        $writer->startTag("listregistrations", %a);
+        
+        $writer->startTag("yepguid");
+        $writer->characters($self->{YEPGUID});
+        $writer->endTag("yepguid");
+        
+        $writer->startTag("yepsecret");
+        $writer->characters($self->{YEPSECRET});
+        $writer->endTag("yepsecret");
+
+        $writer->endTag("listregistrations");
         
         if(defined $self->{TODIR} && $self->{TODIR} ne "")
         {
@@ -223,12 +233,63 @@ sub NCCListRegistrations
         # A customer may have removed them via NCC web page. 
         # So remove them also here in YEP
         
-        $self->_deleteRegistrationLocal(keys $guidhash);
+        $self->_deleteRegistrationLocal(keys %{$guidhash});
         
         return 0;
     }
 }
 
+#
+# return count of errors. 0 == success
+#
+sub NCCDeleteRegistration
+{
+    my $self = shift;
+    my @guids = @_;
+    
+    my $errors = 0;
+    
+    if(! defined $self->{DBH} || !$self->{DBH})
+    {
+        print STDERR __("Database handle is not available.\n");
+        return 1;
+    }
+
+    foreach my $guid (@guids)
+    {
+        my $output = "";
+        my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                 "client_version" => "1.2.3");
+        
+        my $writer = new XML::Writer(OUTPUT => \$output);
+        $writer->xmlDecl("UTF-8");
+        $writer->startTag("de-register", %a);
+
+        $writer->startTag("guid");
+        $writer->characters($guid);
+        $writer->endTag("guid");
+        
+        $writer->startTag("yepguid");
+        $writer->characters($self->{YEPGUID});
+        $writer->endTag("yepguid");
+        
+        $writer->startTag("yepsecret");
+        $writer->characters($self->{YEPSECRET});
+        $writer->endTag("yepsecret");
+        
+        $writer->endTag("de-register");
+        
+        my $ok = $self->_sendData($output, "command=de-register");
+        
+        if(!$ok)
+        {
+            print STDERR sprintf(__("Delete registration request failed: %s.\n"), $guid);
+            $errors++;
+        }
+        $self->_deleteRegistrationLocal($guid);
+    }
+    return $errors;
+}
 
 
 ###############################################################################
@@ -248,11 +309,11 @@ sub _deleteRegistrationLocal
     }
     elsif(@guids == 1)
     {
-        $where sprintf("GUID = %s", $self->{DBH}->quote($guid[0]));
+        $where = sprintf("GUID = %s", $self->{DBH}->quote( $guids[0] ) );
     }
     else
     {
-        $where sprintf("GUID IN ('%s')", join("','", @guid));
+        $where = sprintf("GUID IN ('%s')", join("','", @guids));
     }
         
     my $statement = "DELETE FROM Registration where ".$where;
@@ -423,7 +484,7 @@ sub _sendData
     my %params = ('Content' => $data);
     if(defined $destfile && $destfile ne "")
     {
-        $params{:content_file} = $destfile;
+        $params{':content_file'} = $destfile;
     } 
     
     my $response = $self->{USERAGENT}->post( $regurl->as_string(), %params);
