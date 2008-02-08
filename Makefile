@@ -1,5 +1,5 @@
 NAME         = yep
-VERSION      = 0.0.4
+VERSION      = 0.0.5
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
