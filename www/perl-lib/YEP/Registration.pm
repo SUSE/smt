@@ -433,11 +433,7 @@ sub insertRegistration
     }
 
     # store the regtime
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-    $year += 1900;
-    $mon +=1;
-    $regtimestring = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday, $hour,$min,$sec);
-    
+    $regtimestring = YEP::Utils::getDBTimestamp();
 
     my @insert = ();
     my @update = ();
@@ -695,28 +691,7 @@ sub findCatalogs
 
     my $result = {};
     my $statement ="";
-#    my $pidhash = {};
 
-    #
-    # This table is dropped -- with have this dependencies now in ProductCatalogs directly
-    #
-    # get product dependencies
-    
-#     foreach my $parent (@{$productids})
-#     {
-#         $pidhash->{$parent} = 1;
-        
-#         $statement = "SELECT CHILD_PRODUCT_ID from ProductDependencies WHERE PARENT_PRODUCT_ID=$parent";
-#         $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-#                        APR::Const::SUCCESS,"STATEMENT: $statement");
-
-#         my $childs = $dbh->selectcol_arrayref($statement);
-#         foreach my $child (@{$childs})
-#         {
-#             $pidhash->{$child} = 1;
-#         }
-#     }
-    
     # get catalog values (only for the once we DOMIRROR)
 
     $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc WHERE ";
@@ -743,23 +718,6 @@ sub findCatalogs
         $r->log_error("No productids found");
         return $result;
     }
-
-
-#     if(keys %{$pidhash} > 1)
-#     {
-#         $statement .= "pc.PRODUCTDATAID IN (".join(",", keys %{$pidhash}).") ";
-#     }
-#     elsif(keys %{$pidhash} == 1)
-#     {
-#         $statement .= "pc.PRODUCTDATAID = ".join("", keys %{$pidhash})." ";
-#     }
-#     else
-#     {
-#         # This should not happen
-#         $r->log_error("No productids found");
-#         return $result;
-#     }
-    
     
     $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                    APR::Const::SUCCESS,"STATEMENT: $statement");

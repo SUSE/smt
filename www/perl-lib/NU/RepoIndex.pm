@@ -42,11 +42,8 @@ sub handler {
     my $r = shift;
     my $dbh = undef;
 
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-    $year += 1900;
-    $mon +=1;
-    my $regtimestring = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday, $hour,$min,$sec);
-    
+    my $regtimestring = YEP::Utils::getDBTimestamp();
+
     $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                    APR::Const::SUCCESS,"repoindex.xml requested");
     
