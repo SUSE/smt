@@ -17,6 +17,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 my $mirrorable;
 my $domirror;
 
+my $debug   = 0;
 my $help    = 0;
 my $fromdir = "";
 my $todir   = "";
@@ -25,11 +26,12 @@ my $createdbreplfile = "";
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
-	 'fromdir=s' => \$fromdir,
-	 'todir=s'   => \$todir,
-	 'createdbreplacementfile=s' => \$createdbreplfile,
-         'help|h' => \$help
-);
+                          'fromdir=s' => \$fromdir,
+                          'todir=s'   => \$todir,
+                          'createdbreplacementfile=s' => \$createdbreplfile,
+                          'help|h' => \$help,
+                          'debug'  => \$debug
+                         );
 
 if ( defined $help and ( $help == 1 ) )
 {
@@ -44,6 +46,7 @@ if ( defined $help and ( $help == 1 ) )
     print __("                and update the database.\n");
     print __("  --todir    -- write NCC informations to directory without updating the database.\n");
     print __("  --createdbreplacementfile -- create a database replacement file for using yep-mirror without database.\n");
+    print __("  --debug    -- Enable debug mode\n");
   exit 0;
 }
 
@@ -81,7 +84,7 @@ eval
     {
         # We have currently no NCC support for this, so comment out
 	
-        my $rd= YEP::Mirror::RegData->new(debug   => 0,
+        my $rd= YEP::Mirror::RegData->new(debug   => $debug,
                                           element => "product",
                                           table   => "Products",
                                           key     => "PRODUCTDATAID",
@@ -123,6 +126,12 @@ eval
         {
             print STDERR __("Error while fetching ProductCatalogs data.\n");
         }
+
+        my $lr= YEP::NCCRegTools->new(debug   => $debug,
+                                      fromdir => (($fromdir ne "")?$fromdir:undef),
+                                      todir   => (($todir ne "")?$todir:undef));
+        $lr->NCCListRegistrations();
+        
     }
 
     if ($todir ne "")

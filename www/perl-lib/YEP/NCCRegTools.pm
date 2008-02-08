@@ -49,9 +49,10 @@ sub new
     else
     {
         $self->{USERAGENT} = LWP::UserAgent->new(keep_alive => 1);
-        push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
+        $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
         # FIXME: remove http for production
         $self->{USERAGENT}->protocols_allowed( [ 'http', 'https'] );
+        push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
     }
     
     if(exists $ENV{http_proxy})
@@ -77,6 +78,11 @@ sub new
     {
 	    $self->{DBH} = $opt{dbh};
     }
+    else
+    {
+        $self->{DBH} = YEP::Utils::db_connect();
+    }
+    
     
     my ($ruri, $rguid, $rsecret) = YEP::Utils::getLocalRegInfos();
     
@@ -163,42 +169,64 @@ sub NCCRegister
 sub NCCListRegistrations
 {
     my $self = shift;
+
+    my $destfile = $self->{TEMPDIR};
     
-    if(! defined $self->{DBH} || !$self->{DBH})
+    if(defined $self->{FROMDIR} && -d $self->{FROMDIR})
     {
-        print STDERR __("Database handle is not available.\n");
-        return 1;
+        $destfile = $self->{FROMDIR}."/listregistrations.xml";
     }
-
-    my $output = "";
-    my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-             "client_version" => "1.2.3");
-    
-    my $writer = new XML::Writer(OUTPUT => \$output);
-    $writer->xmlDecl("UTF-8");
-    $writer->emptyTag("listregistrations", %a);
-
-    my $destfile = $self->{TODIR}."/listregistrations.xml";
-    my $ok = $self->_sendData($output, "command=listregistrations", $destfile);
-    
-    if(!$ok || !-e $destfile)
+    else
     {
-        print STDERR "List registrations request failed.\n";
-        return 1;
+        my $output = "";
+        my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                 "client_version" => "1.2.3");
+        
+        my $writer = new XML::Writer(OUTPUT => \$output);
+        $writer->xmlDecl("UTF-8");
+        $writer->emptyTag("listregistrations", %a);
+        
+        if(defined $self->{TODIR} && $self->{TODIR} ne "")
+        {
+            $destfile = $self->{TODIR};
+        }
+    
+        $destfile .= "/listregistrations.xml";
+        my $ok = $self->_sendData($output, "command=listregistrations", $destfile);
+    
+        if(!$ok || !-e $destfile)
+        {
+            print STDERR "List registrations request failed.\n";
+            return 1;
+        }
+        return 0;
     }
-
-    my $guidhash = $self->{DBH}->selectall_hashref("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > '2000-01-01 00:00:00'");
-
-    my $parser = new YEP::Parser::ListReg();
-    $parser->parse($destfile, sub{ _listreg_handler($self, $guidhash, @_)});
     
-    # $guidhash includes now a list of GUIDs which are no longer in NCC
-    # A customer may have removed them via NCC web page. 
-    # So remove them also here in YEP
+    if(defined $self->{TODIR} && $self->{TODIR} ne "")
+    {
+        return 0;
+    }
+    else
+    {
+        if(! defined $self->{DBH} || !$self->{DBH})
+        {
+            print STDERR __("Database handle is not available.\n");
+            return 1;
+        }
+        
+        my $guidhash = $self->{DBH}->selectall_hashref("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > '2000-01-01 00:00:00'");
 
-    $self->_deleteRegistrationLocal(keys $guidhash);
+        my $parser = new YEP::Parser::ListReg();
+        $parser->parse($destfile, sub{ _listreg_handler($self, $guidhash, @_)});
     
-    return 0;
+        # $guidhash includes now a list of GUIDs which are no longer in NCC
+        # A customer may have removed them via NCC web page. 
+        # So remove them also here in YEP
+        
+        $self->_deleteRegistrationLocal(keys $guidhash);
+        
+        return 0;
+    }
 }
 
 
@@ -389,6 +417,7 @@ sub _sendData
     print "SEND TO: ".$regurl->as_string()."\n" if($self->{DEBUG});
     print "XML:\n$data\n" if($self->{DEBUG});
 
+    # FIXME: we need to delete this as soon as NCC provide these features
     return 1;
 
     my %params = ('Content' => $data);
