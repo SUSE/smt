@@ -44,6 +44,10 @@ TODO:
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
 
+- have a look at the mod_perl Database handle feature.
+  one db handle for apache
+  perl-Apache-DBI
+
 DONE:
 =====
 
