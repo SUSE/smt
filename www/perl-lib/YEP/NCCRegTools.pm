@@ -4,9 +4,9 @@ use strict;
 use LWP::UserAgent;
 use URI;
 use YEP::Parser::ListReg;
+use YEP::Utils;
 use XML::Writer;
 use Crypt::SSLeay;
-use YEP::Utils;
 use File::Temp;
 
 use Data::Dumper;
@@ -30,6 +30,7 @@ sub new
 
     $self->{URI}   = undef;
     $self->{DEBUG} = 0;
+    $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = undef; 
     $self->{YEPGUID} = "";
@@ -63,6 +64,15 @@ sub new
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
+    }
+
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
     }
 
     if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
@@ -105,7 +115,7 @@ sub NCCRegister
     
     if(! defined $self->{DBH} || !$self->{DBH})
     {
-        print STDERR __("Database handle is not available.\n");
+        printLog($self->{LOG}, "error", __("Database handle is not available."));
         return 1;
     }
 
@@ -128,7 +138,7 @@ sub NCCRegister
                 
                 if(!defined $out || $out eq "")
                 {
-                    print STDERR sprintf(__("Unable to generate XML for GUID: %s\n"). $guid);
+                    printLog($self->{LOG}, "error", sprintf(__("Unable to generate XML for GUID: %s"). $guid));
                     $errors++;
                     next;
                 }
@@ -149,7 +159,7 @@ sub NCCRegister
             }
             else
             {
-                print STDERR sprintf(__("Incomplete registration found. GUID:%s\n"), $guid);
+                printLog($self->{LOG}, "error", sprintf(__("Incomplete registration found. GUID:%s"), $guid));
                 $errors++;
                 next;
             }
@@ -157,7 +167,7 @@ sub NCCRegister
     };
     if($@)
     {
-        print STDERR $@."\n";
+        printLog($self->{LOG}, "error", $@);
         $errors++;
     }
     return $errors;
@@ -206,7 +216,7 @@ sub NCCListRegistrations
     
         if(!$ok || !-e $destfile)
         {
-            print STDERR "List registrations request failed.\n";
+            printLog($self->{LOG}, "error", "List registrations request failed.");
             return 1;
         }
         return 0;
@@ -220,13 +230,13 @@ sub NCCListRegistrations
     {
         if(! defined $self->{DBH} || !$self->{DBH})
         {
-            print STDERR __("Database handle is not available.\n");
+            printLog($self->{LOG}, "error", __("Database handle is not available."));
             return 1;
         }
         
         my $guidhash = $self->{DBH}->selectall_hashref("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > '2000-01-01 00:00:00'");
 
-        my $parser = new YEP::Parser::ListReg();
+        my $parser = new YEP::Parser::ListReg(log => $self->{LOG});
         $parser->parse($destfile, sub{ _listreg_handler($self, $guidhash, @_)});
     
         # $guidhash includes now a list of GUIDs which are no longer in NCC
@@ -251,7 +261,7 @@ sub NCCDeleteRegistration
     
     if(! defined $self->{DBH} || !$self->{DBH})
     {
-        print STDERR __("Database handle is not available.\n");
+        printLog($self->{LOG}, "error", __("Database handle is not available."));
         return 1;
     }
 
@@ -283,7 +293,7 @@ sub NCCDeleteRegistration
         
         if(!$ok)
         {
-            print STDERR sprintf(__("Delete registration request failed: %s.\n"), $guid);
+            printLog($self->{LOG}, "error", sprintf(__("Delete registration request failed: %s."), $guid));
             $errors++;
         }
         $self->_deleteRegistrationLocal($guid);
@@ -383,12 +393,12 @@ sub _listreg_handler
         {
             # We found a registration from YEP in NCC which does not exist in YEP anymore
             # print and error. The admin has to delete it in NCC by hand.
-            print STDERR sprintf(__("WARNING: Found a subscription in NCC which is not available here: '%s'"), $data->{GUID});
+            printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a subscription in NCC which is not available here: '%s'"), $data->{GUID}));
         }
     };
     if($@)
     {
-        print STDERR $@."\n";
+        printLog($self->{LOG}, "error", $@);
         return;
     }
     return;
@@ -404,19 +414,19 @@ sub _updateRegistration
     
     if(!defined $guid)
     {
-        print STDERR __("Invalid GUID\n");
+        printLog($self->{LOG}, "error", __("Invalid GUID"));
         return 0;
     }
     
     if(!defined $products || ref($products) ne "ARRAY")
     {
-        print STDERR __("Invalid Products\n");
+        printLog($self->{LOG}, "error", __("Invalid Products"));
         return 0;
     }
     
     if(!defined $regtimestring)
     {
-        print STDERR __("Invalid time string\n");
+        printLog($self->{LOG}, "error", __("Invalid time string"));
         return 0;
     }
     
@@ -441,7 +451,7 @@ sub _updateRegistration
     else
     {
         # this should not happen
-        print STDERR __("No products found.\n");
+        printLog($self->{LOG}, "error", __("No products found."));
         return 0;
     }
     
@@ -459,12 +469,12 @@ sub _sendData
 
     if (! defined $self->{URI})
     {
-        print STDERR __("Cannot send data to registration server. Missing URL.\n");
+        printLog($self->{LOG}, "error", __("Cannot send data to registration server. Missing URL."));
         return 0;
     }
     if($self->{URI} =~ /^-/)
     {
-        print STDERR sprintf(__("Invalid protocol(%s).\n"), $self->{URI});
+        printLog($self->{LOG}, "error", sprintf(__("Invalid protocol(%s)."), $self->{URI}));
         return 0;
     }
 
@@ -475,8 +485,8 @@ sub _sendData
     }
     
 
-    print "SEND TO: ".$regurl->as_string()."\n" if($self->{DEBUG});
-    print "XML:\n$data\n" if($self->{DEBUG});
+    printLog($self->{LOG}, "debug", "SEND TO: ".$regurl->as_string()) if($self->{DEBUG});
+    printLog($self->{LOG}, "debug", "XML:\n$data") if($self->{DEBUG});
 
     # FIXME: we need to delete this as soon as NCC provide these features
     return 1;
@@ -495,7 +505,7 @@ sub _sendData
     }
     else
     {
-        print STDERR $response->status_line."\n";
+        printLog($self->{LOG}, "error", $response->status_line);
         return 0;
     }
 }

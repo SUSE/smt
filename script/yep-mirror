@@ -63,18 +63,18 @@ if($help)
     exit 0;
 }
 
-# open the logfile
-
-my $LOG = YEP::Utils::openLog($logfile);
-
 
 # get a lock
 
 if(!YEP::Utils::openLock("yep-mirror"))
 {
-    YEP::Utils::printLog($LOG, "info", __("Mirror process is still running."));
+    print __("Mirror process is still running.\n");
     exit 0;
 }
+
+# open the logfile
+
+my $LOG = YEP::Utils::openLog($logfile);
 
 
 my $dbh = undef;

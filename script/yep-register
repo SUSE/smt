@@ -32,8 +32,10 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 my $debug = 0;
 my $help  = 0;
+my $logfile = "/dev/null";
 
 my $result = GetOptions ("debug|d"     => \$debug,
+                         "logfile|L=s" => \$logfile,
                          "help|h"      => \$help
                         );
 
@@ -44,8 +46,9 @@ if($help)
     print __("or which data changed since the last registration.\n");
     print "\n";
     print __("Options:\n");
-    print "--debug -d       " . __("enable debug mode\n");
-    print "--help -h        " . __("show this message\n");
+    print "--debug -d        ".__("enable debug mode\n");
+    print "--logfile -L file ".__("Path to logfile\n");
+    print "--help -h         ".__("show this message\n");
     exit 0;
 }
 
@@ -61,6 +64,10 @@ if(!YEP::Utils::openLock("yep-register"))
     exit 0;
 }
 
+# open the logfile
+
+my $LOG = YEP::Utils::openLog($logfile);
+
 my $dbh = undef;
 
 $dbh = YEP::Utils::db_connect();
@@ -69,20 +76,21 @@ if(!$dbh)
 {
     if(!YEP::Utils::unLock("yep-register"))
     {
-        print STDERR __("Cannot remove lockfile.\n");
+        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    die __("Cannot connect to database");
+    YEP::Utils::printLog($LOG, "error", __("Cannot connect to database"));
+    exit 1;
 }
 
 eval
 {
-    my $nccreg = YEP::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh);
+    my $nccreg = YEP::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, log => $LOG);
     my $err = $nccreg->NCCRegister();
     if($err != 0)
     {
         if(!YEP::Utils::unLock("yep-register"))
         {
-            print STDERR __("Cannot remove lockfile.\n");
+            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
         }
         exit 1;
     }
@@ -91,16 +99,17 @@ if($@)
 {
     if(!YEP::Utils::unLock("yep-register"))
     {
-        print STDERR __("Cannot remove lockfile.\n");
+        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
     exit 1;
 }
 
 if(!YEP::Utils::unLock("yep-register"))
 {
-    print STDERR __("Cannot remove lockfile.\n");
+    YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
 }
 exit 0;
+
 
 
 

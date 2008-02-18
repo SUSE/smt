@@ -346,7 +346,7 @@ sub setMirrorableCatalogs
         $job->resource("/repo/repoindex.xml");
     
         $job->mirror();
-	$indexfile = $job->local();
+        $indexfile = $job->local();
     }
 
     if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})

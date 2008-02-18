@@ -18,6 +18,7 @@ my $mirrorable;
 my $domirror;
 
 my $debug   = 0;
+my $logfile = "/dev/null";
 my $help    = 0;
 my $fromdir = "";
 my $todir   = "";
@@ -29,6 +30,7 @@ use Getopt::Long;
                           'fromdir=s' => \$fromdir,
                           'todir=s'   => \$todir,
                           'createdbreplacementfile=s' => \$createdbreplfile,
+                          "logfile|L=s" => \$logfile,
                           'help|h' => \$help,
                           'debug'  => \$debug
                          );
@@ -42,11 +44,12 @@ if ( defined $help and ( $help == 1 ) )
     print basename($0).__(" --todir directory\n");
     print basename($0).__(" --createdbreplacementfile filename\n\n");
     print __("Options:\n");
-    print __("  --fromdir  -- read NCC informations from directory instead of downloading it from NCC\n");
-    print __("                and update the database.\n");
-    print __("  --todir    -- write NCC informations to directory without updating the database.\n");
-    print __("  --createdbreplacementfile -- create a database replacement file for using yep-mirror without database.\n");
-    print __("  --debug    -- Enable debug mode\n");
+    print "--fromdir                 ".__("read NCC informations from directory instead of downloading it from NCC\n");
+    print "                          ".__("and update the database.\n");
+    print "--todir                   ".__("write NCC informations to directory without updating the database.\n");
+    print "--createdbreplacementfile ".__("create a database replacement file for using yep-mirror without database.\n");
+    print "--logfile -L file         ".__("Path to logfile\n");
+    print "--debug                   ".__("Enable debug mode\n");
   exit 0;
 }
 
@@ -78,6 +81,10 @@ if(!YEP::Utils::openLock("yep-ncc-sync"))
     exit 0;
 }
 
+# open the logfile
+
+my $LOG = YEP::Utils::openLog($logfile);
+
 eval
 {
     if (0)
@@ -85,6 +92,7 @@ eval
         # We have currently no NCC support for this, so comment out
 	
         my $rd= YEP::Mirror::RegData->new(debug   => $debug,
+                                          log     => $LOG,
                                           element => "product",
                                           table   => "Products",
                                           key     => "PRODUCTDATAID",
@@ -93,9 +101,8 @@ eval
         my $res = $rd->sync();
         if ($res)
         {
-            print STDERR __("Error while fetching Products data.\n");
+            YEP::Utils::printLog($LOG, "error", __("Error while fetching Products data."));
         }
-
 
         $rd->element("targets");
         $rd->table("Targets");
@@ -104,7 +111,7 @@ eval
         $res = $rd->sync();
         if ($res)
         {
-            print STDERR __("Error while fetching Targets data.\n");
+            YEP::Utils::printLog($LOG, "error", __("Error while fetching Targets data."));
         }
 
         $rd->element("catalogs");
@@ -114,7 +121,7 @@ eval
         $res = $rd->sync();
         if ($res)
         {
-            print STDERR __("Error while fetching Catalogs data.\n");
+            YEP::Utils::printLog($LOG, "error", __("Error while fetching Catalogs data."));
         }
 
         $rd->element("productcatalogs");
@@ -124,10 +131,11 @@ eval
         $res = $rd->sync();
         if ($res)
         {
-            print STDERR __("Error while fetching ProductCatalogs data.\n");
+            YEP::Utils::printLog($LOG, "error", __("Error while fetching ProductCatalogs data."));
         }
 
         my $lr= YEP::NCCRegTools->new(debug   => $debug,
+                                      log     => $LOG,
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
         $lr->NCCListRegistrations();
@@ -141,7 +149,7 @@ eval
 
         if (!YEP::Utils::unLock("yep-ncc-sync"))
         {
-            print STDERR __("Cannot remove lockfile.\n");
+            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
         }
         exit 0;
     }
@@ -154,14 +162,15 @@ if (@_)
 {
     if (!YEP::Utils::unLock("yep-ncc-sync"))
     {
-        print STDERR __("Cannot remove lockfile.\n");
+        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    die @_;
+    YEP::Utils::printLog($LOG, "error", @_);
+    exit 1;
 }
 
 if (!YEP::Utils::unLock("yep-ncc-sync"))
 {
-    print STDERR __("Cannot remove lockfile.\n");
+    YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
 }
 
 exit 0;

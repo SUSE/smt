@@ -208,9 +208,10 @@ sub printLog
     
     if($dolog && defined $LOG)
     {
+        my ($package, $filename, $line) = caller;
         foreach (split(/\n/, $message))
         {
-            print $LOG getDBTimestamp()." [$category] $_\n";
+            print $LOG getDBTimestamp()." $package - [$category]  $_\n";
         }
     }
     return;
