@@ -30,9 +30,6 @@ TODO:
   It searches for same files (SLES <=> SLED as example) and
   create a hardlink to safe some disk space.
 
-- add a logfile option to yep-mirror.pl and prepare the YEP::Mirror::... 
-  modules to print in a logfile
-
 - test what happens if two processes want to write yep.db
   How can we solve concutrrent access with DBI?
 
@@ -137,8 +134,9 @@ DONE:
     of the YaST run.
   * NiceToHave: configuration of a cronjob for yep-mirror.pl
 
-Ideas:
-======
+- add a logfile option to yep-mirror.pl and prepare the YEP::Mirror::... 
+  modules to print in a logfile
+
 - provide test and production enviroment. 
   A restricted area to test patches and if tests are ok move them
   to production so that they can used by everyone.
