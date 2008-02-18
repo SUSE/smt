@@ -103,6 +103,7 @@ sub new
     # local destination ie: /var/repo/download.suse.org/foo/10.3
     $self->{LOCALPATH}   = undef;
     $self->{DEBUG}  = 0;
+    $self->{LOG}    = 0;
     $self->{DEEPVERIFY} = 0;
     $self->{DBREPLACEMENT} = undef;
     
@@ -111,6 +112,15 @@ sub new
         $self->{DEBUG} = 1;
     }
 
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
+    }
+    
     bless($self);
     return $self;
 }
@@ -157,7 +167,10 @@ sub mirrorTo()
     my $options = shift;
   
     if ( not -e $dest )
-    { die $dest . " does not exist"; }
+    { 
+        printLog($self->{LOG}, "error", $dest . " does not exist");
+        exit 1;
+    }
 
     # extract the url components to create
     # the destination directory
@@ -174,13 +187,13 @@ sub mirrorTo()
     {
       $self->{LOCALPATH} = $dest;
     }
-    print sprintf(__("Mirroring: %s\n"), $saveuri->as_string);
-    print sprintf(__("Target:    %s\n"), $self->{LOCALPATH});
+    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string));
+    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->{LOCALPATH}));
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repo/repoindex.xml" ) );
 
     # get the repository index
-    my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG});
+    my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG});
     $job->uri( $self->{URI} );
     $job->resource( "/repo/repoindex.xml" );
     $job->localdir( $self->{LOCALPATH} );
@@ -195,14 +208,15 @@ sub mirrorTo()
         $dbh = YEP::Utils::db_connect();
         if(!$dbh)
         {
-            die __("Cannot connect to database");
+            printLog($self->{LOG}, "error", __("Cannot connect to database"));
+            exit 1;
         }
     }
     
     # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
     # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     
-    my $parser = YEP::Parser::NU->new();
+    my $parser = YEP::Parser::NU->new(log => $self->{LOG});
     $parser->parse($destfile, sub{ mirror_handler($self, $dbh, @_) });
 
     if($dbh)
@@ -221,7 +235,10 @@ sub clean()
     # algorithm
     
     if ( not -e $dest )
-    { die sprintf(__("Destination '%s' does not exist"), $dest); }
+    { 
+        printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $dest));
+        exit 1;
+    }
 
     $self->{LOCALPATH} = $dest;
 
@@ -230,10 +247,11 @@ sub clean()
     my $dbh = YEP::Utils::db_connect();
     if(!$dbh)
     {
-        die __("Cannot connect to database");
+        printLog($self->{LOG}, "error", __("Cannot connect to database"));
+        exit 1;
     }
 
-    my $parser = YEP::Parser::NU->new();
+    my $parser = YEP::Parser::NU->new(log => $self->{LOG});
     $parser->parse($path, sub{ clean_handler($self, $dbh, @_) });
     
     $dbh->disconnect;
@@ -272,7 +290,7 @@ sub mirror_handler
     if($domirror)
     {
         # get the repository index
-        my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
+        my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
         
         my $catalogURI = join("/", $self->{URI}, "repo", $data->{PATH});
         my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
@@ -298,7 +316,7 @@ sub clean_handler
     if(defined $res && exists $res->[0] &&
        defined $res->[0] && $res->[0] eq "Y")
     {
-        my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG});
+        my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
         
         my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
         $localPath =~ s/\/\.?\//\//g;

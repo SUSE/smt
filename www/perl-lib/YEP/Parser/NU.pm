@@ -2,6 +2,7 @@ package YEP::Parser::NU;
 use strict;
 use URI;
 use XML::Parser;
+use YEP::Utils;
 use IO::Zlib;
 
 =head1 NAME
@@ -57,10 +58,22 @@ Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # constructor
 sub new
 {
+    my $pkgname = shift;
+    my %opt   = @_;
     my $self  = {};
 
     $self->{CURRENT}   = undef;
     $self->{HANDLER}   = undef;
+    $self->{LOG}    = 0;
+
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
+    }
 
     bless($self);
     return $self;
@@ -91,7 +104,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "YEP::Parser::NU Invalid XML in '$path': $@\n";
+          printLog($self->{LOG}, "error", "YEP::Parser::NU Invalid XML in '$path': $@");
       }
     }
     else
@@ -102,7 +115,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "YEP::Parser::NU Invalid XML in '$path': $@\n";
+          printLog($self->{LOG}, "error", "YEP::Parser::NU Invalid XML in '$path': $@");
       }
    }
 }

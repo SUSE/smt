@@ -13,7 +13,7 @@ use POSIX ();     # Needed for setlocale()
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(__);
+our @EXPORT = qw(__ printLog);
 
 
 #
@@ -167,6 +167,53 @@ sub getDBTimestamp
     $mon +=1;
     my $timestamp = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday, $hour,$min,$sec);
     return $timestamp;
+}
+
+
+#
+# open logfile
+#
+sub openLog
+{
+    my $logfile = shift || "/dev/null";
+    
+    my $LOG;
+    open($LOG, ">> $logfile") or die "Cannot open logfile '$logfile': $!";
+    if($logfile ne "/dev/null")
+    {
+        $LOG->autoflush(1);
+    }
+    return $LOG;
+}
+
+sub printLog
+{
+    my $LOG      = shift;
+    my $category = shift;
+    my $message  = shift;
+    my $doprint  = shift || 1;
+    my $dolog    = shift || 1;
+
+    if($doprint)
+    {
+        if(lc($category) eq "error")
+        {
+            print STDERR "$message\n";
+        }
+        else
+        {
+            print "$message\n";
+        }
+    }
+    
+    if($dolog && defined $LOG)
+    {
+        foreach (split(/\n/, $message))
+        {
+            print $LOG getDBTimestamp()." [$category] $_\n";
+        }
+    }
+    return;
 }
 
 

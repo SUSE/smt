@@ -32,6 +32,7 @@ sub new
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:LWP::UserAgent->new(keep_alive => 1);
     $self->{DEBUG}      = 0;
+    $self->{LOG}        = undef;
     $self->{JOBTYPE}    = undef;
 
     if(exists $ENV{http_proxy})
@@ -42,6 +43,15 @@ sub new
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
+    }
+
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
     }
 
     bless($self);
@@ -139,12 +149,11 @@ sub realchecksum()
     my $digest;
     my $filename = $self->local;
     open(FILE, "< $filename") or do {
-        print STDERR "Cannot open '$filename': $!\n" if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "Cannot open '$filename': $!") if($self->{DEBUG});
         return "";
     };
-      
+    
     $sha1 = Digest::SHA1->new;
-    #$sha1->add($data);
     $sha1->addfile(*FILE);
     $digest = $sha1->hexdigest();
     return $digest;
@@ -157,16 +166,15 @@ sub mirror
 
     if ( not $self->outdated() )
     {
-      print "----> ", $self->{RESOURCE}, " is up to date\n" if($self->{DEBUG});
-      # no need to mirror
-      return 2;
+        printLog($self->{LOG}, "debug", sprintf("----> %s is up to date", $self->{RESOURCE})) if($self->{DEBUG});
+        # no need to mirror
+        return 2;
     }
     else
     {
         if($self->{DEBUG})
         {
-            print "Fetch ";
-            $self->print();
+            printLog($self->{LOG}, "debug", sprintf("Fetch [%s]", $self->resource()));
         }
     }
     
@@ -177,8 +185,8 @@ sub mirror
     
     if ( $response->is_redirect )
     {
-      print "Redirected", "\n" if($self->{DEBUG});
-      return 1;
+        printLog($self->{LOG}, "debug", "Redirected") if($self->{DEBUG});
+        return 1;
     }
 
     if( $response->is_success )
@@ -187,7 +195,7 @@ sub mirror
     }
     else
     {
-        print STDERR sprintf(__("Failed to download '%s': %s\n"), $self->{RESOURCE}, $response->status_line);
+        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), $self->{RESOURCE}, $response->status_line));
         return 1;
     }
 }
@@ -201,7 +209,7 @@ sub modified
     
     $response->is_success or do 
     {
-        print STDERR sprintf(__("Failed to download '%s': %s\n"), $self->{RESOURCE}, $response->status_line);
+        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), $self->{RESOURCE}, $response->status_line));
         return undef;
     };
 
@@ -212,23 +220,23 @@ sub modified
 # or if local does not exists
 sub outdated
 {
-  my $self = shift;
+    my $self = shift;
     
-  if ( not -e $self->local() )
-  {
-    return 1;
-  }
-
-  my $date = (stat $self->local())[9];
-  my $modifiedAt = $self->modified();
-  
-  return (!defined $modifiedAt || $date < $modifiedAt);
+    if ( not -e $self->local() )
+    {
+        return 1;
+    }
+    
+    my $date = (stat $self->local())[9];
+    my $modifiedAt = $self->modified();
+    
+    return (!defined $modifiedAt || $date < $modifiedAt);
 }
 
 sub print
 {
-  my $self = shift;
-  print "[", $self->resource(), "]\n";
+    my $self = shift;
+    print "[", $self->resource(), "]\n";
 }
 
 =head1 NAME

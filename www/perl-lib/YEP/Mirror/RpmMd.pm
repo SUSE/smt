@@ -41,6 +41,7 @@ sub new
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{CLEANLIST} = {};
     $self->{DEBUG} = 0;
+    $self->{LOG}   = undef;
     $self->{LASTUPTODATE} = 0;
     $self->{REMOVEINVALID} = 0;
 
@@ -54,6 +55,15 @@ sub new
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
+    }
+    
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
     }
     
     bless($self);
@@ -132,13 +142,13 @@ sub mirrorTo()
         $force = 1;
     }
 
-    print sprintf(__("Mirroring: %s\n"), $saveuri->as_string);
-    print sprintf(__("Target:    %s\n"), $self->{LOCALPATH});
+    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string));
+    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->{LOCALPATH}));
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
     # get the repository index
-    my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+    my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
     $job->uri( $self->{URI} );
     $job->localdir( $self->{LOCALPATH} );
 
@@ -152,14 +162,15 @@ sub mirrorTo()
       # check if the local repository is valid
       if ( $self->verify($self->{LOCALPATH}, {removeinvalid => 1}) )
       {
-          print sprintf(__("=> Finished mirroring '%s' All files are up-to-date.\n\n"), $saveuri->as_string);
+          printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
+          print "\n";
           $self->{LASTUPTODATE} = 1;
           return 0;
       }
       else
       {
           # we should continue here
-          print __("repomd.xml is the same, but repo is not valid. Start mirroring.\n");
+          printLog($self->{LOG}, "info", __("repomd.xml is the same, but repo is not valid. Start mirroring."));
 
           # just in case
           $self->{LASTUPTODATE} = 0;
@@ -182,7 +193,7 @@ sub mirrorTo()
     if( -d $job->localdir()."/repodata" )
     {
         my $cmd = "cp -a '".$job->localdir()."/repodata' '".$job->localdir()."/.repodata'";
-        print "$cmd \n" if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "$cmd") if($self->{DEBUG});
         my $ret = `$cmd`;
         my $resource = $job->resource();
         $job->remoteresource($resource);
@@ -244,7 +255,7 @@ sub mirrorTo()
     }
 
     # parse it and find more resources
-    my $parser = YEP::Parser::RpmMd->new();
+    my $parser = YEP::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->specialmdlocation(1);
     $parser->parse(".repodata/repomd.xml", sub { download_handler($self, @_)});
@@ -309,7 +320,7 @@ sub mirrorTo()
             $success = rename( $job->localdir()."/repodata", $job->localdir()."/.old.repodata");
             if(!$success)
             {
-                print STDERR sprintf(__("Cannot rename directory '%s'\n"), $job->localdir()."/repodata");
+                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->localdir()."/repodata"));
                 $self->{STATISTIC}->{ERROR} += 1;
             }
         }
@@ -318,17 +329,17 @@ sub mirrorTo()
             $success = rename( $job->localdir()."/.repodata", $job->localdir()."/repodata");
             if(!$success)
             {
-                print STDERR sprintf(__("Cannot rename directory '%s'\n"), $job->localdir()."/.repodata");
+                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->localdir()."/.repodata"));
                 $self->{STATISTIC}->{ERROR} += 1;
             }
         }
     }
     
-    print sprintf(__("=> Finished mirroring '%s'\n"), $saveuri->as_string);
-    print sprintf(__("=> Downloaded Files : %s\n"), $self->{STATISTIC}->{DOWNLOAD});
-    print sprintf(__("=> Up to date Files : %s\n"), $self->{STATISTIC}->{UPTODATE});
-    print sprintf(__("=> Errors           : %s\n"), $self->{STATISTIC}->{ERROR});
-    print sprintf(__("=> Mirror Time      : %s seconds\n"), (tv_interval($t0)));
+    printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
+    printLog($self->{LOG}, "info", sprintf(__("=> Downloaded Files : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+    printLog($self->{LOG}, "info", sprintf(__("=> Up to date Files : %s"), $self->{STATISTIC}->{UPTODATE}));
+    printLog($self->{LOG}, "info", sprintf(__("=> Errors           : %s"), $self->{STATISTIC}->{ERROR}));
+    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time      : %s seconds"), (tv_interval($t0))));
     print "\n";
 
     return $self->{STATISTIC}->{ERROR};
@@ -344,11 +355,14 @@ sub clean()
     my $t0 = [gettimeofday] ;
 
     if ( not -e $dest )
-    { die sprintf(__("Destination '%s' does not exist"),$dest); }
+    { 
+        printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"),$dest));
+        exit 1;
+    }
 
     $self->{LOCALPATH} = $dest;
 
-    print sprintf(__("Cleaning:         %s\n"), $self->{LOCALPATH});
+    printLog($self->{LOG}, "info", sprintf(__("Cleaning:         %s"), $self->{LOCALPATH}));
 
     # algorithm
     
@@ -364,7 +378,7 @@ sub clean()
              }
              , no_chdir => 1 }, $self->{LOCALPATH} );
 
-    my $parser = YEP::Parser::RpmMd->new();
+    my $parser = YEP::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->parse("/repodata/repomd.xml", sub { clean_handler($self, @_)});
     
@@ -379,13 +393,13 @@ sub clean()
     my $cnt = 0;
     foreach my $file ( keys %{$self->{CLEANLIST}} )
     {
-        print "Delete: $file\n" if ($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "Delete: $file") if ($self->{DEBUG});
         $cnt += unlink $file;
     }
 
-    print sprintf(__("Finished cleaning: '%s'\n", $self->{LOCALPATH}));
-    print sprintf(__("=> Removed files : %s\n"), $cnt);
-    print sprintf(__("=> Clean Time    : %s seconds\n"), (tv_interval($t0)));
+    printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'", $self->{LOCALPATH})));
+    printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt));
+    printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s seconds"), (tv_interval($t0))));
     print "\n";
 }
 
@@ -412,17 +426,19 @@ sub verify()
     }
 
     if ( not -e $self->{LOCALPATH} )
-    { die $self->{LOCALPATH} . " does not exist"; }
-
-
-    print sprintf(__("Verifying: %s\n"), $self->{LOCALPATH});
+    { 
+        printLog($self->{LOG}, "error", $self->{LOCALPATH} . " does not exist");
+        exit 1;
+    }
+    
+    printLog($self->{LOG}, "info", sprintf(__("Verifying: %s"), $self->{LOCALPATH}));
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
     $self->{STATISTIC}->{ERROR} = 0;
     
     # parse it and find more resources
-    my $parser = YEP::Parser::RpmMd->new();
+    my $parser = YEP::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->parse("repodata/repomd.xml", sub { verify_handler($self, @_)});
 
@@ -432,33 +448,28 @@ sub verify()
     {
         $job = $self->{VERIFYJOBS}->{$_};
         
-        #print STDERR "Verify: " . $job->resource . " : ";
-        print "Verify: ". $job->resource . ": " if ($self->{DEBUG});
         my $ok = $job->verify();
         $cnt++;
         if ($ok || ($job->resource eq "/repodata/repomd.xml") )
         {
-            print "OK\n" if ($self->{DEBUG});
-            #print STDERR "OK\n";
+            printLog($self->{LOG}, "debug", "Verify: ". $job->resource . ": OK") if ($self->{DEBUG});
         }
         else
         {
-            #print STDERR "FAILED: " . $job->resource . ": \n";
-            print sprintf(__("FAILED ( %s vs %s )\n"), $job->checksum, $job->realchecksum);
-            #print STDERR "FAILED ( " .$job->checksum. " vs " . $job->realchecksum . ")\n";
+            printLog($self->{LOG}, "info", "Verify: ". $job->resource . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum, $job->realchecksum));
             $self->{STATISTIC}->{ERROR} += 1;
             if ($self->{REMOVEINVALID} == 1)
             {
-                print sprintf(__("Deleting %s\n"), $job->resource);
+                printLog($self->{LOG}, "info", sprintf(__("Deleting %s"), $job->resource));
                 unlink($job->local);
             }
         }
     }
 
-    print sprintf(__("=> Finished verifying: %s\n"), $self->{LOCALPATH});
-    print sprintf(__("=> Files             : %s\n"), $cnt);
-    print sprintf(__("=> Errors            : %s\n"), $self->{STATISTIC}->{ERROR});
-    print sprintf(__("=> Verify Time       : %s seconds\n"), (tv_interval($t0)));
+    printLog($self->{LOG}, "info", sprintf(__("=> Finished verifying: %s"), $self->{LOCALPATH}));
+    printLog($self->{LOG}, "info", sprintf(__("=> Files             : %s"), $cnt));
+    printLog($self->{LOG}, "info", sprintf(__("=> Errors            : %s"), $self->{STATISTIC}->{ERROR}));
+    printLog($self->{LOG}, "info", sprintf(__("=> Verify Time       : %s seconds"), (tv_interval($t0))));
     print "\n";
     
     $self->{REMOVEINVALID}  = 0;
@@ -513,7 +524,7 @@ sub download_handler
     {
 
         # get the repository index
-        my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+        my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
         $job->resource( $data->{LOCATION} );
         $job->checksum( $data->{CHECKSUM} );
         $job->localdir( $self->{LOCALPATH} );
@@ -587,7 +598,7 @@ sub download_handler
             }
             else
             {
-                print STDERR "no resource on $job->local";
+                printLog($self->{LOG}, "error", "no resource on $job->local");
             }
         }
     }
@@ -598,7 +609,7 @@ sub download_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
                 $job->resource( $file->{LOCATION} );
                 $job->checksum( $file->{CHECKSUM} );
                 $job->localdir( $self->{LOCALPATH} );
@@ -620,7 +631,7 @@ sub verify_handler
     {
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+            my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
             $job->resource( $data->{LOCATION} );
             $job->checksum( $data->{CHECKSUM} );
             $job->localdir( $self->{LOCALPATH} );
@@ -638,11 +649,11 @@ sub verify_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT});
+                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
                 $job->resource( $file->{LOCATION} );
                 $job->checksum( $file->{CHECKSUM} );
                 $job->localdir( $self->{LOCALPATH} );
-
+                
                 $self->{VERIFYJOBS}->{$job->local()} = $job;
             }
         }

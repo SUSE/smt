@@ -2,6 +2,7 @@ package YEP::Parser::RpmMd;
 use strict;
 use URI;
 use XML::Parser;
+use YEP::Utils;
 use IO::Zlib;
 
 =head1 NAME
@@ -57,6 +58,8 @@ Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # constructor
 sub new
 {
+    my $pkgname = shift;
+    my %opt   = @_;
     my $self  = {};
 
     $self->{CURRENT}   = undef;
@@ -64,6 +67,17 @@ sub new
     $self->{HANDLER}   = undef;
     $self->{RESOURCE}  = undef;
     $self->{LOCATIONHACK} = 0;
+    $self->{LOG}    = 0;
+
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
+    }
+
     bless($self);
     return $self;
 }
@@ -96,14 +110,15 @@ sub parse()
     
     if(!defined $self->{RESOURCE})
     {
-        die "Invalid resource";
+        printLog($self->{LOG}, "error", "Invalid resource");
+        return;
     }
     
     $path = $self->{RESOURCE}."/$repodata";
     
     if(!-e $path)
     {
-        print STDERR "File not found $path\n";
+        printLog($self->{LOG}, "error", "File not found $path");
         return;
     }
     
@@ -130,7 +145,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "YEP::Parser::RpmMd Invalid XML in '$path': $@\n";
+          printLog($self->{LOG}, "error", "YEP::Parser::RpmMd Invalid XML in '$path': $@");
       }
     }
     else
@@ -141,7 +156,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          print STDERR "YEP::Parser::RpmMd Invalid XML in '$path': $@\n";
+          printLog($self->{LOG}, "error", "YEP::Parser::RpmMd Invalid XML in '$path': $@");
       }
     }
 }

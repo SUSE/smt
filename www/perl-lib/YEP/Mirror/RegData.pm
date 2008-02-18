@@ -30,6 +30,7 @@ sub new
 
     $self->{URI}   = undef;
     $self->{DEBUG} = 0;
+    $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
     push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
@@ -47,7 +48,7 @@ sub new
 
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
-
+    
     if(exists $ENV{http_proxy})
     {
         $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});
@@ -75,6 +76,15 @@ sub new
     elsif(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
     {
 	    $self->{TODIR} = $opt{todir};
+    }
+
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
     }
 
     my ($ruri, $rguid, $rsecret) = YEP::Utils::getLocalRegInfos();
@@ -185,7 +195,7 @@ sub _requestData
     
     if ( $response->is_redirect )
     {
-        print "Redirected", "\n" if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "Redirected") if($self->{DEBUG});
         return undef;
     }
     
@@ -196,7 +206,7 @@ sub _requestData
     else
     {
         # FIXME: was 'die'; check if we should stop if a download failed
-        print STDERR "Failed to POST '$uri->as_string()': ".$response->status_line."\n";
+        printLog($self->{LOG}, "error", "Failed to POST '$uri->as_string()': ".$response->status_line);
         return undef;
     }
 }
@@ -208,7 +218,7 @@ sub _parseXML
 
     if(! -e $xmlfile)
     {
-        die "File '$xmlfile' does not exist.";
+        printLog($self->{LOG}, "error", "File '$xmlfile' does not exist.");
     }
 
     my $parser = YEP::Parser::RegData->new();
@@ -239,24 +249,27 @@ sub _updateDB
     
     if(!defined $table || $table eq "")
     {
-        die "Invalid table name";
+        printLog($self->{LOG}, "error", "Invalid table name");
+        exit 1;
     }
     if(!defined $key || ref($key) ne "ARRAY")
     {
-        die "Invalid key element.";
+        printLog($self->{LOG}, "error", "Invalid key element.");
+        exit 1;
     }
     
     if(! exists $self->{XML}->{DATA}->{$self->{ELEMENT}})
     {
         # data not available; no need to update the database
-        print STDERR "WARNING: No content for $self->{ELEMENT}\n";
+        printLog($self->{LOG}, "warn", "WARNING: No content for $self->{ELEMENT}");
         return 1;
     }
     
     my $dbh = YEP::Utils::db_connect();
     if(!defined $dbh)
     {
-        die "Cannot connect to database.";
+        printLog($self->{LOG}, "error", "Cannot connect to database.");
+        exit 1;
     }
     
     foreach my $row (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
@@ -271,11 +284,11 @@ sub _updateDB
         my $st = sprintf("SELECT %s FROM %s WHERE %s", 
                          join(',', @$key), $table, join(' AND ', @primkeys_where));
         
-        print "STATEMENT: $st\n" if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "STATEMENT: $st") if($self->{DEBUG});
                     
         my $all = $dbh->selectall_arrayref($st);
 
-        print Data::Dumper->Dump([$all])  if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", Data::Dumper->Dump([$all]))  if($self->{DEBUG});
 
         # special handling for catalogs table
         # LOCALPATH is required
@@ -313,7 +326,7 @@ sub _updateDB
 
             $statement .= " WHERE ".join(' AND ', @primkeys_where);
             
-            print "STATEMENT: $statement\n" if($self->{DEBUG});
+            printLog($self->{LOG}, "debug", "STATEMENT: $statement") if($self->{DEBUG});
 
             $dbh->do($statement);
             
@@ -335,14 +348,14 @@ sub _updateDB
             $statement .= join(',', @v);
             $statement .= ")";
             
-            print "STATEMENT: $statement\n" if($self->{DEBUG});
+            printLog($self->{LOG}, "debug", "STATEMENT: $statement") if($self->{DEBUG});
             
             $dbh->do($statement);
         }
         else
         {
             # more then one element by selecting the keyvalue - evil
-            print STDERR "ERROR: invalid key value '$key'\n";
+            printLog($self->{LOG}, "error", "ERROR: invalid key value '$key'");
         }
     }
     $dbh->disconnect;

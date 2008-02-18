@@ -31,12 +31,14 @@ my $dbreplacement = {};
 my $LocalBasePath = "";
 
 my $help     = 0;
+my $logfile = "/dev/null";
 
 my $result = GetOptions ("debug|d"     => \$debug,
                          "cleanup|c"   => \$clean,
                          "directory=s" => \$LocalBasePath,
                          "deepverify"  => \$deepverify,
                          "dbreplfile=s" => \$dbreplfile,
+                         "logfile|L=s" => \$logfile,
                          "help|h"      => \$help
                         );
 
@@ -46,25 +48,31 @@ if($help)
     print basename($0) . __(" [OPTIONS]\n");
     print "\n";
     print __("Options:\n");
-    print "--debug -d       " . __("enable debug mode\n");
-    print "--clean -c       " . __("cleanup all mirrored repositories.\n");
-    print "                 " . __("Remove all files not longer mention in the metadata.\n");
-    print "                 " . __("This mode do no mirror before cleanup.\n");
-    print "--directory arg  " . __("The directory to work on. Using this option ignores the configured\n");
-    print "                 " . __("default value in yep.conf\n");
-    print "--deepverify     " . __("Verify all checksums \n");
-    print "--dbreplfile arg " . __("Path to XML file to use as database replacement. Such a file can be created with\n");
-    print "                 " . __("the sync-ncc command. This option is only usefull if the yep database is not on the \n");
-    print "                 " . __("same host as this script should run\n"); 
-    print "--help -h        " . __("show this message\n");
+    print "--debug -d        " . __("enable debug mode\n");
+    print "--clean -c        " . __("cleanup all mirrored repositories.\n");
+    print "                  " . __("Remove all files not longer mention in the metadata.\n");
+    print "                  " . __("This mode do no mirror before cleanup.\n");
+    print "--directory arg   " . __("The directory to work on. Using this option ignores the configured\n");
+    print "                  " . __("default value in yep.conf\n");
+    print "--deepverify      " . __("Verify all checksums \n");
+    print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can be created with\n");
+    print "                  " . __("the sync-ncc command. This option is only usefull if the yep database is not on the \n");
+    print "                  " . __("same host as this script should run\n"); 
+    print "--logfile -L file " . __("Path to logfile\n");
+    print "--help -h         " . __("show this message\n");
     exit 0;
 }
+
+# open the logfile
+
+my $LOG = YEP::Utils::openLog($logfile);
+
 
 # get a lock
 
 if(!YEP::Utils::openLock("yep-mirror"))
 {
-    print __("Mirror process is still running.\n");
+    YEP::Utils::printLog($LOG, "info", __("Mirror process is still running."));
     exit 0;
 }
 
@@ -79,9 +87,10 @@ if(!defined $dbreplfile)
     {
         if(!YEP::Utils::unLock("yep-mirror"))
         {
-            print STDERR __("Cannot remove lockfile.\n");
+            YEP::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
         }
-        die __("Cannot connect to database");
+        YEP::Utils::printLog($LOG, "error",  __("Cannot connect to database"));
+        exit 1;
     }
 }
 else
@@ -101,9 +110,10 @@ if(!defined $cfg)
 {
     if(!YEP::Utils::unLock("yep-mirror"))
     {
-        print STDERR __("Cannot remove lockfile.\n");
+        YEP::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
     }
-    die sprintf(__("Cannot read the YEP configuration file: %s"), @Config::IniFiles::errors);
+    YEP::Utils::printLog($LOG, "error", sprintf(__("Cannot read the YEP configuration file: %s"), @Config::IniFiles::errors));
+    exit 1;
 }
 
 my $NUUrl = $cfg->val("NU", "NUUrl");
@@ -111,9 +121,9 @@ if(!defined $NUUrl || $NUUrl eq "")
 {
     if(!YEP::Utils::unLock("yep-mirror"))
     {
-        print STDERR __("Cannot remove lockfile.\n");
+        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    die __("Cannot read NU Url");
+    YEP::Utils::printLog($LOG, "error", __("Cannot read NU Url"));
 }
 
 if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
@@ -123,9 +133,10 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     {
         if(!YEP::Utils::unLock("yep-mirror"))
         {
-            print STDERR __("Cannot remove lockfile.\n");
+            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
         }
-        die __("Cannot read the local base path");
+        YEP::Utils::printLog($LOG, "error", __("Cannot read the local base path"));
+        exit 1;
     }
 }
 
@@ -137,9 +148,10 @@ if(!defined $nuUser || $nuUser eq "" ||
 {
     if(!YEP::Utils::unLock("yep-mirror"))
     {
-        print STDERR __("Cannot remove lockfile.\n");
+        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    die __("Cannot read the Mirror Credentials");
+    YEP::Utils::printLog($LOG, "error", __("Cannot read the Mirror Credentials"));
+    exit 1;
 }
 
 my $uri = URI->new($NUUrl);
@@ -170,7 +182,7 @@ foreach my $id (keys %{$hash})
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
-        my $zyppMirror = YEP::Mirror::RpmMd->new(debug => $debug);
+        my $zyppMirror = YEP::Mirror::RpmMd->new(debug => $debug, log => $LOG);
         if($clean)
         {
             $zyppMirror->clean( $fullpath );
@@ -187,7 +199,7 @@ foreach my $id (keys %{$hash})
 #
 # Now mirror the NU catalogs
 #
-my $mirror = YEP::Mirror::NU->new(debug => $debug);
+my $mirror = YEP::Mirror::NU->new(debug => $debug, log => $LOG);
 $mirror->deepverify($deepverify);
 if($clean)
 {
@@ -213,7 +225,7 @@ if(!defined $dbreplfile)
     {
         if(!YEP::Utils::unLock("yep-mirror"))
         {
-            print STDERR __("Cannot remove lockfile.\n");
+            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
             exit 1;
         }
         exit 0;
@@ -227,12 +239,12 @@ if(!defined $dbreplfile)
         $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
     }
 
-    print $warning;
+    YEP::Utils::printLog($LOG, "info", $warning);
 }
 
 if(!YEP::Utils::unLock("yep-mirror"))
 {
-    print STDERR __("Cannot remove lockfile.\n");
+    YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     exit 1;
 }
 

@@ -2,6 +2,7 @@ package YEP::Parser::ListReg;
 use strict;
 use URI;
 use XML::Parser;
+use YEP::Utils;
 use IO::Zlib;
 
 
@@ -23,12 +24,24 @@ use IO::Zlib;
 # constructor
 sub new
 {
+    my $pkgname = shift;
+    my %opt   = @_;
     my $self  = {};
 
     $self->{CURRENT}   = undef;
     $self->{HANDLER}   = undef;
     $self->{ELEMENT}   = undef;
     $self->{CURSUB}    = undef;
+    $self->{LOG}       = undef;
+
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = YEP::Utils::openLog();
+    }
 
     bless($self);
     return $self;
@@ -45,12 +58,14 @@ sub parse()
     
     if (!defined $file)
     {
-        die "Invalid filename";
+        printLog($self->{LOG}, "error", "Invalid filename");
+        exit 1;
     }
 
     if (!-e $file)
     {
-        die "File '$file' does not exist.";
+        printLog($self->{LOG}, "error", "File '$file' does not exist.");
+        exit 1;
     }
     
     my $parser = XML::Parser->new( Handlers =>
@@ -69,7 +84,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            print STDERR "YEP::Parser::ListReg Invalid XML in '$file': $@\n";
+            printLog($self->{LOG}, "error", "YEP::Parser::ListReg Invalid XML in '$file': $@");
         }
     }
     else
@@ -80,7 +95,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            print STDERR "YEP::Parser::ListReg Invalid XML in '$file': $@\n";
+            printLog($self->{LOG}, "error", "YEP::Parser::ListReg Invalid XML in '$file': $@");
         }
     }
 }
