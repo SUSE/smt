@@ -36,10 +36,6 @@ TODO:
 - create, implement and test a strategy how we can update the database structure
   after release. (e.g. if we need to add some tables, or collumns in tables) 
 
-- how can a customer say, that he always wants to mirror _all_ mirrorable catalogs?
-  Idea: add an "mirrorall" option to yep.conf and modify yep-ncc-sync to set 
-        DOMIRROR flag to 'Y' for all mirrorable catalogs if this option is true 
-
 - modify listProducts registration command for YEP.
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
@@ -152,6 +148,11 @@ DONE:
   one db handle for apache
   perl-Apache-DBI
   Have a look at doc/Server-Tuning.txt
+
+- how can a customer say, that he always wants to mirror _all_ mirrorable catalogs?
+  Idea: add an "mirrorall" option to yep.conf and modify yep-ncc-sync to set 
+        DOMIRROR flag to 'Y' for all mirrorable catalogs if this option is true 
+
 
 
 

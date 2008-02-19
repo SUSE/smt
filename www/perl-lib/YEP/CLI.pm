@@ -399,6 +399,12 @@ sub setMirrorableCatalogs
         }
     }
 
+    my $mirrorAll = $cfg->val("LOCAL", "MirrorAll");
+    if(defined $mirrorAll && lc($mirrorAll) eq "true")
+    {
+        # set DOMIRROR to Y where MIRRORABLE = Y
+        $dbh->do("UPDATE Catalogs SET DOMIRROR='Y' WHERE MIRRORABLE='Y'");
+    }
 }
 
 sub removeCustomCatalog
