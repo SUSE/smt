@@ -44,9 +44,9 @@ TODO:
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
 
-- have a look at the mod_perl Database handle feature.
-  one db handle for apache
-  perl-Apache-DBI
+- yast module:
+  maybe set max_connections=160 in /etc/my.cnf
+  needs some disuccion.
 
 DONE:
 =====
@@ -147,4 +147,11 @@ DONE:
   * register the testing enviroment can be done by providing a special
     URL parameter. Such a parameter can be configured on the clients in
     /etc/suseRegister.conf 
+
+- have a look at the mod_perl Database handle feature.
+  one db handle for apache
+  perl-Apache-DBI
+  Have a look at doc/Server-Tuning.txt
+
+
 
