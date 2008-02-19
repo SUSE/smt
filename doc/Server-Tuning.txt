@@ -1,0 +1,42 @@
+
+Server Tuning
+=============
+
+mysqld:
+-------
+
+mysqld has a max_connections limit of 100 by default. To change this, simply
+change /etc/my.cnf and set:
+
+-----------------------------------------
+[mysqld]
+...
+max_connections = <number>
+
+-----------------------------------------
+
+Restart mysql after changing this parameter.
+
+apache2:
+--------
+
+apache2 has max clients limit of 150 by default. To change this, simply change
+/etc/apache2/server-tuning.conf and set:
+
+-----------------------------------------
+
+# prefork MPM    if you use the prefork module
+<IfModule prefork.c>
+...
+
+  MaxClients         <number>
+
+-----------------------------------------
+
+MaxClients must be lower then the value of "ServerLimit". 
+Restart apache2 after changing this parameter.
+
+
+For YEP it is usefull to set the mysqld max_connections limit a little bit
+higher then then the apache2 MaxClients limit. 
+
