@@ -1,0 +1,131 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib ("/srv/www/perl-lib/");
+use YEP::CLI;
+use YEP::Utils;
+use File::Basename;
+
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+my $debug;
+my $help;
+
+use Getopt::Long;
+&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
+&Getopt::Long::GetOptions(
+         'debug|d' => \$debug,
+         'help|h' => \$help
+);
+
+if ( defined $help && ( $help == 1 ) )
+{
+  print basename($0) . " : " . __("generate a report\n");
+  print "--debug (-d) : " . __("enable debug mode\n");
+  exit 0;
+}
+
+my %conf = (
+            SUSE         => { 
+                             NAME => "openSUSE",
+                             ARCHGROUPS => {}
+                            },
+            SLES         => {
+                             NAME => "SUSE Linux Enterprise Server",
+                             ARCHGROUPS => {
+                                            "x86/x86_64" => ['i386', 'i486', 'i586', 'i686', 'x86_64'],
+                                            "ppc"        => ['ppc', 'ppc64'],
+                                            "s390"       => ['s390', 's390x'],
+                                            "ia64"       => ['ia64'],
+                                            "unknown"    => [undef]
+                                           }
+                            },
+            SLED         => {
+                             NAME => "SUSE Linux Enterprise Desktop",
+                             ARCHGROUPS => {}
+                            },
+            ZlmSatellite => {
+                             NAME => "Zenworks Linux Management",
+                             ARCHGROUPS => {}
+                            },
+            SDK          => {
+                             NAME => "SUSE Linux Enterprise Software Development Kit",
+                             ARCHGROUPS => {}
+                            },
+            SLERT        => {
+                             NAME => "SUSE Linux Enterprise Server RT Solution",
+                             ARCHGROUPS => {}
+                            },
+            OES          => {
+                             NAME => "Novell Open Enterprise Server",
+                             ARCHGROUPS => {}
+                            },
+            VMDP         => {
+                             NAME => "SUSE Linux Enterprise Virtual Machine Driver Pack",
+                             ARCHGROUPS => {}
+                            },
+            Pulsar       => {
+                             NAME => "ZENworks Pulsar",
+                             ARCHGROUPS => {}
+                            },
+            "SLES-HA"    => {
+                             NAME => "SUSE Linux Enterprise HA Server",
+                             ARCHGROUPS => {}
+                            },
+            ZOS          => {
+                             NAME => "ZENworks Orchestrator",
+                             ARCHGROUPS => {}
+                            },
+            SLEDC        => {
+                             NAME => "SUSE Linux Enterprise Data Center",
+                             ARCHGROUPS => {
+                                            "x86/x86_64" => ['i386', 'i486', 'i586', 'i686', 'x86_64'],
+                                            "ppc"        => ['ppc', 'ppc64'],
+                                            "s390"       => ['s390', 's390x'],
+                                            "ia64"       => ['ia64'],
+                                            "unknown"    => [undef]
+                                           }
+                            },
+            YEP_DEFAULT  => {
+                             NAME => undef,
+                             ARCHGROUPS => {
+                                            "x86/x86_64" => ['i386', 'i486', 'i586', 'i686', 'x86_64'],
+                                            "ppc"        => ['ppc', 'ppc64'],
+                                            "s390"       => ['s390', 's390x'],
+                                            "ia64"       => ['ia64'],
+                                            "unknown"    => [undef]
+                                           }
+                            }
+           );
+
+# open the logfile
+
+my $LOG = YEP::Utils::openLog();
+
+my $classReport = YEP::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug);
+if(!defined $classReport)
+{
+    exit 1;
+}
+
+my $subReport = YEP::CLI::subscriptionReport(log => $LOG, debug => $debug);
+if(!defined $subReport)
+{
+    exit 1;
+}
+
+
+print __("Product Class Report\n");
+print    "====================\n\n";
+print $classReport."\n";
+
+print __("Subscription Report\n");
+print    "===================\n\n";
+print $subReport."\n";
+
+
+exit 0;

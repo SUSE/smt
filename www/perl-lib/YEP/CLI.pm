@@ -493,6 +493,178 @@ sub hardlink
     printLog($options{log}, "info", sprintf(__("Hardlink Time      : %s seconds"), (tv_interval($t0))));
 }
 
+sub productClassReport
+{
+    my %options = @_;
+    my ($cfg, $dbh, $nuri) = init();
+    my %conf;
+    
+    my $debug = 0;
+    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
+    
+    if(exists $options{conf} && defined $options{conf} && ref($options{conf}) eq "HASH")
+    {
+        %conf = %{$options{conf}};
+    }
+    else
+    {
+        printLog($options{log}, "error", "Invalid configuration provided.");
+        return undef;
+    }
+    
+    my $t = new YEP::ASCIITable;
+    $t->setCols(__("Product Class"), __("Architecture"), __("Installed Clients"));
+    
+    
+    my $classes = $dbh->selectcol_arrayref("SELECT DISTINCT PRODUCT_CLASS from Products where PRODUCT_CLASS is not NULL");
+    
+    foreach my $class (@{$classes})
+    {
+        my $found = 0;
+        
+        my $cn = $class;
+        $cn = $conf{$class}->{NAME} if(exists $conf{$class}->{NAME} && defined $conf{$class}->{NAME});
+        
+        my %groups = %{$conf{YEP_DEFAULT}->{ARCHGROUPS}};
+        %groups = %{$conf{$class}->{ARCHGROUPS}} if(exists $conf{$class}->{ARCHGROUPS} && defined $conf{$class}->{ARCHGROUPS});
+        
+        foreach my $archgroup (keys %groups)
+        {
+            my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
+            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s AND ", 
+                                  $dbh->quote($class));
+            
+            if(@{$groups{$archgroup}} == 1)
+            {
+                if(defined @{$groups{$archgroup}}[0])
+                {
+                    $statement .= sprintf(" ARCHLOWER = %s", $dbh->quote(@{$groups{$archgroup}}[0]));
+                }
+                else
+                {
+                    $statement .= " ARCHLOWER IS NULL";
+                }
+            }
+            elsif(@{$groups{$archgroup}} > 1)
+            {
+                $statement .= sprintf(" ARCHLOWER IN('%s')", join("','", @{$groups{$archgroup}}));
+            }
+            else
+            {
+                die "This should not happen";
+            }
+            
+            $statement .= ")";
+            
+            printLog($options{log}, "debug", "STATEMENT: $statement") if($debug);
+            
+            my $count = $dbh->selectcol_arrayref($statement);
+            
+            if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
+            {
+                $t->addRow("$cn", $archgroup, $count->[0]);
+                $found = 1;
+            }
+        }
+        
+        if(!$found)
+        {
+            # this select is for products which do not have an architecture set (ARCHLOWER is NULL) 
+            my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
+            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s)", 
+                                  $dbh->quote($class));
+            
+            printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+            
+            my $count = $dbh->selectcol_arrayref($statement);
+            
+            if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
+            {
+                $t->addRow("$cn", "", $count->[0]);
+                $found = 1;
+            }
+        }
+    }
+    return $t->draw();
+}
+
+sub subscriptionReport
+{
+    my %options = @_;
+    my ($cfg, $dbh, $nuri) = init();
+    my $report = "";
+    
+    my $debug = 0;
+    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
+
+    #
+    # active subscriptions
+    #
+    
+    my $statement = "select DISTINCT SUBSCRIPTION, 0+(select COUNT(s2.GUID) from SubscriptionStatus s2 where s2.SUBSTATUS = 'ACTIVE' and s2.SUBSCRIPTION = s1.SUBSCRIPTION) AS Machines from SubscriptionStatus s1";
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    my $res = $dbh->selectall_arrayref($statement, {Slice => {}});
+
+    my $tact = new YEP::ASCIITable;
+    $tact->setCols(__('Subscription'),__('Machines'));
+
+    foreach my $subs (@{$res})
+    {
+        $tact->addRow($subs->{SUBSCRIPTION}, $subs->{Machines});
+    }
+    
+    $report .= "\n\n";
+    $report .= __("Active Subscriptions\n");
+    $report .=    "--------------------\n\n";
+    $report .= $tact->draw();
+
+    #
+    # expired subscriptions
+    #
+    $statement = "select s.SUBSCRIPTION, s.GUID, c.HOSTNAME from SubscriptionStatus s, Clients c where s.SUBSTATUS = 'EXPIRED' and s.GUID = c.GUID order by SUBSCRIPTION";
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    $res = $dbh->selectall_arrayref($statement, {Slice => {}});
+    
+    my $texp = new YEP::ASCIITable;
+    $texp->setCols(__('Subscription'),__('Unique ID'), __('Hostname'));
+
+    foreach my $subs (@{$res})
+    {
+        $texp->addRow($subs->{SUBSCRIPTION}, $subs->{GUID}, $subs->{HOSTNAME});
+    }
+    
+    $report .= "\n\n";
+    $report .= __("Expired Subscriptions -- please re-new\n");
+    $report .=    "--------------------------------------\n\n";
+    $report .= $texp->draw();
+    
+    #
+    # expire soon 
+    #
+    $statement = "select s.SUBSCRIPTION, s.SUBENDDATE, s.GUID, c.HOSTNAME from SubscriptionStatus s, Clients c where s.SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) > s.SUBENDDATE and s.GUID = c.GUID order by SUBENDDATE,SUBSCRIPTION";
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+    
+    $res = $dbh->selectall_arrayref($statement, {Slice => {}});
+    
+    my $tsoon = new YEP::ASCIITable;
+    $tsoon->setCols(__('Expire Date'), __('Subscription'),__('Unique ID'), __('Hostname'));
+
+    foreach my $subs (@{$res})
+    {
+        $tsoon->addRow($subs->{SUBENDDATE}, $subs->{SUBSCRIPTION}, $subs->{GUID}, $subs->{HOSTNAME});
+    }
+    
+    $report .= "\n\n";
+    $report .= __("Subscriptions which expire in less then 30 Days -- please re-new.\n");
+    $report .=    "-----------------------------------------------------------------\n\n";
+    $report .= $tsoon->draw();
+    
+    return $report;
+}
+
+
 sub _sha1sum
 {
   my $file = shift;
