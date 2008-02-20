@@ -19,6 +19,9 @@ TODO:
   * new packages (e.g.) skelcd-control-YEP and skelcd-YEP
     (internal ones, for building the add-on)
   * ... (maybe to be discussed with POS team)
+  * IMPORTANT: This add-on product must call the registration
+               module if it is installed later on an existing SLES10
+               using the yast2 add-on module
 
 - yast module:
   - Write parameter in yep.conf (what does this mean?)
