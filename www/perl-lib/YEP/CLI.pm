@@ -1,69 +1,6 @@
 package YEP::CLI;
 use strict;
 use warnings;
-use YEP::ASCIITable;
-
-=head1 NAME
-
- YEP::CLI - YEP common actions for command line programs
-
-=head1 SYNOPSIS
-
-  YEP::listProducts();
-  YEP::listCatalogs();
-  YEP::setupCustomCatalogs();
-
-=head1 DESCRIPTION
-
-Common actions used in command line utilities that administer the
-YEP system.
-
-=head1 METHODS
-
-=over 4
-
-=item listProducts
-
-Shows products. Pass mirrorable => 1 to get only mirrorable
-products. 0 for non-mirrorable products, or nothing to get all
-products.
-
-=item listRegistrations
-
-Shows active registrations on the system.
-
-
-=item setupCustomCatalogs
-
-modify the database to setup catalogs create by the customer
-
-=item setCatalogDoMirror
-
-set the catalog mirror flag to enabled or disabled
-
-Pass id => foo to select the catalog.
-Pass enabled => 1 or enabled => 0
-disabled => 1 or disabled => 0 are supported as well
-
-=item catalogDoMirrorFlag
-
-Pass id => foo to select the catalog.
-true if the catalog is ser to be mirrored, false otherwise
-
-=back
-
-=back
-
-=head1 AUTHOR
-
-dmacvicar@suse.de
-
-=head1 COPYRIGHT
-
-Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
-
-=cut
-
 
 use URI;
 use YEP::Utils;
@@ -74,6 +11,10 @@ use IO::File;
 use YEP::Parser::NU;
 use YEP::Mirror::Job;
 use XML::Writer;
+
+use File::Basename;
+use Digest::SHA1  qw(sha1 sha1_hex);
+use Time::HiRes qw(gettimeofday tv_interval);
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -487,4 +428,155 @@ sub createDBReplacementFile
 
     return ;
 }
+
+sub hardlink
+{
+    my %options = @_;
+    my ($cfg, $dbh, $nuri) = init();
+    my $t0 = [gettimeofday] ;
+
+    my $debug = 0;
+    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
+
+    my $dir = $cfg->val("LOCAL", "MirrorTo");
+    if(!defined $dir || $dir eq "" || ! -d $dir)
+    {
+        printLog($options{log}, "error", sprintf("Wrong mirror directory: %s", $dir));
+        return 1;
+    }
+    my $cmd = "find $dir -xdev -iname '*.rpm' -type f -size +$options{size}k ";
+    printLog($options{log}, "info", "$cmd") if($debug);
+    
+    my $filelist = `$cmd`;
+    my @files = sort split(/\n/, $filelist);
+    my @f2 = @files;
+    
+    foreach my $MM (@files)
+    {
+        foreach my $NN (@f2)
+        {
+            next if (!defined $NN);
+
+            if( $NN ne $MM  &&  basename($MM) eq basename($NN) )
+            {
+                printLog($options{log}, "info", "$MM ");
+                printLog($options{log}, "info", "$NN ");
+                if( (stat($MM))[1] != (stat($NN))[1] )
+                {
+                    my $sha1MM = _sha1sum($MM);
+                    my $sha1NN = _sha1sum($NN);
+                    if(defined $sha1MM && defined $sha1NN && $sha1MM eq $sha1NN)
+                    {
+                        printLog($options{log}, "info", "Do hardlink");
+                        #my $ret = link $MM, $NN;
+                        #print "RET: $ret\n";
+                        `ln -f '$MM' '$NN'`;
+                        $NN = undef;
+                    }
+                    else
+                    {
+                        printLog($options{log}, "info", "Checksums does not match $sha1MM != $sha1NN.");
+                    }
+                }
+                else
+                {
+                    printLog($options{log}, "info", "Files are hard linked. Nothing to do.");
+                    $NN = undef;
+                }
+            }
+            elsif($NN eq $MM)
+            {
+                $NN = undef;
+            }
+        }
+    }
+    printLog($options{log}, "info", sprintf(__("Hardlink Time      : %s seconds"), (tv_interval($t0))));
+}
+
+sub _sha1sum
+{
+  my $file = shift;
+
+  return undef if(! -e $file);
+
+  open(FILE, "< $file") or do {
+        return undef;
+  };
+
+  my $sha1 = Digest::SHA1->new;
+  eval
+  {
+      $sha1->addfile(*FILE);
+  };
+  if($@)
+  {
+      return undef;
+  }
+  my $digest = $sha1->hexdigest();
+  return $digest;
+}
+
+
 1;
+
+=head1 NAME
+
+ YEP::CLI - YEP common actions for command line programs
+
+=head1 SYNOPSIS
+
+  YEP::listProducts();
+  YEP::listCatalogs();
+  YEP::setupCustomCatalogs();
+
+=head1 DESCRIPTION
+
+Common actions used in command line utilities that administer the
+YEP system.
+
+=head1 METHODS
+
+=over 4
+
+=item listProducts
+
+Shows products. Pass mirrorable => 1 to get only mirrorable
+products. 0 for non-mirrorable products, or nothing to get all
+products.
+
+=item listRegistrations
+
+Shows active registrations on the system.
+
+
+=item setupCustomCatalogs
+
+modify the database to setup catalogs create by the customer
+
+=item setCatalogDoMirror
+
+set the catalog mirror flag to enabled or disabled
+
+Pass id => foo to select the catalog.
+Pass enabled => 1 or enabled => 0
+disabled => 1 or disabled => 0 are supported as well
+
+=item catalogDoMirrorFlag
+
+Pass id => foo to select the catalog.
+true if the catalog is ser to be mirrored, false otherwise
+
+=back
+
+=back
+
+=head1 AUTHOR
+
+dmacvicar@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
+

@@ -29,10 +29,6 @@ TODO:
     url=...
     https://<local.full.quallified.domain.name>/ 
 
-- yup has a hardlink feature. Would be nice if we could have it too.
-  It searches for same files (SLES <=> SLED as example) and
-  create a hardlink to safe some disk space.
-
 - test what happens if two processes want to write yep.db
   How can we solve concutrrent access with DBI?
 
@@ -155,6 +151,10 @@ DONE:
 - how can a customer say, that he always wants to mirror _all_ mirrorable catalogs?
   Idea: add an "mirrorall" option to yep.conf and modify yep-ncc-sync to set 
         DOMIRROR flag to 'Y' for all mirrorable catalogs if this option is true 
+
+- yup has a hardlink feature. Would be nice if we could have it too.
+  It searches for same files (SLES <=> SLED as example) and
+  create a hardlink to safe some disk space.
 
 
 

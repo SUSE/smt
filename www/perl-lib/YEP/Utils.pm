@@ -6,6 +6,7 @@ use warnings;
 use Config::IniFiles;
 use DBI;
 use Fcntl;
+use IO::File;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()

@@ -7,6 +7,7 @@
 use YEP::Mirror::NU;
 use YEP::Mirror::RpmMd;
 use YEP::Utils;
+use YEP::CLI;
 use YEP::Parser::RegData;
 use Config::IniFiles;
 use File::Path;
@@ -23,6 +24,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 my $debug    = 0;
 my $clean    = 0;
+my $hardlink = 0;
 my $deepverify = 0;
 
 my $dbreplfile = undef;
@@ -35,6 +37,7 @@ my $logfile = "/dev/null";
 
 my $result = GetOptions ("debug|d"     => \$debug,
                          "cleanup|c"   => \$clean,
+                         "hardlink=i"  => \$hardlink,
                          "directory=s" => \$LocalBasePath,
                          "deepverify"  => \$deepverify,
                          "dbreplfile=s" => \$dbreplfile,
@@ -52,6 +55,8 @@ if($help)
     print "--clean -c        " . __("cleanup all mirrored repositories.\n");
     print "                  " . __("Remove all files not longer mention in the metadata.\n");
     print "                  " . __("This mode do no mirror before cleanup.\n");
+    print "--hardlink size   " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
+    print "                  " . __("for them\n");
     print "--directory arg   " . __("The directory to work on. Using this option ignores the configured\n");
     print "                  " . __("default value in yep.conf\n");
     print "--deepverify      " . __("Verify all checksums \n");
@@ -75,6 +80,18 @@ if(!YEP::Utils::openLock("yep-mirror"))
 # open the logfile
 
 my $LOG = YEP::Utils::openLog($logfile);
+
+
+if($hardlink > 0)
+{
+    YEP::CLI::hardlink(log => $LOG, size => $hardlink, debug => $debug);
+    
+    if(!YEP::Utils::unLock("yep-mirror"))
+    {
+        YEP::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+    }
+    exit 0;
+}
 
 
 my $dbh = undef;
