@@ -16,7 +16,6 @@ echo "drop database if exists yep;" | mysql -u root
 echo "create database if not exists yep;" | mysql -u root
 cat $YEPDIR/db/yep-tables_mysql.sql | mysql -u root yep
 cat $YEPDIR/db/products.sql | mysql -u root yep
-cat $YEPDIR/db/product_dependencies.sql | mysql -u root yep
 cat $YEPDIR/db/targets.sql | mysql -u root yep
 cat $YEPDIR/db/tmp-catalogs.sql | mysql -u root yep
 cat $YEPDIR/db/tmp-productcatalogs.sql | mysql -u root yep
