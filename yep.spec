@@ -1,5 +1,5 @@
 #
-# spec file for package yep (Version 0.0.5)
+# spec file for package yep (Version 0.0.6)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -12,7 +12,7 @@
 
 Name:           yep
 BuildRequires:  apache2 apache2-mod_perl
-Version:        0.0.5
+Version:        0.0.6
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       apache2

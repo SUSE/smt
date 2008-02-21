@@ -1,5 +1,5 @@
 NAME         = yep
-VERSION      = 0.0.5
+VERSION      = 0.0.6
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -13,9 +13,9 @@ install_all: install install_conf install_db
 	@echo "Required packages:"
 	@echo "* apache2"
 	@echo "* apache2-mod_perl"
-	@echo "* sqlite"
+	@echo "* mysql"
 	@echo "* perl-DBI"
-	@echo "* perl-DBD-SQLite"
+	@echo "* perl-DBD-mysql"
 	@echo "* perl-Crypt-SSLeay"
 	@echo "* perl-Config-IniFiles"
 	@echo "* perl-XML-Parser"
@@ -24,9 +24,7 @@ install_all: install install_conf install_db
 	@echo "* perl-IO-Zlib"
 	@echo "* perl-URI"
 	@echo "* perl-TimeDate"
-	@echo " "
-	@echo "chown wwwrun.www /var/lib/YEP/db/"
-	@echo "chown wwwrun.www YEP_SQLITE_DB"
+	@echo "* perl-Text-ASCIITable"
 	@echo " "
 	@echo "Finaly start the web server with 'rcapache2 start'"
 	@echo "==========================================================="
@@ -85,7 +83,6 @@ install:
 	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
 	cp www/perl-lib/YEP/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Parser/
 	cp www/perl-lib/YEP/CLI.pm /$(DESTDIR)$(PERLMODDIR)/YEP/
-	cp www/perl-lib/YEP/ASCIITable.pm /$(DESTDIR)$(PERLMODDIR)/YEP/
 
 
 test: clean
