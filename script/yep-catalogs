@@ -6,7 +6,7 @@ use lib ("/srv/www/perl-lib/");
 use YEP::CLI;
 use File::Basename;
 use YEP::Utils;
-use YEP::ASCIITable;
+use Text::ASCIITable;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -115,7 +115,7 @@ my @idnumbers;
 my $sth = $dbh->prepare($sql);
 $sth->execute();
 
-my $t = new YEP::ASCIITable;
+my $t = new Text::ASCIITable;
 $t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"));
 
 while ( my $v = $sth->fetchrow_hashref() )

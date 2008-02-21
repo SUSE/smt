@@ -4,7 +4,7 @@ use warnings;
 
 use URI;
 use YEP::Utils;
-use YEP::ASCIITable;
+use Text::ASCIITable;
 use Config::IniFiles;
 use File::Temp;
 use IO::File;
@@ -106,7 +106,7 @@ sub listCatalogs
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
-    my $t = new YEP::ASCIITable;
+    my $t = new Text::ASCIITable;
 
     my @cols;
     #push( @cols, "ID" );
@@ -156,7 +156,7 @@ sub listProducts
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
-    my $t = new YEP::ASCIITable;
+    my $t = new Text::ASCIITable;
     $t->setCols(__('Name'),__('Version'), __('Target'), __('Usage'));
     
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
@@ -183,7 +183,7 @@ sub listRegistrations
 
     my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
-    my $t = new YEP::ASCIITable;
+    my $t = new Text::ASCIITable;
     $t->setOptions('drawRowLine',1);
     $t->setCols(__('Unique ID'),__('Hostname'), __('Last Contact'), __('Product'));
 
@@ -512,7 +512,7 @@ sub productClassReport
         return undef;
     }
     
-    my $t = new YEP::ASCIITable;
+    my $t = new Text::ASCIITable;
     $t->setCols(__("Product Class"), __("Architecture"), __("Installed Clients"));
     
     
@@ -606,7 +606,7 @@ sub subscriptionReport
 
     my $res = $dbh->selectall_arrayref($statement, {Slice => {}});
 
-    my $tact = new YEP::ASCIITable;
+    my $tact = new Text::ASCIITable;
     $tact->setCols(__('Subscription'),__('Machines'));
 
     foreach my $subs (@{$res})
@@ -627,7 +627,7 @@ sub subscriptionReport
 
     $res = $dbh->selectall_arrayref($statement, {Slice => {}});
     
-    my $texp = new YEP::ASCIITable;
+    my $texp = new Text::ASCIITable;
     $texp->setCols(__('Subscription'),__('Unique ID'), __('Hostname'));
 
     foreach my $subs (@{$res})
@@ -648,7 +648,7 @@ sub subscriptionReport
     
     $res = $dbh->selectall_arrayref($statement, {Slice => {}});
     
-    my $tsoon = new YEP::ASCIITable;
+    my $tsoon = new Text::ASCIITable;
     $tsoon->setCols(__('Expire Date'), __('Subscription'),__('Unique ID'), __('Hostname'));
 
     foreach my $subs (@{$res})

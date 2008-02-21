@@ -26,6 +26,7 @@ Requires:       perl-libwww-perl
 Requires:       perl-IO-Zlib
 Requires:       perl-URI
 Requires:       perl-TimeDate
+Requires:       perl-Text-ASCIITable
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-yep
