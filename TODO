@@ -43,6 +43,10 @@ TODO:
   maybe set max_connections=160 in /etc/my.cnf
   needs some disuccion.
 
+- add a parameter to yep.conf  about disable client registration at NCC
+  * use this parameter in yep-register and yep-delete-registration
+
+
 DONE:
 =====
 
