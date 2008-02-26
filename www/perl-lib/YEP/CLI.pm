@@ -1,15 +1,15 @@
-package YEP::CLI;
+package SMT::CLI;
 use strict;
 use warnings;
 
 use URI;
-use YEP::Utils;
+use SMT::Utils;
 use Text::ASCIITable;
 use Config::IniFiles;
 use File::Temp;
 use IO::File;
-use YEP::Parser::NU;
-use YEP::Mirror::Job;
+use SMT::Parser::NU;
+use SMT::Mirror::Job;
 use XML::Writer;
 
 use File::Basename;
@@ -31,16 +31,16 @@ sub init
     my $dbh;
     my $cfg;
     my $nuri;
-    if ( not $dbh=YEP::Utils::db_connect() )
+    if ( not $dbh=SMT::Utils::db_connect() )
     {
         die __("ERROR: Could not connect to the database");
     }
 
     #print "hello CLI\n";
-    $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
+    $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
     if(!defined $cfg)
     {
-        die __("Cannot read the YEP configuration file: ").@Config::IniFiles::errors;
+        die __("Cannot read the SMT configuration file: ").@Config::IniFiles::errors;
     }
 
     # TODO move the url assembling code out
@@ -281,7 +281,7 @@ sub setMirrorableCatalogs
     else
     {
         # get the file
-        my $job = YEP::Mirror::Job->new();
+        my $job = SMT::Mirror::Job->new();
         $job->uri($nuri);
         $job->localdir($destdir);
         $job->resource("/repo/repoindex.xml");
@@ -296,7 +296,7 @@ sub setMirrorableCatalogs
         return;
     }
 
-    my $parser = YEP::Parser::NU->new();
+    my $parser = SMT::Parser::NU->new();
     $parser->parse($indexfile, sub {
                                     my $repodata = shift;
                                     print __(sprintf("* set [" . $repodata->{NAME} . "] [" . $repodata->{DISTRO_TARGET} . "] as mirrorable.\n"));
@@ -327,7 +327,7 @@ sub setMirrorableCatalogs
 	    else
 	    {
     	        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
-                my $job = YEP::Mirror::Job->new();
+                my $job = SMT::Mirror::Job->new();
                 $job->uri($catUrl);
                 $job->localdir($tempdir);
                 $job->resource("/repodata/repomd.xml");
@@ -525,7 +525,7 @@ sub productClassReport
         my $cn = $class;
         $cn = $conf{$class}->{NAME} if(exists $conf{$class}->{NAME} && defined $conf{$class}->{NAME});
         
-        my %groups = %{$conf{YEP_DEFAULT}->{ARCHGROUPS}};
+        my %groups = %{$conf{SMT_DEFAULT}->{ARCHGROUPS}};
         %groups = %{$conf{$class}->{ARCHGROUPS}} if(exists $conf{$class}->{ARCHGROUPS} && defined $conf{$class}->{ARCHGROUPS});
         
         foreach my $archgroup (keys %groups)
@@ -693,18 +693,18 @@ sub _sha1sum
 
 =head1 NAME
 
- YEP::CLI - YEP common actions for command line programs
+ SMT::CLI - SMT common actions for command line programs
 
 =head1 SYNOPSIS
 
-  YEP::listProducts();
-  YEP::listCatalogs();
-  YEP::setupCustomCatalogs();
+  SMT::listProducts();
+  SMT::listCatalogs();
+  SMT::setupCustomCatalogs();
 
 =head1 DESCRIPTION
 
 Common actions used in command line utilities that administer the
-YEP system.
+SMT system.
 
 =head1 METHODS
 

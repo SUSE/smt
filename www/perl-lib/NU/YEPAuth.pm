@@ -1,4 +1,4 @@
-package NU::YEPAuth;
+package NU::SMTAuth;
 
 use strict;
 use warnings;

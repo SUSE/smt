@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-use YEP::Parser::NU;
+use SMT::Parser::NU;
 use Test::Simple tests => 6;
 
 my $counter = 0;
@@ -21,7 +21,7 @@ sub handler()
 
 }
 
-$parser = YEP::Parser::NU->new();
+$parser = SMT::Parser::NU->new();
 $parser->parse("./testdata/repoindex.xml", \&handler);
 
 # the data file contains 70 entries

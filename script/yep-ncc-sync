@@ -4,9 +4,9 @@ use strict;
 use warnings;
 #use lib ("/srv/www/perl-lib/");
 use lib ("www/perl-lib/");
-use YEP::CLI;
-use YEP::Utils;
-use YEP::Mirror::RegData;
+use SMT::CLI;
+use SMT::Utils;
+use SMT::Mirror::RegData;
 use File::Basename;
 
 use Locale::gettext ();
@@ -47,7 +47,7 @@ if ( defined $help and ( $help == 1 ) )
     print "--fromdir                 ".__("read NCC informations from directory instead of downloading it from NCC\n");
     print "                          ".__("and update the database.\n");
     print "--todir                   ".__("write NCC informations to directory without updating the database.\n");
-    print "--createdbreplacementfile ".__("create a database replacement file for using yep-mirror without database.\n");
+    print "--createdbreplacementfile ".__("create a database replacement file for using smt-mirror without database.\n");
     print "--logfile -L file         ".__("Path to logfile\n");
     print "--debug                   ".__("Enable debug mode\n");
   exit 0;
@@ -55,7 +55,7 @@ if ( defined $help and ( $help == 1 ) )
 
 if($createdbreplfile ne "")
 {
-    YEP::CLI::createDBReplacementFile($createdbreplfile);
+    SMT::CLI::createDBReplacementFile($createdbreplfile);
     exit 0;
 }
 
@@ -75,7 +75,7 @@ if($todir ne "" && ! -d $todir)
 	die "Directory '$fromdir' does not exist";
 }
 
-if(!YEP::Utils::openLock("yep-ncc-sync"))
+if(!SMT::Utils::openLock("smt-ncc-sync"))
 {
     print __("Syncronization process is still running.\n");
     exit 0;
@@ -83,7 +83,7 @@ if(!YEP::Utils::openLock("yep-ncc-sync"))
 
 # open the logfile
 
-my $LOG = YEP::Utils::openLog($logfile);
+my $LOG = SMT::Utils::openLog($logfile);
 
 eval
 {
@@ -91,7 +91,7 @@ eval
     {
         # We have currently no NCC support for this, so comment out
 	
-        my $rd= YEP::Mirror::RegData->new(debug   => $debug,
+        my $rd= SMT::Mirror::RegData->new(debug   => $debug,
                                           log     => $LOG,
                                           element => "product",
                                           table   => "Products",
@@ -101,7 +101,7 @@ eval
         my $res = $rd->sync();
         if ($res)
         {
-            YEP::Utils::printLog($LOG, "error", __("Error while fetching Products data."));
+            SMT::Utils::printLog($LOG, "error", __("Error while fetching Products data."));
         }
 
         $rd->element("targets");
@@ -111,7 +111,7 @@ eval
         $res = $rd->sync();
         if ($res)
         {
-            YEP::Utils::printLog($LOG, "error", __("Error while fetching Targets data."));
+            SMT::Utils::printLog($LOG, "error", __("Error while fetching Targets data."));
         }
 
         $rd->element("catalogs");
@@ -121,7 +121,7 @@ eval
         $res = $rd->sync();
         if ($res)
         {
-            YEP::Utils::printLog($LOG, "error", __("Error while fetching Catalogs data."));
+            SMT::Utils::printLog($LOG, "error", __("Error while fetching Catalogs data."));
         }
 
         $rd->element("productcatalogs");
@@ -131,10 +131,10 @@ eval
         $res = $rd->sync();
         if ($res)
         {
-            YEP::Utils::printLog($LOG, "error", __("Error while fetching ProductCatalogs data."));
+            SMT::Utils::printLog($LOG, "error", __("Error while fetching ProductCatalogs data."));
         }
 
-        my $lr= YEP::NCCRegTools->new(debug   => $debug,
+        my $lr= SMT::NCCRegTools->new(debug   => $debug,
                                       log     => $LOG,
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
@@ -144,33 +144,33 @@ eval
 
     if ($todir ne "")
     {
-        YEP::CLI::setMirrorableCatalogs(todir => $todir);
+        SMT::CLI::setMirrorableCatalogs(todir => $todir);
         # if todir parameter is set, we can stop here. Everything is done.
 
-        if (!YEP::Utils::unLock("yep-ncc-sync"))
+        if (!SMT::Utils::unLock("smt-ncc-sync"))
         {
-            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
         }
         exit 0;
     }
 
-    YEP::CLI::resetCatalogsStatus();
-    YEP::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef);
+    SMT::CLI::resetCatalogsStatus();
+    SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef);
 
 };
 if (@_)
 {
-    if (!YEP::Utils::unLock("yep-ncc-sync"))
+    if (!SMT::Utils::unLock("smt-ncc-sync"))
     {
-        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    YEP::Utils::printLog($LOG, "error", @_);
+    SMT::Utils::printLog($LOG, "error", @_);
     exit 1;
 }
 
-if (!YEP::Utils::unLock("yep-ncc-sync"))
+if (!SMT::Utils::unLock("smt-ncc-sync"))
 {
-    YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+    SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
 }
 
 exit 0;

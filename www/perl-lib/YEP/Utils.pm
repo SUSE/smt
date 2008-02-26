@@ -1,4 +1,4 @@
-package YEP::Utils;
+package SMT::Utils;
 
 use strict;
 use warnings;
@@ -18,16 +18,16 @@ our @EXPORT = qw(__ printLog);
 
 
 #
-# read db values from the yep configuration file,
+# read db values from the smt configuration file,
 # open the database and returns the database handle
 #
 sub db_connect
 {
-    my $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
+    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
     if(!defined $cfg)
     {
         # FIXME: is die correct here?
-        die sprintf(__("Cannot read the YEP configuration file: %s"), @Config::IniFiles::errors);
+        die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
     }
     
     my $config = $cfg->val('DB', 'config');
@@ -51,7 +51,7 @@ sub __
 {
     my $msgid = shift;
     my $package = caller;
-    my $domain = "yep";
+    my $domain = "smt";
     return Locale::gettext::dgettext ($domain, $msgid);
 }
 

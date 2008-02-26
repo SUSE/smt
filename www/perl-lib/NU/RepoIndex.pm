@@ -10,7 +10,7 @@ use Apache2::Const -compile => qw(OK SERVER_ERROR :log);
 use Apache2::RequestUtil;
 use XML::Writer;
 
-use YEP::Utils;
+use SMT::Utils;
 
 
 sub getCatalogsByGUID($$)
@@ -42,13 +42,13 @@ sub handler {
     my $r = shift;
     my $dbh = undef;
 
-    my $regtimestring = YEP::Utils::getDBTimestamp();
+    my $regtimestring = SMT::Utils::getDBTimestamp();
 
     $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                    APR::Const::SUCCESS,"repoindex.xml requested");
     
     # try to connect to the database - else report server error
-    if ( not $dbh=YEP::Utils::db_connect() ) 
+    if ( not $dbh=SMT::Utils::db_connect() ) 
     {  return Apache2::Const::SERVER_ERROR; }
 
     $r->content_type('text/xml');

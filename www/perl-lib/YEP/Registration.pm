@@ -1,4 +1,4 @@
-package YEP::Registration;
+package SMT::Registration;
 
 use strict;
 use warnings;
@@ -15,7 +15,7 @@ use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
 
 use constant IOBUFSIZE => 8192;
 
-use YEP::Utils;
+use SMT::Utils;
 
 use Data::Dumper;
 use DBI;
@@ -42,15 +42,15 @@ sub handler {
     {
         if($hargs->{command} eq "register")
         {
-            YEP::Registration::register($r, $hargs);
+            SMT::Registration::register($r, $hargs);
         }
         elsif($hargs->{command} eq "listproducts")
         {
-            YEP::Registration::listproducts($r, $hargs);
+            SMT::Registration::listproducts($r, $hargs);
         }
         elsif($hargs->{command} eq "listparams")
         {
-            YEP::Registration::listparams($r, $hargs);
+            SMT::Registration::listparams($r, $hargs);
         }
         else
         {
@@ -86,7 +86,7 @@ sub register
     }
     
     my $data = read_post($r);
-    my $dbh = YEP::Utils::db_connect();
+    my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
         die "Cannot open Database";
@@ -105,11 +105,11 @@ sub register
     if($@) {
         # ignore the errors, but print them
         chomp($@);
-        $r->log_error("YEP::Registration::register Invalid XML: $@");
+        $r->log_error("SMT::Registration::register Invalid XML: $@");
     }
 
 
-    my $needinfo = YEP::Registration::parseFromProducts($r, $dbh, $regroot->{register}->{product}, "NEEDINFO");
+    my $needinfo = SMT::Registration::parseFromProducts($r, $dbh, $regroot->{register}->{product}, "NEEDINFO");
 
     #$r->log_error("REGROOT:".Data::Dumper->Dump([$regroot]));
 
@@ -137,7 +137,7 @@ sub register
     if($@) {
         # ignore the errors, but print them
         chomp($@);
-        $r->log_error("YEP::Registration::register Invalid XML: $@");
+        $r->log_error("SMT::Registration::register Invalid XML: $@");
     }
 
     #$r->log_error("INFOCOUNT: ".$dat->{INFOCOUNT});
@@ -155,19 +155,19 @@ sub register
 
         # insert new registration data
 
-        my $pidarr = YEP::Registration::insertRegistration($r, $dbh, $regroot);
+        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot);
 
         # get the os-target
 
-        my $target = YEP::Registration::findTarget($r, $dbh, $regroot);
+        my $target = SMT::Registration::findTarget($r, $dbh, $regroot);
 
         # get the catalogs
 
-        my $catalogs = YEP::Registration::findCatalogs($r, $dbh, $target, $pidarr);
+        my $catalogs = SMT::Registration::findCatalogs($r, $dbh, $target, $pidarr);
 
         # send new <zmdconfig>
 
-        my $zmdconfig = YEP::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $usetestenv);
+        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $usetestenv);
 
         $r->warn("Return ZMDCONFIG: ".$zmdconfig);
 
@@ -189,7 +189,7 @@ sub listproducts
 
     $r->warn("listproducts called.");
     
-    my $dbh = YEP::Utils::db_connect();
+    my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
         die ("Cannot connect to database");
@@ -235,7 +235,7 @@ sub listparams
     $r->warn("listparams called.");
     
     my $lpreq = read_post($r);
-    my $dbh = YEP::Utils::db_connect();
+    my $dbh = SMT::Utils::db_connect();
 
     my $data  = {STATE => 0, PRODUCTS => []};
     my $parser = XML::Parser->new( Handlers =>
@@ -249,10 +249,10 @@ sub listparams
     if($@) {
         # ignore the errors, but print them
         chomp($@);
-        $r->log_error("YEP::Registration::parseFromProducts Invalid XML: $@");
+        $r->log_error("SMT::Registration::parseFromProducts Invalid XML: $@");
     }
     
-    my $xml = YEP::Registration::parseFromProducts($r, $dbh, $data->{PRODUCTS}, "PARAMLIST");
+    my $xml = SMT::Registration::parseFromProducts($r, $dbh, $data->{PRODUCTS}, "PARAMLIST");
     
     $r->warn("Return PARAMLIST:".$xml);
 
@@ -276,7 +276,7 @@ sub parseFromProducts
 
     if(uc($column) eq "PARAMLIST" || uc($column) eq "NEEDINFO")
     {
-        return YEP::Registration::mergeDocuments($r, \@list);
+        return SMT::Registration::mergeDocuments($r, \@list);
     }
     
     return "";
@@ -289,7 +289,7 @@ sub writeXML
     my $writer = shift;
 
     my $element = ref($node);
-    $element =~ s/^yep:://;
+    $element =~ s/^smt:://;
     
     return if($element eq "Characters");
 
@@ -321,7 +321,7 @@ sub mergeXML
             
             if(ref($child2) eq ref($child1))
             {
-                if(ref($child2) eq "yep::param")
+                if(ref($child2) eq "smt::param")
                 {
                     # we have to match the id
                     if($child2->{id} eq $child1->{id})
@@ -362,7 +362,7 @@ sub mergeDocuments
         if($basedoc eq "")
         {
             $basedoc = $other;
-            my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
+            my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
             eval {
                 $root1 = $p1->parse( $basedoc );
                 $node1 = $root1->[0];
@@ -370,14 +370,14 @@ sub mergeDocuments
             if($@) {
                 # ignore the errors, but print them
                 chomp($@);
-                $r->log_error("YEP::Registration::mergeDocuments Invalid XML: $@");
+                $r->log_error("SMT::Registration::mergeDocuments Invalid XML: $@");
             }
             
             next;
         }
         next if($basedoc eq $other);
         
-        my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'yep');
+        my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
         eval {
             my $root2 = $p2->parse( $other );
             my $node2;
@@ -393,7 +393,7 @@ sub mergeDocuments
         if($@) {
             # ignore the errors, but print them
             chomp($@);
-            $r->log_error("YEP::Registration::register Invalid XML: $@");
+            $r->log_error("SMT::Registration::register Invalid XML: $@");
         }
     }
     
@@ -433,7 +433,7 @@ sub insertRegistration
     }
 
     # store the regtime
-    $regtimestring = YEP::Utils::getDBTimestamp();
+    $regtimestring = SMT::Utils::getDBTimestamp();
 
     my @insert = ();
     my @update = ();
@@ -737,11 +737,11 @@ sub buildZmdConfig
     my $catalogs   = shift;
     my $usetestenv = shift || 0;
     
-    my $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
+    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
     if(!defined $cfg)
     {
         # FIXME: is die correct here?
-        die "Cannot read the YEP configuration file: ".@Config::IniFiles::errors;
+        die "Cannot read the SMT configuration file: ".@Config::IniFiles::errors;
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');

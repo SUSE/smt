@@ -1,13 +1,13 @@
-package YEP::Parser::NU;
+package SMT::Parser::NU;
 use strict;
 use URI;
 use XML::Parser;
-use YEP::Utils;
+use SMT::Utils;
 use IO::Zlib;
 
 =head1 NAME
 
-YEP::Parser::NU - parsers NU repoindex.xml file
+SMT::Parser::NU - parsers NU repoindex.xml file
 
 =head1 SYNOPSIS
 
@@ -21,7 +21,7 @@ YEP::Parser::NU - parsers NU repoindex.xml file
     print $data->{PRIORITY};
   }
 
-  $parser = YEP::Parser::NU->new();
+  $parser = SMT::Parser::NU->new();
   $parser->parse("repoindex.xml", \&handler);
 
 =head1 DESCRIPTION
@@ -35,7 +35,7 @@ passing every repoindex.xml repo entry to it.
 
 =item new()
 
-Create a new YEP::Parser::NU object:
+Create a new SMT::Parser::NU object:
 
 =over 4
 
@@ -72,7 +72,7 @@ sub new
     }
     else
     {
-        $self->{LOG} = YEP::Utils::openLog();
+        $self->{LOG} = SMT::Utils::openLog();
     }
 
     bless($self);
@@ -104,7 +104,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          printLog($self->{LOG}, "error", "YEP::Parser::NU Invalid XML in '$path': $@");
+          printLog($self->{LOG}, "error", "SMT::Parser::NU Invalid XML in '$path': $@");
       }
     }
     else
@@ -115,7 +115,7 @@ sub parse()
       if($@) {
           # ignore the errors, but print them
           chomp($@);
-          printLog($self->{LOG}, "error", "YEP::Parser::NU Invalid XML in '$path': $@");
+          printLog($self->{LOG}, "error", "SMT::Parser::NU Invalid XML in '$path': $@");
       }
    }
 }

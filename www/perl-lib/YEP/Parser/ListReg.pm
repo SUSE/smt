@@ -1,8 +1,8 @@
-package YEP::Parser::ListReg;
+package SMT::Parser::ListReg;
 use strict;
 use URI;
 use XML::Parser;
-use YEP::Utils;
+use SMT::Utils;
 use IO::Zlib;
 
 
@@ -40,7 +40,7 @@ sub new
     }
     else
     {
-        $self->{LOG} = YEP::Utils::openLog();
+        $self->{LOG} = SMT::Utils::openLog();
     }
 
     bless($self);
@@ -84,7 +84,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            printLog($self->{LOG}, "error", "YEP::Parser::ListReg Invalid XML in '$file': $@");
+            printLog($self->{LOG}, "error", "SMT::Parser::ListReg Invalid XML in '$file': $@");
         }
     }
     else
@@ -95,7 +95,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            printLog($self->{LOG}, "error", "YEP::Parser::ListReg Invalid XML in '$file': $@");
+            printLog($self->{LOG}, "error", "SMT::Parser::ListReg Invalid XML in '$file': $@");
         }
     }
 }

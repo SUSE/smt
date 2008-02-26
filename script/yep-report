@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
-use YEP::CLI;
-use YEP::Utils;
+use SMT::CLI;
+use SMT::Utils;
 use File::Basename;
 
 use Locale::gettext ();
@@ -90,7 +90,7 @@ my %conf = (
                                             "unknown"    => [undef]
                                            }
                             },
-            YEP_DEFAULT  => {
+            SMT_DEFAULT  => {
                              NAME => undef,
                              ARCHGROUPS => {
                                             "x86/x86_64" => ['i386', 'i486', 'i586', 'i686', 'x86_64'],
@@ -104,15 +104,15 @@ my %conf = (
 
 # open the logfile
 
-my $LOG = YEP::Utils::openLog();
+my $LOG = SMT::Utils::openLog();
 
-my $classReport = YEP::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug);
+my $classReport = SMT::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug);
 if(!defined $classReport)
 {
     exit 1;
 }
 
-my $subReport = YEP::CLI::subscriptionReport(log => $LOG, debug => $debug);
+my $subReport = SMT::CLI::subscriptionReport(log => $LOG, debug => $debug);
 if(!defined $subReport)
 {
     exit 1;

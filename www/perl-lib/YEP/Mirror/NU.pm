@@ -1,26 +1,26 @@
-package YEP::Mirror::NU;
+package SMT::Mirror::NU;
 
 use strict;
 
 use URI;
 use File::Path;
 
-use YEP::Parser::NU;
-use YEP::Mirror::Job;
-use YEP::Mirror::RpmMd;
-use YEP::Utils;
+use SMT::Parser::NU;
+use SMT::Mirror::Job;
+use SMT::Mirror::RpmMd;
+use SMT::Utils;
 
 use Data::Dumper;
 
 =head1 NAME
 
-YEP::Mirror::NU - mirroring of a Novell Update repository
+SMT::Mirror::NU - mirroring of a Novell Update repository
 
 =head1 SYNOPSIS
 
-  use YEP::Mirror::NU;
+  use SMT::Mirror::NU;
 
-  $mirror = YEP::Mirror::NU->new();
+  $mirror = SMT::Mirror::NU->new();
   $mirror->uri( 'https://username:password@nu.novell.com');
   $mirror->mirrorTo( "/srv/www/htdocs/");
 
@@ -41,9 +41,9 @@ which are not mentioned in the metadata, you can use the clean method:
 
 =item new([$params])
 
-Create a new YEP::Mirror::RpmMd object:
+Create a new SMT::Mirror::RpmMd object:
 
-  my $mirror = YEP::Mirror::RpmMd->new(debug => 1);
+  my $mirror = SMT::Mirror::RpmMd->new(debug => 1);
 
 Arguments are an anonymous hash array of parameters:
 
@@ -118,7 +118,7 @@ sub new
     }
     else
     {
-        $self->{LOG} = YEP::Utils::openLog();
+        $self->{LOG} = SMT::Utils::openLog();
     }
     
     bless($self);
@@ -193,7 +193,7 @@ sub mirrorTo()
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repo/repoindex.xml" ) );
 
     # get the repository index
-    my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG});
+    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG});
     $job->uri( $self->{URI} );
     $job->resource( "/repo/repoindex.xml" );
     $job->localdir( $self->{LOCALPATH} );
@@ -205,7 +205,7 @@ sub mirrorTo()
     
     if(!defined $self->{DBREPLACEMENT} || ref($self->{DBREPLACEMENT}) ne "HASH")
     {
-        $dbh = YEP::Utils::db_connect();
+        $dbh = SMT::Utils::db_connect();
         if(!$dbh)
         {
             printLog($self->{LOG}, "error", __("Cannot connect to database"));
@@ -216,7 +216,7 @@ sub mirrorTo()
     # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
     # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     
-    my $parser = YEP::Parser::NU->new(log => $self->{LOG});
+    my $parser = SMT::Parser::NU->new(log => $self->{LOG});
     $parser->parse($destfile, sub{ mirror_handler($self, $dbh, @_) });
 
     if($dbh)
@@ -244,14 +244,14 @@ sub clean()
 
     my $path = $self->{LOCALPATH}."/repo/repoindex.xml";
 
-    my $dbh = YEP::Utils::db_connect();
+    my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
         printLog($self->{LOG}, "error", __("Cannot connect to database"));
         exit 1;
     }
 
-    my $parser = YEP::Parser::NU->new(log => $self->{LOG});
+    my $parser = SMT::Parser::NU->new(log => $self->{LOG});
     $parser->parse($path, sub{ clean_handler($self, $dbh, @_) });
     
     $dbh->disconnect;
@@ -290,7 +290,7 @@ sub mirror_handler
     if($domirror)
     {
         # get the repository index
-        my $mirror = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
+        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
         
         my $catalogURI = join("/", $self->{URI}, "repo", $data->{PATH});
         my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
@@ -316,7 +316,7 @@ sub clean_handler
     if(defined $res && exists $res->[0] &&
        defined $res->[0] && $res->[0] eq "Y")
     {
-        my $rpmmd = YEP::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
+        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
         
         my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
         $localPath =~ s/\/\.?\//\//g;

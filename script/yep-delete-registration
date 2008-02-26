@@ -15,8 +15,8 @@ BEGIN
 
 
 use strict;
-use YEP::Utils;
-use YEP::NCCRegTools;
+use SMT::Utils;
+use SMT::NCCRegTools;
 use Getopt::Long;
 use LWP::UserAgent;
 use Crypt::SSLeay;
@@ -42,7 +42,7 @@ my $result = GetOptions ("guid|g=s"    => \@guids,
 if($help)
 {
     print basename($0) . __(" [OPTIONS]\n");
-    print __("Delete one or more registration from NCC and YEP\n");
+    print __("Delete one or more registration from NCC and SMT\n");
     print "\n";
     print __("Options:\n");
     print "--guid -g        " . __("Unique ID of the client which should be deleted.\n");
@@ -67,7 +67,7 @@ $useragent->protocols_allowed( [ 'https' ] );
 $useragent->default_headers->push_header('Content-Type' => 'text/xml');
 push @{ $useragent->requests_redirectable }, 'POST';
 
-if(!YEP::Utils::openLock("yep-delete-registration"))
+if(!SMT::Utils::openLock("smt-delete-registration"))
 {
     print __("Delete registration process is still running.\n");
     exit 0;
@@ -75,11 +75,11 @@ if(!YEP::Utils::openLock("yep-delete-registration"))
 
 my $dbh = undef;
 
-$dbh = YEP::Utils::db_connect();
+$dbh = SMT::Utils::db_connect();
 
 if(!$dbh)
 {
-    if(!YEP::Utils::unLock("yep-delete-registration"))
+    if(!SMT::Utils::unLock("smt-delete-registration"))
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
@@ -88,11 +88,11 @@ if(!$dbh)
 
 eval
 {
-    my $nccreg = YEP::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh);
+    my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh);
     my $err = $nccreg->NCCDeleteRegistration(@guids);
     if($err != 0)
     {
-        if(!YEP::Utils::unLock("yep-delete-registration"))
+        if(!SMT::Utils::unLock("smt-delete-registration"))
         {
             print STDERR __("Cannot remove lockfile.\n");
         }
@@ -101,14 +101,14 @@ eval
 };
 if($@)
 {
-    if(!YEP::Utils::unLock("yep-delete-registration"))
+    if(!SMT::Utils::unLock("smt-delete-registration"))
     {
         print STDERR __("Cannot remove lockfile.\n");
     }
     exit 1;
 }
 
-if(!YEP::Utils::unLock("yep-delete-registration"))
+if(!SMT::Utils::unLock("smt-delete-registration"))
 {
     print STDERR __("Cannot remove lockfile.\n");
 }

@@ -1,9 +1,9 @@
 
-YEP Design
+SMT Design
 ==============================
 mc@suse.de - dmacvicar@suse.de
 
-For reference to the product, see YEP PRD or contact
+For reference to the product, see SMT PRD or contact
 visnov@suse.cz
 
 1. Functionality:

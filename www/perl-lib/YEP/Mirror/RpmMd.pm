@@ -1,4 +1,4 @@
-package YEP::Mirror::RpmMd;
+package SMT::Mirror::RpmMd;
 use strict;
 
 use LWP::UserAgent;
@@ -10,9 +10,9 @@ use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
 use Digest::SHA1  qw(sha1 sha1_hex);
 
-use YEP::Mirror::Job;
-use YEP::Parser::RpmMd;
-use YEP::Utils;
+use SMT::Mirror::Job;
+use SMT::Parser::RpmMd;
+use SMT::Utils;
 
 BEGIN 
 {
@@ -63,7 +63,7 @@ sub new
     }
     else
     {
-        $self->{LOG} = YEP::Utils::openLog();
+        $self->{LOG} = SMT::Utils::openLog();
     }
     
     bless($self);
@@ -148,7 +148,7 @@ sub mirrorTo()
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
     # get the repository index
-    my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
     $job->uri( $self->{URI} );
     $job->localdir( $self->{LOCALPATH} );
 
@@ -255,7 +255,7 @@ sub mirrorTo()
     }
 
     # parse it and find more resources
-    my $parser = YEP::Parser::RpmMd->new(log => $self->{LOG});
+    my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->specialmdlocation(1);
     $parser->parse(".repodata/repomd.xml", sub { download_handler($self, @_)});
@@ -378,7 +378,7 @@ sub clean()
              }
              , no_chdir => 1 }, $self->{LOCALPATH} );
 
-    my $parser = YEP::Parser::RpmMd->new(log => $self->{LOG});
+    my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->parse("/repodata/repomd.xml", sub { clean_handler($self, @_)});
     
@@ -438,7 +438,7 @@ sub verify()
     $self->{STATISTIC}->{ERROR} = 0;
     
     # parse it and find more resources
-    my $parser = YEP::Parser::RpmMd->new(log => $self->{LOG});
+    my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->parse("repodata/repomd.xml", sub { verify_handler($self, @_)});
 
@@ -524,7 +524,7 @@ sub download_handler
     {
 
         # get the repository index
-        my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+        my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
         $job->resource( $data->{LOCATION} );
         $job->checksum( $data->{CHECKSUM} );
         $job->localdir( $self->{LOCALPATH} );
@@ -609,7 +609,7 @@ sub download_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
                 $job->resource( $file->{LOCATION} );
                 $job->checksum( $file->{CHECKSUM} );
                 $job->localdir( $self->{LOCALPATH} );
@@ -631,7 +631,7 @@ sub verify_handler
     {
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+            my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
             $job->resource( $data->{LOCATION} );
             $job->checksum( $data->{CHECKSUM} );
             $job->localdir( $self->{LOCALPATH} );
@@ -649,7 +649,7 @@ sub verify_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = YEP::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
                 $job->resource( $file->{LOCATION} );
                 $job->checksum( $file->{CHECKSUM} );
                 $job->localdir( $self->{LOCALPATH} );
@@ -663,13 +663,13 @@ sub verify_handler
 
 =head1 NAME
 
-YEP::Mirror::RpmMd - mirroring of a rpm metadata repository
+SMT::Mirror::RpmMd - mirroring of a rpm metadata repository
 
 =head1 SYNOPSIS
 
-  use YEP::Mirror::RpmMd;
+  use SMT::Mirror::RpmMd;
 
-  $mirror = YEP::Mirror::RpmMd->new();
+  $mirror = SMT::Mirror::RpmMd->new();
   $mirror->uri( "http://repo.com/10.3" );
 
   $mirror->mirrorTo( "/somedir", { urltree => 1 });
@@ -701,9 +701,9 @@ which are not mentioned in the metadata, you can use the clean method:
 
 =item new([$params])
 
-Create a new YEP::Mirror::RpmMd object:
+Create a new SMT::Mirror::RpmMd object:
 
-  my $mirror = YEP::Mirror::RpmMd->new(debug => 1);
+  my $mirror = SMT::Mirror::RpmMd->new(debug => 1);
 
 Arguments are an anonymous hash array of parameters:
 

@@ -1,5 +1,5 @@
 #
-# spec file for package yep (Version 0.0.6)
+# spec file for package smt (Version 0.0.6)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -10,7 +10,7 @@
 
 # norootforbuild
 
-Name:           yep
+Name:           smt
 BuildRequires:  apache2 apache2-mod_perl
 Version:        0.0.6
 Release:        0.2
@@ -29,14 +29,14 @@ Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
-Recommends:     yast2-yep
+Recommends:     yast2-smt
 PreReq:         %fillup_prereq apache2 apache2-mod_perl
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
 License:        GPL v2 or later
 Summary:        YaST Enterprise Proxy
 Source:         %{name}-%{version}.tar.bz2
-Source1:        sysconfig.apache2-yep
+Source1:        sysconfig.apache2-smt
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -67,19 +67,19 @@ cp -p %{S:1} .
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
 make DESTDIR=$RPM_BUILD_ROOT install
 make DESTDIR=$RPM_BUILD_ROOT install_conf
-mkdir -p $RPM_BUILD_ROOT/var/lib/YEP/db
-install -m 644 db/*.sql $RPM_BUILD_ROOT/var/lib/YEP/db/
-install -m 755 db/setup_mysql.sh $RPM_BUILD_ROOT/var/lib/YEP/db/
+mkdir -p $RPM_BUILD_ROOT/var/lib/SMT/db
+install -m 644 db/*.sql $RPM_BUILD_ROOT/var/lib/SMT/db/
+install -m 755 db/setup_mysql.sh $RPM_BUILD_ROOT/var/lib/SMT/db/
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
-install -m 644 sysconfig.apache2-yep   $RPM_BUILD_ROOT/var/adm/fillup-templates/
+install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
 
 # create apache config links
 mkdir -p $RPM_BUILD_ROOT/etc/apache2/conf.d/
 mkdir -p $RPM_BUILD_ROOT/etc/apache2/vhosts.d/
 
-ln -s /etc/yep.d/nu_server.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/nu_server.conf
-ln -s /etc/yep.d/yep_mod_perl.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/yep_mod_perl.conf
-ln -s /etc/yep.d/vhost-ssl.conf $RPM_BUILD_ROOT/etc/apache2/vhosts.d/vhost-ssl.conf
+ln -s /etc/smt.d/nu_server.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/nu_server.conf
+ln -s /etc/smt.d/smt_mod_perl.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/smt_mod_perl.conf
+ln -s /etc/smt.d/vhost-ssl.conf $RPM_BUILD_ROOT/etc/apache2/vhosts.d/vhost-ssl.conf
 
 # ---------------------------------------------------------------------------
 
@@ -87,7 +87,7 @@ ln -s /etc/yep.d/vhost-ssl.conf $RPM_BUILD_ROOT/etc/apache2/vhosts.d/vhost-ssl.c
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
 
 %post
-%{fillup_only -ans apache2 yep}
+%{fillup_only -ans apache2 smt}
 exit 0
 
 %postun
@@ -95,31 +95,31 @@ exit 0
 
 %files
 %defattr(-,root,root)
-%dir %{perl_vendorlib}/YEP/
-%dir %{perl_vendorlib}/YEP/Mirror
-%dir %{perl_vendorlib}/YEP/Parser
-%dir /etc/yep.d
-%dir /var/lib/YEP
-%dir /var/lib/YEP/db
+%dir %{perl_vendorlib}/SMT/
+%dir %{perl_vendorlib}/SMT/Mirror
+%dir %{perl_vendorlib}/SMT/Parser
+%dir /etc/smt.d
+%dir /var/lib/SMT
+%dir /var/lib/SMT/db
 %dir /srv/www/htdocs/repo/
 %dir /srv/www/htdocs/testing/
 %dir /srv/www/htdocs/testing/repo/
 %dir /srv/www/perl-lib/NU/
-%dir /srv/www/perl-lib/YEP/
-%config(noreplace) /etc/yep.conf
+%dir /srv/www/perl-lib/SMT/
+%config(noreplace) /etc/smt.conf
 %config /etc/apache2/*.pl
-%config /etc/yep.d/*.conf
+%config /etc/smt.d/*.conf
 /etc/apache2/conf.d/*.conf
 /etc/apache2/vhosts.d/*.conf
-%{perl_vendorlib}/YEP/*.pm
-%{perl_vendorlib}/YEP/Mirror/*.pm
-%{perl_vendorlib}/YEP/Parser/*.pm
+%{perl_vendorlib}/SMT/*.pm
+%{perl_vendorlib}/SMT/Mirror/*.pm
+%{perl_vendorlib}/SMT/Parser/*.pm
 /srv/www/perl-lib/NU/*.pm
-/srv/www/perl-lib/YEP/*.pm
-/usr/sbin/yep-*
-/usr/sbin/yep
-/var/lib/YEP/db/*
-/var/adm/fillup-templates/sysconfig.apache2-yep
+/srv/www/perl-lib/SMT/*.pm
+/usr/sbin/smt-*
+/usr/sbin/smt
+/var/lib/SMT/db/*
+/var/adm/fillup-templates/sysconfig.apache2-smt
 %doc README COPYING 
 
 %changelog

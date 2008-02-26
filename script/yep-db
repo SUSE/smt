@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use lib ("/srv/www/perl-lib/");
-use YEP::Utils;
+use SMT::Utils;
 use Getopt::Long qw(:config pass_through no_auto_abbrev);
 use Data::Dumper;
 use File::Basename;
@@ -17,7 +17,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 my $dbh = undef;
 my $sth = undef;
 
-if ( not $dbh=YEP::Utils::db_connect() )
+if ( not $dbh=SMT::Utils::db_connect() )
 {
     print __("ERROR: Could not connect to the database\n");
     return 1;

@@ -37,7 +37,7 @@ MaxClients must be lower then the value of "ServerLimit".
 Restart apache2 after changing this parameter.
 
 
-For YEP it is usefull to set the mysqld max_connections limit a little bit
+For SMT it is usefull to set the mysqld max_connections limit a little bit
 higher then then the apache2 MaxClients limit. 
 
 
@@ -47,7 +47,7 @@ Speedup database connection:
 If the database connect() takes a long time it might be usefull to switch to 
 persistent database connections. This can be easily done by installing 
 perl-Apache-DBI module (SDK) and put "use Apache::DBI;" into 
-/etc/apache2/yep-mod_perl-startup.pl . Example:
+/etc/apache2/smt-mod_perl-startup.pl . Example:
 
 -----------------------------------------
   ...

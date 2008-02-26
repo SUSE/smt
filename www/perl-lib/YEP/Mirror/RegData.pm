@@ -1,12 +1,12 @@
-package YEP::Mirror::RegData;
+package SMT::Mirror::RegData;
 use strict;
 
 use LWP::UserAgent;
 use URI;
-use YEP::Parser::RegData;
+use SMT::Parser::RegData;
 use XML::Writer;
 use Crypt::SSLeay;
-use YEP::Utils;
+use SMT::Utils;
 use File::Temp;
 
 use Data::Dumper;
@@ -84,10 +84,10 @@ sub new
     }
     else
     {
-        $self->{LOG} = YEP::Utils::openLog();
+        $self->{LOG} = SMT::Utils::openLog();
     }
 
-    my ($ruri, $rguid, $rsecret) = YEP::Utils::getLocalRegInfos();
+    my ($ruri, $rguid, $rsecret) = SMT::Utils::getLocalRegInfos();
 
     $self->{URI} = $ruri;
     $self->{USERINFO} = $rguid.":".$rsecret;
@@ -221,7 +221,7 @@ sub _parseXML
         printLog($self->{LOG}, "error", "File '$xmlfile' does not exist.");
     }
 
-    my $parser = YEP::Parser::RegData->new();
+    my $parser = SMT::Parser::RegData->new();
     $parser->parse($xmlfile, sub { ncc_handler($self, @_); });
 
     return 0;
@@ -265,7 +265,7 @@ sub _updateDB
         return 1;
     }
     
-    my $dbh = YEP::Utils::db_connect();
+    my $dbh = SMT::Utils::db_connect();
     if(!defined $dbh)
     {
         printLog($self->{LOG}, "error", "Cannot connect to database.");

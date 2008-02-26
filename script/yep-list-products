@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
-use YEP::CLI;
-use YEP::Utils;
+use SMT::CLI;
+use SMT::Utils;
 use File::Basename;
 
 use Locale::gettext ();
@@ -34,4 +34,4 @@ if ( defined $help and ( $help == 1 ) )
   exit 0;
 }
 
-YEP::CLI::listProducts(verbose => $verbose, used => $used );
+SMT::CLI::listProducts(verbose => $verbose, used => $used );

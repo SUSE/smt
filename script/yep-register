@@ -15,8 +15,8 @@ BEGIN
 
 
 use strict;
-use YEP::Utils;
-use YEP::NCCRegTools;
+use SMT::Utils;
+use SMT::NCCRegTools;
 use Getopt::Long;
 use LWP::UserAgent;
 use Crypt::SSLeay;
@@ -58,7 +58,7 @@ $useragent->protocols_allowed( [ 'https' ] );
 $useragent->default_headers->push_header('Content-Type' => 'text/xml');
 push @{ $useragent->requests_redirectable }, 'POST';
 
-if(!YEP::Utils::openLock("yep-register"))
+if(!SMT::Utils::openLock("smt-register"))
 {
     print __("Registration process is still running.\n");
     exit 0;
@@ -66,47 +66,47 @@ if(!YEP::Utils::openLock("yep-register"))
 
 # open the logfile
 
-my $LOG = YEP::Utils::openLog($logfile);
+my $LOG = SMT::Utils::openLog($logfile);
 
 my $dbh = undef;
 
-$dbh = YEP::Utils::db_connect();
+$dbh = SMT::Utils::db_connect();
 
 if(!$dbh)
 {
-    if(!YEP::Utils::unLock("yep-register"))
+    if(!SMT::Utils::unLock("smt-register"))
     {
-        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    YEP::Utils::printLog($LOG, "error", __("Cannot connect to database"));
+    SMT::Utils::printLog($LOG, "error", __("Cannot connect to database"));
     exit 1;
 }
 
 eval
 {
-    my $nccreg = YEP::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, log => $LOG);
+    my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, log => $LOG);
     my $err = $nccreg->NCCRegister();
     if($err != 0)
     {
-        if(!YEP::Utils::unLock("yep-register"))
+        if(!SMT::Utils::unLock("smt-register"))
         {
-            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
         }
         exit 1;
     }
 };
 if($@)
 {
-    if(!YEP::Utils::unLock("yep-register"))
+    if(!SMT::Utils::unLock("smt-register"))
     {
-        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
     exit 1;
 }
 
-if(!YEP::Utils::unLock("yep-register"))
+if(!SMT::Utils::unLock("smt-register"))
 {
-    YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+    SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
 }
 exit 0;
 

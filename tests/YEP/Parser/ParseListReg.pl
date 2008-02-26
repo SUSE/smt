@@ -5,11 +5,11 @@ BEGIN {
 }
 
 use strict;
-use YEP::Parser::ListReg;
+use SMT::Parser::ListReg;
 use Test::Simple tests => 3;
 use Data::Dumper;
 
-my $rd = YEP::Parser::ListReg->new();
+my $rd = SMT::Parser::ListReg->new();
 $rd->parse("./testdata/regdatatest/registrations.xml", sub { test_handler(@_)});
 
 

@@ -13,10 +13,10 @@ TODO:
 }
 
 
-- YEP Add-On Product (server)
+- SMT Add-On Product (server)
   * someone needs to build and sign the add-on periodically
   * add-on contains all server RPMs
-  * new packages (e.g.) skelcd-control-YEP and skelcd-YEP
+  * new packages (e.g.) skelcd-control-SMT and skelcd-SMT
     (internal ones, for building the add-on)
   * ... (maybe to be discussed with POS team)
   * IMPORTANT: This add-on product must call the registration
@@ -24,18 +24,18 @@ TODO:
                using the yast2 add-on module
 
 - yast module:
-  - Write parameter in yep.conf (what does this mean?)
+  - Write parameter in smt.conf (what does this mean?)
     [LOCAL]
     url=...
     https://<local.full.quallified.domain.name>/ 
 
-- test what happens if two processes want to write yep.db
+- test what happens if two processes want to write smt.db
   How can we solve concutrrent access with DBI?
 
 - create, implement and test a strategy how we can update the database structure
   after release. (e.g. if we need to add some tables, or collumns in tables) 
 
-- modify listProducts registration command for YEP.
+- modify listProducts registration command for SMT.
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
 
@@ -43,8 +43,8 @@ TODO:
   maybe set max_connections=160 in /etc/my.cnf
   needs some disuccion.
 
-- add a parameter to yep.conf  about disable client registration at NCC
-  * use this parameter in yep-register and yep-delete-registration
+- add a parameter to smt.conf  about disable client registration at NCC
+  * use this parameter in smt-register and smt-delete-registration
 
 
 DONE:
@@ -59,7 +59,7 @@ DONE:
   * adjusting /etc/sysconfig/apache2
   * reloading apache2 when configuration changed
   * insserving apache2 if needed
-  * configures cron to run /usr/bin/yep-mirror.pl periodically
+  * configures cron to run /usr/bin/smt-mirror.pl periodically
   * insserving cron if needed
   * restarting cron if needed
   * checks and installs cron package if needed, otherwise
@@ -68,27 +68,27 @@ DONE:
     exists /etc/ssl/servercerts/servercert.pem
     if it doesn't, offers to call a service proposal (CA proposal)
   * copies the CA (or the server certificate) to
-    /srv/www/htdocs/yep.crt
+    /srv/www/htdocs/smt.crt
 
 - yast module:
   * found out that the server certificate does not work.
-    we need to copy the ca-certificate to /srv/www/htdocs/yep.crt
+    we need to copy the ca-certificate to /srv/www/htdocs/smt.crt
     The ca can be found at:
     /etc/ssl/certs/YaST-CA.pem
 
-- YEP::Registration listparam has to check for "accept=''" option
+- SMT::Registration listparam has to check for "accept=''" option
   [Not needed, a stripped result is produced by the client (suse_register)
    only]
 
-- yep.db must be owned by user "wwwrun"
+- smt.db must be owned by user "wwwrun"
   Found out that sqlite must have write access to the directory too.
   We should think about to move the DB to /var/lib/wwwrun/
-  [Is now at /var/lib/YEP/db/]
+  [Is now at /var/lib/SMT/db/]
 
-- call verify (yep-mirror.pl) after syncing a repo and restart syncing 
+- call verify (smt-mirror.pl) after syncing a repo and restart syncing 
   if verify failed (e.g. 3 times before stopping)
 
-- yep-mirror.pl: After mirror check if there are catalogs where the
+- smt-mirror.pl: After mirror check if there are catalogs where the
   DOMIRROR flag is set to "Y" but the MIRRORABLE flag is set to "N".
   This can happen if an entitlement is expired on NCC. 
   In such a case we should print a warning message to inform the
@@ -110,20 +110,20 @@ DONE:
     the "Mirroable" flags to 'Y' again
        Comment: download "repomd.xml" and for all available catalogs in there
                 set the Mirrorable flag to 'Y'
-       All three jobs should be run by:  yep initialize
+       All three jobs should be run by:  smt initialize
 
 - client tool to view all mirrorable catalogs and change the
   "DoMirror" Flag on demand.
       Comment: should support "list all catalogs" for Mirrorable and All catalog
-                   yep list catalogs      (list Mirrorable)
-                   yep list -a catalogs   (list all)
-                   yep list products      (here we need the products list)
+                   smt list catalogs      (list Mirrorable)
+                   smt list -a catalogs   (list all)
+                   smt list products      (here we need the products list)
                List required fields (at least id, name, version, arch) to easyly activate them like this:
-                   yep activate <catalog_id>
-                   yep activate <catalog_name>
-                   yep activate --product <product_name>    (resolves internally what catalogs this product has)
-                   yep activate --version <verision_name>   (does this make sense?)
-                   yep activate --arch <arch_name>          (does this make sense?)
+                   smt activate <catalog_id>
+                   smt activate <catalog_name>
+                   smt activate --product <product_name>    (resolves internally what catalogs this product has)
+                   smt activate --version <verision_name>   (does this make sense?)
+                   smt activate --arch <arch_name>          (does this make sense?)
                Only Mirroable catalogs can be activated!
 
 
@@ -135,9 +135,9 @@ DONE:
 - write yast module for initial setup
   * start database initialization (ncc-mirror) at the end
     of the YaST run.
-  * NiceToHave: configuration of a cronjob for yep-mirror.pl
+  * NiceToHave: configuration of a cronjob for smt-mirror.pl
 
-- add a logfile option to yep-mirror.pl and prepare the YEP::Mirror::... 
+- add a logfile option to smt-mirror.pl and prepare the SMT::Mirror::... 
   modules to print in a logfile
 
 - provide test and production enviroment. 
@@ -153,7 +153,7 @@ DONE:
   Have a look at doc/Server-Tuning.txt
 
 - how can a customer say, that he always wants to mirror _all_ mirrorable catalogs?
-  Idea: add an "mirrorall" option to yep.conf and modify yep-ncc-sync to set 
+  Idea: add an "mirrorall" option to smt.conf and modify smt-ncc-sync to set 
         DOMIRROR flag to 'Y' for all mirrorable catalogs if this option is true 
 
 - yup has a hardlink feature. Would be nice if we could have it too.

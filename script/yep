@@ -6,8 +6,8 @@
 use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
-use YEP::CLI;
-use YEP::Utils;
+use SMT::CLI;
+use SMT::Utils;
 use File::Basename;
 use File::Find;
 
@@ -20,7 +20,7 @@ sub help
 {
     print __("show help\n");
     my @files;
-    find( sub { push(@files, $1) if $_ =~ /yep\-(.+)/; }, "/usr/sbin");
+    find( sub { push(@files, $1) if $_ =~ /smt\-(.+)/; }, "/usr/sbin");
     
 
     print "YaST Enterprise Proxy. (c)2007 Novell Inc.\n\n";
@@ -30,7 +30,7 @@ sub help
       print basename($0) . " $cmd\n";
     }
 
-    print __("\nUse yep help <command> for more help\n");
+    print __("\nUse smt help <command> for more help\n");
     exit 0;
 }
 
@@ -39,7 +39,7 @@ sub executeCommand
   my $name = shift;
   my @options = @_;
 
-  my $exec = "/usr/sbin/yep-$name";
+  my $exec = "/usr/sbin/smt-$name";
   my $cmd = "$exec " . join(" ", @options);
   #print "execute '$cmd'\n";
   if ( -e $exec )

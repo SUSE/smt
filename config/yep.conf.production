@@ -4,7 +4,7 @@ NUUser=
 NUPass=
 
 [DB]
-config=dbi:mysql:database=yep;host=localhost
+config=dbi:mysql:database=smt;host=localhost
 user=root
 pass=
 

@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 
 use strict;
-use YEP::Mirror::RegData;
+use SMT::Mirror::RegData;
 use Test::Simple tests => 4;
 
 sub testsync
@@ -20,7 +20,7 @@ sub testsync
 }
 
 
-my $rd = YEP::Mirror::RegData->new(debug   => 1,
+my $rd = SMT::Mirror::RegData->new(debug   => 1,
                                    element => "productdata",
                                    table   => "Products",
                                    key     => "PRODUCTDATAID");

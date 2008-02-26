@@ -1,10 +1,10 @@
-package YEP::NCCRegTools;
+package SMT::NCCRegTools;
 use strict;
 
 use LWP::UserAgent;
 use URI;
-use YEP::Parser::ListReg;
-use YEP::Utils;
+use SMT::Parser::ListReg;
+use SMT::Utils;
 use XML::Writer;
 use Crypt::SSLeay;
 use File::Temp;
@@ -33,8 +33,8 @@ sub new
     $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = undef; 
-    $self->{YEPGUID} = "";
-    $self->{YEPSECRET} = "";
+    $self->{SMTGUID} = "";
+    $self->{SMTSECRET} = "";
 
     $self->{DBH} = undef;
 
@@ -72,7 +72,7 @@ sub new
     }
     else
     {
-        $self->{LOG} = YEP::Utils::openLog();
+        $self->{LOG} = SMT::Utils::openLog();
     }
 
     if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
@@ -90,15 +90,15 @@ sub new
     }
     else
     {
-        $self->{DBH} = YEP::Utils::db_connect();
+        $self->{DBH} = SMT::Utils::db_connect();
     }
     
     
-    my ($ruri, $rguid, $rsecret) = YEP::Utils::getLocalRegInfos();
+    my ($ruri, $rguid, $rsecret) = SMT::Utils::getLocalRegInfos();
     
     $self->{URI}      = $ruri;
-    $self->{YEPGUID}  = $rguid;
-    $self->{YEPSECRET}= $rsecret;
+    $self->{SMTGUID}  = $rguid;
+    $self->{SMTSECRET}= $rsecret;
     bless($self);
     
     return $self;
@@ -125,7 +125,7 @@ sub NCCRegister
         
         foreach my $guid (@{$guids})
         {
-            my $regtimestring = YEP::Utils::getDBTimestamp();
+            my $regtimestring = SMT::Utils::getDBTimestamp();
             my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s
  and r.PRODUCTID=p.PRODUCTDATAID", $self->{DBH}->quote($guid)), {Slice => {}});
             
@@ -196,13 +196,13 @@ sub NCCListRegistrations
         $writer->xmlDecl("UTF-8");
         $writer->startTag("listregistrations", %a);
         
-        $writer->startTag("yepguid");
-        $writer->characters($self->{YEPGUID});
-        $writer->endTag("yepguid");
+        $writer->startTag("smtguid");
+        $writer->characters($self->{SMTGUID});
+        $writer->endTag("smtguid");
         
-        $writer->startTag("yepsecret");
-        $writer->characters($self->{YEPSECRET});
-        $writer->endTag("yepsecret");
+        $writer->startTag("smtsecret");
+        $writer->characters($self->{SMTSECRET});
+        $writer->endTag("smtsecret");
 
         $writer->endTag("listregistrations");
         
@@ -236,12 +236,12 @@ sub NCCListRegistrations
         
         my $guidhash = $self->{DBH}->selectall_hashref("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > '2000-01-01 00:00:00'");
 
-        my $parser = new YEP::Parser::ListReg(log => $self->{LOG});
+        my $parser = new SMT::Parser::ListReg(log => $self->{LOG});
         $parser->parse($destfile, sub{ _listreg_handler($self, $guidhash, @_)});
     
         # $guidhash includes now a list of GUIDs which are no longer in NCC
         # A customer may have removed them via NCC web page. 
-        # So remove them also here in YEP
+        # So remove them also here in SMT
         
         $self->_deleteRegistrationLocal(keys %{$guidhash});
         
@@ -279,13 +279,13 @@ sub NCCDeleteRegistration
         $writer->characters($guid);
         $writer->endTag("guid");
         
-        $writer->startTag("yepguid");
-        $writer->characters($self->{YEPGUID});
-        $writer->endTag("yepguid");
+        $writer->startTag("smtguid");
+        $writer->characters($self->{SMTGUID});
+        $writer->endTag("smtguid");
         
-        $writer->startTag("yepsecret");
-        $writer->characters($self->{YEPSECRET});
-        $writer->endTag("yepsecret");
+        $writer->startTag("smtsecret");
+        $writer->characters($self->{SMTSECRET});
+        $writer->endTag("smtsecret");
         
         $writer->endTag("de-register");
         
@@ -391,7 +391,7 @@ sub _listreg_handler
         }
         else
         {
-            # We found a registration from YEP in NCC which does not exist in YEP anymore
+            # We found a registration from SMT in NCC which does not exist in SMT anymore
             # print and error. The admin has to delete it in NCC by hand.
             printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a subscription in NCC which is not available here: '%s'"), $data->{GUID}));
         }
@@ -560,13 +560,13 @@ sub _buildRegisterXML
         }
     }
     
-    $writer->startTag("yepguid");
-    $writer->characters($self->{YEPGUID});
-    $writer->endTag("yepguid");
+    $writer->startTag("smtguid");
+    $writer->characters($self->{SMTGUID});
+    $writer->endTag("smtguid");
 
-    $writer->startTag("yepsecret");
-    $writer->characters($self->{YEPSECRET});
-    $writer->endTag("yepsecret");
+    $writer->startTag("smtsecret");
+    $writer->characters($self->{SMTSECRET});
+    $writer->endTag("smtsecret");
     
     foreach my $PHash (@{$products})
     {

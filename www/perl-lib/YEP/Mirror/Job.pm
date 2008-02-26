@@ -1,4 +1,4 @@
-package YEP::Mirror::Job;
+package SMT::Mirror::Job;
 use strict;
 
 use LWP::UserAgent;
@@ -7,7 +7,7 @@ use File::Basename;
 use Date::Parse;
 use Crypt::SSLeay;
 use Digest::SHA1  qw(sha1 sha1_hex);
-use YEP::Utils;
+use SMT::Utils;
 
 BEGIN 
 {
@@ -51,7 +51,7 @@ sub new
     }
     else
     {
-        $self->{LOG} = YEP::Utils::openLog();
+        $self->{LOG} = SMT::Utils::openLog();
     }
 
     bless($self);
@@ -241,11 +241,11 @@ sub print
 
 =head1 NAME
 
-YEP::Mirror::Job - represents a single resource mirror job
+SMT::Mirror::Job - represents a single resource mirror job
 
 =head1 SYNOPSIS
 
-  $job = YEP::Mirror::Job->new();
+  $job = SMT::Mirror::Job->new();
   $job->uri("http://foo.com/");
   $job->localdir("/tmp");
   $job->resource("/file.txt");
@@ -267,9 +267,9 @@ or if it needs refresh and to transfer it.
 
 =item new([$params])
 
-Create a new YEP::Mirror::Job object:
+Create a new SMT::Mirror::Job object:
 
-  my $mirror = YEP::Mirror::Job->new(debug => 1);
+  my $mirror = SMT::Mirror::Job->new(debug => 1);
 
 Arguments are an anonymous hash array of parameters:
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <registrations xmlns="http://www.novell.com/xml/center/regsvc-1_0"
                lang="en">
- <yepguid>ab6205f37503eed745</yepguid>
+ <smtguid>ab6205f37503eed745</smtguid>
  <client>
    <guid>1badbeef4abadb01</guid>
    <subscription name="SLES10">

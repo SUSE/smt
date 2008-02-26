@@ -5,7 +5,7 @@ BEGIN {
     push @INC, "../../../www/perl-lib";
 }
 
-use YEP::Mirror::RpmMd;
+use SMT::Mirror::RpmMd;
 use IO::Zlib;
 use Test::Simple tests => 6;
 
@@ -13,7 +13,7 @@ my $url = 'http://download.opensuse.org/repositories/home:/dmacvicar/openSUSE_10
 my $tempdir = File::Temp::tempdir(CLEANUP => 1);
 print STDERR "Saving $url to $tempdir\n";
 
-$mirror = YEP::Mirror::RpmMd->new();
+$mirror = SMT::Mirror::RpmMd->new();
 $mirror->uri( $url );
 ok($mirror->mirrorTo( $tempdir ) == 0, "should mirror ok");
 

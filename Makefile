@@ -1,9 +1,9 @@
-NAME         = yep
+NAME         = smt
 VERSION      = 0.0.6
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
-YEP_SQLITE_DB = $(DESTDIR)/var/lib/YEP/db/yep.db
+SMT_SQLITE_DB = $(DESTDIR)/var/lib/SMT/db/smt.db
 TEMPF = $(shell mktemp)
 
 install_all: install install_conf install_db
@@ -32,57 +32,57 @@ install_all: install install_conf install_db
 install_db: install_db_mysql
 
 install_db_sqlite:
-	mkdir -p $(DESTDIR)/var/lib/YEP/db/
+	mkdir -p $(DESTDIR)/var/lib/SMT/db/
 	cd db/
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/yep-tables_sqlite.sql"
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/products.sql"
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/targets.sql"
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-catalogs.sql"
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-productcatalogs.sql"
-	sqlite3 -line $(YEP_SQLITE_DB) ".read db/tmp-register.sql"
+	sqlite3 -line $(SMT_SQLITE_DB) ".read db/smt-tables_sqlite.sql"
+	sqlite3 -line $(SMT_SQLITE_DB) ".read db/products.sql"
+	sqlite3 -line $(SMT_SQLITE_DB) ".read db/targets.sql"
+	sqlite3 -line $(SMT_SQLITE_DB) ".read db/tmp-catalogs.sql"
+	sqlite3 -line $(SMT_SQLITE_DB) ".read db/tmp-productcatalogs.sql"
+	sqlite3 -line $(SMT_SQLITE_DB) ".read db/tmp-register.sql"
 # this table is dropped
-#	sqlite3 -line $(YEP_SQLITE_DB) ".read db/product_dependencies.sql"
+#	sqlite3 -line $(SMT_SQLITE_DB) ".read db/product_dependencies.sql"
 
 install_db_mysql:
-	echo "drop database if exists yep;" | mysql -u root
-	echo "create database if not exists yep;" | mysql -u root
-	cat db/yep-tables_mysql.sql | mysql -u root yep
-	cat db/products.sql | mysql -u root yep
-	cat db/targets.sql | mysql -u root yep
-	cat db/tmp-catalogs.sql | mysql -u root yep
-	cat db/tmp-productcatalogs.sql | mysql -u root yep
-	cat db/tmp-register.sql | mysql -u root yep
+	echo "drop database if exists smt;" | mysql -u root
+	echo "create database if not exists smt;" | mysql -u root
+	cat db/smt-tables_mysql.sql | mysql -u root smt
+	cat db/products.sql | mysql -u root smt
+	cat db/targets.sql | mysql -u root smt
+	cat db/tmp-catalogs.sql | mysql -u root smt
+	cat db/tmp-productcatalogs.sql | mysql -u root smt
+	cat db/tmp-register.sql | mysql -u root smt
 # this table is dropped
-#	cat db/product_dependencies.sql | mysql -u root yep
+#	cat db/product_dependencies.sql | mysql -u root smt
 
 install_conf:
 	mkdir -p $(DESTDIR)/etc/
-	cp config/yep.conf $(DESTDIR)/etc/
+	cp config/smt.conf $(DESTDIR)/etc/
 
 install:
 	mkdir -p $(DESTDIR)/usr/sbin/
 	mkdir -p $(DESTDIR)/etc/apache2
-	mkdir -p $(DESTDIR)/etc/yep.d/
+	mkdir -p $(DESTDIR)/etc/smt.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
 	mkdir -p $(DESTDIR)/srv/www/htdocs/testing/repo
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
-	mkdir -p $(DESTDIR)/srv/www/perl-lib/YEP
-	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Mirror
-	mkdir -p $(DESTDIR)$(PERLMODDIR)/YEP/Parser
-	cp apache2/yep-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
-	cp apache2/conf.d/*.conf $(DESTDIR)/etc/yep.d/
-	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/yep.d/
-	cp script/yep $(DESTDIR)/usr/sbin/
-	cp script/yep-* $(DESTDIR)/usr/sbin/
-	chmod 0755 $(DESTDIR)/usr/sbin/yep
-	chmod 0755 $(DESTDIR)/usr/sbin/yep-*
+	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT
+	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror
+	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Parser
+	cp apache2/smt-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
+	cp apache2/conf.d/*.conf $(DESTDIR)/etc/smt.d/
+	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/smt.d/
+	cp script/smt $(DESTDIR)/usr/sbin/
+	cp script/smt-* $(DESTDIR)/usr/sbin/
+	chmod 0755 $(DESTDIR)/usr/sbin/smt
+	chmod 0755 $(DESTDIR)/usr/sbin/smt-*
 	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
-	cp www/perl-lib/YEP/Registration.pm $(DESTDIR)/srv/www/perl-lib/YEP/
-	cp www/perl-lib/YEP/Utils.pm $(DESTDIR)$(PERLMODDIR)/YEP/
-	cp www/perl-lib/YEP/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/YEP/
-	cp www/perl-lib/YEP/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Mirror/
-	cp www/perl-lib/YEP/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/YEP/Parser/
-	cp www/perl-lib/YEP/CLI.pm /$(DESTDIR)$(PERLMODDIR)/YEP/
+	cp www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	cp www/perl-lib/SMT/Utils.pm $(DESTDIR)$(PERLMODDIR)/SMT/
+	cp www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
+	cp www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
+	cp www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
+	cp www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 
 
 test: clean
@@ -103,38 +103,38 @@ dist: clean
 	@mkdir -p $(NAME)-$(VERSION)/db
 	@mkdir -p $(NAME)-$(VERSION)/doc
 	@mkdir -p $(NAME)-$(VERSION)/script
-	@mkdir -p $(NAME)-$(VERSION)/tests/YEP/Mirror
+	@mkdir -p $(NAME)-$(VERSION)/tests/SMT/Mirror
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/jobtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/rpmmdtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/regdatatest
 	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/NU
-	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror
-	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/YEP/Parser
+	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/SMT/Mirror
+	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/SMT/Parser
 
 	@cp apache2/*.pl $(NAME)-$(VERSION)/apache2/
 	@cp apache2/conf.d/*.conf $(NAME)-$(VERSION)/apache2/conf.d/
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
-	@cp config/yep.conf.production $(NAME)-$(VERSION)/config/yep.conf
+	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
 	@cp db/*.sql $(NAME)-$(VERSION)/db/
 	@cp db/*.sh $(NAME)-$(VERSION)/db/
 	@cp db/README $(NAME)-$(VERSION)/db/
 	@cp doc/* $(NAME)-$(VERSION)/doc/
 	rm -f $(NAME)-$(VERSION)/doc/*~
 	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
-	@cp tests/YEP/Mirror/*.pl $(NAME)-$(VERSION)/tests/YEP/Mirror/
+	@cp tests/SMT/Mirror/*.pl $(NAME)-$(VERSION)/tests/SMT/Mirror/
 	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
 	@cp www/README $(NAME)-$(VERSION)/www/
 	@cp script/* $(NAME)-$(VERSION)/script/
 	@cp www/perl-lib/NU/*.pm $(NAME)-$(VERSION)/www/perl-lib/NU/
-	@cp www/perl-lib/YEP/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/
-	@cp www/perl-lib/YEP/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Mirror/
-	@cp www/perl-lib/YEP/Parser/*.pm $(NAME)-$(VERSION)/www/perl-lib/YEP/Parser/
+	@cp www/perl-lib/SMT/*.pm $(NAME)-$(VERSION)/www/perl-lib/SMT/
+	@cp www/perl-lib/SMT/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/SMT/Mirror/
+	@cp www/perl-lib/SMT/Parser/*.pm $(NAME)-$(VERSION)/www/perl-lib/SMT/Parser/
 	@cp HACKING Makefile README COPYING $(NAME)-$(VERSION)/
 
 	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/
 
 pot:
 	find www/ -name "*.pm" > sourcefiles
-	find script/ -maxdepth 1 -name "yep*" >> sourcefiles
-	xgettext --default-domain=yep --directory=. --keyword=__ -o yep.pot --files-from sourcefiles
+	find script/ -maxdepth 1 -name "smt*" >> sourcefiles
+	xgettext --default-domain=smt --directory=. --keyword=__ -o smt.pot --files-from sourcefiles
 	rm -f sourcefiles

@@ -4,11 +4,11 @@
 ## Copyright (c) 2007 SUSE LINUX Products GmbH, Nuernberg, Germany.
 ###########################################################################
 
-use YEP::Mirror::NU;
-use YEP::Mirror::RpmMd;
-use YEP::Utils;
-use YEP::CLI;
-use YEP::Parser::RegData;
+use SMT::Mirror::NU;
+use SMT::Mirror::RpmMd;
+use SMT::Utils;
+use SMT::CLI;
+use SMT::Parser::RegData;
 use Config::IniFiles;
 use File::Path;
 use URI;
@@ -58,10 +58,10 @@ if($help)
     print "--hardlink size   " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     print "                  " . __("for them\n");
     print "--directory arg   " . __("The directory to work on. Using this option ignores the configured\n");
-    print "                  " . __("default value in yep.conf\n");
+    print "                  " . __("default value in smt.conf\n");
     print "--deepverify      " . __("Verify all checksums \n");
     print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can be created with\n");
-    print "                  " . __("the sync-ncc command. This option is only usefull if the yep database is not on the \n");
+    print "                  " . __("the sync-ncc command. This option is only usefull if the smt database is not on the \n");
     print "                  " . __("same host as this script should run\n"); 
     print "--logfile -L file " . __("Path to logfile\n");
     print "--help -h         " . __("show this message\n");
@@ -71,7 +71,7 @@ if($help)
 
 # get a lock
 
-if(!YEP::Utils::openLock("yep-mirror"))
+if(!SMT::Utils::openLock("smt-mirror"))
 {
     print __("Mirror process is still running.\n");
     exit 0;
@@ -79,16 +79,16 @@ if(!YEP::Utils::openLock("yep-mirror"))
 
 # open the logfile
 
-my $LOG = YEP::Utils::openLog($logfile);
+my $LOG = SMT::Utils::openLog($logfile);
 
 
 if($hardlink > 0)
 {
-    YEP::CLI::hardlink(log => $LOG, size => $hardlink, debug => $debug);
+    SMT::CLI::hardlink(log => $LOG, size => $hardlink, debug => $debug);
     
-    if(!YEP::Utils::unLock("yep-mirror"))
+    if(!SMT::Utils::unLock("smt-mirror"))
     {
-        YEP::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
     }
     exit 0;
 }
@@ -98,15 +98,15 @@ my $dbh = undef;
 
 if(!defined $dbreplfile)
 {
-    $dbh = YEP::Utils::db_connect();
+    $dbh = SMT::Utils::db_connect();
     
     if(!$dbh)
     {
-        if(!YEP::Utils::unLock("yep-mirror"))
+        if(!SMT::Utils::unLock("smt-mirror"))
         {
-            YEP::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
         }
-        YEP::Utils::printLog($LOG, "error",  __("Cannot connect to database"));
+        SMT::Utils::printLog($LOG, "error",  __("Cannot connect to database"));
         exit 1;
     }
 }
@@ -115,32 +115,32 @@ else
     # add a parser
     $dbreplacement = {};
     
-    my $parser = YEP::Parser::RegData->new();
+    my $parser = SMT::Parser::RegData->new();
     $parser->parse( $dbreplfile, sub { catalog_handler($dbreplacement, @_); });
 }
 
 
 #print Data::Dumper->Dump([$dbreplacement]);
 
-my $cfg = new Config::IniFiles( -file => "/etc/yep.conf" );
+my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
 if(!defined $cfg)
 {
-    if(!YEP::Utils::unLock("yep-mirror"))
+    if(!SMT::Utils::unLock("smt-mirror"))
     {
-        YEP::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
     }
-    YEP::Utils::printLog($LOG, "error", sprintf(__("Cannot read the YEP configuration file: %s"), @Config::IniFiles::errors));
+    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
     exit 1;
 }
 
 my $NUUrl = $cfg->val("NU", "NUUrl");
 if(!defined $NUUrl || $NUUrl eq "")
 {
-    if(!YEP::Utils::unLock("yep-mirror"))
+    if(!SMT::Utils::unLock("smt-mirror"))
     {
-        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    YEP::Utils::printLog($LOG, "error", __("Cannot read NU Url"));
+    SMT::Utils::printLog($LOG, "error", __("Cannot read NU Url"));
 }
 
 if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
@@ -148,11 +148,11 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
     if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     {
-        if(!YEP::Utils::unLock("yep-mirror"))
+        if(!SMT::Utils::unLock("smt-mirror"))
         {
-            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
         }
-        YEP::Utils::printLog($LOG, "error", __("Cannot read the local base path"));
+        SMT::Utils::printLog($LOG, "error", __("Cannot read the local base path"));
         exit 1;
     }
 }
@@ -163,11 +163,11 @@ my $nuPass = $cfg->val("NU", "NUPass");
 if(!defined $nuUser || $nuUser eq "" ||
    !defined $nuPass || $nuPass eq "")
 {
-    if(!YEP::Utils::unLock("yep-mirror"))
+    if(!SMT::Utils::unLock("smt-mirror"))
     {
-        YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    YEP::Utils::printLog($LOG, "error", __("Cannot read the Mirror Credentials"));
+    SMT::Utils::printLog($LOG, "error", __("Cannot read the Mirror Credentials"));
     exit 1;
 }
 
@@ -199,7 +199,7 @@ foreach my $id (keys %{$hash})
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
-        my $zyppMirror = YEP::Mirror::RpmMd->new(debug => $debug, log => $LOG);
+        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG);
         if($clean)
         {
             $zyppMirror->clean( $fullpath );
@@ -216,7 +216,7 @@ foreach my $id (keys %{$hash})
 #
 # Now mirror the NU catalogs
 #
-my $mirror = YEP::Mirror::NU->new(debug => $debug, log => $LOG);
+my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG);
 $mirror->deepverify($deepverify);
 if($clean)
 {
@@ -240,9 +240,9 @@ if(!defined $dbreplfile)
     
     if(keys %{$hash} == 0)
     {
-        if(!YEP::Utils::unLock("yep-mirror"))
+        if(!SMT::Utils::unLock("smt-mirror"))
         {
-            YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
             exit 1;
         }
         exit 0;
@@ -256,12 +256,12 @@ if(!defined $dbreplfile)
         $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
     }
 
-    YEP::Utils::printLog($LOG, "info", $warning);
+    SMT::Utils::printLog($LOG, "info", $warning);
 }
 
-if(!YEP::Utils::unLock("yep-mirror"))
+if(!SMT::Utils::unLock("smt-mirror"))
 {
-    YEP::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+    SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     exit 1;
 }
 

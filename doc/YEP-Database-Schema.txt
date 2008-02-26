@@ -1,5 +1,5 @@
 
-YEP Database 
+SMT Database 
 ============
 
 
@@ -19,7 +19,7 @@ NCCREGDATE: Timestamp when this registration was registered at NCC
 This table is changed with every registration. 
 It happens DELETE, UPDATE and INSERT statements during registration.
 
-Expected table size: depends on how many clients are registered against YEP 
+Expected table size: depends on how many clients are registered against SMT 
                      and how many products they have installed.
 
 -------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ SUBDURATION:  SUBENDDATE - SUBSTARTDATE
 SERVERCLASS:  OS or ADDON
 
 This table temporarily store the subscription status. The content is newly 
-created during yep ncc-sync . 
+created during smt ncc-sync . 
 
 -------------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ VALUE:     The Parameter value for this KEYNAME (can be hwinfo output)
 This table is changed with every registration. 
 It happens DELETE and INSERT statements during registration.
 
-Expected table size: depends on how many clients are registered against YEP 
+Expected table size: depends on how many clients are registered against SMT 
                      Every GUID will have around 20 rows in this table.
 
 -------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ PARAMLIST:     XML description of the requested parameters if you want
                to register this product.
 NEEDINFO:      Similar to PARAMLIST but this is realy send during registration
                of this product.
-SERVICE:       (currently not used in YEP)
+SERVICE:       (currently not used in SMT)
 PRODUCT_LIST:  Y/N Should this product send on a listProducts request of
                suse_register
 PRODUCT_CLASS: Common Name for a class of products, e.g all
@@ -157,10 +157,10 @@ DESCRIPTION:  A catalog description
 TARGET:       The catalog target (NULL in case of a single rpmmd catalog)
               The target is something zmd special. It tells zmd about 
               interoperability for products(suse vs. rhat) and architectures.
-LOCALPATH:    Path on YEP where this catalog can be found
+LOCALPATH:    Path on SMT where this catalog can be found
               (this is not a full path! The full path can be build this way:
                <BasePath>/repo/<LOCALPATH>/ 
-               where BasePath can be yep.con.LOCAL.mirrorTo or 
+               where BasePath can be smt.con.LOCAL.mirrorTo or 
                apache DocumentRoot)
 EXTURL:       scheme and host part of EXTURL
 EXTURL:       URL where we can mirror this catalog from

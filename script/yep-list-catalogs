@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
-use YEP::CLI;
-use YEP::Utils;
+use SMT::CLI;
+use SMT::Utils;
 use File::Basename;
 
 use Locale::gettext ();
@@ -36,4 +36,4 @@ if ( defined $help and ( $help == 1 ) )
 }
 
 my %opts = ( );
-YEP::CLI::listCatalogs(mirrorable => $mirrorable, domirror => $domirror, verbose => $verbose);
+SMT::CLI::listCatalogs(mirrorable => $mirrorable, domirror => $domirror, verbose => $verbose);
