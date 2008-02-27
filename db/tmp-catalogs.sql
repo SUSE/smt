@@ -137,6 +137,96 @@ insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, E
 -- SP1-Beta
 insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
  Values("afb93b054f42082a4c1bdbe060c104dc18ca8ede", "SLES10-SP1-Beta", "SLES10-SP1-Beta for sles-10-i586", "sles-10-i586", "$RCE/SLES10-SP1-Beta/sles-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/$RCE/SLES10-SP1-Beta/sles-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("e58d42826a90aed0cf46fad1517c931ebb2dc4f9", "SLES10-SP1-Beta", "SLES10-SP1-Beta for sles-10-ia64", "sles-10-ia64", "$RCE/SLES10-SP1-Beta/sles-10-ia64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/$RCE/SLES10-SP1-Beta/sles-10-ia64/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("2e7552e0252d01dcab1fe8303a92ad6c9b74ae93", "SLES10-SP1-Beta", "SLES10-SP1-Beta for sles-10-ppc", "sles-10-ppc", "$RCE/SLES10-SP1-Beta/sles-10-ppc/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/$RCE/SLES10-SP1-Beta/sles-10-ppc/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("7372f7a172763137ed184a1b24f3f8525ec52854", "SLES10-SP1-Beta", "SLES10-SP1-Beta for sles-10-s390x", "sles-10-s390x", "$RCE/SLES10-SP1-Beta/sles-10-s390x/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/$RCE/SLES10-SP1-Beta/sles-10-s390x/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("98a90b3b23e2e2bf916627c9ba0fa815d561bc53", "SLES10-SP1-Beta", "SLES10-SP1-Beta for sles-10-x86_64", "sles-10-x86_64", "$RCE/SLES10-SP1-Beta/sles-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/$RCE/SLES10-SP1-Beta/sles-10-x86_64/", "nu", "Y");
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("1b59b1ce6c3e3d398d5759057cd304e49551d381", "SLED10-SP1-Beta", "SLED10-SP1-Beta for sled-10-i586", "sled-10-i586", "$RCE/SLED10-SP1-Beta/sled-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/$RCE/SLED10-SP1-Beta/sled-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("579bc18493e525bd7e3804266e086fb886b885a3", "SLED10-SP1-Beta", "SLED10-SP1-Beta for sled-10-x86_64", "sled-10-x86_64", "$RCE/SLED10-SP1-Beta/sled-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/$RCE/SLED10-SP1-Beta/sled-10-x86_64/", "nu", "Y");
+
+
+-- SDK SP1 Online
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("bd6ca83b85d8173037a18848ac4f1ecfb76d90b8", "SLE10-SDK-SP1-Online", "SLE10-SDK-SP1-Online for sles-10-i586", "sles-10-i586", "$RCE/SLE10-SDK-SP1-Online/sles-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Online/sles-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("c8ab693dbee471326fa229dd7191a3b672732bf8", "SLE10-SDK-SP1-Online", "SLE10-SDK-SP1-Online for sles-10-ia64", "sles-10-ia64", "$RCE/SLE10-SDK-SP1-Online/sles-10-ia64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Online/sles-10-ia64/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("471401465da17e85d1d71a3c58731cedf0b6a6c1", "SLE10-SDK-SP1-Online", "SLE10-SDK-SP1-Online for sles-10-ppc", "sles-10-ppc", "$RCE/SLE10-SDK-SP1-Online/sles-10-ppc/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Online/sles-10-ppc/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("d8ed334a095268039a31a895f8cbddb2579cff4c", "SLE10-SDK-SP1-Online", "SLE10-SDK-SP1-Online for sles-10-s390x", "sles-10-s390x", "$RCE/SLE10-SDK-SP1-Online/sles-10-s390x/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Online/sles-10-s390x/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("82d77f477f072cd68fa134937e9b6d8a4af45a64", "SLE10-SDK-SP1-Online", "SLE10-SDK-SP1-Online for sles-10-x86_64", "sles-10-x86_64", "$RCE/SLE10-SDK-SP1-Online/sles-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Online/sles-10-x86_64/", "nu");
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("b49021f602ca24ebd40a89d18d8796f057c43606", "SLE10-SDK-SP1-Online", "SLE10-SDK-SP1-Online for sled-10-i586", "sled-10-i586", "$RCE/SLE10-SDK-SP1-Online/sled-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Online/sled-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("98d00727ffe40d5ed05cc5df4d2e722c476d6dc0", "SLE10-SDK-SP1-Online", "SLE10-SDK-SP1-Online for sled-10-x86_64", "sled-10-x86_64", "$RCE/SLE10-SDK-SP1-Online/sled-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Online/sled-10-x86_64/", "nu");
+
+
+-- SDK SP1 Updates
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("e03b5de3f1774e6b8571ce83727349a312e2b436", "SLE10-SDK-SP1-Updates", "SLE10-SDK-SP1-Updates for sles-10-i586", "sles-10-i586", "$RCE/SLE10-SDK-SP1-Updates/sles-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Updates/sles-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("2a056ad90c3d9fa58be54a9bdbf2344465eea573", "SLE10-SDK-SP1-Updates", "SLE10-SDK-SP1-Updates for sles-10-ia64", "sles-10-ia64", "$RCE/SLE10-SDK-SP1-Updates/sles-10-ia64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Updates/sles-10-ia64/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("b091dc039245301bea88ed5cc1a80545539de9d7", "SLE10-SDK-SP1-Updates", "SLE10-SDK-SP1-Updates for sles-10-ppc", "sles-10-ppc", "$RCE/SLE10-SDK-SP1-Updates/sles-10-ppc/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Updates/sles-10-ppc/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("c6f9bb14a096cb12a7ee7642ddb96289b050c062", "SLE10-SDK-SP1-Updates", "SLE10-SDK-SP1-Updates for sles-10-s390x", "sles-10-s390x", "$RCE/SLE10-SDK-SP1-Updates/sles-10-s390x/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Updates/sles-10-s390x/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("ecbc47fef360e0e6c07a9590f658bad3e9e8f1e3", "SLE10-SDK-SP1-Updates", "SLE10-SDK-SP1-Updates for sles-10-x86_64", "sles-10-x86_64", "$RCE/SLE10-SDK-SP1-Updates/sles-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Updates/sles-10-x86_64/", "nu");
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("9216d717574809dd5d4585435e88f8f81b77f3e3", "SLE10-SDK-SP1-Updates", "SLE10-SDK-SP1-Updates for sled-10-i586", "sled-10-i586", "$RCE/SLE10-SDK-SP1-Updates/sled-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Updates/sled-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("12fe98e2c987c5bfe0ef8cf01d240d5d6757f651", "SLE10-SDK-SP1-Updates", "SLE10-SDK-SP1-Updates for sled-10-x86_64", "sled-10-x86_64", "$RCE/SLE10-SDK-SP1-Updates/sled-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP1-Updates/sled-10-x86_64/", "nu");
+
+
+-- SDK SP2 Online
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("3add46ff88ec9646acaefecbbcf9a39294a5f9fd", "SLE10-SDK-SP2-Online", "SLE10-SDK-SP2-Online for sles-10-i586", "sles-10-i586", "$RCE/SLE10-SDK-SP2-Online/sles-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Online/sles-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("5ef602e1602b77536835ff1406d9f0367d4c81b4", "SLE10-SDK-SP2-Online", "SLE10-SDK-SP2-Online for sles-10-ia64", "sles-10-ia64", "$RCE/SLE10-SDK-SP2-Online/sles-10-ia64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Online/sles-10-ia64/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("318f29aa93a6d17e3e4500fe26bc5cc417740be3", "SLE10-SDK-SP2-Online", "SLE10-SDK-SP2-Online for sles-10-ppc", "sles-10-ppc", "$RCE/SLE10-SDK-SP2-Online/sles-10-ppc/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Online/sles-10-ppc/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("7c17a049f89c07653057a089ec07c8510032ad51", "SLE10-SDK-SP2-Online", "SLE10-SDK-SP2-Online for sles-10-s390x", "sles-10-s390x", "$RCE/SLE10-SDK-SP2-Online/sles-10-s390x/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Online/sles-10-s390x/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("b3b364966ac3af4745e4b1a2c8c91596e3109d05", "SLE10-SDK-SP2-Online", "SLE10-SDK-SP2-Online for sles-10-x86_64", "sles-10-x86_64", "$RCE/SLE10-SDK-SP2-Online/sles-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Online/sles-10-x86_64/", "nu");
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("d819fb7eb19d3c3a0c69cda8244e5459227d4b5d", "SLE10-SDK-SP2-Online", "SLE10-SDK-SP2-Online for sled-10-i586", "sled-10-i586", "$RCE/SLE10-SDK-SP2-Online/sled-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Online/sled-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("d97e587d14aaf23594af1eed2cc22ea14f35b478", "SLE10-SDK-SP2-Online", "SLE10-SDK-SP2-Online for sled-10-x86_64", "sled-10-x86_64", "$RCE/SLE10-SDK-SP2-Online/sled-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Online/sled-10-x86_64/", "nu");
+
+
+-- SDK SP2 Updates
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("443a09a8373fd9acd5e025bacebdf6551efacd60", "SLE10-SDK-SP2-Updates", "SLE10-SDK-SP2-Updates for sles-10-i586", "sles-10-i586", "$RCE/SLE10-SDK-SP2-Updates/sles-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Updates/sles-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("7c29827ad2edff11afc6c999165e0dee9ec84abd", "SLE10-SDK-SP2-Updates", "SLE10-SDK-SP2-Updates for sles-10-ia64", "sles-10-ia64", "$RCE/SLE10-SDK-SP2-Updates/sles-10-ia64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Updates/sles-10-ia64/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("1d723dd6764a9801578c73f1f3af29e0ba0095bd", "SLE10-SDK-SP2-Updates", "SLE10-SDK-SP2-Updates for sles-10-ppc", "sles-10-ppc", "$RCE/SLE10-SDK-SP2-Updates/sles-10-ppc/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Updates/sles-10-ppc/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("c438218089695914f1ab16ccc447c3164ddfe036", "SLE10-SDK-SP2-Updates", "SLE10-SDK-SP2-Updates for sles-10-s390x", "sles-10-s390x", "$RCE/SLE10-SDK-SP2-Updates/sles-10-s390x/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Updates/sles-10-s390x/", "nu");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("7974d941cc4961cd55a09f8257d5fc4243088d98", "SLE10-SDK-SP2-Updates", "SLE10-SDK-SP2-Updates for sles-10-x86_64", "sles-10-x86_64", "$RCE/SLE10-SDK-SP2-Updates/sles-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Updates/sles-10-x86_64/", "nu");
+
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR)
+ Values("852f1caea693361af8000ca7382a5e922b0a3ea5", "SLE10-SDK-SP2-Updates", "SLE10-SDK-SP2-Updates for sled-10-i586", "sled-10-i586", "$RCE/SLE10-SDK-SP2-Updates/sled-10-i586/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Updates/sled-10-i586/", "nu", "Y");
+insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)
+ Values("4ee59915cbe4c6fb516520ff19eaea23af50f59e", "SLE10-SDK-SP2-Updates", "SLE10-SDK-SP2-Updates for sled-10-x86_64", "sled-10-x86_64", "$RCE/SLE10-SDK-SP2-Updates/sled-10-x86_64/", "https://nu.novell.com/", "https://nu.novell.com/repo/$RCE/SLE10-SDK-SP2-Updates/sled-10-x86_64/", "nu");
+
 
 
 -- insert into Catalogs(CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE)

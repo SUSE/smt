@@ -1,7 +1,7 @@
 ---------------------------------------------------------------------------------------------------------------
 -- select PRODUCTDATAID, PRODUCT, VERSION, RELEASE, ARCH, PRODUCTLOWER, VERSIONLOWER, RELEASELOWER, ARCHLOWER, FRIENDLY, 
 --        PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST, PRODUCT_CLASS
--- from activator.NNW_PRODUCT_DATA
+-- from ncc.NNW_PRODUCT_DATA
 --------------------------------------------------------------------------------------------------------------- 
 -- result export as insert statements
 ---------------------------------------------------------------------------------------------------------------
@@ -10620,3 +10620,70 @@ INSERT INTO Products(PRODUCTDATAID, PRODUCT, VERSION, REL, ARCH, PRODUCTLOWER, V
 	<param id="url">${mirror:url}</param>
 	<group-catalogs/>
 </service>', 'Y', 'SLES');
+
+INSERT INTO Products(PRODUCTDATAID, PRODUCT, VERSION, REL, ARCH, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER, FRIENDLY, PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST, PRODUCT_CLASS)
+  VALUES(860, 'SUSE-Linux-Enterprise-POS', '10', NULL, NULL, 'suse-linux-enterprise-pos', '10', NULL, NULL, 'SUSE Linux Enterprise Point of Service 10', '<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="">
+	<guid description="" class="mandatory"/>
+	<param id="secret" description="" command="zmd-secret" class="mandatory"/>
+	<host description=""/>
+	<product description="" class="mandatory"/>
+	<param id="ostarget" description="" command="zmd-ostarget" class="mandatory"/>
+	<param id="ostarget-bak" description="" command="lsb_release -sd" class="mandatory"/>
+	<param id="email" description="" class="mandatory"/>
+	<param id="regcode-slepos" description=""/>
+	<param id="moniker" description=""/>
+	<param id="processor" description="" command="uname -p"/>
+	<param id="platform" description="" command="uname -i"/>
+	<param id="hostname" description="" command="uname -n"/>
+	<param id="cpu" description="" command="hwinfo --cpu"/>
+	<param id="disk" description="" command="hwinfo --disk"/>
+	<param id="dsl" description="" command="hwinfo --dsl"/>
+	<param id="gfxcard" description="" command="hwinfo --gfxcard"/>
+	<param id="isdn" description="" command="hwinfo --isdn"/>
+	<param id="memory" description="" command="hwinfo --memory"/>
+	<param id="netcard" description="" command="hwinfo --netcard --nowpa"/>
+	<param id="scsi" description="" command="hwinfo --scsi"/>
+	<param id="sound" description="" command="hwinfo --sound"/>
+	<param id="sys" description="" command="hwinfo --sys"/>
+	<param id="tape" description="" command="hwinfo --tape"/>
+</paramlist>', '<?xml version="1.0" encoding="UTF-8"?>
+<needinfo xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="" href="">
+	<guid description="" class="mandatory"/>
+	<param id="secret" description="" command="zmd-secret" class="mandatory"/>
+	<host description=""/>
+	<product description="" class="mandatory"/>
+	<param id="ostarget" description="" command="zmd-ostarget" class="mandatory"/>
+	<param id="ostarget-bak" description="" command="lsb_release -sd" class="mandatory"/>
+	<param id="identification" description="" page="reg.jsp?guid={guid}&amp;lang={lang}" class="mandatory">
+		<param id="email" description=""/>
+	</param>
+	<param id="regcode-slepos" description="" page="reg.jsp?guid={guid}&amp;lang={lang}"/>
+	<param id="moniker" description="" page="reg.jsp?guid={guid}&amp;lang={lang}"/>
+	<param id="sysident" description="">
+		<param id="processor" description="" command="uname -p"/>
+		<param id="platform" description="" command="uname -i"/>
+		<param id="hostname" description="" command="uname -n"/>
+	</param>
+	<param id="hw_inventory" description="">
+		<param id="cpu" description="" command="hwinfo --cpu"/>
+		<param id="disk" description="" command="hwinfo --disk"/>
+		<param id="dsl" description="" command="hwinfo --dsl"/>
+		<param id="gfxcard" description="" command="hwinfo --gfxcard"/>
+		<param id="isdn" description="" command="hwinfo --isdn"/>
+		<param id="memory" description="" command="hwinfo --memory"/>
+		<param id="netcard" description="" command="hwinfo --netcard --nowpa"/>
+		<param id="scsi" description="" command="hwinfo --scsi"/>
+		<param id="sound" description="" command="hwinfo --sound"/>
+		<param id="sys" description="" command="hwinfo --sys"/>
+		<param id="tape" description="" command="hwinfo --tape"/>
+	</param>
+	<privacy url="http://www.novell.com/company/policies/privacy/textonly.html" description="" class="informative"/>
+</needinfo>', '<service xmlns="http://www.novell.com/xml/center/regsvc-1_0" id="${mirror:id}" description="${mirror:name}" type="${mirror:type}">
+	<param id="url">${mirror:url}</param>
+	<group-catalogs/>
+</service>', 'Y', 'SLEPOS');
+INSERT INTO Products(PRODUCTDATAID, PRODUCT, VERSION, REL, ARCH, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER, FRIENDLY, PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST, PRODUCT_CLASS)
+  VALUES(880, 'SUSE-Linux-Enterprise-SDK-SP2', '10', NULL, NULL, 'suse-linux-enterprise-sdk-sp2', '10', NULL, NULL, 'SUSE Linux 10 SP2 Software Development Kit', NULL, NULL, '<service xmlns="http://www.novell.com/xml/center/regsvc-1_0" id="${mirror:id}" description="${mirror:name}" type="${mirror:type}">
+	<param id="url">${mirror:url}</param>
+	<param id="group">sle10-sdk-sp2</param>
+</service>', 'Y', 'SDK');
