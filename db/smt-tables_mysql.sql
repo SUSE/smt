@@ -8,11 +8,10 @@ drop table if exists Targets;
 drop table if exists SubscriptionStatus;
 drop table if exists Clients;
 
--- this table is dropped.
-drop table if exists ProductDependencies;
 
 create table Clients(GUID        CHAR(50) PRIMARY KEY,
                      HOSTNAME    VARCHAR(100) DEFAULT '',
+                     TARGET      VARCHAR(100),
                      DESCRIPTION VARCHAR(500) DEFAULT '',
                      LASTCONTACT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );

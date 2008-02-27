@@ -153,13 +153,13 @@ sub register
     {
         # we have all data; store it and send <zmdconfig>
 
-        # insert new registration data
-
-        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot);
-
         # get the os-target
 
         my $target = SMT::Registration::findTarget($r, $dbh, $regroot);
+
+        # insert new registration data
+
+        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot, $target);
 
         # get the catalogs
 
@@ -412,7 +412,8 @@ sub insertRegistration
     my $r       = shift;
     my $dbh     = shift;
     my $regdata = shift;
-
+    my $target  = shift || '';
+    
     my $cnt     = 0;
     my $existingpids = {};
     my $regtimestring = "";
@@ -570,8 +571,9 @@ sub insertRegistration
     my $aff = 0;
     if($hostname ne "")
     {
-        $statement = sprintf("UPDATE Clients SET HOSTNAME=%s, LASTCONTACT=%s WHERE GUID=%s", 
+        $statement = sprintf("UPDATE Clients SET HOSTNAME=%s, TARGET=%s, LASTCONTACT=%s WHERE GUID=%s", 
                              $dbh->quote($hostname), 
+                             $dbh->quote($target), 
                              $dbh->quote($regtimestring),
                              $dbh->quote($regdata->{register}->{guid}));
         $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
@@ -588,9 +590,10 @@ sub insertRegistration
         if($aff == 0)
         {
             # New registration; we need an insert
-            $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME) VALUES (%s, %s)", 
+            $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET) VALUES (%s, %s, %s)", 
                                  $dbh->quote($regdata->{register}->{guid}),
-                                 $dbh->quote($hostname));
+                                 $dbh->quote($hostname),
+                                 $dbh->quote($target));
             $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                            APR::Const::SUCCESS,"STATEMENT: $statement");
             eval
@@ -606,7 +609,8 @@ sub insertRegistration
     }
     else
     {
-        $statement = sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", 
+        $statement = sprintf("UPDATE Clients SET TARGET=%s, LASTCONTACT=%s WHERE GUID=%s", 
+                             $dbh->quote($target),
                              $dbh->quote($regtimestring),
                              $dbh->quote($regdata->{register}->{guid}));
         $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
@@ -623,8 +627,9 @@ sub insertRegistration
         if($aff == 0)
         {
             # New registration; we need an insert
-            $statement = sprintf("INSERT INTO Clients (GUID) VALUES (%s)", 
-                                 $dbh->quote($regdata->{register}->{guid}));
+            $statement = sprintf("INSERT INTO Clients (GUID, TARGET) VALUES (%s, %s)", 
+                                 $dbh->quote($regdata->{register}->{guid}),
+                                 $dbh->quote($target));
             $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                            APR::Const::SUCCESS,"STATEMENT: $statement");
             eval
