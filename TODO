@@ -30,10 +30,12 @@ TODO:
     https://<local.full.quallified.domain.name>/ 
 
 - test what happens if two processes want to write smt.db
-  How can we solve concutrrent access with DBI?
+  How can we solve concurent access with DBI?
 
 - create, implement and test a strategy how we can update the database structure
   after release. (e.g. if we need to add some tables, or collumns in tables) 
+
+- look on how to implement the migration using the module (dmacvicar)
 
 - modify listProducts registration command for SMT.
   Show only products where all required catalogs are localy mirrored.
@@ -45,6 +47,30 @@ TODO:
 
 - add a parameter to smt.conf  about disable client registration at NCC
   * use this parameter in smt-register and smt-delete-registration
+
+- create symlinks for activating smt
+  locilka proposed to create init.d script for smt. It would require apache2 and 
+  mysql services. This could also cover database update.
+
+- yast module: reset/set mysql root password, create yep user, set yep 
+  configuration file and make sure only www-run can read it (part of the init 
+  script?)
+
+- fix generating repoindex (jdsn)
+  (use TARGET in Clients Table)
+
+- provide details how to change the NU password for mysql, creating SMT 
+  database, creating user and granting permissions, store the credentials in 
+  smt.conf file (duncan)
+
+- cron jobs for other smt tasks (locilka)
+  * smt-ncc-sync, smt-mirror and smt-report maybe together in one job (one time a day)
+  * smt-register in an extra job (every quarter?)
+
+  Check if we can provide a default with the yep rpm.
+  What happens if they are %config(noreplace)?
+  Will a .rpmsave or .rpmnew file be a new cronjob?
+
 
 
 DONE:
