@@ -1,6 +1,6 @@
 /**
- * File:	include/yep/dialogs.ycp
- * Package:	Configuration of yep
+ * File:	include/smt/dialogs.ycp
+ * Package:	Configuration of smt
  * Summary:	Dialogs definitions
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
@@ -8,14 +8,14 @@
  */
 
 {
-    textdomain "yep";
+    textdomain "smt";
 
-    include "yep/helps.ycp";
-    include "yep/complex.ycp";
+    include "smt/helps.ycp";
+    include "smt/complex.ycp";
 
     import "Wizard";
     import "Popup";
-    import "YEPData";
+    import "SMTData";
     import "Label";
     import "Confirm";
     import "Progress";
@@ -85,18 +85,18 @@
 
 	Progress::New (
 	    // TRANSLATORS: Dialog caption
-	    _("Initializing YEP Configuration"),
+	    _("Initializing SMT Configuration"),
 	    " ",
 	    2,
 	    [
 		// TRANSLATORS: Progress step
-		_("Read YEP configuration"),
+		_("Read SMT configuration"),
 		// TRANSLATORS: Progress step
 		_("Read cron settings"),
 	    ],
 	    [
 		// TRANSLATORS: Progress step
-		_("Reading YEP configuration..."),
+		_("Reading SMT configuration..."),
 		// TRANSLATORS: Progress step
 		_("Reading cron settings..."),
 		Message::Finished(),
@@ -109,12 +109,12 @@
 	Progress::NextStage();
 	sleep (sl);
 
-	YEPData::ReadCredentials();
+	SMTData::ReadCredentials();
 
 	Progress::NextStage();
 	sleep (sl);
 
-	YEPData::ReadCronSettings();
+	SMTData::ReadCronSettings();
 
 	Progress::NextStage();
 	sleep (sl);
@@ -127,12 +127,12 @@
     symbol WriteDialog() {
 	Progress::New (
 	    // TRANSLATORS: Dialog caption
-	    _("Writing YEP Configuration"),
+	    _("Writing SMT Configuration"),
 	    " ",
 	    5,
 	    [
 		// TRANSLATORS: Progress step
-		_("Adjust YEP configuration"),
+		_("Adjust SMT configuration"),
 		// TRANSLATORS: Progress step
 		_("Check and install server certificate"),
 		// TRANSLATORS: Progress step
@@ -144,7 +144,7 @@
 	    ],
 	    [
 		// TRANSLATORS: Progress step
-		_("Adjusting YEP configuration..."),
+		_("Adjusting SMT configuration..."),
 		// TRANSLATORS: Progress step
 		_("Checking and installing server certificate..."),
 		// TRANSLATORS: Progress step
@@ -163,27 +163,27 @@
 	Progress::NextStage();
 	sleep (sl);
 
-	YEPData::WriteCredentials();
+	SMTData::WriteCredentials();
 
 	Progress::NextStage();
 	sleep (sl);
 
-	YEPData::WriteCASettings();
+	SMTData::WriteCASettings();
 
 	Progress::NextStage();
 	sleep (sl);
 
-	YEPData::CheckAndAdjustApacheConfiguration();
+	SMTData::CheckAndAdjustApacheConfiguration();
 
 	Progress::NextStage();
 	sleep (sl);
 
-	YEPData::WriteCronSettings();
+	SMTData::WriteCronSettings();
 
 	Progress::NextStage();
 	sleep (sl);
 
-	YEPData::RunSmallSync();
+	SMTData::RunSmallSync();
 
 	Progress::NextStage();
 	sleep (sl);
@@ -195,7 +195,7 @@
 
     void InitCredentialsDialog (string id) {
 	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
-	    string value = YEPData::GetCredentials (one_entry);
+	    string value = SMTData::GetCredentials (one_entry);
 	    if (value == nil) value = "";
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
 	});
@@ -203,7 +203,7 @@
 
     void StoreCredentialsDialog (string id, map event) {
 	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
-	    YEPData::SetCredentials (one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
+	    SMTData::SetCredentials (one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
     }
 
@@ -260,7 +260,7 @@
 	list <term> items = [];
 
 	integer counter = -1;
-	foreach (map one_entry, YEPData::GetCronSettings(), {
+	foreach (map one_entry, SMTData::GetCronSettings(), {
 	    counter = counter + 1;
 
 	    if (one_entry == nil || one_entry == $[])
@@ -382,9 +382,9 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	}
 
 	if (schd_id != nil && schd_id > -1) {
-	    YEPData::ReplaceCronJob (schd_id, settings);
+	    SMTData::ReplaceCronJob (schd_id, settings);
 	} else {
-	    YEPData::AddNewCronJob (settings);
+	    SMTData::AddNewCronJob (settings);
 	}
 
 	return true;
@@ -410,9 +410,9 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	boolean dialog_ret = false;
 
 	if (schd_id != nil && schd_id > -1) {
-	    settings = YEPData::GetCronSettings()[schd_id]:$[];
+	    settings = SMTData::GetCronSettings()[schd_id]:$[];
 	    if (settings == nil) {
-		y2error ("Wrong settings on offset %1: %2", schd_id, YEPData::GetCronSettings());
+		y2error ("Wrong settings on offset %1: %2", schd_id, SMTData::GetCronSettings());
 	    }
 	    editing = true;
 	}
@@ -541,7 +541,7 @@ Should you want to set it up, rerun the current YaST configuration module."));
 		return nil;
 	    }
 
-	    YEPData::RemoveCronJob (current_item);
+	    SMTData::RemoveCronJob (current_item);
 	    changed = true;
 	    SetFocusTable();
 	}

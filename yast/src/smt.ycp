@@ -1,22 +1,22 @@
 /**
- * File:	clients/yep.ycp
- * Package:	Configuration of yep
+ * File:	clients/smt.ycp
+ * Package:	Configuration of smt
  * Summary:	Main file
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
- * $Id: yep.ycp 27914 2006-02-13 14:32:08Z locilka $
+ * $Id: smt.ycp 27914 2006-02-13 14:32:08Z locilka $
  *
- * Main file for yep configuration. Uses all other files.
+ * Main file for smt configuration. Uses all other files.
  */
 
 {
-    textdomain "yep";
+    textdomain "smt";
 
     import "CommandLine";
     import "Mode";
     import "GetInstArgs";
 
-    include "yep/wizard.ycp";
+    include "smt/wizard.ycp";
 
     if (size (GetInstArgs::argmap()) == 0 && size (WFM::Args()) > 0) {
 	Mode::SetUI ("commandline");
@@ -26,5 +26,5 @@
 	return `auto;
     }
 
-    return (symbol) YEPSequence();
+    return (symbol) SMTSequence();
 }

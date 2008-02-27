@@ -1,8 +1,8 @@
 /**
  * File:
- *   yep_cron.scr
+ *   smt_cron.scr
  * Summary:
- *   SCR Agent for reading/writing /etc/cron.d/yast2-yep
+ *   SCR Agent for reading/writing /etc/cron.d/yast2-smt
  *   using the any-agent
  * Access:
  *   read/write
@@ -11,13 +11,13 @@
  *
  * $Id:$
  *
- * Read/Sets the values defined in /etc/cron.d/yast2-yep
+ * Read/Sets the values defined in /etc/cron.d/yast2-smt
  */
-.yep_cron
+.smt_cron
 
 `ag_anyagent (
     `Description (
-	(`File ("/etc/cron.d/yast2-yep")),	// read this file
+	(`File ("/etc/cron.d/yast2-smt")),	// read this file
 	"#\n",					// comments
 	false,					// read/write
 	(`List (

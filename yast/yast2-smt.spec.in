@@ -5,8 +5,8 @@ Requires:	yast2
 Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
 
-# This YaST tool configures YEP (cron, apache2)
-Recommends:	yep
+# This YaST tool configures SMT (cron, apache2)
+Recommends:	smt
 Recommends:	cron
 Recommends:	apache2
 
@@ -14,7 +14,7 @@ BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-t
 
 BuildArchitectures:	noarch
 
-Summary:	Configuration of YAST Enterprise Proxy
+Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 
 %description
 -
@@ -29,10 +29,10 @@ Summary:	Configuration of YAST Enterprise Proxy
 
 %files
 %defattr(-,root,root)
-%dir @yncludedir@/yep
-@yncludedir@/yep/*
-@clientdir@/yep.ycp
-@moduledir@/YEP*.*
-@desktopdir@/yep.desktop
-@scrconfdir@/yep*.scr
+%dir @yncludedir@/smt
+@yncludedir@/smt/*
+@clientdir@/smt.ycp
+@moduledir@/SMT*.*
+@desktopdir@/smt.desktop
+@scrconfdir@/smt*.scr
 %doc @docdir@

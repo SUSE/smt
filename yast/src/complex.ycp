@@ -1,6 +1,6 @@
 /**
- * File:	include/yep/complex.ycp
- * Package:	Configuration of yep
+ * File:	include/smt/complex.ycp
+ * Package:	Configuration of smt
  * Summary:	Complex functions
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
@@ -8,9 +8,9 @@
  */
 
 {
-    textdomain "yep";
+    textdomain "smt";
 
-    import "YEPData";
+    import "SMTData";
     import "Directory";
     import "String";
     import "Report";
@@ -37,9 +37,9 @@
     boolean CredentialsTest (any log_view) {
 	log_view_ID = log_view;
 
-	string user = YEPData::GetCredentials ("NUUser");
-	string pass = YEPData::GetCredentials ("NUPass");
-	string url  = YEPData::GetCredentials ("NUUrl");
+	string user = SMTData::GetCredentials ("NUUser");
+	string pass = SMTData::GetCredentials ("NUPass");
+	string url  = SMTData::GetCredentials ("NUUrl");
 
 	if (user == nil) user = "";
 	if (pass == nil) pass = "";

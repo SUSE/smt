@@ -1,8 +1,8 @@
 /**
  * File:
- *   yep_conf.scr
+ *   smt_conf.scr
  * Summary:
- *   SCR Agent for reading/writing /etc/yep.conf
+ *   SCR Agent for reading/writing /etc/smt.conf
  *   using the ini-agent
  * Access:
  *   read/write
@@ -10,20 +10,20 @@
  *   Lukas Ocilka <locilka@suse.cz>
  *
  * Example:
- *   Read (.yep_conf.value.NU.NUUser)
+ *   Read (.smt_conf.value.NU.NUUser)
  *   ("john_the_fish")
- *   Write (.yep_conf.value.NU.NUUser, "Howard")
+ *   Write (.smt_conf.value.NU.NUUser, "Howard")
  *   (true)
  *
  * $Id: $
  *
- * Read/Sets the values defined in /etc/yep.conf.
+ * Read/Sets the values defined in /etc/smt.conf.
  */
-.yep_conf
+.smt_conf
 
 `ag_ini(
   `IniAgent(
-    "/etc/yep.conf",
+    "/etc/smt.conf",
     $[
       "comments": [ "^[ \t]*#.*", "#.*", "^[ \t]*$" ],
       "sections" : [

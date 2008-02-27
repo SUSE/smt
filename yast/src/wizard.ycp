@@ -1,24 +1,24 @@
 /**
- * File:	clients/yep.ycp
- * Package:	Configuration of yep
+ * File:	clients/smt.ycp
+ * Package:	Configuration of smt
  * Summary:	Definition of dialog sequences
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
  * $Id: wizard.ycp 27914 2006-02-13 14:32:08Z locilka $
  *
- * Main file for yep configuration. Uses all other files.
+ * Main file for smt configuration. Uses all other files.
  */
 
 {
-    textdomain "yep";
+    textdomain "smt";
 
     import "CWMTab";
     import "Sequencer";
     import "CWM";
     import "Mode";
 
-    include "yep/helps.ycp";
-    include "yep/dialogs.ycp";
+    include "smt/helps.ycp";
+    include "smt/dialogs.ycp";
 
     map <string, map <string, any> > widgets = $[
 	    "cr" : $[
@@ -85,7 +85,7 @@
 	return CWM::Run (w, $[`abort : ReallyExit]);
     }
 
-    any YEPSequence () {
+    any SMTSequence () {
 	map aliases = $[
 	    "read"  : [ ``( ReadDialog() ), true ],
 	    "main"  :   ``( MainSequence() ),
@@ -117,7 +117,7 @@
 	return ret;
     }
 
-    any YEPInstallSequence () {
+    any SMTInstallSequence () {
 	map aliases = $[
 	    "read"  : [ ``( ReadDialog() ), true ],
 	    "main"  :   ``( MainSequence() ),

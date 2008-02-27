@@ -1,16 +1,16 @@
 /**
- * File:	modules/YEPData.ycp
- * Package:	Configuration of yep
- * Summary:	YEP global data and functions
+ * File:	modules/SMTData.ycp
+ * Package:	Configuration of SMT
+ * Summary:	SMT global data and functions
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
- * $Id: YEPData.ycp 27914 2006-02-13 14:32:08Z locilka $
+ * $Id:$
  */
 
 {
-    textdomain "yep";
+    textdomain "smt";
 
-    module "YEPData";
+    module "SMTData";
 
     import "Message";
     import "Service";
@@ -26,17 +26,17 @@
     map <string, string> NU_credentials = $[];
 
     // script entered into a crontab
-    string cron_mirror_script = "/usr/bin/yep-mirror.pl";
+    string cron_mirror_script = "/usr/bin/smt-mirror.pl";
     // cron 
-    string path_to_cron = "/etc/cron.d/yast2-yep";
+    string path_to_cron = "/etc/cron.d/yast2-smt";
 
-    string path_to_sync_script = "/usr/sbin/yep-ncc-sync";
+    string path_to_sync_script = "/usr/sbin/smt-ncc-sync";
     string user_for_sync_script = "root";
 
     string server_cert = "/etc/ssl/certs/YaST-CA.pem";
-    string apache_cert = "/srv/www/htdocs/yep.crt";
+    string apache_cert = "/srv/www/htdocs/smt.crt";
 
-    list <map> yep_cron_settings = [];
+    list <map> smt_cron_settings = [];
 
     /**
      * Returns list of scheduled NU mirrorings.
@@ -57,7 +57,7 @@
      * ]
      */
     global list <map> GetCronSettings () {
-	return yep_cron_settings;
+	return smt_cron_settings;
     }
 
     /**
@@ -71,7 +71,7 @@
 	new_cron_job["user"] = user_for_sync_script;
 	new_cron_job["command"] = path_to_sync_script;
 
-	yep_cron_settings = add (yep_cron_settings, new_cron_job);
+	smt_cron_settings = add (smt_cron_settings, new_cron_job);
     }
 
     /**
@@ -91,7 +91,7 @@
 	new_settings["user"] = user_for_sync_script;
 	new_settings["command"] = path_to_sync_script;
 
-	yep_cron_settings[cron_job_id] = new_settings;
+	smt_cron_settings[cron_job_id] = new_settings;
     }
 
     /**
@@ -107,24 +107,24 @@
 	    return;
 	}
 
-	yep_cron_settings = remove (yep_cron_settings, cron_job_id);
+	smt_cron_settings = remove (smt_cron_settings, cron_job_id);
     }
 
     /**
-     * Reads the current YEP credentials into the memory
+     * Reads the current SMT credentials into the memory
      *
      * @return boolean if successful
      */
     global boolean ReadCredentials () {
 	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
-	    NU_credentials[one_entry] = (string) SCR::Read (add (.yep_conf.value.NU, one_entry));
+	    NU_credentials[one_entry] = (string) SCR::Read (add (.smt_conf.value.NU, one_entry));
 	});
 
 	return true;
     }
 
     /**
-     * Writes the current credentials to the YEP configuration file.
+     * Writes the current credentials to the SMT configuration file.
      *
      * @return boolean if successful
      */
@@ -132,15 +132,15 @@
 	boolean failed = false;
 
 	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
-	    if (! (boolean) SCR::Write (add (.yep_conf.value.NU, one_entry), NU_credentials[one_entry]:"")) {
-		y2error ("Cannot write to yep.conf:%1", one_entry);
+	    if (! (boolean) SCR::Write (add (.smt_conf.value.NU, one_entry), NU_credentials[one_entry]:"")) {
+		y2error ("Cannot write to smt.conf:%1", one_entry);
 		failed = true;
 	    }
 	});
 
 	if (failed == false) {
-	    if (! (boolean) SCR::Write (.yep_conf, nil)) {
-		y2error ("Cannot write to yep.conf");
+	    if (! (boolean) SCR::Write (.smt_conf, nil)) {
+		y2error ("Cannot write to smt.conf");
 		failed = true;
 	    }
 	}
@@ -179,7 +179,7 @@
 
     /**
      * Function checks and adjusts the apache configuration
-     * to be usable by YEP.
+     * to be usable by SMT.
      *
      * @return boolean if successful
      */
@@ -228,6 +228,8 @@
 	    apache_conf_changed = true;
 	}
 
+	// Symlink conf
+
 	// Something has been changed
 	// Apache conf needs writing
 	// and Apache service needs restarting
@@ -266,7 +268,7 @@
 	    y2error ("Sync script doesn't exist");
 	    Report::Error (sformat (_("Synchronization script %1 does not exist.
 
-Please, check your YEP installation."), path_to_sync_script));
+Please, check your SMT installation."), path_to_sync_script));
 	    return false;
 	}
 
@@ -305,13 +307,13 @@ Please, check your YEP installation."), path_to_sync_script));
 	    }
 	}
 
-	yep_cron_settings = (list <map>) SCR::Read (.yep_cron);
+	smt_cron_settings = (list <map>) SCR::Read (.smt_cron);
     }
 
     global boolean WriteCronSettings () {
 	string service_name = "cron";
 
-	if (yep_cron_settings == nil || size (yep_cron_settings) == 0) {
+	if (smt_cron_settings == nil || size (smt_cron_settings) == 0) {
 	    if (FileUtils::Exists (path_to_cron) && ! (boolean) SCR::Execute (.target.remove, path_to_cron)) {
 		y2error ("Cannot remove %1 cron-file", path_to_cron);
 	    } else {
@@ -321,13 +323,13 @@ Please, check your YEP installation."), path_to_sync_script));
 	}
 
 
-	if (! (boolean) SCR::Write (.yep_cron, yep_cron_settings)) {
+	if (! (boolean) SCR::Write (.smt_cron, smt_cron_settings)) {
 	    y2error ("Writing cron failed");
 	    Report::Error (_("Cannot write cron settings."));
 	    return false;
 	}
 
-	if (size (yep_cron_settings) > 0) {
+	if (size (smt_cron_settings) > 0) {
 	    if (! Service::Enabled (service_name)) {
 		Service::Enable (service_name);
 	    } else {

@@ -1,9 +1,9 @@
 # Makefile.am for yep/src
 
-yncludedir = @yncludedir@/yep
+yncludedir = @yncludedir@/smt
 
 client_DATA = \
-	yep.ycp
+	smt.ycp
 
 ynclude_DATA = \
 	dialogs.ycp \
@@ -13,12 +13,12 @@ ynclude_DATA = \
 
 desktop_DATA = $(wildcard *.desktop)
 
-module_DATA = $(wildcard YEP*.ycp)
+module_DATA = $(wildcard SMT*.ycp)
 
 # create a symlink for local build, #145327
-yep:
+smt:
 	ln -sf . $@
-ycpchook = yep
+ycpchook = smt
 
 EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(desktop_DATA)
 

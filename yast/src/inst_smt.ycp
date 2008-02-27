@@ -1,0 +1,18 @@
+/**
+ * File:	clients/smt.ycp
+ * Package:	Configuration of smt
+ * Summary:	Main file
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id: smt.ycp 27914 2006-02-13 14:32:08Z locilka $
+ *
+ * Main file for smt configuration. Uses all other files.
+ */
+
+{
+    textdomain "smt";
+
+    include "smt/wizard.ycp";
+
+    return SMTInstallSequence();
+}

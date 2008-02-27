@@ -1,6 +1,6 @@
 /**
- * File:	include/yep/helps.ycp
- * Package:	Configuration of yep
+ * File:	include/smt/helps.ycp
+ * Package:	Configuration of smt
  * Summary:	Help texts of all the dialogs
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
@@ -8,7 +8,7 @@
  */
 
 {
-    textdomain "yep";
+    textdomain "smt";
 
     map <string, string> HELPS = $[
 	"credentials" :
