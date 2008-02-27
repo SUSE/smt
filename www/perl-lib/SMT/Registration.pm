@@ -745,6 +745,7 @@ sub buildZmdConfig
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
+    $LocalNUUrl =~ s/\s*$//;
     if($usetestenv)
     {
         $LocalNUUrl    .= "/testing/";
