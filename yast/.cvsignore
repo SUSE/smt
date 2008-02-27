@@ -16,5 +16,5 @@ install-sh
 missing
 mkinstalldirs
 stamp-h
-yep.pot
+smt.pot
 autom4te.cache

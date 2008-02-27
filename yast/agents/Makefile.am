@@ -1,4 +1,4 @@
-# Makefile.am for yep/agents
+# Makefile.am for smt/agents
 
 agent_SCRIPTS =
 

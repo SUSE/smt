@@ -1,4 +1,4 @@
-# Makefile.am for yep/src
+# Makefile.am for smt/src
 
 yncludedir = @yncludedir@/smt
 

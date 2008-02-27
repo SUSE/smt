@@ -1,4 +1,4 @@
-# Makefile.am for yep/doc
+# Makefile.am for smt/doc
 
 SUBDIRS = autodocs
 

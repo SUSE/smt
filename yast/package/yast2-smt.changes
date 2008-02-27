@@ -52,7 +52,7 @@ Tue Jan 15 11:22:48 CET 2008 - locilka@suse.cz
 
 - Added functionality to test the entered credentials.
 - Requires: grep & curl
-- Adjusting the apache configuration when saving YEP configuration.
+- Adjusting the apache configuration when saving SMT configuration.
 - Reloading apache in case of configuration change.
 - Enabling apache service if it is not enabled.
 
