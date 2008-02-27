@@ -116,7 +116,7 @@ my $sth = $dbh->prepare($sql);
 $sth->execute();
 
 my $t = new Text::ASCIITable;
-$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"));
+$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"));
 
 while ( my $v = $sth->fetchrow_hashref() )
 {
@@ -126,7 +126,10 @@ while ( my $v = $sth->fetchrow_hashref() )
   my $catName = $v->{NAME};
   my $catTarget = $v->{TARGET};
   my $catType = $v->{CATALOGTYPE};
-  $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? "*" : ""), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--") );
+  my $catDesc = $v->{DESCRIPTION};
+  my $catMA   = $v->{MIRRORABLE};
+  $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? "*" : ""), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
+              $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")));
   
   if (defined($verbose))
   {
