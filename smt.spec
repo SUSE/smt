@@ -106,7 +106,7 @@ exit 0
 %dir /srv/www/htdocs/testing/repo/
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/SMT/
-%config(noreplace) /etc/smt.conf
+%config(noreplace) %attr(640, wwwrun, root)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
 /etc/apache2/conf.d/*.conf

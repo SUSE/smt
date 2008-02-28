@@ -52,6 +52,7 @@ TODO:
 - yast module: reset/set mysql root password, create yep user, set yep 
   configuration file and make sure only www-run can read it (part of the init 
   script?)
+  (default permissions of smt.conf are now 640, wwwrun, root)
 
 - fix generating repoindex (jdsn)
   (use TARGET in Clients Table)
