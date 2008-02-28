@@ -45,9 +45,6 @@ TODO:
   maybe set max_connections=160 in /etc/my.cnf
   needs some disuccion.
 
-- add a parameter to smt.conf  about disable client registration at NCC
-  * use this parameter in smt-register and smt-delete-registration
-
 - create symlinks for activating smt
   locilka proposed to create init.d script for smt. It would require apache2 and 
   mysql services. This could also cover database update.
@@ -185,6 +182,9 @@ DONE:
 - yup has a hardlink feature. Would be nice if we could have it too.
   It searches for same files (SLES <=> SLED as example) and
   create a hardlink to safe some disk space.
+
+- add a parameter to smt.conf  about disable client registration at NCC
+  * use this parameter in smt-register and smt-delete-registration
 
 
 

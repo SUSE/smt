@@ -68,6 +68,28 @@ if(!SMT::Utils::openLock("smt-register"))
 
 my $LOG = SMT::Utils::openLog($logfile);
 
+# check if we are allowed to register clients at NCC
+
+my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
+if(!defined $cfg)
+{
+    if(!SMT::Utils::unLock("smt-register"))
+    {
+        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+    }
+    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
+    exit 1;
+}
+my $allowRegister = $cfg->val("LOCAL", "forwardRegistration");
+if(!(defined $allowRegister && $allowRegister eq "true"))
+{
+    if(!SMT::Utils::unLock("smt-register"))
+    {
+        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+    }
+    exit 0;
+}
+
 my $dbh = undef;
 
 $dbh = SMT::Utils::db_connect();

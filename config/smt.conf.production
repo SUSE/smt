@@ -13,4 +13,5 @@ pass=
 url=
 MirrorTo=/srv/www/htdocs
 MirrorAll=false
+forwardRegistration=true
 

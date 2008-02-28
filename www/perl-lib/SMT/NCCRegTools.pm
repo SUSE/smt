@@ -265,8 +265,37 @@ sub NCCDeleteRegistration
         return 1;
     }
 
+    # check if we are allowed to register clients at NCC
+    # if no, we are also not allowed to remove them
+    
+    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
+    if(!defined $cfg)
+    {
+        SMT::Utils::printLog($self->{LOG}, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
+        return 1;
+    }
+    my $allowRegister = $cfg->val("LOCAL", "forwardRegistration");
+
     foreach my $guid (@guids)
     {
+        $self->_deleteRegistrationLocal($guid);
+
+        if(!(defined $allowRegister && $allowRegister eq "true"))
+        {
+            next;
+        }
+        
+        # check if this client was registered at NCC
+        my $statement = sprintf("SELECT GUID from Registration where NCCREGDATE > '0000-00-00 00:00:00' and GUID=%s", 
+                                $self->{DBH}->quote($guid));
+        my $result = $self->{DBH}->selectcol_arrayref($statement);
+        if(!(exists $result->[0] && defined $result->[0] && $result->[0] eq $guid))
+        {
+            # this GUID was never registered at NCC 
+            # no need to delete it there
+            next;
+        }        
+        
         my $output = "";
         my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
                  "client_version" => "1.2.3");
@@ -274,16 +303,16 @@ sub NCCDeleteRegistration
         my $writer = new XML::Writer(OUTPUT => \$output);
         $writer->xmlDecl("UTF-8");
         $writer->startTag("de-register", %a);
-
+        
         $writer->startTag("guid");
         $writer->characters($guid);
         $writer->endTag("guid");
         
         $writer->startTag("smtguid");
-        $writer->characters($self->{SMTGUID});
+            $writer->characters($self->{SMTGUID});
         $writer->endTag("smtguid");
         
-        $writer->startTag("smtsecret");
+            $writer->startTag("smtsecret");
         $writer->characters($self->{SMTSECRET});
         $writer->endTag("smtsecret");
         
@@ -295,9 +324,9 @@ sub NCCDeleteRegistration
         {
             printLog($self->{LOG}, "error", sprintf(__("Delete registration request failed: %s."), $guid));
             $errors++;
-        }
-        $self->_deleteRegistrationLocal($guid);
+            }
     }
+    
     return $errors;
 }
 
