@@ -22,6 +22,7 @@
     import "PackageSystem";
     import "Wizard";
     import "Progress";
+    import "Directory";
 
     map <string, string> NU_credentials = $[];
 
@@ -37,6 +38,25 @@
     string apache_cert = "/srv/www/htdocs/smt.crt";
 
     list <map> smt_cron_settings = [];
+
+    boolean first_run = nil;
+
+    string first_run_file = sformat ("%1/smt-already-adjusted", Directory::vardir);
+
+    boolean smt_enabled = nil;
+
+    list <string> smt_services = ["apache2", "mysql"];
+
+    /**
+     * SMT can be easily disabled by removing symlinks that point from /etc/apache2/conf.d/
+     * to /etc/smt.d/ (dynamic apache configuration)
+     *
+     * @struct [ $["from" : "original_file", "to" : "symlink_name" ], ... ]
+     */
+    list <map <string, string> > smt_symlinks = [
+	$[ "from" : "/etc/smt.d/nu_server.conf", "to" : "/etc/apache2/conf.d/nu_server.conf" ],
+	$[ "from" : "/etc/smt.d/smt_mod_perl.conf", "to" : "/etc/apache2/conf.d/smt_mod_perl.conf" ],
+    ];
 
     /**
      * Returns list of scheduled NU mirrorings.
@@ -108,6 +128,85 @@
 	}
 
 	smt_cron_settings = remove (smt_cron_settings, cron_job_id);
+    }
+
+    /**
+     * Reads whether the configuration process has been already done.
+     */
+    global void ReadFirstRun () {
+	if (! FileUtils::Exists (first_run_file)) {
+	    y2milestone ("File %1 doesn't exist -> this is a first-run", first_run_file);
+	    first_run = true;
+	} else {
+	    y2milestone ("Not a first-time run...");
+	    first_run = false;
+	}
+    }
+
+    /**
+     * Writes that the configuration has been already done.
+     */
+    global void WriteFirstRunStatus () {
+	integer cmd_exec = (integer) SCR::Execute (.target.bash, sformat ("touch '%1'", String::Quote (first_run_file)));
+
+	if (cmd_exec != 0) {
+	    y2error ("Cannot create file %1", first_run_file);
+	}
+    }
+
+    /**
+     * Returns whether the current YaST run is the first run of the SMT configuration.
+     */
+    global boolean IsFirstRun () {
+	return first_run;
+    }
+
+    global void ReadSMTServiceStatus () {
+	if (IsFirstRun() == nil) {
+	    y2error ("Cannot evaluate first_run!");
+	} else if (IsFirstRun() == true) {
+	    smt_enabled = true;
+	    return;
+	}
+
+	// default (changed later to false if something doesn't work)
+	smt_enabled = true;
+
+	foreach (string one_service, smt_services, {
+	    if (! Service::Enabled (one_service)) {
+		smt_enabled = false;
+	    }
+	});
+
+	foreach (map <string, string> one_symlink, smt_symlinks, {
+	    string symlink_from = one_symlink["from"]:"";
+	    string symlink_to   = one_symlink["to"]:"";
+
+	    if (symlink_from == nil || symlink_from == "" || symlink_to == nil || symlink_to == "") {
+		y2error ("Wrong symlink definition: %1!", one_symlink);
+	    }
+
+	    if (! FileUtils::Exists (symlink_to)) {
+		y2milestone ("File %1 does not exist", symlink_to);
+		smt_enabled = false;
+	    } else if (! FileUtils::Exists (symlink_from)) {
+		y2error ("File %1 does not exist", symlink_from);
+		smt_enabled = false;
+	    }
+	});
+    }
+
+    global boolean GetSMTServiceStatus () {
+	return smt_enabled;
+    }
+
+    global void SetSMTServiceStatus (boolean new_status) {
+	if (new_status == nil) {
+	    y2error ("Cannot set 'nil' status!");
+	    return;
+	}
+
+	smt_enabled = new_status;
     }
 
     /**
@@ -229,6 +328,7 @@
 	}
 
 	// Symlink conf
+	// FIXME: ...
 
 	// Something has been changed
 	// Apache conf needs writing

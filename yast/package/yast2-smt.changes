@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Mar  3 17:07:37 CET 2008 - locilka@suse.cz
+
+- Added basic support for enabling/disabling the SMT service.
+- 2.13.4
+
+-------------------------------------------------------------------
 Tue Jan 29 20:30:31 CET 2008 - mc@suse.de
 
 - Using /etc/ssl/certs/YaST-CA.pem instead of
