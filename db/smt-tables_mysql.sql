@@ -5,8 +5,14 @@ drop table if exists ProductCatalogs;
 drop table if exists Registration;
 drop table if exists MachineData;
 drop table if exists Targets;
-drop table if exists SubscriptionStatus;
 drop table if exists Clients;
+
+drop table if exists Subscriptions;
+drop table if exists ProductSubscriptions;
+drop table if exists ClientSubscriptions;
+
+-- dropped table
+drop table if exists SubscriptionStatus;
 
 
 create table Clients(GUID        CHAR(50) PRIMARY KEY,
@@ -16,17 +22,42 @@ create table Clients(GUID        CHAR(50) PRIMARY KEY,
                      LASTCONTACT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
 
-create table SubscriptionStatus(GUID         CHAR(50),
-                                SUBSCRIPTION VARCHAR(100),
-                                SUBTYPE      CHAR(20)  DEFAULT "UNKNOWN",
-                                SUBSTATUS    CHAR(20)  DEFAULT "UNKNOWN",
-                                SUBSTARTDATE TIMESTAMP DEFAULT '0000-00-00 00:00:00',
-                                SUBENDDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
-                                SUBDURATION  BIGINT    DEFAULT 0,
-                                SERVERCLASS  CHAR(50)  DEFAULT '',
-                           --   LASTMODIFIED TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                PRIMARY KEY (GUID, SUBSCRIPTION)
-                               );
+
+create table Subscriptions(REGCODE        VARCHAR(100) PRIMARY KEY,
+                           SUBNAME        VARCHAR(100) NOT NULL,
+                           SUBTYPE        CHAR(20)  DEFAULT "UNKNOWN",
+                           SUBSTATUS      CHAR(20)  DEFAULT "UNKNOWN",
+                           SUBSTARTDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
+                           SUBENDDATE     TIMESTAMP DEFAULT '0000-00-00 00:00:00',
+                           SUBDURATION    BIGINT    DEFAULT 0,
+                           SERVERCLASS    CHAR(50),
+                           NODECOUNT      integer NOT NULL
+                          );
+
+-- these statements are interresting for "self auditing"
+
+-- select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) from Subscriptions group by SUBNAME, SUBSTATUS order by SUBNAME;
+-- select count(distinct r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID IN (select distinct productdataid from ProductSubscriptions ps where ps.REGCODE = 'someregcode');
+
+
+
+create table ProductSubscriptions(PRODUCTDATAID integer NOT NULL,
+                                  REGCODE       VARCHAR(100) NOT NULL,
+                                  PRIMARY KEY(PRODUCTDATAID, REGCODE)
+                                 );
+
+-- these statements give the real subscription status of the clients
+
+-- select s.REGCODE, s.SUBSTATUS, s.SUBNAME, c.GUID, c.hostname from Subscriptions s, ClientSubscriptions cs, Clients c where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID;
+
+-- clients with no subscriptions
+-- select c.GUID from Clients c where c.GUID not in (select distinct GUID from ClientSubscriptions);
+
+
+create table ClientSubscriptions(GUID    CHAR(50)     NOT NULL,
+                                 REGCODE VARCHAR(100) NOT NULL,
+                                 PRIMARY KEY(GUID, REGCODE)
+                                );
 
 create table Registration(GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,

@@ -28,6 +28,8 @@ TODO:
     [LOCAL]
     url=...
     https://<local.full.quallified.domain.name>/ 
+    nccEmail=<emailaddress>
+
 
 - test what happens if two processes want to write smt.db
   How can we solve concurent access with DBI?

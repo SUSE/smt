@@ -33,8 +33,10 @@ sub new
     $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = undef; 
-    $self->{SMTGUID} = "";
-    $self->{SMTSECRET} = "";
+    $self->{AUTHUSER} = "";
+    $self->{AUTHPASS} = "";
+
+    $self->{NCCEMAIL} = "";
 
     $self->{DBH} = undef;
 
@@ -51,8 +53,7 @@ sub new
     {
         $self->{USERAGENT} = LWP::UserAgent->new(keep_alive => 1);
         $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
-        # FIXME: remove http for production
-        $self->{USERAGENT}->protocols_allowed( [ 'http', 'https'] );
+        $self->{USERAGENT}->protocols_allowed( [ 'https'] );
         push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
     }
     
@@ -93,12 +94,17 @@ sub new
         $self->{DBH} = SMT::Utils::db_connect();
     }
     
+    if(exists $opt{nccemail} && defined $opt{nccemail})
+    {
+        $self->{NCCEMAIL} = $opt{nccemail};
+    }
     
-    my ($ruri, $rguid, $rsecret) = SMT::Utils::getLocalRegInfos();
+    
+    my ($ruri, $user, $pass) = SMT::Utils::getLocalRegInfos();
     
     $self->{URI}      = $ruri;
-    $self->{SMTGUID}  = $rguid;
-    $self->{SMTSECRET}= $rsecret;
+    $self->{AUTHUSER} = $user;
+    $self->{AUTHPASS} = $pass;
     bless($self);
     
     return $self;
@@ -118,7 +124,13 @@ sub NCCRegister
         printLog($self->{LOG}, "error", __("Database handle is not available."));
         return 1;
     }
-
+    
+    if(!defined $self->{NCCEMAIL} || $self->{NCCEMAIL} eq "")
+    {
+        printLog($self->{LOG}, "error", __("No email address for registration available."));
+        return 1;
+    }
+    
     eval
     {
         my $guids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE");
@@ -196,13 +208,13 @@ sub NCCListRegistrations
         $writer->xmlDecl("UTF-8");
         $writer->startTag("listregistrations", %a);
         
-        $writer->startTag("smtguid");
-        $writer->characters($self->{SMTGUID});
-        $writer->endTag("smtguid");
+        $writer->startTag("authuser");
+        $writer->characters($self->{AUTHUSER});
+        $writer->endTag("authuser");
         
-        $writer->startTag("smtsecret");
-        $writer->characters($self->{SMTSECRET});
-        $writer->endTag("smtsecret");
+        $writer->startTag("authpass");
+        $writer->characters($self->{AUTHPASS});
+        $writer->endTag("authpass");
 
         $writer->endTag("listregistrations");
         
@@ -236,6 +248,11 @@ sub NCCListRegistrations
         
         my $guidhash = $self->{DBH}->selectall_hashref("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > '2000-01-01 00:00:00'");
 
+        # The _listreg_handler fill the ClientSubscription table new.
+        # Here we need to delete it first
+
+        $self->{DBH}->do("DELETE from ClientSubscriptions");
+        
         my $parser = new SMT::Parser::ListReg(log => $self->{LOG});
         $parser->parse($destfile, sub{ _listreg_handler($self, $guidhash, @_)});
     
@@ -248,6 +265,81 @@ sub NCCListRegistrations
         return 0;
     }
 }
+
+#
+# return count of errors. 0 == success
+#
+sub NCCListSubscriptions
+{
+    my $self = shift;
+
+    my $destfile = $self->{TEMPDIR};
+    
+    if(defined $self->{FROMDIR} && -d $self->{FROMDIR})
+    {
+        $destfile = $self->{FROMDIR}."/listsubscriptions.xml";
+    }
+    else
+    {
+        my $output = "";
+        my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                 "client_version" => "1.2.3");
+        
+        my $writer = new XML::Writer(OUTPUT => \$output);
+        $writer->xmlDecl("UTF-8");
+        $writer->startTag("listsubscriptions", %a);
+        
+        $writer->startTag("authuser");
+        $writer->characters($self->{AUTHUSER});
+        $writer->endTag("authuser");
+        
+        $writer->startTag("authpass");
+        $writer->characters($self->{AUTHPASS});
+        $writer->endTag("authpass");
+
+        $writer->endTag("listsubscriptions");
+        
+        if(defined $self->{TODIR} && $self->{TODIR} ne "")
+        {
+            $destfile = $self->{TODIR};
+        }
+    
+        $destfile .= "/listsubscriptions.xml";
+        my $ok = $self->_sendData($output, "command=listsubscriptions", $destfile);
+    
+        if(!$ok || !-e $destfile)
+        {
+            printLog($self->{LOG}, "error", "List subscriptions request failed.");
+            return 1;
+        }
+        return 0;
+    }
+    
+    if(defined $self->{TODIR} && $self->{TODIR} ne "")
+    {
+        return 0;
+    }
+    else
+    {
+        if(! defined $self->{DBH} || !$self->{DBH})
+        {
+            printLog($self->{LOG}, "error", __("Database handle is not available."));
+            return 1;
+        }
+        
+        # The _listsub_handler fill the Subscriptions and ProductSubscriptions table new.
+        # Here we need to delete it first
+
+        $self->{DBH}->do("DELETE from Subscriptions");
+        $self->{DBH}->do("DELETE from ProductSubscriptions");
+        
+        my $parser = new SMT::Parser::ListSubscriptions(log => $self->{LOG});
+        $parser->parse($destfile, sub{ _listsub_handler($self, @_)});
+        
+        return 0;
+    }
+}
+
 
 #
 # return count of errors. 0 == success
@@ -308,13 +400,13 @@ sub NCCDeleteRegistration
         $writer->characters($guid);
         $writer->endTag("guid");
         
-        $writer->startTag("smtguid");
-            $writer->characters($self->{SMTGUID});
-        $writer->endTag("smtguid");
+        $writer->startTag("authuser");
+            $writer->characters($self->{AUTHUSER});
+        $writer->endTag("authuser");
         
-            $writer->startTag("smtsecret");
-        $writer->characters($self->{SMTSECRET});
-        $writer->endTag("smtsecret");
+            $writer->startTag("authpass");
+        $writer->characters($self->{AUTHPASS});
+        $writer->endTag("authpass");
         
         $writer->endTag("de-register");
         
@@ -367,9 +459,7 @@ sub _deleteRegistrationLocal
     
     $self->{DBH}->do($statement);
     
-    $statement = "DELETE FROM SubscriptionStatus where ".$where;
-
-    $self->{DBH}->do($statement);
+    #FIXME: does it make sense to remove this GUID from ClientSubscriptions ?
 
     return 1;
 }
@@ -395,25 +485,12 @@ sub _listreg_handler
         if(exists $guidhash->{$data->{GUID}})
         {
             delete $guidhash->{$data->{GUID}};
-            $statement = sprintf("DELETE from SubscriptionStatus where GUID=%s", $self->{DBH}->quote($data->{GUID}));
             
-            $self->{DBH}->do($statement);
-            
-            foreach my $key (keys %{$data})
+            foreach my $regcode (@{$data->{SUBREF}})
             {
-                next if($key eq "GUID" || $key eq "");
-                
-                # FIXME# STARTDATE and ENDDATE may need a format convert
-                $statement = "INSERT INTO SubscriptionStatus (GUID, SUBSCRIPTION, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS) ";
-                $statement .= sprintf("VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", 
-                                      $self->{DBH}->quote($data->{GUID}),
-                                      $self->{DBH}->quote($key),
-                                      $self->{DBH}->quote($data->{$key}->{TYPE}),
-                                      $self->{DBH}->quote($data->{$key}->{STATUS}),
-                                      $self->{DBH}->quote($data->{$key}->{STARTDATE}),
-                                      $self->{DBH}->quote($data->{$key}->{ENDDATE}),
-                                      $data->{$key}->{DURATION},
-                                      $self->{DBH}->quote($data->{$key}->{SERVERCLASS}));
+                $statement = sprintf("INSERT INTO ClientSubscriptions (GUID, REGCODE) VALUES(%s, %s)", 
+                                     $self->{DBH}->quote($data->{GUID}),
+                                     $self->{DBH}->quote($regcode));
                 
                 $self->{DBH}->do($statement);
             }
@@ -423,6 +500,63 @@ sub _listreg_handler
             # We found a registration from SMT in NCC which does not exist in SMT anymore
             # print and error. The admin has to delete it in NCC by hand.
             printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a subscription in NCC which is not available here: '%s'"), $data->{GUID}));
+        }
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, "error", $@);
+        return;
+    }
+    return;
+}
+
+sub _listsub_handler
+{
+    my $self     = shift;
+    my $data     = shift;
+    
+    my $statement = "";
+
+    if(!exists $data->{REGCODE} || !defined $data->{REGCODE} || $data->{REGCODE} eq "" ||
+       !exists $data->{NAME} || !defined $data->{NAME} || $data->{NAME} eq "" ||
+       !exists $data->{STATUS} || !defined $data->{STATUS} || $data->{STATUS} eq "" ||
+       !exists $data->{ENDDATE} || !defined $data->{ENDDATE} || $data->{ENDDATE} eq "" ||
+       !exists $data->{PRODUCTLIST} || !defined $data->{PRODUCTLIST} || $data->{PRODUCTLIST} eq "" ||
+       !exists $data->{NODECOUNT} || !defined $data->{NODECOUNT} || $data->{NODECOUNT} eq "")
+    {
+        # should not happen, but it is better to check it
+        printLog($self->{LOG}, "error", "ListRegistrations: incomplete data set. Skip");
+        return;
+    }
+    
+    eval
+    {
+        # FIXME: We may need to convert the date types
+        $statement =  "INSERT INTO SUBSCRIPTIONS (REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT) ";
+        $statement .= sprintf("VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                              $self->{DBH}->quote($data->{REGCODE}),
+                              $self->{DBH}->quote($data->{NAME}),
+                              $self->{DBH}->quote($data->{TYPE}),
+                              $self->{DBH}->quote($data->{STATUS}),
+                              $self->{DBH}->quote($data->{STARTDATE}),
+                              $self->{DBH}->quote($data->{ENDDATE}),
+                              $data->{DURATION},
+                              $self->{DBH}->quote($data->{SERVERCLASS}),
+                              $data->{NODECOUNT});
+        
+
+        my $res = $self->{DBH}->do($statement);
+        printLog($self->{LOG}, "debug", "$statement :$res");
+        
+        my @productids = split(/\s*,\s*/, $data->{PRODUCTLIST});
+        
+        foreach my $id (@productids)
+        {
+            $statement = sprintf("INSERT INTO ProductSubscriptions (PRODUCTDATAID, REGCODE) VALUES (%s, %s)",
+                                 $id, $self->{DBH}->quote($data->{REGCODE}));
+
+            my $res = $self->{DBH}->do($statement);
+            printLog($self->{LOG}, "debug", "$statement :$res");
         }
     };
     if($@)
@@ -555,14 +689,6 @@ sub _buildRegisterXML
     my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
              "client_version" => "1.2.3");
 
-#     if(!$ctx->{nooptional})
-#     {
-#         $a{accept} = "optional";
-#     }
-#     if($ctx->{acceptmand} || $ctx->{nooptional})
-#     {
-#         $a{accept} = "mandatory";
-#     }
     $a{force} = "batch";
     
     $writer->startTag("register", %a);
@@ -589,13 +715,13 @@ sub _buildRegisterXML
         }
     }
     
-    $writer->startTag("smtguid");
-    $writer->characters($self->{SMTGUID});
-    $writer->endTag("smtguid");
+    $writer->startTag("authuser");
+    $writer->characters($self->{AUTHUSER});
+    $writer->endTag("authuser");
 
-    $writer->startTag("smtsecret");
-    $writer->characters($self->{SMTSECRET});
-    $writer->endTag("smtsecret");
+    $writer->startTag("authpass");
+    $writer->characters($self->{AUTHPASS});
+    $writer->endTag("authpass");
     
     foreach my $PHash (@{$products})
     {
@@ -618,14 +744,30 @@ sub _buildRegisterXML
         }
     }
 
+    my $foundEmail = 0;
+    
     foreach my $pair (@{$regdata})
     {
         next if($pair->{KEYNAME} eq "host");
+        
         if(!defined $pair->{VALUE})
         {
             $pair->{VALUE} = "";
         }
-        
+
+        if($pair->{KEYNAME} eq "email" )
+        {
+            if($pair->{VALUE} ne "")
+            {
+                $foundEmail = 1;
+            }
+            else
+            {
+                $foundEmail = 1;
+                $pair->{VALUE} = $self->{NCCEMAIL};
+            }
+        }
+                
         if($pair->{VALUE} eq "")
         {
             $writer->emptyTag("param", "id" => $pair->{KEYNAME});
@@ -646,6 +788,14 @@ sub _buildRegisterXML
         }
     }
 
+    if(!$foundEmail)
+    {
+        $writer->startTag("param",
+                          "id" => "email");
+        $writer->characters($self->{NCCEMAIL});
+        $writer->endTag("param");
+    }
+    
     $writer->endTag("register");
 
     return $output;

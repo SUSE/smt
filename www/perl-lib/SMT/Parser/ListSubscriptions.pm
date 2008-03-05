@@ -1,4 +1,4 @@
-package SMT::Parser::ListReg;
+package SMT::Parser::ListSubscriptions;
 use strict;
 use URI;
 use XML::Parser;
@@ -9,11 +9,16 @@ use IO::Zlib;
 # The handler is called with something like this
 #
 # $VAR1 = {
-#           'SUBREF' => [
-#                         'regcode1',
-#                         'regcode2'
-#                       ],
-#           'GUID' => 'adbeef4abadb013564'
+#           'REGCODE' => 'some regcode',
+#           'NAME' => 'SuSE Linux Enterprise Server x86',
+#           'SERVERCLASS' => 'ADDON',
+#           'DURATION' => '60',
+#           'STATUS' => 'ACTIVE',
+#           'TYPE' => 'FULL',
+#           'ENDDATE' => '1202149302',
+#           'STARTDATE' => '1202149301'
+#           'PRODUCTLIST' => '436,437,438,439,808',
+#           'NODECOUNT' => '35'
 #         };
 
 
@@ -27,7 +32,7 @@ sub new
     $self->{CURRENT}   = undef;
     $self->{HANDLER}   = undef;
     $self->{ELEMENT}   = undef;
-    $self->{REGCODE}   = "";
+    $self->{TMP}       = "";
     $self->{LOG}       = undef;
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
@@ -102,20 +107,12 @@ sub handle_start_tag()
     my $self = shift;
     my( $expat, $element, %attrs ) = @_;
 
-    if(lc($element) eq "guid")
+    if(lc($element) eq "subscription")
     {
-        $self->{ELEMENT} = "GUID";
-        $self->{CURRENT}->{GUID} = "";
-    }
-    elsif(lc($element) eq "subref")
-    {
-        $self->{ELEMENT} = "SUBREF";
-        if(!exists $self->{CURRENT}->{SUBREF})
-        {
-            $self->{CURRENT}->{SUBREF} = [];
-        }
+        $self->{ELEMENT} = uc($element);
     }
 }
+
 
 sub handle_char_tag
 {
@@ -125,38 +122,68 @@ sub handle_char_tag
     chomp($string);
     return if($string =~ /^\s*$/);
 
-    if(defined $self->{ELEMENT} && $self->{ELEMENT} eq "GUID")
-    {
-        $self->{CURRENT}->{GUID} .= $string;
-    }
-    elsif(defined $self->{ELEMENT} && $self->{ELEMENT} eq "SUBREF")
-    {
-        $self->{REGCODE} .= $string;
-    }
+    $self->{TMP} .= $string;
 }
 
 sub handle_end_tag
 {
     my( $self, $expat, $element ) = @_;
 
-    if(lc($element) eq "client")
+    if(lc($element) eq "subscription")
     {
         # first call the callback
         $self->{HANDLER}->($self->{CURRENT});
 
         $self->{ELEMENT} = undef; 
-        $self->{REGCODE} = "";
         $self->{CURRENT} = undef;
     }
-    elsif(lc($element) eq "subref")
+    elsif($self->{ELEMENT} eq "SUBSCRIPTION")
     {
-        chomp($self->{REGCODE});
-        push @{$self->{CURRENT}->{SUBREF}}, $self->{REGCODE};
-        $self->{REGCODE} = "";        
+        chomp($self->{TMP});
+        
+        if(lc($element) eq "type")
+        {
+            $self->{CURRENT}->{TYPE} = $self->{TMP};
+        }
+        elsif(lc($element) eq "substatus")
+        {
+            $self->{CURRENT}->{STATUS} = $self->{TMP};
+        }
+        elsif(lc($element) eq "start-date")
+        {
+            $self->{CURRENT}->{STARTDATE} = $self->{TMP};
+        }
+        elsif(lc($element) eq "end-date")
+        {
+            $self->{CURRENT}->{ENDDATE} = $self->{TMP};
+        }
+        elsif(lc($element) eq "duration")
+        {
+            $self->{CURRENT}->{DURATION} = $self->{TMP};
+        }
+        elsif(lc($element) eq "server-class")
+        {
+            $self->{CURRENT}->{SERVERCLASS} = $self->{TMP};
+        }
+        elsif(lc($element) eq "regcode")
+        {
+            $self->{CURRENT}->{REGCODE} = $self->{TMP};
+        }
+        elsif(lc($element) eq "subname")
+        {
+            $self->{CURRENT}->{NAME} = $self->{TMP};
+        }
+        elsif(lc($element) eq "productlist")
+        {
+            $self->{CURRENT}->{PRODUCTLIST} = $self->{TMP};
+        }
+        elsif(lc($element) eq "nodecount")
+        {
+            $self->{CURRENT}->{NODECOUNT} = $self->{TMP};
+        }
+        
+        $self->{TMP} = "";
     }
-    
 }
 
 1;
-
-

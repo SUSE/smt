@@ -89,6 +89,8 @@ if(!(defined $allowRegister && $allowRegister eq "true"))
     }
     exit 0;
 }
+my $nccEmail = $cfg->val("LOCAL", "nccEmail");
+
 
 my $dbh = undef;
 
@@ -106,7 +108,8 @@ if(!$dbh)
 
 eval
 {
-    my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, log => $LOG);
+    my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, 
+                                       log => $LOG, nccemail = $nccEmail);
     my $err = $nccreg->NCCRegister();
     if($err != 0)
     {

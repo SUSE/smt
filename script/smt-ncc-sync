@@ -139,7 +139,8 @@ eval
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
         $lr->NCCListRegistrations();
-        
+
+        $lr->NCCListSubscriptions();
     }
 
     if ($todir ne "")

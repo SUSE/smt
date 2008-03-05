@@ -118,8 +118,6 @@ sub unLock
 sub getLocalRegInfos
 {
     my $uri    = "";
-    my $guid   = "";
-    my $secret = "";
     
     open(FH, "< /etc/suseRegister.conf") or die sprintf(__("Cannot open /etc/suseRegister.conf: %s"), $!);
     while(<FH>)
@@ -132,28 +130,28 @@ sub getLocalRegInfos
     }
     close FH;
     
-    open(FH, "< /etc/zmd/deviceid") or die sprintf(__("Cannot open /etc/zmd/deviceid: %s"), $!);
-    
-    $guid = <FH>;
-    chomp($guid);
-    close FH;
-
-    open(FH, "< /etc/zmd/secret") or die sprintf(__("Cannot open /etc/zmd/secret: %s"), $!);
-    
-    $secret = <FH>;
-    chomp($secret);
-    close FH;
-
-    if($guid eq "" || $secret eq "")
+    if(!defined $uri || $uri eq "")
     {
-        die __("Cannot read credentials for registration\n");
+        die __("Cannot read URL from /etc/suseRegister.conf");
+    }
+    
+    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
+    if(!defined $cfg)
+    {
+        # FIXME: is die correct here?
+        die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
+    }
+    
+    my $user   = $cfg->val('NU', 'NUUser');
+    my $pass   = $cfg->val('NU', 'NUPass');
+    if(!defined $user || $user eq "" || 
+       !defined $pass || $pass eq "")
+    {
+        # FIXME: is die correct here?
+        die __("Cannot read Mirror Credentials from SMT configuration file.");
     }
 
-    if($uri eq "")
-    {
-        die __("Cannot read URL for registration\n");
-    }
-    return ($uri, $guid, $secret);  
+    return ($uri, $user, $pass);  
 }
 
 

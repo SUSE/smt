@@ -11,6 +11,8 @@ pass=
 [LOCAL]
 # Default should be http://server.domain.top/
 url=
+# This email address is used for registration at NCC 
+nccEmail=
 MirrorTo=/srv/www/htdocs
 MirrorAll=false
 forwardRegistration=true
