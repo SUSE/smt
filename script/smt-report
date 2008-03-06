@@ -118,14 +118,26 @@ if(!defined $subReport)
     exit 1;
 }
 
+my $prodSubReport = SMT::CLI::productSubscriptionReport(log => $LOG, debug => $debug);
+if(!defined $prodSubReport)
+{
+    exit 1;
+}
+
 
 print __("Product Class Report\n");
 print    "====================\n\n";
 print $classReport."\n";
 
-print __("Subscription Report\n");
-print    "===================\n\n";
+print __("Subscription Report based on a local calculation\n");
+print    "================================================\n\n";
+print $prodSubReport."\n";
+
+print __("Subscription Report based on NCC registrations\n");
+print    "==============================================\n\n";
 print $subReport."\n";
+
+
 
 
 exit 0;

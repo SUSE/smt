@@ -20,5 +20,6 @@ cat $SMTDIR/db/targets.sql | mysql -u root smt
 cat $SMTDIR/db/tmp-catalogs.sql | mysql -u root smt
 cat $SMTDIR/db/tmp-productcatalogs.sql | mysql -u root smt
 cat $SMTDIR/db/tmp-register.sql | mysql -u root smt
+cat $SMTDIR/db/tmp-subscriptions.sql | mysql -u root smt
 
 exit 0;

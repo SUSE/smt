@@ -588,6 +588,235 @@ sub productClassReport
     return $t->draw();
 }
 
+sub productSubscriptionReport
+{
+    my %options = @_;
+    my ($cfg, $dbh, $nuri) = init();
+    my $report = "";
+    
+    my $debug = 0;
+    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
+
+    my $statement = "";
+    my $time = SMT::Utils::getDBTimestamp();
+    my $calchash = {};
+    my $expireSoonMachines = {};
+    my $expiredMachines = {};
+    
+
+    $statement = "select SUBNAME, REGCODE from Subscriptions group by SUBNAME;";
+
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    my $res = $dbh->selectall_hashref($statement, "REGCODE");
+
+    foreach my $regcode (keys %{$res})
+    {
+        $statement = sprintf("SELECT COUNT(DISTINCT r.GUID) from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID and p.PRODUCTDATAID IN (SELECT DISTINCT PRODUCTDATAID from ProductSubscriptions ps where ps.REGCODE = %s)", 
+                             $dbh->quote($regcode));
+
+        printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+        
+        my $count = $dbh->selectcol_arrayref($statement);
+        
+        if(exists $count->[0] && defined $count->[0])
+        {
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = int $count->[0];
+        }
+    }
+
+    #
+    # Active Subscriptions
+    #
+    
+    $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
+    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) < SUBENDDATE ";
+    $statement .= "group by SUBNAME order by SUBNAME;";
+    
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    $res = $dbh->selectall_hashref($statement, "SUBNAME");
+
+    my $tact = new Text::ASCIITable({ headingText => __("Active Subscriptions")." ($time)" });
+    $tact->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+
+    foreach my $subname (keys %{$res})
+    {
+        my $assignedMachines = 0;
+        my $nc = 0;
+        
+        if($res->{$subname}->{UNLIMITED})
+        {
+            $assignedMachines = int $calchash->{$subname}->{MACHINES};
+            $calchash->{$subname}->{MACHINES} = 0;
+            $nc = "unlimited";
+        }
+        else
+        {
+            $nc = (int $res->{$subname}->{SUM_NODECOUNT});
+            if($nc >= (int $calchash->{$subname}->{MACHINES}))
+            {
+                $assignedMachines = $calchash->{$subname}->{MACHINES};
+                $calchash->{$subname}->{MACHINES} = 0;
+            }
+            else
+            {
+                $assignedMachines = $nc;
+                $calchash->{$subname}->{MACHINES} -= $nc;                
+            }
+        }
+                
+        $tact->addRow(
+                      $res->{$subname}->{SUBNAME},
+                      $nc,
+                      $assignedMachines,
+                      $res->{$subname}->{MINENDDATE}
+                     );
+    }
+    $report .= $tact->draw()."\n";
+
+
+    #
+    # Expire soon
+    #
+    
+    $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
+    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) > SUBENDDATE ";
+    $statement .= "group by SUBNAME order by SUBNAME;";
+    
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    $res = $dbh->selectall_hashref($statement, "SUBNAME");
+
+    my $tsoon = new Text::ASCIITable({ headingText => __("Subscriptions which expired within the next 30 days")." ($time)" });
+    $tsoon->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+
+    foreach my $subname (keys %{$res})
+    {
+        my $assignedMachines = 0;
+        my $nc = 0;
+        
+        if($res->{$subname}->{UNLIMITED})
+        {
+            $assignedMachines = $calchash->{$subname}->{MACHINES};
+            $calchash->{$subname}->{MACHINES} = 0;
+            $nc = "unlimited";
+        }
+        else
+        {
+            $nc = (int $res->{$subname}->{SUM_NODECOUNT});
+            if($nc >= (int $calchash->{$subname}->{MACHINES}))
+            {
+                $assignedMachines = $calchash->{$subname}->{MACHINES};
+                $calchash->{$subname}->{MACHINES} = 0;
+            }
+            else
+            {
+                $assignedMachines = $nc;
+                $calchash->{$subname}->{MACHINES} -= $nc;                
+            }
+        }
+
+        if($assignedMachines > 0)
+        {
+            $expireSoonMachines->{$subname} += int $assignedMachines;
+        }
+        
+        $tsoon->addRow(
+                       $res->{$subname}->{SUBNAME},
+                       $nc,
+                       $assignedMachines,
+                       $res->{$subname}->{MINENDDATE}
+                      );
+    }
+    $report .= $tsoon->draw()."\n";
+
+
+    #
+    # Expired Subscriptions
+    #
+    
+    $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MAX(SUBENDDATE) as MAXENDDATE ";
+    $statement .= "from Subscriptions where SUBSTATUS = 'EXPIRED' ";
+    $statement .= "group by SUBNAME order by SUBNAME;";
+    
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    $res = $dbh->selectall_hashref($statement, "SUBNAME");
+
+    my $texp = new Text::ASCIITable({ headingText => __("Expired Subscriptions")." ($time)" });
+    $texp->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my $doDraw = 0;
+    
+    foreach my $subname (keys %{$res})
+    {
+        my $assignedMachines = 0;
+        my $nc = 0;
+        
+        $assignedMachines = int $calchash->{$subname}->{MACHINES};
+
+        if($res->{$subname}->{UNLIMITED})
+        {
+            $nc = "unlimited";
+        }
+        else
+        {
+            $nc = (int $res->{$subname}->{SUM_NODECOUNT});
+        }
+
+        next if($assignedMachines == 0);
+        $doDraw = 1;
+
+        $expiredMachines->{$subname} += int $assignedMachines;
+        
+        $texp->addRow(
+                      $res->{$subname}->{SUBNAME},
+                      $nc,
+                      $assignedMachines,
+                      $res->{$subname}->{MAXENDDATE}
+                     );
+    }
+    if($doDraw)
+    {
+        $report .= $texp->draw()."\n";
+    }
+    
+    $report .= __("Summary:\n");
+    $report .=    "========\n\n";
+
+    my $ok = 1;
+
+    foreach my $subname (keys %{$expireSoonMachines})
+    {
+        if($expireSoonMachines->{$subname} > 0)
+        {
+            $report .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
+                               $expireSoonMachines->{$subname},
+                               $subname);
+            $ok = 0;
+        }
+    }
+
+    foreach my $subname (keys %{$expiredMachines})
+    {
+        if($expiredMachines->{$subname} > 0)
+        {
+            $report .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
+                               $expireSoonMachines->{$subname},
+                               $subname);
+            $ok = 0;
+        }
+    }
+
+    if($ok)
+    {
+        $report .= __("The Subscription status is ok.\n");
+    }    
+
+    return $report;
+}
+
+
 sub subscriptionReport
 {
     my %options = @_;
@@ -597,70 +826,205 @@ sub subscriptionReport
     my $debug = 0;
     $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
 
+    my $statement = "";
+    my $time = SMT::Utils::getDBTimestamp();
+    my $calchash = {};
+    
     #
     # active subscriptions
     #
-    
-    my $statement = "select DISTINCT SUBSCRIPTION, 0+(select COUNT(s2.GUID) from SubscriptionStatus s2 where s2.SUBSTATUS = 'ACTIVE' and s2.SUBSCRIPTION = s1.SUBSCRIPTION) AS Machines from SubscriptionStatus s1";
+
+    $statement  = "select s.SUBNAME, s.REGCODE, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE from Subscriptions s ";
+    $statement .= "where s.SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) < s.SUBENDDATE;";
+
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
 
-    my $res = $dbh->selectall_arrayref($statement, {Slice => {}});
+    my $res = $dbh->selectall_hashref($statement, "REGCODE");
 
-    my $tact = new Text::ASCIITable;
-    $tact->setCols(__('Subscription'),__('Machines'));
+    $statement  = "select s.REGCODE, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    $statement .= "where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
+    $statement .= "(now()+interval 30 DAY) < s.SUBENDDATE group by REGCODE order by SUBENDDATE";
 
-    foreach my $subs (@{$res})
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    my $assigned = $dbh->selectall_hashref($statement, "REGCODE");
+
+    foreach my $regcode (keys %{$assigned})
     {
-        $tact->addRow($subs->{SUBSCRIPTION}, $subs->{Machines});
+        if(exists $res->{$regcode})
+        {
+            $res->{$regcode}->{MACHINES} = $assigned->{$regcode}->{MACHINES};
+        }
     }
     
-    $report .= "\n\n";
-    $report .= __("Active Subscriptions\n");
-    $report .=    "--------------------\n\n";
-    $report .= $tact->draw();
+    my $tact = new Text::ASCIITable({ headingText => __("Active Subscriptions")." ($time)" });
+    $tact->setCols(__('Subscription'),__('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+
+    foreach my $regcode (keys %{$res})
+    {
+        if(!exists $calchash->{$res->{$regcode}->{SUBNAME}})
+        {
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{NODECOUNT} = (int $res->{$regcode}->{NODECOUNT});
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = (exists $res->{$regcode}->{MACHINES})?(int $res->{$regcode}->{MACHINES}):0;
+        }
+        else
+        {
+            my $nc = $calchash->{$res->{$regcode}->{SUBNAME}}->{NODECOUNT};
+            # nodecount == -1 means unlimited
+            if($nc != -1)
+            {
+                if((int $res->{$regcode}->{NODECOUNT}) == -1)
+                {
+                    $nc = -1;
+                }
+                else
+                {
+                    $nc += (int $res->{$regcode}->{NODECOUNT});
+                }
+            }
+            
+            my $m = $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES};
+            
+            if(exists $res->{$regcode}->{MACHINES})
+            {
+                $m += (int $res->{$regcode}->{MACHINES});
+            }
+            
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{NODECOUNT} = $nc;
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = $m;
+        }
+        
+        $tact->addRow(
+                      $res->{$regcode}->{SUBNAME},
+                      $res->{$regcode}->{REGCODE},
+                      ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
+                      (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
+                      $res->{$regcode}->{SUBENDDATE}
+                     );
+    }
+    $report .= $tact->draw()."\n";
+
+    #
+    # expire soon 
+    #
+    $statement = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE from Subscriptions s, ClientSubscriptions cs, Clients c where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) > s.SUBENDDATE group by REGCODE order by SUBENDDATE;";
+    
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    $res = $dbh->selectall_hashref($statement, "REGCODE");
+
+    my $tsoon = new Text::ASCIITable({ headingText => __('Subscriptions which expiring within the next 30 Days')." ($time)" });
+    $tsoon->setCols(__('Subscription'),__('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    
+    foreach my $regcode (keys %{$res})
+    {
+        if(!exists $calchash->{$res->{$regcode}->{SUBNAME}})
+        {
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{NODECOUNT} = (int $res->{$regcode}->{NODECOUNT});
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = (exists $res->{$regcode}->{MACHINES})?(int $res->{$regcode}->{MACHINES}):0;
+        }
+        else
+        {
+            my $nc = $calchash->{$res->{$regcode}->{SUBNAME}}->{NODECOUNT};
+            # nodecount == -1 means unlimited
+            if($nc != -1)
+            {
+                if((int $res->{$regcode}->{NODECOUNT}) == -1)
+                {
+                    $nc = -1;
+                }
+                else
+                {
+                    $nc += (int $res->{$regcode}->{NODECOUNT});
+                }
+            }
+
+            my $m = $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES};
+            if(exists $res->{$regcode}->{MACHINES})
+            {
+                $m += (int $res->{$regcode}->{MACHINES});
+            }
+            
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{NODECOUNT} = $nc;
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = $m;
+        }
+
+        $tsoon->addRow(
+                       $res->{$regcode}->{SUBNAME},
+                       $res->{$regcode}->{REGCODE},
+                      ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
+                       (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
+                       $res->{$regcode}->{SUBENDDATE}
+                      );
+    }
+    $report .= $tsoon->draw()."\n";
+
 
     #
     # expired subscriptions
     #
-    $statement = "select s.SUBSCRIPTION, s.GUID, c.HOSTNAME from SubscriptionStatus s, Clients c where s.SUBSTATUS = 'EXPIRED' and s.GUID = c.GUID order by SUBSCRIPTION";
+
+    $statement = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE from Subscriptions s, ClientSubscriptions cs, Clients c where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'EXPIRED' group by REGCODE order by SUBENDDATE;";
+    
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
 
-    $res = $dbh->selectall_arrayref($statement, {Slice => {}});
-    
-    my $texp = new Text::ASCIITable;
-    $texp->setCols(__('Subscription'),__('Unique ID'), __('Hostname'));
+    $res = $dbh->selectall_hashref($statement, "REGCODE");
 
-    foreach my $subs (@{$res})
-    {
-        $texp->addRow($subs->{SUBSCRIPTION}, $subs->{GUID}, $subs->{HOSTNAME});
-    }
-    
-    $report .= "\n\n";
-    $report .= __("Expired Subscriptions -- please re-new\n");
-    $report .=    "--------------------------------------\n\n";
-    $report .= $texp->draw();
-    
-    #
-    # expire soon 
-    #
-    $statement = "select s.SUBSCRIPTION, s.SUBENDDATE, s.GUID, c.HOSTNAME from SubscriptionStatus s, Clients c where s.SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) > s.SUBENDDATE and s.GUID = c.GUID order by SUBENDDATE,SUBSCRIPTION";
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
-    
-    $res = $dbh->selectall_arrayref($statement, {Slice => {}});
-    
-    my $tsoon = new Text::ASCIITable;
-    $tsoon->setCols(__('Expire Date'), __('Subscription'),__('Unique ID'), __('Hostname'));
+    my $texp = new Text::ASCIITable({ headingText => __('Expired Subscriptions')." ($time)" });
+    $texp->setCols(__('Subscription'),__('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
 
-    foreach my $subs (@{$res})
+    foreach my $regcode (keys %{$res})
     {
-        $tsoon->addRow($subs->{SUBENDDATE}, $subs->{SUBSCRIPTION}, $subs->{GUID}, $subs->{HOSTNAME});
+
+        if(!exists $calchash->{$res->{$regcode}->{SUBNAME}})
+        {
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{NODECOUNT} = 0;
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = (exists $res->{$regcode}->{MACHINES})?(int $res->{$regcode}->{MACHINES}):0;
+        }
+        else
+        {
+            my $m = $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES};
+            if(exists $res->{$regcode}->{MACHINES})
+            {
+                $m += (int $res->{$regcode}->{MACHINES});
+            }
+            
+            $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = $m;
+        }
+
+        $texp->addRow(
+                      $res->{$regcode}->{SUBNAME},
+                      $res->{$regcode}->{REGCODE},
+                      ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
+                      (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
+                       $res->{$regcode}->{SUBENDDATE}
+                     );
     }
+    $report .= $texp->draw()."\n";
+
+
+    $report .= __("Summary:\n");
+    $report .=    "========\n\n";
+
+    my $ok = 1;
     
-    $report .= "\n\n";
-    $report .= __("Subscriptions which expire in less then 30 Days -- please re-new.\n");
-    $report .=    "-----------------------------------------------------------------\n\n";
-    $report .= $tsoon->draw();
-    
+    foreach my $sn (keys %{$calchash})
+    {
+        if($calchash->{$sn}->{NODECOUNT} != -1 && $calchash->{$sn}->{NODECOUNT} < $calchash->{$sn}->{MACHINES})
+        {
+            $report .= sprintf(__("Not enough '%s' entitlements. Active entilements: %d  Assigned machines: %d "),
+                               $sn,
+                               $calchash->{$sn}->{NODECOUNT},
+                               $calchash->{$sn}->{MACHINES});
+            $ok = 0;
+        }
+    }
+
+    if($ok)
+    {
+        $report .= __("The Subscription status is ok.\n");
+    }    
+   
     return $report;
 }
 
