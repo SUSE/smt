@@ -12,7 +12,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl
-Version:        0.1.0
+Version:        0.2.0
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       apache2
