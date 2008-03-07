@@ -4,6 +4,7 @@ use warnings;
 
 use URI;
 use SMT::Utils;
+use DBI qw(:sql_types);
 use Text::ASCIITable;
 use Config::IniFiles;
 use File::Temp;
@@ -20,11 +21,6 @@ use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
-
-#use vars qw($cfg $dbh $nuri);
-
-#print "hello CLI2\n";
-
 
 sub init
 {
@@ -602,7 +598,8 @@ sub productSubscriptionReport
     my $calchash = {};
     my $expireSoonMachines = {};
     my $expiredMachines = {};
-    
+    my $nowP30day = SMT::Utils::getDBTimestamp((time + (30*24*60*60)));
+    my $sth = undef;
 
     $statement = "select SUBNAME, REGCODE from Subscriptions group by SUBNAME;";
 
@@ -630,13 +627,15 @@ sub productSubscriptionReport
     #
     
     $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
-    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) < SUBENDDATE ";
+    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and ? < SUBENDDATE ";
     $statement .= "group by SUBNAME order by SUBNAME;";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->execute;
+    $res = $sth->fetchall_hashref("SUBNAME");
+
+    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
-
-    $res = $dbh->selectall_hashref($statement, "SUBNAME");
-
     my $tact = new Text::ASCIITable({ headingText => __("Active Subscriptions")." ($time)" });
     $tact->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
 
@@ -681,13 +680,15 @@ sub productSubscriptionReport
     #
     
     $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
-    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) > SUBENDDATE ";
+    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and ? > SUBENDDATE ";
     $statement .= "group by SUBNAME order by SUBNAME;";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->execute;
+    $res = $sth->fetchall_hashref("SUBNAME");
+
+    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
-
-    $res = $dbh->selectall_hashref($statement, "SUBNAME");
-
     my $tsoon = new Text::ASCIITable({ headingText => __("Subscriptions which expired within the next 30 days")." ($time)" });
     $tsoon->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
 
@@ -822,6 +823,8 @@ sub subscriptionReport
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
     my $report = "";
+    my $nowP30day = SMT::Utils::getDBTimestamp((time + (30*24*60*60)));
+    my $sth = undef;
     
     my $debug = 0;
     $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
@@ -835,19 +838,23 @@ sub subscriptionReport
     #
 
     $statement  = "select s.SUBNAME, s.REGCODE, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE from Subscriptions s ";
-    $statement .= "where s.SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) < s.SUBENDDATE;";
+    $statement .= "where s.SUBSTATUS = 'ACTIVE' and ? < s.SUBENDDATE;";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->execute;
+    my $res = $sth->fetchall_hashref("REGCODE");
 
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
-
-    my $res = $dbh->selectall_hashref($statement, "REGCODE");
+    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
 
     $statement  = "select s.REGCODE, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
     $statement .= "where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
-    $statement .= "(now()+interval 30 DAY) < s.SUBENDDATE group by REGCODE order by SUBENDDATE";
-
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
-
-    my $assigned = $dbh->selectall_hashref($statement, "REGCODE");
+    $statement .= "? < s.SUBENDDATE group by REGCODE order by SUBENDDATE";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->execute;
+    my $assigned = $sth->fetchall_hashref("REGCODE");
+                         
+    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
 
     foreach my $regcode (keys %{$assigned})
     {
@@ -907,11 +914,15 @@ sub subscriptionReport
     #
     # expire soon 
     #
-    $statement = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE from Subscriptions s, ClientSubscriptions cs, Clients c where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and (now()+interval 30 DAY) > s.SUBENDDATE group by REGCODE order by SUBENDDATE;";
+    $statement  = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE ";
+    $statement .= "from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    $statement .= "where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ? > s.SUBENDDATE group by REGCODE order by SUBENDDATE;";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->execute;
+    $res = $sth->fetchall_hashref("REGCODE");
     
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
-
-    $res = $dbh->selectall_hashref($statement, "REGCODE");
+    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
 
     my $tsoon = new Text::ASCIITable({ headingText => __('Subscriptions which expiring within the next 30 Days')." ($time)" });
     $tsoon->setCols(__('Subscription'),__('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
@@ -964,7 +975,9 @@ sub subscriptionReport
     # expired subscriptions
     #
 
-    $statement = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE from Subscriptions s, ClientSubscriptions cs, Clients c where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'EXPIRED' group by REGCODE order by SUBENDDATE;";
+    $statement  = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES, s.NODECOUNT, s.SUBSTATUS, s.SUBENDDATE ";
+    $statement .= "from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    $statement .= "where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'EXPIRED' group by REGCODE order by SUBENDDATE;";
     
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
 

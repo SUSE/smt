@@ -11,6 +11,7 @@ use Apache2::RequestUtil;
 use XML::Writer;
 
 use SMT::Utils;
+use DBI qw(:sql_types);
 
 
 sub getCatalogsByGUID($$)
@@ -62,7 +63,12 @@ sub handler {
 
     eval
     {
-        $dbh->do(sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", $dbh->quote($regtimestring), $dbh->quote($username)));
+        my $sth = $dbh->prepare("UPDATE Clients SET LASTCONTACT=? WHERE GUID=?");
+        $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+        $sth->bind_param(2, $username);
+        $sth->execute;
+        
+        #$dbh->do(sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", $dbh->quote($regtimestring), $dbh->quote($username)));
     };
     if($@)
     {

@@ -16,6 +16,7 @@ use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
 use constant IOBUFSIZE => 8192;
 
 use SMT::Utils;
+use DBI qw(:sql_types);
 
 use Data::Dumper;
 use DBI;
@@ -481,15 +482,15 @@ sub insertRegistration
 
     foreach my $id (@insert)
     {
-        $statement = sprintf("INSERT into Registration (GUID, PRODUCTID, REGDATE) VALUES (%s, %s, %s) ", 
-                             $dbh->quote($regdata->{register}->{guid}),
-                             $id,
-                             $dbh->quote($regtimestring)
-                            );
         eval {
-            $cnt = $dbh->do($statement);
+            my $sth = $dbh->prepare("INSERT into Registration (GUID, PRODUCTID, REGDATE) VALUES (?, ?, ?)");
+            $sth->bind_param(1, $regdata->{register}->{guid});
+            $sth->bind_param(2, $id, SQL_INTEGER);
+            $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
+            $cnt = $sth->execute;
+            
             $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: $statement  Affected rows: $cnt");
+                           APR::Const::SUCCESS,"STATEMENT: ".$sth->{Statement}." Affected rows: $cnt");
         };
         if($@)
         {
@@ -499,7 +500,7 @@ sub insertRegistration
 
     if(@update > 0)
     {
-        $statement = sprintf("UPDATE Registration SET REGDATE=%s WHERE GUID=%s AND PRODUCTID ", 
+        $statement = sprintf("UPDATE Registration SET REGDATE=? WHERE GUID=%s AND PRODUCTID ", 
                              $dbh->quote($regtimestring),
                              $dbh->quote($regdata->{register}->{guid})
                             );
@@ -513,9 +514,11 @@ sub insertRegistration
         }
         
         eval {
-            $cnt = $dbh->do($statement);
+            my $sth = $dbh->prepare($statement);
+            $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+            $cnt = $sth->execute;
             $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: $statement  Affected rows: $cnt");
+                           APR::Const::SUCCESS,"STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
         };
         if($@)
         {
@@ -571,16 +574,17 @@ sub insertRegistration
     my $aff = 0;
     if($hostname ne "")
     {
-        $statement = sprintf("UPDATE Clients SET HOSTNAME=%s, TARGET=%s, LASTCONTACT=%s WHERE GUID=%s", 
-                             $dbh->quote($hostname), 
-                             $dbh->quote($target), 
-                             $dbh->quote($regtimestring),
-                             $dbh->quote($regdata->{register}->{guid}));
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement");
         eval
         {
-            $aff = $dbh->do($statement);
+            my $sth = $dbh->prepare("UPDATE Clients SET HOSTNAME=?, TARGET=?, LASTCONTACT=? WHERE GUID=?");
+            $sth->bind_param(1, $hostname);
+            $sth->bind_param(2, $target);
+            $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
+            $sth->bind_param(4, $regdata->{register}->{guid});
+            $aff = $sth->execute;
+            
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS,"STATEMENT: $statement");
         };
         if($@)
         {
@@ -609,15 +613,16 @@ sub insertRegistration
     }
     else
     {
-        $statement = sprintf("UPDATE Clients SET TARGET=%s, LASTCONTACT=%s WHERE GUID=%s", 
-                             $dbh->quote($target),
-                             $dbh->quote($regtimestring),
-                             $dbh->quote($regdata->{register}->{guid}));
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement");
         eval
         {
-            $aff = $dbh->do($statement);
+            my $sth = $dbh->prepare("UPDATE Clients SET TARGET=?, LASTCONTACT=? WHERE GUID=?");
+            $sth->bind_param(1, $target);
+            $sth->bind_param(2, $regtimestring, SQL_TIMESTAMP);
+            $sth->bind_param(3, $regdata->{register}->{guid});
+            $aff = $sth->execute;
+            
+            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                           APR::Const::SUCCESS,"STATEMENT: $statement");
         };
         if($@)
         {

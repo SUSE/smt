@@ -8,6 +8,7 @@ use SMT::Utils;
 use XML::Writer;
 use Crypt::SSLeay;
 use File::Temp;
+use DBI qw(:sql_types);
 
 use Data::Dumper;
 
@@ -138,8 +139,7 @@ sub NCCRegister
         foreach my $guid (@{$guids})
         {
             my $regtimestring = SMT::Utils::getDBTimestamp();
-            my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s
- and r.PRODUCTID=p.PRODUCTDATAID", $self->{DBH}->quote($guid)), {Slice => {}});
+            my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", $self->{DBH}->quote($guid)), {Slice => {}});
             
             my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s", 
                                                                     $self->{DBH}->quote($guid)), {Slice => {}});
@@ -246,7 +246,10 @@ sub NCCListRegistrations
             return 1;
         }
         
-        my $guidhash = $self->{DBH}->selectall_hashref("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > '2000-01-01 00:00:00'");
+        my $sth = $self->{DBH}->prepare("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > ?");
+        $sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMESTAMP);
+        $sth->execute;
+        my $guidhash = $self->{DBH}->fetchall_hashref();
 
         # The _listreg_handler fill the ClientSubscription table new.
         # Here we need to delete it first
@@ -378,9 +381,12 @@ sub NCCDeleteRegistration
         }
         
         # check if this client was registered at NCC
-        my $statement = sprintf("SELECT GUID from Registration where NCCREGDATE > '0000-00-00 00:00:00' and GUID=%s", 
-                                $self->{DBH}->quote($guid));
-        my $result = $self->{DBH}->selectcol_arrayref($statement);
+        my $sth = $self->{DBH}->prepare("SELECT GUID from Registration where NCCREGDATE > ? and GUID=?");
+        $sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMASTAMP);
+        $sth->bind_param(2, $guid);
+        $sth->execute;
+        my $result = $self->{DBH}->fetchrow_arrayref();
+
         if(!(exists $result->[0] && defined $result->[0] && $result->[0] eq $guid))
         {
             # this GUID was never registered at NCC 
@@ -533,20 +539,22 @@ sub _listsub_handler
     {
         # FIXME: We may need to convert the date types
         $statement =  "INSERT INTO SUBSCRIPTIONS (REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT) ";
-        $statement .= sprintf("VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                              $self->{DBH}->quote($data->{REGCODE}),
-                              $self->{DBH}->quote($data->{NAME}),
-                              $self->{DBH}->quote($data->{TYPE}),
-                              $self->{DBH}->quote($data->{STATUS}),
-                              $self->{DBH}->quote($data->{STARTDATE}),
-                              $self->{DBH}->quote($data->{ENDDATE}),
-                              $data->{DURATION},
-                              $self->{DBH}->quote($data->{SERVERCLASS}),
-                              $data->{NODECOUNT});
+        $statement .= "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-
-        my $res = $self->{DBH}->do($statement);
-        printLog($self->{LOG}, "debug", "$statement :$res");
+        my $sth = $self->{DBH}->prepare($statement);
+        $sth->bind_param(1, $data->{REGCODE});
+        $sth->bind_param(2, $data->{NAME});
+        $sth->bind_param(3, $data->{TYPE});
+        $sth->bind_param(4, $data->{STATUS});
+        $sth->bind_param(5, $data->{STARTDATE}, SQL_TIMESTAMP);
+        $sth->bind_param(6, $data->{ENDDATE}, SQL_TIMESTAMP);
+        $sth->bind_param(7, $data->{DURATION}, SQL_INTEGER);
+        $sth->bind_param(8, $data->{SERVERCLASS});
+        $sth->bind_param(9, $data->{NODECOUNT}, SQL_INTEGER);
+        
+        my $res = $sth->execute;
+        
+        printLog($self->{LOG}, "debug", $sth->{Statement}." :$res");
         
         my @productids = split(/\s*,\s*/, $data->{PRODUCTLIST});
         
@@ -602,7 +610,7 @@ sub _updateRegistration
         }
     }
     
-    my $statement = "UPDATE Registration SET NCCREGDATE=%s WHERE GUID=%s and ";
+    my $statement = "UPDATE Registration SET NCCREGDATE=? WHERE GUID=%s and ";
     if(@productids > 1)
     {
         $statement .= "PRODUCTID IN (".join(",", @productids).")";
@@ -617,8 +625,11 @@ sub _updateRegistration
         printLog($self->{LOG}, "error", __("No products found."));
         return 0;
     }
+    my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
+    $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+    return $sth->execute;
     
-    return $self->{DBH}->do(sprintf($statement, $self->{DBH}->quote($regtimestring), $self->{DBH}->quote($guid)));
+    #return $self->{DBH}->do(sprintf($statement, $self->{DBH}->quote($regtimestring), $self->{DBH}->quote($guid)));
 }
 
 

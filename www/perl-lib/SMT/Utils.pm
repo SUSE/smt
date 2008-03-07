@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Config::IniFiles;
-use DBI;
+use DBI qw(:sql_types);
 use Fcntl;
 use IO::File;
 
@@ -156,12 +156,17 @@ sub getLocalRegInfos
 
 
 #
-# return current timestamp in database format
+# You can provide a parameter in seconds from 1970-01-01 00:00:00
+# If you do not provide a parameter the current time is used.
+#
+# return the timestamp in database format
 # YYY-MM-DD hh:mm:ss
 #
 sub getDBTimestamp
 {
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+    my $time = shift || time;
+    
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($time);
     $year += 1900;
     $mon +=1;
     my $timestamp = sprintf("%04d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday, $hour,$min,$sec);
