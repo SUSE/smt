@@ -23,8 +23,8 @@ create table Subscriptions(REGCODE        VARCHAR(100) PRIMARY KEY,
                            SUBNAME        VARCHAR(100) NOT NULL,
                            SUBTYPE        CHAR(20)  DEFAULT "UNKNOWN",
                            SUBSTATUS      CHAR(20)  DEFAULT "UNKNOWN",
-                           SUBSTARTDATE   TIMESTAMP DEFAULT TIMESTAMP'1970-01-01 00:00:00',
-                           SUBENDDATE     TIMESTAMP DEFAULT TIMESTAMP'1970-01-01 00:00:00',
+                           SUBSTARTDATE   TIMESTAMP DEFAULT '1970-01-02 00:00:00',
+                           SUBENDDATE     TIMESTAMP DEFAULT '1970-01-02 00:00:00',
                            SUBDURATION    BIGINT    DEFAULT 0,
                            SERVERCLASS    CHAR(50),
                            NODECOUNT      integer NOT NULL
@@ -58,7 +58,7 @@ create table ClientSubscriptions(GUID    CHAR(50)     NOT NULL,
 create table Registration(GUID         CHAR(50) NOT NULL,
                           PRODUCTID    integer NOT NULL,
                           REGDATE      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                          NCCREGDATE   TIMESTAMP DEFAULT TIMESTAMP'1070-01-01 00:00:00',
+                          NCCREGDATE   TIMESTAMP DEFAULT TIMESTAMP'1970-01-02 00:00:00',
                           PRIMARY KEY(GUID, PRODUCTID)
                        -- FOREIGN KEY (ProductID) REFERENCES Products  -- FOREIGN KEY not supported by sqlite3
                          );
