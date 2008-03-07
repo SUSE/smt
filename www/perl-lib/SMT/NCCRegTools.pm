@@ -134,7 +134,7 @@ sub NCCRegister
     
     eval
     {
-        my $guids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE");
+        my $guids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE || NCCREGDATE IS NULL");
         
         foreach my $guid (@{$guids})
         {
@@ -246,8 +246,8 @@ sub NCCListRegistrations
             return 1;
         }
         
-        my $sth = $self->{DBH}->prepare("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE > ?");
-        $sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMESTAMP);
+        my $sth = $self->{DBH}->prepare("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE IS NOT NULL");
+        #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMESTAMP);
         $sth->execute;
         my $guidhash = $self->{DBH}->fetchall_hashref();
 
@@ -381,9 +381,9 @@ sub NCCDeleteRegistration
         }
         
         # check if this client was registered at NCC
-        my $sth = $self->{DBH}->prepare("SELECT GUID from Registration where NCCREGDATE > ? and GUID=?");
-        $sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMASTAMP);
-        $sth->bind_param(2, $guid);
+        my $sth = $self->{DBH}->prepare("SELECT GUID from Registration where NCCREGDATE IS NOT NULL and GUID=?");
+        #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMASTAMP);
+        $sth->bind_param(1, $guid);
         $sth->execute;
         my $result = $self->{DBH}->fetchrow_arrayref();
 
