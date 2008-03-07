@@ -90,7 +90,8 @@ sub register
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
-        die "Cannot open Database";
+        $r->log_error("Cannot open Database");
+        die "Please contact your administrator.";
     }
     
     my $regroot = { ACCEPTOPT => 1, CURRENTELEMENT => "", PRODUCTATTR => {}, register => {}};
@@ -193,7 +194,8 @@ sub listproducts
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
-        die ("Cannot connect to database");
+        $r->log_error("Cannot connect to database");
+        die "Please contact your administrator";
     }
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
@@ -750,12 +752,18 @@ sub buildZmdConfig
     my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
     if(!defined $cfg)
     {
-        # FIXME: is die correct here?
-        die "Cannot read the SMT configuration file: ".@Config::IniFiles::errors;
+        $r->log_error("Cannot read the SMT configuration file: ".@Config::IniFiles::errors);
+        die "SMT server is missconfigured. Please contact your administrator.";
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
     $LocalNUUrl =~ s/\s*$//;
+    if(!defined $LocalNUUrl || $LocalNUUrl !~ /^http/)
+    {
+        $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
+        die "SMT server is missconfigured. Please contact your administrator.";
+    }
+    
     if($usetestenv)
     {
         $LocalNUUrl    .= "/testing/";
@@ -787,7 +795,13 @@ sub buildZmdConfig
     foreach my $cat (keys %{$catalogs})
     {
         next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
-    
+        if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
+           $catalogs->{$cat}->{LOCALPATH} eq "")
+        {
+            $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
+            next;
+        }
+        
         $writer->startTag("param", 
                           "name" => "catalog",
                           "url"  => "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH}
@@ -802,6 +816,12 @@ sub buildZmdConfig
     foreach my $cat (keys %{$catalogs})
     {
         next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "zypp");
+        if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
+           $catalogs->{$cat}->{LOCALPATH} eq "")
+        {
+            $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
+            next;
+        }
 
         $writer->startTag("service", 
                           "id"          => $catalogs->{$cat}->{NAME},
