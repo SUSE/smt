@@ -58,13 +58,20 @@ if (defined $ARGV[0] )
     #print "cmd: $cmd\n";
     if ( $cmd eq "help" )
     {
-        #print "2foo\n";
-        my $targethelp = shift(@ARGV);
-        executeCommand($targethelp,"-h");
+        if (defined $ARGV[0] ) 
+        {
+            #print "2foo\n";
+            my $targethelp = shift(@ARGV);
+            executeCommand($targethelp,"-h");
+        }
+        else
+        {
+            help();
+        }
     }
     else
     {
-      executeCommand($cmd, @ARGV)
+        executeCommand($cmd, @ARGV)
     }
 }
 else
