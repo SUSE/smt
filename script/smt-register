@@ -109,7 +109,7 @@ if(!$dbh)
 eval
 {
     my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, 
-                                       log => $LOG, nccemail = $nccEmail);
+                                       log => $LOG, nccemail => $nccEmail);
     my $err = $nccreg->NCCRegister();
     if($err != 0)
     {
