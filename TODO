@@ -71,7 +71,10 @@ TODO:
   What happens if they are %config(noreplace)?
   Will a .rpmsave or .rpmnew file be a new cronjob?
 
+- enhance the lock functions. If a lockfile is present, check if the process
+  is realy running. If not remove the lockfile and go on.
 
+ 
 
 DONE:
 =====
