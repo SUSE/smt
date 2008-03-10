@@ -29,7 +29,7 @@ insert into Clients (GUID, HOSTNAME, TARGET) VALUES('slessp1i586', 'test3', 'sle
 insert into Clients (GUID, HOSTNAME, TARGET) VALUES('slessp1i586-2', 'test42', 'sles-10-i586');
 insert into Clients (GUID, HOSTNAME, TARGET) VALUES('sledsp1x8664', 'test4', 'sles-10-x86_64');
 
--- -------------------------------------------------------------------------------------------------------------------------------------
+--
 
 
 insert into Registration(GUID, PRODUCTID)
@@ -55,7 +55,7 @@ insert into Registration(GUID, PRODUCTID)
 insert into Registration(GUID, PRODUCTID)
  values("sles-20", 437);
 
--------------- some examples --------------------
+-- some examples
 -- sqlite> select PRODUCTID from Registration where GUID = "sledsp1x8664";
 -- 435
 -- sqlite> select * from ProductCatalogs where PRODUCTID = 435;

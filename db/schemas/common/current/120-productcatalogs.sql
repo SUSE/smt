@@ -119,9 +119,11 @@ insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
 
 -- SLES SP2 final "online" ia64
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
- values(842, "5fa4eb6f855643ea2500eebfb73d76e026c7fe5d", 'N');   -- Online Catalog
+ values(842, "5fa4eb6f855643ea2500eebfb73d76e026c7fe5d", 'N');   
+-- Online Catalog
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
- values(842, "dd114f3c081c18dc8b877061c1ca40fba0bad3e4", 'N');   -- Updates Catalog
+ values(842, "dd114f3c081c18dc8b877061c1ca40fba0bad3e4", 'N');
+-- Updates Catalog
 
 
 -- SLES SP2 final "online" ppc
@@ -207,7 +209,8 @@ insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
 
 -- SLES SP2 final ia64
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)
- values(827, "dd114f3c081c18dc8b877061c1ca40fba0bad3e4", 'N');   -- Updates Catalog
+ values(827, "dd114f3c081c18dc8b877061c1ca40fba0bad3e4", 'N');   
+-- Updates Catalog
 
 -- SLES SP2 final ppc
 insert into ProductCatalogs(PRODUCTDATAID, CATALOGID, OPTIONAL)

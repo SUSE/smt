@@ -1,10 +1,10 @@
----------------------------------------------------------------------------------------------------------------
+--
 -- select PRODUCTDATAID, PRODUCT, VERSION, RELEASE, ARCH, PRODUCTLOWER, VERSIONLOWER, RELEASELOWER, ARCHLOWER, FRIENDLY, 
 --        PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST, PRODUCT_CLASS
 -- from ncc.NNW_PRODUCT_DATA
---------------------------------------------------------------------------------------------------------------- 
+--
 -- result export as insert statements
----------------------------------------------------------------------------------------------------------------
+--
 INSERT INTO Products(PRODUCTDATAID, PRODUCT, VERSION, REL, ARCH, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER, FRIENDLY, PARAMLIST, NEEDINFO, SERVICE, PRODUCT_LIST, PRODUCT_CLASS)
   VALUES(1, 'TestProduct', '1.0', NULL, NULL, 'testproduct', '1.0', NULL, NULL, 'Test Product', '<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0" lang="">
 	<guid description="" class="mandatory"/>
