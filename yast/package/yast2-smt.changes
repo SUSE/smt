@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Mar 10 15:13:37 CET 2008 - locilka@suse.cz
+
+- Moving SMT to Network Services (desktop file, bnc #368097)
+
+-------------------------------------------------------------------
 Mon Mar  3 17:07:37 CET 2008 - locilka@suse.cz
 
 - Added basic support for enabling/disabling the SMT service.
