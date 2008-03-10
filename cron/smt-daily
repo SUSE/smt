@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+#
+# smt-daily
+# This script runs organizational commands for the SMT service.
+# It syncs the local SMT with the Novell NCC, creates a daily report
+# and updates the mirrored installation and update sources.
+
+
+SMTCMD=/usr/sbin/smt
+JOBS="ncc-sync report mirror"
+
+if [ -x ${SMTCMD} ]
+then
+
+  for JOB in ${JOBS}
+  do
+    if [ -x ${SMTCMD}-${JOB} ]
+    then
+      ${SMTCMD}-${JOB}
+    else
+      echo "WARNING: Could not find the SMT binary ${SMTCMD}-${JOB}"
+      echo "         Please make sure SMT is properly installed."
+    fi
+  done
+
+else
+  echo "Could not find the SMT binaries. Your SMT installation seems to be broken."
+  # in cronjobs always do an exit 0 - even on errors - exit 1 only in case of real panic
+  exit 0
+fi
+
+exit 0

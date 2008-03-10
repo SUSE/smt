@@ -1,0 +1,6 @@
+# SMT cron.d configuration
+#     run smt-register every 15 minutes
+#
+SMTREGISTERCMD=/usr/sbin/smt-register
+
+*/15 * * * *    root    ${SMTREGISTERCMD}

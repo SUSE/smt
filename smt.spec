@@ -72,6 +72,8 @@ install -m 644 db/*.sql $RPM_BUILD_ROOT/var/lib/SMT/db/
 install -m 755 db/setup_mysql.sh $RPM_BUILD_ROOT/var/lib/SMT/db/
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
+install -m 744 cron/smt-register $RPM_BUILD_ROOT/etc/cron.d/
+install -m 744 cron/smt-daily $RPM_BUILD_ROOT/etc/cron.daily/
 
 # create apache config links
 mkdir -p $RPM_BUILD_ROOT/etc/apache2/conf.d/
@@ -121,6 +123,8 @@ exit 0
 /usr/sbin/smt
 /var/lib/SMT/db/*
 /var/adm/fillup-templates/sysconfig.apache2-smt
+/etc/cron.d/smt-register
+/etc/cron.daily/smt-daily
 %dir %{_datadir}/schemas/smt
 %{_datadir}/schemas/smt/*
 
