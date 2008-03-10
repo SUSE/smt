@@ -120,6 +120,9 @@ exit 0
 /usr/sbin/smt
 /var/lib/SMT/db/*
 /var/adm/fillup-templates/sysconfig.apache2-smt
+%dir %{_datadir}/schemas/smt
+%{_datadir}/schemas/smt/*
+
 %doc README COPYING 
 
 %changelog
