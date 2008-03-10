@@ -3,8 +3,8 @@ package SMT;
 use strict;
 use warnings;
 
-use vars qw($VERSION);
+use vars qw($SCHEMA_VERSION);
 
-$VERSION = "2.0";
+$SCHEMA_VERSION = 0.02;
 
 1;

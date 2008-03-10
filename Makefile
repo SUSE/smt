@@ -1,5 +1,6 @@
 NAME         = smt
 VERSION      = 0.2.1
+SCHEMA_VERSION = 0.02
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -87,8 +88,8 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
-	cp -R db/schemas/common/current $(DESTDIR)/usr/share/schemas/smt/_common/$(VERSION)
-	cp -R db/schemas/mysql/current $(DESTDIR)/usr/share/schemas/smt/mysql/$(VERSION)
+	cp -R db/schemas/common/current $(DESTDIR)/usr/share/schemas/smt/_common/$(SCHEMA_VERSION)
+	cp -R db/schemas/mysql/current $(DESTDIR)/usr/share/schemas/smt/mysql/$(SCHEMA_VERSION)
 
 test: clean
 	cd tests; perl tests.pl && cd -
