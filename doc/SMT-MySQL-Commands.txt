@@ -3,3 +3,9 @@ mysqladmin -u root -p oldpassword newpass
 
 or sql command:
 SET PASSWORD FOR root@localhost=PASSWORD('rubberchicken');
+
+give access to some user in database:
+
+grant all on database1.* to user1@host identified by "secret";
+revoke all on database1.* from user1@host;
+
