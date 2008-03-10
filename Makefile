@@ -83,6 +83,7 @@ install:
 	cp www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
 	cp www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
 	cp www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
+	cp www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common

@@ -111,6 +111,7 @@ exit 0
 %config /etc/smt.d/*.conf
 /etc/apache2/conf.d/*.conf
 /etc/apache2/vhosts.d/*.conf
+%{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm
 %{perl_vendorlib}/SMT/Parser/*.pm

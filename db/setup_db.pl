@@ -37,8 +37,8 @@ if ( not $dbh=db_connect() )
 my $m = DBIx::Migration::Directories->new(
    base                    => '/usr/share/schemas',
    schema                  => 'smt',
-#   desired_version_from    => 'MyApp::DataPackage',
+   desired_version_from    => 'SMT',
    dbh                     => $dbh
 );
  
-$m->migrate or die "Installing database failed!";
+$m->full_migrate or die "Installing database failed!";
