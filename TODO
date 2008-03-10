@@ -4,6 +4,9 @@ TODO:
 
 - 
 
+- schema version, needs tob e present in the Makefile (for installation of
+  schemas) and in the code (to check). Figure out a good way to handle this.
+
 {
   - verify checksum of /repodata/repomd.xml
 
