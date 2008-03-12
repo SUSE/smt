@@ -93,7 +93,8 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
 	cp -R db/schemas/common/current $(DESTDIR)/usr/share/schemas/smt/_common/$(SCHEMA_VERSION)
 	cp -R db/schemas/mysql/current $(DESTDIR)/usr/share/schemas/smt/mysql/$(SCHEMA_VERSION)
-
+	cp -R db/schemas/mysql/migrate/* $(DESTDIR)/usr/share/schemas/smt/mysql/
+	cp -R db/schemas/common/migrate/* $(DESTDIR)/usr/share/schemas/smt/_common/
 test: clean
 	cd tests; perl tests.pl && cd -
 

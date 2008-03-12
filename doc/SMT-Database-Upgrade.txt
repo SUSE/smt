@@ -1,0 +1,23 @@
+
+First database version is 0.02
+
+Current schema version is defined in SMT.pm and Makefile
+
+modify to db/schemas/$driver/current fles to edit current schema.
+$driver is mysql or common if the statements are compatible or not.
+
+To add an upgrade script from X.XX to Y.YY , add a file like:
+
+100_create_new_table.sql
+
+on db/schemas/$driver/migrate/X.XX-Y.YY
+
+and a downgrade script like:
+
+100_drop_new_table in 
+
+db/schemas/$driver/migrate/Y.YY-X.XX
+
+See
+http://search.cpan.org/~crakrjack/DBIx-Migration-Directories-0.05/lib/DBIx/Migration/Directories.pod#___top
+for more info about the layout after they get installed
