@@ -8,7 +8,7 @@ X-KDE-HasReadOnlyMode=true
 X-KDE-Library=yast2
 X-SuSE-YaST-Call=smt
 
-X-SuSE-YaST-Group=Misc
+X-SuSE-YaST-Group=Net_advanced
 X-SuSE-YaST-Argument=
 X-SuSE-YaST-RootOnly=true
 X-SuSE-YaST-AutoInst=

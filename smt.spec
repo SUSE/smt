@@ -113,6 +113,8 @@ exit 0
 %config /etc/smt.d/*.conf
 /etc/apache2/conf.d/*.conf
 /etc/apache2/vhosts.d/*.conf
+/etc/init.d/smt
+/usr/sbin/rcsmt
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm

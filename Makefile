@@ -59,6 +59,9 @@ install_db_mysql:
 install_conf:
 	mkdir -p $(DESTDIR)/etc/
 	cp config/smt.conf $(DESTDIR)/etc/
+	mkdir -p $(DESTDIR)/etc/init.d/
+	cp config/rc.smt $(DESTDIR)/etc/init.d/smt
+	ln -s /etc/init.d/smt /usr/sbin/rcsmt
 
 install:
 	mkdir -p $(DESTDIR)/usr/sbin/
