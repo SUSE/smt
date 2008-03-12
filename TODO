@@ -79,7 +79,29 @@ TODO:
 - enhance the lock functions. If a lockfile is present, check if the process
   is realy running. If not remove the lockfile and go on.
 
- 
+- review help texts of our commandline tools.
+
+- write man pages for commandline tools
+
+- Doku: describe how to renew the server certificate.
+        * using yast2-ca-management module
+        * importing an own cert with common-server-certificate module
+        
+        Say also, that no changes on the clients are necessary as long
+        as they use the same CA certificate. 
+        (Our generated CA is valid for 10 years)
+
+        Everybody using SMT have to do it after one year.
+        To reduce support calls, we should describe this
+        in our manual. 
+
+- report module should check the server certificate an warn if it is time
+  to renew it. E.g. 15(10, 5,4,3,2,1,0) days before it expires.
+
+- usability tests of our commandline tools. 
+  * What functionaly customers might miss.
+  * Is the "how to use them" clear and obvious?
+  
 
 DONE:
 =====
