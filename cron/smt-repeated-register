@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# smt-repeated-register
+
+JOBS="register"
+SMTLOGRUN=/usr/lib/SMT/bin/smt-logrun
+
+${SMTLOGRUN} ${JOBS}
+
+if [ $? != 0 ]
+then
+  echo "Warning: Errors occurred within smt-repeated-register run"
+fi
+
+# in cronjobs always do an exit 0 - even on errors - exit 1 only in case of real panic
+exit 0

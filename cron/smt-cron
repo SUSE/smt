@@ -1,0 +1,6 @@
+# SMT cron.d configuration
+#     run smt-register every 15 minutes
+#     run smt-daily once a night at 01:00
+
+*/15  *  *  *  *    root    /usr/lib/SMT/bin/smt-repeated-register
+0     1  *  *  *    root    /usr/lib/SMT/bin/smt-daily
