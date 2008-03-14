@@ -123,11 +123,6 @@ For information about creating a Novell Login account, see
   * What functionaly customers might miss.
   * Is the "how to use them" clear and obvious?
   
-- send <smtguid> with every call to NCC. (mc)
-
-- use Mirror Credentials for authentication everywhere.
-  (This should be the case, but double check needed. mc)
-
 DONE:
 =====
 
@@ -247,3 +242,10 @@ DONE:
 - created symlinks for activating smt by creating init.d script for smt. It requires apache2
   and  mysql services. This could also cover database update.
   (/etc/init.d/smt and /usr/sbin/rcsmt (symlink) scripts)
+
+- send <smtguid> with every call to NCC. (mc)
+
+- use Mirror Credentials for authentication everywhere.
+  (This should be the case, but double check needed. mc)
+
+
