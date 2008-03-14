@@ -9,6 +9,7 @@
 
 SMTCMD=/usr/sbin/smt
 JOBS="ncc-sync report mirror"
+LOGDIR="/var/log/"
 
 if [ -x ${SMTCMD} ]
 then
@@ -17,7 +18,7 @@ then
   do
     if [ -x ${SMTCMD}-${JOB} ]
     then
-      ${SMTCMD}-${JOB}
+      ${SMTCMD}-${JOB} -L ${LOGDIR}/smt-${JOB}.log
     else
       echo "WARNING: Could not find the SMT binary ${SMTCMD}-${JOB}"
       echo "         Please make sure SMT is properly installed."
