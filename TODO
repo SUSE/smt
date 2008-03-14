@@ -100,6 +100,10 @@ TODO:
   * What functionaly customers might miss.
   * Is the "how to use them" clear and obvious?
   
+- send <smtguid> with every call to NCC. (mc)
+
+- use Mirror Credentials for authentication everywhere.
+  (This should be the case, but double check needed. mc)
 
 DONE:
 =====
