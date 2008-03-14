@@ -3,4 +3,4 @@
 #
 SMTREGISTERCMD=/usr/sbin/smt-register
 
-*/15 * * * *    root    ${SMTREGISTERCMD}
+*/15 * * * *    root    ${SMTREGISTERCMD} -L /var/log/smt-register.log
