@@ -37,6 +37,8 @@ sub new
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
 
+    $self->{SMTGUID} = SMT::Utils::getSMTGuid();
+
     $self->{NCCEMAIL} = "";
 
     $self->{DBH} = undef;
@@ -146,6 +148,8 @@ sub NCCRegister
             
             if(defined $regdata && ref($regdata) eq "ARRAY")
             {
+                printLog($self->{LOG}, "debug", "Register '$guid'") if($self->{DEBUG});
+
                 my $out = $self->_buildRegisterXML($guid, $products, $regdata);
                 
                 if(!defined $out || $out eq "")
@@ -215,6 +219,10 @@ sub NCCListRegistrations
         $writer->startTag("authpass");
         $writer->characters($self->{AUTHPASS});
         $writer->endTag("authpass");
+
+        $writer->startTag("smtguid");
+        $writer->characters($self->{SMTGUID});
+        $writer->endTag("smtguid");
 
         $writer->endTag("listregistrations");
         
@@ -299,6 +307,10 @@ sub NCCListSubscriptions
         $writer->startTag("authpass");
         $writer->characters($self->{AUTHPASS});
         $writer->endTag("authpass");
+
+        $writer->startTag("smtguid");
+        $writer->characters($self->{SMTGUID});
+        $writer->endTag("smtguid");
 
         $writer->endTag("listsubscriptions");
         
@@ -414,6 +426,10 @@ sub NCCDeleteRegistration
         $writer->characters($self->{AUTHPASS});
         $writer->endTag("authpass");
         
+        $writer->startTag("smtguid");
+        $writer->characters($self->{SMTGUID});
+        $writer->endTag("smtguid");
+
         $writer->endTag("de-register");
         
         my $ok = $self->_sendData($output, "command=de-register");
@@ -733,6 +749,10 @@ sub _buildRegisterXML
     $writer->startTag("authpass");
     $writer->characters($self->{AUTHPASS});
     $writer->endTag("authpass");
+    
+    $writer->startTag("smtguid");
+    $writer->characters($self->{SMTGUID});
+    $writer->endTag("smtguid");
     
     foreach my $PHash (@{$products})
     {

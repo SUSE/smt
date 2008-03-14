@@ -38,6 +38,8 @@ sub new
     $self->{USERAGENT}->protocols_allowed( [ 'http', 'https'] );
     $self->{USERINFO} = "";
 
+    $self->{SMTGUID} = SMT::Utils::getSMTGuid();
+
     $self->{TEMPDIR} = File::Temp::tempdir(CLEANUP => 1);
 
     $self->{ELEMENT} = "";
@@ -187,8 +189,15 @@ sub _requestData
     my $content = "";
     my $writer = new XML::Writer(NEWLINES => 1, OUTPUT => \$content);
     $writer->xmlDecl();
-    $writer->emptyTag($self->{ELEMENT}, xmlns => "http://www.novell.com/center/xml/regsvc10");
+    $writer->startTag($self->{ELEMENT}, xmlns => "http://www.novell.com/center/xml/regsvc10");
     
+    $writer->startTag("smtguid");
+    $writer->characters($self->{SMTGUID});
+    $writer->endTag("smtguid");
+    
+    $writer->endTag($self->{ELEMENT});
+    
+
     my $response = $self->{USERAGENT}->post( $uri->as_string(), 
                                              ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
                                              'Content' => $content);

@@ -154,6 +154,21 @@ sub getLocalRegInfos
     return ($uri, $user, $pass);  
 }
 
+#
+# Return deviceid (guid) of the SMT server
+#
+sub getSMTGuid
+{
+    my $guid   = "";
+    open(FH, "< /etc/zmd/deviceid") or die sprintf(__("Cannot open /etc/zmd/deviceid: %s"), $!);
+    
+    $guid = <FH>;
+    chomp($guid);
+    close FH;
+    
+    return $guid;
+}
+
 
 #
 # You can provide a parameter in seconds from 1970-01-01 00:00:00
