@@ -31,6 +31,12 @@ sub handler {
     my $args = $r->args();
     my $hargs = {};
     
+    if(! defined $args)
+    {
+        $r->warn("Registration called without args.");
+	return Apache2::Const::SERVER_ERROR;
+    }
+
     foreach my $a (split(/\&/, $args))
     {
         chomp($a);
