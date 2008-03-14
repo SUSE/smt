@@ -14,18 +14,21 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 my $debug;
 my $help;
+my $logfile;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
-         'debug|d' => \$debug,
-         'help|h' => \$help
-);
+                          'debug|d' => \$debug,
+                          "logfile|L=s" => \$logfile,
+                          'help|h' => \$help
+                         );
 
 if ( defined $help && ( $help == 1 ) )
 {
-  print basename($0) . " : " . __("generate a report\n");
-  print "--debug (-d) : " . __("enable debug mode\n");
+  print basename($0)." : " . __("generate a report\n");
+  print "--debug (-d)              ". __("enable debug mode\n");
+  print "--logfile -L file         ".__("Path to logfile\n");
   exit 0;
 }
 
@@ -104,7 +107,7 @@ my %conf = (
 
 # open the logfile
 
-my $LOG = SMT::Utils::openLog();
+my $LOG = SMT::Utils::openLog($logfile);
 
 my $classReport = SMT::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug);
 if(!defined $classReport)
@@ -125,19 +128,16 @@ if(!defined $prodSubReport)
 }
 
 
-print __("Product Class Report\n");
-print    "====================\n\n";
-print $classReport."\n";
+printLog($LOG, "info", __("Product Class Report"));
+printLog($LOG, "info", "====================\n");
+printLog($LOG, "info", $classReport."\n");
 
-print __("Subscription Report based on a local calculation\n");
-print    "================================================\n\n";
-print $prodSubReport."\n";
+printLog($LOG, "info", __("Subscription Report based on a local calculation"));
+printLog($LOG, "info", "================================================\n");
+printLog($LOG, "info", $prodSubReport."\n");
 
-print __("Subscription Report based on NCC registrations\n");
-print    "==============================================\n\n";
-print $subReport."\n";
-
-
-
+printLog($LOG, "info", __("Subscription Report based on NCC registrations"));
+printLog($LOG, "info",  "==============================================\n");
+printLog($LOG, "info", $subReport."\n");
 
 exit 0;
