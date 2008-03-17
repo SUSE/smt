@@ -61,6 +61,7 @@ install_conf:
 	cp config/smt.conf $(DESTDIR)/etc/
 	mkdir -p $(DESTDIR)/etc/init.d/
 	cp config/rc.smt $(DESTDIR)/etc/init.d/smt
+	if [ -e /usr/sbin/rcsmt ]; then rm -rf /usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt /usr/sbin/rcsmt
 
 install:
@@ -91,10 +92,10 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
-	cp -R db/schemas/common/current $(DESTDIR)/usr/share/schemas/smt/_common/$(SCHEMA_VERSION)
 	cp -R db/schemas/mysql/current $(DESTDIR)/usr/share/schemas/smt/mysql/$(SCHEMA_VERSION)
-	cp -R db/schemas/mysql/migrate/* $(DESTDIR)/usr/share/schemas/smt/mysql/
-	cp -R db/schemas/common/migrate/* $(DESTDIR)/usr/share/schemas/smt/_common/
+	cp -R db/schemas/common/current $(DESTDIR)/usr/share/schemas/smt/_common/$(SCHEMA_VERSION)
+	if [ -e db/schemas/mysql/migrate/* ]; then cp -R db/schemas/mysql/migrate/* $(DESTDIR)/usr/share/schemas/smt/mysql/; fi
+	if [ -e db/schemas/common/migrate/* ]; then cp -R db/schemas/common/migrate/* $(DESTDIR)/usr/share/schemas/smt/_common/; fi
 test: clean
 	cd tests; perl tests.pl && cd -
 
