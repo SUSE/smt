@@ -56,6 +56,15 @@ function adjust_services () {
     done
 }
 
+function init_or_upgrade_database () {
+    dbcommand="/usr/lib/SMT/bin/smt-db"
+    if [ ! -e ${dbcommand} ]; then
+	echo "Error: ${dbcommand} does not exist, database connection might not work"
+    else
+	${dbcommand}
+    fi
+}
+
 #
 # Links the apache2 plugins stored in smt.d
 # from the acpache2 conf.d directory
@@ -123,6 +132,7 @@ case "$action" in
 	action="start"
 	link_apache_plugins
 	adjust_services
+	init_or_upgrade_database
 	;;
     # removes symlinks and reloads services
     stop)
@@ -135,6 +145,7 @@ case "$action" in
 	action="restart"
 	link_apache_plugins
 	adjust_services
+	init_or_upgrade_database
 	;;
     # returns status of both services at once
     status)
