@@ -1,0 +1,94 @@
+#!/usr/bin/perl
+###########################################################################
+## Copyright (c) 2007 Novell Inc.
+###########################################################################
+
+use strict;
+use warnings;
+use lib ("/srv/www/perl-lib/");
+
+use SMT::Utils;
+use DBIx::Migration::Directories;
+use DBIx::Transaction;
+
+
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+sub db_connect
+{
+    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
+    if(!defined $cfg)
+    {
+        # FIXME: is die correct here?
+        die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
+    }
+    
+    my $config = $cfg->val('DB', 'config');
+    my $user   = $cfg->val('DB', 'user');
+    my $pass   = $cfg->val('DB', 'pass');
+    if(!defined $config || $config eq "")
+    {
+        # FIXME: is die correct here?
+        die __("Invalid Database configuration. Missing value for DB/config.");
+    }
+     
+    my $dbh    = DBIx::Transaction->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});
+
+    return $dbh;
+}
+
+sub help
+{
+    print __("\nSMT database maintenance tool\n");
+    print __("Available commands:");
+    print "  help : show help\n");
+    print "  init : initialize or upgrade database\n");
+    exit 0;
+}
+
+sub migrate
+{
+    my $dbh;
+    if ( not $dbh=db_connect() )
+    {
+        die __("ERROR: Could not connect to the database");
+    }
+
+
+    my $m = DBIx::Migration::Directories->new(
+        base                    => '/usr/share/schemas',
+        schema                  => 'smt',
+        desired_version_from    => 'SMT',
+        dbh                     => $dbh
+        );
+ 
+    $m->full_migrate or die "Installing database failed!";
+    exit 0;
+}
+
+if (defined $ARGV[0] ) 
+{
+    my $cmd = shift(@ARGV);
+    #print "cmd: $cmd\n";
+    if ( $cmd eq "help" )
+    {
+
+    }
+    elsif ( $cmd eq "init" )
+    {
+        migrate();
+    }
+}
+else
+{
+    help();
+}
+
+exit 0;
+
+
+
+
+
