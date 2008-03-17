@@ -29,6 +29,15 @@
 		"init"		: InitCredentialsDialog,
 		"store"		: StoreCredentialsDialog,
 	    ],
+	    "db" : $[
+		"widget"	: `custom,
+		"help"		: HELPS["database"]:"",
+		"custom_widget"	: `Empty(),
+		"validate_type"	: `function,
+		"validate_function"	: ValidateDatabaseDialog,
+		"init"		: InitDatabaseDialog,
+		"store"		: StoreDatabaseDialog,
+	    ],
 	    "sd" : $[
 		"widget"	: `custom,
 		"help"		: HELPS["scheduled_downloads"]:"",
@@ -41,11 +50,19 @@
 
     map <string, any> tabs = $[
 	    "credentials" : $[
-		"header"	: _("NU Credentials"),
+		// TRANSLATORS: tab-header
+		"header"	: _("NU and NCC Credentials"),
 		"widget_names"	: ["cr"],
 		"contents"	: CredentialsDialogContent(),
 	    ],
+	    "database" : $[
+		// TRANSLATORS: tab-header
+		"header"	: _("Database Connection"),
+		"widget_names"	: ["db"],
+		"contents"	: DatabaseDialogContent(),
+	    ],
 	    "scheduled_downloads" : $[
+		// TRANSLATORS: tab-header
 		"header"	: _("Scheduled NU Mirroring"),
 		"widget_names"	: ["sd"],
 		"contents"	: ScheduledDownloadsDialogContent(),
@@ -54,7 +71,7 @@
 
     map <string, any> wd = $[
 	    "tab" : CWMTab::CreateWidget ($[
-		"tab_order"	: ["credentials", "scheduled_downloads"],
+		"tab_order"	: ["credentials", "database", "scheduled_downloads"],
 		"tabs"		: tabs,
 		"widget_descr"	: widgets,
 		"initial_tab"	: "credentials",

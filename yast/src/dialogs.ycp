@@ -28,33 +28,73 @@
     term CredentialsDialogContent () {
 	return `HBox (
 		`HStretch(),
-		`HSquash (`VBox (
-		    `VWeight(2, `VStretch()),
-		    // TRANSLATORS: check box
-		    `Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Mamagement Tool service (SMT)"))),
-		    `VWeight(1, `VStretch()),
-		    `Left (`HSquash (`MinWidth (
-			45,
-			// TRANSLATORS: text entry (URL)
-			`TextEntry (`id ("NUUrl"), _("NU UR&L"))
-		    ))),
+		`HSquash (
+		    `VBox (
+			`VWeight(2, `VStretch()),
+			// TRANSLATORS: check box
+			`Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Mamagement Tool service (SMT)"))),
+
+			`VWeight(1, `VStretch()),
+
+			`Left (`HSquash (`MinWidth (
+			    45,
+			    // TRANSLATORS: text entry (URL)
+			    `TextEntry (`id ("NUUrl"), _("NU UR&L"))
+			))),
+			`Left (`HSquash (`MinWidth (
+			    20,
+			    // TRANSLATORS: text entry (User name)
+			    `TextEntry (`id ("NUUser"), _("NU &User"))
+			))),
+			`Left (`HSquash (`MinWidth (
+			    20,
+			    // TRANSLATORS: password entry
+			    `Password (`id ("NUPass"), _("NU &Password"))
+			))),
+			`VSpacing (1),
+			// TRANSLATORS: push button
+			`PushButton (`id ("test_NU_credentials"), `opt(`key_F6), _("&Test...")),
+
+			`VWeight(1, `VStretch()),
+
+			`Left (`HSquash (`MinWidth (
+			    45,
+			    // TRANSLATORS: text entry (URL)
+			    `TextEntry (`id ("nccEmail"), _("&NCC E-mail Used for Registration"))
+			))),
+
+			`VWeight(1, `VStretch()),
+
+			`VWeight(2, `VStretch())
+		    )
+		),
+		`HStretch()
+	    );
+    }
+
+    term DatabaseDialogContent () {
+	return `HBox (
+	    `HStretch(),
+	    `HSquash (
+		`VBox (
+		    `VStretch(),
+
 		    `Left (`HSquash (`MinWidth (
 			20,
-			// TRANSLATORS: text entry (User name)
-			`TextEntry (`id ("NUUser"), _("NU &User"))
+			// TRANSLATORS: password entry
+			`Password (`id ("DB-password-1"), _("Database &Password"))
 		    ))),
 		    `Left (`HSquash (`MinWidth (
 			20,
 			// TRANSLATORS: password entry
-			`Password (`id ("NUPass"), _("NU &Password"))
+			`Password (`id ("DB-password-2"), _("Database Password Once &Again"))
 		    ))),
-		    `VSpacing (1),
-		    // TRANSLATORS: push button
-		    `PushButton (`id ("test_NU_credentials"), `opt(`key_F6), _("&Test...")),
-		    `VWeight(2, `VStretch())
-		)),
-		`HStretch()
-	    );
+		    
+		    `VStretch()
+		)
+	    ),
+	    `HStretch()
+	);
     }
 
     term ScheduledDownloadsDialogContent () {
@@ -204,7 +244,13 @@
 
     void InitCredentialsDialog (string id) {
 	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
-	    string value = SMTData::GetCredentials (one_entry);
+	    string value = SMTData::GetCredentials ("NU", one_entry);
+	    if (value == nil) value = "";
+	    UI::ChangeWidget (`id (one_entry), `Value, value);
+	});
+
+	foreach (string one_entry, ["nccEmail"], {
+	    string value = SMTData::GetCredentials ("LOCAL", one_entry);
 	    if (value == nil) value = "";
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
 	});
@@ -214,8 +260,52 @@
 
     void StoreCredentialsDialog (string id, map event) {
 	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
-	    SMTData::SetCredentials (one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
+	    SMTData::SetCredentials ("NU", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
+
+	foreach (string one_entry, ["nccEmail"], {
+	    SMTData::SetCredentials ("LOCAL", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
+	});
+    }
+
+    void InitDatabaseDialog (string id) {
+	string value = SMTData::GetCredentials ("DB", "pass");
+	if (value == nil) value = "";
+	UI::ChangeWidget (`id ("DB-password-1"), `Value, value);
+	UI::ChangeWidget (`id ("DB-password-2"), `Value, value);
+    }
+
+    void StoreDatabaseDialog (string id, map event) {
+	SMTData::SetCredentials ("DB", "pass", (string) UI::QueryWidget (`id ("DB-password-1"), `Value));
+    }
+
+    boolean ValidateDatabaseDialog (string id, map event) {
+	string pass_1 = (string) UI::QueryWidget (`id ("DB-password-1"), `Value);
+	string pass_2 = (string) UI::QueryWidget (`id ("DB-password-2"), `Value);
+
+	if (pass_1 == nil || pass_1 == "") {
+	    UI::SetFocus (`id ("DB-password-1"));
+	    // TRANSLATORS: error report
+	    Report::Error (_("Password cannot be empty."));
+	    return false;
+	}
+
+	if (pass_2 == nil || pass_2 == "") {
+	    UI::SetFocus (`id ("DB-password-2"));
+	    // TRANSLATORS: error report
+	    Report::Error (_("Password cannot be empty."));
+	    return false;
+	}
+
+	if (pass_1 != pass_2) {
+	    UI::SetFocus (`id ("DB-password-1"));
+	    // TRANSLATORS: error report
+	    Report::Error (_("The first password and the second password don't match."));
+	    return false;
+	}
+
+	y2milestone ("Password validation passed");
+	return true;
     }
 
     boolean TestCredentials () {

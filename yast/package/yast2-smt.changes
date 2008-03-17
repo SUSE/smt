@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Mar 17 15:47:07 CET 2008 - locilka@suse.cz
+
+- Using smt init scrpt from YaST.
+- Added new tab dialog with DB password handling.
+- Added NCC E-mail text-field.
+
+-------------------------------------------------------------------
 Mon Mar 10 15:13:37 CET 2008 - locilka@suse.cz
 
 - Moving SMT to Network Services (desktop file, bnc #368097)

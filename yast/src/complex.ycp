@@ -37,9 +37,9 @@
     boolean CredentialsTest (any log_view) {
 	log_view_ID = log_view;
 
-	string user = SMTData::GetCredentials ("NUUser");
-	string pass = SMTData::GetCredentials ("NUPass");
-	string url  = SMTData::GetCredentials ("NUUrl");
+	string user = SMTData::GetCredentials ("NU", "NUUser");
+	string pass = SMTData::GetCredentials ("NU", "NUPass");
+	string url  = SMTData::GetCredentials ("NU", "NUUrl");
 
 	if (user == nil) user = "";
 	if (pass == nil) pass = "";

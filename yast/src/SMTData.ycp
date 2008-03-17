@@ -24,7 +24,7 @@
     import "Progress";
     import "Directory";
 
-    map <string, string> NU_credentials = $[];
+    map <string, map <string, string> > all_credentials = $[];
 
     // script entered into a crontab
     string cron_mirror_script = "/usr/bin/smt-mirror.pl";
@@ -45,18 +45,7 @@
 
     boolean smt_enabled = nil;
 
-    list <string> smt_services = ["apache2", "mysql"];
-
-    /**
-     * SMT can be easily disabled by removing symlinks that point from /etc/apache2/conf.d/
-     * to /etc/smt.d/ (dynamic apache configuration)
-     *
-     * @struct [ $["from" : "original_file", "to" : "symlink_name" ], ... ]
-     */
-    list <map <string, string> > smt_symlinks = [
-	$[ "from" : "/etc/smt.d/nu_server.conf", "to" : "/etc/apache2/conf.d/nu_server.conf" ],
-	$[ "from" : "/etc/smt.d/smt_mod_perl.conf", "to" : "/etc/apache2/conf.d/smt_mod_perl.conf" ],
-    ];
+    list <string> smt_services = ["smt"];
 
     /**
      * Returns list of scheduled NU mirrorings.
@@ -177,23 +166,6 @@
 		smt_enabled = false;
 	    }
 	});
-
-	foreach (map <string, string> one_symlink, smt_symlinks, {
-	    string symlink_from = one_symlink["from"]:"";
-	    string symlink_to   = one_symlink["to"]:"";
-
-	    if (symlink_from == nil || symlink_from == "" || symlink_to == nil || symlink_to == "") {
-		y2error ("Wrong symlink definition: %1!", one_symlink);
-	    }
-
-	    if (! FileUtils::Exists (symlink_to)) {
-		y2milestone ("File %1 does not exist", symlink_to);
-		smt_enabled = false;
-	    } else if (! FileUtils::Exists (symlink_from)) {
-		y2error ("File %1 does not exist", symlink_from);
-		smt_enabled = false;
-	    }
-	});
     }
 
     global boolean GetSMTServiceStatus () {
@@ -210,13 +182,65 @@
     }
 
     /**
+     * Returns value for credentials entry.
+     *
+     * @see SetCredentials
+     *
+     * @param string entry_name
+     * @return string value
+     */
+    global string GetCredentials (string location, string entry_name) {
+	if (! haskey (all_credentials, location)) {
+	    y2warning ("Key %1 not defined", location);
+	    return "";
+	} else if (! haskey (all_credentials[location]:$[], entry_name)) {
+	    y2warning ("Key %1/%2 not defined", location, entry_name);
+	    return "";
+	}
+
+	return all_credentials[location, entry_name]:"";
+    }
+
+    /**
+     * Sets name/value credential pairs.
+     *
+     * @see GetCredentials
+     *
+     * @param string entry_name
+     * @param string value
+     */
+    global void SetCredentials (string location, string entry_name, string value) {
+	if (! haskey (all_credentials, location)) {
+	    all_credentials[location] = $[];
+	}
+
+	all_credentials[location, entry_name] = value;
+    }
+
+    /**
      * Reads the current SMT credentials into the memory
      *
      * @return boolean if successful
      */
     global boolean ReadCredentials () {
+	all_credentials = $[];
+
+	all_credentials["NU"] = $[];
+
 	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
-	    NU_credentials[one_entry] = (string) SCR::Read (add (.smt_conf.value.NU, one_entry));
+	    SetCredentials ("NU", one_entry, (string) SCR::Read (add (.smt_conf.value.NU, one_entry)));
+	});
+
+	all_credentials["LOCAL"] = $[];
+
+	foreach (string one_entry, ["nccEmail"], {
+	    SetCredentials ("LOCAL", one_entry, (string) SCR::Read (add (.smt_conf.value.LOCAL, one_entry)));
+	});
+
+	all_credentials["DB"] = $[];
+
+	foreach (string one_entry, ["user", "pass"], {
+	    SetCredentials ("DB", one_entry, (string) SCR::Read (add (.smt_conf.value.DB, one_entry)));
 	});
 
 	return true;
@@ -230,11 +254,13 @@
     global boolean WriteCredentials () {
 	boolean failed = false;
 
-	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
-	    if (! (boolean) SCR::Write (add (.smt_conf.value.NU, one_entry), NU_credentials[one_entry]:"")) {
-		y2error ("Cannot write to smt.conf:%1", one_entry);
-		failed = true;
-	    }
+	foreach (string base_key, map <string, string> current_credentials, all_credentials, {
+	    foreach (string key, string value, current_credentials, {
+		if (! (boolean) SCR::Write (add (add (.smt_conf.value, base_key), key), value)) {
+		    y2error ("Cannot write to smt.conf/%1/%2", base_key, key);
+		    failed = true;
+		}
+	    });
 	});
 
 	if (failed == false) {
@@ -245,35 +271,6 @@
 	}
 
 	return (failed == false);
-    }
-
-    /**
-     * Returns value for credentials entry.
-     *
-     * @see SetCredentials
-     *
-     * @param string entry_name
-     * @return string value
-     */
-    global string GetCredentials (string entry_name) {
-	if (! haskey (NU_credentials, entry_name)) {
-	    y2warning ("Key %1 not defined", entry_name);
-	    return "";
-	}
-
-	return NU_credentials[entry_name]:"";
-    }
-
-    /**
-     * Sets name/value credential pairs.
-     *
-     * @see GetCredentials
-     *
-     * @param string entry_name
-     * @param string value
-     */
-    global void SetCredentials (string entry_name, string value) {
-	NU_credentials[entry_name] = value;
     }
 
     /**
