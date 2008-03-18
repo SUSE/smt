@@ -34,6 +34,15 @@ TODO:
     url=...
     https://<local.full.quallified.domain.name>/ 
     nccEmail=<emailaddress>
+    reportEmail=<comma_separated_list_of_email_addresses>
+
+
+About reportEmail:  specify a list of eMail addresses where the regular/daily SMT report should be sent to.
+                    The report will be sent to the root user in any case and additionally to the listed addresses
+                    The YaST module should offer an input field (or somthing applicable) to edit these addresses.
+                    The value of this variable is a comma separated list of addresses.
+
+
 
 About nccEmail: here is the help text which come from NCC if you enter 
                 the email address via the webpage during registration:
