@@ -181,6 +181,22 @@
 	smt_enabled = new_status;
     }
 
+    global boolean WriteSMTServiceStatus () {
+	if (GetSMTServiceStatus() == true) {
+	    foreach (string one_service, smt_services, {
+		Service::Enable (one_service);
+		Service::Start (one_service);
+	    });
+	} else {
+	    foreach (string one_service, smt_services, {
+		Service::Stop (one_service);
+		Service::Disable (one_service);
+	    });
+	}
+
+	return true;
+    }
+
     /**
      * Returns value for credentials entry.
      *

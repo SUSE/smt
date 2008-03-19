@@ -211,6 +211,8 @@
 		// TRANSLATORS: Progress step
 		_("Adjust Web-server configuration"),
 		// TRANSLATORS: Progress step
+		_("Adjust SMT service"),
+		// TRANSLATORS: Progress step
 		_("Write cron settings"),
 		// TRANSLATORS: Progress step
 		_("Run synchronization check"),
@@ -221,7 +223,9 @@
 		// TRANSLATORS: Progress step
 		_("Checking and installing server certificate..."),
 		// TRANSLATORS: Progress step
-		_("Adjusting Web-server configuration"),
+		_("Adjusting Web-server configuration..."),
+		// TRANSLATORS: Progress step
+		_("Adjusting SMT service..."),
 		// TRANSLATORS: Progress step
 		_("Writing cron settings..."),
 		// TRANSLATORS: Progress step
@@ -247,6 +251,11 @@
 	sleep (sl);
 
 	SMTData::CheckAndAdjustApacheConfiguration();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	SMTData::WriteSMTServiceStatus();
 
 	Progress::NextStage();
 	sleep (sl);
@@ -290,6 +299,10 @@
 	foreach (string one_entry, ["nccEmail"], {
 	    SMTData::SetCredentials ("LOCAL", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
+
+	boolean new_service_status = (boolean) UI::QueryWidget (`id ("enable_smt_service"), `Value);
+	y2milestone ("New SMT status: %1", (new_service_status == true ? "enabled":"disabled"));
+	SMTData::SetSMTServiceStatus (new_service_status);
     }
 
     void InitDatabaseDialog (string id) {
@@ -372,6 +385,12 @@
 
     void InitReportEmails () {
 	string reportEmail = SMTData::GetCredentials ("LOCAL", "reportEmail");
+
+	if (reportEmail == nil) {
+	    y2warning ("LOCAL/reportEmail not defined yet");
+	    reportEmail = "";
+	}
+
 	reportEmail = mergestring (splitstring (reportEmail, " \t"), "");
 	report_e_mails = (list <string>) toset (
 	    splitstring (reportEmail, ",")
@@ -400,7 +419,19 @@
     }
 
     symbol HandleReportEmailTableDialog (string id, map event) {
-	y2milestone ("FIXME: %1 %2", id, event);
+	if (id != "reporting")
+	    return nil;
+
+	any event_id = event["ID"]:nil;
+
+	if (event_id == `add) {
+	    // FIXME
+	} else if (event_id == `edit) {
+	    // FIXME
+	} else if (event_id == `delete) {
+	    // FIXME
+	}
+
 	return nil;
     }
 

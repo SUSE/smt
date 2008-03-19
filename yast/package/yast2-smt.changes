@@ -2,6 +2,7 @@
 Wed Mar 19 16:53:19 CET 2008 - locilka@suse.cz
 
 - New feature to modify LOCAL/reportEmail.
+- Implemented enabling and disabling SMT directly from YaST module.
 
 -------------------------------------------------------------------
 Mon Mar 17 15:47:07 CET 2008 - locilka@suse.cz
