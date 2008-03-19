@@ -75,6 +75,7 @@ install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 744 cron/smt-cron $RPM_BUILD_ROOT/etc/cron.d/
 install -m 755 cron/smt-logrun $RPM_BUILD_ROOT/usr/lib/SMT/bin/
 install -m 744 db/smt-db $RPM_BUILD_ROOT/usr/lib/SMT/bin/
+install -m 744 logrotate/smt $RPM_BUILD_ROOT/etc/logrotate.d/
 
 # create apache config links
 mkdir -p $RPM_BUILD_ROOT/etc/apache2/conf.d/
@@ -129,6 +130,7 @@ exit 0
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
 %config /etc/cron.d/smt-cron
+%config /etc/logrotate.d/smt
 %dir %{_datadir}/schemas/smt
 %{_datadir}/schemas/smt/*
 

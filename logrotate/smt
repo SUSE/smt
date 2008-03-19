@@ -1,0 +1,9 @@
+/var/log/smt-*.log {
+    compress
+    missingok
+    notifempty
+    maxage 365
+    rotate 8
+    weekly
+    create 0600 root root
+}
