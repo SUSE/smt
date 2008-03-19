@@ -46,20 +46,33 @@
 		"init"		: InitScheduledDownloadsDialog,
 		"store"		: StoreScheduledDownloadsDialog,
 	    ],
+	    "reporting" : $[
+		"widget"	: `custom,
+		"help"		: HELPS["reporting"]:"",
+		"custom_widget"	: `Empty(),
+		"handle"	: HandleReportEmailTableDialog,
+		"init"		: InitReportEmailTableDialog,
+		"store"		: StoreReportEmailTableDialog,
+	    ],
     ];
 
     map <string, any> tabs = $[
 	    "credentials" : $[
 		// TRANSLATORS: tab-header
-		"header"	: _("NU and NCC Credentials"),
+		"header"	: _("Customer Center Access"),
 		"widget_names"	: ["cr"],
 		"contents"	: CredentialsDialogContent(),
 	    ],
 	    "database" : $[
 		// TRANSLATORS: tab-header
-		"header"	: _("Database Connection"),
-		"widget_names"	: ["db"],
-		"contents"	: DatabaseDialogContent(),
+		"header"	: _("Database and Logging"),
+		"widget_names"	: ["db", "reporting"],
+		"contents"	:   `VBox (
+					DatabaseDialogContent(),
+					`VSpacing (1),
+					ReportEmailTableContent(),
+					`VStretch()
+				    ),
 	    ],
 	    "scheduled_downloads" : $[
 		// TRANSLATORS: tab-header

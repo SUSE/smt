@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Mar 19 16:53:19 CET 2008 - locilka@suse.cz
+
+- New feature to modify LOCAL/reportEmail.
+
+-------------------------------------------------------------------
 Mon Mar 17 15:47:07 CET 2008 - locilka@suse.cz
 
 - Using smt init scrpt from YaST.

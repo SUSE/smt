@@ -233,7 +233,7 @@
 
 	all_credentials["LOCAL"] = $[];
 
-	foreach (string one_entry, ["nccEmail"], {
+	foreach (string one_entry, ["nccEmail", "reportEmail"], {
 	    SetCredentials ("LOCAL", one_entry, (string) SCR::Read (add (.smt_conf.value.LOCAL, one_entry)));
 	});
 
@@ -324,9 +324,6 @@
 	    apache_conf_changed = true;
 	}
 
-	// Symlink conf
-	// FIXME: ...
-
 	// Something has been changed
 	// Apache conf needs writing
 	// and Apache service needs restarting
@@ -337,24 +334,10 @@
 		Message::CannotWriteSettingsTo (apache_conf_file);
 		return false;
 	    }
-
-	    if (! Service::Reload ("apache2")) {
-		y2error ("Reloading apache2 failed");
-		// TRANSLATORS: error message, %1 is replaced with a service-name
-		Report::Error (sformat (_("Reloading service has %1 failed."), "apache2"));
-		return false;
-	    }
 	}
 
 	if (! (boolean) SCR::UnregisterAgent (.http_server_conf)) {
 	    y2error ("Cannot unregister agent");
-	}
-
-	// Enabling the Apache service
-	if (! Service::Enabled ("apache2")) {
-	    Service::Enable ("apache2");
-	} else {
-	    y2milestone ("Service already enabled, skipping ...");
 	}
 
 	return true;
