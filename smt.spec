@@ -72,18 +72,16 @@ install -m 644 db/*.sql $RPM_BUILD_ROOT/var/lib/SMT/db/
 install -m 755 db/setup_mysql.sh $RPM_BUILD_ROOT/var/lib/SMT/db/
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
-install -m 744 cron/smt-cron $RPM_BUILD_ROOT/etc/cron.d/
+install -m 744 cron/smt-cron $RPM_BUILD_ROOT/etc/smt.d/
 install -m 755 cron/smt-logrun $RPM_BUILD_ROOT/usr/lib/SMT/bin/
 install -m 744 db/smt-db $RPM_BUILD_ROOT/usr/lib/SMT/bin/
+install -m 755 config/rc.smt $RPM_BUILD_ROOT/etc/init.d/smt
+ln -s /etc/init.d/smt $RPM_BUILD_ROOT/usr/sbin/rcsmt
 install -m 744 logrotate/smt $RPM_BUILD_ROOT/etc/logrotate.d/
 
 # create apache config links
 mkdir -p $RPM_BUILD_ROOT/etc/apache2/conf.d/
 mkdir -p $RPM_BUILD_ROOT/etc/apache2/vhosts.d/
-
-ln -s /etc/smt.d/nu_server.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/nu_server.conf
-ln -s /etc/smt.d/smt_mod_perl.conf $RPM_BUILD_ROOT/etc/apache2/conf.d/smt_mod_perl.conf
-ln -s /etc/smt.d/vhost-ssl.conf $RPM_BUILD_ROOT/etc/apache2/vhosts.d/vhost-ssl.conf
 
 # ---------------------------------------------------------------------------
 
