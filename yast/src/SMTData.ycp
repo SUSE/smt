@@ -29,7 +29,7 @@
     // script entered into a crontab
     string cron_mirror_script = "/usr/bin/smt-mirror.pl";
     // cron 
-    string path_to_cron = "/etc/cron.d/yast2-smt";
+    string path_to_cron = "/etc/smt.d/smt-cron";
 
     string path_to_sync_script = "/usr/sbin/smt-ncc-sync";
     string user_for_sync_script = "root";

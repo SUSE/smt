@@ -17,7 +17,7 @@
 
 `ag_anyagent (
     `Description (
-	(`File ("/etc/cron.d/yast2-smt")),	// read this file
+	(`File ("/etc/smt.d/smt-cron")),	// read this file`
 	"#\n",					// comments
 	false,					// read/write
 	(`List (

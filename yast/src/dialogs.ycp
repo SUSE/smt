@@ -88,7 +88,7 @@
 		    `Left (`HSquash (`MinWidth (
 			20,
 			// TRANSLATORS: password entry
-			`Password (`id ("DB-password-2"), _("Database Password Once &Again"))
+			`Password (`id ("DB-password-2"), _("Database Password &Once Again"))
 		    ))),
 		    
 		    `VStretch()
@@ -139,7 +139,7 @@
 		),
 		`Left (
 		    `HBox (
-			`PushButton (`id (`add), _("Add...")),
+			`PushButton (`id (`add), _("&Add...")),
 			`PushButton (`id (`edit), Label::EditButton()),
 			`PushButton (`id (`delete), Label::DeleteButton())
 		    )
@@ -202,7 +202,7 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Writing SMT Configuration"),
 	    " ",
-	    5,
+	    6,
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjust SMT configuration"),
@@ -320,25 +320,22 @@
 	string pass_1 = (string) UI::QueryWidget (`id ("DB-password-1"), `Value);
 	string pass_2 = (string) UI::QueryWidget (`id ("DB-password-2"), `Value);
 
-	if (pass_1 == nil || pass_1 == "") {
-	    UI::SetFocus (`id ("DB-password-1"));
-	    // TRANSLATORS: error report
-	    Report::Error (_("Password cannot be empty."));
-	    return false;
-	}
-
-	if (pass_2 == nil || pass_2 == "") {
-	    UI::SetFocus (`id ("DB-password-2"));
-	    // TRANSLATORS: error report
-	    Report::Error (_("Password cannot be empty."));
-	    return false;
-	}
-
 	if (pass_1 != pass_2) {
 	    UI::SetFocus (`id ("DB-password-1"));
 	    // TRANSLATORS: error report
 	    Report::Error (_("The first password and the second password don't match."));
 	    return false;
+	}
+
+	// pass_1 and pass_2 are equal
+	if (pass_1 == nil || pass_1 == "") {
+	    UI::SetFocus (`id ("DB-password-1"));
+	    // TRANSLATORS: error report, actually containing a question
+	    if (! Popup::ContinueCancel (_("Password should not be empty.
+
+Would you like to continue even if the password is empty
+or cancel the current procedure to change it?")))
+		return false;
 	}
 
 	y2milestone ("Password validation passed");
@@ -418,6 +415,56 @@
 	StoreReportEmails();
     }
 
+    boolean EmailValid (string e_mail) {
+	// very simple e-mail validator
+	return (regexpmatch (e_mail, ".+@.+\\..+"));
+    }
+
+    void HandleAddEditEmailAddress (string e_mail) {
+	if (e_mail == nil) e_mail = "";
+
+	UI::OpenDialog (
+	    `VBox (
+		`HSquash (`MinWidth (40, `TextEntry (`id ("e-mail"), (e_mail == "" ?
+		    _("New &E-Mail")
+		    :
+		    _("Editing &E-Mail")
+		), e_mail))),
+		`HBox (
+		    `PushButton (`id (`ok), `opt(`default), Label::OKButton()),
+		    `HSpacing  (2),
+		    `PushButton (`id (`cancel), Label::CancelButton())
+		)
+	    )
+	);
+
+	any ret = nil;
+	while (true) {
+	    ret = UI::UserInput();
+
+	    // Cancel pressed
+	    if (ret != `ok)
+		break;
+
+	    // OK pressed
+	    string new_mail = (string) UI::QueryWidget (`id ("e-mail"), `Value);
+
+	    if (EmailValid (new_mail)) {
+		report_e_mails = filter (string one_email, report_e_mails, { return one_email != e_mail; });
+		report_e_mails = toset (add (report_e_mails, new_mail));
+		break;
+	    } else {
+		Report::Error (sformat (_("E-mail '%1' is not valid."), new_mail));
+		UI::SetFocus (`id ("e-mail"));
+	    }
+	}
+
+	UI::CloseDialog();
+
+	if (ret == `ok)
+	    RedrawReportEmailsTable();
+    }
+
     symbol HandleReportEmailTableDialog (string id, map event) {
 	if (id != "reporting")
 	    return nil;
@@ -425,11 +472,16 @@
 	any event_id = event["ID"]:nil;
 
 	if (event_id == `add) {
-	    // FIXME
+	    HandleAddEditEmailAddress ("");
 	} else if (event_id == `edit) {
-	    // FIXME
+	    string currently_selected = (string) UI::QueryWidget (`id (`report_table), `CurrentItem);
+	    HandleAddEditEmailAddress (currently_selected);
 	} else if (event_id == `delete) {
-	    // FIXME
+	    string currently_selected = (string) UI::QueryWidget (`id (`report_table), `CurrentItem);
+	    if (Confirm::Delete (currently_selected)) {
+		report_e_mails = filter (string one_email, report_e_mails, { return one_email != currently_selected; });
+		RedrawReportEmailsTable();
+	    }
 	}
 
 	return nil;
