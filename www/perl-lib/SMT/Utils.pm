@@ -18,10 +18,10 @@ our @EXPORT = qw(__ printLog);
 
 
 #
-# read db values from the smt configuration file,
-# open the database and returns the database handle
+# read SMT config file and return a hash
+#        will result in a "die" on error
 #
-sub db_connect
+sub getSMTConfig
 {
     my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
     if(!defined $cfg)
@@ -29,7 +29,20 @@ sub db_connect
         # FIXME: is die correct here?
         die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
     }
-    
+
+    return $cfg;
+}
+
+
+
+#
+# read db values from the smt configuration file,
+# open the database and returns the database handle
+#
+sub db_connect
+{
+    my $cfg = getSMTConfig;
+
     my $config = $cfg->val('DB', 'config');
     my $user   = $cfg->val('DB', 'user');
     my $pass   = $cfg->val('DB', 'pass');
@@ -38,7 +51,7 @@ sub db_connect
         # FIXME: is die correct here?
         die __("Invalid Database configuration. Missing value for DB/config.");
     }
-     
+
     my $dbh    = DBI->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});
 
     return $dbh;
@@ -118,7 +131,7 @@ sub unLock
 sub getLocalRegInfos
 {
     my $uri    = "";
-    
+
     open(FH, "< /etc/suseRegister.conf") or die sprintf(__("Cannot open /etc/suseRegister.conf: %s"), $!);
     while(<FH>)
     {
@@ -129,19 +142,14 @@ sub getLocalRegInfos
         }
     }
     close FH;
-    
+
     if(!defined $uri || $uri eq "")
     {
         die __("Cannot read URL from /etc/suseRegister.conf");
     }
-    
-    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-    if(!defined $cfg)
-    {
-        # FIXME: is die correct here?
-        die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
-    }
-    
+
+    my $cfg = getSMTConfig;
+
     my $user   = $cfg->val('NU', 'NUUser');
     my $pass   = $cfg->val('NU', 'NUPass');
     if(!defined $user || $user eq "" || 
@@ -234,6 +242,42 @@ sub printLog
         }
     }
     return;
+}
+
+
+#
+# sends an eMail with the passed content to the administrators defined in smt.conf as "reportEmail"
+#                                   this function will do nothing if no eMail address is specified
+#
+sub sendMailToAdmins
+{
+    # not yet finished
+    return;
+
+    my $message = shift;
+    if (! defined $message)
+    {
+        return;
+    }
+
+    my $cfg = getSMTConfig;
+
+    my $addresses = $cfg->val('LOCAL', 'reportEmail');
+    my @aList = split(/,/, $addresses);
+    my @addressList = undef;
+    foreach $val (@aList)
+    {
+        if ($val ~= //  #&&
+           # validate that eMail-address is valid
+                             )
+        { push @addressList, $val; }
+    }
+
+
+    # TODO:
+    # create eMail
+    # send to list of recipients
+
 }
 
 
