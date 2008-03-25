@@ -257,7 +257,20 @@ sub ncc_handler
 
     my $root = $data->{MAINELEMENT};
     delete $data->{MAINELEMENT};
-    
+
+    if(lc($root) eq "productdata")
+    {
+        $data->{PRODUCTLOWER} = undef;
+        $data->{VERSIONLOWER} = undef;
+        $data->{RELLOWER}     = undef;
+        $data->{ARCHLOWER}    = undef;
+
+        $data->{PRODUCTLOWER} = lc($data->{PRODUCT}) if(exists $data->{PRODUCT} && defined $data->{PRODUCT});
+        $data->{VERSIONLOWER} = lc($data->{VERSION}) if(exists $data->{VERSION} && defined $data->{VERSION});
+        $data->{RELLOWER}     = lc($data->{REL}) if(exists $data->{REL} && defined $data->{REL});
+        $data->{ARCHLOWER}    = lc($data->{ARCH}) if(exists $data->{ARCH} && defined $data->{ARCH});
+    }
+        
     push @{$self->{XML}->{DATA}->{$root}}, $data; 
 }
 
