@@ -36,8 +36,11 @@ sub new
     push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
     # FIXME: remove http for production
     $self->{USERAGENT}->protocols_allowed( [ 'http', 'https'] );
-    $self->{USERINFO} = "";
+    #$self->{USERINFO} = "";
 
+    $self->{AUTHUSER} = "";
+    $self->{AUTHPASS} = "";
+    
     $self->{SMTGUID} = SMT::Utils::getSMTGuid();
 
     $self->{TEMPDIR} = File::Temp::tempdir(CLEANUP => 1);
@@ -89,10 +92,13 @@ sub new
         $self->{LOG} = SMT::Utils::openLog();
     }
 
-    my ($ruri, $rguid, $rsecret) = SMT::Utils::getLocalRegInfos();
+    my ($ruri, $authuser, $authpass) = SMT::Utils::getLocalRegInfos();
 
     $self->{URI} = $ruri;
-    $self->{USERINFO} = $rguid.":".$rsecret;
+    #$self->{USERINFO} = $rguid.":".$rsecret;
+
+    $self->{AUTHUSER} = $authuser;
+    $self->{AUTHPASS} = $authpass;
     
     bless($self);
 
@@ -183,13 +189,21 @@ sub _requestData
     }
 
     my $uri = URI->new($self->{URI});
-    $uri->userinfo($self->{USERINFO});
+    #$uri->userinfo($self->{USERINFO});
     $uri->query("command=regdata");
     
     my $content = "";
     my $writer = new XML::Writer(NEWLINES => 1, OUTPUT => \$content);
     $writer->xmlDecl();
     $writer->startTag($self->{ELEMENT}, xmlns => "http://www.novell.com/center/xml/regsvc10");
+
+    $writer->startTag("authuser");
+    $writer->characters($self->{AUTHUSER});
+    $writer->endTag("authuser");
+
+    $writer->startTag("authpass");
+    $writer->characters($self->{AUTHPASS});
+    $writer->endTag("authpass");
     
     $writer->startTag("smtguid");
     $writer->characters($self->{SMTGUID});
