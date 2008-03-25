@@ -131,7 +131,21 @@ For information about creating a Novell Login account, see
 - usability tests of our commandline tools. 
   * What functionaly customers might miss.
   * Is the "how to use them" clear and obvious?
-  
+
+- Dump Reports into CSV file. AI: jdsn
+
+- Auth request of Registrationdata not via basic auth
+  Put the mirror credentials into the request XML
+
+  <regdata xmlns="...">
+    <authuser>...</authuser>
+    <authpass>...</authpass>
+    <smtguid>...</smtguid>
+  </regdata>
+
+  AI: mc
+
+ 
 DONE:
 =====
 
