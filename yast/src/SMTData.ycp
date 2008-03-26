@@ -130,13 +130,15 @@
 	}
     }
 
+    global boolean GetFirstRun () {
+	return first_run;
+    }
+
     /**
      * Writes that the configuration has been already done.
      */
     global void WriteFirstRunStatus () {
-	integer cmd_exec = (integer) SCR::Execute (.target.bash, sformat ("touch '%1'", String::Quote (first_run_file)));
-
-	if (cmd_exec != 0) {
+	if (! (boolean) SCR::Write (.target.ycp, String::Quote (first_run_file), [])) {
 	    y2error ("Cannot create file %1", first_run_file);
 	}
     }
@@ -247,7 +249,7 @@
 
 	all_credentials["LOCAL"] = $[];
 
-	foreach (string one_entry, ["nccEmail", "reportEmail"], {
+	foreach (string one_entry, ["nccEmail", "reportEmail", "url"], {
 	    SetCredentials ("LOCAL", one_entry, (string) SCR::Read (add (.smt_conf.value.LOCAL, one_entry)));
 	});
 

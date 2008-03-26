@@ -65,8 +65,14 @@
 
 			`Left (`HSquash (`MinWidth (
 			    45,
-			    // TRANSLATORS: text entry (URL)
+			    // TRANSLATORS: text entry (e-mail)
 			    `TextEntry (`id ("nccEmail"), _("&NCC E-mail Used for Registration"))
+			))),
+
+			`Left (`HSquash (`MinWidth (
+			    45,
+			    // TRANSLATORS: text entry (URL)
+			    `TextEntry (`id ("url"), _("&Your SMT Server URL"))
 			))),
 
 			`VWeight(1, `VStretch()),
@@ -274,6 +280,7 @@
 	SMTData::RunSmallSync();
 
 	Progress::NextStage();
+	SMTData::WriteFirstRunStatus();
 	sleep (sl);
 
 	Progress::Finish();
@@ -288,11 +295,24 @@
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
 	});
 
-	foreach (string one_entry, ["nccEmail"], {
+	foreach (string one_entry, ["nccEmail", "url"], {
 	    string value = SMTData::GetCredentials ("LOCAL", one_entry);
 	    if (value == nil) value = "";
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
 	});
+
+	if (SMTData::GetFirstRun() && SMTData::GetCredentials ("LOCAL", "url") == "") {
+	    map cmd_out = (map) SCR::Execute (.target.bash_output, "/bin/hostname --fqdn");
+
+	    if (cmd_out["exit"]:-1 == 0 && size (cmd_out["stdout"]:"") > 0) {
+		string value = splitstring (cmd_out["stdout"]:"", "\n")[0]:"";
+
+		if (size (value) > 0) {
+		    value = sformat ("http://%1/", value);
+		    UI::ChangeWidget (`id ("url"), `Value, value);
+		}
+	    }
+	}
 
 	UI::ChangeWidget (`id ("enable_smt_service"), `Value, SMTData::GetSMTServiceStatus());
     }
@@ -302,7 +322,7 @@
 	    SMTData::SetCredentials ("NU", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
 
-	foreach (string one_entry, ["nccEmail"], {
+	foreach (string one_entry, ["nccEmail", "url"], {
 	    SMTData::SetCredentials ("LOCAL", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
 

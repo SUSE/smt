@@ -3,6 +3,7 @@ Wed Mar 26 15:02:35 CET 2008 - locilka@suse.cz
 
 - Added support for periodical cron jobs (every M-minute...).
 - Added support for more different jobs configured by YaST.
+- Added support for LOCAL/url.
 
 -------------------------------------------------------------------
 Wed Mar 19 16:53:19 CET 2008 - locilka@suse.cz
