@@ -39,6 +39,10 @@ TODO:
   configuration file and make sure only www-run can read it (part of the init 
   script?)
   (default permissions of smt.conf are now 640, wwwrun, root)
+  -- Which means that getting the content of the file is quite trivial with
+     user html directories and mod_perl or mod_php or ...
+     User can easily create some script which is executed by accessing it over
+     HTTP. Apache should be somehow limited and/or behavior documented.
 
 - fix generating repoindex (jdsn)
   (use TARGET in Clients Table)
