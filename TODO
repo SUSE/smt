@@ -18,46 +18,6 @@ TODO:
                module if it is installed later on an existing SLES10
                using the yast2 add-on module
 
-- yast module:
-  - Write parameter in smt.conf (what does this mean?)
-    [LOCAL]
-    url=...
-    https://<local.full.quallified.domain.name>/ 
-    nccEmail=<emailaddress>
-    reportEmail=<comma_separated_list_of_email_addresses>
-
-
-About reportEmail:  specify a list of eMail addresses where the regular/daily SMT report should be sent to.
-                    The report will be sent to the root user in any case and additionally to the listed addresses
-                    The YaST module should offer an input field (or somthing applicable) to edit these addresses.
-                    The value of this variable is a comma separated list of addresses.
-
-
-
-About nccEmail: here is the help text which come from NCC if you enter 
-                the email address via the webpage during registration:
-
-To access valuable resources in the Novell Customer Center, you need a 
-Novell Login account. The e-mail address that is associated with your 
-Novell Login account is the e-mail address that you should use when 
-registering this system. If you do not yet have a Novell Login account,
-enter a valid e-mail address that you want to associate with a 
-Novell Login account, and then use the same e-mail address when 
-creating the account.
-We ask that you provide an e-mail address for the following reasons. 
-We use this e-mail address to:
-* Uniquely identify you with this system.
-* Grant this system access to updates and subscription benefits.
-* Send you important e-mail notifications regarding the subscription for this system.
-
-If you have any questions about how your e-mail address might be used, 
-see the privacy policy for Novell at 
-  http://www.novell.com/company/policies/privacy/textonly.html.
-For information about creating a Novell Login account, see 
-  https://secure-www.novell.com/selfreg/html/about.jsp.
-
-
-
 - test what happens if two processes want to write smt.db
   How can we solve concurent access with DBI?
 
@@ -73,8 +33,7 @@ For information about creating a Novell Login account, see
 - yast module:
   maybe set max_connections=160 in /etc/my.cnf
   needs some disuccion.
-
-
+  AI: needs WHAT?
 
 - yast module: reset/set mysql root password, create yep user, set yep 
   configuration file and make sure only www-run can read it (part of the init 
@@ -87,14 +46,6 @@ For information about creating a Novell Login account, see
 - provide details how to change the NU password for mysql, creating SMT 
   database, creating user and granting permissions, store the credentials in 
   smt.conf file (duncan)
-
-- cron jobs for other smt tasks (locilka)
-  * smt-ncc-sync, smt-mirror and smt-report maybe together in one job (one time a day)
-  * smt-register in an extra job (every quarter?)
-
-  Check if we can provide a default with the yep rpm.
-  What happens if they are %config(noreplace)?
-  Will a .rpmsave or .rpmnew file be a new cronjob?
 
 - enhance the lock functions. If a lockfile is present, check if the process
   is realy running. If not remove the lockfile and go on.
@@ -166,6 +117,54 @@ DONE:
     we need to copy the ca-certificate to /srv/www/htdocs/smt.crt
     The ca can be found at:
     /etc/ssl/certs/YaST-CA.pem
+
+- yast module:
+  - Write parameter in smt.conf
+    [LOCAL]
+    url=...
+    https://<local.full.quallified.domain.name>/ 
+    nccEmail=<emailaddress>
+    reportEmail=<comma_separated_list_of_email_addresses>
+
+
+About reportEmail:  specify a list of eMail addresses where the regular/daily SMT report should be sent to.
+                    The report will be sent to the root user in any case and additionally to the listed addresses
+                    The YaST module should offer an input field (or somthing applicable) to edit these addresses.
+                    The value of this variable is a comma separated list of addresses.
+
+
+
+About nccEmail: here is the help text which come from NCC if you enter 
+                the email address via the webpage during registration:
+
+		To access valuable resources in the Novell Customer Center, you need a 
+		Novell Login account. The e-mail address that is associated with your 
+		Novell Login account is the e-mail address that you should use when 
+		registering this system. If you do not yet have a Novell Login account,
+		enter a valid e-mail address that you want to associate with a 
+		Novell Login account, and then use the same e-mail address when 
+		creating the account.
+		We ask that you provide an e-mail address for the following reasons. 
+		We use this e-mail address to:
+		  * Uniquely identify you with this system.
+		  * Grant this system access to updates and subscription benefits.
+		  * Send you important e-mail notifications regarding the subscription for this system.
+
+		If you have any questions about how your e-mail address might be used, 
+		see the privacy policy for Novell at 
+		  http://www.novell.com/company/policies/privacy/textonly.html.
+		For information about creating a Novell Login account, see 
+		  https://secure-www.novell.com/selfreg/html/about.jsp.
+
+- cron jobs for other smt tasks (locilka)
+  * smt-ncc-sync, smt-mirror and smt-report maybe together in one job (one time a day)
+  * smt-register in an extra job (every quarter?)
+
+  Check if we can provide a default with the yep rpm.
+  -> provided
+  What happens if they are %config(noreplace)?
+  Will a .rpmsave or .rpmnew file be a new cronjob?
+  -> no, they're ignored
 
 - SMT::Registration listparam has to check for "accept=''" option
   [Not needed, a stripped result is produced by the client (suse_register)
