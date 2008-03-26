@@ -4,9 +4,11 @@
 Requires:	yast2
 Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
+Requires:	/bin/hostname
+Requires:	smt
 
 # This YaST tool configures SMT (cron, apache2)
-Recommends:	smt
+Recommends:	mysql
 Recommends:	cron
 Recommends:	apache2
 
