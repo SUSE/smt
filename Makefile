@@ -103,7 +103,7 @@ install:
 	cp db/smt-db $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/etc/init.d/smt
-	install -m 644 cron/smt-cron $(DESTDIR)/etc/cron.d/
+	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/cron.d/
 	install -m 755 cron/smt-logrun $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-repeated-register $(DESTDIR)/usr/lib/SMT/bin/
@@ -141,6 +141,7 @@ dist: clean
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
 	@cp config/rc.smt $(NAME)-$(VERSION)/config/
 	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
+	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
 	find db -name ".svn" -prune -o \
                 \( \
                   \( -type d -exec install -m755 -d $(NAME)-$(VERSION)/\{\} \; \) \

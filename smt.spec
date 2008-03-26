@@ -112,7 +112,7 @@ exit 0
 /usr/sbin/smt
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
-%config /etc/cron.d/smt-cron
+%config /etc/cron.d/novell.com-smt
 %config /etc/logrotate.d/smt
 %{_datadir}/schemas/smt/*
 
