@@ -67,21 +67,8 @@ cp -p %{S:1} .
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
 make DESTDIR=$RPM_BUILD_ROOT install
 make DESTDIR=$RPM_BUILD_ROOT install_conf
-mkdir -p $RPM_BUILD_ROOT/var/lib/SMT/db
-install -m 644 db/*.sql $RPM_BUILD_ROOT/var/lib/SMT/db/
-install -m 755 db/setup_mysql.sh $RPM_BUILD_ROOT/var/lib/SMT/db/
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
-install -m 744 cron/smt-cron $RPM_BUILD_ROOT/etc/smt.d/
-install -m 755 cron/smt-logrun $RPM_BUILD_ROOT/usr/lib/SMT/bin/
-install -m 744 db/smt-db $RPM_BUILD_ROOT/usr/lib/SMT/bin/
-install -m 755 config/rc.smt $RPM_BUILD_ROOT/etc/init.d/smt
-ln -s /etc/init.d/smt $RPM_BUILD_ROOT/usr/sbin/rcsmt
-install -m 744 logrotate/smt $RPM_BUILD_ROOT/etc/logrotate.d/
-
-# create apache config links
-mkdir -p $RPM_BUILD_ROOT/etc/apache2/conf.d/
-mkdir -p $RPM_BUILD_ROOT/etc/apache2/vhosts.d/
 
 # ---------------------------------------------------------------------------
 
@@ -93,7 +80,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/apache2/vhosts.d/
 exit 0
 
 %postun
-%restart_on_update apache2
+%restart_on_update smt
 
 %files
 %defattr(-,root,root)
@@ -101,19 +88,18 @@ exit 0
 %dir %{perl_vendorlib}/SMT/Mirror
 %dir %{perl_vendorlib}/SMT/Parser
 %dir /etc/smt.d
-%dir /var/lib/SMT
-%dir /var/lib/SMT/db
 %dir /srv/www/htdocs/repo/
 %dir /srv/www/htdocs/testing/
 %dir /srv/www/htdocs/testing/repo/
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/SMT/
+%dir /usr/lib/SMT/
 %dir /usr/lib/SMT/bin/
+%dir %{_datadir}/schemas/
+%dir %{_datadir}/schemas/smt
 %config(noreplace) %attr(640, wwwrun, root)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
-/etc/apache2/conf.d/*.conf
-/etc/apache2/vhosts.d/*.conf
 /etc/init.d/smt
 /usr/sbin/rcsmt
 %{perl_vendorlib}/SMT.pm
@@ -124,12 +110,10 @@ exit 0
 /srv/www/perl-lib/SMT/*.pm
 /usr/sbin/smt-*
 /usr/sbin/smt
-/var/lib/SMT/db/*
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
 %config /etc/cron.d/smt-cron
 %config /etc/logrotate.d/smt
-%dir %{_datadir}/schemas/smt
 %{_datadir}/schemas/smt/*
 
 %doc README COPYING 

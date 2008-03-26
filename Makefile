@@ -64,13 +64,20 @@ install_conf:
 install:
 	mkdir -p $(DESTDIR)/usr/sbin/
 	mkdir -p $(DESTDIR)/etc/apache2
+	mkdir -p $(DESTDIR)/etc/init.d
 	mkdir -p $(DESTDIR)/etc/smt.d/
+	mkdir -p $(DESTDIR)/etc/cron.d/
+	mkdir -p $(DESTDIR)/etc/logrotate.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
 	mkdir -p $(DESTDIR)/srv/www/htdocs/testing/repo
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Parser
+	mkdir -p $(DESTDIR)/usr/share/schemas/smt
+	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
+	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
+	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
 	cp apache2/smt-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	cp apache2/conf.d/*.conf $(DESTDIR)/etc/smt.d/
 	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/smt.d/
@@ -86,18 +93,22 @@ install:
 	cp www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
 	cp www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	cp www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
-	mkdir -p $(DESTDIR)/usr/share/schemas/smt
-	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
-	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
 	cp -R db/schemas/mysql/current $(DESTDIR)/usr/share/schemas/smt/mysql/$(SCHEMA_VERSION)
 	cp -R db/schemas/common/current $(DESTDIR)/usr/share/schemas/smt/_common/$(SCHEMA_VERSION)
 	if [ -e db/schemas/mysql/migrate/* ]; then cp -R db/schemas/mysql/migrate/* $(DESTDIR)/usr/share/schemas/smt/mysql/; fi
 	if [ -e db/schemas/common/migrate/* ]; then cp -R db/schemas/common/migrate/* $(DESTDIR)/usr/share/schemas/smt/_common/; fi
 	cp config/rc.smt $(DESTDIR)/etc/init.d/smt
-	if [ -e /usr/sbin/rcsmt ]; then rm -rf /usr/sbin/rcsmt; fi
-	ln -s /etc/init.d/smt /usr/sbin/rcsmt
-	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
+	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
+	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	cp db/smt-db $(DESTDIR)/usr/lib/SMT/bin/smt-db
+	chmod 0755 $(DESTDIR)/usr/lib/SMT/bin/smt-db
+	chmod 0755 $(DESTDIR)/etc/init.d/smt
+	install -m 644 cron/smt-cron $(DESTDIR)/etc/cron.d/
+	install -m 755 cron/smt-logrun $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 cron/smt-repeated-register $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 644 logrotate/smt $(DESTDIR)/etc/logrotate.d/
+
 test: clean
 	cd tests; perl tests.pl && cd -
 
@@ -113,6 +124,7 @@ dist: clean
 	@mkdir -p $(NAME)-$(VERSION)/apache2/conf.d/
 	@mkdir -p $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@mkdir -p $(NAME)-$(VERSION)/config
+	@mkdir -p $(NAME)-$(VERSION)/cron
 	@mkdir -p $(NAME)-$(VERSION)/db
 	@mkdir -p $(NAME)-$(VERSION)/doc
 	@mkdir -p $(NAME)-$(VERSION)/script
@@ -120,28 +132,34 @@ dist: clean
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/jobtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/rpmmdtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/regdatatest
-	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/NU
-	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/SMT/Mirror
-	@mkdir -p $(NAME)-$(VERSION)/www/perl-lib/SMT/Parser
+	@mkdir -p $(NAME)-$(VERSION)/www/
+	@mkdir -p $(NAME)-$(VERSION)/logrotate
 
 	@cp apache2/*.pl $(NAME)-$(VERSION)/apache2/
 	@cp apache2/conf.d/*.conf $(NAME)-$(VERSION)/apache2/conf.d/
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
-	@cp db/*.sql $(NAME)-$(VERSION)/db/
-	@cp db/*.sh $(NAME)-$(VERSION)/db/
-	@cp db/README $(NAME)-$(VERSION)/db/
+	@cp config/rc.smt $(NAME)-$(VERSION)/config/
+	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
+	find db -name ".svn" -prune -o \
+                \( \
+                  \( -type d -exec install -m755 -d $(NAME)-$(VERSION)/\{\} \; \) \
+                  -o \
+                  \( -type f -exec install -m644 \{\} $(NAME)-$(VERSION)/\{\} \; \) \
+                \)
 	@cp doc/* $(NAME)-$(VERSION)/doc/
-	rm -f $(NAME)-$(VERSION)/doc/*~
 	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
 	@cp tests/SMT/Mirror/*.pl $(NAME)-$(VERSION)/tests/SMT/Mirror/
 	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
 	@cp www/README $(NAME)-$(VERSION)/www/
 	@cp script/* $(NAME)-$(VERSION)/script/
-	@cp www/perl-lib/NU/*.pm $(NAME)-$(VERSION)/www/perl-lib/NU/
-	@cp www/perl-lib/SMT/*.pm $(NAME)-$(VERSION)/www/perl-lib/SMT/
-	@cp www/perl-lib/SMT/Mirror/*.pm $(NAME)-$(VERSION)/www/perl-lib/SMT/Mirror/
-	@cp www/perl-lib/SMT/Parser/*.pm $(NAME)-$(VERSION)/www/perl-lib/SMT/Parser/
+	@cp logrotate/smt $(NAME)-$(VERSION)/logrotate/
+	find www -name ".svn" -prune -o \
+                \( \
+                  \( -type d -exec install -m755 -d $(NAME)-$(VERSION)/\{\} \; \) \
+                  -o \
+                  \( -type f -exec install -m644 \{\} $(NAME)-$(VERSION)/\{\} \; \) \
+                \)
 	@cp HACKING Makefile README COPYING $(NAME)-$(VERSION)/
 
 	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/
