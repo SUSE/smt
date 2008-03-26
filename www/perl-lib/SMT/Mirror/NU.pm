@@ -267,7 +267,7 @@ sub mirror_handler
 
     if(defined $dbh && $dbh)
     {
-        my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+        my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where MIRRORABLE='Y' and CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
                                                     $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ) );
 
         if(defined $res && exists $res->[0] && 
