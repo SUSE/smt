@@ -4,18 +4,8 @@ TODO:
 
 - 
 
-- schema version, needs tob e present in the Makefile (for installation of
+- schema version, needs to be present in the Makefile (for installation of
   schemas) and in the code (to check). Figure out a good way to handle this.
-
-{
-  - verify checksum of /repodata/repomd.xml
-
-  - Do we need to provide a keyring and accept new keys? 
-    Talk to security-team about this.
-
-  Talked to security-team: This is nice to have but no requirement
-  because the client are checking the repomd too.
-}
 
 
 - SMT Add-On Product (server)
@@ -134,18 +124,20 @@ For information about creating a Novell Login account, see
 
 - Dump Reports into CSV file. AI: jdsn
 
-- Auth request of Registrationdata not via basic auth
-  Put the mirror credentials into the request XML
 
-  <regdata xmlns="...">
-    <authuser>...</authuser>
-    <authpass>...</authpass>
-    <smtguid>...</smtguid>
-  </regdata>
+Nice-To-Have but not so important
+=================================
 
-  AI: mc
 
- 
+- verify checksum of /repodata/repomd.xml
+
+- Do we need to provide a keyring and accept new keys? 
+  Talk to security-team about this.
+
+  Talked to security-team: This is nice to have but no requirement
+  because the client are checking the repomd too.
+
+
 DONE:
 =====
 
@@ -270,5 +262,16 @@ DONE:
 
 - use Mirror Credentials for authentication everywhere.
   (This should be the case, but double check needed. mc)
+
+- Auth request of Registrationdata not via basic auth
+  Put the mirror credentials into the request XML
+
+  <regdata xmlns="...">
+    <authuser>...</authuser>
+    <authpass>...</authpass>
+    <smtguid>...</smtguid>
+  </regdata>
+
+  AI: mc
 
 
