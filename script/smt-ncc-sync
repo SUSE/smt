@@ -156,7 +156,10 @@ eval
     }
 
     SMT::CLI::resetCatalogsStatus();
-    SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef);
+    SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
+                                    todir   => ($todir ne "")?$todir:undef,
+                                    log     => $LOG,
+                                    debug   => $debug);
 
 };
 if (@_)

@@ -293,11 +293,14 @@ sub setMirrorableCatalogs
     }
 
     my $parser = SMT::Parser::NU->new();
-    $parser->parse($indexfile, sub {
-                                    my $repodata = shift;
-                                    print __(sprintf("* set [" . $repodata->{NAME} . "] [" . $repodata->{DISTRO_TARGET} . "] as mirrorable.\n"));
-                                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
-                               }
+    $parser->parse($indexfile, 
+                   sub {
+                       my $repodata = shift;
+                       printLog($opt{log}, "info", sprintf(__("* set [%s %s] as mirrorable."), 
+                                                           $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                       my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
+                                                   $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
+                   }
     );
 
     my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
@@ -331,8 +334,11 @@ sub setMirrorableCatalogs
                 # if no error
                 $ret = $job->mirror();
 	    }
-            print __(sprintf ("* set [" . $catName . "] as " . ( ($ret == 0) ? '' : ' not ' ) . " mirrorable.\n"));
-            my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND TARGET=%s", ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), $dbh->quote($catName), $dbh->quote($catTarget) ) );
+        printLog($opt{log}, "info", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' )));
+        my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND TARGET=%s", 
+                                    ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), 
+                                    $dbh->quote($catName), 
+                                    $dbh->quote($catTarget) ) );
         }
     }
 
