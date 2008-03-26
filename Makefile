@@ -66,7 +66,6 @@ install:
 	mkdir -p $(DESTDIR)/etc/apache2
 	mkdir -p $(DESTDIR)/etc/init.d
 	mkdir -p $(DESTDIR)/etc/smt.d/
-	mkdir -p $(DESTDIR)/etc/cron.d/
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
 	mkdir -p $(DESTDIR)/srv/www/htdocs/testing/repo
@@ -103,7 +102,7 @@ install:
 	cp db/smt-db $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/etc/init.d/smt
-	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/cron.d/
+	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/
 	install -m 755 cron/smt-logrun $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-repeated-register $(DESTDIR)/usr/lib/SMT/bin/

@@ -265,9 +265,9 @@ sub sendMailToAdmins
     my $addresses = $cfg->val('LOCAL', 'reportEmail');
     my @aList = split(/,/, $addresses);
     my @addressList = undef;
-    foreach $val (@aList)
+    foreach my $val (@aList)
     {
-        if ($val ~= //  #&&
+        if ($val =~ //  #&&
            # validate that eMail-address is valid
                              )
         { push @addressList, $val; }

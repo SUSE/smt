@@ -48,7 +48,7 @@ fi
 services="apache2 mysql cron"
 apache_plugins="nu_server.conf smt_mod_perl.conf"
 apache_vhosts="vhost-ssl.conf"
-smt_cronfiles="smt-cron"
+smt_cronfiles="novell.com-smt"
 
 action="$1"
 exit_code=0
@@ -69,7 +69,7 @@ function init_or_upgrade_database () {
     if [ ! -e ${dbcommand} ]; then
 	echo "Error: ${dbcommand} does not exist, database connection might not work"
     else
-	${dbcommand}
+	${dbcommand} init
     fi
 }
 
@@ -118,7 +118,7 @@ function link_smt_plugins () {
 	fi
     done
 
-    mkdir ${smt_crondir}
+    mkdir -p ${smt_crondir}
 
     for filename in ${smt_cronfiles}; do
 	if [ ! -e ${smt_crondir}${filename} ]; then
@@ -154,7 +154,7 @@ function unlink_smt_plugins () {
     done
 
     for filename in ${apache_vhosts}; do
-	filename="${smt_apache_vhostsdir}${filename}"
+	filename="${smt_apache_vhostdir}${filename}"
 
 	if [ -e ${filename} ]; then
 	    echo "Removing apache2 vhosts plugin ${filename}"
@@ -191,7 +191,7 @@ function check_smt_plugins () {
     done
 
     for filename in ${apache_vhosts}; do
-	filename="${smt_apache_vhostsdir}${filename}"
+	filename="${smt_apache_vhostdir}${filename}"
 
 	if [ -e ${filename} ]; then
 	    echo "Using apache2 vhosts plugin ${filename}"

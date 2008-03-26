@@ -100,6 +100,8 @@ exit 0
 %config(noreplace) %attr(640, wwwrun, root)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
+%config /etc/smt.d/novell.com-smt
+%config /etc/logrotate.d/smt
 /etc/init.d/smt
 /usr/sbin/rcsmt
 %{perl_vendorlib}/SMT.pm
@@ -112,8 +114,6 @@ exit 0
 /usr/sbin/smt
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
-%config /etc/cron.d/novell.com-smt
-%config /etc/logrotate.d/smt
 %{_datadir}/schemas/smt/*
 
 %doc README COPYING 

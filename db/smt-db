@@ -43,8 +43,8 @@ sub help
 {
     print __("\nSMT database maintenance tool\n");
     print __("Available commands:");
-    print "  help : show help\n");
-    print "  init : initialize or upgrade database\n");
+    print "  help : ".__("show help\n");
+    print "  init : ".__("initialize or upgrade database\n");
     exit 0;
 }
 
