@@ -26,6 +26,11 @@
 
     integer sl = 100;
 
+    map <string, string> smt_cron_scripts = $[
+	"/usr/lib/SMT/bin/smt-repeated-register"	: _("NCC Registration"),
+	"/usr/lib/SMT/bin/smt-daily"			: _("Synchronization of Updates"),
+    ];
+
     term CredentialsDialogContent () {
 	return `HBox (
 		`HStretch(),
@@ -100,11 +105,12 @@
 
     term ScheduledDownloadsDialogContent () {
 	return `VBox (
-	    `Left(`Label (_("List of Scheduled NU Mirroring"))),
+	    `Left(`Label (_("List of Scheduled Jobs"))),
 	    `Table (
 		`id ("scheduled_NU_mirroring"),
 		`opt (`vstretch),
 		`header (
+		    _("Job to Run"),
 		    // TRANSLATORS: table header item
 		    _("Frequency"),
 		    // TRANSLATORS: table header item
@@ -497,6 +503,56 @@ or cancel the current procedure to change it?")))
 	"6" : _("Saturday"),
     ];
 
+    string CutZeros (string with_zeros) {
+	if (regexpmatch (with_zeros, "^0.+")) {
+	    with_zeros = regexpsub (with_zeros, "^0(.+)", "\\1");
+	}
+
+	return with_zeros;
+    }
+
+    map CutPerriodicalSigns (map settings) {
+	map tmp_settings = settings;
+
+	foreach (string key, ["hour", "minute", "day_of_month", "day_of_month"], {
+	    if (regexpmatch (settings[key]:"", "\\*/")) {
+		settings[key] = regexpsub (settings[key]:"", "\\*/(.*)", "\\1");
+	    }
+	});
+
+	if (tmp_settings != settings) {
+	    y2milestone ("Periodicall settings changed %1 -> %2", tmp_settings, settings);
+	}
+
+	return settings;
+    }
+
+    string FindJobName (string command) {
+	string ret = _("Unknown");
+
+	foreach (string script_command, string script_name, smt_cron_scripts, {
+	    if (regexpmatch (command, script_command)) {
+		ret = script_name;
+		break;
+	    }
+	});
+
+	return ret;
+    }
+
+    string FindJobScript (string command) {
+	string ret = "";
+
+	foreach (string script_command, string script_name, smt_cron_scripts, {
+	    if (regexpmatch (command, script_command)) {
+		ret = script_command;
+		break;
+	    }
+	});
+
+	return ret;
+    }
+
     /**
      * Redraws the table of currently scheduled NU mirrorings.
      */
@@ -517,8 +573,18 @@ or cancel the current procedure to change it?")))
 
 	    term item = `item (`id (counter));
 
+	    item = add (item, FindJobName (one_entry["command"]:""));
+
+	    // covers */15 - every 15 minutes/hours
+	    boolean periodically = false;
+
 	    // Monthly
-	    if (one_entry["day_of_month"]:"*" != "*") {
+	    if (regexpmatch (one_entry["hour"]:"", "\\*/") || regexpmatch (one_entry["minute"]:"", "\\*/")) {
+		periodically = true;
+		item = add (item, _("Periodically"));
+		item = add (item, "--");
+		item = add (item, "--");
+	    } else if (one_entry["day_of_month"]:"*" != "*") {
 		item = add (item, _("Monthly"));
 		item = add (item, "--");
 		item = add (item, one_entry["day_of_month"]:_("Undefined"));
@@ -534,8 +600,23 @@ or cancel the current procedure to change it?")))
 		item = add (item, "--");
 	    }
 
-	    item = add (item, one_entry["hour"]:_("Undefined"));
-	    item = add (item, one_entry["minute"]:_("Undefined"));
+	    one_entry = CutPerriodicalSigns (one_entry);
+
+	    if (periodically && one_entry["hour"]:"*" != "*" && one_entry["hour"]:"0" != "0") {
+		item = add (item, sformat (_("Every %1 hours"), one_entry["hour"]:_("Undefined")));
+	    } else if (periodically) {
+		item = add (item, "--");
+	    } else {
+		item = add (item, one_entry["hour"]:_("Undefined"));
+	    }
+
+	    if (periodically && one_entry["minute"]:"*" != "*" && one_entry["minute"]:"0" != "0") {
+		item = add (item, sformat (_("Every %1 minutes"), one_entry["minute"]:_("Undefined")));
+	    } else if (periodically) {
+		item = add (item, "--");
+	    } else {
+		item = add (item, one_entry["minute"]:_("Undefined"));
+	    }
 
 	    items = add (items, item);
 	});
@@ -593,6 +674,14 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	    day_of_month_available = true;
 	}
 
+	if (current_freq == `periodically) {
+	    UI::ChangeWidget (`id ("hour"), `Label, _("Every H-th &Hour"));
+	    UI::ChangeWidget (`id ("minute"), `Label, _("Every M-th &Minute"));
+	} else {
+	    UI::ChangeWidget (`id ("hour"), `Label, _("&Hour"));
+	    UI::ChangeWidget (`id ("minute"), `Label, _("&Minute"));
+	}
+
 	UI::ChangeWidget (`id ("day_of_week"),  `Enabled, day_of_week_available);
 	UI::ChangeWidget (`id ("day_of_month"), `Enabled, day_of_month_available);
     }
@@ -607,6 +696,7 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	    "hour"		: "*",
 	    "minute"		: "*",
 	    "month"		: "*",
+	    "command"		: "",
 	];
 
 	symbol current_freq = (symbol) UI::QueryWidget (`id (`frequency), `Value);
@@ -616,14 +706,29 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	string day_of_month = tostring (UI::QueryWidget (`id ("day_of_month"), `Value));
 	string day_of_week = tostring (UI::QueryWidget (`id ("day_of_week"), `Value));
 
-	settings["hour"] = hour;
-	settings["minute"] = minute;
+	settings["hour"] = CutZeros (hour);
+	settings["minute"] = CutZeros (minute);
 
-	if (current_freq == `weekly) {
+	// Periodical frequency needs to add "*/X" periodical sign
+	if (current_freq == `periodically) {
+	    if (settings["hour"]:"0" != "0" && settings["hour"]:"*" != "*") {
+		settings["hour"] = sformat ("*/%1", settings["hour"]:"0");
+	    } else {
+		settings["hour"] = "*";
+	    }
+	    if (settings["minute"]:"0" != "0" && settings["minute"]:"*" != "*") {
+		settings["minute"] = sformat ("*/%1", settings["minute"]:"0");
+	    } else {
+		settings["minute"] = "*";
+	    }
+	} else if (current_freq == `weekly) {
 	    settings["day_of_week"] = day_of_week;
 	} else if (current_freq == `monthly) {
 	    settings["day_of_month"] = day_of_month;
 	}
+
+	string command = (string) UI::QueryWidget (`id (`job_to_run), `Value);
+	settings["command"] = command;
 
 	if (schd_id != nil && schd_id > -1) {
 	    SMTData::ReplaceCronJob (schd_id, settings);
@@ -632,14 +737,6 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	}
 
 	return true;
-    }
-
-    string CutZeros (string with_zeros) {
-	if (regexpmatch (with_zeros, "^0.+")) {
-	    with_zeros = regexpsub (with_zeros, "^0(.+)", "\\1");
-	}
-
-	return with_zeros;
     }
 
     /**
@@ -666,8 +763,13 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	});
 
 	symbol freqency_sel = `daily;
+
+	// "*/15" - Every 15 minutes, hours
+	if (regexpmatch (settings["hour"]:"", "\\*/") || regexpmatch (settings["minute"]:"", "\\*/")) {
+	    freqency_sel = `periodically;
+	    settings = CutPerriodicalSigns (settings);
 	// Monthly
-	if (settings["day_of_month"]:"*" != "*") {
+	} else if (settings["day_of_month"]:"*" != "*") {
 	    freqency_sel = `monthly;
 	// Weekly
 	} else if (settings["day_of_week"]:"*" != "*") {
@@ -687,28 +789,41 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	integer minute		= tointeger (CutZeros (settings["minute"]:"0"));
 	integer day_of_month	= tointeger (CutZeros (settings["day_of_month"]:"0"));
 
+	list <term> scripts = maplist (string script_command, string script_name, smt_cron_scripts, {
+	    return `item (`id (script_command), script_name);
+	});
+
 	UI::OpenDialog (
 	    `VBox (
 		`HSpacing (30),
 		`Left (`Heading ((editing ? _("Editing a Scheduled Mirroring"):_("Adding New Scheduled Mirroring")))),
 		`VSpacing (1),
-		`Left(`ComboBox (
-		    `id (`frequency),
-		    `opt (`notify),
-		    _("&Frequency"),
-		    [
-			`item (`id (`daily), _("Daily"), (freqency_sel == `daily)),
-			`item (`id (`weekly), _("Weekly"), (freqency_sel == `weekly)),
-			`item (`id (`monthly), _("Monthly"), (freqency_sel == `monthly))
-		    ]
-		)),
+		`HBox (
+		    `Left(`ComboBox (
+			`id (`frequency),
+			`opt (`notify),
+			_("&Frequency"),
+			[
+			    `item (`id (`daily), _("Daily"), (freqency_sel == `daily)),
+			    `item (`id (`weekly), _("Weekly"), (freqency_sel == `weekly)),
+			    `item (`id (`monthly), _("Monthly"), (freqency_sel == `monthly)),
+			    `item (`id (`periodically), _("Periodically"), (freqency_sel == `periodically))
+			]
+		    )),
+		    `HSpacing (2),
+		    `Left (`ComboBox (
+			`id (`job_to_run),
+			_("&Job to Run"),
+			scripts
+		    ))
+		),
 		`VSpacing (1),
 		`Frame (
 		    _("Mirroring Start Time"),
 		    `HBox (
 			`HSpacing (2),
 			`VBox (
-			    `ComboBox (`id ("day_of_week"), _("Day of the &Week"), day_of_week),
+			    `ComboBox (`id ("day_of_week"), `opt(`hstretch), _("Day of the &Week"), day_of_week),
 			    `IntField (`id ("hour"), _("&Hour"), 0, 24, hour)
 			),
 			`HSpacing (2),
@@ -728,6 +843,17 @@ Should you want to set it up, rerun the current YaST configuration module."));
 	);
 
 	AdjustAddEditDialogToFrequency();
+
+	// select the right script if editing already entered cron job
+	if (editing) {
+	    string script = FindJobScript (settings["command"]:"");
+
+	    if (script == "" || script == nil) {
+		y2error ("Unable to determine script name %1", settings);
+	    } else {
+		UI::ChangeWidget (`id (`job_to_run), `Value, script);
+	    }
+	}
 
 	any ret = nil;
 

@@ -2,7 +2,7 @@
  * File:
  *   smt_cron.scr
  * Summary:
- *   SCR Agent for reading/writing /etc/cron.d/yast2-smt
+ *   SCR Agent for reading/writing /etc/smt.d/novell.com-smt
  *   using the any-agent
  * Access:
  *   read/write
@@ -11,7 +11,8 @@
  *
  * $Id:$
  *
- * Read/Sets the values defined in /etc/cron.d/yast2-smt
+ * Read/Sets the values defined in /etc/smt.d/novell.com-smt
+ * linked from /etc/cron.d/novell.com-smt
  */
 .smt_cron
 

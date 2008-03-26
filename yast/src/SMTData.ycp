@@ -78,7 +78,6 @@
      */
     global void AddNewCronJob (map new_cron_job) {
 	new_cron_job["user"] = user_for_sync_script;
-	new_cron_job["command"] = path_to_sync_script;
 
 	smt_cron_settings = add (smt_cron_settings, new_cron_job);
     }
@@ -98,7 +97,6 @@
 	}
 
 	new_settings["user"] = user_for_sync_script;
-	new_settings["command"] = path_to_sync_script;
 
 	smt_cron_settings[cron_job_id] = new_settings;
     }
