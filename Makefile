@@ -1,6 +1,5 @@
 NAME         = smt
 VERSION      = 0.2.1
-SCHEMA_VERSION = 0.02
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -92,10 +91,20 @@ install:
 	cp www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
 	cp www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	cp www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
-	cp -R db/schemas/mysql/current $(DESTDIR)/usr/share/schemas/smt/mysql/$(SCHEMA_VERSION)
-	cp -R db/schemas/common/current $(DESTDIR)/usr/share/schemas/smt/_common/$(SCHEMA_VERSION)
-	if [ -e db/schemas/mysql/migrate/* ]; then cp -R db/schemas/mysql/migrate/* $(DESTDIR)/usr/share/schemas/smt/mysql/; fi
-	if [ -e db/schemas/common/migrate/* ]; then cp -R db/schemas/common/migrate/* $(DESTDIR)/usr/share/schemas/smt/_common/; fi
+	cd db/schemas; \
+	find mysql/ -name ".svn" -prune -o \
+                \( \
+                  \( -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
+                  -o \
+                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
+                \)
+	cd db/schemas; \
+        find _common/ -name ".svn" -prune -o \
+                \( \
+                  \( -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
+                  -o \
+                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
+                \)
 	cp config/rc.smt $(DESTDIR)/etc/init.d/smt
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
