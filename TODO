@@ -2,11 +2,6 @@
 TODO:
 =====
 
-- 
-
-- schema version, needs to be present in the Makefile (for installation of
-  schemas) and in the code (to check). Figure out a good way to handle this.
-
 
 - SMT Add-On Product (server)
   * someone needs to build and sign the add-on periodically
@@ -18,13 +13,6 @@ TODO:
                module if it is installed later on an existing SLES10
                using the yast2 add-on module
 
-- test what happens if two processes want to write smt.db
-  How can we solve concurent access with DBI?
-
-- create, implement and test a strategy how we can update the database structure
-  after release. (e.g. if we need to add some tables, or collumns in tables) 
-
-- look on how to implement the migration using the module (dmacvicar)
 
 - modify listProducts registration command for SMT.
   Show only products where all required catalogs are localy mirrored.
@@ -43,9 +31,6 @@ TODO:
      user html directories and mod_perl or mod_php or ...
      User can easily create some script which is executed by accessing it over
      HTTP. Apache should be somehow limited and/or behavior documented.
-
-- fix generating repoindex (jdsn)
-  (use TARGET in Clients Table)
 
 - provide details how to change the NU password for mysql, creating SMT 
   database, creating user and granting permissions, store the credentials in 
@@ -69,6 +54,15 @@ TODO:
         Everybody using SMT have to do it after one year.
         To reduce support calls, we should describe this
         in our manual. 
+
+        If the CA changes, every client must newly accept the certificate
+        using the yast2 registration module.
+
+        A new CA (on SMT server) must be copied to /srv/www/htdocs/smt.crt
+        This should be done by some magic (e.g. smt init script)
+
+- check if the CA in /srv/www/htdocs/smt.crt is still the one we use for
+  apache. If not copy the CA again.
 
 - report module should check the server certificate an warn if it is time
   to renew it. E.g. 15(10, 5,4,3,2,1,0) days before it expires.
@@ -276,5 +270,20 @@ About nccEmail: here is the help text which come from NCC if you enter
   </regdata>
 
   AI: mc
+
+- schema version, needs to be present in the Makefile (for installation of
+  schemas) and in the code (to check). Figure out a good way to handle this.
+
+- test what happens if two processes want to write smt.db
+  How can we solve concurent access with DBI?
+
+- create, implement and test a strategy how we can update the database structure
+  after release. (e.g. if we need to add some tables, or collumns in tables) 
+
+- look on how to implement the migration using the module (dmacvicar)
+
+- fix generating repoindex (jdsn)
+  (use TARGET in Clients Table)
+
 
 
