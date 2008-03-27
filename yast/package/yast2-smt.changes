@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Mar 27 10:21:11 CET 2008 - locilka@suse.cz
+
+- LOCAL/url is now mandatory. Reporting error if user does not fill
+  it in.
+
+-------------------------------------------------------------------
 Wed Mar 26 15:02:35 CET 2008 - locilka@suse.cz
 
 - Added support for periodical cron jobs (every M-minute...).

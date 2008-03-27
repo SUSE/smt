@@ -28,6 +28,8 @@
 		"handle"	: HandleCredentialsDialog,
 		"init"		: InitCredentialsDialog,
 		"store"		: StoreCredentialsDialog,
+		"validate_type"	: `function,
+		"validate_function"	: ValidateCredentialsDialog,
 	    ],
 	    "db" : $[
 		"widget"	: `custom,

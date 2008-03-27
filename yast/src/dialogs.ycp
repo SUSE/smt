@@ -301,7 +301,7 @@
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
 	});
 
-	if (SMTData::GetFirstRun() && SMTData::GetCredentials ("LOCAL", "url") == "") {
+	if (SMTData::GetCredentials ("LOCAL", "url") == "") {
 	    map cmd_out = (map) SCR::Execute (.target.bash_output, "/bin/hostname --fqdn");
 
 	    if (cmd_out["exit"]:-1 == 0 && size (cmd_out["stdout"]:"") > 0) {
@@ -365,6 +365,20 @@ or cancel the current procedure to change it?")))
 	}
 
 	y2milestone ("Password validation passed");
+	return true;
+    }
+
+    boolean ValidateCredentialsDialog (string id, map event) {
+	string url = (string) UI::QueryWidget (`id ("url"), `Value);
+
+	if (url == nil || url == "") {
+	    UI::SetFocus (`id ("url"));
+	    Report::Error (_("The SMT URL must not be empty.
+
+Fill in your SMT server URL in format 'http:://server.name/'."));
+	    return false;
+	}
+
 	return true;
     }
 
