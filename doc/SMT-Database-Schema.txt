@@ -3,10 +3,33 @@ SMT Database
 ============
 
 
+Clients(GUID        CHAR(50) PRIMARY KEY,
+        HOSTNAME    VARCHAR(100) DEFAULT '',
+        TARGET      VARCHAR(100),
+        DESCRIPTION VARCHAR(500) DEFAULT '',
+        LASTCONTACT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+       );
+
+GUID:       The ID of the client machine (/etc/zmd/deviceid)
+HOSTNAME    The hostname of the client if we get this during registration
+TARGET      The target of the client if we get this during registration
+DESCRIPTION Free text - currently not used
+LASTCONTACT A timestamp, set everytime the client contacted the SMT server
+
+In this table every registered GUID exists only one time. 
+
+This table changes during every contact with the client.
+It happens DELETE, UPDATE and INSERT statements during registration.
+Every fetch of /repo/repoindex.xml updates the LASTCONTACT column.
+
+Expected table size: depends on how many clients are registered against SMT 
+
+-------------------------------------------------------------------------------
+
 Registration(GUID         CHAR(50) NOT NULL,
              PRODUCTID    integer NOT NULL,
              REGDATE      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-             NCCREGDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
+             NCCREGDATE   TIMESTAMP NULL default NULL,
              PRIMARY KEY(GUID, ProductID)
             );
 
@@ -22,30 +45,6 @@ It happens DELETE, UPDATE and INSERT statements during registration.
 Expected table size: depends on how many clients are registered against SMT 
                      and how many products they have installed.
 
--------------------------------------------------------------------------------
-
-SubscriptionStatus(GUID         CHAR(50),
-                   SUBSCRIPTION VARCHAR(100),
-                   SUBTYPE      CHAR(20)  DEFAULT "UNKNOWN",
-                   SUBSTATUS    CHAR(20)  DEFAULT "UNKNOWN",
-                   SUBSTARTDATE TIMESTAMP DEFAULT '0000-00-00 00:00:00',
-                   SUBENDDATE   TIMESTAMP DEFAULT '0000-00-00 00:00:00',
-                   SUBDURATION  BIGINT    DEFAULT 0,
-                   SERVERCLASS  CHAR(50)  DEFAULT '',
-                   PRIMARY KEY (GUID, SUBSCRIPTION),
-                  );
-
-GUID:         The ID of the client machine (/etc/zmd/deviceid)
-SUBSCRIPTION: Name or ID for this subscription
-SUBTYPE:      UNKNOWN, FULL, PROVISIONAL or EVALUATION
-SUBSTATUS:    ACTIVE or EXPIRED
-SUBSTARTDATE: Date when the customer buyed this subscription
-SUBENDDATE:   Date when this subscription expires
-SUBDURATION:  SUBENDDATE - SUBSTARTDATE
-SERVERCLASS:  OS or ADDON
-
-This table temporarily store the subscription status. The content is newly 
-created during smt ncc-sync . 
 
 -------------------------------------------------------------------------------
 
@@ -178,25 +177,90 @@ Expected table size: ~ 2 * Products
 
 -------------------------------------------------------------------------------
 
-ProductDependencies
-
-This table is dropped. NCC will deliver direct dependencies in ProductCatalogs.
-
--------------------------------------------------------------------------------
-
 Targets (OS      VARCHAR(200) NOT NULL PRIMARY KEY,
          TARGET  VARCHAR(100) NOT NULL,
-         ARCH    VARCHAR(200) NOT NULL
+      -- ARCH    VARCHAR(200) NOT NULL
         );
 
 OS:     The string you get if you call rug ping and return OSTarget.
 TARGET: internal representation (See also Catalog.TARGET)
-ARCH:   The architecture (maybe this go away)
+ARCH:   The architecture (this go away)
 
 
 This table is changed during an ncc-sync (maybe once a day). 
 It happens UPDATE and INSERT statements during this operation.
 
 Expected table size: Current rows: 8
+
+-------------------------------------------------------------------------------
+
+Subscriptions(REGCODE        VARCHAR(100) PRIMARY KEY,
+              SUBNAME        VARCHAR(100) NOT NULL,
+              SUBTYPE        CHAR(20)  DEFAULT "UNKNOWN",
+              SUBSTATUS      CHAR(20)  DEFAULT "UNKNOWN",
+              SUBSTARTDATE   TIMESTAMP NOT NULL,
+              SUBENDDATE     TIMESTAMP NOT NULL,
+              SUBDURATION    BIGINT    DEFAULT 0,
+              SERVERCLASS    CHAR(50),
+              NODECOUNT      integer NOT NULL
+            );
+
+REGCODE      The registration code for a subscription
+SUBNAME      The name of the subscription
+SUBTYPE      The type of the subscription 
+             FULL, PROVISIONAL, EVALUATION (maybe more if needed)
+SUBSTATUS    The status of this subscription 
+             ACTIVE, EXPIRED (maybe more if needed)
+SUBSTARTDATE time when the customer buy this subscription
+SUBENDDATE   time when this subscription expires
+SUBDURATION  valid period of this subscription
+SERVERCLASS  The class of this subscription (OS or ADDON)
+NODECOUNT    The number how many installations can be assigned to this 
+             subscription. The value “-1” is defined as “unlimited”
+
+This table is changed during an ncc-sync (maybe once a day). 
+This table will be setup new during this operation, which means 
+first all entries are deleted and then filled new with the current data.
+
+Expected table size: Depends on how many subscriptions the customer has.
+
+-------------------------------------------------------------------------------
+
+ProductSubscriptions(PRODUCTDATAID integer NOT NULL,
+                     REGCODE       VARCHAR(100) NOT NULL,
+                     PRIMARY KEY(PRODUCTDATAID, REGCODE)
+                    );
+
+
+PRODUCTDATAID  The ProductID
+REGCODE        The regcode of a subscription
+
+This table define which subscriptions can be used for which products.
+It is used for "self auditing" in case of NCC registration is disabled.
+
+This table is changed during an ncc-sync (maybe once a day). 
+This table will be setup new during this operation, which means 
+first all entries are deleted and then filled new with the current data.
+
+Expected table size: Depends on how many subscriptions the customer has.
+
+-------------------------------------------------------------------------------
+
+ClientSubscriptions(GUID    CHAR(50)     NOT NULL,
+                    REGCODE VARCHAR(100) NOT NULL,
+                    PRIMARY KEY(GUID, REGCODE)
+                   );
+
+This table defines which client is assigned to which subscription.
+
+GUID     A Client GUID 
+REGCODE  The regcode of a subscription
+
+This table is changed during an ncc-sync (maybe once a day). 
+This table will be setup new during this operation, which means 
+first all entries are deleted and then filled new with the current data.
+
+Expected table size: Depends on how many machines are registered at NCC.
+
 
 -------------------------------------------------------------------------------
