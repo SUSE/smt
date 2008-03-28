@@ -85,8 +85,43 @@ sub openLock
     
     if( -e $path )
     {
-        return 0;
+        # check if the process is still running
+
+        my $oldpid = "";
+        
+        open(LOCK, "< $path") and do {
+            $oldpid = <LOCK>;
+            close LOCK;
+        };
+        
+        chomp($oldpid);
+        
+        if( ! -e "/proc/$oldpid/cmdline")
+        {
+            # pid does not exists; remove lock
+            unlink $path;
+        }
+        else
+        {
+            my $cmdline = "";
+            open(CMDLINE, "< /proc/$oldpid/cmdline") and do {
+                $cmdline = <CMDLINE>;
+                close CMDLINE;
+            };
+            
+            if($cmdline !~ /$progname/)
+            {
+                # this pid is a different process; remove the lock
+                unlink $path;
+            }
+            else
+            {
+                # process still running
+                return 0;
+            }
+        }
     }
+    
     sysopen(LOCK, $path, O_WRONLY | O_EXCL | O_CREAT, 0640) or return 0;
     print LOCK "$pid";
     close LOCK;

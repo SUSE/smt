@@ -36,9 +36,6 @@ TODO:
   database, creating user and granting permissions, store the credentials in 
   smt.conf file (duncan)
 
-- enhance the lock functions. If a lockfile is present, check if the process
-  is realy running. If not remove the lockfile and go on.
-
 - review help texts of our commandline tools.
 
 - write man pages for commandline tools
@@ -284,6 +281,9 @@ About nccEmail: here is the help text which come from NCC if you enter
 
 - report module should check the server certificate an warn if it is time
   to renew it. E.g. 15(10, 5,4,3,2,1,0) days before it expires.
+
+- enhance the lock functions. If a lockfile is present, check if the process
+  is realy running. If not remove the lockfile and go on.
 
 
 
