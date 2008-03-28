@@ -28,6 +28,8 @@ Requires:       perl-URI
 Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
 Requires:	limal-ca-mgm-perl
+Requires:       perl-DBIx-Migration-Directories
+Requires:	perl-DBIx-Transaction
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
