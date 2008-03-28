@@ -17,3 +17,14 @@ MirrorTo=/srv/www/htdocs
 MirrorAll=false
 forwardRegistration=true
 
+[REPORT]
+# comma separated list of eMail addresses where the status reports will be sent to
+reportEmail=
+# from field of report mails - if empty it defaults to "root@<hostname>"
+reportEmailFrom=
+# relay mail server - leave emtpy if mail should be sent directly
+mailServer=
+mailServerPort=
+# mail server authentication - leave empty if not required
+mailServerUser=
+mailServerPassword=
