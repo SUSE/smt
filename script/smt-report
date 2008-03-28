@@ -140,4 +140,14 @@ printLog($LOG, "info", __("Subscription Report based on NCC registrations"));
 printLog($LOG, "info",  "==============================================\n");
 printLog($LOG, "info", $subReport."\n");
 
+my $days = SMT::CLI::certificateExpireCheck(log => $LOG, debug => $debug);
+if(defined $days && $days > 0 && $days <= 10)
+{
+    printLog($LOG, "warn", sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days));
+}
+elsif(defined $days && $days <= 0)
+{
+    printLog($LOG, "error", __("ERROR: SMT server certificate is expired!"));
+}
+
 exit 0;

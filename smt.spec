@@ -27,6 +27,7 @@ Requires:       perl-IO-Zlib
 Requires:       perl-URI
 Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
+Requires:	limal-ca-mgm-perl
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt

@@ -64,9 +64,6 @@ TODO:
 - check if the CA in /srv/www/htdocs/smt.crt is still the one we use for
   apache. If not copy the CA again.
 
-- report module should check the server certificate an warn if it is time
-  to renew it. E.g. 15(10, 5,4,3,2,1,0) days before it expires.
-
 - usability tests of our commandline tools. 
   * What functionaly customers might miss.
   * Is the "how to use them" clear and obvious?
@@ -284,6 +281,9 @@ About nccEmail: here is the help text which come from NCC if you enter
 
 - fix generating repoindex (jdsn)
   (use TARGET in Clients Table)
+
+- report module should check the server certificate an warn if it is time
+  to renew it. E.g. 15(10, 5,4,3,2,1,0) days before it expires.
 
 
 

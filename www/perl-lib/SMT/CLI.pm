@@ -17,6 +17,9 @@ use File::Basename;
 use Digest::SHA1  qw(sha1 sha1_hex);
 use Time::HiRes qw(gettimeofday tv_interval);
 
+use LIMAL;
+use LIMAL::CaMgm;
+
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
@@ -1045,6 +1048,42 @@ sub subscriptionReport
     }    
    
     return $report;
+}
+
+
+sub certificateExpireCheck
+{
+    #log => $LOG, debug => $debug);
+    my %options = @_;
+
+    my $apacheVhostConf = "/etc/apache2/vhosts.d/vhost-ssl.conf";
+    my $certfile = undef;
+    
+    open(VHOST, "< $apacheVhostConf") or return undef;
+    
+    while(<VHOST>)
+    {
+        my $line = $_;
+        if($line =~ /^\s*SSLCertificateFile\s+(\S+)/ && defined $1 && -e $1)
+        {
+            $certfile = $1;
+            last;
+        }
+    }
+    close VHOST;
+    
+    return undef if(! defined $certfile);
+    
+    my $certData = LIMAL::CaMgm::LocalManagement::getCertificate($certfile, $LIMAL::CaMgm::E_PEM);
+
+    my $endtime = $certData->getEndDate();
+    my $currentTime = time();
+   
+    my $days = int( ($endtime-$currentTime) / ( 60*60*24) );
+
+    printLog($options{log}, "debug", "Check $certfile: Valid for $days days") if($options{debug});
+    
+    return $days;
 }
 
 
