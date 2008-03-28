@@ -56,7 +56,19 @@ TODO:
         using the yast2 registration module.
 
         A new CA (on SMT server) must be copied to /srv/www/htdocs/smt.crt
-        This should be done by some magic (e.g. smt init script)
+        This is now done by the smt init script during "start"
+
+        Explain the hostname problem.
+
+        The server certificate must contain the correct hostname.
+        If the client request https://some.hostname/ then "some.hostname"
+        must be part of the certificate.
+        Two places are possible:
+        1.) as common name (CN in the subject) 
+        2.) as "Subject Alternative Name" 
+                DNS:some.hostname    and/or 
+                IP:<ipaddress>
+
 
 - usability tests of our commandline tools. 
   * What functionaly customers might miss.
