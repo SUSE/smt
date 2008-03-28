@@ -213,6 +213,48 @@ function check_smt_plugins () {
     done
 }
 
+function check_copy_cert {
+    smtcrthash=`openssl x509 -noout -subject_hash -in /srv/www/htdocs/smt.crt 2>/dev/null`
+    ok="false"
+    calink=""
+    for filename in ${apache_vhosts}; do
+
+        if [ -e ${smt_apache_vhostdir}${filename} -a -e ${smt_d}${filename} ]; then
+
+            servercert=`grep -P "^\sSSLCertificateFile" ${smt_apache_vhostdir}${filename} | sed 's/^[[:space:]]*SSLCertificateFile[[:space:]]*//'`
+            hashval=""
+
+            if [ -e ${servercert} ]; then
+
+                hashval=`openssl x509 -issuer_hash -noout -in ${servercert}`
+
+                if [ -n "${smtcrthash}" -a "${smtcrthash}" = "${hashval}" ]; then
+                    ok="true"
+                    break;
+                fi
+
+                suffix=0
+                while [ -e "/etc/ssl/certs/${hashval}.${suffix}" ]; do
+                    calink="/etc/ssl/certs/${hashval}.${suffix}"
+                    ((suffix++))
+                done
+
+                if [ -e ${calink} ]; then
+                    echo "Copy SMT certificate"
+                    ok="true"
+                    cp ${calink} /srv/www/htdocs/smt.crt
+                fi
+            fi
+        fi
+    done
+    if [ ${ok} != "true" ]; then
+        echo "Setting smt certificate failed"
+        exit_code=1
+    else
+        echo "The SMT certificate is ok"
+    fi
+}
+
 #
 # main part 
 #
@@ -221,6 +263,7 @@ case "$action" in
     start*)
 	action="reload"
 	link_smt_plugins
+    check_copy_cert
 	adjust_services
 	init_or_upgrade_database
 	;;
@@ -234,6 +277,7 @@ case "$action" in
     restart)
 	action="restart"
 	link_smt_plugins
+    check_copy_cert
 	adjust_services
 	init_or_upgrade_database
 	;;
