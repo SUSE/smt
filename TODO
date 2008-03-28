@@ -58,9 +58,6 @@ TODO:
         A new CA (on SMT server) must be copied to /srv/www/htdocs/smt.crt
         This should be done by some magic (e.g. smt init script)
 
-- check if the CA in /srv/www/htdocs/smt.crt is still the one we use for
-  apache. If not copy the CA again.
-
 - usability tests of our commandline tools. 
   * What functionaly customers might miss.
   * Is the "how to use them" clear and obvious?
@@ -284,6 +281,9 @@ About nccEmail: here is the help text which come from NCC if you enter
 
 - enhance the lock functions. If a lockfile is present, check if the process
   is realy running. If not remove the lockfile and go on.
+
+- check if the CA in /srv/www/htdocs/smt.crt is still the one we use for
+  apache. If not copy the CA again.
 
 
 
