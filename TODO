@@ -2,18 +2,6 @@
 TODO:
 =====
 
-
-- SMT Add-On Product (server)
-  * someone needs to build and sign the add-on periodically
-  * add-on contains all server RPMs
-  * new packages (e.g.) skelcd-control-SMT and skelcd-SMT
-    (internal ones, for building the add-on)
-  * ... (maybe to be discussed with POS team)
-  * IMPORTANT: This add-on product must call the registration
-               module if it is installed later on an existing SLES10
-               using the yast2 add-on module
-
-
 - modify listProducts registration command for SMT.
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
@@ -31,10 +19,6 @@ TODO:
      user html directories and mod_perl or mod_php or ...
      User can easily create some script which is executed by accessing it over
      HTTP. Apache should be somehow limited and/or behavior documented.
-
-- provide details how to change the NU password for mysql, creating SMT 
-  database, creating user and granting permissions, store the credentials in 
-  smt.conf file (duncan)
 
 - review help texts of our commandline tools.
 
@@ -296,6 +280,20 @@ About nccEmail: here is the help text which come from NCC if you enter
 
 - check if the CA in /srv/www/htdocs/smt.crt is still the one we use for
   apache. If not copy the CA again.
+
+- SMT Add-On Product (server)
+  * someone needs to build and sign the add-on periodically
+  * add-on contains all server RPMs
+  * new packages (e.g.) skelcd-control-SMT and skelcd-SMT
+    (internal ones, for building the add-on)
+  * ... (maybe to be discussed with POS team)
+  * IMPORTANT: This add-on product must call the registration
+               module if it is installed later on an existing SLES10
+               using the yast2 add-on module
+
+- provide details how to change the NU password for mysql, creating SMT 
+  database, creating user and granting permissions, store the credentials in 
+  smt.conf file (duncan)
 
 
 
