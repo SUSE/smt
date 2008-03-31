@@ -156,21 +156,18 @@ sub listProducts
     $sth->execute();
 
     my $t = new Text::ASCIITable;
-    $t->setCols(__('Name'),__('Version'), __('Target'), __('Usage'));
+    $t->setCols(__('Name'),__('Version'), __('Target'), __('Release'), __('Usage'));
     
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
                                                    # there's nothing left
     {
-        #print "$nickname, $favorite_number\n";
-        #print "$PRODUCT $VERSION $ARCH\n";
-        my $productstr = $value->{PRODUCT};
-        $productstr .= " $value->{VERSION}" if(defined $value->{VERSION});
-        $productstr .= " $value->{ARCH}" if(defined $value->{ARCH});
-        #print "$productstr\n";
-        
         next if ( exists($options{ used }) && defined($options{used}) && (int($value->{registered_machines}) < 1) );
         
-        $t->addRow($value->{PRODUCT}, defined($value->{VERSION}) ? $value->{VERSION} : "-", defined($value->{ARCH}) ? $value->{ARCH} : "-", $value->{registered_machines});
+        $t->addRow($value->{PRODUCT}, 
+                   defined($value->{VERSION}) ? $value->{VERSION} : "-", 
+                   defined($value->{ARCH}) ? $value->{ARCH} : "-", 
+                   defined($value->{REL}) ? $value->{REL} : "-", 
+                   $value->{registered_machines});
     }
     print $t->draw();
     $sth->finish();
@@ -203,6 +200,61 @@ sub listRegistrations
         $t->addRow($clnt->{GUID}, $clnt->{HOSTNAME}, $clnt->{LASTCONTACT}, $prdstr);
     }
     print $t->draw();
+}
+
+sub enableCatalogsByProduct
+{
+    my %opts = @_;
+    
+    my ($cfg, $dbh, $nuri) = init();
+    
+    #( verbose => $verbose, prodStr => $enableByProduct)
+    
+    if(! exists $opts{prodStr} || ! defined $opts{prodStr} || $opts{prodStr} eq "")
+    {
+        print __("Invalid product string.\n");
+        return 1;
+    }
+    my ($product, $version, $arch, $release) = split(/\s*,\s*/, $opts{prodStr}, 4);
+    
+    my $st1 = sprintf("select PRODUCTDATAID from Products where PRODUCT=%s ", $dbh->quote($product));
+    
+    if(defined $version && $version ne "")
+    {
+        $st1 .= sprintf(" and VERSION=%s ", $dbh->quote($version));
+    }
+    if(defined $arch && $arch ne "")
+    {
+        $st1 .= sprintf(" and ARCH=%s ", $dbh->quote($arch));
+    }
+    if(defined $release && $release ne "")
+    {
+        $st1 .= sprintf(" and REL=%s ", $dbh->quote($release));
+    }
+    
+    my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE from ProductCatalogs pc, Catalogs c where PRODUCTDATAID IN ($st1) and pc.CATALOGID = c.CATALOGID order by NAME,TARGET;";
+    
+    #print "$statement \n";
+
+    my $arr = $dbh->selectall_arrayref($statement, {Slice => {}});
+    
+    foreach my $row (@{$arr})
+    {
+        if(uc($row->{MIRRORABLE}) ne "Y")
+        {
+            print sprintf(__("Catalog [%s %s] cannot be enabled. Access on the server denied.\n"), 
+                          $row->{NAME}, 
+                          ($row->{TARGET}) ? $row->{TARGET} : "");
+        }
+        else
+        {
+            SMT::CLI::setCatalogDoMirror(enabled => 1, name => $row->{NAME}, target => $row->{TARGET});
+            print sprintf(__("Catalog [%s %s] enabled.\n"),
+                          $row->{NAME}, 
+                          ($row->{TARGET}) ? $row->{TARGET} : "");
+        }
+    }
+    return 0;
 }
 
 sub resetCatalogsStatus
