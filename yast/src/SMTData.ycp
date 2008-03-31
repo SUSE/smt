@@ -516,18 +516,7 @@ Server certificate is vitally important for NU server to support SSL."),
 
 	    // Server certificate exists
 	    } else {
-		// Copy the certificate to an apache configuration
-		string cmd = sformat ("/bin/cp --force '%1' '%2'", String::Quote (server_cert), String::Quote (apache_cert));
-		map cmd_out = (map) SCR::Execute (.target.bash_output, cmd);
-
-		if (cmd_out["exit"]:-1 != 0) {
-		    y2error ("Cannot copy server certificate >%1<: %2", cmd, cmd_out);
-		    Report::Error (sformat (_("Copying server certificate %1 to %2 failed.
-Server will not support HTTPS"), server_cert, apache_cert));
-		} else {
-		    ret = true;
-		}
-
+		ret = true;
 		break;
 	    }
 	}
