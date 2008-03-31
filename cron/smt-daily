@@ -9,6 +9,10 @@
 JOBS="ncc-sync report mirror"
 SMTLOGRUN=/usr/lib/SMT/bin/smt-logrun
 
+# random start - 0 - ~30min
+SLTIME=$(($RANDOM/18))
+sleep $SLTIME
+
 ${SMTLOGRUN} ${JOBS}
 
 if [ $? != 0 ]

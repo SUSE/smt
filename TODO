@@ -2,10 +2,6 @@
 TODO:
 =====
 
-- find a solution to randomize the cronjobs a little bit.
-  The reason is, that not all SMT server in the world start
-  requesting things from NCC at the same time.
-
 - modify listProducts registration command for SMT.
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
@@ -298,6 +294,10 @@ About nccEmail: here is the help text which come from NCC if you enter
 - provide details how to change the NU password for mysql, creating SMT 
   database, creating user and granting permissions, store the credentials in 
   smt.conf file (duncan)
+
+- find a solution to randomize the cronjobs a little bit.
+  The reason is, that not all SMT server in the world start
+  requesting things from NCC at the same time.
 
 
 

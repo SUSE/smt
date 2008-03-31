@@ -5,6 +5,10 @@
 JOBS="register"
 SMTLOGRUN=/usr/lib/SMT/bin/smt-logrun
 
+# random start - 0 - ~10min
+SLTIME=$(($RANDOM/54))
+sleep $SLTIME
+
 ${SMTLOGRUN} ${JOBS}
 
 if [ $? != 0 ]
