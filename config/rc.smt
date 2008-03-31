@@ -263,7 +263,7 @@ case "$action" in
     start*)
 	action="reload"
 	link_smt_plugins
-    check_copy_cert
+	check_copy_cert
 	adjust_services
 	init_or_upgrade_database
 	;;
@@ -277,9 +277,19 @@ case "$action" in
     restart)
 	action="restart"
 	link_smt_plugins
-    check_copy_cert
+	check_copy_cert
 	adjust_services
 	init_or_upgrade_database
+	;;
+    try-restart)
+	$0 status
+	if test $? = 0; then
+		$0 restart
+	else
+		rc_reset        # Not running is not a failure.
+	fi
+	# Remember status and be quiet
+	rc_status
 	;;
     # returns status of both services at once
     status)
@@ -296,6 +306,7 @@ case "$action" in
 	        stop               - stop smt (removes SMT apache plugins and reloads services)
 	        status             - check whether httpd is running
 	        restart            - stops smt if running, and starts it again
+	        try-restart        - restart smt if it is running
 	        help               - this screen
 	
 	EOF
