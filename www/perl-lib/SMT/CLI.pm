@@ -156,19 +156,60 @@ sub listProducts
     $sth->execute();
 
     my $t = new Text::ASCIITable;
-    $t->setCols(__('Name'),__('Version'), __('Target'), __('Release'), __('Usage'));
+    if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
+    {
+        $t->setCols(__('Name'),__('Version'), __('Target'), __('Release'), __('Usage'), __('Catalogs mirrored?'));
+    }
+    else
+    {
+        $t->setCols(__('Name'),__('Version'), __('Target'), __('Release'), __('Usage'));
+    }
     
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
                                                    # there's nothing left
     {
         next if ( exists($options{ used }) && defined($options{used}) && (int($value->{registered_machines}) < 1) );
-        
-        $t->addRow($value->{PRODUCT}, 
-                   defined($value->{VERSION}) ? $value->{VERSION} : "-", 
-                   defined($value->{ARCH}) ? $value->{ARCH} : "-", 
-                   defined($value->{REL}) ? $value->{REL} : "-", 
-                   $value->{registered_machines});
+     
+        if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
+        {
+            my $statement = sprintf("select distinct c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTDATAID=%s and pc.CATALOGID = c.CATALOGID",
+                                    $dbh->quote($value->{PRODUCTDATAID}));
+            my $arr = $dbh->selectall_arrayref($statement);
+            my $cm = __("No");
+            
+            if( @{$arr} == 0 )
+            {
+                # no catalogs required for this product => all catalogs available
+                $cm = __("Yes");
+            }
+            elsif( @{$arr} == 1 )
+            {
+                if( uc($arr->[0]->[0]) eq "Y")
+                {
+                    # all catalogs available
+                    $cm = __("Yes");
+                }
+                # else default is NO
+            }
+            # else some are available, some not => not all catalogs available
+            
+            
+            $t->addRow($value->{PRODUCT}, 
+                       defined($value->{VERSION}) ? $value->{VERSION} : "-", 
+                       defined($value->{ARCH}) ? $value->{ARCH} : "-", 
+                       defined($value->{REL}) ? $value->{REL} : "-", 
+                       $value->{registered_machines}, $cm);
+        }
+        else
+        {
+            $t->addRow($value->{PRODUCT}, 
+                       defined($value->{VERSION}) ? $value->{VERSION} : "-", 
+                       defined($value->{ARCH}) ? $value->{ARCH} : "-", 
+                       defined($value->{REL}) ? $value->{REL} : "-", 
+                       $value->{registered_machines});
+        }
     }
+    
     print $t->draw();
     $sth->finish();
 }
