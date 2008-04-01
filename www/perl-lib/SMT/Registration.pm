@@ -685,7 +685,11 @@ sub findTarget
     elsif(exists $regroot->{register}->{"ostarget-bak"} && defined $regroot->{register}->{"ostarget-bak"} &&
           $regroot->{register}->{"ostarget-bak"} ne "")
     {
-        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($regroot->{register}->{"ostarget-bak"})) ;
+        my $targetString = $regroot->{register}->{"ostarget-bak"};
+        $targetString =~ s/^\s*"//;
+        $targetString =~ s/"\s*$//;
+
+        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($targetString)) ;
         $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                        APR::Const::SUCCESS,"STATEMENT: $statement");
 
