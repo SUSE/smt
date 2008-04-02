@@ -5,7 +5,11 @@ CURL=/usr/bin/curl
 OPENSSL=/usr/bin/openssl
 CREHASH=/usr/bin/c_rehash
 ZMDINIT=/etc/init.d/novell-zmd
+SRCONF=/etc/suseRegister.conf
 CP=/bin/cp
+CAT=/bin/cat
+GREP=/usr/bin/grep
+RM=/bin/rm
 
 SSLDIR=/etc/ssl/certs/
 ZMDSSLDIR=/etc/zmd/trusted-certs/
@@ -32,17 +36,32 @@ if [ ! -x $CP ]; then
 	exit 1;
 fi
 
+if [ ! -x $CAT ]; then
+	echo "cat command not found. Abort.";
+	exit 1;
+fi
+
+if [ ! -x $GREP ]; then
+	echo "grep command not found. Abort.";
+	exit 1;
+fi
+
+if [ ! -x $RPM ]; then
+	echo "rm command not found. Abort.";
+	exit 1;
+fi
+
 CERTURL=`echo "$REGURL" | awk -F/ '{print $1 "//" $3 "/smt.crt"}'`
 TEMPFILE=`mktemp /tmp/smt.crt.XXXXXX`
 
 if [ -x $WGET ]; then
-	$WGET --output-document $TEMPFILE $CERTURL;
+	$WGET --no-verbose -q --output-document $TEMPFILE $CERTURL > /dev/null;
 	if [ $? -ne 0 ]; then
 		echo "Download failed. Abort.";
 		exit 1;
 	fi
 elif [ -x $CURL ]; then
-	$CURL --output $TEMPFILE $CERTURL;
+	$CURL -s -S --output $TEMPFILE $CERTURL > /dev/null;
         if [ $? -ne 0 ]; then
                 echo "Download failed. Abort.";
                 exit 1;
@@ -65,14 +84,19 @@ fi
 $CP $TEMPFILE $SSLDIR/smt.pem
 $CP $TEMPFILE $ZMDSSLDIR/smt.cer
 
-$CREHASH $SSLDIR
+$CREHASH $SSLDIR > /dev/null
 
 if [ -x $ZMDINIT ]; then
-	$ZMDINIT restart
+	$ZMDINIT restart > /dev/null
 fi
 
-cat /etc/suseRegister.conf | grep -v "^url" > /etc/suseRegister.conf.NEW
-$CP /etc/suseRegister.conf /etc/suseRegister.conf-`date '+%x'`
-echo "url=$REGURL" > /etc/suseRegister.conf
-cat /etc/suseRegister.conf.NEW >> /etc/suseRegister.conf
- 
+SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
+
+
+$CAT $SRCONF | $GREP -v "^url" > $SRCTMP
+$CP $SRCONF ${SRCONF}-`date '+%x'` 
+echo "url=$REGURL" > $SRCONF
+$CAT $SRCTMP >> $SRCONF
+$RM $SRCTMP
+
+echo "Client setup finished."
