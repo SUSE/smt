@@ -8,6 +8,7 @@ ZMDINIT=/etc/init.d/novell-zmd
 SRCONF=/etc/suseRegister.conf
 CP=/bin/cp
 CAT=/bin/cat
+CHMOD=/bin/chmod
 GREP=/usr/bin/grep
 RM=/bin/rm
 
@@ -18,7 +19,17 @@ REGURL=$1
 
 if [ -z "$REGURL" ]; then
 	echo "Missing registration URL. Abort."
+    echo ""
+    echo "Usage: $0 <registration URL>"
+    echo "       configures a SLE10 client to register against a different registration server"
+    echo ""
+    echo "Example: $0 https://smt.example.com/center/regsvc"
 	exit 1;
+fi
+
+if ! echo $REGURL | grep "^https" > /dev/null ; then
+    echo "The registration URL must be a HTTPS URL. Abort."
+    exit 1
 fi
 
 if [ ! -x $OPENSSL ]; then
@@ -46,22 +57,27 @@ if [ ! -x $GREP ]; then
 	exit 1;
 fi
 
-if [ ! -x $RPM ]; then
+if [ ! -x $RM ]; then
 	echo "rm command not found. Abort.";
 	exit 1;
 fi
 
-CERTURL=`echo "$REGURL" | awk -F/ '{print $1 "//" $3 "/smt.crt"}'`
+if [ ! -x $CHMOD ]; then
+	echo "chmod command not found. Abort.";
+	exit 1;
+fi
+
+CERTURL=`echo "$REGURL" | awk -F/ '{print "https://" $3 "/smt.crt"}'`
 TEMPFILE=`mktemp /tmp/smt.crt.XXXXXX`
 
 if [ -x $WGET ]; then
-	$WGET --no-verbose -q --output-document $TEMPFILE $CERTURL > /dev/null;
+	$WGET  --no-verbose -q --no-check-certificate --output-document $TEMPFILE $CERTURL
 	if [ $? -ne 0 ]; then
 		echo "Download failed. Abort.";
 		exit 1;
 	fi
 elif [ -x $CURL ]; then
-	$CURL -s -S --output $TEMPFILE $CERTURL > /dev/null;
+	$CURL  -s -S --insecure --output $TEMPFILE $CERTURL 
         if [ $? -ne 0 ]; then
                 echo "Download failed. Abort.";
                 exit 1;
@@ -82,7 +98,9 @@ if [ "$YN" != "Y" -a "$YN" != "y" ]; then
 fi
 
 $CP $TEMPFILE $SSLDIR/smt.pem
+$CHMOD 0644 $SSLDIR/smt.pem
 $CP $TEMPFILE $ZMDSSLDIR/smt.cer
+$CHMOD 0644 $ZMDSSLDIR/smt.cer
 
 $CREHASH $SSLDIR > /dev/null
 
