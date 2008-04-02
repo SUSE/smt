@@ -97,10 +97,10 @@ if [ "$YN" != "Y" -a "$YN" != "y" ]; then
 	exit 1;
 fi
 
-$CP $TEMPFILE $SSLDIR/smt.pem
-$CHMOD 0644 $SSLDIR/smt.pem
-$CP $TEMPFILE $ZMDSSLDIR/smt.cer
-$CHMOD 0644 $ZMDSSLDIR/smt.cer
+$CP $TEMPFILE $SSLDIR/registration-server.pem
+$CHMOD 0644 $SSLDIR/registration-server.pem
+$CP $TEMPFILE $ZMDSSLDIR/registration-server.cer
+$CHMOD 0644 $ZMDSSLDIR/registration-server.cer
 
 $CREHASH $SSLDIR > /dev/null
 
