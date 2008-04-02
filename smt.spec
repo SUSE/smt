@@ -119,7 +119,7 @@ exit 0
 /usr/lib/SMT/bin/*
 %{_datadir}/schemas/smt/*
 
-%doc README COPYING 
+%doc README COPYING script/clientSetup4SMT.sh
 
 %changelog
 * Mon Jan 21 2008 - mc@suse.de
