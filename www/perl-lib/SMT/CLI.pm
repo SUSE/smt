@@ -274,14 +274,13 @@ sub listProducts
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
-    my $t = new Text::ASCIITable;
+
+    my @HEAD = [ __('Name'), __('Version'), __('Target'), __('Release'), __('Usage') ];
+    my @VALUES = [];
+
     if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
     {
-        $t->setCols(__('Name'),__('Version'), __('Target'), __('Release'), __('Usage'), __('Catalogs mirrored?'));
-    }
-    else
-    {
-        $t->setCols(__('Name'),__('Version'), __('Target'), __('Release'), __('Usage'));
+        push @HEAD,  __('Catalogs mirrored?');
     }
     
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
@@ -313,23 +312,26 @@ sub listProducts
             # else some are available, some not => not all catalogs available
             
             
-            $t->addRow($value->{PRODUCT}, 
-                       defined($value->{VERSION}) ? $value->{VERSION} : "-", 
-                       defined($value->{ARCH}) ? $value->{ARCH} : "-", 
-                       defined($value->{REL}) ? $value->{REL} : "-", 
-                       $value->{registered_machines}, $cm);
+            push @VALUES, [ $value->{PRODUCT}, 
+                            $value->{VERSION} || "-", 
+                            $value->{ARCH}    || "-", 
+                            $value->{REL}     || "-", 
+                            $value->{registered_machines}, 
+                            $cm ];
         }
         else
         {
-            $t->addRow($value->{PRODUCT}, 
-                       defined($value->{VERSION}) ? $value->{VERSION} : "-", 
-                       defined($value->{ARCH}) ? $value->{ARCH} : "-", 
-                       defined($value->{REL}) ? $value->{REL} : "-", 
-                       $value->{registered_machines});
+            push @VALUES, [ $value->{PRODUCT}, 
+                            $value->{VERSION} || "-", 
+                            $value->{ARCH}    || "-", 
+                            $value->{REL}     || "-", 
+                            $value->{registered_machines} ];
         }
     }
-    
-    print $t->draw();
+   
+    # FIXME this function should return the hash only and the caller should decide how to render and where to print the result
+    #       for now keeping the print statment here to keep it working 
+    print renderReport({'cols' => \@HEAD, 'vals' => \@VALUES }, 'asciitable');
     $sth->finish();
 }
 
