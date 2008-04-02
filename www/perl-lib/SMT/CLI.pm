@@ -275,8 +275,8 @@ sub listProducts
     $sth->execute();
 
 
-    my @HEAD = [ __('Name'), __('Version'), __('Target'), __('Release'), __('Usage') ];
-    my @VALUES = [];
+    my @HEAD = ( __('Name'), __('Version'), __('Target'), __('Release'), __('Usage') );
+    my @VALUES = ();
 
     if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
     {
