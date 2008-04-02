@@ -89,13 +89,18 @@ sub escapeCSVRow($)
 #
 # renders a report table either as ASCII-Table or in CSV format
 #
-#   takes a hash of the format
+#   takes two parameters:
+#      - a hash for the data
+#      - format mode
+#   Examples:
 #   $data = (
 #     'cols' = [ "first", "second",    ...  ],
 #     'vals' = [ [a1,a2], [b1,b2],     ...  ],
 #     'opts' = {'optname' => 'optval', ...  },
 #     'heading' = "header string"
 #   );
+#   $mode = 'asciitable';
+#   $mode = 'csv';
 #
 sub renderReport($$)
 {
