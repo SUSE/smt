@@ -64,6 +64,120 @@ sub init
     return ($cfg, $dbh, $nuri);
 }
 
+
+#
+# escapeCSVRow
+#   takes an array of values and returns an escaped CSV row string
+#
+sub escapeCSVRow($)
+{
+    my $arr = shift;
+    if (! defined $arr) { return ''; }
+    my $str = '';
+
+    foreach my $val (@{$arr})
+    {
+        $val =~ s/\"/\"\"/g;    # double all quotation marks
+        $str .= '"'.$val.'",';  # delimit strings with quotation marks
+    }
+    $str =~ s/,$//;             # remove trailing comma
+    return $str;
+}
+
+
+
+#
+# renders a report table either as ASCII-Table or in CSV format
+#
+#   takes a hash of the format
+#   $data = (
+#     'cols' = [ "first", "second",    ...  ],
+#     'vals' = [ [a1,a2], [b1,b2],     ...  ],
+#     'opts' = {'optname' => 'optval', ...  },
+#     'heading' = "header string"
+#   );
+#
+sub renderReport($$)
+{
+    my $d    = shift; 
+    my $mode = shift;
+    my $res = '';
+
+    # return empty string in case needed data is missing
+    if ( ! defined $d || ! defined $mode) { return ''; }
+
+    my %data = (%{$d});
+    if ( ! exists  $data{'cols'} ||
+         ! exists  $data{'vals'} ||
+         ! defined $data{'cols'} ||  
+         ! defined $data{'vals'}    )  { return ''; }
+   
+    # general handling of header string 
+    my $heading  = undef;
+    if (exists $data{'opts'}{'headingText'}  &&  defined $data{'opts'}{'headingText'})
+    { $heading = $data{'opts'}{'headingText'}; }
+    if (exists $data{'heading'}  &&  defined $data{'heading'})
+    { $heading = $data{'heading'}; }
+
+
+    if ($mode eq 'asciitable')
+    {
+        my $t = new Text::ASCIITable;
+
+        # set options
+        if (exists $data{'opts'}  &&  defined $data{'opts'})
+        {
+            while (my ($key,$val) = each(%{$data{'opts'}}))
+            {
+                $t->setOptions($key,$val);
+            }
+        }
+
+        # overwrite heading if defined
+        if (defined $heading)
+        {
+            $t->setOptions('headingText', $heading);
+        }
+
+        $t->setCols(@{$data{'cols'}});
+        # addRow may fail with long lists, so do it one by one
+        foreach my $row (@{$data{'vals'}})
+        {
+            $t->addRow($row);
+        }
+
+        $res = $t->draw();
+        
+    }
+    elsif ($mode eq 'csv') 
+    {
+        my @valbody  = [];
+
+        # add heading if defined        
+        $res .= defined $heading ? escapeCSVRow($heading)."\n":'';
+
+        # add title/cols row
+        $res .= escapeCSVRow(\@{$data{'cols'}});
+        $res .= "\n";
+
+        foreach my $valrow (@{$data{'vals'}})
+        {
+            $res .= escapeCSVRow(\@{$valrow});
+            $res .= "\n";
+        }
+    }
+    else
+    {
+        $res = '';
+    }
+
+    return $res;
+}
+
+
+
+
+
 sub listCatalogs
 {
     my %options = @_;
