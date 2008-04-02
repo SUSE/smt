@@ -70,6 +70,11 @@ function init_or_upgrade_database () {
 	echo "Error: ${dbcommand} does not exist, database connection might not work"
     else
 	${dbcommand} init
+	ecode=$?
+	if [ "${ecode}" != "0" ]; then
+		echo "Database initialization failed. Try to run '${dbcommand} setup' ."
+		exitcode=${ecode}
+	fi
     fi
 }
 
