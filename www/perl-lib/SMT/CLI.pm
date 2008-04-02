@@ -183,7 +183,7 @@ sub renderReport($$)
 
 
 
-sub listCatalogs
+sub getCatalogs
 {
     my %options = @_;
 
@@ -224,18 +224,16 @@ sub listCatalogs
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
-    my $t = new Text::ASCIITable;
+    my @HEAD = ();
+    my @VALUES = ();
 
-    my @cols;
-    #push( @cols, "ID" );
-    push( @cols, "Name" );
-    push( @cols, "Description" );
+    #push( @HEAD, "ID" );
+    push( @HEAD, "Name" );
+    push( @HEAD, "Description" );
 
-    push( @cols, "Mirrorable" );
-    push( @cols, "Mirror?" );
+    push( @HEAD, "Mirrorable" );
+    push( @HEAD, "Mirror?" );
 
-    
-    $t->setCols(@cols);
 
     my $counter = 1;
     while (my $values = $sth->fetchrow_hashref())  
@@ -249,22 +247,31 @@ sub listCatalogs
         push( @row, $values->{DOMIRROR} );
         #print $values->{CATALOGID} . " => [" . $values->{NAME} . "] " . $values->{DESCRIPTION} . "\n";
         
-        $t->addRow(@row);
+        push( @VALUES, @row );
 
         if ( exists $options{ used } && defined $options{used} )
         {
-          $t->addRow("", $values->{EXTURL}, "", "");
-          $t->addRow("", $values->{LOCALPATH}, "", "");
-          $t->addRow("", $values->{CATALOGTYPE}, "", "");
+          push( @VALUES, ("", $values->{EXTURL},      "", "") );
+          push( @VALUES, ("", $values->{LOCALPATH},   "", "") );
+          push( @VALUES, ("", $values->{CATALOGTYPE}, "", "") );
         }
         
         $counter++;
     }
-    print $t->draw();
     $sth->finish();
+    return {'cols' => \@HEAD, 'vals' => \@VALUES };
 }
 
-sub listProducts
+#
+# wrapper function to keep compatibility while changing the called function
+#
+sub listCatalogs
+{
+    print renderReport(getCatalogs(@_), 'asciitable');
+}
+
+
+sub getProducts
 {
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
@@ -329,21 +336,31 @@ sub listProducts
         }
     }
    
-    # FIXME this function should return the hash only and the caller should decide how to render and where to print the result
+    # FIXME this function (and all similar) should return the hash only and the caller should decide how to render and where to print the result
     #       for now keeping the print statment here to keep it working 
-    print renderReport({'cols' => \@HEAD, 'vals' => \@VALUES }, 'asciitable');
     $sth->finish();
+    return {'cols' => \@HEAD, 'vals' => \@VALUES };
 }
 
-sub listRegistrations
+
+#
+# wrapper function to keep compatibility while changing the called function
+#
+sub listProducts
+{
+    print renderReport(getProducts(@_), 'asciitable');
+}
+
+
+sub getRegistrations
 {
     my ($cfg, $dbh, $nuri) = init();
 
     my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
-    my $t = new Text::ASCIITable;
-    $t->setOptions('drawRowLine',1);
-    $t->setCols(__('Unique ID'),__('Hostname'), __('Last Contact'), __('Product'));
+    my @HEAD = ( __('Unique ID'), __('Hostname'), __('Last Contact'), __('Product') );
+    my @VALUES = ();
+    my %OPTIONS = ('drawRowLine' => 1 );
 
     foreach my $clnt (@{$clients})
     {
@@ -359,10 +376,20 @@ sub listRegistrations
             $prdstr .= " ".$product->{ARCH} if(defined $product->{ARCH});
             $prdstr .= "\n";
         }
-        $t->addRow($clnt->{GUID}, $clnt->{HOSTNAME}, $clnt->{LASTCONTACT}, $prdstr);
+        push @VALUES, [ $clnt->{GUID}, $clnt->{HOSTNAME}, $clnt->{LASTCONTACT}, $prdstr ];
     }
-    print $t->draw();
+    return {'cols' => \@HEAD, 'vals' => \@VALUES, 'opts' => \%OPTIONS };
 }
+
+
+#
+# wrapper function to keep compatibility while changing the called function
+#
+sub listRegistrations
+{
+    print renderReport(getRegistrations(@_), 'asciitable');
+}
+
 
 sub enableCatalogsByProduct
 {
@@ -730,10 +757,9 @@ sub productClassReport
         printLog($options{log}, "error", "Invalid configuration provided.");
         return undef;
     }
-    
-    my $t = new Text::ASCIITable;
-    $t->setCols(__("Product Class"), __("Architecture"), __("Installed Clients"));
-    
+   
+    my @HEAD = ( __("Product Class"), __("Architecture"), __("Installed Clients") ); 
+    my @VALUES = ();   
     
     my $classes = $dbh->selectcol_arrayref("SELECT DISTINCT PRODUCT_CLASS from Products where PRODUCT_CLASS is not NULL");
     
@@ -781,7 +807,7 @@ sub productClassReport
             
             if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
             {
-                $t->addRow("$cn", $archgroup, $count->[0]);
+                push @VALUES, [ "$cn", $archgroup, $count->[0] ];
                 $found = 1;
             }
         }
@@ -799,19 +825,19 @@ sub productClassReport
             
             if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
             {
-                $t->addRow("$cn", "", $count->[0]);
+                push @VALUES, [ "$cn", "", $count->[0] ];
                 $found = 1;
             }
         }
     }
-    return $t->draw();
+    return {'cols' => \@HEAD, 'vals' => \@VALUES };
 }
 
 sub productSubscriptionReport
 {
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
-    my $report = "";
+    my %report = ();
     
     my $debug = 0;
     $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
@@ -859,8 +885,9 @@ sub productSubscriptionReport
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my $tact = new Text::ASCIITable({ headingText => __("Active Subscriptions")." ($time)" });
-    $tact->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @AHEAD = ( __('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date') ); 
+    my @AVALUES = ();
+    my %AOPTIONS = ( 'headingText' => __("Active Subscriptions"." ($time)" ) );
 
     foreach my $subname (keys %{$res})
     {
@@ -888,15 +915,13 @@ sub productSubscriptionReport
             }
         }
                 
-        $tact->addRow(
-                      $res->{$subname}->{SUBNAME},
-                      $nc,
-                      $assignedMachines,
-                      $res->{$subname}->{MINENDDATE}
-                     );
+        push @AVALUES, [ $res->{$subname}->{SUBNAME},
+                        $nc,
+                        $assignedMachines,
+                        $res->{$subname}->{MINENDDATE}
+                       ];
     }
-    $report .= $tact->draw()."\n";
-
+    $report{'active'} = {'cols' => \@AHEAD, 'vals' => \@AVALUES, 'opts' => \%AOPTIONS };
 
     #
     # Expire soon
@@ -912,8 +937,9 @@ sub productSubscriptionReport
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my $tsoon = new Text::ASCIITable({ headingText => __("Subscriptions which expired within the next 30 days")." ($time)" });
-    $tsoon->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @SHEAD = ( __('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @SVALUES = ();
+    my %SOPTIONS = ( 'headingText' => __("Subscriptions which expired within the next 30 days")." ($time)" );
 
     foreach my $subname (keys %{$res})
     {
@@ -946,14 +972,13 @@ sub productSubscriptionReport
             $expireSoonMachines->{$subname} += int $assignedMachines;
         }
         
-        $tsoon->addRow(
-                       $res->{$subname}->{SUBNAME},
-                       $nc,
-                       $assignedMachines,
-                       $res->{$subname}->{MINENDDATE}
-                      );
+        push @SVALUES, [ $res->{$subname}->{SUBNAME},
+                         $nc,
+                         $assignedMachines,
+                         $res->{$subname}->{MINENDDATE}
+                      ];
     }
-    $report .= $tsoon->draw()."\n";
+    $report{'soon'} = {'cols' => \@SHEAD, 'vals' => \@SVALUES, 'opts' => \%SOPTIONS };
 
 
     #
@@ -968,8 +993,9 @@ sub productSubscriptionReport
 
     $res = $dbh->selectall_hashref($statement, "SUBNAME");
 
-    my $texp = new Text::ASCIITable({ headingText => __("Expired Subscriptions")." ($time)" });
-    $texp->setCols(__('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @EHEAD = ( __('Subscription'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @EVALUES = ();
+    my %EOPTIONS = ( 'headingText' => __("Expired Subscriptions")." ($time)" );
     my $doDraw = 0;
     
     foreach my $subname (keys %{$res})
@@ -993,20 +1019,18 @@ sub productSubscriptionReport
 
         $expiredMachines->{$subname} += int $assignedMachines;
         
-        $texp->addRow(
-                      $res->{$subname}->{SUBNAME},
-                      $nc,
-                      $assignedMachines,
-                      $res->{$subname}->{MAXENDDATE}
-                     );
+        push @EVALUES, [ $res->{$subname}->{SUBNAME},
+                         $nc,
+                         $assignedMachines,
+                         $res->{$subname}->{MAXENDDATE}
+                       ];
     }
-    if($doDraw)
-    {
-        $report .= $texp->draw()."\n";
-    }
-    
-    $report .= __("Summary:\n");
-    $report .=    "========\n\n";
+
+    $report{'expired'} = $doDraw ? {'cols' => \@EHEAD, 'vals' => \@EVALUES, 'opts' => \%EOPTIONS } : undef; 
+   
+    my $summary = ''; 
+    $summary .= __("Summary:\n");
+    $summary .=    "========\n\n";
 
     my $ok = 1;
 
@@ -1014,7 +1038,7 @@ sub productSubscriptionReport
     {
         if($expireSoonMachines->{$subname} > 0)
         {
-            $report .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
+            $summary .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
                                $expireSoonMachines->{$subname},
                                $subname);
             $ok = 0;
@@ -1025,7 +1049,7 @@ sub productSubscriptionReport
     {
         if($expiredMachines->{$subname} > 0)
         {
-            $report .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
+            $summary .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
                                $expireSoonMachines->{$subname},
                                $subname);
             $ok = 0;
@@ -1034,10 +1058,12 @@ sub productSubscriptionReport
 
     if($ok)
     {
-        $report .= __("The Subscription status is ok.\n");
+        $summary .= __("The Subscription status is ok.\n");
     }    
 
-    return $report;
+    $report{'summary'} = $summary;
+    
+    return \%report;
 }
 
 
@@ -1045,7 +1071,7 @@ sub subscriptionReport
 {
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
-    my $report = "";
+    my %report = ();
     my $nowP30day = SMT::Utils::getDBTimestamp((time + (30*24*60*60)));
     my $sth = undef;
     
@@ -1086,9 +1112,10 @@ sub subscriptionReport
             $res->{$regcode}->{MACHINES} = $assigned->{$regcode}->{MACHINES};
         }
     }
-    
-    my $tact = new Text::ASCIITable({ headingText => __("Active Subscriptions")." ($time)" });
-    $tact->setCols(__('Subscription'),__('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+
+    my @AHEAD = ( __('Subscription'), __('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date') );
+    my @AVALUES = ();
+    my %AOPTIONS = ( 'headingText' => __("Active Subscriptions")." ($time)" );
 
     foreach my $regcode (keys %{$res})
     {
@@ -1124,15 +1151,14 @@ sub subscriptionReport
             $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = $m;
         }
         
-        $tact->addRow(
-                      $res->{$regcode}->{SUBNAME},
-                      $res->{$regcode}->{REGCODE},
-                      ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
-                      (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
-                      $res->{$regcode}->{SUBENDDATE}
-                     );
+        push @AVALUES, [ $res->{$regcode}->{SUBNAME},
+                         $res->{$regcode}->{REGCODE},
+                         ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
+                         (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
+                        $res->{$regcode}->{SUBENDDATE}
+                       ];
     }
-    $report .= $tact->draw()."\n";
+    $report{'active'} = {'cols' => \@AHEAD, 'vals' => \@AVALUES, 'opts' => \%AOPTIONS };
 
     #
     # expire soon 
@@ -1147,8 +1173,9 @@ sub subscriptionReport
     
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
 
-    my $tsoon = new Text::ASCIITable({ headingText => __('Subscriptions which expiring within the next 30 Days')." ($time)" });
-    $tsoon->setCols(__('Subscription'),__('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @SHEAD = ( __('Subscription'), __('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date') );
+    my @SVALUES = ();
+    my %SOPTIONS = ( 'headingText' => __('Subscriptions which expiring within the next 30 Days')." ($time)" ); 
     
     foreach my $regcode (keys %{$res})
     {
@@ -1183,15 +1210,14 @@ sub subscriptionReport
             $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = $m;
         }
 
-        $tsoon->addRow(
-                       $res->{$regcode}->{SUBNAME},
-                       $res->{$regcode}->{REGCODE},
-                      ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
-                       (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
-                       $res->{$regcode}->{SUBENDDATE}
-                      );
+        push @SVALUES, [ $res->{$regcode}->{SUBNAME},
+                         $res->{$regcode}->{REGCODE},
+                         ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
+                         (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
+                         $res->{$regcode}->{SUBENDDATE}
+                       ];
     }
-    $report .= $tsoon->draw()."\n";
+    $report{'soon'} = {'cols' => \@SHEAD, 'vals' => \@SVALUES, 'opts' => \%SOPTIONS };
 
 
     #
@@ -1206,8 +1232,9 @@ sub subscriptionReport
 
     $res = $dbh->selectall_hashref($statement, "REGCODE");
 
-    my $texp = new Text::ASCIITable({ headingText => __('Expired Subscriptions')." ($time)" });
-    $texp->setCols(__('Subscription'),__('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @EHEAD = ( __('Subscription'), __('Registration Code'), __('Node Count'), __('Assigned Machines'), __('Expiring Date'));
+    my @EVALUES = ();
+    my %EOPTIONS = ( 'headingText' => __('Expired Subscriptions')." ($time)" );
 
     foreach my $regcode (keys %{$res})
     {
@@ -1228,19 +1255,18 @@ sub subscriptionReport
             $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = $m;
         }
 
-        $texp->addRow(
-                      $res->{$regcode}->{SUBNAME},
-                      $res->{$regcode}->{REGCODE},
-                      ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
-                      (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
-                       $res->{$regcode}->{SUBENDDATE}
-                     );
+        push @EVALUES, [ $res->{$regcode}->{SUBNAME},
+                         $res->{$regcode}->{REGCODE},
+                         ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
+                         (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
+                         $res->{$regcode}->{SUBENDDATE}
+                       ];
     }
-    $report .= $texp->draw()."\n";
+    $report{'expire'} = {'cols' => \@EHEAD, 'vals' => \@EVALUES, 'opts' => \%EOPTIONS };
 
 
-    $report .= __("Summary:\n");
-    $report .=    "========\n\n";
+    my $summary .= __("Summary:\n");
+    $summary .=    "========\n\n";
 
     my $ok = 1;
     
@@ -1248,7 +1274,7 @@ sub subscriptionReport
     {
         if($calchash->{$sn}->{NODECOUNT} != -1 && $calchash->{$sn}->{NODECOUNT} < $calchash->{$sn}->{MACHINES})
         {
-            $report .= sprintf(__("Not enough '%s' entitlements. Active entilements: %d  Assigned machines: %d "),
+            $summary .= sprintf(__("Not enough '%s' entitlements. Active entilements: %d  Assigned machines: %d "),
                                $sn,
                                $calchash->{$sn}->{NODECOUNT},
                                $calchash->{$sn}->{MACHINES});
@@ -1258,10 +1284,12 @@ sub subscriptionReport
 
     if($ok)
     {
-        $report .= __("The Subscription status is ok.\n");
+        $summary .= __("The Subscription status is ok.\n");
     }    
-   
-    return $report;
+
+    $report{'summary'} = $summary;
+
+    return \%report;
 }
 
 
