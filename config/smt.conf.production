@@ -16,6 +16,7 @@ nccEmail=
 MirrorTo=/srv/www/htdocs
 MirrorAll=false
 forwardRegistration=true
+rndRegister=0
 
 [REPORT]
 # comma separated list of eMail addresses where the status reports will be sent to

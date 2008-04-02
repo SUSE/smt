@@ -30,12 +30,14 @@ use POSIX ();     # Needed for setlocale()
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 
-my $debug = 0;
-my $help  = 0;
+my $debug   = 0;
+my $help    = 0;
+my $random  = 0;
 my $logfile = "/dev/null";
 
 my $result = GetOptions ("debug|d"     => \$debug,
                          "logfile|L=s" => \$logfile,
+                         "randomStart|r" => \$random,
                          "help|h"      => \$help
                         );
 
@@ -91,6 +93,9 @@ if(!(defined $allowRegister && $allowRegister eq "true"))
 }
 my $nccEmail = $cfg->val("LOCAL", "nccEmail");
 
+my $sleeptime = 0;
+
+$sleeptime = $cfg->val("LOCAL", "rndRegister", "0") if($random);
 
 my $dbh = undef;
 
@@ -110,7 +115,7 @@ eval
 {
     my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, 
                                        log => $LOG, nccemail => $nccEmail);
-    my $err = $nccreg->NCCRegister();
+    my $err = $nccreg->NCCRegister($sleeptime);
     if($err != 0)
     {
         if(!SMT::Utils::unLock("smt-register"))

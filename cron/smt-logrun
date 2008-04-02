@@ -21,7 +21,12 @@ then
   do
     if [ -x ${SMTCMD}-${JOB} ]
     then
-      ${SMTCMD}-${JOB} -L ${LOGDIR}/smt-${JOB}.log
+      if [ ${JOB} = "register" ]
+      then
+        ${SMTCMD}-${JOB} -r -L ${LOGDIR}/smt-${JOB}.log
+      else
+        ${SMTCMD}-${JOB} -L ${LOGDIR}/smt-${JOB}.log
+      fi
     else
       echo "WARNING: Could not find the SMT binary ${SMTCMD}-${JOB}"
       echo "         Please make sure SMT is properly installed."

@@ -119,6 +119,7 @@ sub new
 sub NCCRegister
 {
     my $self = shift;
+    my $sleeptime = shift;
     
     my $errors = 0;
     
@@ -137,6 +138,14 @@ sub NCCRegister
     eval
     {
         my $guids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE || NCCREGDATE IS NULL");
+
+        if(@{$guids} > 0)
+        {
+            # we have something to register, check for random sleep value
+            sleep(int($sleeptime));
+            
+            printLog($self->{LOG}, "info", sprintf("Register %s new clients.", $#{@$guids}+1 ));
+        }
         
         foreach my $guid (@{$guids})
         {
