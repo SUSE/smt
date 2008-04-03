@@ -159,7 +159,7 @@ sub renderReport($$)
         my @valbody  = [];
 
         # add heading if defined        
-        $res .= defined $heading ? escapeCSVRow($heading)."\n":'';
+        $res .= defined $heading ? escapeCSVRow([$heading])."\n":'';
 
         # add title/cols row
         $res .= escapeCSVRow(\@{$data{'cols'}});
