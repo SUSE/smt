@@ -3,6 +3,20 @@
 ## Copyright (c) 2007 Novell Inc.
 ###########################################################################
 
+#
+# exit codes in "smt-db":
+#
+# 1 : cannot disable echo mode 
+# 2 : Cannot read the SMT configuration file
+# 3 : Invalid Database configuration. Missing value for DB/config
+# 4 : Cannot connect to database (wrong mysql root password?)
+# 5 : SMT database already exists
+# 6 : Passwords do not match. (for smt user)
+# 7 : Cannot create Database smt
+#
+# 20: Could not connect to the database(with smt user - wrong password?)
+# 21: Database migration failed
+
 use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
@@ -22,7 +36,8 @@ sub db_connect
     if(!defined $cfg)
     {
         # FIXME: is die correct here?
-        die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
+        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), @Config::IniFiles::errors);
+	exit 2;
     }
     
     my $config = $cfg->val('DB', 'config');
@@ -31,7 +46,8 @@ sub db_connect
     if(!defined $config || $config eq "")
     {
         # FIXME: is die correct here?
-        die __("Invalid Database configuration. Missing value for DB/config.");
+        print STDERR __("Invalid Database configuration. Missing value for DB/config.\n");
+	exit 3;
     }
      
     my $dbh    = DBIx::Transaction->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});
@@ -54,7 +70,8 @@ sub migrate
     my $dbh;
     if ( not $dbh=db_connect() )
     {
-        die __("ERROR: Could not connect to the database");
+        print STDERR __("ERROR: Could not connect to the database.\n");
+	return 20;
     }
 
 
@@ -71,9 +88,10 @@ sub migrate
     };
     if($@)
     {
-	die "Installing database failed! $@";
+	print STDERR "Installing database failed! $@\n";
+	return 21;
     }
-    exit 0;
+    return 0;
 }
 
 sub setup
@@ -84,7 +102,11 @@ sub setup
     my $smtpass = "";
     
     print "mysql password for user $username: ";
-    system("stty -echo") == 0 or die "Can not disable echo mode: $!";
+    system("stty -echo") == 0 or do
+    {
+	   print STDERR "Can not disable echo mode: $!\n";
+	   return 1;
+    };
     chomp($password = <STDIN>);
     system("stty echo");
     print "\n";
@@ -92,19 +114,27 @@ sub setup
     my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
     if(!defined $cfg)
     {
-        # FIXME: is die correct here?
-        die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
+        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), @Config::IniFiles::errors);
+	return 2;
     }
     
     my $config = $cfg->val('DB', 'config');
     if(!defined $config || $config eq "")
     {
-        # FIXME: is die correct here?
-        die __("Invalid Database configuration. Missing value for DB/config.");
+        print STDERR __("Invalid Database configuration. Missing value for DB/config.\n");
+	return 3;
     }
     $config =~ s/database=smt/database=/;
     
-    my $dbh    = DBI->connect($config, $username, $password, {RaiseError => 1, AutoCommit => 1});
+    my $dbh    = undef;
+    eval {
+    	$dbh    = DBI->connect($config, $username, $password, {RaiseError => 1, AutoCommit => 1});
+    };
+    if($@)
+    {
+	    print STDERR "Cannot connect to database: $@\n";
+	    return 4;
+    }
     
     my $r = $dbh->selectcol_arrayref("show databases");
     my $found = 0;
@@ -116,14 +146,18 @@ sub setup
     
     if($found)
     {
-        die "SMT database already exists.";
+        print STDERR "SMT database already exists.\n";
+	return 5;
     }
     
     print "Enter a new username for the smt database: ";
     chomp($smtuser = <STDIN>);
     
     print "New password for user $smtuser: ";
-    system("stty -echo") == 0 or die "Can not disable echo mode: $!";
+    system("stty -echo") == 0 or do {
+	   print STDERR "Can not disable echo mode: $!\n";
+	   return 1;
+    };
     chomp($smtpass = <STDIN>);
     system("stty echo");
     print "\n";
@@ -131,20 +165,25 @@ sub setup
     my $smtpassV = "";
     
     print "Repeat password for user $smtuser: ";
-    system("stty -echo") == 0 or die "Can not disable echo mode: $!";
+    system("stty -echo") == 0 or do {
+	   print STDERR "Can not disable echo mode: $!\n";
+	   return 1;
+    };
     chomp($smtpassV = <STDIN>);
     system("stty echo");
     print "\n";
     
     if($smtpass ne $smtpassV)
     {
-        die "Passwords do not match.";
+        print STDERR "Passwords do not match.\n";
+	return 6;
     }
 
     $r = $dbh->do("create database if not exists smt");
     if($r != 1)
     {
-        die "Cannot create Database smt";
+        print STDERR "Cannot create Database smt.\n";
+	return 7;
     }
     
     $r = $dbh->do("grant all on smt.* to $smtuser\@localhost identified by '$smtpass'");
@@ -153,7 +192,7 @@ sub setup
     $cfg->setval('DB', 'pass', $smtpass);
     $cfg->WriteConfig("/etc/smt.conf");
     
-    return;
+    return 0;
 }
 
 
@@ -171,8 +210,16 @@ if (defined $ARGV[0] )
     }
     elsif ( $cmd eq "setup" )
     {
-        setup();
-        migrate();
+        my $ret = setup();
+	if($ret != 0)
+	{
+		exit $ret;
+	}
+        $ret = migrate();
+	if($ret != 0)
+	{
+	        exit $ret;
+	}
     }
 }
 else
