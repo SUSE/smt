@@ -100,6 +100,7 @@ sub cpw
 
     my $smtpass  = "";
     my $smtpassV = "";
+    my $host     = "localhost";
 
     my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
     if(!defined $cfg)
@@ -114,9 +115,13 @@ sub cpw
         print STDERR __("Invalid Database configuration. Missing value for DB/config.\n");
         return 3;
     }
+    if($config =~ /host=([^;]+)/)
+    {
+	    $host = $1;
+    }
     my $user = $cfg->val('DB', 'user');
     my $oldpw = "";
-    print "Old password for $user user: ";
+    print "Old password for $user\@$host user: ";
     if($opt ne "--yast")
     {
         system("stty -echo") == 0 or do {
@@ -138,7 +143,7 @@ sub cpw
             return 4;
     }
 
-    print "New password for $user user: ";
+    print "New password for $user\@$host user: ";
     if($opt ne "--yast")
     {
         system("stty -echo") == 0 or do {
@@ -150,7 +155,7 @@ sub cpw
     system("stty echo") if($opt ne "--yast");
     print "\n";
 
-    print "Repeat new password for $user user: ";
+    print "Repeat new password for $user\@$host user: ";
     if($opt ne "--yast")
     {
         system("stty -echo") == 0 or do {
@@ -168,7 +173,7 @@ sub cpw
         return 6;
     }
 
-    $dbh->do("SET PASSWORD FOR $user\@localhost=PASSWORD('$smtpass');");
+    $dbh->do("SET PASSWORD FOR $user\@$host=PASSWORD('$smtpass');");
 
     $cfg->setval('DB', 'user', $user);
     $cfg->setval('DB', 'pass', $smtpass);
@@ -184,7 +189,8 @@ sub setup
     my $password = "";
     my $smtuser  = "smt";
     my $smtpass  = "";
-    
+    my $host     = "localhost";
+
     print "mysql password for user $username: ";
     if($opt ne "--yast")
     {
@@ -212,7 +218,11 @@ sub setup
 	return 3;
     }
     $config =~ s/database=smt/database=/;
-    
+    if($config =~ /host=([^;]+)/)
+    {
+	$host = $1;
+    }
+
     my $dbh    = undef;
     eval {
     	$dbh    = DBI->connect($config, $username, $password, {RaiseError => 1, AutoCommit => 1});
@@ -279,7 +289,7 @@ sub setup
 	return 7;
     }
     
-    $r = $dbh->do("grant all on smt.* to $smtuser\@localhost identified by '$smtpass'");
+    $r = $dbh->do("grant all on smt.* to $smtuser\@$host identified by '$smtpass'");
     
     $cfg->setval('DB', 'user', $smtuser);
     $cfg->setval('DB', 'pass', $smtpass);
