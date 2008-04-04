@@ -96,19 +96,23 @@ sub migrate
 
 sub setup
 {
+    my $opt      = shift;
     my $username = "root";
     my $password = "";
-    my $smtuser = "smt";
-    my $smtpass = "";
+    my $smtuser  = "smt";
+    my $smtpass  = "";
     
     print "mysql password for user $username: ";
-    system("stty -echo") == 0 or do
+    if($opt ne "--yast")
     {
-	   print STDERR "Can not disable echo mode: $!\n";
-	   return 1;
-    };
+    	system("stty -echo") == 0 or do
+    	{
+		   print STDERR "Can not disable echo mode: $!\n";
+		   return 1;
+    	};
+    }
     chomp($password = <STDIN>);
-    system("stty echo");
+    system("stty echo") if($opt ne "--yast");
     print "\n";
     
     my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
@@ -154,23 +158,29 @@ sub setup
     chomp($smtuser = <STDIN>);
     
     print "New password for user $smtuser: ";
-    system("stty -echo") == 0 or do {
-	   print STDERR "Can not disable echo mode: $!\n";
-	   return 1;
-    };
+    if($opt ne "--yast")
+    {
+    	system("stty -echo") == 0 or do {
+		   print STDERR "Can not disable echo mode: $!\n";
+	   	return 1;
+    	};
+    }
     chomp($smtpass = <STDIN>);
-    system("stty echo");
+    system("stty echo") if($opt ne "--yast");
     print "\n";
     
     my $smtpassV = "";
     
     print "Repeat password for user $smtuser: ";
-    system("stty -echo") == 0 or do {
-	   print STDERR "Can not disable echo mode: $!\n";
-	   return 1;
-    };
+    if($opt ne "--yast")
+    {
+    	system("stty -echo") == 0 or do {
+		print STDERR "Can not disable echo mode: $!\n";
+	   	return 1;
+    	};
+    }
     chomp($smtpassV = <STDIN>);
-    system("stty echo");
+    system("stty echo") if($opt ne "--yast");
     print "\n";
     
     if($smtpass ne $smtpassV)
@@ -210,7 +220,12 @@ if (defined $ARGV[0] )
     }
     elsif ( $cmd eq "setup" )
     {
-        my $ret = setup();
+	my $opt = "";
+	if (defined $ARGV[0] )
+	{
+		$opt = shift(@ARGV);
+	}
+        my $ret = setup($opt);
 	if($ret != 0)
 	{
 		exit $ret;
