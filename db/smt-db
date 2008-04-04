@@ -94,6 +94,89 @@ sub migrate
     return 0;
 }
 
+sub cpw
+{
+    my $opt      = shift;
+
+    my $smtpass  = "";
+    my $smtpassV = "";
+
+    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
+    if(!defined $cfg)
+    {
+        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), @Config::IniFiles::errors);
+        return 2;
+    }
+
+    my $config = $cfg->val('DB', 'config');
+    if(!defined $config || $config eq "")
+    {
+        print STDERR __("Invalid Database configuration. Missing value for DB/config.\n");
+        return 3;
+    }
+    my $user = $cfg->val('DB', 'user');
+    my $oldpw = "";
+    print "Old password for $user user: ";
+    if($opt ne "--yast")
+    {
+        system("stty -echo") == 0 or do {
+                   print STDERR "Can not disable echo mode: $!\n";
+                return 1;
+        };
+    }
+    chomp($oldpw = <STDIN>);
+    system("stty echo") if($opt ne "--yast");
+    print "\n";
+
+    my $dbh    = undef;
+    eval {
+        $dbh    = DBI->connect($config, $user, $oldpw, {RaiseError => 1, AutoCommit => 1});
+    };
+    if($@)
+    {
+            print STDERR "Cannot connect to database: $@\n";
+            return 4;
+    }
+
+    print "New password for $user user: ";
+    if($opt ne "--yast")
+    {
+        system("stty -echo") == 0 or do {
+                   print STDERR "Can not disable echo mode: $!\n";
+                return 1;
+        };
+    }
+    chomp($smtpass = <STDIN>);
+    system("stty echo") if($opt ne "--yast");
+    print "\n";
+
+    print "Repeat new password for $user user: ";
+    if($opt ne "--yast")
+    {
+        system("stty -echo") == 0 or do {
+                print STDERR "Can not disable echo mode: $!\n";
+                return 1;
+        };
+    }
+    chomp($smtpassV = <STDIN>);
+    system("stty echo") if($opt ne "--yast");
+    print "\n";
+
+    if($smtpass ne $smtpassV)
+    {
+        print STDERR "Passwords do not match.\n";
+        return 6;
+    }
+
+    $dbh->do("SET PASSWORD FOR $user\@localhost=PASSWORD('$smtpass');");
+
+    $cfg->setval('DB', 'user', $user);
+    $cfg->setval('DB', 'pass', $smtpass);
+    $cfg->WriteConfig("/etc/smt.conf");
+
+    return 0;
+}
+
 sub setup
 {
     my $opt      = shift;
@@ -235,6 +318,19 @@ if (defined $ARGV[0] )
 	{
 	        exit $ret;
 	}
+    }
+    elsif ( $cmd eq "cpw" )
+    {
+	my $opt = "";
+        if (defined $ARGV[0] )
+        {
+                $opt = shift(@ARGV);
+        }
+	my $ret = cpw($opt);
+	if($ret != 0)
+        {
+                exit $ret;
+        }
     }
 }
 else
