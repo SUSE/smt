@@ -3,6 +3,8 @@ Tue Apr  8 13:40:12 CEST 2008 - locilka@suse.cz
 
 - Added smt-db call to the Write() function.
 - Added SCR agent for handling /etc/my.cnf.
+- Fixed location of REPORT/reportEmail.
+- 2.13.6
 
 -------------------------------------------------------------------
 Mon Mar 31 10:14:55 CEST 2008 - locilka@suse.cz

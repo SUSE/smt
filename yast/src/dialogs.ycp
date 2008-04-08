@@ -431,10 +431,10 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
     list <string> report_e_mails = [];
 
     void InitReportEmails () {
-	string reportEmail = SMTData::GetCredentials ("LOCAL", "reportEmail");
+	string reportEmail = SMTData::GetCredentials ("REPORT", "reportEmail");
 
 	if (reportEmail == nil) {
-	    y2warning ("LOCAL/reportEmail not defined yet");
+	    y2warning ("REPORT/reportEmail not defined yet");
 	    reportEmail = "";
 	}
 
@@ -445,7 +445,7 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
     }
 
     void StoreReportEmails () {
-	SMTData::SetCredentials ("LOCAL", "reportEmail", mergestring (report_e_mails, ","));
+	SMTData::SetCredentials ("REPORT", "reportEmail", mergestring (report_e_mails, ","));
     }
 
     void RedrawReportEmailsTable () {

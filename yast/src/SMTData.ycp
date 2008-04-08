@@ -249,19 +249,13 @@
 	    SetCredentials ("NU", one_entry, (string) SCR::Read (add (.smt_conf.value.NU, one_entry)));
 	});
 
-	all_credentials["LOCAL"] = $[];
-
 	foreach (string one_entry, ["nccEmail", "url"], {
 	    SetCredentials ("LOCAL", one_entry, (string) SCR::Read (add (.smt_conf.value.LOCAL, one_entry)));
 	});
 
-	all_credentials["REPORT"] = $[];
-
 	foreach (string one_entry, ["reportEmail"], {
 	    SetCredentials ("REPORT", one_entry, (string) SCR::Read (add (.smt_conf.value.REPORT, one_entry)));
 	});
-
-	all_credentials["DB"] = $[];
 
 	foreach (string one_entry, ["user", "pass"], {
 	    SetCredentials ("DB", one_entry, (string) SCR::Read (add (.smt_conf.value.DB, one_entry)));
