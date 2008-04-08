@@ -636,17 +636,22 @@ Press Retry to try again."),
 	    return true;
 	}
 
+	// max_connections
+	SCR::Write(.smt_mysql.value.mysqld.max_connections, "500");
+	SCR::Write(.smt_mysql, nil);
+
 	if (! Service::Start (smt_database)) {
 	    y2error ("Cannot start database");
 	    return false;
 	}
 
 	// check whether mysql root password is empty
-	boolean root_password_empty = ((integer) SCR::Execute (.target.bash, "echo 'show databases;' | mysql -u root") == 0);
+	boolean root_password_empty = ((integer) SCR::Execute (.target.bash, "echo 'show databases;' | mysql -u root 2>/dev/null") == 0);
 
 	if (root_password_empty) {
 	    y2warning ("mysql root password is empty");
 	} else {
+	    y2milestone ("mysql root password is not empty, asking for it...");
 	    mysql_root_password = AskForRootPassword (_("SMT needs to set the database up."));
 	    if (mysql_root_password == nil) {
 		y2error ("Root password not provided");

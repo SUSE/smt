@@ -2,6 +2,7 @@
 Tue Apr  8 13:40:12 CEST 2008 - locilka@suse.cz
 
 - Added smt-db call to the Write() function.
+- Added SCR agent for handling /etc/my.cnf.
 
 -------------------------------------------------------------------
 Mon Mar 31 10:14:55 CEST 2008 - locilka@suse.cz

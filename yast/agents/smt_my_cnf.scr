@@ -1,0 +1,40 @@
+/**
+ * File:
+ *   smt_conf.scr
+ * Summary:
+ *   SCR Agent for reading/writing /etc/my.cnf
+ *   using the ini-agent
+ * Access:
+ *   read/write
+ * Authors:
+ *   Lukas Ocilka <locilka@suse.cz>
+ *
+ * $Id$
+ *
+ * Read/Sets the values defined in /etc/my.cnf.
+ */
+.smt_mysql
+
+`ag_ini(
+  `IniAgent(
+    "/etc/my.cnf",
+    $[
+      "comments": [ "^[ \t]*#.*", "#.*", "^[ \t]*$" ],
+      "sections" : [
+        $[
+    	    "begin" : [ "^[ \t]*\\[[ \t]*(.*[^ \t])[ \t]*\\][ \t]*", "[%s]" ],
+        ],
+      ],
+      "params" : [
+        $[
+    	    // key_buffer = 16M
+    	    "match" : [ "^[ \t]*([^=]*[^ \t=])[ \t]*=[ \t]*(.*[^ \t]|)[ \t]*$", "%s = %s"],
+        ],
+        $[
+	    // skip-networking
+    	    "match" : [ "^[ \t]*([^=]*[^ \t])([^ \t]*)$", "%s%s"],
+        ],
+      ],
+    ]
+  )
+)
