@@ -5,7 +5,7 @@ NUPass=
 
 [DB]
 config=dbi:mysql:database=smt;host=localhost
-user=root
+user=smt
 pass=
 
 [LOCAL]
