@@ -214,10 +214,12 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Writing SMT Configuration"),
 	    " ",
-	    6,
+	    7,
 	    [
-		// TRANSLATORS: Progress step
 		_("Adjust SMT configuration"),
+		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress step
+		_("Adjust database configuration"),
 		// TRANSLATORS: Progress step
 		_("Check and install server certificate"),
 		// TRANSLATORS: Progress step
@@ -232,6 +234,8 @@
 	    [
 		// TRANSLATORS: Progress step
 		_("Adjusting SMT configuration..."),
+		// TRANSLATORS: Progress step
+		_("Adjusting database configuration..."),
 		// TRANSLATORS: Progress step
 		_("Checking and installing server certificate..."),
 		// TRANSLATORS: Progress step
@@ -249,10 +253,16 @@
 	Wizard::SetTitleIcon("yast");
 	Wizard::RestoreHelp(HELPS["write"]:"");
 
+	SMTData::WriteCredentials();
+
 	Progress::NextStage();
 	sleep (sl);
 
-	SMTData::WriteCredentials();
+	Progress::NextStage();
+	sleep (sl);
+
+	// uses credentials
+	SMTData::WriteDatabaseSettings();
 
 	Progress::NextStage();
 	sleep (sl);

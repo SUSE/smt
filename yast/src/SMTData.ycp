@@ -47,6 +47,8 @@
 
     list <string> smt_services = ["smt"];
 
+    string smt_database = "mysql";
+
     /**
      * Returns list of scheduled NU mirrorings.
      *
@@ -524,6 +526,169 @@ Server certificate is vitally important for NU server to support SSL."),
 	    } else {
 		ret = true;
 		break;
+	    }
+	}
+
+	return ret;
+    }
+
+    string AskForRootPassword (string message) {
+	string ret = nil;
+
+	UI::OpenDialog (`VBox (
+	    `VSpacing (1),
+	    `HBox (
+		`HSpacing (2),
+		`VBox (
+		    (message != "" && message != nil ?
+			`VBox (`Label (message), `VSpacing (1))
+			:
+			`Empty()
+		    ),
+		    `Password (`id (`root_password), _("Enter the MySQL root &Password"))
+		),
+		`HSpacing (2)
+	    ),
+	    `VSpacing (1),
+	    `HBox (
+		`PushButton (`id (`ok), Label::OKButton()),
+		`HSpacing (2),
+		`PushButton (`id (`cancel), Label::CancelButton())
+	    ),
+	    `VSpacing (1)
+	));
+
+	any user_ret = UI::UserInput();
+	if (user_ret == `ok) {
+	    ret = (string) UI::QueryWidget (`id (`root_password), `Value);
+	}
+
+	UI::CloseDialog();
+
+	return ret;
+    }
+
+    string mysql_root_password = "";
+
+    /**
+     * @return boolean whether to try again
+     */
+    boolean HandleSMTDBSetupRetcode (integer retcode_was) {
+	// 2 : Cannot read the SMT configuration file
+	if (retcode_was == 2) {
+	    return Report::AnyQuestion (
+		sformat (_("Unable to read %1"), "/etc/smt.conf"),
+		_("SMT was unable to read the configuration file.
+Please, check the file and press Retry button.
+
+To skip this, press Skip button."),
+		_("&Retry"),
+		_("&Skip"),
+		`yes_button
+	    );
+
+	// 4 : Cannot connect to database (wrong mysql root password?)
+	} else if (retcode_was == 4) {
+	    mysql_root_password = AskForRootPassword (_("SMT was unable to connect to database.
+The root password was probably wrong."));
+	    if (mysql_root_password != nil)
+		return true;
+	    else
+		return false;
+
+	// 5 : SMT database already exists
+	} else if (retcode_was == 5) {
+	    y2milestone ("SMT database already exists");
+	    return false;
+
+	// 7 : Cannot create Database smt
+	} else if (retcode_was == 7) {
+	    return Report::AnyQuestion (
+		_("Cannot create database"),
+		_("SMT was unable to create the database.
+Press Retry to try again."),
+		_("&Retry"),
+		_("&Skip"),
+		`yes_button
+	    );
+
+	// 21: Database migration failed
+	} else if (retcode_was == 21) {
+	    return Report::AnyQuestion (
+		_("Database migration failed"),
+		_("SMT has failed to migrate the database.
+Press Retry to try again."),
+		_("&Retry"),
+		_("&Skip"),
+		`yes_button
+	    );
+
+	} else {
+	    y2warning ("Return code %1 not handled", retcode_was);
+	}
+
+	return false;
+    }
+
+    global boolean WriteDatabaseSettings () {
+	if (! GetSMTServiceStatus()) {
+	    y2milestone ("SMT is disabled, not adjusting database...");
+	    return true;
+	}
+
+	if (! Service::Start (smt_database)) {
+	    y2error ("Cannot start database");
+	    return false;
+	}
+
+	// check whether mysql root password is empty
+	boolean root_password_empty = ((integer) SCR::Execute (.target.bash, "echo 'show databases;' | mysql -u root") == 0);
+
+	if (root_password_empty) {
+	    y2warning ("mysql root password is empty");
+	} else {
+	    mysql_root_password = AskForRootPassword (_("SMT needs to set the database up."));
+	    if (mysql_root_password == nil) {
+		y2error ("Root password not provided");
+		return false;
+	    }
+	}
+
+	// /usr/lib/SMT/smt-db setup --yast
+	// * mysql root password
+	// * smt user name
+	// * smt user password
+	// * verify smt user password
+	string smt_db_command = sformat (
+	    "%1\n%2\n%3\n%4\n",
+	    mysql_root_password,
+	    GetCredentials ("DB","user"),
+	    GetCredentials ("DB","pass"),
+	    GetCredentials ("DB","pass")
+	);
+
+	string smt_command_file = sformat ("%1/smt-command-filename", Directory::tmpdir);
+	SCR::Write (.target.string, smt_command_file, "");
+	// rw only for owner
+	SCR::Execute (.target.bash, sformat ("chmod 0600 '%1'", String::Quote (smt_command_file)));
+	SCR::Write (.target.string, smt_command_file, smt_db_command);
+
+	boolean ret = false;
+
+	while (true) {
+	    y2milestone ("Calling smt-db setup");
+	    integer retcode = (integer) SCR::Execute (.target.bash, sformat ("/usr/lib/SMT/bin/smt-db setup --yast < '%1'", smt_command_file));
+	    y2milestone ("smt-db setup returned: %1", retcode);
+
+	    if (retcode == 0) {
+		y2milestone ("Success");
+		ret = true;
+		break;
+	    } else {
+		if (! HandleSMTDBSetupRetcode (retcode)) {
+		    y2milestone ("Finishing SMT-DB setup");
+		    break;
+		}
 	    }
 	}
 
