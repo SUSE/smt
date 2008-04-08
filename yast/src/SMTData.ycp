@@ -49,6 +49,8 @@
 
     string smt_database = "mysql";
 
+    string max_mysql_connections = "160";
+
     /**
      * Returns list of scheduled NU mirrorings.
      *
@@ -631,7 +633,7 @@ Press Retry to try again."),
 	}
 
 	// max_connections
-	SCR::Write(.smt_mysql.value.mysqld.max_connections, "500");
+	SCR::Write(.smt_mysql.value.mysqld.max_connections, max_mysql_connections);
 	SCR::Write(.smt_mysql, nil);
 
 	if (! Service::Start (smt_database)) {
