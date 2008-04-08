@@ -6,15 +6,7 @@ TODO:
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
 
-- yast module:
-  maybe set max_connections=160 in /etc/my.cnf
-  needs some disuccion.
-  AI: needs WHAT?
-
-- yast module: reset/set mysql root password, create yep user, set yep 
-  configuration file and make sure only www-run can read it (part of the init 
-  script?)
-  (default permissions of smt.conf are now 640, wwwrun, root)
+- default permissions of smt.conf are now 640, wwwrun, root
   -- Which means that getting the content of the file is quite trivial with
      user html directories and mod_perl or mod_php or ...
      User can easily create some script which is executed by accessing it over
@@ -299,5 +291,9 @@ About nccEmail: here is the help text which come from NCC if you enter
   The reason is, that not all SMT server in the world start
   requesting things from NCC at the same time.
 
+- yast module:
+  maybe set max_connections=160 in /etc/my.cnf
+  needs some disuccion.
 
+- yast module: reset/set mysql root password, create yep user
 
