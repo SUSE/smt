@@ -24,7 +24,7 @@ use lib ("/srv/www/perl-lib/");
 use SMT::Utils;
 use DBIx::Migration::Directories;
 use DBIx::Transaction;
-
+use Config::IniFiles;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
