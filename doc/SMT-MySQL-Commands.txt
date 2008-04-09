@@ -1,5 +1,6 @@
 
-mysqladmin -u root -p oldpassword newpass
+mysqladmin -u root password "<here the new password>"
+(this command failes, if the root password is not empty)
 
 or sql command:
 SET PASSWORD FOR root@localhost=PASSWORD('rubberchicken');
