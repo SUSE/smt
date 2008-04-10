@@ -53,6 +53,16 @@ smt_cronfiles="novell.com-smt"
 action="$1"
 exit_code=0
 
+function mysql_config () {
+    if ! grep max_connections /etc/my.cnf >/dev/null 2>&1; then
+	TMPFILE=`mktemp /etc/my.cnf.XXXXXXXXXX`
+	cp /etc/my.cnf $TMPFILE
+	cat $TMPFILE | sed 's/\[mysqld\]/[mysqld]\nmax_connections=160/' > /etc/my.cnf
+	rm -f $TMPFILE
+	echo "Changing max_connections for mysqld"
+    fi
+}
+
 function adjust_services () {
     for service in ${services}; do
         rc${service} ${action}
@@ -267,6 +277,7 @@ case "$action" in
     # starts the SMT service (symlinks apache configuration)
     start*)
 	action="reload"
+	mysql_config
 	link_smt_plugins
 	check_copy_cert
 	adjust_services
