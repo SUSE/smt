@@ -27,6 +27,7 @@ Requires:       perl-IO-Zlib
 Requires:       perl-URI
 Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
+Requires:       perl-MIME-Lite
 Requires:	limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
 Requires:	perl-DBIx-Transaction
