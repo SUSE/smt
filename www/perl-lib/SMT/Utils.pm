@@ -366,7 +366,7 @@ sub sendMailToAdmins
                                'Type'    => 'multipart/mixed'
                              );
 
-    # attach asciitable rendered report as mail body
+    # attach message as mail body
     $msg->attach( 'Type' => 'TEXT',
                   'Data' => $message
                 );
@@ -374,7 +374,6 @@ sub sendMailToAdmins
 
     if (defined $attachments  &&  scalar(keys %{$attachments} ) > 0 )
     {
-        #while ( my ($filename, $data) = each(%{$attachments} )  )
         foreach my $filename ( sort keys %{$attachments})
         {
             $msg->attach( 'Type'        =>'text/csv',
