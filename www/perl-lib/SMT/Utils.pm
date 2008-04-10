@@ -326,7 +326,7 @@ sub sendMailToAdmins
     # create the mail config
     my $mtype = 'sendmail';   # default to send eMail directly
 
-    if (defined $relay{'server'}  &&  $relay{'server'} != '')
+    if (defined $relay{'server'}  &&  $relay{'server'} ne '')
     {
         # switch to smtp if a relay is defined
         $mtype = 'smtp';
