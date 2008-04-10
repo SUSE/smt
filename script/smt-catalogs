@@ -105,12 +105,12 @@ if ( defined($domirror) )
       }
 }
 
-if (defined $name )
+if (defined $name && $name ne "")
 {
   $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($name) );
 }
 # if target was given, limit the search even more
-if (defined $target )
+if (defined $target && $target ne "")
 {
   $sql = $sql . sprintf(" and TARGET=%s", $dbh->quote($target) );
 }

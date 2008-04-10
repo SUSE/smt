@@ -40,7 +40,20 @@ sub executeCommand
   my @options = @_;
 
   my $exec = "/usr/sbin/smt-$name";
-  my $cmd = "$exec " . join(" ", @options);
+  #my $cmd = "$exec " . join(" ", @options);
+  my $cmd = "$exec ";
+  foreach (@options)
+  {
+    if($_ eq "")
+    {
+      $cmd .= "'' ";
+    }
+    else
+    {
+      $cmd .= "$_ ";
+    }
+  }
+
   #print "execute '$cmd'\n";
   if ( -e $exec )
   {
