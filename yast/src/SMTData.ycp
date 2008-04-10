@@ -626,6 +626,89 @@ Press Retry to try again."),
 	return false;
     }
 
+    string AskForNewRootPassword () {
+	string ret = nil;
+
+	UI::OpenDialog (`VBox (
+	    `VSpacing (1),
+	    `HBox (
+		`HSpacing (2),
+		`VBox (
+		    `Label (_("The current MySQL root password is empty.
+
+For security reasons, please, set a new one.")),
+		    `VSpacing (1),
+		    `Password (`id (`new_root_password_1), _("New MySQL root &Password")),
+		    `Password (`id (`new_root_password_2), _("New Password &Again"))
+		),
+		`HSpacing (2)
+	    ),
+	    `VSpacing (1),
+	    `HBox (
+		`PushButton (`id (`ok), Label::OKButton()),
+		`HSpacing (2),
+		`PushButton (`id (`cancel), Label::CancelButton())
+	    ),
+	    `VSpacing (1)
+	));
+
+	while (true) {
+	    any user_ret = UI::UserInput();
+
+	    if (user_ret == `cancel) {
+		ret = nil;
+		break;
+	    } else if (user_ret == `ok) {
+		string pass_1 = (string) UI::QueryWidget (`id (`new_root_password_1), `Value);
+		string pass_2 = (string) UI::QueryWidget (`id (`new_root_password_2), `Value);
+
+		if (pass_1 == nil || pass_1 == "") {
+		    UI::SetFocus (`id (`new_root_password_1));
+		    Report::Error (_("Set up a new password, please."));
+		    continue;
+		} else if (pass_1 != pass_2) {
+		    UI::SetFocus (`id (`new_root_password_2));
+		    Report::Error (_("The first and the second passwords do not match."));
+		    continue;
+		}
+
+		y2milestone ("New password provided");
+		ret = pass_1;
+		break;
+	    }
+	}
+
+	UI::CloseDialog();
+
+	return ret;
+    }
+
+    boolean SetNewRootPassword (string new_mysql_root_password) {
+	y2milestone ("Adjusting new root password");
+
+	string mysql_command = sformat (
+	    "SET PASSWORD FOR root@localhost=PASSWORD('%1');",
+	    String::Quote (new_mysql_root_password)
+	);
+
+	string mysql_command_file = sformat ("%1/smt-rootpass-filename", Directory::tmpdir);
+	SCR::Write (.target.string, mysql_command_file, "");
+	// rw only for owner
+	SCR::Execute (.target.bash, sformat ("chmod 0600 '%1'", String::Quote (mysql_command_file)));
+	SCR::Write (.target.string, mysql_command_file, mysql_command);
+
+	string cmd_cmd = sformat ("mysql -u root < '%1'", mysql_command_file);
+	map cmd = (map) SCR::Execute (.target.bash_output, cmd_cmd);
+	if (cmd["exit"]:-1 != 0) {
+	    y2error ("Cannot set new root password: %1", cmd);
+	    Report::Error (_("Setting up new MySQL root password failed."));
+	    return false;
+	}
+
+	y2milestone ("Successful %1", cmd);
+	return true;
+    }
+
     global boolean WriteDatabaseSettings () {
 	if (! GetSMTServiceStatus()) {
 	    y2milestone ("SMT is disabled, not adjusting database...");
@@ -644,8 +727,28 @@ Press Retry to try again."),
 	// check whether mysql root password is empty
 	boolean root_password_empty = ((integer) SCR::Execute (.target.bash, "echo 'show databases;' | mysql -u root 2>/dev/null") == 0);
 
+	// root password is empty
+	// ask user to set a new one
 	if (root_password_empty) {
-	    y2warning ("mysql root password is empty");
+	    // exception: SMT user is root
+	    if (GetCredentials ("DB","user") == "root") {
+		y2warning ("SMT user is root, using root's new password");
+		mysql_root_password = GetCredentials ("DB","pass");
+	    } else {
+		y2warning ("mysql root password is empty");
+		mysql_root_password = AskForNewRootPassword();
+
+		if (mysql_root_password == nil) {
+		    y2error ("New password not provided");
+		    return false;
+		}
+	    }
+
+	    if (! SetNewRootPassword (mysql_root_password)) {
+		y2warning ("Unable to set new root password, using empty one");
+		mysql_root_password = "";
+	    }
+	// root password has been already set
 	} else {
 	    y2milestone ("mysql root password is not empty, asking for it...");
 	    mysql_root_password = AskForRootPassword (_("SMT needs to set the database up."));

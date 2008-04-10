@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Apr 10 10:48:20 CEST 2008 - locilka@suse.cz
+
+- If MySQL root password is not set, user is asked to set it. In
+  case of smt-user is root, the new smt-user's password is used.
+- 2.13.7
+
+-------------------------------------------------------------------
 Tue Apr  8 13:40:12 CEST 2008 - locilka@suse.cz
 
 - Added smt-db call to the Write() function.
