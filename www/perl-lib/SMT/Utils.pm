@@ -8,6 +8,9 @@ use DBI qw(:sql_types);
 use Fcntl;
 use IO::File;
 
+use MIME::Lite;  # sending eMails
+use Net::SMTP;   # sending eMails via smtp relay
+
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
@@ -253,8 +256,10 @@ sub printLog
     my $LOG      = shift;
     my $category = shift;
     my $message  = shift;
-    my $doprint  = shift || 1;
-    my $dolog    = shift || 1;
+    my $doprint  = shift;
+    my $dolog    = shift;
+    if (! defined $doprint) { $doprint = 1 }
+    if (! defined $dolog)   { $doprint = 1 }
 
     if($doprint)
     {
@@ -286,33 +291,121 @@ sub printLog
 #
 sub sendMailToAdmins
 {
-    # not yet finished
-    return;
-
     my $message = shift;
-    if (! defined $message)
-    {
-        return;
-    }
-
+    my $attachments = shift;
+    if (! defined $message)  { return; }
+    
     my $cfg = getSMTConfig;
 
-    my $addresses = $cfg->val('LOCAL', 'reportEmail');
-    my @aList = split(/,/, $addresses);
-    my @addressList = undef;
-    foreach my $val (@aList)
+    my $getReportEmail = $cfg->val('REPORT', 'reportEmail');
+    my @reportEmailList = split(/,/, $getReportEmail);
+    my @addressList = ();
+    foreach my $val (@reportEmailList)
     {
-        if ($val =~ //  #&&
-           # validate that eMail-address is valid
-                             )
-        { push @addressList, $val; }
+        $val =~ s/^\s*//;
+        $val =~ s/\s*$//;
+
+        push @addressList, $val;
+    }
+    if (length(@addressList) < 1 )  { return; }
+    my $reportEmailTo = join(', ', @addressList);
+
+    # read config for smtp relay
+    my %relay = ();
+    $relay{'server'}    = $cfg->val('REPORT', 'mailServer');
+    $relay{'port'}      = $cfg->val('REPORT', 'mailServerPort');
+    $relay{'user'}      = $cfg->val('REPORT', 'mailServerUser');
+    $relay{'password'}  = $cfg->val('REPORT', 'mailServerPassword');
+    my $reportEmailFrom = $cfg->val('REPORT', 'reportEmailFrom');
+
+    if (! defined $reportEmailFrom  || $reportEmailFrom eq '')
+    { $reportEmailFrom = "$ENV{'USER'}\@".`/bin/hostname --fqdn`; }
+
+    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+
+    # create the mail config
+    my $mtype = 'sendmail';   # default to send eMail directly
+
+    if (defined $relay{'server'}  &&  $relay{'server'} != '')
+    {
+        # switch to smtp if a relay is defined
+        $mtype = 'smtp';
+
+        # make sure the port is valid
+        if (! defined $relay{'port'} || $relay{'port'} !~ /^\d+$/ )
+        {
+            $relay{'port'} = '';
+        }
+
+        $relay{'Relay'} = "$relay{'server'}";
+        if ($relay{'port'} != '')
+        {
+            $relay{'Relay'} .= ":$relay{'port'}";
+        }
+
+        if (defined $relay{'user'}  &&  $relay{'user'} != '')
+        {
+            # make sure we have a password - even if empty
+            if (! defined $relay{'password'} )
+            {
+                $relay{'password'} = '';
+            }
+        }
+        else 
+        {
+            # if no authentication is needed - set user to undef
+            $relay{'user'} = undef;
+        }
+
     }
 
+    # create the message
+    my $msg = MIME::Lite->new( 'From'    => $reportEmailFrom,
+                               'To'      => $reportEmailTo,
+                               'Subject' => "SMT Report $datestring",
+                               'Type'    => 'multipart/mixed'
+                             );
 
-    # TODO:
-    # create eMail
-    # send to list of recipients
+    # attach asciitable rendered report as mail body
+    $msg->attach( 'Type' => 'TEXT',
+                  'Data' => $message
+                );
 
+
+    if (defined $attachments  &&  scalar(keys %{$attachments} ) > 0 )
+    {
+        #while ( my ($filename, $data) = each(%{$attachments} )  )
+        foreach my $filename ( sort keys %{$attachments})
+        {
+            $msg->attach( 'Type'        =>'text/csv',
+                          'Filename'    => $filename,
+                          'Data'        => ${$attachments}{$filename},
+                          'Disposition' => 'attachment'
+                 );
+        }
+    }
+
+    if ($mtype  eq  'sendmail')
+    {
+        # send message via sendmail (-t automatically scans for the recipients in the header)
+        $msg->send($mtype, "/usr/lib/sendmail -t -oi ");
+    }
+    else
+    {
+        # send message via NET::SMTP
+        if (defined $relay{'user'})
+        {
+            # with user authentication
+            $msg->send('smtp', $relay{'Relay'}, 'AuthUser' => $relay{'user'}, 'AuthPass' => $relay{'password'}  );
+        }
+        else
+        {
+            # or withour user authentication
+            $msg->send($mtype, $relay{'Relay'});
+        }
+    }
+
+    return;
 }
 
 

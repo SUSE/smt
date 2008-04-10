@@ -27,9 +27,6 @@ use Getopt::Long;
 my $LOG = SMT::Utils::openLog($logfile);
 
 
-## FIXME  support for mailing is still missing
-
-
 # configuration
 my %conf = (
             SUSE         => { 
@@ -126,26 +123,44 @@ sub printUsage
     print "  --attach (-a) : " . __("attach CSV report files to mail (only together with --mail)\n");
     print "  --quiet   (-q) : " . __("suppress output\n");
     print "  --csv     (-c) : " . __("export data in CSV format\n");
-    print "  --file    (-F) [<dir>] : " . __("write export files to <dir>\n");
-    print "  --logfile (-L) <file>     : " . __("Path to logfile\n");
+    print "  --file    (-F) [<file>] : " . __("write report to <file>, in csv mode <file> expands to <file-name>-reportname[.<file-extension>]\n");
+    print "  --logfile (-L) <file>   : " . __("Path to logfile\n");
 }
 
 
-sub certificateCheck
+#
+# performs certificate checks and collects the errors found in a list
+#      an error is a hash with the type name as key and the message as value
+#      returns the error messages as text block
+#
+sub certificateCheck($$)
 {
-    my %ret = ();
+    my $printIt = shift;
+    my $logIt = shift;
+    if (!defined $printIt || !defined $logIt) { return ''; }
+    my $messageBlock = '';
+
+    my @msg = ();
     my $days = SMT::CLI::certificateExpireCheck(log => $LOG, debug => $debug);
     if(defined $days && $days > 0 && $days <= 10)
     {
-        #printLog($LOG, "warn", sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days));
-        %ret = ( 'warn' => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) );
+        push @msg, { 'warn' => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) };
     }
     elsif(defined $days && $days <= 0)
     {
-        #printLog($LOG, "error", __("ERROR: SMT server certificate is expired!"));
-        %ret = ( 'error' =>  __("ERROR: SMT server certificate is expired!") );
+        push @msg, { 'error' =>  __("ERROR: SMT server certificate is expired!") };
     }
-    return %ret;
+
+    foreach my $message (@msg)
+    {
+        while (my ($type, $message) = each(%{$message}) )
+        {
+            printLog($LOG, $type, $message, $printIt, $logIt);
+            $messageBlock .= $message."\n";
+        }
+    }
+
+    return $messageBlock;
 }
 
 
@@ -192,6 +207,70 @@ sub getReportRenderedAs
 }
 
 
+#
+# assemble a merged report
+#
+sub getMergedReport($)
+{
+    my $renderMode = shift;
+    if (! defined $renderMode) { return ''; }
+    my %headings = (  'class'   =>  __("Product Class Report"),
+                      'sub'     =>  __("Subscription Report based on a local calculation"),
+                      'prodsub' =>  __("Subscription Report based on NCC registrations")
+                   );
+
+    my $res = '';
+    $res .= $headings{'class'}."\n";
+    $res .= sprintf '=' x length($headings{'class'})."\n\n";
+    $res .= getReportRenderedAs($renderMode, 'class');
+    $res .= "\n\n";
+
+    $res .= $headings{'prodsub'}."\n";
+    $res .= sprintf '=' x length($headings{'prodsub'})."\n\n";
+    $res .= getReportRenderedAs($renderMode, 'prodsub', 'active')."\n";
+    $res .= getReportRenderedAs($renderMode, 'prodsub', 'soon')."\n";
+    $res .= getReportRenderedAs($renderMode, 'prodsub', 'expired')."\n";
+    $res .= getReportRenderedAs($renderMode, 'prodsub', 'summary')."\n";
+    $res .= "\n\n"; 
+
+    $res .= $headings{'sub'}."\n";
+    $res .= sprintf '=' x length($headings{'sub'})."\n\n";
+    $res .= getReportRenderedAs($renderMode, 'sub', 'active')."\n";
+    $res .= getReportRenderedAs($renderMode, 'sub', 'soon')."\n";
+    $res .= getReportRenderedAs($renderMode, 'sub', 'expired')."\n";
+    $res .= getReportRenderedAs($renderMode, 'sub', 'summary')."\n";
+    $res .= "\n\n";
+
+    return $res;
+}
+
+
+#
+# return s hash with all reports rendered separately
+#
+sub getSeparateReports($)
+{
+    my $renderMode = shift;
+    my %res = ();
+    if (! defined $renderMode) { return %res; }
+
+    $res{'product_class'} = getReportRenderedAs($renderMode, 'class');
+
+    $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'prodsub', 'active');
+    $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'prodsub', 'soon');
+    $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'prodsub', 'expired');
+    $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'prodsub', 'summary');
+   
+    $res{'subscription_active'}     = getReportRenderedAs($renderMode, 'sub', 'active');
+    $res{'subscription_expiresoon'} = getReportRenderedAs($renderMode, 'sub', 'soon');
+    $res{'subscription_expired'}    = getReportRenderedAs($renderMode, 'sub', 'expired');
+    $res{'subscription_summary'}    = getReportRenderedAs($renderMode, 'sub', 'summary');
+
+    return %res;
+}
+
+
+
 ### MAIN #####################################################################
 
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
@@ -202,9 +281,10 @@ sub getReportRenderedAs
          'attach|a'   => \$attach,
          'quiet|q'    => \$quiet,
          'csv|c'      => \$csv,
-         'file|F=s'   => \$file, 
+         'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
          'logfile|L=s'=> \$logfile
 );
+
 
 
 if ( defined $help && ( $help == 1 ) )
@@ -214,53 +294,108 @@ if ( defined $help && ( $help == 1 ) )
 }
 
 
-# FIXME  for now static configuration to remain functioning
-#        will be configurable via parameters soon
-my $renderMode = 'asciitable';
-
-my $classReport = getReportRenderedAs($renderMode, 'class');
-
-my $prodSubReport = '';
-$prodSubReport   .= getReportRenderedAs($renderMode, 'prodsub', 'active')."\n";
-$prodSubReport   .= getReportRenderedAs($renderMode, 'prodsub', 'soon')."\n";
-$prodSubReport   .= getReportRenderedAs($renderMode, 'prodsub', 'expired')."\n";
-$prodSubReport   .= getReportRenderedAs($renderMode, 'prodsub', 'summary')."\n";
-
-my $subReport = '';
-$subReport   .= getReportRenderedAs($renderMode, 'sub', 'active')."\n";
-$subReport   .= getReportRenderedAs($renderMode, 'sub', 'soon')."\n";
-$subReport   .= getReportRenderedAs($renderMode, 'sub', 'expired')."\n";
-$subReport   .= getReportRenderedAs($renderMode, 'sub', 'summary')."\n";
+# default settings
+my $doPrint = 1;
+my $doLog = 1; 
+my $certErrors = '';
+my $datestring = POSIX::strftime("%Y-%m-%d_%H-%M-%S", localtime);
+my $defaultFilePrefix = "SMT_report-$datestring";
 
 
-
-printLog($LOG, "info", __("Product Class Report"));
-printLog($LOG, "info", "====================\n");
-printLog($LOG, "info", $classReport."\n");
-
-printLog($LOG, "info", __("Subscription Report based on a local calculation"));
-printLog($LOG, "info", "================================================\n");
-printLog($LOG, "info", $prodSubReport."\n");
-
-printLog($LOG, "info", __("Subscription Report based on NCC registrations"));
-printLog($LOG, "info",  "==============================================\n");
-printLog($LOG, "info", $subReport."\n");
-
-
-
-
-
-###printLog($LOG, "info", "Example", doPrint, doLog);
-
-my %certCheck = certificateCheck();
-
-if (1)  # FIXME do not print if output is to be suppressed
+# set doPrint to 0 if quiet mode selected
+if (defined $quiet && $quiet == 1)
 {
-    while (my ($type, $message) = each(%certCheck) )
+    $doPrint = 0;
+}
+
+# print and log the ascii report if wanted
+printLog($LOG, "info", getMergedReport('asciitable'), $doPrint, $doLog);
+
+# print, log and get the certificate check results
+$certErrors = certificateCheck($doPrint, $doLog);
+
+
+if (defined $file)
+{
+    # exporting the report
+    my $fname = '';
+    my ($Efile, $Edir, $Eext) = fileparse($file, qr/\.[^.]*/);
+
+    if ($Efile eq '')
     {
-        printLog($LOG, $type, $message, 1, 1 );
+        $Efile = $defaultFilePrefix; 
+        $Eext  = '';  # trigger automatic extension
+    }
+
+    # if file extension is csv we switch to csv export
+    if ( (defined $csv && $csv == 1) ||  $Eext eq '.csv' )
+    {
+        $csv = 1;
+    }
+
+    if ($csv)
+    {
+        if ($Eext eq '') { $Eext = '.csv'; }
+
+        my %rep = getSeparateReports('csv');
+
+        while ( my ($rname, $rdata) = each(%rep) )
+        {
+            my $extension = $Eext;
+            if ($extension eq '.csv'  &&  $rname =~ /summary/i ) { $extension = '.txt';  }
+            $fname = $Edir.$Efile.'-'.$rname.$extension;
+            open(REPFILE, "> $fname ")  ||  die sprintf(__("Can not open target file %s"), $fname);
+            print REPFILE $rdata;
+            close REPFILE;
+        }
+    }
+    else
+    {
+        $fname = $fname = $Edir.$Efile.$Eext;
+        open(REPFILE, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
+        print REPFILE getMergedReport('asciitable');
+        close REPFILE;
+    }
+
+    if ($certErrors ne '')
+    {
+        $fname = $Edir.$Efile.'-certificatecheck.txt';
+        open(ERRFILE, "> $fname");
+        print ERRFILE $certErrors;
+        close ERRFILE;
     }
 }
-        
+
+
+
+if (defined $mail  &&  $mail == 1)
+{
+    my %ATTACH = ();
+
+    if (defined $attach  &&  $attach == 1)
+    {
+        my %rep = getSeparateReports('csv');
+
+        while ( my ($rname, $rdata) = each(%rep) )
+        {
+            my $extension = '.csv';
+            if ( $rname =~ /summary/i ) { $extension = '.txt';  }
+            my $csvName = $defaultFilePrefix.'-'.$rname.$extension;
+            $ATTACH{$csvName} = $rdata;
+        }
+
+        if (defined $certErrors  &&  $certErrors ne '')
+        {
+            $ATTACH{"$defaultFilePrefix-certificatecheck .txt"} = $certErrors; 
+        }
+    }
+
+    my $MailBody = '';
+    if ($certErrors ne '') { $MailBody .= $certErrors."\n\n"; }
+    $MailBody .= getMergedReport('asciitable');
+
+    SMT::Utils::sendMailToAdmins($MailBody, \%ATTACH);
+}
+
 
 exit 0;
