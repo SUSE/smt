@@ -338,12 +338,12 @@ sub sendMailToAdmins
         }
 
         $relay{'Relay'} = "$relay{'server'}";
-        if ($relay{'port'} != '')
+        if ($relay{'port'} ne '')
         {
             $relay{'Relay'} .= ":$relay{'port'}";
         }
 
-        if (defined $relay{'user'}  &&  $relay{'user'} != '')
+        if (defined $relay{'user'}  &&  $relay{'user'} ne '')
         {
             # make sure we have a password - even if empty
             if (! defined $relay{'password'} )
