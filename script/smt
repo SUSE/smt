@@ -40,7 +40,6 @@ sub executeCommand
   my @options = @_;
 
   my $exec = "/usr/sbin/smt-$name";
-  #my $cmd = "$exec " . join(" ", @options);
   my $cmd = "$exec ";
   foreach (@options)
   {
@@ -73,7 +72,6 @@ if (defined $ARGV[0] )
     {
         if (defined $ARGV[0] ) 
         {
-            #print "2foo\n";
             my $targethelp = shift(@ARGV);
             executeCommand($targethelp,"-h");
         }
