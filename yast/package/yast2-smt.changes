@@ -3,6 +3,7 @@ Fri Apr 11 11:38:17 CEST 2008 - locilka@suse.cz
 
 - Removed SCR agent for my.cnf and functions that were modifying
   the MySQL configuration.
+- 2.13.8
 
 -------------------------------------------------------------------
 Thu Apr 10 10:48:20 CEST 2008 - locilka@suse.cz
