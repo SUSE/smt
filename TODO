@@ -52,8 +52,6 @@ TODO:
   * What functionaly customers might miss.
   * Is the "how to use them" clear and obvious?
 
-- Dump Reports into CSV file. AI: jdsn
-
 
 Nice-To-Have but not so important
 =================================
@@ -70,6 +68,10 @@ Nice-To-Have but not so important
 
 DONE:
 =====
+
+- Dump Reports into CSV file. AI: jdsn
+
+- Send Reports via eMail, optionally attach them as csv to the mail as well. AI: jdsn
 
 - localization of the client tools
 
