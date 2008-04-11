@@ -307,7 +307,7 @@ sub sendMailToAdmins
 
         push @addressList, $val;
     }
-    if (length(@addressList) < 1 )  { return; }
+    if (scalar(@addressList) < 1 )  { return; }
     my $reportEmailTo = join(', ', @addressList);
 
     # read config for smtp relay
