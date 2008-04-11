@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Apr 11 11:38:17 CEST 2008 - locilka@suse.cz
+
+- Removed SCR agent for my.cnf and functions that were modifying
+  the MySQL configuration.
+
+-------------------------------------------------------------------
 Thu Apr 10 10:48:20 CEST 2008 - locilka@suse.cz
 
 - If MySQL root password is not set, user is asked to set it. In

@@ -49,8 +49,6 @@
 
     string smt_database = "mysql";
 
-    string max_mysql_connections = "160";
-
     /**
      * Returns list of scheduled NU mirrorings.
      *
@@ -714,10 +712,6 @@ For security reasons, please, set a new one.")),
 	    y2milestone ("SMT is disabled, not adjusting database...");
 	    return true;
 	}
-
-	// max_connections
-	SCR::Write(.smt_mysql.value.mysqld.max_connections, max_mysql_connections);
-	SCR::Write(.smt_mysql, nil);
 
 	if (! Service::Start (smt_database)) {
 	    y2error ("Cannot start database");
