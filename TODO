@@ -2,6 +2,8 @@
 TODO:
 =====
 
+- What about the Firewall?
+
 - modify listProducts registration command for SMT.
   Show only products where all required catalogs are localy mirrored.
   Is this a good idea?
