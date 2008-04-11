@@ -54,12 +54,14 @@ action="$1"
 exit_code=0
 
 function mysql_config () {
-    if ! grep max_connections /etc/my.cnf >/dev/null 2>&1; then
-	TMPFILE=`mktemp /etc/my.cnf.XXXXXXXXXX`
-	cp /etc/my.cnf $TMPFILE
-	cat $TMPFILE | sed 's/\[mysqld\]/[mysqld]\nmax_connections=160/' > /etc/my.cnf
-	rm -f $TMPFILE
-	echo "Changing max_connections for mysqld"
+    if grep -v -E "^[[:space:]]*#" /etc/smt.conf | grep -E "config.+mysql.+localhost" >/dev/null 2>&1; then
+    	if ! grep max_connections /etc/my.cnf >/dev/null 2>&1; then
+		TMPFILE=`mktemp /etc/my.cnf.XXXXXXXXXX`
+		cp /etc/my.cnf $TMPFILE
+		cat $TMPFILE | sed 's/\[mysqld\]/[mysqld]\nmax_connections=160/' > /etc/my.cnf
+		rm -f $TMPFILE
+		echo "Changing max_connections for mysqld"
+	fi
     fi
 }
 
