@@ -64,6 +64,13 @@ cp -p %{S:1} .
 # ---------------------------------------------------------------------------
 
 %build
+for prog in script/smt*; do
+    if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" $prog > $prog.$$$$ ; then
+        perl -p -e 's/.if n .na/.\\\".if n .na/;' $prog.$$$$ > $prog.1;
+    fi
+    rm -f $prog.$$$$
+done
+
 #make test
 # ---------------------------------------------------------------------------
 
@@ -73,7 +80,11 @@ make DESTDIR=$RPM_BUILD_ROOT install
 make DESTDIR=$RPM_BUILD_ROOT install_conf
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
-
+mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
+cd script
+for manp in smt*.1; do
+    install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man1/$manp
+done
 # ---------------------------------------------------------------------------
 
 %clean
@@ -120,6 +131,7 @@ exit 0
 /usr/lib/SMT/bin/*
 %{_datadir}/schemas/smt/*
 
+%attr(644, root, root) %{_mandir}/man1/*
 %doc README COPYING script/clientSetup4SMT.sh
 
 %changelog
