@@ -176,7 +176,7 @@ else
     SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
     exit 0;
   }
-  elsif ( $answer =~ /[0-9]+/ )
+  elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count)
   {
     my $number = int($answer);
     SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
@@ -184,7 +184,7 @@ else
   }
   else
   {
-    die __("canceled");
+      print __("canceled.\n");
   }
 }
 
