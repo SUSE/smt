@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 0.3.1)
+# spec file for package smt (Version 0.4.0)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -12,7 +12,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl
-Version:        0.3.2
+Version:        0.4.0
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       apache2
