@@ -64,12 +64,15 @@ cp -p %{S:1} .
 # ---------------------------------------------------------------------------
 
 %build
-for prog in script/smt*; do
+mkdir man
+cd script
+for prog in smt*; do
     if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" $prog > $prog.$$$$ ; then
-        perl -p -e 's/.if n .na/.\\\".if n .na/;' $prog.$$$$ > $prog.1;
+        perl -p -e 's/.if n .na/.\\\".if n .na/;' $prog.$$$$ > ../man/$prog.1;
     fi
     rm -f $prog.$$$$
 done
+cd -
 
 #make test
 # ---------------------------------------------------------------------------
@@ -81,7 +84,7 @@ make DESTDIR=$RPM_BUILD_ROOT install_conf
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
-cd script
+cd man
 for manp in smt*.1; do
     install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man1/$manp
 done
