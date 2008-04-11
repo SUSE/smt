@@ -162,13 +162,13 @@ eval
                                     debug   => $debug);
 
 };
-if (@_)
+if ($@)
 {
     if (!SMT::Utils::unLock("smt-ncc-sync"))
     {
         SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", @_);
+    SMT::Utils::printLog($LOG, "error", $@);
     exit 1;
 }
 
