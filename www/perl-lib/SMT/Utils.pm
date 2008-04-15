@@ -258,8 +258,8 @@ sub printLog
     my $message  = shift;
     my $doprint  = shift;
     my $dolog    = shift;
-    if (! defined $doprint) { $doprint = 1 }
-    if (! defined $dolog)   { $doprint = 1 }
+    if (! defined $doprint) { $doprint = 1;}
+    if (! defined $dolog)   { $dolog   = 1;}
 
     if($doprint)
     {
