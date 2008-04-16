@@ -1,0 +1,264 @@
+#! /usr/bin/perl -w
+
+###########################################################################
+## Copyright (c) 2007 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###########################################################################
+
+
+use strict;
+use Config::IniFiles;
+use SMT::Utils;
+use URI;
+use File::Path;
+use IPC::Open3;
+use Fcntl qw(:DEFAULT);
+
+use Getopt::Long;
+
+use Time::HiRes qw(gettimeofday tv_interval);
+
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+my $debug  = 0;
+my $log    = undef;
+my $errors = 0;
+my $help     = 0;
+my $logfile = "/dev/null";
+
+
+my $result = GetOptions ("debug|d"     => \$debug,
+                         "logfile|L=s" => \$logfile,
+                         "help|h"      => \$help
+                        );
+if($help)
+{
+    print basename($0) . __(" [OPTIONS]\n");
+    print "\n";
+    print __("Options:\n");
+    print "--debug -d        " . __("enable debug mode\n");
+    print "--logfile -L file " . __("Path to logfile\n");
+    print "--help -h         " . __("show this message\n");
+    exit 0;
+}
+
+# get a lock
+
+if(!SMT::Utils::openLock("smt-mirror-sles9"))
+{
+    print __("SLES9 Mirror process is still running.\n");
+    exit 0;
+}
+
+# open the logfile
+
+$log = SMT::Utils::openLog($logfile);
+
+
+# to be able to parse the output of wget correctly set language
+# to english
+$ENV{LANG}     = "en_US.UTF-8";
+$ENV{LANGUAGE} = "en_US.UTF-8";
+
+#my $cfg;
+#eval {
+#    $cfg = getSMTConfig();
+#};
+#if($@)
+#{
+#    if(!SMT::Utils::unLock("smt-mirror-sles9"))
+#    {
+#        SMT::Utils::printLog($log, "error",  __("Cannot remove lockfile."));
+#    }
+#    SMT::Utils::printLog($log, "error", "$@");
+#    exit 1;
+#}
+
+my $cfg = new Config::IniFiles( -file => "./smt.conf" );
+if(!defined $cfg)
+{
+    if(!SMT::Utils::unLock("smt-mirror-sles9"))
+    {
+        SMT::Utils::printLog($log, "error",  __("Cannot remove lockfile."));
+    }
+    SMT::Utils::printLog($log, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
+    exit 1;
+}
+
+my $mirrorTo = $cfg->val("LOCAL", "MirrorTo");
+$mirrorTo .= "/repo/YOU9/";
+
+my @sections = $cfg->Sections();
+
+foreach my $sname (@sections)
+{
+    next if($sname !~ /^YOU9-/);
+
+    my $mirror          = (lc($cfg->val($sname, "mirror")) eq "true")?1:0;
+
+    next if(!$mirror);
+    
+    my $mirror_prod     = $cfg->val($sname, "mirror_prod");
+    my @mirror_archs    = split(/\s*,\s*/, $cfg->val($sname, "mirror_archs"));
+    my @mirror_versions = split(/\s*,\s*/, $cfg->val($sname, "mirror_version"));
+    my $credentials     = $cfg->val($sname, "credentials");
+    
+    foreach my $arch (@mirror_archs)
+    {
+        foreach my $version (@mirror_versions)
+        {
+            my $t0 = [gettimeofday] ;
+
+            my $uri = URI->new("https://you.novell.com/");
+            $uri->userinfo($credentials);
+            $uri->path("/update/$arch/update/$mirror_prod/$version/");
+            
+            my $saveuri = $uri->clone();
+            $saveuri->userinfo(undef);
+            
+            my $destdir = "$mirrorTo/$arch/update/$mirror_prod/$version/";
+            &File::Path::mkpath( $destdir );
+            
+            my   $cmd = "/usr/bin/wget";
+            my   @cmdargs = ("--mirror", "--no-parent", "--no-host-directories");
+            push @cmdargs, "--directory-prefix", $destdir;
+            push @cmdargs, "--cut-dirs", "5"; #, "-nv";
+            push @cmdargs, "-i", "-";
+            
+            printLog($log, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string));
+            printLog($log, "info", sprintf(__("Target:    %s"), $destdir));
+
+            #printLog($log, "debug", "Execute $cmd ".join(" ", @cmdargs)) if($debug);
+            
+            my $pid = open3(\*IN, \*OUT, \*ERR, $cmd, @cmdargs) or do
+            {
+                printLog($log, "error", "Cannot execute $cmd ".join(" ", @cmdargs).": $!");
+                return 1;
+            };
+            print IN $uri->as_string."\n";
+            
+            close IN;
+            
+            my $out = "";
+            my $err = "";
+            my $currentfile="";
+            
+            while (<ERR>)
+            {
+                $err = $_;
+                chomp($err);
+                next if($err =~ /^\s*$/);
+                next if($err =~ /\.\.\.\.\./);
+                
+                if($err =~ /not\s+retrieving/i)
+                {
+                    printLog($log, "debug", sprintf("----> %s is up to date", $currentfile)) if($debug);
+                }
+                elsif($err =~ /saved/i)
+                {
+                    printLog($log, "debug", sprintf("Fetch [%s]", $currentfile)) if($debug);
+                }
+                
+                if($err =~ /\s+=>\s*(.*)/)
+                {
+                    next if("$1" eq "$currentfile");
+                    $currentfile=$1;
+                }
+                elsif($err =~ /request sent, awaiting response\.\.\.\s(\d+)\s+(.*)/)
+                {
+                    my $code = $1;
+                    my $msg  = $2;
+                    
+                    if(int($code) >= 400)
+                    {
+                        # ignore "403 Forbidden" for index.html and robots.txt 
+                        next if(int($code) >= 403 && ($currentfile =~ /index\.html/ || $currentfile =~ /robots\.txt/));
+
+                        printLog($log, "error", sprintf(__("Failed to download '%s': %s"), $currentfile, "$code: $msg"));
+                        $errors += 1;
+                    }
+                    elsif(int($code) >= 300)
+                    {
+                        printLog($log, "info", "$currentfile - HTTP Status $code: $msg");
+                    }
+                }
+            }
+            while (<OUT>)
+            {
+                $out = $_;
+                chomp($out);
+                next if($out =~ /^\s*$/);
+                printLog($log, "info", "$out");
+            }
+            close OUT;
+            close ERR;
+            waitpid $pid, 0;
+            if(($?>>8) != 0)
+            {
+                $errors += 1;
+            }
+
+            printLog($log, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
+            printLog($log, "info", sprintf(__("=> Errors           : %s"), $errors));
+            printLog($log, "info", sprintf(__("=> Mirror Time      : %s seconds"), (tv_interval($t0))));
+            print "\n";
+            
+        }
+    }
+}
+
+
+if(!SMT::Utils::unLock("smt-mirror-sles9"))
+{
+    SMT::Utils::printLog($log, "error", __("Cannot remove lockfile."));
+    exit 1;
+}
+
+exit 0;
+
+#
+# Manpage
+#
+
+=head1 NAME
+
+smt mirror-sles9 -
+
+=head1 SYNOPSIS
+
+smt [help|--help|-h] mirror-sles9 [options]
+
+=head1 DESCRIPTION
+
+smt mirror-sles9
+
+
+=head1 OPTIONS
+
+=head2
+
+
+=head1 AUTHORS and CONTRIBUTORS
+
+Duncan Mac-Vicar Prett, Lukas Ocilka, Jens Daniel Schmidt, Michael Calmer
+
+=head1 LICENSE
+
+Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 675 Mass
+Ave, Cambridge, MA 02139, USA.
+
+=cut
