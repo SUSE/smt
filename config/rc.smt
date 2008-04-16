@@ -53,25 +53,51 @@ smt_cronfiles="novell.com-smt"
 action="$1"
 exit_code=0
 
-function mysql_config () {
+function has_local_mysql () {
     if grep -v -E "^[[:space:]]*#" /etc/smt.conf | grep -E "config.+mysql.+localhost" >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function mysql_config () {
+    if has_local_mysql; then
     	if ! grep max_connections /etc/my.cnf >/dev/null 2>&1; then
-		TMPFILE=`mktemp /etc/my.cnf.XXXXXXXXXX`
-		cp /etc/my.cnf $TMPFILE
-		cat $TMPFILE | sed 's/\[mysqld\]/[mysqld]\nmax_connections=160/' > /etc/my.cnf
-		rm -f $TMPFILE
-		echo "Changing max_connections for mysqld"
-	fi
+            TMPFILE=`mktemp /etc/my.cnf.XXXXXXXXXX`
+            cp /etc/my.cnf $TMPFILE
+            cat $TMPFILE | sed 's/\[mysqld\]/[mysqld]\nmax_connections=160/' > /etc/my.cnf
+            rm -f $TMPFILE
+            echo "Changing max_connections for mysqld"
+        fi
     fi
 }
 
 function adjust_services () {
     for service in ${services}; do
-        rc${service} ${action}
-	tmp_exitcode=$?
-	if [ "${tmp_exitcode}" != "0" ]; then
-	    exitcode=${tmp_exitcode}
-	fi
+        rc${service} status >/dev/null 2>&1
+        s_status=$?
+
+        tmp_exitcode=1
+
+        # if we do not have a local mysql daemon configured skip 
+        # mysql service
+        if [ "${service}" == "mysql" -a ! has_local_mysql ]; then
+            continue
+        fi
+        
+        # if action is start and the service is already running
+        # do only a reload
+        if [ "${action}" == "start" -a "${s_status}" == "0" ]; then
+            rc${service} reload
+            tmp_exitcode=$?
+        else
+            rc${service} ${action}
+            tmp_exitcode=$?
+        fi
+        if [ "${tmp_exitcode}" != "0" ]; then
+            exitcode=${tmp_exitcode}
+        fi
     done
 }
 
@@ -278,7 +304,7 @@ function check_copy_cert {
 case "$action" in
     # starts the SMT service (symlinks apache configuration)
     start*)
-	action="reload"
+	action="start"
 	mysql_config
 	link_smt_plugins
 	check_copy_cert
