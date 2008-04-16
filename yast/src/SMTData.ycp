@@ -192,7 +192,7 @@
 		if (dep_s != nil) {
 		    y2milestone ("These services need to be enabled: %1", dep_s);
 		    foreach (string one_dep, dep_s, {
-			if (! Service::Enable (one_dep)) {
+			if (! Service::Enabled (one_dep) && ! Service::Enable (one_dep)) {
 			    y2error ("Unable to enable service: %1", one_dep);
 			    return;
 			}

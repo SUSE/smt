@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Apr 16 15:39:28 CEST 2008 - locilka@suse.cz
+
+- Enabling service only if not yet enabled.
+
+-------------------------------------------------------------------
 Wed Apr 16 12:15:24 CEST 2008 - locilka@suse.cz
 
 - Calling RunlevelEd to solve smt service runlevel dependencies.
