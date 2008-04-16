@@ -48,6 +48,8 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
 
+    $self->{HAVE_BULKOP} = 0;  # set to 1 as soon as NCC has the implementation
+
     if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
     {
         $self->{USERAGENT} = $opt{useragent};
@@ -146,40 +148,67 @@ sub NCCRegister
             
             printLog($self->{LOG}, "info", sprintf("Register %s new clients.", $#{@$guids}+1 ));
         }
+
+        my $output = "";
+            
+        my $writer;
+        my $guidHash = {};
+        if($self->{HAVE_BULKOP})
+        {
+            $writer = new XML::Writer(OUTPUT => \$output);
+            $writer->xmlDecl("UTF-8");
+            
+            my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                     "client_version" => "1.2.3",
+                     "lang" => "en");
+            $writer->startTag("bulkop", %a);
+        }
         
+        my $regtimestring = SMT::Utils::getDBTimestamp();
         foreach my $guid (@{$guids})
         {
-            my $regtimestring = SMT::Utils::getDBTimestamp();
+            $regtimestring = SMT::Utils::getDBTimestamp();
             my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", $self->{DBH}->quote($guid)), {Slice => {}});
-            
+
             my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s", 
                                                                     $self->{DBH}->quote($guid)), {Slice => {}});
             
+            $guidHash->{$guid} = $products;
+
             if(defined $regdata && ref($regdata) eq "ARRAY")
             {
                 printLog($self->{LOG}, "debug", "Register '$guid'") if($self->{DEBUG});
 
-                my $out = $self->_buildRegisterXML($guid, $products, $regdata);
+                my $out = "";
                 
-                if(!defined $out || $out eq "")
+                if(!$self->{HAVE_BULKOP})
                 {
-                    printLog($self->{LOG}, "error", sprintf(__("Unable to generate XML for GUID: %s"). $guid));
-                    $errors++;
+                    $out = $self->_buildRegisterXML($guid, $products, $regdata);
+
+                    if(!defined $out || $out eq "")
+                    {
+                        printLog($self->{LOG}, "error", sprintf(__("Unable to generate XML for GUID: %s"). $guid));
+                        $errors++;
                     next;
+                    }
+                    
+                    my $ret = $self->_sendData($out, "command=register");
+                    if(!$ret)
+                    {
+                        $errors++;
+                        next;
+                    }
+                    
+                    $ret = $self->_updateRegistration($guid, $products, $regtimestring);
+                    if(!$ret)
+                    {
+                        $errors++;
+                        next;
+                    }
                 }
-                
-                my $ret = $self->_sendData($out, "command=register");
-                if(!$ret)
+                else
                 {
-                    $errors++;
-                    next;
-                }
-                
-                $ret = $self->_updateRegistration($guid, $products, $regtimestring);
-                if(!$ret)
-                {
-                    $errors++;
-                    next;
+                    $self->_buildRegisterXML($guid, $products, $regdata, $writer);
                 }
             }
             else
@@ -187,6 +216,33 @@ sub NCCRegister
                 printLog($self->{LOG}, "error", sprintf(__("Incomplete registration found. GUID:%s"), $guid));
                 $errors++;
                 next;
+            }
+        }
+
+        if($self->{HAVE_BULKOP})
+        {
+            $writer->endTag("bulkop");
+
+            if(!defined $output || $output eq "")
+            {
+                printLog($self->{LOG}, "error", __("Unable to generate XML"));
+                $errors++;
+                return $errors;
+            }
+            my $destfile = $self->{TEMPDIR}."/bulkop.xml";
+            
+            my $ret= $self->_sendData($output, "command=bulkop", $destfile);
+            if(! $ret)
+            {
+                $errors++;
+                return $errors;
+            }
+            
+            $ret = $self->_updateRegistrationBulk($guidHash, $regtimestring, $destfile);
+            if(!$ret)
+            {
+                $errors++;
+                return $errors;
             }
         }
     };
@@ -447,7 +503,7 @@ sub NCCDeleteRegistration
         {
             printLog($self->{LOG}, "error", sprintf(__("Delete registration request failed: %s."), $guid));
             $errors++;
-            }
+        }
     }
     
     return $errors;
@@ -540,6 +596,76 @@ sub _listreg_handler
     }
     return;
 }
+
+sub _bulkop_handler
+{
+    my $self          = shift;
+    my $data          = shift;
+    my $guidHash      = shift;
+    my $regtimestring = shift; 
+
+    if(!exists $data->{GUID} || ! defined $data->{GUID} || $data->{GUID} eq "")
+    {
+        # something goes wrong
+        return;
+    }
+    my $guid = $data->{GUID};
+ 
+    # evaluate the status
+
+    if(! exists $data->{STATUS} || ! defined $data->{STATUS} || $data->{STATUS} eq "")
+    {
+        # something goes wrong
+        return;
+    }
+    
+    if($data->{STATUS} eq "error")
+    {
+        printLog($self->{LOG}, "error", 
+                 sprintf(__("Registration of GUID '%s' failed. %s"), $guid, $data->{MESSAGE}));
+        return;
+    }
+    elsif($data->{STATUS} eq "warning")
+    {
+        printLog($self->{LOG}, "warn", $data->{MESSAGE});
+    }
+    # else success
+   
+    if(!exists $guidHash->{$guid} || ! defined $guidHash->{$guid} || ref($guidHash->{$guid}) ne "ARRAY")
+    {
+        # something goes wrong
+        return;
+    }
+ 
+    my @productids = ();
+    foreach my $prod (@{$guidHash->{$guid}})
+    {
+        if( exists $prod->{PRODUCTDATAID} && defined $prod->{PRODUCTDATAID} )
+        {
+            push @productids, $prod->{PRODUCTDATAID};
+        }
+    }
+    
+    my $statement = "UPDATE Registration SET NCCREGDATE=? WHERE GUID=%s and ";
+    if(@productids > 1)
+    {
+        $statement .= "PRODUCTID IN (".join(",", @productids).")";
+    }
+    elsif(@productids == 1)
+    {
+        $statement .= "PRODUCTID = ".$productids[0];
+    }
+    else
+    {
+        # this should not happen
+        printLog($self->{LOG}, "error", __("No products found."));
+        return 0;
+    }
+    my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
+    $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+    $sth->execute;
+}
+
 
 sub _listsub_handler
 {
@@ -655,6 +781,41 @@ sub _updateRegistration
     return $sth->execute;
     
     #return $self->{DBH}->do(sprintf($statement, $self->{DBH}->quote($regtimestring), $self->{DBH}->quote($guid)));
+}
+
+sub _updateRegistrationBulk
+{
+    my $self          = shift || undef;
+    my $guidHash      = shift || undef;
+    my $regtimestring = shift || undef;
+    my $respfile      = shift || undef;
+    
+    if(!defined $guidHash)
+    {
+        printLog($self->{LOG}, "error", __("Invalid GUIDHASH parameter"));
+        return 0;
+    }
+    
+    if(!defined $regtimestring)
+    {
+        printLog($self->{LOG}, "error", __("Invalid time string"));
+        return 0;
+    }
+
+    if(! defined $respfile || ! -e $respfile)
+    {
+        printLog($self->{LOG}, "error", __("Invalid server response"));
+        return 0;
+    }
+     
+
+    # A parser for the answer is required here and everything below this comment
+    # should be part of the handler
+   
+    my $parser = new SMT::Parser::Bulkop(log => $self->{LOG});
+    $parser->parse($respfile, sub{ _bulkop_handler($self, $guidHash, $regtimestring, @_)});
+
+    return 1;
 }
 
 
