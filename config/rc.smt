@@ -10,13 +10,13 @@
 ### BEGIN INIT INFO
 # Provides:			smt
 # Required-Start:		$local_fs $remote_fs $network mysql apache2 cron
-# X-UnitedLinux-Should-Start:	$named $time mysql ypclient
+# X-UnitedLinux-Should-Start:	$local_fs $remote_fs $network mysql ypclient apache2 cron
 # Required-Stop:		$local_fs $remote_fs $network
 # X-UnitedLinux-Should-Stop:	
 # Default-Start:		3 5
 # Default-Stop:			0 1 2 6
 # Short-Description:		SMT - Subscription Management Tool for SLE
-# Description:			Handles apache2 and mysql
+# Description:			Handles SMT service by apache2 with plugins, mysql and cron
 ### END INIT INFO
 
 pname=smt
