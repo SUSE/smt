@@ -4,6 +4,7 @@ use strict;
 use LWP::UserAgent;
 use URI;
 use SMT::Parser::ListReg;
+use SMT::Parser::Bulkop;
 use SMT::Utils;
 use XML::Writer;
 use Crypt::SSLeay;
