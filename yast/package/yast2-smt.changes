@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Apr 16 12:15:24 CEST 2008 - locilka@suse.cz
+
+- Calling RunlevelEd to solve smt service runlevel dependencies.
+- Adjusted RPM dependencies.
+- 2.13.9
+
+-------------------------------------------------------------------
 Fri Apr 11 11:38:17 CEST 2008 - locilka@suse.cz
 
 - Removed SCR agent for my.cnf and functions that were modifying

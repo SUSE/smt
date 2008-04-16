@@ -2,6 +2,7 @@
 
 @HEADER@
 Requires:	yast2
+Requires:	yast2-runlevel
 Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
 Requires:	/bin/hostname
@@ -12,7 +13,7 @@ Recommends:	mysql
 Recommends:	cron
 Recommends:	apache2
 
-BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite
+BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite yast2-runlevel
 
 BuildArchitectures:	noarch
 

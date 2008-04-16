@@ -23,6 +23,7 @@
     import "Confirm";
     import "PackageSystem";
     import "Label";
+    import "RunlevelEd";
 
     integer sl = 100;
 
@@ -194,6 +195,11 @@
 
 	SMTData::ReadCredentials();
 	SMTData::ReadFirstRun();
+
+	boolean orig = Progress::set (false);
+	RunlevelEd::Read();
+	Progress::set (orig);
+
 	SMTData::ReadSMTServiceStatus();
 
 	Progress::NextStage();

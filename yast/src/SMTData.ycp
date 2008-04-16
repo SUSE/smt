@@ -23,6 +23,7 @@
     import "Wizard";
     import "Progress";
     import "Directory";
+    import "RunlevelEd";
 
     map <string, map <string, string> > all_credentials = $[];
 
@@ -185,7 +186,19 @@
 
     global boolean WriteSMTServiceStatus () {
 	if (GetSMTServiceStatus() == true) {
+
 	    foreach (string one_service, smt_services, {
+		list <string> dep_s = RunlevelEd::ServiceDependencies (one_service, true);
+		if (dep_s != nil) {
+		    y2milestone ("These services need to be enabled: %1", dep_s);
+		    foreach (string one_dep, dep_s, {
+			if (! Service::Enable (one_dep)) {
+			    y2error ("Unable to enable service: %1", one_dep);
+			    return;
+			}
+		    });
+		}
+
 		Service::Enable (one_service);
 		Service::Start (one_service);
 	    });
