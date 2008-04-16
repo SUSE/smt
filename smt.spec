@@ -115,7 +115,7 @@ exit 0
 %dir /usr/lib/SMT/bin/
 %dir %{_datadir}/schemas/
 %dir %{_datadir}/schemas/smt
-%config(noreplace) %attr(640, wwwrun, root)/etc/smt.conf
+%config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
 %config /etc/smt.d/novell.com-smt

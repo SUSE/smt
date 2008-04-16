@@ -179,7 +179,9 @@ sub cpw
     $cfg->setval('DB', 'pass', $smtpass);
     $cfg->WriteConfig("/etc/smt.conf");
     my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
-    chown $uid, 0, "/etc/smt.conf";
+    chown 0, $gid, "/etc/smt.conf";
+    my $mode = 640;
+    chmod $mode, "/etc/smt.conf";
 
     return 0;
 }
@@ -297,7 +299,9 @@ sub setup
     $cfg->setval('DB', 'pass', $smtpass);
     $cfg->WriteConfig("/etc/smt.conf");
     my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
-    chown $uid, 0, "/etc/smt.conf";
+    chown 0, $gid, "/etc/smt.conf";
+    my $mode = 640;
+    chmod $mode, "/etc/smt.conf";
 
     return 0;
 }
