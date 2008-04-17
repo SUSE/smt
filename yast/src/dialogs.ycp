@@ -24,6 +24,7 @@
     import "PackageSystem";
     import "Label";
     import "RunlevelEd";
+    import "SuSEFirewall";
 
     integer sl = 100;
 
@@ -40,6 +41,7 @@
 			`VWeight(2, `VStretch()),
 			// TRANSLATORS: check box
 			`Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Mamagement Tool service (SMT)"))),
+			`Left ("firewall"),
 
 			`VWeight(1, `VStretch()),
 
@@ -171,16 +173,24 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Initializing SMT Configuration"),
 	    " ",
-	    2,
+	    4,
 	    [
 		// TRANSLATORS: Progress step
 		_("Read SMT configuration"),
+		// TRANSLATORS: Progress step
+		_("Read SMT status"),
+		// TRANSLATORS: Progress step
+		_("Read firewall settings"),
 		// TRANSLATORS: Progress step
 		_("Read cron settings"),
 	    ],
 	    [
 		// TRANSLATORS: Progress step
 		_("Reading SMT configuration..."),
+		// TRANSLATORS: Progress step
+		_("Reading SMT status..."),
+		// TRANSLATORS: Progress step
+		_("Reading firewall settings..."),
 		// TRANSLATORS: Progress step
 		_("Reading cron settings..."),
 		Message::Finished(),
@@ -196,11 +206,21 @@
 	SMTData::ReadCredentials();
 	SMTData::ReadFirstRun();
 
+	Progress::NextStage();
+	sleep (sl);
+
 	boolean orig = Progress::set (false);
 	RunlevelEd::Read();
 	Progress::set (orig);
 
 	SMTData::ReadSMTServiceStatus();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	orig = Progress::set (false);
+	SuSEFirewall::Read();
+	Progress::set (orig);
 
 	Progress::NextStage();
 	sleep (sl);
@@ -233,6 +253,8 @@
 		// TRANSLATORS: Progress step
 		_("Adjust SMT service"),
 		// TRANSLATORS: Progress step
+		_("Write firewall settings"),
+		// TRANSLATORS: Progress step
 		_("Write cron settings"),
 		// TRANSLATORS: Progress step
 		_("Run synchronization check"),
@@ -248,6 +270,8 @@
 		_("Adjusting Web-server configuration..."),
 		// TRANSLATORS: Progress step
 		_("Adjusting SMT service..."),
+		// TRANSLATORS: Progress step
+		_("Writing firewall settings..."),
 		// TRANSLATORS: Progress step
 		_("Writing cron settings..."),
 		// TRANSLATORS: Progress step
@@ -284,6 +308,13 @@
 	sleep (sl);
 
 	SMTData::WriteSMTServiceStatus();
+
+	Progress::NextStage();
+	sleep (sl);
+
+	boolean orig = Progress::set (false);
+	SuSEFirewall::Write();
+	Progress::set (orig);
 
 	Progress::NextStage();
 	sleep (sl);

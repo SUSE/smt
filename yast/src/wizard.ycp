@@ -16,6 +16,7 @@
     import "Sequencer";
     import "CWM";
     import "Mode";
+    import "CWMFirewallInterfaces";
 
     include "smt/helps.ycp";
     include "smt/dialogs.ycp";
@@ -56,13 +57,18 @@
 		"init"		: InitReportEmailTableDialog,
 		"store"		: StoreReportEmailTableDialog,
 	    ],
+	    "firewall" : CWMFirewallInterfaces::CreateOpenFirewallWidget ($[
+		// renamed in SLES11
+		"services" : [ "http", "https" ],
+		"display_details" : false,
+	    ]),
     ];
 
     map <string, any> tabs = $[
 	    "credentials" : $[
 		// TRANSLATORS: tab-header
 		"header"	: _("Customer Center Access"),
-		"widget_names"	: ["cr"],
+		"widget_names"	: ["cr", "firewall"],
 		"contents"	: CredentialsDialogContent(),
 	    ],
 	    "database" : $[
