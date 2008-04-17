@@ -2,8 +2,7 @@
 TODO:
 =====
 
-- yast module cannot change the smt database password.
-  (lukas: use /usr/lib/SMT/bin/smt-db cpw)
+
 
 - default permissions of smt.conf are now 640, root, wwwrun
   -- Which means that getting the content of the file is quite trivial with
@@ -308,3 +307,8 @@ About nccEmail: here is the help text which come from NCC if you enter
 - What about the Firewall?
     firewall is supported in YaST via CWM
     http and https services are open if selected
+
+- yast module cannot change the smt database password.
+  using /usr/lib/SMT/bin/smt-db cpw
+
+- randomizing startup times of cron jobs
