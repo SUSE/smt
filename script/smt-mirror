@@ -26,6 +26,7 @@ my $debug    = 0;
 my $clean    = 0;
 my $hardlink = 0;
 my $deepverify = 0;
+my $dryrun     = 0;
 
 my $dbreplfile = undef;
 my $dbreplacement = {};
@@ -40,6 +41,7 @@ my $result = GetOptions ("debug|d"     => \$debug,
                          "hardlink=i"  => \$hardlink,
                          "directory=s" => \$LocalBasePath,
                          "deepverify"  => \$deepverify,
+                         "dryrun|n"    => \$dryrun,
                          "dbreplfile=s" => \$dbreplfile,
                          "logfile|L=s" => \$logfile,
                          "help|h"      => \$help
@@ -48,7 +50,9 @@ my $result = GetOptions ("debug|d"     => \$debug,
 
 if($help)
 {
-    print basename($0) . __(" [OPTIONS]\n");
+    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug]\n";
+    print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
+    print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
     print __("Options:\n");
     print "--debug -d        " . __("enable debug mode\n");
@@ -60,6 +64,7 @@ if($help)
     print "--directory arg   " . __("The directory to work on. Using this option ignores the configured\n");
     print "                  " . __("default value in smt.conf\n");
     print "--deepverify      " . __("Verify all checksums \n");
+    print "--dryrun -n       " . __("Run mirror algorithm without downloading the rpms. It shown only the names which would be downloaded \n");
     print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can be created with\n");
     print "                  " . __("the sync-ncc command. This option is only usefull if the smt database is not on the \n");
     print "                  " . __("same host as this script should run\n"); 
@@ -81,10 +86,34 @@ if(!SMT::Utils::openLock("smt-mirror"))
 
 my $LOG = SMT::Utils::openLog($logfile);
 
+my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
+if(!defined $cfg)
+{
+    if(!SMT::Utils::unLock("smt-mirror"))
+    {
+        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+    }
+    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
+    exit 1;
+}
+
+if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
+{
+    $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
+    if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
+    {
+        if(!SMT::Utils::unLock("smt-mirror"))
+        {
+            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        }
+        SMT::Utils::printLog($LOG, "error", __("Cannot read the local base path"));
+        exit 1;
+    }
+}
 
 if($hardlink > 0)
 {
-    SMT::CLI::hardlink(log => $LOG, size => $hardlink, debug => $debug);
+    SMT::CLI::hardlink(log => $LOG, size => $hardlink, debug => $debug, basepath => $LocalBasePath);
     
     if(!SMT::Utils::unLock("smt-mirror"))
     {
@@ -122,16 +151,6 @@ else
 
 #print Data::Dumper->Dump([$dbreplacement]);
 
-my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-if(!defined $cfg)
-{
-    if(!SMT::Utils::unLock("smt-mirror"))
-    {
-        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
-    }
-    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
-    exit 1;
-}
 
 my $NUUrl = $cfg->val("NU", "NUUrl");
 if(!defined $NUUrl || $NUUrl eq "")
@@ -141,20 +160,6 @@ if(!defined $NUUrl || $NUUrl eq "")
         SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     }
     SMT::Utils::printLog($LOG, "error", __("Cannot read NU Url"));
-}
-
-if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
-{
-    $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
-    if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
-    {
-        if(!SMT::Utils::unLock("smt-mirror"))
-        {
-            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
-        }
-        SMT::Utils::printLog($LOG, "error", __("Cannot read the local base path"));
-        exit 1;
-    }
 }
 
 my $nuUser = $cfg->val("NU", "NUUser");
@@ -208,7 +213,7 @@ foreach my $id (keys %{$hash})
         {
             $zyppMirror->uri( $hash->{$id}->{EXTURL} );
             $zyppMirror->deepverify($deepverify);
-            $zyppMirror->mirrorTo( $fullpath, { urltree => 0 } );
+            $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
         }
     }
 }
@@ -230,7 +235,7 @@ else
     }
     
     $mirror->uri( $uri->as_string );
-    $mirror->mirrorTo( $LocalBasePath, { urltree => 0 } );
+    $mirror->mirrorTo( $LocalBasePath, { urltree => 0, dryrun => $dryrun } );
 }
 
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
