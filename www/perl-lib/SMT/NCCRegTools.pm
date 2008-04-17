@@ -272,6 +272,7 @@ sub NCCListRegistrations
     {
         my $output = "";
         my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                 "lang" => "en",
                  "client_version" => "1.2.3");
         
         my $writer = new XML::Writer(OUTPUT => \$output);
@@ -360,6 +361,7 @@ sub NCCListSubscriptions
     {
         my $output = "";
         my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                 "lang" => "en",
                  "client_version" => "1.2.3");
         
         my $writer = new XML::Writer(OUTPUT => \$output);
@@ -474,6 +476,7 @@ sub NCCDeleteRegistration
         
         my $output = "";
         my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                 "lang" => "en",
                  "client_version" => "1.2.3");
         
         my $writer = new XML::Writer(OUTPUT => \$output);
@@ -827,6 +830,7 @@ sub _sendData
     my $query = shift || undef;
     my $destfile = shift || undef;
     
+    my $defaultquery = "lang=en-US&version=1.0";
 
     if (! defined $self->{URI})
     {
@@ -842,9 +846,12 @@ sub _sendData
     my $regurl = URI->new($self->{URI});
     if(defined $query && $query =~ /\w=\w/)
     {
-        $regurl->query($query);
+        $regurl->query($query."&".$defaultquery);
     }
-    
+    else
+    {
+        $regurl->query($defaultquery);
+    }    
 
     printLog($self->{LOG}, "debug", "SEND TO: ".$regurl->as_string()) if($self->{DEBUG});
     printLog($self->{LOG}, "debug", "XML:\n$data") if($self->{DEBUG});
@@ -878,15 +885,20 @@ sub _buildRegisterXML
     my $guid     = shift;
     my $products = shift;
     my $regdata  = shift;
-
-    my $output = "";
-
-    my $writer = new XML::Writer(OUTPUT => \$output);
-    $writer->xmlDecl("UTF-8");
+    my $writer   = shift;
     
-    my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-             "client_version" => "1.2.3");
-
+    my $output = "";
+    my %a = ();
+    if(! defined $writer || !$writer)
+    {
+        $writer = new XML::Writer(OUTPUT => \$output);
+        $writer->xmlDecl("UTF-8");
+    
+        %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+              "lang" => "en",
+              "client_version" => "1.2.3");
+    }
+    
     $a{force} = "batch";
     
     $writer->startTag("register", %a);

@@ -190,13 +190,17 @@ sub _requestData
 
     my $uri = URI->new($self->{URI});
     #$uri->userinfo($self->{USERINFO});
-    $uri->query("command=regdata");
+    $uri->query("command=regdata&lang=en-US&version=1.0");
     
+    my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+             "client_version" => "1.2.3",
+             "lang" => "en");
+
     my $content = "";
     my $writer = new XML::Writer(NEWLINES => 1, OUTPUT => \$content);
     $writer->xmlDecl();
-    $writer->startTag($self->{ELEMENT}, xmlns => "http://www.novell.com/center/xml/regsvc10");
-
+    $writer->startTag($self->{ELEMENT}, %a);
+    
     $writer->startTag("authuser");
     $writer->characters($self->{AUTHUSER});
     $writer->endTag("authuser");
