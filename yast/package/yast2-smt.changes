@@ -5,6 +5,7 @@ Thu Apr 17 14:27:20 CEST 2008 - locilka@suse.cz
 - Changing the SMT-user password by calling 'smt-db cpw'.
 - Randomized cron jobs (daily by random startup time, periodical by
   random register-wait).
+- 2.13.10
 
 -------------------------------------------------------------------
 Wed Apr 16 15:39:28 CEST 2008 - locilka@suse.cz
