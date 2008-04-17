@@ -270,7 +270,7 @@
 	    SetCredentials ("REPORT", one_entry, (string) SCR::Read (add (.smt_conf.value.REPORT, one_entry)));
 	});
 
-	foreach (string one_entry, ["user", "pass"], {
+	foreach (string one_entry, ["user", "pass", "config"], {
 	    SetCredentials ("DB", one_entry, (string) SCR::Read (add (.smt_conf.value.DB, one_entry)));
 	});
 
@@ -694,11 +694,27 @@ For security reasons, please, set a new one.")),
 	return ret;
     }
 
+    string GetMysqlHostname () {
+	string hostname = "localhost";
+
+	string db_config = GetCredentials ("DB","config");
+	foreach (string one_db_item, splitstring (db_config, ";"), {
+	    if (regexpmatch (one_db_item, ".*host=.*")) {
+		hostname = regexpsub (one_db_item, ".*host=(.*)", "\\1");
+		y2milestone ("Hostname found: %1", hostname);
+		break;
+	    }
+	});
+
+	return hostname;
+    }
+
     boolean SetNewRootPassword (string new_mysql_root_password) {
 	y2milestone ("Adjusting new root password");
 
 	string mysql_command = sformat (
-	    "SET PASSWORD FOR root@localhost=PASSWORD('%1');",
+	    "SET PASSWORD FOR root@%1=PASSWORD('%2');",
+	    GetMysqlHostname(),
 	    String::Quote (new_mysql_root_password)
 	);
 
@@ -708,7 +724,7 @@ For security reasons, please, set a new one.")),
 	SCR::Execute (.target.bash, sformat ("chmod 0600 '%1'", String::Quote (mysql_command_file)));
 	SCR::Write (.target.string, mysql_command_file, mysql_command);
 
-	string cmd_cmd = sformat ("mysql -u root < '%1'", mysql_command_file);
+	string cmd_cmd = sformat ("mysql -u root -h %1 < '%2'", GetMysqlHostname(), mysql_command_file);
 	map cmd = (map) SCR::Execute (.target.bash_output, cmd_cmd);
 	if (cmd["exit"]:-1 != 0) {
 	    y2error ("Cannot set new root password: %1", cmd);
@@ -732,7 +748,9 @@ For security reasons, please, set a new one.")),
 	}
 
 	// check whether mysql root password is empty
-	boolean root_password_empty = ((integer) SCR::Execute (.target.bash, "echo 'show databases;' | mysql -u root 2>/dev/null") == 0);
+	boolean root_password_empty = ((integer) SCR::Execute (.target.bash,
+	    sformat ("echo 'show databases;' | mysql -u root -h %1 2>/dev/null", GetMysqlHostname())
+	) == 0);
 
 	// root password is empty
 	// ask user to set a new one
