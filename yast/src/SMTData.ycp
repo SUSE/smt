@@ -133,10 +133,6 @@
 	}
     }
 
-    global boolean GetFirstRun () {
-	return first_run;
-    }
-
     /**
      * Writes that the configuration has been already done.
      */
@@ -262,7 +258,7 @@
 	    SetCredentials ("NU", one_entry, (string) SCR::Read (add (.smt_conf.value.NU, one_entry)));
 	});
 
-	foreach (string one_entry, ["nccEmail", "url"], {
+	foreach (string one_entry, ["nccEmail", "url", "rndRegister"], {
 	    SetCredentials ("LOCAL", one_entry, (string) SCR::Read (add (.smt_conf.value.LOCAL, one_entry)));
 	});
 
@@ -419,6 +415,35 @@ Please, check your SMT installation."), path_to_sync_script));
 	}
 
 	smt_cron_settings = (list <map>) SCR::Read (.smt_cron);
+    }
+
+    global void CronRandomize () {
+	if (! IsFirstRun()) {
+	    return;
+	}
+
+	y2milestone ("First-run: randomizing cron times");
+
+	// to get different 'random' numbers :->>>
+	srandom();
+
+	// randomize smt-daily
+	integer counter = -1;
+	foreach (map one_cron_job, GetCronSettings(), {
+	    counter = counter + 1;
+
+	    if (regexpmatch (one_cron_job["command"]:"", "smt-daily")) {
+		// 01 - 02
+		one_cron_job["hour"] = tostring (random (2));
+		one_cron_job["minute"] = tostring (random (59));
+		y2milestone ("smt-daily randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
+		ReplaceCronJob (counter, one_cron_job);
+	    }
+	});
+
+	// randomize smt-repeated-register
+	// 450 (seconds) == 7.5 minutes
+	SetCredentials ("LOCAL", "rndRegister", tostring (random (450)));
     }
 
     global boolean WriteCronSettings () {
