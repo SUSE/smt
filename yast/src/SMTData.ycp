@@ -765,7 +765,7 @@ For security reasons, please, set a new one.")),
 	    }
 	}
 
-	// /usr/lib/SMT/smt-db setup --yast
+	// /usr/lib/SMT/bin/smt-db setup --yast
 	// * mysql root password
 	// * smt user name
 	// * smt user password
@@ -803,6 +803,63 @@ For security reasons, please, set a new one.")),
 	    }
 	}
 
+	SCR::Execute (.target.remove, smt_command_file);
+
 	return ret;
+    }
+
+    string initial_password = nil;
+
+    /**
+     * Function remembers initial SMT-user password
+     */
+    global void StorePasswordTMP () {
+	if (initial_password == nil) {
+	    initial_password = GetCredentials ("DB","pass");
+	} else {
+	    y2error ("Initial password already set!");
+	}
+    }
+
+    /**
+     * Function changes the SMT-user passowrd if different
+     * than the initial one
+     */
+    global boolean ChangePasswordIfDifferent () {
+	string new_password = GetCredentials ("DB","pass");
+
+	if (initial_password == new_password) {
+	    y2milestone ("SMT-user password is the same");
+	    return true;
+	}
+
+	// /usr/lib/SMT/bin/smt-db cpw
+	// * mysql root password
+	// * smt user name
+	// * smt user password
+	// * verify smt user password
+	string smt_cpw_command = sformat (
+	    "%1\n%2\n%3\n",
+	    initial_password,
+	    GetCredentials ("DB","pass"),
+	    GetCredentials ("DB","pass")
+	);
+
+	string smt_command_file = sformat ("%1/smt-cpw-command-filename", Directory::tmpdir);
+	SCR::Write (.target.string, smt_command_file, "");
+	// rw only for owner
+	SCR::Execute (.target.bash, sformat ("chmod 0600 '%1'", String::Quote (smt_command_file)));
+	SCR::Write (.target.string, smt_command_file, smt_cpw_command);
+
+	y2milestone ("Calling smt-db cpw");
+	integer retcode = (integer) SCR::Execute (.target.bash, sformat ("/usr/lib/SMT/bin/smt-db cpw --yast < '%1'", smt_command_file));
+	y2milestone ("smt-db setup returned: %1", retcode);
+
+	if (retcode != 0) {
+	    Report::Error (_("Unable to change SMT-user password."));
+	    return false;
+	} else {
+	    return true;
+	}
     }
 }

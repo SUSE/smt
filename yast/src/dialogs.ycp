@@ -205,6 +205,7 @@
 
 	SMTData::ReadCredentials();
 	SMTData::ReadFirstRun();
+	SMTData::StorePasswordTMP();
 
 	Progress::NextStage();
 	sleep (sl);
@@ -240,7 +241,7 @@
 	    // TRANSLATORS: Dialog caption
 	    _("Writing SMT Configuration"),
 	    " ",
-	    7,
+	    8,
 	    [
 		_("Adjust SMT configuration"),
 		// TRANSLATORS: Progress step
@@ -292,6 +293,7 @@
 	sleep (sl);
 
 	// uses credentials
+	SMTData::ChangePasswordIfDifferent();
 	SMTData::WriteDatabaseSettings();
 
 	Progress::NextStage();

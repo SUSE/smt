@@ -2,6 +2,7 @@
 Thu Apr 17 14:27:20 CEST 2008 - locilka@suse.cz
 
 - Added firewall support (http, https).
+- Changing the SMT-user password by calling 'smt-db cpw'.
 
 -------------------------------------------------------------------
 Wed Apr 16 15:39:28 CEST 2008 - locilka@suse.cz
