@@ -855,6 +855,8 @@ For security reasons, please, set a new one.")),
 	integer retcode = (integer) SCR::Execute (.target.bash, sformat ("/usr/lib/SMT/bin/smt-db cpw --yast < '%1'", smt_command_file));
 	y2milestone ("smt-db setup returned: %1", retcode);
 
+	SCR::Execute (.target.remove, smt_command_file);
+
 	if (retcode != 0) {
 	    Report::Error (_("Unable to change SMT-user password."));
 	    return false;
