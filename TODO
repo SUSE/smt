@@ -2,8 +2,6 @@
 TODO:
 =====
 
-- What about the Firewall?  (lukas: use firewall widget in the yast module)
-
 - yast module cannot change the smt database password.
   (lukas: use /usr/lib/SMT/bin/smt-db cpw)
 
@@ -14,6 +12,8 @@ TODO:
      HTTP. Apache should be somehow limited and/or behavior documented.
 
 - review help texts of our commandline tools.
+
+- write helps texts for YaST
 
 - write man pages for commandline tools
 
@@ -305,4 +305,6 @@ About nccEmail: here is the help text which come from NCC if you enter
   
   We have now -catstat (-c) option
 
-
+- What about the Firewall?
+    firewall is supported in YaST via CWM
+    http and https services are open if selected
