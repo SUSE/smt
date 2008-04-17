@@ -682,13 +682,22 @@ sub hardlink
 
     my $debug = 0;
     $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
-
-    my $dir = $cfg->val("LOCAL", "MirrorTo");
-    if(!defined $dir || $dir eq "" || ! -d $dir)
+    
+    my $dir = "";
+    if(! exists $options{basepath} || ! defined $options{basepath} || ! -d $options{basepath})
     {
-        printLog($options{log}, "error", sprintf("Wrong mirror directory: %s", $dir));
-        return 1;
+        $dir = $cfg->val("LOCAL", "MirrorTo");
+        if(!defined $dir || $dir eq "" || ! -d $dir)
+        {
+            printLog($options{log}, "error", sprintf("Wrong mirror directory: %s", $dir));
+            return 1;
+        }
     }
+    else
+    {
+        $dir = $options{basepath};
+    }
+    
     my $cmd = "find $dir -xdev -iname '*.rpm' -type f -size +$options{size}k ";
     printLog($options{log}, "info", "$cmd") if($debug);
     
