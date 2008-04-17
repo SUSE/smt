@@ -262,6 +262,22 @@ sub mirrorTo()
  
     foreach my $r ( sort keys %{$self->{JOBS}})
     {
+        if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
+        {
+            if( $self->{JOBS}->{$r}->outdated() )
+            {
+                printLog($self->{LOG}, "info",  sprintf("New File [%s]", $r));
+                $self->{STATISTIC}->{DOWNLOAD} += 1;
+            }
+            else
+            {
+                printLog($self->{LOG}, "debug", sprintf("-------> %s is up to date", $r)) if($self->{DEBUG});
+                $self->{STATISTIC}->{UPTODATE} += 1;
+            }
+            
+            next;
+        }
+        
         my $tries = 3;
         do
         {
@@ -306,9 +322,16 @@ sub mirrorTo()
         } while $tries > 0;
     }
 
-    # if no error happens copy .repodata to repodata
+    # dryrun - remove .repodata directory
+    if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
+    {
+        if( -d $job->localdir()."/.repodata")
+        {
+            rmtree($job->localdir()."/.repodata", 0, 0);
+        }
 
-    if($self->{STATISTIC}->{ERROR} == 0 && -d $job->localdir()."/.repodata")
+    }  # if no error happens copy .repodata to repodata
+    elsif($self->{STATISTIC}->{ERROR} == 0 && -d $job->localdir()."/.repodata")
     {
         if( -d $job->localdir()."/.old.repodata")
         {
@@ -335,8 +358,17 @@ sub mirrorTo()
         }
     }
     
-    printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
-    printLog($self->{LOG}, "info", sprintf(__("=> Downloaded Files : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+    if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
+    {
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun '%s'"), $saveuri->as_string));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files to download: %s"), $self->{STATISTIC}->{DOWNLOAD}));
+    }
+    else
+    {
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
+        printLog($self->{LOG}, "info", sprintf(__("=> Downloaded Files : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+    }
+    
     printLog($self->{LOG}, "info", sprintf(__("=> Up to date Files : %s"), $self->{STATISTIC}->{UPTODATE}));
     printLog($self->{LOG}, "info", sprintf(__("=> Errors           : %s"), $self->{STATISTIC}->{ERROR}));
     printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time      : %s seconds"), (tv_interval($t0))));

@@ -217,7 +217,7 @@ sub mirrorTo()
     # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     
     my $parser = SMT::Parser::NU->new(log => $self->{LOG});
-    $parser->parse($destfile, sub{ mirror_handler($self, $dbh, @_) });
+    $parser->parse($destfile, sub{ mirror_handler($self, $dbh, $options->{dryrun}, @_) });
 
     if($dbh)
     {
@@ -259,9 +259,10 @@ sub clean()
 
 sub mirror_handler
 {
-    my $self = shift;
-    my $dbh  = shift;
-    my $data = shift;
+    my $self   = shift;
+    my $dbh    = shift;
+    my $dryrun = shift;
+    my $data   = shift;
 
     my $domirror = 0;
 
@@ -299,7 +300,7 @@ sub mirror_handler
         
         $mirror->uri( $catalogURI );
         $mirror->deepverify($self->{DEEPVERIFY});
-        $mirror->mirrorTo( $localPath );
+        $mirror->mirrorTo( $localPath, {dryrun => $dryrun} );
     }
 }
 
