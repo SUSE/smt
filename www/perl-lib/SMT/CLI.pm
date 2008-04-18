@@ -93,12 +93,12 @@ sub escapeCSVRow($)
 #      - a hash for the data
 #      - format mode
 #   Examples:
-#   $data = (
-#     'cols' = [ "first", "second",    ...  ],
-#     'vals' = [ [a1,a2], [b1,b2],     ...  ],
-#     'opts' = {'optname' => 'optval', ...  },
-#     'heading' = "header string"
-#   );
+#   $data = {
+#     'cols' => [ "first", "second",    ...  ],
+#     'vals' => [ [a1,a2], [b1,b2],     ...  ],
+#     'opts' => {'optname' => 'optval', ...  },
+#     'heading' => "header string"
+#   };
 #   $mode = 'asciitable';
 #   $mode = 'csv';
 #
