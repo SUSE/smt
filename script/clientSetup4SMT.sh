@@ -112,7 +112,7 @@ SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
 
 
 $CAT $SRCONF | $GREP -v "^url" > $SRCTMP
-$CP $SRCONF ${SRCONF}-`date '+%x'` 
+$CP $SRCONF ${SRCONF}-`date '+%F'` 
 echo "url=$REGURL" > $SRCONF
 $CAT $SRCTMP >> $SRCONF
 $RM $SRCTMP
