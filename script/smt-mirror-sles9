@@ -99,7 +99,9 @@ foreach my $sname (@sections)
     {
         foreach my $version (@mirror_versions)
         {
-            my $t0 = [gettimeofday] ;
+           # reset error variable
+           $errors = 0;
+           my $t0 = [gettimeofday] ;
 
             my $uri = URI->new("https://you.novell.com/");
             $uri->userinfo($credentials);
@@ -194,7 +196,6 @@ foreach my $sname (@sections)
             SMT::Utils::printLog($log, "info", sprintf(__("=> Errors           : %s"), $errors));
             SMT::Utils::printLog($log, "info", sprintf(__("=> Mirror Time      : %s seconds"), (tv_interval($t0))));
             print "\n";
-            
         }
     }
 }
