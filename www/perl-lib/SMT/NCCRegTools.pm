@@ -588,6 +588,9 @@ sub _listreg_handler
         }
         else
         {
+            # FIXME: maybe we get GUID from other SMTs of this company. If yes, we should
+	    #        skip this warning.
+	    #
             # We found a registration from SMT in NCC which does not exist in SMT anymore
             # print and error. The admin has to delete it in NCC by hand.
             printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a subscription in NCC which is not available here: '%s'"), $data->{GUID}));
