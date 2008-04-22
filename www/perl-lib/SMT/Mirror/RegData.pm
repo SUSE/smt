@@ -216,7 +216,7 @@ sub _requestData
     $writer->endTag($self->{ELEMENT});
     
 
-    my $response = $self->{USERAGENT}->post( $uri->as_string(), 
+    my $response = $self->{USERAGENT}->post( $uri->as_string(),
                                              ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
                                              'Content' => $content);
     
@@ -233,7 +233,7 @@ sub _requestData
     else
     {
         # FIXME: was 'die'; check if we should stop if a download failed
-        printLog($self->{LOG}, "error", "Failed to POST '$uri->as_string()': ".$response->status_line);
+        printLog($self->{LOG}, "error", "Failed to POST '".$uri->as_string()."': ".$response->status_line);
         return undef;
     }
 }
