@@ -759,10 +759,15 @@ sub buildZmdConfig
     my $catalogs   = shift;
     my $usetestenv = shift || 0;
     
-    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-    if(!defined $cfg)
+    my $cfg = undef;
+
+    eval
     {
-        $r->log_error("Cannot read the SMT configuration file: ".@Config::IniFiles::errors);
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        $r->log_error("Cannot read the SMT configuration file: ".$@);
         die "SMT server is missconfigured. Please contact your administrator.";
     }
     

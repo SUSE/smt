@@ -29,18 +29,20 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 sub init
 {
     my $dbh;
-    my $cfg;
+    my $cfg = undef;
     my $nuri;
     if ( not $dbh=SMT::Utils::db_connect() )
     {
         die __("ERROR: Could not connect to the database");
     }
 
-    #print "hello CLI\n";
-    $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-    if(!defined $cfg)
+    eval
     {
-        die __("Cannot read the SMT configuration file: ").@Config::IniFiles::errors;
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        die __("Cannot read the SMT configuration file: ").$@;
     }
 
     # TODO move the url assembling code out

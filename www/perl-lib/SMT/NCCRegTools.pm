@@ -443,12 +443,18 @@ sub NCCDeleteRegistration
     # check if we are allowed to register clients at NCC
     # if no, we are also not allowed to remove them
     
-    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-    if(!defined $cfg)
+    my $cfg = undef;
+
+    eval
     {
-        SMT::Utils::printLog($self->{LOG}, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        SMT::Utils::printLog($self->{LOG}, "error", sprintf(__("Cannot read the SMT configuration file: %s"), $@));
         return 1;
     }
+
     my $allowRegister = $cfg->val("LOCAL", "forwardRegistration");
 
     foreach my $guid (@guids)

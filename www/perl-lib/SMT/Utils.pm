@@ -26,7 +26,9 @@ our @EXPORT = qw(__ printLog);
 #
 sub getSMTConfig
 {
-    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
+    my $filename = shift || "/etc/smt.conf";
+    
+    my $cfg = new Config::IniFiles( -file => $filename );
     if(!defined $cfg)
     {
         # FIXME: is die correct here?

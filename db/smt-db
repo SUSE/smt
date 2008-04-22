@@ -32,12 +32,16 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 sub db_connect
 {
-    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-    if(!defined $cfg)
+    my $cfg = undef;
+
+    eval
     {
-        # FIXME: is die correct here?
-        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), @Config::IniFiles::errors);
-	exit 2;
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), $@);
+        exit 2;
     }
     
     my $config = $cfg->val('DB', 'config');
@@ -102,10 +106,15 @@ sub cpw
     my $smtpassV = "";
     my $host     = "localhost";
 
-    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-    if(!defined $cfg)
+    my $cfg = undef;
+
+    eval
     {
-        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), @Config::IniFiles::errors);
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), $@);
         return 2;
     }
 
@@ -206,11 +215,16 @@ sub setup
     system("stty echo") if($opt ne "--yast");
     print "\n";
     
-    my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-    if(!defined $cfg)
+    my $cfg = undef;
+
+    eval
     {
-        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), @Config::IniFiles::errors);
-	return 2;
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), $@);
+        return 2;
     }
     
     my $config = $cfg->val('DB', 'config');

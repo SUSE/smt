@@ -86,14 +86,19 @@ if(!SMT::Utils::openLock("smt-mirror"))
 
 my $LOG = SMT::Utils::openLog($logfile);
 
-my $cfg = new Config::IniFiles( -file => "/etc/smt.conf" );
-if(!defined $cfg)
+my $cfg = undef;
+
+eval
+{
+    $cfg = SMT::Utils::getSMTConfig();
+};
+if($@ || !defined $cfg)
 {
     if(!SMT::Utils::unLock("smt-mirror"))
     {
         SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors));
+    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), $@));
     exit 1;
 }
 
