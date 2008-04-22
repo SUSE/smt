@@ -7,6 +7,7 @@ use lib ("www/perl-lib/");
 use SMT::CLI;
 use SMT::Utils;
 use SMT::Mirror::RegData;
+use SMT::NCCRegTools;
 use File::Basename;
 
 use Locale::gettext ();
