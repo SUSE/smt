@@ -21,11 +21,15 @@ my $csv;     # export data as csv
 my $file;    # write output to file
 my $logfile;
 
+# which reports
+my $classreport = 0;
+my $localreport = 0;
+my $nccreport   = 0;
+
+
 use Getopt::Long;
 
-# open the logfile
-my $LOG = SMT::Utils::openLog($logfile);
-
+my $LOG = undef;
 
 # configuration
 my %conf = (
@@ -101,24 +105,56 @@ my %conf = (
                             }
            );
 
+my $legendLocal = "
+Legend:
+
+Subscription:                The name of the subscription.
+Locally Registered Machines: The number of clients which are registered against this subscription.
+Active Subscriptions:        The number of allowed clients for this subscriptions.
+Soon expiring Subscriptions: Like 'Active Subscriptions', but these are expiring soon.
+Missing Subscriptions:       The number of clients which require a subscription of this type
+                             but no free subscription is available.
+
+Total Subscriptions:         Number of Subscriptions of this type
+Used Locally:                Number of clients which are assigned to this type
+Expiring Date:               The date when this subscription expires.
+";
+
+my $legendNCC   = "
+Legend:
+
+Subscription:                The name of the subscription.
+Registered Machines at NCC:  The number of clients which are assigned to this subscription.
+                             This is a total number over the company, not only this SMT server.
+Active Subscriptions:        The number of allowed clients for this subscriptions.
+Soon expiring Subscriptions: Like 'Active Subscriptions', but these are expiring soon.
+Missing Subscriptions:       The number of clients which require a subscription of this type
+                             but no free subscription is available.
+
+Registration Code:           The registration code for this subscription.
+Total Subscriptions:         Number of Subscriptions of this type
+Total Used:                  Number of used subscriptions (company wide)
+Used Locally:                Number of used subscriptions from this SMT server.
+Expiring Date:               The date when this subscription expires.
+";
+
+my $footer      = "
+Footer
+";
+
 
 
 # main hashes that keep the report data
 my %REP = ();
-my %DATA = (
-            'class'   => SMT::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug),
-            'prodsub' => SMT::CLI::productSubscriptionReport(log => $LOG, debug => $debug),
-            'sub'     => SMT::CLI::subscriptionReport(log => $LOG, debug => $debug)
-          );
-
+my %DATA = ();
 
 ### SUBS #####################################################################
 
 sub printUsage
 {
     print basename($0) . " : " . __("generate a report")."\n";
-    print "  --help    (-h) : " . __("print this help")."\n";
-    print "  --debug   (-d) : " . __("enable debug mode")."\n";
+    print "  --local        : " . __("force to create a report based on a local calculation")."\n";
+    print "  --ncc          : " . __("force to create a report based on NCC data")."\n";
     print "  --mail    (-m) : " . __("enable mailing of report")."\n";
     print "  --attach  (-a) : " . __("attach CSV report files to mail (only together with --mail)")."\n";
     print "  --quiet   (-q) : " . __("suppress output")."\n";
@@ -126,6 +162,8 @@ sub printUsage
     print "  --file    (-F) [<file>] : " . __("write report to a file")."\n";
     print "            " . __("in csv mode <file> expands to [<dir>/]<file-name>-reportname[.<file-extension>]\n");
     print "  --logfile (-L) <file>   : " . __("Path to logfile")."\n";
+    print "  --help    (-h) : " . __("print this help")."\n";
+    print "  --debug   (-d) : " . __("enable debug mode")."\n";
 }
 
 
@@ -180,7 +218,8 @@ sub getReportRenderedAs
 
     if (defined $subrep && $subrep ne '')
     {
-        if ($subrep eq 'summary')
+        if (($subrep eq 'summary' && ref($DATA{$report}{$subrep}) ne "HASH") ||
+            ($subrep eq 'alerts' && ref($DATA{$report}{$subrep}) ne "HASH"))
         {
             # do not render summaries
             return $DATA{$report}{$subrep};
@@ -215,32 +254,50 @@ sub getMergedReport($)
 {
     my $renderMode = shift;
     if (! defined $renderMode) { return ''; }
-    my %headings = (  'class'   =>  __("Product Class Report"),
-                      'sub'     =>  __("Subscription Report based on a local calculation"),
-                      'prodsub' =>  __("Subscription Report based on NCC registrations")
+    my %headings = (
+                    'class'   =>  __("Product Class Report"),
+                    'sub'     =>  __("Subscription Report based on NCC registrations"),
+                    'prodsub' =>  __("Subscription Report based on a local calculation")
                    );
 
     my $res = '';
-    $res .= $headings{'class'}."\n";
-    $res .= sprintf '=' x length($headings{'class'})."\n\n";
-    $res .= getReportRenderedAs($renderMode, 'class');
-    $res .= "\n\n";
+    if($classreport)
+    {
+        $res .= $headings{'class'}."\n";
+        $res .= sprintf '=' x length($headings{'class'})."\n\n";
+        $res .= getReportRenderedAs($renderMode, 'class');
+        $res .= "\n\n";
+    }
+    
+    if($localreport)
+    {
+        $res .= $headings{'prodsub'}."\n";
+        $res .= sprintf '=' x length($headings{'prodsub'})."\n\n";
+        $res .= getReportRenderedAs($renderMode, 'prodsub', 'alerts')."\n";
+        $res .= getReportRenderedAs($renderMode, 'prodsub', 'summary')."\n";
+        $res .= getReportRenderedAs($renderMode, 'prodsub', 'active')."\n";
+        $res .= getReportRenderedAs($renderMode, 'prodsub', 'soon')."\n";
+        $res .= getReportRenderedAs($renderMode, 'prodsub', 'expired')."\n";
+        $res .= "\n\n"; 
 
-    $res .= $headings{'prodsub'}."\n";
-    $res .= sprintf '=' x length($headings{'prodsub'})."\n\n";
-    $res .= getReportRenderedAs($renderMode, 'prodsub', 'active')."\n";
-    $res .= getReportRenderedAs($renderMode, 'prodsub', 'soon')."\n";
-    $res .= getReportRenderedAs($renderMode, 'prodsub', 'expired')."\n";
-    $res .= getReportRenderedAs($renderMode, 'prodsub', 'summary')."\n";
-    $res .= "\n\n"; 
+        $res .= $legendLocal."\n\n";
+    }
+    
+    if($nccreport)
+    {
+        $res .= $headings{'sub'}."\n";
+        $res .= sprintf '=' x length($headings{'sub'})."\n\n";
+        $res .= getReportRenderedAs($renderMode, 'sub', 'alerts')."\n";
+        $res .= getReportRenderedAs($renderMode, 'sub', 'summary')."\n";
+        $res .= getReportRenderedAs($renderMode, 'sub', 'active')."\n";
+        $res .= getReportRenderedAs($renderMode, 'sub', 'soon')."\n";
+        $res .= getReportRenderedAs($renderMode, 'sub', 'expired')."\n";
+        $res .= "\n\n";
 
-    $res .= $headings{'sub'}."\n";
-    $res .= sprintf '=' x length($headings{'sub'})."\n\n";
-    $res .= getReportRenderedAs($renderMode, 'sub', 'active')."\n";
-    $res .= getReportRenderedAs($renderMode, 'sub', 'soon')."\n";
-    $res .= getReportRenderedAs($renderMode, 'sub', 'expired')."\n";
-    $res .= getReportRenderedAs($renderMode, 'sub', 'summary')."\n";
-    $res .= "\n\n";
+        $res .= $legendNCC."\n\n";
+    }
+    
+    $res .= $footer."\n\n";
 
     return $res;
 }
@@ -255,18 +312,26 @@ sub getSeparateReports($)
     my %res = ();
     if (! defined $renderMode) { return %res; }
 
-    $res{'product_class'} = getReportRenderedAs($renderMode, 'class');
+    $res{'product_class'} = getReportRenderedAs($renderMode, 'class') if($classreport);
 
-    $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'prodsub', 'active');
-    $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'prodsub', 'soon');
-    $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'prodsub', 'expired');
-    $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'prodsub', 'summary');
-   
-    $res{'subscription_active'}     = getReportRenderedAs($renderMode, 'sub', 'active');
-    $res{'subscription_expiresoon'} = getReportRenderedAs($renderMode, 'sub', 'soon');
-    $res{'subscription_expired'}    = getReportRenderedAs($renderMode, 'sub', 'expired');
-    $res{'subscription_summary'}    = getReportRenderedAs($renderMode, 'sub', 'summary');
-
+    if($localreport)
+    {
+        $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'prodsub', 'active');
+        $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'prodsub', 'soon');
+        $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'prodsub', 'expired');
+        $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'prodsub', 'summary');
+        $res{'product_subscription_alerts'}      = getReportRenderedAs($renderMode, 'prodsub', 'alerts');
+    }
+    
+    if($nccreport)
+    {
+        $res{'subscription_active'}     = getReportRenderedAs($renderMode, 'sub', 'active');
+        $res{'subscription_expiresoon'} = getReportRenderedAs($renderMode, 'sub', 'soon');
+        $res{'subscription_expired'}    = getReportRenderedAs($renderMode, 'sub', 'expired');
+        $res{'subscription_summary'}    = getReportRenderedAs($renderMode, 'sub', 'summary');
+        $res{'subscription_alerts'}      = getReportRenderedAs($renderMode, 'sub', 'alerts');
+    }
+    
     return %res;
 }
 
@@ -276,22 +341,48 @@ sub getSeparateReports($)
 
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
-         'debug|d'    => \$debug,
-         'help|h'     => \$help,
-         'mail|m'     => \$mail,
-         'attach|a'   => \$attach,
-         'quiet|q'    => \$quiet,
-         'csv|c'      => \$csv,
-         'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
-         'logfile|L=s'=> \$logfile
-);
-
-
+                          'local'      => \$localreport,
+                          'ncc'        => \$nccreport,
+                          'classreport'=> \$classreport,
+                          'debug|d'    => \$debug,
+                          'help|h'     => \$help,
+                          'mail|m'     => \$mail,
+                          'attach|a'   => \$attach,
+                          'quiet|q'    => \$quiet,
+                          'csv|c'      => \$csv,
+                          'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
+                          'logfile|L=s'=> \$logfile
+                         );
 
 if ( defined $help && ( $help == 1 ) )
 {
     printUsage();  
     exit 0;
+}
+
+# open the logfile
+$LOG = SMT::Utils::openLog($logfile);
+
+$DATA {'class'}   = SMT::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug) if($classreport);
+$DATA {'prodsub'} = SMT::CLI::productSubscriptionReport(log => $LOG, debug => $debug);
+$DATA {'sub'}     = SMT::CLI::subscriptionReport(log => $LOG, debug => $debug);
+
+
+if(!($localreport || $nccreport || $classreport))
+{
+    # calculate best report
+
+    my $cfg = SMT::Utils::getSMTConfig();
+    
+    my $fwdr = $cfg->val("LOCAL", "forwardRegistration");
+    if(lc($fwdr) eq "true")
+    {
+        $nccreport = 1;
+    }
+    else
+    {
+        $localreport = 1;
+    }
 }
 
 
@@ -343,7 +434,7 @@ if (defined $file)
         while ( my ($rname, $rdata) = each(%rep) )
         {
             my $extension = $Eext;
-            if ($extension eq '.csv'  &&  $rname =~ /summary/i ) { $extension = '.txt';  }
+            if ($extension eq '.csv'  &&  $rname =~ /alerts/i ) { $extension = '.txt';  }
             $fname = $Edir.$Efile.'-'.$rname.$extension;
             open(REPFILE, "> $fname ")  ||  die sprintf(__("Can not open target file %s"), $fname);
             print REPFILE $rdata;
@@ -380,7 +471,7 @@ if (defined $mail  &&  $mail == 1)
         while ( my ($rname, $rdata) = each(%rep) )
         {
             my $extension = '.csv';
-            if ( $rname =~ /summary/i ) { $extension = '.txt';  }
+            if ( $rname =~ /alerts/i ) { $extension = '.txt';  }
             my $csvName = $defaultFilePrefix.'-'.$rname.$extension;
             $ATTACH{$csvName} = $rdata;
         }
