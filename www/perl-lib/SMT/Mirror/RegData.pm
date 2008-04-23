@@ -176,8 +176,12 @@ sub sync
     }
     else
     {
-    	$self->_parseXML($xmlfile);
-    	return $self->_updateDB();
+    	my $ret = $self->_parseXML($xmlfile);
+        if($ret)
+        {
+            return $ret;
+        }
+        return $self->_updateDB();
     }
 }
 
@@ -245,7 +249,7 @@ sub _requestData
             
             my $newuri = $response->header("location");
             
-            printLog($self->{LOG}, "debug", "Redirected to $newuri"); # if($self->{DEBUG});
+            printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
             $uri = URI->new($newuri);
         }
     } while($response->is_redirect);
@@ -280,6 +284,7 @@ sub _parseXML
     if(! -e $xmlfile)
     {
         printLog($self->{LOG}, "error", "File '$xmlfile' does not exist.");
+        return 1;
     }
 
     my $parser = SMT::Parser::RegData->new();
@@ -303,6 +308,21 @@ sub ncc_handler
         $data->{RELLOWER}     = undef;
         $data->{ARCHLOWER}    = undef;
 
+        if(exists $data->{RELEASE} && defined $data->{RELEASE})
+        {
+            # fix RELEASE => REL
+            $data->{REL} = $data->{RELEASE};
+            delete $data->{RELEASE};
+        }        
+
+        if(exists $data->{PARAM} && defined $data->{PARAM})
+        {
+            # fix PARAM => PARAMLIST
+            $data->{PARAMLIST} = $data->{PARAM};
+            delete $data->{PARAM};
+        }        
+
+
         $data->{PRODUCTLOWER} = lc($data->{PRODUCT}) if(exists $data->{PRODUCT} && defined $data->{PRODUCT});
         $data->{VERSIONLOWER} = lc($data->{VERSION}) if(exists $data->{VERSION} && defined $data->{VERSION});
         $data->{RELLOWER}     = lc($data->{REL}) if(exists $data->{REL} && defined $data->{REL});
@@ -324,12 +344,12 @@ sub _updateDB
     if(!defined $table || $table eq "")
     {
         printLog($self->{LOG}, "error", "Invalid table name");
-        exit 1;
+        return 1;
     }
     if(!defined $key || ref($key) ne "ARRAY")
     {
         printLog($self->{LOG}, "error", "Invalid key element.");
-        exit 1;
+        return 1;
     }
     
     if(! exists $self->{XML}->{DATA}->{$self->{ELEMENT}})
@@ -343,7 +363,7 @@ sub _updateDB
     if(!defined $dbh)
     {
         printLog($self->{LOG}, "error", "Cannot connect to database.");
-        exit 1;
+        return 1;
     }
     
     foreach my $row (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
@@ -388,7 +408,14 @@ sub _updateDB
             {
                 next if( grep( ($_ eq $cn), @$key ) );
 
-                push @pairs, "$cn = ".$dbh->quote($row->{$cn});
+                if(!defined $row->{$cn} || lc($row->{$cn}) eq "null")
+                {
+                    push @pairs, "$cn = NULL";
+                }
+                else
+                {
+                    push @pairs, "$cn = ".$dbh->quote($row->{$cn});
+                }
             }
             
             # if all columns of a table are part of the primary key 
@@ -420,7 +447,14 @@ sub _updateDB
             foreach my $cn (keys %$row)
             {
                 push @k, $cn;
-                push @v, $dbh->quote($row->{$cn});
+                if(!defined $row->{$cn} || lc($row->{$cn}) eq "null")
+                {
+                    push @v, "NULL";
+                }
+                else
+                {
+                    push @v, $dbh->quote($row->{$cn});
+                }
             }
 
             $statement .= join(',', @k);

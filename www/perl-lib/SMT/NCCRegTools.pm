@@ -4,6 +4,7 @@ use strict;
 use LWP::UserAgent;
 use URI;
 use SMT::Parser::ListReg;
+use SMT::Parser::ListSubscriptions;
 use SMT::Parser::Bulkop;
 use SMT::Utils;
 use XML::Writer;
@@ -296,6 +297,12 @@ sub NCCListRegistrations
             printLog($self->{LOG}, "error", __("Database handle is not available."));
             return 1;
         }
+
+        if(! defined $destfile || ! -e $destfile)
+        {
+            printLog($self->{LOG}, "error", sprintf(__("File '%s' does not exist."), $destfile));
+            return 1;
+        }
         
         my $sth = $self->{DBH}->prepare("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE IS NOT NULL");
         #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMESTAMP);
@@ -371,7 +378,6 @@ sub NCCListSubscriptions
             printLog($self->{LOG}, "error", "List subscriptions request failed.");
             return 1;
         }
-        return 0;
     }
     
     if(defined $self->{TODIR} && $self->{TODIR} ne "")
@@ -385,7 +391,13 @@ sub NCCListSubscriptions
             printLog($self->{LOG}, "error", __("Database handle is not available."));
             return 1;
         }
-        
+
+        if(! defined $destfile || ! -e $destfile)
+        {
+            printLog($self->{LOG}, "error", sprintf(__("File '%s' does not exist."), $destfile));
+            return 1;
+        }
+
         # The _listsub_handler fill the Subscriptions and ProductSubscriptions table new.
         # Here we need to delete it first
 
@@ -599,6 +611,7 @@ sub _listreg_handler
                                      $self->{DBH}->quote($regcode));
                 
                 $self->{DBH}->do($statement);
+                printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
             }
         }
         else
@@ -731,8 +744,8 @@ sub _listsub_handler
     eval
     {
         # FIXME: We may need to convert the date types
-        $statement =  "INSERT INTO SUBSCRIPTIONS (REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT) ";
-        $statement .= "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $statement =  "INSERT INTO Subscriptions (REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT, CONSUMED) ";
+        $statement .= "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         my $sth = $self->{DBH}->prepare($statement);
         $sth->bind_param(1, $data->{REGCODE});
@@ -744,10 +757,11 @@ sub _listsub_handler
         $sth->bind_param(7, $data->{DURATION}, SQL_INTEGER);
         $sth->bind_param(8, $data->{SERVERCLASS});
         $sth->bind_param(9, $data->{NODECOUNT}, SQL_INTEGER);
+        $sth->bind_param(10, $data->{CONSUMED}, SQL_INTEGER);
         
         my $res = $sth->execute;
         
-        printLog($self->{LOG}, "debug", $sth->{Statement}." :$res");
+        printLog($self->{LOG}, "debug", $sth->{Statement}." :$res") if($self->{DEBUG});
         
         my @productids = split(/\s*,\s*/, $data->{PRODUCTLIST});
         
@@ -757,7 +771,7 @@ sub _listsub_handler
                                  $id, $self->{DBH}->quote($data->{REGCODE}));
 
             my $res = $self->{DBH}->do($statement);
-            printLog($self->{LOG}, "debug", "$statement :$res");
+            printLog($self->{LOG}, "debug", "$statement :$res") if($self->{DEBUG});
         }
     };
     if($@)
@@ -866,7 +880,7 @@ sub _sendData
             
             my $newuri = $response->header("location");
             
-            printLog($self->{LOG}, "debug", "Redirected to $newuri"); # if($self->{DEBUG});
+            printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
             $regurl = URI->new($newuri);
         }
     } while($response->is_redirect);

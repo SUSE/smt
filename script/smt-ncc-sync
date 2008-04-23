@@ -88,11 +88,9 @@ my $LOG = SMT::Utils::openLog($logfile);
 
 eval
 {
-    # We have currently no NCC support for this, so comment out
-	
     my $rd= SMT::Mirror::RegData->new(debug   => $debug,
                                       log     => $LOG,
-                                      element => "product",
+                                      element => "productdata",
                                       table   => "Products",
                                       key     => "PRODUCTDATAID",
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
@@ -139,9 +137,11 @@ eval
                                   log     => $LOG,
                                   fromdir => (($fromdir ne "")?$fromdir:undef),
                                   todir   => (($todir ne "")?$todir:undef));
+
+    $lr->NCCListSubscriptions();
+    
     $lr->NCCListRegistrations();
     
-    $lr->NCCListSubscriptions();
     
     if ($todir ne "")
     {

@@ -106,7 +106,9 @@ sub handle_start_tag()
 #         else
 #         {
         $self->{COLNAME} = $attrs{name};
-        $self->{CURRENT}->{$attrs{name}} = "";
+        
+        # undef to indicate a NULL value which is defined for an empyt col element
+        $self->{CURRENT}->{$attrs{name}} = undef;
 #        }
     }
     elsif(lc($element) eq "row")
