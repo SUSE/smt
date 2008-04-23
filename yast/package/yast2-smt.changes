@@ -2,6 +2,7 @@
 Wed Apr 23 11:22:48 CEST 2008 - locilka@suse.cz
 
 - Added inst_smt script to be called from installation workflow.
+- 2.13.11
 
 -------------------------------------------------------------------
 Thu Apr 17 14:27:20 CEST 2008 - locilka@suse.cz
