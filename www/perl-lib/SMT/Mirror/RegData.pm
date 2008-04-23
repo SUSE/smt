@@ -33,17 +33,21 @@ sub new
     $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
-    push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
-    # FIXME: remove http for production
-    $self->{USERAGENT}->protocols_allowed( [ 'http', 'https'] );
-    #$self->{USERINFO} = "";
+    $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
+    $self->{USERAGENT}->protocols_allowed( [ 'https'] );
+
+    $self->{MAX_REDIRECTS} = 2;
+    
+    # This does not work, we have to deal with redirects ourself
+    #push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
+
 
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
     
     $self->{SMTGUID} = SMT::Utils::getSMTGuid();
 
-    $self->{TEMPDIR} = File::Temp::tempdir(CLEANUP => 1);
+    $self->{TEMPDIR} = File::Temp::tempdir(CLEANUP => 0);
 
     $self->{ELEMENT} = "";
     $self->{TABLE}   = "";
@@ -189,7 +193,6 @@ sub _requestData
     }
 
     my $uri = URI->new($self->{URI});
-    #$uri->userinfo($self->{USERINFO});
     $uri->query("command=regdata&lang=en-US&version=1.0");
     
     my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
@@ -197,7 +200,7 @@ sub _requestData
              "lang" => "en");
 
     my $content = "";
-    my $writer = new XML::Writer(NEWLINES => 1, OUTPUT => \$content);
+    my $writer = new XML::Writer(NEWLINES => 0, OUTPUT => \$content);
     $writer->xmlDecl();
     $writer->startTag($self->{ELEMENT}, %a);
     
@@ -215,19 +218,50 @@ sub _requestData
     
     $writer->endTag($self->{ELEMENT});
     
+    my $response = "";
+    my $redirects = 0;
+    
+    do
+    {
+        printLog($self->{LOG}, "debug", "Send to '$uri' content: $content") if($self->{DEBUG});
 
-    my $response = $self->{USERAGENT}->post( $uri->as_string(),
-                                             ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
-                                             'Content' => $content);
+        $response = $self->{USERAGENT}->post( $uri->as_string(), {},
+                                              ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
+                                              'Content' => $content);
+        
+        # enable this if you want to have a trace
+        #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$response]));
+        
+        printLog($self->{LOG}, "debug", "Result: ".$response->code()." ".$response->message()) if($self->{DEBUG});
+
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > $self->{MAX_REDIRECTS})
+            {
+                printLog($self->{LOG}, "error", "Reach maximal redirects. Abort");
+                return undef;
+            }
+            
+            my $newuri = $response->header("location");
+            
+            printLog($self->{LOG}, "debug", "Redirected to $newuri"); # if($self->{DEBUG});
+            $uri = URI->new($newuri);
+        }
+    } while($response->is_redirect);
     
-    if ( $response->is_redirect )
+    if( $response->is_success && -e $destdir."/".$self->{ELEMENT}.".xml")
     {
-        printLog($self->{LOG}, "debug", "Redirected") if($self->{DEBUG});
-        return undef;
-    }
-    
-    if( $response->is_success )
-    {
+        if($self->{DEBUG})
+        {
+            open(CONT, "< $destdir/".$self->{ELEMENT}.".xml") and do
+            {
+                my @c = <CONT>;
+                close CONT;
+                printLog($self->{LOG}, "debug", "Content:".join("\n", @c));
+            };
+        }
+        
         return $destdir."/".$self->{ELEMENT}.".xml";
     }
     else
@@ -368,8 +402,14 @@ sub _updateDB
             
             printLog($self->{LOG}, "debug", "STATEMENT: $statement") if($self->{DEBUG});
 
-            $dbh->do($statement);
-            
+            eval
+            {
+                $dbh->do($statement);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, "error", "$@");
+            }
         }
         # PRIMARY KEY does not exists in DB, do insert
         elsif(@$all == 0)
@@ -390,7 +430,14 @@ sub _updateDB
             
             printLog($self->{LOG}, "debug", "STATEMENT: $statement") if($self->{DEBUG});
             
-            $dbh->do($statement);
+            eval
+            {
+                $dbh->do($statement);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, "error", "$@");
+            }
         }
         else
         {

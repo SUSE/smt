@@ -35,6 +35,9 @@ sub new
     $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = undef; 
+
+    $self->{MAX_REDIRECTS} = 2;
+
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
 
@@ -49,7 +52,7 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
 
-    $self->{HAVE_BULKOP} = 0;  # set to 1 as soon as NCC has the implementation
+#    $self->{HAVE_BULKOP} = 0;  # set to 1 as soon as NCC has the implementation
 
     if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
     {
@@ -60,7 +63,9 @@ sub new
         $self->{USERAGENT} = LWP::UserAgent->new(keep_alive => 1);
         $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
         $self->{USERAGENT}->protocols_allowed( [ 'https'] );
-        push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
+
+        # This does not work, we have to deal with redirects ourself
+        #push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
     }
     
     if(exists $ENV{http_proxy})
@@ -149,21 +154,24 @@ sub NCCRegister
             
             printLog($self->{LOG}, "info", sprintf("Register %s new clients.", $#{@$guids}+1 ));
         }
-
+        else
+        {
+            # nothing to register -- success
+            return 0;
+        }
+        
         my $output = "";
             
         my $writer;
         my $guidHash = {};
-        if($self->{HAVE_BULKOP})
-        {
-            $writer = new XML::Writer(OUTPUT => \$output);
-            $writer->xmlDecl("UTF-8");
-            
-            my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-                     "client_version" => "1.2.3",
-                     "lang" => "en");
-            $writer->startTag("bulkop", %a);
-        }
+
+        $writer = new XML::Writer(OUTPUT => \$output);
+        $writer->xmlDecl("UTF-8");
+        
+        my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                 "client_version" => "1.2.3",
+                 "lang" => "en");
+        $writer->startTag("bulkop", %a);
         
         my $regtimestring = SMT::Utils::getDBTimestamp();
         foreach my $guid (@{$guids})
@@ -182,35 +190,7 @@ sub NCCRegister
 
                 my $out = "";
                 
-                if(!$self->{HAVE_BULKOP})
-                {
-                    $out = $self->_buildRegisterXML($guid, $products, $regdata);
-
-                    if(!defined $out || $out eq "")
-                    {
-                        printLog($self->{LOG}, "error", sprintf(__("Unable to generate XML for GUID: %s"). $guid));
-                        $errors++;
-                    next;
-                    }
-                    
-                    my $ret = $self->_sendData($out, "command=register");
-                    if(!$ret)
-                    {
-                        $errors++;
-                        next;
-                    }
-                    
-                    $ret = $self->_updateRegistration($guid, $products, $regtimestring);
-                    if(!$ret)
-                    {
-                        $errors++;
-                        next;
-                    }
-                }
-                else
-                {
-                    $self->_buildRegisterXML($guid, $products, $regdata, $writer);
-                }
+                $self->_buildRegisterXML($guid, $products, $regdata, $writer);
             }
             else
             {
@@ -220,31 +200,28 @@ sub NCCRegister
             }
         }
 
-        if($self->{HAVE_BULKOP})
+        $writer->endTag("bulkop");
+        
+        if(!defined $output || $output eq "")
         {
-            $writer->endTag("bulkop");
-
-            if(!defined $output || $output eq "")
-            {
-                printLog($self->{LOG}, "error", __("Unable to generate XML"));
-                $errors++;
-                return $errors;
-            }
-            my $destfile = $self->{TEMPDIR}."/bulkop.xml";
-            
-            my $ret= $self->_sendData($output, "command=bulkop", $destfile);
-            if(! $ret)
-            {
-                $errors++;
-                return $errors;
-            }
-            
-            $ret = $self->_updateRegistrationBulk($guidHash, $regtimestring, $destfile);
-            if(!$ret)
-            {
-                $errors++;
-                return $errors;
-            }
+            printLog($self->{LOG}, "error", __("Unable to generate XML"));
+            $errors++;
+            return $errors;
+        }
+        my $destfile = $self->{TEMPDIR}."/bulkop.xml";
+        
+        my $ret= $self->_sendData($output, "command=bulkop", $destfile);
+        if(! $ret)
+        {
+            $errors++;
+            return $errors;
+        }
+        
+        $ret = $self->_updateRegistrationBulk($guidHash, $regtimestring, $destfile);
+        if(!$ret)
+        {
+            $errors++;
+            return $errors;
         }
     };
     if($@)
@@ -306,7 +283,6 @@ sub NCCListRegistrations
             printLog($self->{LOG}, "error", "List registrations request failed.");
             return 1;
         }
-        return 0;
     }
     
     if(defined $self->{TODIR} && $self->{TODIR} ne "")
@@ -324,7 +300,7 @@ sub NCCListRegistrations
         my $sth = $self->{DBH}->prepare("SELECT DISTINCT GUID from Registration WHERE NCCREGDATE IS NOT NULL");
         #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMESTAMP);
         $sth->execute;
-        my $guidhash = $self->{DBH}->fetchall_hashref();
+        my $guidhash = $sth->fetchall_hashref("GUID");
 
         # The _listreg_handler fill the ClientSubscription table new.
         # Here we need to delete it first
@@ -430,9 +406,14 @@ sub NCCListSubscriptions
 sub NCCDeleteRegistration
 {
     my $self = shift;
-    my @guids = @_;
+    my $guidhash = {};
+    foreach (@_) 
+    {
+        $guidhash->{$_} = [];
+    }
     
     my $errors = 0;
+    my $found = 0;
     
     if(! defined $self->{DBH} || !$self->{DBH})
     {
@@ -456,22 +437,32 @@ sub NCCDeleteRegistration
     }
 
     my $allowRegister = $cfg->val("LOCAL", "forwardRegistration");
+    
+    my $output = "";
+    my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+             "lang" => "en",
+             "client_version" => "1.2.3");
+    
+    my $writer = new XML::Writer(OUTPUT => \$output);
+    $writer->xmlDecl("UTF-8");
+    $writer->startTag("bulkop", %a);
 
-    foreach my $guid (@guids)
+    foreach my $guid (keys %{$guidhash})
     {
+        # check if this client was registered at NCC 
+        # we have to execute this before calling _deleteRegistrationLocal
+        my $sth = $self->{DBH}->prepare("SELECT GUID from Registration where NCCREGDATE IS NOT NULL and GUID=?");
+        #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMASTAMP);
+        $sth->bind_param(1, $guid);
+        $sth->execute;
+        my $result = $self->{DBH}->fetchrow_arrayref();
+
         $self->_deleteRegistrationLocal($guid);
 
         if(!(defined $allowRegister && $allowRegister eq "true"))
         {
             next;
         }
-        
-        # check if this client was registered at NCC
-        my $sth = $self->{DBH}->prepare("SELECT GUID from Registration where NCCREGDATE IS NOT NULL and GUID=?");
-        #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMASTAMP);
-        $sth->bind_param(1, $guid);
-        $sth->execute;
-        my $result = $self->{DBH}->fetchrow_arrayref();
 
         if(!(exists $result->[0] && defined $result->[0] && $result->[0] eq $guid))
         {
@@ -479,25 +470,19 @@ sub NCCDeleteRegistration
             # no need to delete it there
             next;
         }        
+        $found++;
         
-        my $output = "";
-        my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-                 "lang" => "en",
-                 "client_version" => "1.2.3");
-        
-        my $writer = new XML::Writer(OUTPUT => \$output);
-        $writer->xmlDecl("UTF-8");
-        $writer->startTag("de-register", %a);
+        $writer->startTag("de-register");
         
         $writer->startTag("guid");
         $writer->characters($guid);
         $writer->endTag("guid");
         
         $writer->startTag("authuser");
-            $writer->characters($self->{AUTHUSER});
+        $writer->characters($self->{AUTHUSER});
         $writer->endTag("authuser");
         
-            $writer->startTag("authpass");
+        $writer->startTag("authpass");
         $writer->characters($self->{AUTHPASS});
         $writer->endTag("authpass");
         
@@ -507,15 +492,39 @@ sub NCCDeleteRegistration
 
         $writer->endTag("de-register");
         
-        my $ok = $self->_sendData($output, "command=de-register");
-        
-        if(!$ok)
-        {
-            printLog($self->{LOG}, "error", sprintf(__("Delete registration request failed: %s."), $guid));
-            $errors++;
-        }
+    }
+    $writer->endTag("bulkop");
+
+    if($found == 0)
+    {
+        # nothing todo - success
+        return 0;
+    }    
+
+    if(!defined $output || $output eq "")
+    {
+        printLog($self->{LOG}, "error", __("Unable to generate XML"));
+        $errors++;
+        return $errors;
+    }
+    my $destfile = $self->{TEMPDIR}."/bulkop.xml";
+
+    my $ok = $self->_sendData($output, "command=bulkop", $destfile);
+    
+    if(!$ok)
+    {
+        #printLog($self->{LOG}, "error", sprintf(__("Delete registration request failed: %s."), $guid));
+        $errors++;
+        return $errors;
     }
     
+    $ok = $self->_updateRegistrationBulk($guidhash, "", $destfile);
+    if(!$ok)
+    {
+        $errors++;
+        return $errors;
+    }
+
     return $errors;
 }
 
@@ -595,8 +604,8 @@ sub _listreg_handler
         else
         {
             # FIXME: maybe we get GUID from other SMTs of this company. If yes, we should
-	    #        skip this warning.
-	    #
+            #        skip this warning.
+            #
             # We found a registration from SMT in NCC which does not exist in SMT anymore
             # print and error. The admin has to delete it in NCC by hand.
             printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a subscription in NCC which is not available here: '%s'"), $data->{GUID}));
@@ -616,6 +625,9 @@ sub _bulkop_handler
     my $data          = shift;
     my $guidHash      = shift;
     my $regtimestring = shift; 
+    my $operation     = "";
+    
+    $regtimestring = SMT::Utils::getDBTimestamp() if(!defined $regtimestring || $regtimestring eq "");
 
     if(!exists $data->{GUID} || ! defined $data->{GUID} || $data->{GUID} eq "")
     {
@@ -624,6 +636,15 @@ sub _bulkop_handler
     }
     my $guid = $data->{GUID};
  
+
+    if(!exists $data->{OPERATION} || !defined $data->{OPERATION} ||
+       !($data->{OPERATION} eq "register" || $data->{OPERATION} eq "de-register"))
+    {
+        # this should not happen
+        printLog($self->{LOG}, "error", sprintf(__("Unknown bulk operation '%s'."), $data->{OPERATION}));
+    }
+    $operation = $data->{OPERATION};
+    
     # evaluate the status
 
     if(! exists $data->{STATUS} || ! defined $data->{STATUS} || $data->{STATUS} eq "")
@@ -635,12 +656,12 @@ sub _bulkop_handler
     if($data->{STATUS} eq "error")
     {
         printLog($self->{LOG}, "error", 
-                 sprintf(__("Registration of GUID '%s' failed. %s"), $guid, $data->{MESSAGE}));
+                 sprintf(__("Operation %s[%s] failed: %s"), $operation, $guid, $data->{MESSAGE}));
         return;
     }
     elsif($data->{STATUS} eq "warning")
     {
-        printLog($self->{LOG}, "warn", $data->{MESSAGE});
+        printLog($self->{LOG}, "warn", sprintf(__("Operation: %s[%s] : %s"), $operation, $guid, $data->{MESSAGE}));
     }
     # else success
    
@@ -650,33 +671,41 @@ sub _bulkop_handler
         return;
     }
  
-    my @productids = ();
-    foreach my $prod (@{$guidHash->{$guid}})
+    if(exists $data->{OPERATION} && defined $data->{OPERATION} && $data->{OPERATION} eq "register")
     {
-        if( exists $prod->{PRODUCTDATAID} && defined $prod->{PRODUCTDATAID} )
+        my @productids = ();
+        foreach my $prod (@{$guidHash->{$guid}})
         {
-            push @productids, $prod->{PRODUCTDATAID};
+            if( exists $prod->{PRODUCTDATAID} && defined $prod->{PRODUCTDATAID} )
+            {
+                push @productids, $prod->{PRODUCTDATAID};
+            }
         }
+        
+        my $statement = "UPDATE Registration SET NCCREGDATE=? WHERE GUID=%s and ";
+        if(@productids > 1)
+        {
+            $statement .= "PRODUCTID IN (".join(",", @productids).")";
+        }
+        elsif(@productids == 1)
+        {
+            $statement .= "PRODUCTID = ".$productids[0];
+        }
+        else
+        {
+            # this should not happen
+            printLog($self->{LOG}, "error", __("No products found."));
+            return 0;
+        }
+        my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
+        $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+        $sth->execute;
+        printLog($self->{LOG}, "info", sprintf(__("Registration success: '%s'."), $guid));
     }
-    
-    my $statement = "UPDATE Registration SET NCCREGDATE=? WHERE GUID=%s and ";
-    if(@productids > 1)
+    elsif(exists $data->{OPERATION} && defined $data->{OPERATION} && $data->{OPERATION} eq "de-register")
     {
-        $statement .= "PRODUCTID IN (".join(",", @productids).")";
+        printLog($self->{LOG}, "info", sprintf(__("Delete registration success: '%s'."), $guid));
     }
-    elsif(@productids == 1)
-    {
-        $statement .= "PRODUCTID = ".$productids[0];
-    }
-    else
-    {
-        # this should not happen
-        printLog($self->{LOG}, "error", __("No products found."));
-        return 0;
-    }
-    my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
-    $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
-    $sth->execute;
 }
 
 
@@ -737,63 +766,6 @@ sub _listsub_handler
         return;
     }
     return;
-}
-
-
-sub _updateRegistration
-{
-    my $self          = shift || undef;
-    my $guid          = shift || undef;
-    my $products      = shift || undef;
-    my $regtimestring = shift || undef;
-    
-    if(!defined $guid)
-    {
-        printLog($self->{LOG}, "error", __("Invalid GUID"));
-        return 0;
-    }
-    
-    if(!defined $products || ref($products) ne "ARRAY")
-    {
-        printLog($self->{LOG}, "error", __("Invalid Products"));
-        return 0;
-    }
-    
-    if(!defined $regtimestring)
-    {
-        printLog($self->{LOG}, "error", __("Invalid time string"));
-        return 0;
-    }
-    
-    my @productids = ();
-    foreach my $prod (@{$products})
-    {
-        if( exists $prod->{PRODUCTDATAID} && defined $prod->{PRODUCTDATAID} )
-        {
-            push @productids, $prod->{PRODUCTDATAID};
-        }
-    }
-    
-    my $statement = "UPDATE Registration SET NCCREGDATE=? WHERE GUID=%s and ";
-    if(@productids > 1)
-    {
-        $statement .= "PRODUCTID IN (".join(",", @productids).")";
-    }
-    elsif(@productids == 1)
-    {
-        $statement .= "PRODUCTID = ".$productids[0];
-    }
-    else
-    {
-        # this should not happen
-        printLog($self->{LOG}, "error", __("No products found."));
-        return 0;
-    }
-    my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
-    $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
-    return $sth->execute;
-    
-    #return $self->{DBH}->do(sprintf($statement, $self->{DBH}->quote($regtimestring), $self->{DBH}->quote($guid)));
 }
 
 sub _updateRegistrationBulk
@@ -862,27 +834,60 @@ sub _sendData
         $regurl->query($defaultquery);
     }    
 
-    printLog($self->{LOG}, "debug", "SEND TO: ".$regurl->as_string()) if($self->{DEBUG});
-    printLog($self->{LOG}, "debug", "XML:\n$data") if($self->{DEBUG});
-
-    # FIXME: we need to delete this as soon as NCC provide these features
-    return 1;
-
     my %params = ('Content' => $data);
     if(defined $destfile && $destfile ne "")
     {
         $params{':content_file'} = $destfile;
     } 
     
-    my $response = $self->{USERAGENT}->post( $regurl->as_string(), %params);
+    my $response = "";
+    my $redirects = 0;
     
-    if($response->is_success)
+    do
     {
+        printLog($self->{LOG}, "debug", "SEND TO: ".$regurl->as_string()) if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "XML:\n$data") if($self->{DEBUG});
+        
+        $response = $self->{USERAGENT}->post( $regurl->as_string(), {}, %params);
+        
+        # enable this if you want to have a trace
+        #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$response]));
+
+        printLog($self->{LOG}, "debug", "Result: ".$response->code()." ".$response->message()) if($self->{DEBUG});
+        
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > $self->{MAX_REDIRECTS})
+            {
+                printLog($self->{LOG}, "error", "Reach maximal redirects. Abort");
+                return undef;
+            }
+            
+            my $newuri = $response->header("location");
+            
+            printLog($self->{LOG}, "debug", "Redirected to $newuri"); # if($self->{DEBUG});
+            $regurl = URI->new($newuri);
+        }
+    } while($response->is_redirect);
+
+
+    if($response->is_success && -e $destfile)
+    {
+        if($self->{DEBUG})
+        {
+            open(CONT, "< $destfile") and do
+            {
+                my @c = <CONT>;
+                close CONT;
+                printLog($self->{LOG}, "debug", "Content:".join("\n", @c));
+            };
+        }
         return 1;
     }
     else
     {
-        printLog($self->{LOG}, "error", $response->status_line);
+        printLog($self->{LOG}, "error", "Invalid response:".$response->status_line);
         return 0;
     }
 }
