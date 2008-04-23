@@ -327,7 +327,9 @@
 	Progress::NextStage();
 	sleep (sl);
 
-	SMTData::RunSmallSync();
+	if (SMTData::GetSMTServiceStatus() == true) {
+	    SMTData::RunSmallSync();
+	}
 
 	Progress::NextStage();
 	SMTData::WriteFirstRunStatus();

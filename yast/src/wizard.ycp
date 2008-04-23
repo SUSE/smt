@@ -90,37 +90,80 @@
 	    ],
     ];
 
-    map <string, any> wd = $[
+    symbol InstallCredentialsDialog () {
+	list<map<string,any> > w = CWM::CreateWidgets (tabs["credentials", "widget_names"]:[], widgets);
+	term contents = CWM::PrepareDialog (tabs["credentials", "contents"]:`Empty(), w);
+	string caption = sformat (_("SMT Configuration Wizard - Step %1/%2"), 1, 2);
+	string help = CWM::MergeHelps (w);
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::NextButton ());
+	return CWM::Run (w, $[]);
+    }
+
+    symbol InstallDatabaseDialog () {
+	list<map<string,any> > w = CWM::CreateWidgets (tabs["database", "widget_names"]:[], widgets);
+	term contents = CWM::PrepareDialog (tabs["database", "contents"]:`Empty(), w);
+	string caption = sformat (_("SMT Configuration Wizard - Step %1/%2"), 2, 2);
+	string help = CWM::MergeHelps (w);
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::NextButton ());
+	return CWM::Run (w, $[]);
+    }
+
+    any MainSequence() {
+	map <string, any> wd = $[
 	    "tab" : CWMTab::CreateWidget ($[
 		"tab_order"	: ["credentials", "database", "scheduled_downloads"],
 		"tabs"		: tabs,
 		"widget_descr"	: widgets,
 		"initial_tab"	: "credentials",
 	    ])
-    ];
+	];
 
-    term contents = `VBox("tab");
-    list <map <string, any> > w = CWM::CreateWidgets (["tab"], (map <string, map <string, any> >) wd);
-    // TRANSLATORS: dialog caption
-    string caption = _("NU Configuration");
-    contents = CWM::PrepareDialog (contents, w);
-
-    any MainSequence() {
-	boolean installation = (Mode::installation() || Mode::update());
+	term contents = `VBox("tab");
+	list <map <string, any> > w = CWM::CreateWidgets (["tab"], (map <string, map <string, any> >) wd);
+	// TRANSLATORS: dialog caption
+	string caption = _("NU Configuration");
+	contents = CWM::PrepareDialog (contents, w);
 
 	Wizard::SetContentsButtons (
 	    caption,
 	    contents,
 	    "",
 	    Label::BackButton (),
-	    (installation ? Label::NextButton() : Label::FinishButton())
+	    Label::FinishButton()
 	);
-	if (! installation)
-	    Wizard::DisableBackButton();
 
 	Wizard::SetTitleIcon("yast");
 
 	return CWM::Run (w, $[`abort : ReallyExit]);
+    }
+
+    any MainInstallSequence() {
+	map aliases = $[
+	    "credentials" : ``( InstallCredentialsDialog() ),
+	    "database" : ``( InstallDatabaseDialog() ),
+	];
+
+	map sequence = $[
+	    "ws_start" : "credentials",
+	    "credentials" : $[
+		`abort      : `abort,
+		`next       : "database",
+	    ],
+	    "database" : $[
+		`abort      : `abort,
+		`next       : `next,
+	    ],
+	];
+
+	Wizard::SetTitleIcon ("yast");
+
+	any ret = Sequencer::Run(aliases, sequence);
+
+	return ret;
     }
 
     any SMTSequence () {
@@ -158,7 +201,7 @@
     any SMTInstallSequence () {
 	map aliases = $[
 	    "read"  : [ ``( ReadDialog() ), true ],
-	    "main"  :   ``( MainSequence() ),
+	    "main"  :   ``( MainInstallSequence() ),
 	    "write" : [ ``( WriteDialog() ), true ]
 	];
 

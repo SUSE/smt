@@ -3,7 +3,8 @@
 yncludedir = @yncludedir@/smt
 
 client_DATA = \
-	smt.ycp
+	smt.ycp \
+	inst_smt.ycp
 
 ynclude_DATA = \
 	dialogs.ycp \
