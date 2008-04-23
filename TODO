@@ -2,7 +2,8 @@
 TODO:
 =====
 
-
+- review packaged documentation in /usr/share/doc/packages/smt/
+  and remove useless things or add something which is missing.
 
 - default permissions of smt.conf are now 640, root, wwwrun
   -- Which means that getting the content of the file is quite trivial with
