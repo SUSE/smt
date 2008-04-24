@@ -635,16 +635,19 @@ sub _listreg_handler
 sub _bulkop_handler
 {
     my $self          = shift;
-    my $data          = shift;
     my $guidHash      = shift;
     my $regtimestring = shift; 
+    my $data          = shift;
     my $operation     = "";
     
     $regtimestring = SMT::Utils::getDBTimestamp() if(!defined $regtimestring || $regtimestring eq "");
 
+    #printLog($self->{LOG}, "debug", "BULKOP_HANDLER:".Data::Dumper->Dump([$data]));
+    
     if(!exists $data->{GUID} || ! defined $data->{GUID} || $data->{GUID} eq "")
     {
         # something goes wrong
+        printLog($self->{LOG}, "error", "No GUID");
         return;
     }
     my $guid = $data->{GUID};
@@ -660,19 +663,20 @@ sub _bulkop_handler
     
     # evaluate the status
 
-    if(! exists $data->{STATUS} || ! defined $data->{STATUS} || $data->{STATUS} eq "")
+    if(! exists $data->{RESULT} || ! defined $data->{RESULT} || $data->{RESULT} eq "")
     {
         # something goes wrong
+        printLog($self->{LOG}, "error", "No RESULT");
         return;
     }
     
-    if($data->{STATUS} eq "error")
+    if($data->{RESULT} eq "error")
     {
         printLog($self->{LOG}, "error", 
                  sprintf(__("Operation %s[%s] failed: %s"), $operation, $guid, $data->{MESSAGE}));
         return;
     }
-    elsif($data->{STATUS} eq "warning")
+    elsif($data->{RESULT} eq "warning")
     {
         printLog($self->{LOG}, "warn", sprintf(__("Operation: %s[%s] : %s"), $operation, $guid, $data->{MESSAGE}));
     }
@@ -813,7 +817,7 @@ sub _updateRegistrationBulk
     # A parser for the answer is required here and everything below this comment
     # should be part of the handler
    
-    my $parser = new SMT::Parser::Bulkop(log => $self->{LOG});
+    my $parser = new SMT::Parser::Bulkop(debug => $self->{DEBUG}, log => $self->{LOG});
     $parser->parse($respfile, sub{ _bulkop_handler($self, $guidHash, $regtimestring, @_)});
 
     return 1;
@@ -1044,5 +1048,7 @@ sub _buildRegisterXML
 
     return $output;
 }
+
+
 
 1;
