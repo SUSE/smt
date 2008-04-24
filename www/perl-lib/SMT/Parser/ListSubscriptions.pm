@@ -110,6 +110,7 @@ sub handle_start_tag()
     if(lc($element) eq "subscription")
     {
         $self->{ELEMENT} = uc($element);
+        $self->{TMP} = "";
     }
 }
 
@@ -136,6 +137,7 @@ sub handle_end_tag
 
         $self->{ELEMENT} = undef; 
         $self->{CURRENT} = undef;
+        $self->{TMP} = "";
     }
     elsif($self->{ELEMENT} eq "SUBSCRIPTION")
     {
