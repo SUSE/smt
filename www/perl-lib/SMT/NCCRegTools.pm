@@ -621,7 +621,7 @@ sub _listreg_handler
             #
             # We found a registration from SMT in NCC which does not exist in SMT anymore
             # print and error. The admin has to delete it in NCC by hand.
-            printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a subscription in NCC which is not available here: '%s'"), $data->{GUID}));
+            printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a Client in NCC which is not available here: '%s'"), $data->{GUID}));
         }
     };
     if($@)
@@ -729,6 +729,8 @@ sub _listsub_handler
     
     my $statement = "";
 
+    #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$data]));
+
     if(!exists $data->{REGCODE} || !defined $data->{REGCODE} || $data->{REGCODE} eq "" ||
        !exists $data->{NAME} || !defined $data->{NAME} || $data->{NAME} eq "" ||
        !exists $data->{STATUS} || !defined $data->{STATUS} || $data->{STATUS} eq "" ||
@@ -752,8 +754,8 @@ sub _listsub_handler
         $sth->bind_param(2, $data->{NAME});
         $sth->bind_param(3, $data->{TYPE});
         $sth->bind_param(4, $data->{STATUS});
-        $sth->bind_param(5, $data->{STARTDATE}, SQL_TIMESTAMP);
-        $sth->bind_param(6, $data->{ENDDATE}, SQL_TIMESTAMP);
+        $sth->bind_param(5, SMT::Utils::getDBTimestamp($data->{STARTDATE}), SQL_TIMESTAMP);
+        $sth->bind_param(6, SMT::Utils::getDBTimestamp($data->{ENDDATE}), SQL_TIMESTAMP);
         $sth->bind_param(7, $data->{DURATION}, SQL_INTEGER);
         $sth->bind_param(8, $data->{SERVERCLASS});
         $sth->bind_param(9, $data->{NODECOUNT}, SQL_INTEGER);
