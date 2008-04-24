@@ -195,7 +195,11 @@ sub mirror
     }
     else
     {
-        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), $self->{RESOURCE}, $response->status_line));
+        my $saveuri = URI->new($self->remote());
+        $saveuri->userinfo(undef);
+        
+        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
+                                                $saveuri->as_string(), $response->status_line));
         return 1;
     }
 }
@@ -209,7 +213,10 @@ sub modified
     
     $response->is_success or do 
     {
-        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), $self->{RESOURCE}, $response->status_line));
+        my $saveuri = URI->new($self->remote());
+        $saveuri->userinfo(undef);
+        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
+                                                $saveuri->as_string() , $response->status_line));
         return undef;
     };
 
