@@ -181,7 +181,9 @@ sub sync
         {
             return $ret;
         }
-        return $self->_updateDB();
+        $ret = $self->_updateDB();
+        delete $self->{XML}->{DATA}->{$self->{ELEMENT}};
+        return $ret;
     }
 }
 
@@ -365,7 +367,7 @@ sub _updateDB
         printLog($self->{LOG}, "error", "Cannot connect to database.");
         return 1;
     }
-    
+
     foreach my $row (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
     {
         my @primkeys_where = ();
@@ -394,6 +396,17 @@ sub _updateDB
             }
             else
             {
+                # we need to check if this is ATI or NVidia SP1 repos and have to rename it
+                
+                if($row->{NAME} eq "ATI-Drivers" && $row->{EXTURL} =~ /sle10sp1/)
+                {
+                    $row->{NAME} = $row->{NAME}."-SP1";
+                }
+                elsif($row->{NAME} eq "nVidia-Drivers" && $row->{EXTURL} =~ /sle10sp1/)
+                {
+                    $row->{NAME} = $row->{NAME}."-SP1";
+                }
+                
                 $row->{LOCALPATH} = 'RPMMD/'.$row->{NAME};
             }
         }
