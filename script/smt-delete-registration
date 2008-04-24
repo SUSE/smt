@@ -31,10 +31,12 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 my $debug = 0;
 my $help  = 0;
+my $logfile = "/dev/null";
 
 my @guids = ();
 
 my $result = GetOptions ("guid|g=s"    => \@guids,
+                         "logfile|L=s" => \$logfile,
                          "debug|d"     => \$debug,
                          "help|h"      => \$help
                         );
@@ -59,7 +61,7 @@ if(@guids == 0)
     exit 1;
 }
 
-print Data::Dumper->Dump([@guids]);
+#print Data::Dumper->Dump([@guids]);
 
 
 my $useragent = LWP::UserAgent->new(keep_alive => 1);
@@ -74,6 +76,10 @@ if(!SMT::Utils::openLock("smt-delete-registration"))
     print __("Delete registration process is still running.\n");
     exit 0;
 }
+
+# open the logfile
+
+my $LOG = SMT::Utils::openLog($logfile);
 
 my $dbh = undef;
 
@@ -90,7 +96,7 @@ if(!$dbh)
 
 eval
 {
-    my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh);
+    my $nccreg = SMT::NCCRegTools->new(log => $LOG, debug => $debug, useragent => $useragent, dbh => $dbh);
     my $err = $nccreg->NCCDeleteRegistration(@guids);
     if($err != 0)
     {
