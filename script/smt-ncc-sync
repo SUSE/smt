@@ -95,6 +95,8 @@ eval
                                       key     => "PRODUCTDATAID",
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
+    printLog($LOG, "info", __("Syncing Products"));
+    
     my $res = $rd->sync();
     if ($res)
     {
@@ -106,6 +108,7 @@ eval
     $rd->table("Targets");
     $rd->key("OS");
     
+    printLog($LOG, "info", __("Syncing Targets"));
     $res = $rd->sync();
     if ($res)
     {
@@ -116,6 +119,7 @@ eval
     $rd->table("Catalogs");
     $rd->key("CATALOGID");
     
+    printLog($LOG, "info", __("Syncing Catalogs"));
     $res = $rd->sync();
     if ($res)
     {
@@ -126,6 +130,7 @@ eval
     $rd->table("ProductCatalogs");
     $rd->key(['PRODUCTDATAID', 'CATALOGID']);
     
+    printLog($LOG, "info", __("Syncing ProductCatalogs"));
     $res = $rd->sync();
     if ($res)
     {
@@ -138,8 +143,10 @@ eval
                                   fromdir => (($fromdir ne "")?$fromdir:undef),
                                   todir   => (($todir ne "")?$todir:undef));
 
+    printLog($LOG, "info", __("Syncing Subscriptions"));
     $lr->NCCListSubscriptions();
     
+    printLog($LOG, "info", __("Syncing Registrations"));
     $lr->NCCListRegistrations();
     
     
@@ -156,6 +163,7 @@ eval
     }
     
     SMT::CLI::resetCatalogsStatus();
+    printLog($LOG, "info", __("Find Catalogs which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
                                     todir   => ($todir ne "")?$todir:undef,
                                     log     => $LOG,
