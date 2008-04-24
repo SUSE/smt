@@ -540,8 +540,8 @@ sub setMirrorableCatalogs
     $parser->parse($indexfile, 
                    sub {
                        my $repodata = shift;
-                       printLog($opt{log}, "info", sprintf(__("* set [%s %s] as mirrorable."), 
-                                                           $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                       printLog($opt{log}, "debug", sprintf(__("* set [%s %s] as mirrorable."), 
+                                                           $repodata->{NAME}, $repodata->{DISTRO_TARGET})) if($opt{debug});
                        my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
                                                    $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                    }
@@ -578,7 +578,7 @@ sub setMirrorableCatalogs
                 # if no error
                 $ret = $job->mirror();
 	    }
-        printLog($opt{log}, "info", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' )));
+        printLog($opt{log}, "debug", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' ))) if($opt{debug});
         my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND TARGET=%s", 
                                     ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), 
                                     $dbh->quote($catName), 
