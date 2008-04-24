@@ -112,8 +112,10 @@ if (defined $name && $name ne "")
 # if target was given, limit the search even more
 if (defined $target && $target ne "")
 {
-  $sql = $sql . sprintf(" and TARGET=%s", $dbh->quote($target) );
+    $sql = $sql . sprintf(" and TARGET=%s", $dbh->quote($target) );
 }
+
+$sql = $sql . " order by NAME, TARGET";
 
 # hash to associate order with id.
 my @idnumbers;
