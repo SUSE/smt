@@ -467,10 +467,10 @@ sub NCCDeleteRegistration
         #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMASTAMP);
         $sth->bind_param(1, $guid);
         $sth->execute;
-        my $result = $self->{DBH}->fetchrow_arrayref();
+        my $result = $sth->fetchrow_arrayref();
 
         $self->_deleteRegistrationLocal($guid);
-
+        
         if(!(defined $allowRegister && $allowRegister eq "true"))
         {
             next;
@@ -506,7 +506,7 @@ sub NCCDeleteRegistration
         
     }
     $writer->endTag("bulkop");
-
+    
     if($found == 0)
     {
         # nothing todo - success
@@ -520,7 +520,7 @@ sub NCCDeleteRegistration
         return $errors;
     }
     my $destfile = $self->{TEMPDIR}."/bulkop.xml";
-
+    
     my $ok = $self->_sendData($output, "command=bulkop", $destfile);
     
     if(!$ok)
@@ -794,6 +794,8 @@ sub _updateRegistrationBulk
     my $guidHash      = shift || undef;
     my $regtimestring = shift || undef;
     my $respfile      = shift || undef;
+
+    $regtimestring = SMT::Utils::getDBTimestamp() if(!defined $regtimestring || $regtimestring eq "");
     
     if(!defined $guidHash)
     {
