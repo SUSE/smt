@@ -521,7 +521,7 @@ sub setMirrorableCatalogs
     else
     {
         # get the file
-        my $job = SMT::Mirror::Job->new();
+        my $job = SMT::Mirror::Job->new(debug => $opt{debug}, log => $opt{log});
         $job->uri($nuri);
         $job->localdir($destdir);
         $job->resource("/repo/repoindex.xml");
@@ -536,7 +536,7 @@ sub setMirrorableCatalogs
         return;
     }
 
-    my $parser = SMT::Parser::NU->new();
+    my $parser = SMT::Parser::NU->new(debug => $opt{debug}, log => $opt{log});
     $parser->parse($indexfile, 
                    sub {
                        my $repodata = shift;
