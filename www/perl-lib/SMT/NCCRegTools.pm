@@ -53,8 +53,6 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
 
-#    $self->{HAVE_BULKOP} = 0;  # set to 1 as soon as NCC has the implementation
-
     if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
     {
         $self->{USERAGENT} = $opt{useragent};
@@ -146,14 +144,14 @@ sub NCCRegister
     
     eval
     {
-        my $guids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE || NCCREGDATE IS NULL");
+        my $allguids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE || NCCREGDATE IS NULL");
 
-        if(@{$guids} > 0)
+        if(@{$allguids} > 0)
         {
             # we have something to register, check for random sleep value
             sleep(int($sleeptime));
             
-            printLog($self->{LOG}, "info", sprintf("Register %s new clients.", $#{@$guids}+1 ));
+            printLog($self->{LOG}, "info", sprintf("Register %s new clients.", $#{@$allguids}+1 ));
         }
         else
         {
@@ -161,68 +159,74 @@ sub NCCRegister
             return 0;
         }
         
-        my $output = "";
-            
-        my $writer;
-        my $guidHash = {};
-
-        $writer = new XML::Writer(OUTPUT => \$output);
-        $writer->xmlDecl("UTF-8");
-        
-        my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-                 "client_version" => "1.2.3",
-                 "lang" => "en");
-        $writer->startTag("bulkop", %a);
-        
-        my $regtimestring = SMT::Utils::getDBTimestamp();
-        foreach my $guid (@{$guids})
+        while(@$allguids > 0)
         {
-            $regtimestring = SMT::Utils::getDBTimestamp();
-            my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", $self->{DBH}->quote($guid)), {Slice => {}});
-
-            my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s", 
-                                                                    $self->{DBH}->quote($guid)), {Slice => {}});
+            # register only 25 clients in one bulkop call
+            my @guids = splice(@{$allguids}, 0, 25);
+        
+            my $output = "";
             
-            $guidHash->{$guid} = $products;
-
-            if(defined $regdata && ref($regdata) eq "ARRAY")
+            my $writer;
+            my $guidHash = {};
+            
+            $writer = new XML::Writer(OUTPUT => \$output);
+            $writer->xmlDecl("UTF-8");
+            
+            my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                     "client_version" => "1.2.3",
+                     "lang" => "en");
+            $writer->startTag("bulkop", %a);
+            
+            my $regtimestring = SMT::Utils::getDBTimestamp();
+            foreach my $guid (@guids)
             {
-                printLog($self->{LOG}, "debug", "Register '$guid'") if($self->{DEBUG});
-
-                my $out = "";
+                $regtimestring = SMT::Utils::getDBTimestamp();
+                my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", $self->{DBH}->quote($guid)), {Slice => {}});
                 
-                $self->_buildRegisterXML($guid, $products, $regdata, $writer);
+                my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s", 
+                                                                        $self->{DBH}->quote($guid)), {Slice => {}});
+                
+                $guidHash->{$guid} = $products;
+                
+                if(defined $regdata && ref($regdata) eq "ARRAY")
+                {
+                    printLog($self->{LOG}, "debug", "Register '$guid'") if($self->{DEBUG});
+                    
+                    my $out = "";
+                    
+                    $self->_buildRegisterXML($guid, $products, $regdata, $writer);
+                }
+                else
+                {
+                    printLog($self->{LOG}, "error", sprintf(__("Incomplete registration found. GUID:%s"), $guid));
+                    $errors++;
+                    next;
+                }
             }
-            else
+            
+            $writer->endTag("bulkop");
+            
+            if(!defined $output || $output eq "")
             {
-                printLog($self->{LOG}, "error", sprintf(__("Incomplete registration found. GUID:%s"), $guid));
+                printLog($self->{LOG}, "error", __("Unable to generate XML"));
                 $errors++;
                 next;
             }
-        }
-
-        $writer->endTag("bulkop");
-        
-        if(!defined $output || $output eq "")
-        {
-            printLog($self->{LOG}, "error", __("Unable to generate XML"));
-            $errors++;
-            return $errors;
-        }
-        my $destfile = $self->{TEMPDIR}."/bulkop.xml";
-        
-        my $ret= $self->_sendData($output, "command=bulkop", $destfile);
-        if(! $ret)
-        {
-            $errors++;
-            return $errors;
-        }
-        
-        $ret = $self->_updateRegistrationBulk($guidHash, $regtimestring, $destfile);
-        if(!$ret)
-        {
-            $errors++;
-            return $errors;
+            my $destfile = $self->{TEMPDIR}."/bulkop.xml";
+            
+            my $ret= $self->_sendData($output, "command=bulkop", $destfile);
+            if(! $ret)
+            {
+                $errors++;
+                next;
+            }
+            
+            $ret = $self->_updateRegistrationBulk($guidHash, $regtimestring, $destfile);
+            if(!$ret)
+            {
+                $errors++;
+                next;
+            }
         }
     };
     if($@)
