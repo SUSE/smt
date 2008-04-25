@@ -508,10 +508,8 @@ sub insertRegistration
 
     if(@update > 0)
     {
-        $statement = sprintf("UPDATE Registration SET REGDATE=? WHERE GUID=%s AND PRODUCTID ", 
-                             $dbh->quote($regtimestring),
-                             $dbh->quote($regdata->{register}->{guid})
-                            );
+        $statement = "UPDATE Registration SET REGDATE=? WHERE GUID=? AND PRODUCTID "; 
+
         if(@update > 1)
         {
             $statement .= "IN (".join(",", @update).")";
@@ -524,6 +522,7 @@ sub insertRegistration
         eval {
             my $sth = $dbh->prepare($statement);
             $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+            $sth->bind_param(2, $regdata->{register}->{guid});
             $cnt = $sth->execute;
             $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                            APR::Const::SUCCESS,"STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
