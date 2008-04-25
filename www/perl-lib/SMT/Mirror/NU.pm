@@ -106,6 +106,7 @@ sub new
     $self->{LOG}    = 0;
     $self->{DEEPVERIFY} = 0;
     $self->{DBREPLACEMENT} = undef;
+    $self->{MIRRORSRC} = 1;
     
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
@@ -121,6 +122,11 @@ sub new
         $self->{LOG} = SMT::Utils::openLog();
     }
     
+    if(exists $opt{mirrorsrc} && defined $opt{mirrorsrc} && !$opt{mirrorsrc})
+    {
+        $self->{MIRRORSRC} = 0;
+    }    
+
     bless($self);
     return $self;
 }
@@ -291,7 +297,7 @@ sub mirror_handler
     if($domirror)
     {
         # get the repository index
-        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
+        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC});
         
         my $catalogURI = join("/", $self->{URI}, "repo", $data->{PATH});
         my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
@@ -317,7 +323,7 @@ sub clean_handler
     if(defined $res && exists $res->[0] &&
        defined $res->[0] && $res->[0] eq "Y")
     {
-        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG});
+        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC});
         
         my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
         $localPath =~ s/\/\.?\//\//g;

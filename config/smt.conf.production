@@ -15,6 +15,7 @@ url=
 nccEmail=
 MirrorTo=/srv/www/htdocs
 MirrorAll=false
+MirrorSRC=true
 forwardRegistration=true
 rndRegister=0
 

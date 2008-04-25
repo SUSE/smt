@@ -15,6 +15,7 @@ SMT::Parser::RpmMd - parsers YUM repodata files
   {
     my $data = shift;
     print $data->{NAME};
+    print $data->{ARCH};
     print $data->{DISTRO_TARGET};
     print $data->{PATH};
     print $data->{DESCRIPTION};
@@ -174,6 +175,7 @@ sub handle_start_tag()
         $self->{CURRENT}->{MAINELEMENT} = undef;
         $self->{CURRENT}->{SUBELEMENT} = undef;
         $self->{CURRENT}->{NAME} = undef;
+        $self->{CURRENT}->{ARCH} = undef;
         $self->{CURRENT}->{CHECKSUM} = undef;
         $self->{CURRENT}->{LOCATION} = undef;
         $self->{CURRENT}->{PKGFILES} = [];
@@ -195,6 +197,10 @@ sub handle_start_tag()
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
     }
     elsif ( lc($element) eq "name" )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "arch" )
     {
         $self->{CURRENT}->{SUBELEMENT} = lc($element);
     }
@@ -222,6 +228,10 @@ sub handle_char_tag
         if ($self->{CURRENT}->{SUBELEMENT} eq "name")
         {
             $self->{CURRENT}->{NAME} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "arch")
+        {
+            $self->{CURRENT}->{ARCH} .= $string;
         }
         elsif ($self->{CURRENT}->{SUBELEMENT} eq "checksum")
         {

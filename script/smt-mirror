@@ -185,6 +185,16 @@ my $uri = URI->new($NUUrl);
 $uri->userinfo("$nuUser:$nuPass");
 
 
+my $mirrorsrc = $cfg->val("LOCAL", "MirrorSRC");
+if(defined $mirrorsrc && lc($mirrorsrc) eq "false")
+{
+    $mirrorsrc = 0;
+}
+else
+{
+    $mirrorsrc = 1;
+}
+
 my $hash = {};
 
 if(!defined $dbreplfile)
@@ -209,7 +219,7 @@ foreach my $id (keys %{$hash})
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
-        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG);
+        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc);
         if($clean)
         {
             $zyppMirror->clean( $fullpath );
@@ -226,7 +236,7 @@ foreach my $id (keys %{$hash})
 #
 # Now mirror the NU catalogs
 #
-my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG);
+my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc);
 $mirror->deepverify($deepverify);
 if($clean)
 {

@@ -44,6 +44,7 @@ sub new
     $self->{LOG}   = undef;
     $self->{LASTUPTODATE} = 0;
     $self->{REMOVEINVALID} = 0;
+    $self->{MIRRORSRC} = 1;
 
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
@@ -66,6 +67,11 @@ sub new
         $self->{LOG} = SMT::Utils::openLog();
     }
     
+    if(exists $opt{mirrorsrc} && defined $opt{mirrorsrc} && !$opt{mirrorsrc})
+    {
+        $self->{MIRRORSRC} = 0;
+    }    
+
     bless($self);
     return $self;
 }
@@ -429,7 +435,7 @@ sub clean()
         $cnt += unlink $file;
     }
 
-    printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'", $self->{LOCALPATH})));
+    printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->{LOCALPATH}));
     printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt));
     printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s seconds"), (tv_interval($t0))));
     print "\n";
@@ -554,6 +560,14 @@ sub download_handler
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "" && !exists $self->{JOBS}->{$data->{LOCATION}})
     {
+        if(!$self->{MIRRORSRC} && exists $data->{ARCH} && defined $data->{ARCH} && lc($data->{ARCH}) eq "src")
+        {
+            # we do not want source rpms - skip
+            printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->{DEBUG});
+            
+            return;
+        }
+        
 
         # get the repository index
         my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
@@ -658,6 +672,14 @@ sub verify_handler
     my $self = shift;
     my $data = shift;
 
+    if(!$self->{MIRRORSRC} && exists $data->{ARCH} && defined $data->{ARCH} && lc($data->{ARCH}) eq "src")
+    {
+        # we do not want source rpms - skip
+        printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->{DEBUG});
+        
+        return;
+    }
+    
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "")
     {
