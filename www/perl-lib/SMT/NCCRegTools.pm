@@ -464,24 +464,47 @@ sub NCCDeleteRegistration
         # check if this client was registered at NCC 
         # we have to execute this before calling _deleteRegistrationLocal
         my $sth = $self->{DBH}->prepare("SELECT GUID from Registration where NCCREGDATE IS NOT NULL and GUID=?");
-        #$sth->bind_param(1, '1970-01-02 00:00:01', SQL_TIMASTAMP);
         $sth->bind_param(1, $guid);
         $sth->execute;
-        my $result = $sth->fetchrow_arrayref();
 
+        my $result = $sth->fetchrow_arrayref();
+        printLog($self->{LOG}, "debug", "Statement: ".$sth->{Statement}) if($self->{DEBUG});
+        
+        my $s = sprintf("SELECT KEYNAME, VALUE from MachineData where GUID=%s",
+                        $self->{DBH}->quote($guid));
+
+        my $ost = $self->{DBH}->selectall_arrayref($s, {Slice=>{}});
+        printLog($self->{LOG}, "debug", "Statement: $s") if($self->{DEBUG});
+
+        my $ostarget = "";
+        my $ostargetbak = "";
+        foreach my $x (@$ost)
+        {
+            if($x->{KEYNAME} eq "ostarget")
+            {
+                $ostarget = $x->{VALUE};
+            }
+            elsif($x->{KEYNAME} eq "ostarget-bak")
+            {
+                $ostargetbak = $x->{VALUE};
+            }
+        }
+        
         $self->_deleteRegistrationLocal($guid);
         
-        if(!(defined $allowRegister && $allowRegister eq "true"))
-        {
-            next;
-        }
-
         if(!(exists $result->[0] && defined $result->[0] && $result->[0] eq $guid))
         {
             # this GUID was never registered at NCC 
             # no need to delete it there
             next;
         }        
+
+        if(!(defined $allowRegister && $allowRegister eq "true"))
+        {
+            printLog($self->{LOG}, "warn", "Forward registration is disabled. '$guid' deleted only locally. ");
+            next;
+        }
+
         $found++;
         
         $writer->startTag("de-register");
@@ -501,6 +524,19 @@ sub NCCDeleteRegistration
         $writer->startTag("smtguid");
         $writer->characters($self->{SMTGUID});
         $writer->endTag("smtguid");
+
+        if($ostarget ne "")
+        {
+            $writer->startTag("param", id => "ostarget");
+            $writer->cdata($ostarget);
+            $writer->endTag("param");
+        }
+        if($ostargetbak ne "")
+        {
+            $writer->startTag("param", id => "ostarget-bak");
+            $writer->cdata($ostargetbak);
+            $writer->endTag("param");
+        }        
 
         $writer->endTag("de-register");
         
@@ -567,16 +603,22 @@ sub _deleteRegistrationLocal
         
     my $statement = "DELETE FROM Registration where ".$where;
     
-    $self->{DBH}->do($statement);
+    my $res = $self->{DBH}->do($statement);
     
+    printLog($self->{LOG}, "debug", "Statement: $statement Result: $res") if($self->{DEBUG});
+
     $statement = "DELETE FROM Clients where ".$where;
 
-    $self->{DBH}->do($statement);
+    $res = $self->{DBH}->do($statement);
+
+    printLog($self->{LOG}, "debug", "Statement: $statement Result: $res") if($self->{DEBUG});
     
     $statement = "DELETE FROM MachineData where ".$where;
     
-    $self->{DBH}->do($statement);
+    $res = $self->{DBH}->do($statement);
     
+    printLog($self->{LOG}, "debug", "Statement: $statement Result: $res") if($self->{DEBUG});
+
     #FIXME: does it make sense to remove this GUID from ClientSubscriptions ?
 
     return 1;
