@@ -621,7 +621,7 @@ sub setupCustomCatalogs
     $exthost =~ /^(https?:\/\/[^\/]+\/)/;
     $exthost = $1;
 
-    my $affected = $dbh->do(sprintf("INSERT INTO Catalogs (CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR,MIRRORABLE ) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+    my $affected = $dbh->do(sprintf("INSERT INTO Catalogs (CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR,MIRRORABLE,SRC ) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'C')",
                                     $dbh->quote($options{catalogid}),
                                     $dbh->quote($options{name}),
                                     $dbh->quote($options{description}),
@@ -634,7 +634,7 @@ sub setupCustomCatalogs
                                     $dbh->quote("Y")));
     foreach my $pid (@{$options{productids}})
     {
-        $affected += $dbh->do(sprintf("INSERT INTO ProductCatalogs VALUES(%s, %s, %s)",
+        $affected += $dbh->do(sprintf("INSERT INTO ProductCatalogs (PRODUCTDATAID, CATALOGID, OPTIONAL, SRC)VALUES(%s, %s, %s, 'C')",
                                       $pid,
                                       $dbh->quote($options{catalogid}),
                                       $dbh->quote("N")));

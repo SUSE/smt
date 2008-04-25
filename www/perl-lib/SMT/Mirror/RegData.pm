@@ -368,13 +368,41 @@ sub _updateDB
         return 1;
     }
 
+    # get all datasets which are from NCC
+    my $stm = sprintf("SELECT %s FROM %s WHERE SRC='N'", join(',', @$key), $table);
+    
+    printLog($self->{LOG}, "debug", "STATEMENT: $stm") if($self->{DEBUG});
+    
+    my $alln = $dbh->selectall_arrayref($stm, {Slice=>{}});
+    
+    my $allhash = {};
+    
+    foreach my $sv (@{$alln})
+    {
+        my $str = "";
+        my $j=0;
+        foreach my $k (@$key) 
+        {
+            $str .= "-" if($j > 0);
+            $str .= $sv->{$k};
+            $j++;
+        }
+        $allhash->{$str} = 1;
+    }
+    
     foreach my $row (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
     {
         my @primkeys_where = ();
+        my $str = "";
+        my $j=0;
         foreach (@$key) 
         {
             push @primkeys_where, "$_=".$dbh->quote($row->{$_});
+            $str .= "-" if($j > 0);
+            $str .= $row->{$_};
+            $j++;
         }
+        delete $allhash->{$str} if(exists $allhash->{$str});
 
         # does the key exists in the db?
         my $st = sprintf("SELECT %s FROM %s WHERE %s", 
@@ -492,6 +520,34 @@ sub _updateDB
             printLog($self->{LOG}, "error", "ERROR: invalid key value '$key'");
         }
     }
+
+    #printLog($self->{LOG}, "debug", "ALLHASH END: ".Data::Dumper->Dump([$allhash]));
+
+    # delete all which where not touched but from NCC and no custom value
+    foreach my $set (keys %{$allhash})
+    {
+        my @primkeys_where = ();
+        if(@$key > 1)
+        {
+            my @vals = split(/-/, $set);
+            
+            for(my $j=0; $j < @vals; $j++)
+            {
+                push @primkeys_where, $key->[$j]." = ".$dbh->quote($vals[$j]);
+            }
+        }
+        elsif(@$key == 1)
+        {
+            push @primkeys_where, $key->[0]." = ".$dbh->quote($set);
+        }
+        
+        my $delstr = sprintf("DELETE from %s where %s", $table, join(' AND ', @primkeys_where));
+                    
+        my $res = $dbh->do($delstr);
+
+        printLog($self->{LOG}, "debug", "STATEMENT: $delstr Result: $res") if($self->{DEBUG});
+    }
+    
     $dbh->disconnect;
     return 0;
 }
