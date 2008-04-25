@@ -2,6 +2,10 @@
 TODO:
 =====
 
+- Maybe we need to limit the number of request we send in <bulkop>
+  E.g. send only 20 register / de-register request per <bulkop>
+  If we have more, start again.
+
 - review packaged documentation in /usr/share/doc/packages/smt/
   and remove useless things or add something which is missing.
 
