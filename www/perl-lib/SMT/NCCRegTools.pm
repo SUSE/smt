@@ -146,7 +146,8 @@ sub NCCRegister
     
     eval
     {
-        my $allguids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE REGDATE > NCCREGDATE || NCCREGDATE IS NULL");
+        # get all GUIDs which need a (re-)registration but not the once which failed before.
+        my $allguids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE (REGDATE > NCCREGDATE || NCCREGDATE IS NULL) && NCCREGERROR=0");
 
         if(@{$allguids} > 0)
         {
@@ -722,7 +723,11 @@ sub _bulkop_handler
     {
         printLog($self->{LOG}, "error", 
                  sprintf(__("Operation %s[%s] failed: %s"), $operation, $guid, $data->{MESSAGE}));
-        return;
+        if($operation ne "register")
+        {
+            # on registration we have to update the registration table even on error.
+            return;
+        }
     }
     elsif($data->{RESULT} eq "warning")
     {
@@ -746,26 +751,51 @@ sub _bulkop_handler
                 push @productids, $prod->{PRODUCTDATAID};
             }
         }
-        
-        my $statement = "UPDATE Registration SET NCCREGDATE=? WHERE GUID=%s and ";
-        if(@productids > 1)
+
+        my $statement = "";
+        if($data->{RESULT} ne "error")
         {
-            $statement .= "PRODUCTID IN (".join(",", @productids).")";
+            $statement = "UPDATE Registration SET NCCREGDATE=?, NCCREGERROR=0 WHERE GUID=%s and ";
+            if(@productids > 1)
+            {
+                $statement .= "PRODUCTID IN (".join(",", @productids).")";
+            }
+            elsif(@productids == 1)
+            {
+                $statement .= "PRODUCTID = ".$productids[0];
+            }
+            else
+            {
+                # this should not happen
+                printLog($self->{LOG}, "error", __("No products found."));
+                return 0;
+            }
+            my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
+            $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+            $sth->execute;
+            printLog($self->{LOG}, "info", sprintf(__("Registration success: '%s'."), $guid));
         }
-        elsif(@productids == 1)
+        else  # error
         {
-            $statement .= "PRODUCTID = ".$productids[0];
+            # on error we set NCCREGERROR to 1
+            $statement = "UPDATE Registration SET NCCREGERROR=1 WHERE GUID=%s and ";
+            if(@productids > 1)
+            {
+                $statement .= "PRODUCTID IN (".join(",", @productids).")";
+            }
+            elsif(@productids == 1)
+            {
+                $statement .= "PRODUCTID = ".$productids[0];
+            }
+            else
+            {
+                # this should not happen
+                printLog($self->{LOG}, "error", __("No products found."));
+                return 0;
+            }
+            my $res = $self->{DBH}->do(sprintf("$statement", $self->{DBH}->quote($guid)));
+            printLog($self->{LOG}, "debug",  sprintf("$statement", $self->{DBH}->quote($guid))) if($self->{DEBUG});
         }
-        else
-        {
-            # this should not happen
-            printLog($self->{LOG}, "error", __("No products found."));
-            return 0;
-        }
-        my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
-        $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
-        $sth->execute;
-        printLog($self->{LOG}, "info", sprintf(__("Registration success: '%s'."), $guid));
     }
     elsif(exists $data->{OPERATION} && defined $data->{OPERATION} && $data->{OPERATION} eq "de-register")
     {

@@ -1086,8 +1086,6 @@ sub productSubscriptionReport
 
     foreach my $subname (keys %{$calchash})
     {
-        my $warningprint = 0;
-        
         my $calc = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{ACTIVE} - $calchash->{$subname}->{ESOON};
         $calc = 0 if ($calc < 0);
 
@@ -1101,8 +1099,6 @@ sub productSubscriptionReport
         if(exists $expireSoonMachines->{$subname} && defined $expireSoonMachines->{$subname} &&
            $expireSoonMachines->{$subname} > 0)
         {
-            $alerts .= __("Alerts:\n");
-            $warningprint = 1;
             $alerts .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
                                $expireSoonMachines->{$subname},
                                $subname);
@@ -1112,19 +1108,28 @@ sub productSubscriptionReport
         if(exists $expiredMachines->{$subname} && defined $expiredMachines->{$subname} &&
            $expiredMachines->{$subname} > 0)
         {
-            $alerts .= __("Alerts:\n") if(!$warningprint);
             $alerts .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
                                $expiredMachines->{$subname},
                                $subname);
             $ok = 0;
         }
-        
-        $alerts .= "\n";
+    }
+
+    # search for failed NCC registrations and add them to the alerts
+    $statement = "SELECT COUNT(DISTINCT GUID) from Registration WHERE NCCREGERROR != 0";
+    my $count = $dbh->selectcol_arrayref($statement);
+    if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
+    {
+        $alerts .= sprintf(__("NCC registration failed for %d Machines. \n"), $count->[0]);
     }
     
     $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => \@SUMVALUES, 'opts' => \%SUMOPTIONS };
-    $report{'alerts'} = $alerts;
-    
+    $report{'alerts'} = "";
+    if($alerts ne "")
+    {
+        $report{'alerts'} = __("Alerts:\n").$alerts ;
+    }
+        
     return \%report;
 }
 
@@ -1162,8 +1167,17 @@ sub subscriptionReport
     
     foreach my $subname (keys %{$res})
     {
+        if(!exists $res->{$subname}->{SUM_TOTALCONSUMED} || !defined $res->{$subname}->{SUM_TOTALCONSUMED})
+        {
+            $res->{$subname}->{SUM_TOTALCONSUMED} = 0;
+        }
+        if(!exists $res2->{$subname}->{MACHINES} || !defined $res2->{$subname}->{MACHINES})
+        {
+            $res2->{$subname}->{MACHINES} = 0;
+        }
+        
         $calchash->{$subname}->{MACHINES} = int $res->{$subname}->{SUM_TOTALCONSUMED};
-        $calchash->{$subname}->{TOTMACHINES} = int $res->{$subname}->{SUM_TOTALCONSUMED};
+        $calchash->{$subname}->{TOTMACHINES} = $calchash->{$subname}->{MACHINES};
         $calchash->{$subname}->{LOCMACHINES} = int $res2->{$subname}->{MACHINES};
         $calchash->{$subname}->{ACTIVE} = 0;
         $calchash->{$subname}->{ESOON} = 0;
@@ -1423,8 +1437,6 @@ sub subscriptionReport
 
     foreach my $subname (keys %{$calchash})
     {
-        my $warningprint = 0;
-        
         my $calc = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{ACTIVE} -$calchash->{$subname}->{ESOON};
         $calc = 0 if ($calc < 0);
         
@@ -1434,8 +1446,6 @@ sub subscriptionReport
         if(exists $expireSoonMachines->{$subname} && defined $expireSoonMachines->{$subname} &&
            $expireSoonMachines->{$subname} > 0)
         {
-            $alerts .= __("Alerts:\n");
-            $warningprint = 1;
             $alerts .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
                                $expireSoonMachines->{$subname},
                                $subname);
@@ -1445,18 +1455,27 @@ sub subscriptionReport
         if(exists $expiredMachines->{$subname} && defined $expiredMachines->{$subname} &&
            $expiredMachines->{$subname} > 0)
         {
-            $alerts .= __("Alerts:\n") if(!$warningprint);
             $alerts .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
                                $expiredMachines->{$subname},
                                 $subname);
             $ok = 0;
         }
-        
-        $alerts .= "\n";
     }
 
+    # search for failed NCC registrations and add them to the alerts
+    $statement = "SELECT COUNT(DISTINCT GUID) from Registration WHERE NCCREGERROR != 0";
+    my $count = $dbh->selectcol_arrayref($statement);
+    if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
+    {
+        $alerts .= sprintf(__("NCC registration failed for %d Machines. \n"), $count->[0]);
+    }
+    
     $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => \@SUMVALUES, 'opts' => \%SUMOPTIONS }; 
-    $report{'alerts'} = $alerts;
+    $report{'alerts'} = "";
+    if($alerts ne "")
+    {
+        $report{'alerts'} = __("Alerts:\n").$alerts ;
+    }
     
     return \%report;
 }

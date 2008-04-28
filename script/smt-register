@@ -35,11 +35,13 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 my $debug   = 0;
 my $help    = 0;
 my $random  = 0;
+my $reseterror = 0;
 my $logfile = "/dev/null";
 
 my $result = GetOptions ("debug|d"     => \$debug,
                          "logfile|L=s" => \$logfile,
                          "randomStart|r" => \$random,
+                         "reseterror"  => \$reseterror,
                          "help|h"      => \$help
                         );
 
@@ -50,6 +52,7 @@ if($help)
     print __("or which data changed since the last registration.\n");
     print "\n";
     print __("Options:\n");
+    print "--reseterror      ".__("reset the NCC registration error flag and try to submit failed registrations again.\n");
     print "--debug -d        ".__("enable debug mode\n");
     print "--logfile -L file ".__("Path to logfile\n");
     print "--help -h         ".__("show this message\n");
@@ -123,6 +126,12 @@ if(!$dbh)
 
 eval
 {
+    if($reseterror)
+    {
+        my $res = $dbh->do("Update Registration SET NCCREGERROR=0");
+        SMT::Utils::printLog($LOG, "debug", "Reset NCC Registration Errors. Result: $res") if($debug);
+    }
+    
     my $nccreg = SMT::NCCRegTools->new(debug => $debug, useragent => $useragent, dbh => $dbh, 
                                        log => $LOG, nccemail => $nccEmail);
     my $err = $nccreg->NCCRegister($sleeptime);
