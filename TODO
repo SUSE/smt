@@ -2,10 +2,6 @@
 TODO:
 =====
 
-- Maybe we need to limit the number of request we send in <bulkop>
-  E.g. send only 20 register / de-register request per <bulkop>
-  If we have more, start again.
-
 - review packaged documentation in /usr/share/doc/packages/smt/
   and remove useless things or add something which is missing.
 
@@ -67,6 +63,15 @@ Nice-To-Have but not so important
 
   Talked to security-team: This is nice to have but no requirement
   because the client are checking the repomd too.
+
+
+TODO next SP or SLE11 version
+=============================
+
+- provide --config <configfile> options for the smt commands to
+  use a different configfile then /etc/smt.conf 
+
+- write a function to create a LWP::UserAgent object
 
 
 DONE:
@@ -317,3 +322,9 @@ About nccEmail: here is the help text which come from NCC if you enter
   using /usr/lib/SMT/bin/smt-db cpw
 
 - randomizing startup times of cron jobs
+
+- Maybe we need to limit the number of request we send in <bulkop>
+  E.g. send only 20 register / de-register request per <bulkop>
+  If we have more, start again.
+
+
