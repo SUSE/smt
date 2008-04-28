@@ -548,9 +548,6 @@ sub setMirrorableCatalogs
     );
 
     my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
-    #my $sth = $dbh->prepare($sql);
-    #$sth->execute();
-    #while (my @values = $sth->fetchrow_array())
     my $values = $dbh->selectall_arrayref($sql);
     foreach my $v (@{$values})
     { 
@@ -560,32 +557,37 @@ sub setMirrorableCatalogs
         my $catTarget = $v->[4];
         if( $catUrl ne "" && $catLocal ne "" )
         {
-	    my $ret = 1;
+            my $ret = 1;
             if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
             {
-		    # fromdir is used on a server without internet connection
-		    # we define that the catalogs are mirrorable
-		    $ret = 0;
-	    }
-	    else
-	    {
+                # fromdir is used on a server without internet connection
+                # we define that the catalogs are mirrorable
+                $ret = 0;
+            }
+            else
+            {
     	        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
                 my $job = SMT::Mirror::Job->new();
                 $job->uri($catUrl);
                 $job->localdir($tempdir);
                 $job->resource("/repodata/repomd.xml");
-          
+                
                 # if no error
                 $ret = $job->mirror();
-	    }
-        printLog($opt{log}, "debug", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' ))) if($opt{debug});
-        my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND TARGET=%s", 
+            }
+            printLog($opt{log}, "debug", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' ))) if($opt{debug});
+            my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
                                     ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), 
-                                    $dbh->quote($catName), 
-                                    $dbh->quote($catTarget) ) );
+                                    $dbh->quote($catName)); 
+            if(defined $catTarget && $catTarget ne "")
+            {
+                $statement .= sprintf("AND TARGET=%s", $dbh->quote($catTarget) );
+            }        
+            
+            my $sth = $dbh->do( $statement );
         }
     }
-
+    
     my $mirrorAll = $cfg->val("LOCAL", "MirrorAll");
     if(defined $mirrorAll && lc($mirrorAll) eq "true")
     {
