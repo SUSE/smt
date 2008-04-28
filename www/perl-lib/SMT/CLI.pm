@@ -468,12 +468,12 @@ sub setCatalogDoMirror
 
     $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
 
-    if(exists $opt{name} && defined $opt{name} )
+    if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
     {
       $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
     }
 
-    if(exists $opt{target} && defined $opt{target} )
+    if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
     {
       $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
     }
