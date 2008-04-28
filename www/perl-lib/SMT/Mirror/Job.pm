@@ -16,6 +16,9 @@ BEGIN
         # required for Crypt::SSLeay HTTPS Proxy support
         $ENV{HTTPS_PROXY} = $ENV{https_proxy};
     }
+    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
+    #$ENV{HTTPS_DEBUG} = 1;
+
 }
 
 sub new
