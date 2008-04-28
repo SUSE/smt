@@ -1,0 +1,894 @@
+.---------------------------------------------------------------------------------------------------------------------------------------------------------------.
+| PRODID | CATALOGID                                | PRODUCT                                                | CATALOG                                    | OPT |
++--------+------------------------------------------+--------------------------------------------------------+--------------------------------------------+-----+
+|    142 | dc7f2ee956662a38b5a4fce0e1d2a5309a6dfe92 | ATI Video Drivers                                      | ATI-Drivers/                               | N   |
+|    498 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | ATI Video Drivers SP1                                  | ATI-Drivers-SP1/                           | N   |
+|    539 | 0170ec52fb09a30d576a714db304dbdad692ba3b | Novell-Open-Enterprise-Server-i386 2  i386             | OES2-Updates/sles-10-i586                  | N   |
+D|    539 | b3b9e885a336ace95bfb7d75095de1031daede86 | Novell-Open-Enterprise-Server-i386 2  i386             | OES2-Updates/sles-10-x86_64                | N   |
+|    538 | 0170ec52fb09a30d576a714db304dbdad692ba3b | Novell-Open-Enterprise-Server-i386 2  i486             | OES2-Updates/sles-10-i586                  | N   |
+D|    538 | b3b9e885a336ace95bfb7d75095de1031daede86 | Novell-Open-Enterprise-Server-i386 2  i486             | OES2-Updates/sles-10-x86_64                | N   |
+|    537 | 0170ec52fb09a30d576a714db304dbdad692ba3b | Novell-Open-Enterprise-Server-i386 2  i586             | OES2-Updates/sles-10-i586                  | N   |
+D|    537 | b3b9e885a336ace95bfb7d75095de1031daede86 | Novell-Open-Enterprise-Server-i386 2  i586             | OES2-Updates/sles-10-x86_64                | N   |
+|    536 | 0170ec52fb09a30d576a714db304dbdad692ba3b | Novell-Open-Enterprise-Server-i386 2  i686             | OES2-Updates/sles-10-i586                  | N   |
+D|    536 | b3b9e885a336ace95bfb7d75095de1031daede86 | Novell-Open-Enterprise-Server-i386 2  i686             | OES2-Updates/sles-10-x86_64                | N   |
+D|    540 | 0170ec52fb09a30d576a714db304dbdad692ba3b | Novell-Open-Enterprise-Server-x86_64 2  x86_64         | OES2-Updates/sles-10-i586                  | N   |
+|    540 | b3b9e885a336ace95bfb7d75095de1031daede86 | Novell-Open-Enterprise-Server-x86_64 2  x86_64         | OES2-Updates/sles-10-x86_64                | N   |
+|    141 | f2ed57b3d34a99a925382457131a0019d790dd80 | nVidia Video Drivers                                   | nVidia-Drivers/                            | N   |
+|    499 | 10067ca7520f514061123f7f9941d9056210faa7 | nVidia Video Drivers SP1                               | nVidia-Drivers-SP1/                        | N   |
+WRONG?|    761 | 9a950e88371eee70800f074de3c1789157d12093 | SLES9-SLD-SP-i386 9                                    | SLEHA1-Updates/sles-10-i586                | N   |
+WRONG?|    764 | 9a950e88371eee70800f074de3c1789157d12093 | SLES9-SLD-SP-x86_64 9                                  | SLEHA1-Updates/sles-10-i586                | N   |
+|     24 | dc7f2ee956662a38b5a4fce0e1d2a5309a6dfe92 | SUSE-Linux-Enterprise-Desktop-i386 10  i386            | ATI-Drivers/                               | N   |
+|     24 | f2ed57b3d34a99a925382457131a0019d790dd80 | SUSE-Linux-Enterprise-Desktop-i386 10  i386            | nVidia-Drivers/                            | N   |
+|     24 | ecd5f451f9bd5316ef868f35415c81eff5f0275c | SUSE-Linux-Enterprise-Desktop-i386 10  i386            | SLE10-Debuginfo-Updates/sled-10-i586       | Y   |
+D|     24 | baee41c240b1b4835242b23eefc22118035dede6 | SUSE-Linux-Enterprise-Desktop-i386 10  i386            | SLE10-Debuginfo-Updates/sled-10-x86_64     | Y   |
+|     24 | 43dfa08512d5e6d0239b5fedf7a7daa8a3971646 | SUSE-Linux-Enterprise-Desktop-i386 10  i386            | SLED10-Updates/sled-10-i586                | N   |
+D|     24 | 5b5d1de392e37e4a59e33559ba3af5cf518511e8 | SUSE-Linux-Enterprise-Desktop-i386 10  i386            | SLED10-Updates/sled-10-x86_64              | N   |
+|     23 | dc7f2ee956662a38b5a4fce0e1d2a5309a6dfe92 | SUSE-Linux-Enterprise-Desktop-i386 10  i486            | ATI-Drivers/                               | N   |
+|     23 | f2ed57b3d34a99a925382457131a0019d790dd80 | SUSE-Linux-Enterprise-Desktop-i386 10  i486            | nVidia-Drivers/                            | N   |
+|     23 | ecd5f451f9bd5316ef868f35415c81eff5f0275c | SUSE-Linux-Enterprise-Desktop-i386 10  i486            | SLE10-Debuginfo-Updates/sled-10-i586       | Y   |
+D|     23 | baee41c240b1b4835242b23eefc22118035dede6 | SUSE-Linux-Enterprise-Desktop-i386 10  i486            | SLE10-Debuginfo-Updates/sled-10-x86_64     | Y   |
+|     23 | 43dfa08512d5e6d0239b5fedf7a7daa8a3971646 | SUSE-Linux-Enterprise-Desktop-i386 10  i486            | SLED10-Updates/sled-10-i586                | N   |
+D|     23 | 5b5d1de392e37e4a59e33559ba3af5cf518511e8 | SUSE-Linux-Enterprise-Desktop-i386 10  i486            | SLED10-Updates/sled-10-x86_64              | N   |
+|     22 | dc7f2ee956662a38b5a4fce0e1d2a5309a6dfe92 | SUSE-Linux-Enterprise-Desktop-i386 10  i586            | ATI-Drivers/                               | N   |
+|     22 | f2ed57b3d34a99a925382457131a0019d790dd80 | SUSE-Linux-Enterprise-Desktop-i386 10  i586            | nVidia-Drivers/                            | N   |
+|     22 | ecd5f451f9bd5316ef868f35415c81eff5f0275c | SUSE-Linux-Enterprise-Desktop-i386 10  i586            | SLE10-Debuginfo-Updates/sled-10-i586       | Y   |
+D|     22 | baee41c240b1b4835242b23eefc22118035dede6 | SUSE-Linux-Enterprise-Desktop-i386 10  i586            | SLE10-Debuginfo-Updates/sled-10-x86_64     | Y   |
+|     22 | 43dfa08512d5e6d0239b5fedf7a7daa8a3971646 | SUSE-Linux-Enterprise-Desktop-i386 10  i586            | SLED10-Updates/sled-10-i586                | N   |
+D|     22 | 5b5d1de392e37e4a59e33559ba3af5cf518511e8 | SUSE-Linux-Enterprise-Desktop-i386 10  i586            | SLED10-Updates/sled-10-x86_64              | N   |
+|     21 | dc7f2ee956662a38b5a4fce0e1d2a5309a6dfe92 | SUSE-Linux-Enterprise-Desktop-i386 10  i686            | ATI-Drivers/                               | N   |
+|     21 | f2ed57b3d34a99a925382457131a0019d790dd80 | SUSE-Linux-Enterprise-Desktop-i386 10  i686            | nVidia-Drivers/                            | N   |
+|     21 | ecd5f451f9bd5316ef868f35415c81eff5f0275c | SUSE-Linux-Enterprise-Desktop-i386 10  i686            | SLE10-Debuginfo-Updates/sled-10-i586       | Y   |
+D|     21 | baee41c240b1b4835242b23eefc22118035dede6 | SUSE-Linux-Enterprise-Desktop-i386 10  i686            | SLE10-Debuginfo-Updates/sled-10-x86_64     | Y   |
+|     21 | 43dfa08512d5e6d0239b5fedf7a7daa8a3971646 | SUSE-Linux-Enterprise-Desktop-i386 10  i686            | SLED10-Updates/sled-10-i586                | N   |
+D|     21 | 5b5d1de392e37e4a59e33559ba3af5cf518511e8 | SUSE-Linux-Enterprise-Desktop-i386 10  i686            | SLED10-Updates/sled-10-x86_64              | N   |
+|    434 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | ATI-Drivers-SP1/                           | N   |
+|    434 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | nVidia-Drivers-SP1/                        | N   |
+|    434 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    434 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    434 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    434 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    434 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    434 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10  i386             | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    433 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | ATI-Drivers-SP1/                           | N   |
+|    433 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | nVidia-Drivers-SP1/                        | N   |
+|    433 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    433 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    433 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    433 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    433 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    433 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10  i486             | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    432 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | ATI-Drivers-SP1/                           | N   |
+|    432 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | nVidia-Drivers-SP1/                        | N   |
+|    432 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    432 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    432 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    432 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    432 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    432 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10  i586             | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    431 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | ATI-Drivers-SP1/                           | N   |
+|    431 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | nVidia-Drivers-SP1/                        | N   |
+|    431 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    431 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    431 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    431 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    431 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    431 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10  i686             | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    435 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | ATI-Drivers-SP1/                           | N   |
+|    435 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | nVidia-Drivers-SP1/                        | N   |
+D|    435 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+|    435 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    435 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    435 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | SLED10-SP1-Online/sled-10-x86_64           | N   |
+D|    435 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | SLED10-SP1-Updates/sled-10-i586            | N   |
+|    435 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10  x86_64           | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    449 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | ATI-Drivers-SP1/                           | N   |
+|    449 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | nVidia-Drivers-SP1/                        | N   |
+|    449 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    449 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    449 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    449 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    449 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    449 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i386       | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    448 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | ATI-Drivers-SP1/                           | N   |
+|    448 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | nVidia-Drivers-SP1/                        | N   |
+|    448 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    448 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    448 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    448 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    448 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    448 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i486       | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    447 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | ATI-Drivers-SP1/                           | N   |
+|    447 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | nVidia-Drivers-SP1/                        | N   |
+|    447 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    447 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    447 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    447 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    447 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    447 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i586       | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    446 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | ATI-Drivers-SP1/                           | N   |
+|    446 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | nVidia-Drivers-SP1/                        | N   |
+|    446 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    446 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    446 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    446 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | SLED10-SP1-Online/sled-10-x86_64           | N   |
+|    446 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    446 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10 online i686       | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    450 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | ATI-Drivers-SP1/                           | N   |
+|    450 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | nVidia-Drivers-SP1/                        | N   |
+D|    450 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+|    450 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    450 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | SLED10-SP1-Online/sled-10-i586             | N   |
+|    450 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | SLED10-SP1-Online/sled-10-x86_64           | N   |
+D|    450 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | SLED10-SP1-Updates/sled-10-i586            | N   |
+|    450 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1 10 online x86_64     | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    419 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | ATI-Drivers-SP1/                           | N   |
+|    419 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | nVidia-Drivers-SP1/                        | N   |
+D|    419 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    419 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    419 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    419 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | SLED10-SP1-Online/sled-10-x86_64           | N   |
+D|    419 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    419 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i386   | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    418 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | ATI-Drivers-SP1/                           | N   |
+|    418 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | nVidia-Drivers-SP1/                        | N   |
+D|    418 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    418 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    418 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    418 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | SLED10-SP1-Online/sled-10-x86_64           | N   |
+D|    418 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    418 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i486   | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    417 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | ATI-Drivers-SP1/                           | N   |
+|    417 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | nVidia-Drivers-SP1/                        | N   |
+D|    417 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    417 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    417 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    417 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | SLED10-SP1-Online/sled-10-x86_64           | N   |
+D|    417 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    417 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i586   | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    416 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | ATI-Drivers-SP1/                           | N   |
+|    416 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | nVidia-Drivers-SP1/                        | N   |
+D|    416 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    416 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    416 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | SLED10-SP1-Online/sled-10-i586             | N   |
+D|    416 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | SLED10-SP1-Online/sled-10-x86_64           | N   |
+D|    416 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    416 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  i686   | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    420 | 50e6f8f5befb1d3d00e2ed95103a94c5331b440d | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | ATI-Drivers-SP1/                           | N   |
+|    420 | 10067ca7520f514061123f7f9941d9056210faa7 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | nVidia-Drivers-SP1/                        | N   |
+D|    420 | c41b05df77e2a67f6a49293d9934dee122982c1f | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | SLE10-SP1-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    420 | 31e96f44f41898d3455e135318ffb249a229b835 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | SLE10-SP1-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    420 | 961729be20fb4415acd94465f0229196089c8362 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | SLED10-SP1-Online/sled-10-i586             | N   |
+|    420 | 2bb99e66fb084a2737bf3e837282c4e88124f5c5 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | SLED10-SP1-Online/sled-10-x86_64           | N   |
+D|    420 | 0ab6ec89fd16f18750b5e52fbe70d2cd1ebd8a57 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | SLED10-SP1-Updates/sled-10-i586            | N   |
+D|    420 | dcd4201e4a465368e6f6a441ba38d5859bd68ee0 | SUSE-Linux-Enterprise-Desktop-SP1-migration 10  x86_64 | SLED10-SP1-Updates/sled-10-x86_64          | N   |
+|    818 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10  i386             | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    818 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10  i386             | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    818 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10  i386             | SLED10-SP2-Online/sled-10-i586             | Y   |
+D|    818 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10  i386             | SLED10-SP2-Online/sled-10-x86_64           | Y   |
+|    818 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10  i386             | SLED10-SP2-Updates/sled-10-i586            | N   |
+D|    818 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10  i386             | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+|    817 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10  i486             | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    817 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10  i486             | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    817 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10  i486             | SLED10-SP2-Online/sled-10-i586             | Y   |
+D|    817 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10  i486             | SLED10-SP2-Online/sled-10-x86_64           | Y   |
+|    817 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10  i486             | SLED10-SP2-Updates/sled-10-i586            | N   |
+D|    817 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10  i486             | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+|    815 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10  i686             | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    815 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10  i686             | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    815 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10  i686             | SLED10-SP2-Online/sled-10-i586             | Y   |
+D|    815 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10  i686             | SLED10-SP2-Online/sled-10-x86_64           | Y   |
+|    815 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10  i686             | SLED10-SP2-Updates/sled-10-i586            | N   |
+D|    815 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10  i686             | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+D|    819 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10  x86_64           | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+|    819 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10  x86_64           | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    819 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10  x86_64           | SLED10-SP2-Online/sled-10-i586             | Y   |
+D|    819 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10  x86_64           | SLED10-SP2-Online/sled-10-x86_64           | Y   |
+D|    819 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10  x86_64           | SLED10-SP2-Updates/sled-10-i586            | N   |
+|    819 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10  x86_64           | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+|    833 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i386       | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    833 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i386       | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    833 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i386       | SLED10-SP2-Online/sled-10-i586             | N   |
+D|    833 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i386       | SLED10-SP2-Online/sled-10-x86_64           | N   |
+|    833 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i386       | SLED10-SP2-Updates/sled-10-i586            | N   |
+D|    833 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i386       | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+|    832 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i486       | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    832 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i486       | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    832 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i486       | SLED10-SP2-Online/sled-10-i586             | N   |
+D|    832 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i486       | SLED10-SP2-Online/sled-10-x86_64           | N   |
+|    832 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i486       | SLED10-SP2-Updates/sled-10-i586            | N   |
+D|    832 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i486       | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+|    831 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i586       | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    831 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i586       | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    831 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i586       | SLED10-SP2-Online/sled-10-i586             | N   |
+D|    831 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i586       | SLED10-SP2-Online/sled-10-x86_64           | N   |
+|    831 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i586       | SLED10-SP2-Updates/sled-10-i586            | N   |
+D|    831 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i586       | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+|    830 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i686       | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+D|    830 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i686       | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+|    830 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i686       | SLED10-SP2-Online/sled-10-i586             | N   |
+D|    830 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i686       | SLED10-SP2-Online/sled-10-x86_64           | N   |
+|    830 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i686       | SLED10-SP2-Updates/sled-10-i586            | N   |
+D|    830 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10 online i686       | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+D|    834 | eaae98ac32b71bea41f774e48fcd00a76196cab4 | SUSE-Linux-Enterprise-Desktop-SP2 10 online x86_64     | SLE10-SP2-Debuginfo-Updates/sled-10-i586   | Y   |
+|    834 | 6f3df08aba323625e9f6fbde7251eedbfda615f2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online x86_64     | SLE10-SP2-Debuginfo-Updates/sled-10-x86_64 | Y   |
+D|    834 | 8252064f0b152a226d7ac9ddacb995ea4aa558d2 | SUSE-Linux-Enterprise-Desktop-SP2 10 online x86_64     | SLED10-SP2-Online/sled-10-i586             | N   |
+|    834 | 89bb07c41a716abf3e5a316a5b9530bdc8640740 | SUSE-Linux-Enterprise-Desktop-SP2 10 online x86_64     | SLED10-SP2-Online/sled-10-x86_64           | N   |
+D|    834 | a5c974a67d3d10b2722728cf6a3ae4ca938cb685 | SUSE-Linux-Enterprise-Desktop-SP2 10 online x86_64     | SLED10-SP2-Updates/sled-10-i586            | N   |
+|    834 | 8cebc10508cfdc45d4d22ef57da750a85afe8a81 | SUSE-Linux-Enterprise-Desktop-SP2 10 online x86_64     | SLED10-SP2-Updates/sled-10-x86_64          | N   |
+|     25 | dc7f2ee956662a38b5a4fce0e1d2a5309a6dfe92 | SUSE-Linux-Enterprise-Desktop-x86_64 10  x86_64        | ATI-Drivers/                               | N   |
+|     25 | f2ed57b3d34a99a925382457131a0019d790dd80 | SUSE-Linux-Enterprise-Desktop-x86_64 10  x86_64        | nVidia-Drivers/                            | N   |
+D|     25 | ecd5f451f9bd5316ef868f35415c81eff5f0275c | SUSE-Linux-Enterprise-Desktop-x86_64 10  x86_64        | SLE10-Debuginfo-Updates/sled-10-i586       | Y   |
+|     25 | baee41c240b1b4835242b23eefc22118035dede6 | SUSE-Linux-Enterprise-Desktop-x86_64 10  x86_64        | SLE10-Debuginfo-Updates/sled-10-x86_64     | Y   |
+D|     25 | 43dfa08512d5e6d0239b5fedf7a7daa8a3971646 | SUSE-Linux-Enterprise-Desktop-x86_64 10  x86_64        | SLED10-Updates/sled-10-i586                | N   |
+|     25 | 5b5d1de392e37e4a59e33559ba3af5cf518511e8 | SUSE-Linux-Enterprise-Desktop-x86_64 10  x86_64        | SLED10-Updates/sled-10-x86_64              | N   |
+|    621 | 9a950e88371eee70800f074de3c1789157d12093 | SUSE-Linux-Enterprise-HA-Server 1.0                    | SLEHA1-Updates/sles-10-i586                | N   |
+|    276 | ecd5f451f9bd5316ef868f35415c81eff5f0275c | SUSE-Linux-Enterprise-RT 10                            | SLE10-Debuginfo-Updates/sled-10-i586       | Y   |
+|    276 | baee41c240b1b4835242b23eefc22118035dede6 | SUSE-Linux-Enterprise-RT 10                            | SLE10-Debuginfo-Updates/sled-10-x86_64     | Y   |
+|    276 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-RT 10                            | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|    276 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-RT 10                            | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|    276 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-RT 10                            | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|    276 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-RT 10                            | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+|    276 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-RT 10                            | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+|    276 | 4c627f3f3e444a19fecbe9dd478bd038df441b1b | SUSE-Linux-Enterprise-RT 10                            | SLERT10-Updates/sles-10-i586               | N   |
+|    276 | 7c827fda453ec49f80c948ff64896aef6233ee74 | SUSE-Linux-Enterprise-RT 10                            | SLERT10-Updates/sles-10-x86_64             | N   |
+|    680 | ecd5f451f9bd5316ef868f35415c81eff5f0275c | SUSE-Linux-Enterprise-RT 10.2.0                        | SLE10-Debuginfo-Updates/sled-10-i586       | Y   |
+|    680 | baee41c240b1b4835242b23eefc22118035dede6 | SUSE-Linux-Enterprise-RT 10.2.0                        | SLE10-Debuginfo-Updates/sled-10-x86_64     | Y   |
+|    680 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-RT 10.2.0                        | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|    680 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-RT 10.2.0                        | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|    680 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-RT 10.2.0                        | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|    680 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-RT 10.2.0                        | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+|    680 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-RT 10.2.0                        | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+|    680 | 4c627f3f3e444a19fecbe9dd478bd038df441b1b | SUSE-Linux-Enterprise-RT 10.2.0                        | SLERT10-Updates/sles-10-i586               | N   |
+|    680 | 7c827fda453ec49f80c948ff64896aef6233ee74 | SUSE-Linux-Enterprise-RT 10.2.0                        | SLERT10-Updates/sles-10-x86_64             | N   |
+|     29 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     29 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     29 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     29 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     29 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+|     29 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLES10-Updates/sles-10-i586                | N   |
+D|     29 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLES10-Updates/sles-10-ia64                | N   |
+D|     29 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLES10-Updates/sles-10-ppc                 | N   |
+D|     29 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLES10-Updates/sles-10-s390x               | N   |
+D|     29 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-i386 10  i386             | SLES10-Updates/sles-10-x86_64              | N   |
+|     28 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     28 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     28 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     28 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     28 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+|     28 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLES10-Updates/sles-10-i586                | N   |
+D|     28 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLES10-Updates/sles-10-ia64                | N   |
+D|     28 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLES10-Updates/sles-10-ppc                 | N   |
+D|     28 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLES10-Updates/sles-10-s390x               | N   |
+D|     28 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-i386 10  i486             | SLES10-Updates/sles-10-x86_64              | N   |
+|     27 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     27 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     27 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     27 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     27 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+|     27 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLES10-Updates/sles-10-i586                | N   |
+D|     27 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLES10-Updates/sles-10-ia64                | N   |
+D|     27 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLES10-Updates/sles-10-ppc                 | N   |
+D|     27 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLES10-Updates/sles-10-s390x               | N   |
+D|     27 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-i386 10  i586             | SLES10-Updates/sles-10-x86_64              | N   |
+|     26 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     26 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     26 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     26 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     26 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+|     26 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLES10-Updates/sles-10-i586                | N   |
+D|     26 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLES10-Updates/sles-10-ia64                | N   |
+D|     26 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLES10-Updates/sles-10-ppc                 | N   |
+D|     26 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLES10-Updates/sles-10-s390x               | N   |
+D|     26 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-i386 10  i686             | SLES10-Updates/sles-10-x86_64              | N   |
+D|     33 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+|     33 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     33 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     33 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     33 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+D|     33 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLES10-Updates/sles-10-i586                | N   |
+|     33 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLES10-Updates/sles-10-ia64                | N   |
+D|     33 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLES10-Updates/sles-10-ppc                 | N   |
+D|     33 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLES10-Updates/sles-10-s390x               | N   |
+D|     33 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-ia64 10  ia64             | SLES10-Updates/sles-10-x86_64              | N   |
+D|     31 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     31 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+|     31 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     31 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     31 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+D|     31 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLES10-Updates/sles-10-i586                | N   |
+D|     31 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLES10-Updates/sles-10-ia64                | N   |
+|     31 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLES10-Updates/sles-10-ppc                 | N   |
+D|     31 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLES10-Updates/sles-10-s390x               | N   |
+D|     31 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-ppc 10  ppc               | SLES10-Updates/sles-10-x86_64              | N   |
+D|     32 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     32 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+|     32 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     32 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     32 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+D|     32 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLES10-Updates/sles-10-i586                | N   |
+D|     32 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLES10-Updates/sles-10-ia64                | N   |
+|     32 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLES10-Updates/sles-10-ppc                 | N   |
+D|     32 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLES10-Updates/sles-10-s390x               | N   |
+D|     32 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-ppc 10  ppc64             | SLES10-Updates/sles-10-x86_64              | N   |
+D|     35 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     35 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     35 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+|     35 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     35 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+D|     35 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLES10-Updates/sles-10-i586                | N   |
+D|     35 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLES10-Updates/sles-10-ia64                | N   |
+D|     35 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLES10-Updates/sles-10-ppc                 | N   |
+|     35 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLES10-Updates/sles-10-s390x               | N   |
+D|     35 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-s390x 10  s390            | SLES10-Updates/sles-10-x86_64              | N   |
+D|     34 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     34 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     34 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+|     34 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+D|     34 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+D|     34 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLES10-Updates/sles-10-i586                | N   |
+D|     34 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLES10-Updates/sles-10-ia64                | N   |
+D|     34 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLES10-Updates/sles-10-ppc                 | N   |
+|     34 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLES10-Updates/sles-10-s390x               | N   |
+D|     34 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-s390x 10  s390x           | SLES10-Updates/sles-10-x86_64              | N   |
+|    439 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    439 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    439 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    439 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    439 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    439 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    439 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    439 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    439 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    439 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  i386              | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    438 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    438 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    438 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    438 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    438 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    438 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    438 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    438 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    438 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    438 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  i486              | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    437 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    437 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    437 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    437 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    437 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    437 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    437 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    437 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    437 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    437 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  i586              | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    436 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    436 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    436 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    436 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    436 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    436 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    436 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    436 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    436 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    436 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  i686              | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    443 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+|    443 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    443 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    443 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    443 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    443 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLES10-SP1-Updates/sles-10-i586            | N   |
+|    443 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    443 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    443 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    443 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  ia64              | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    441 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    441 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    441 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    441 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    441 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    441 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    441 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLES10-SP1-Updates/sles-10-ia64            | N   |
+|    441 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    441 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    441 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  ppc               | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    442 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    442 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    442 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    442 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    442 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    442 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    442 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLES10-SP1-Updates/sles-10-ia64            | N   |
+|    442 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    442 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    442 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  ppc64             | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    444 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    444 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    444 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    444 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    444 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    444 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    444 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    444 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLES10-SP1-Updates/sles-10-ppc             | N   |
+|    444 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    444 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  s390              | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    445 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    445 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    445 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    445 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    445 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    445 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    445 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    445 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLES10-SP1-Updates/sles-10-ppc             | N   |
+|    445 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    445 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  s390x             | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    440 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    440 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    440 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    440 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+|    440 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    440 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    440 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    440 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    440 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLES10-SP1-Updates/sles-10-s390x           | N   |
+|    440 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10  x86_64            | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    454 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    454 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    454 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    454 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    454 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    454 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    454 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    454 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    454 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    454 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Online/sles-10-x86_64           | N   |
+|    454 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    454 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    454 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    454 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    454 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online i386        | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    453 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    453 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    453 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    453 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    453 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    453 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    453 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    453 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    453 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    453 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Online/sles-10-x86_64           | N   |
+|    453 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    453 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    453 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    453 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    453 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online i486        | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    452 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    452 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    452 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    452 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    452 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    452 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    452 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    452 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    452 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    452 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Online/sles-10-x86_64           | N   |
+|    452 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    452 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    452 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    452 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    452 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online i586        | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    451 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    451 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    451 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    451 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    451 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    451 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    451 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    451 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    451 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    451 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Online/sles-10-x86_64           | N   |
+|    451 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    451 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    451 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    451 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    451 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online i686        | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    458 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+|    458 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    458 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    458 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    458 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    458 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Online/sles-10-i586             | N   |
+|    458 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    458 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    458 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    458 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Online/sles-10-x86_64           | N   |
+D|    458 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Updates/sles-10-i586            | N   |
+|    458 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    458 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    458 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    458 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online ia64        | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    456 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    456 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    456 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    456 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    456 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    456 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    456 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Online/sles-10-ia64             | N   |
+|    456 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    456 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    456 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Online/sles-10-x86_64           | N   |
+D|    456 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    456 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Updates/sles-10-ia64            | N   |
+|    456 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    456 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    456 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online ppc         | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    457 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    457 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    457 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    457 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    457 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    457 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    457 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Online/sles-10-ia64             | N   |
+|    457 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    457 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    457 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Online/sles-10-x86_64           | N   |
+D|    457 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    457 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Updates/sles-10-ia64            | N   |
+|    457 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    457 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    457 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online ppc64       | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    459 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    459 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    459 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    459 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    459 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    459 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    459 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    459 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Online/sles-10-ppc              | N   |
+|    459 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    459 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Online/sles-10-x86_64           | N   |
+D|    459 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    459 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    459 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Updates/sles-10-ppc             | N   |
+|    459 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    459 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online s390        | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    460 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    460 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    460 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    460 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    460 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    460 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    460 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    460 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Online/sles-10-ppc              | N   |
+|    460 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Online/sles-10-s390x            | N   |
+D|    460 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Online/sles-10-x86_64           | N   |
+D|    460 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    460 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    460 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Updates/sles-10-ppc             | N   |
+|    460 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Updates/sles-10-s390x           | N   |
+D|    460 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online s390x       | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+D|    455 | 1698f8eb8e2f028ab8880ccaa1df1acec3e71f96 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLE10-SP1-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    455 | e03682c0ad34d26c8acf4e107ef2e93cd671b5b0 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLE10-SP1-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    455 | 05dbc1c6069b5c72230f01c5ec6690b1d6250a93 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLE10-SP1-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    455 | e130bec7fbe68f25bac139719e4ee1d752607b0e | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLE10-SP1-Debuginfo-Updates/sles-10-s390x  | Y   |
+|    455 | c608e7ef33bfdc7cdcf0cd0b743e1d2a032ddfc9 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLE10-SP1-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    455 | 5dcfd41efbb49e2ec4a11706ce34466591adf063 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Online/sles-10-i586             | N   |
+D|    455 | b39b408571c4be0b2b5695837413f8330f330097 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Online/sles-10-ia64             | N   |
+D|    455 | de8b041d7ebe24033a5c65d81ba63d8704ad8957 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Online/sles-10-ppc              | N   |
+D|    455 | 82dff1da5aef42f540c56f2418744874d38464ee | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Online/sles-10-s390x            | N   |
+|    455 | 6b8cc937b41447bcec7e50ffef042905da45fac2 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Online/sles-10-x86_64           | N   |
+D|    455 | ead65a1426ecf57ca71fe52a3332059c47cce0d7 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Updates/sles-10-i586            | N   |
+D|    455 | dc6fc73ea2a3c018716702fd6299e0e2780d4830 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Updates/sles-10-ia64            | N   |
+D|    455 | 2942a7c483f292418b15c4dcd4176945fc92c9bf | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Updates/sles-10-ppc             | N   |
+D|    455 | d96ee3ddb39086d30e8075e7c32b18cd53e545d5 | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Updates/sles-10-s390x           | N   |
+|    455 | f38e4eabaff7d5f4afc48a90dcdb66af101ff7fa | SUSE-Linux-Enterprise-Server-SP1 10 online x86_64      | SLES10-SP1-Updates/sles-10-x86_64          | N   |
+|    823 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    823 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    823 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    823 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    823 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    823 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    823 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    823 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    823 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    823 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+|    823 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    823 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    823 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    823 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    823 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  i386              | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+|    822 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    822 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    822 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    822 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    822 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    822 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    822 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    822 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    822 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    822 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+|    822 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    822 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    822 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    822 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    822 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  i486              | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+|    821 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    821 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    821 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    821 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    821 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    821 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    821 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    821 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    821 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    821 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+|    821 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    821 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    821 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    821 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    821 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  i586              | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+|    820 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    820 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    820 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    820 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    820 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    820 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    820 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    820 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    820 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    820 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+|    820 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    820 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    820 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    820 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    820 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  i686              | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    827 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+|    827 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    827 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    827 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    827 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    827 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    827 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    827 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    827 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    827 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+D|    827 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Updates/sles-10-i586            | N   |
+|    827 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    827 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    827 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    827 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  ia64              | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    825 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    825 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    825 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    825 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    825 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    825 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    825 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    825 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    825 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    825 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+D|    825 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    825 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Updates/sles-10-ia64            | N   |
+|    825 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    825 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    825 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  ppc               | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    826 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    826 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    826 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    826 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    826 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    826 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    826 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    826 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    826 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    826 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+D|    826 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    826 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Updates/sles-10-ia64            | N   |
+|    826 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    826 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    826 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  ppc64             | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    828 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    828 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    828 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    828 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    828 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    828 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    828 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    828 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    828 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    828 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+D|    828 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    828 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    828 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Updates/sles-10-ppc             | N   |
+|    828 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    828 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  s390              | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    829 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    829 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    829 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    829 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    829 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    829 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    829 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    829 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    829 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    829 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+D|    829 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    829 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    829 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Updates/sles-10-ppc             | N   |
+|    829 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    829 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  s390x             | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    824 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    824 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    824 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    824 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+|    824 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    824 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Online/sles-10-i586             | Y   |
+D|    824 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Online/sles-10-ia64             | Y   |
+D|    824 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Online/sles-10-ppc              | Y   |
+D|    824 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Online/sles-10-s390x            | Y   |
+D|    824 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Online/sles-10-x86_64           | Y   |
+D|    824 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    824 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    824 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    824 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Updates/sles-10-s390x           | N   |
+|    824 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10  x86_64            | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+|    838 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    838 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    838 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    838 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    838 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    838 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    838 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    838 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    838 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    838 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Online/sles-10-x86_64           | N   |
+|    838 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    838 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    838 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    838 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    838 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online i386        | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+|    837 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    837 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    837 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    837 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    837 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    837 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    837 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    837 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    837 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    837 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Online/sles-10-x86_64           | N   |
+|    837 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    837 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    837 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    837 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    837 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online i486        | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+|    836 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    836 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    836 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    836 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    836 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    836 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    836 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    836 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    836 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    836 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Online/sles-10-x86_64           | N   |
+|    836 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    836 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    836 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    836 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    836 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online i586        | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+|    835 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    835 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    835 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    835 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    835 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+|    835 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    835 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    835 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    835 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    835 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Online/sles-10-x86_64           | N   |
+|    835 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    835 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    835 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    835 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    835 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online i686        | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    842 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+|    842 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    842 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    842 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    842 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    842 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Online/sles-10-i586             | N   |
+|    842 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    842 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    842 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    842 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Online/sles-10-x86_64           | N   |
+D|    842 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Updates/sles-10-i586            | N   |
+|    842 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    842 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    842 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    842 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online ia64        | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    840 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    840 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    840 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    840 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    840 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    840 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    840 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Online/sles-10-ia64             | N   |
+|    840 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    840 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    840 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Online/sles-10-x86_64           | N   |
+D|    840 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    840 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Updates/sles-10-ia64            | N   |
+|    840 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    840 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    840 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online ppc         | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    841 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    841 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+|    841 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    841 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    841 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    841 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    841 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Online/sles-10-ia64             | N   |
+|    841 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    841 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    841 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Online/sles-10-x86_64           | N   |
+D|    841 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    841 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Updates/sles-10-ia64            | N   |
+|    841 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    841 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    841 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online ppc64       | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    843 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    843 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    843 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    843 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    843 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    843 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    843 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    843 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Online/sles-10-ppc              | N   |
+|    843 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    843 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Online/sles-10-x86_64           | N   |
+D|    843 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    843 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    843 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Updates/sles-10-ppc             | N   |
+|    843 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    843 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online s390        | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    844 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    844 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    844 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+|    844 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+D|    844 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    844 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    844 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    844 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Online/sles-10-ppc              | N   |
+|    844 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Online/sles-10-s390x            | N   |
+D|    844 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Online/sles-10-x86_64           | N   |
+D|    844 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    844 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    844 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Updates/sles-10-ppc             | N   |
+|    844 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Updates/sles-10-s390x           | N   |
+D|    844 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online s390x       | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|    839 | 53f91d20e090081aaba2efffec43bda72c5c51bc | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLE10-SP2-Debuginfo-Updates/sles-10-i586   | Y   |
+D|    839 | 005018288e5d049e1ec67f88d71014fd9db45690 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLE10-SP2-Debuginfo-Updates/sles-10-ia64   | Y   |
+D|    839 | ca88c64ea5d9bea45cd550f8a45f47f1d13975a2 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLE10-SP2-Debuginfo-Updates/sles-10-ppc    | Y   |
+D|    839 | 994182d07c701100439f05b97028f5e2483b01e6 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLE10-SP2-Debuginfo-Updates/sles-10-s390x  | Y   |
+|    839 | 31e74bc802d78bdff01dc739bfc5019ea155f3d8 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLE10-SP2-Debuginfo-Updates/sles-10-x86_64 | Y   |
+D|    839 | 4bb9a3896ed11ac3aad3a3d97ee323d2230e03f6 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Online/sles-10-i586             | N   |
+D|    839 | 13476d83dada7b652c90c01111685e7eb4e5ee46 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Online/sles-10-ia64             | N   |
+D|    839 | 73f286eab73d4228b193fd698223f7d58aa25ba8 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Online/sles-10-ppc              | N   |
+D|    839 | 37fd5cfd8a6ddef39120594b87d5f9cffcb7eb2b | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Online/sles-10-s390x            | N   |
+|    839 | 195ba2cb9f88a5fc196957cec4d51a1afe1bf27c | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Online/sles-10-x86_64           | N   |
+D|    839 | 50fe318865460da34c7a899efef0e7b335c0ee36 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Updates/sles-10-i586            | N   |
+D|    839 | 73a3cb757042c8d18f618859a46f11b29e7514f0 | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Updates/sles-10-ia64            | N   |
+D|    839 | 8c91eb8ff4f63c0e7aa0f87aeb26c975599f6a5a | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Updates/sles-10-ppc             | N   |
+D|    839 | c7b707d7a8a1422c1af0ed7546fe591a8a05b1eb | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Updates/sles-10-s390x           | N   |
+|    839 | 7e50af96244159b8cc87cfb044b406f0a90b1f3b | SUSE-Linux-Enterprise-Server-SP2 10 online x86_64      | SLES10-SP2-Updates/sles-10-x86_64          | N   |
+D|     30 | a24c6d225991f9a22995053e466fab9bb81452a0 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLE10-Debuginfo-Updates/sles-10-i586       | Y   |
+D|     30 | e937a4f7e09a1256aa08d74161e49ca382ba0f81 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLE10-Debuginfo-Updates/sles-10-ia64       | Y   |
+D|     30 | d5a6d4080a952bccf24d0bc38b522d7b2641d72a | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLE10-Debuginfo-Updates/sles-10-ppc        | Y   |
+D|     30 | 3c7ad6beda188a22fb61b6807c851bca1a9821b3 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLE10-Debuginfo-Updates/sles-10-s390x      | Y   |
+|     30 | db9d847dae405b88ec04116198eab35f09641262 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLE10-Debuginfo-Updates/sles-10-x86_64     | Y   |
+D|     30 | 4a12cfd25e91c92ddd8098b5d83b4db306d46b50 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLES10-Updates/sles-10-i586                | N   |
+D|     30 | f89f76451ca1f69b136f1379fe9fda60328e7b60 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLES10-Updates/sles-10-ia64                | N   |
+D|     30 | 3e54e43b54c79b61019e9e9db4f36cde46d68494 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLES10-Updates/sles-10-ppc                 | N   |
+D|     30 | 179f7860361a1b1b651aef1dbcce637719826837 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLES10-Updates/sles-10-s390x               | N   |
+|     30 | 59e0c747390f22347c59a62f1db4cbc4fc48c273 | SUSE-Linux-Enterprise-Server-x86_64 10  x86_64         | SLES10-Updates/sles-10-x86_64              | N   |
+|    580 | 3176d1b07438516cb1269e551a52f91273a981b8 | SUSE-Linux-Enterprise-Virtual-Machine-Driver-Pack 10   | SLE10-VMDriverPack-Updates/sles-10-i586    | N   |
+'--------+------------------------------------------+--------------------------------------------------------+--------------------------------------------+-----'
