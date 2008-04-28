@@ -49,7 +49,7 @@ sub new
     
     $self->{SMTGUID} = SMT::Utils::getSMTGuid();
 
-    $self->{TEMPDIR} = File::Temp::tempdir(CLEANUP => 0);
+    $self->{TEMPDIR} = File::Temp::tempdir(CLEANUP => 1);
 
     $self->{ELEMENT} = "";
     $self->{TABLE}   = "";
