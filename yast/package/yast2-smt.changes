@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Apr 29 11:34:37 CEST 2008 - locilka@suse.cz
+
+- Changing smt user password after database is created
+  (bnc #384348).
+- 2.13.12
+
+-------------------------------------------------------------------
 Wed Apr 23 11:22:48 CEST 2008 - locilka@suse.cz
 
 - Added inst_smt script to be called from installation workflow.

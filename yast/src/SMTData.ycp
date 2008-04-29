@@ -149,20 +149,28 @@
 	return first_run;
     }
 
+    boolean smt_enabled_initial = nil;
+
     global void ReadSMTServiceStatus () {
+	smt_enabled = false;
+	smt_enabled_initial = false;
+
 	if (IsFirstRun() == nil) {
 	    y2error ("Cannot evaluate first_run!");
 	} else if (IsFirstRun() == true) {
+	    smt_enabled_initial = true;
 	    smt_enabled = true;
 	    return;
 	}
 
 	// default (changed later to false if something doesn't work)
 	smt_enabled = true;
+	smt_enabled_initial = true;
 
 	foreach (string one_service, smt_services, {
 	    if (! Service::Enabled (one_service)) {
 		smt_enabled = false;
+		smt_enabled_initial = false;
 	    }
 	});
     }
@@ -761,15 +769,20 @@ For security reasons, please, set a new one.")),
 	return true;
     }
 
-    global boolean WriteDatabaseSettings () {
-	if (! GetSMTServiceStatus()) {
-	    y2milestone ("SMT is disabled, not adjusting database...");
-	    return true;
-	}
-
+    global boolean StartDatabaseIfNeeded () {
 	if (! Service::Start (smt_database)) {
 	    y2error ("Cannot start database");
 	    return false;
+	}
+
+	return true;
+    }
+
+    global boolean WriteDatabaseSettings () {
+	// Keeping the service stopped
+	if (smt_enabled_initial == false && ! GetSMTServiceStatus()) {
+	    y2milestone ("SMT is disabled, not adjusting database...");
+	    return true;
 	}
 
 	// check whether mysql root password is empty
@@ -869,6 +882,12 @@ For security reasons, please, set a new one.")),
      * than the initial one
      */
     global boolean ChangePasswordIfDifferent () {
+	// Keeping the service stopped
+	if (smt_enabled_initial == false && ! GetSMTServiceStatus()) {
+	    y2milestone ("SMT is disabled, not adjusting database...");
+	    return true;
+	}
+
 	string new_password = GetCredentials ("DB","pass");
 
 	if (initial_password == new_password) {
@@ -898,13 +917,13 @@ For security reasons, please, set a new one.")),
 	integer retcode = (integer) SCR::Execute (.target.bash, sformat ("/usr/lib/SMT/bin/smt-db cpw --yast < '%1'", smt_command_file));
 	y2milestone ("smt-db setup returned: %1", retcode);
 
-	SCR::Execute (.target.remove, smt_command_file);
-
 	if (retcode != 0) {
 	    Report::Error (_("Unable to change SMT-user password."));
 	    return false;
 	} else {
 	    return true;
 	}
+
+	SCR::Execute (.target.remove, smt_command_file);
     }
 }

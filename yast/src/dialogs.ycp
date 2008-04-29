@@ -294,8 +294,9 @@
 	sleep (sl);
 
 	// uses credentials
-	SMTData::ChangePasswordIfDifferent();
+	SMTData::StartDatabaseIfNeeded();
 	SMTData::WriteDatabaseSettings();
+	SMTData::ChangePasswordIfDifferent();
 
 	Progress::NextStage();
 	sleep (sl);
