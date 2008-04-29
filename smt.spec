@@ -93,6 +93,9 @@ done
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
 
+%preun
+%stop_on_removal smt
+
 %post
 %{fillup_only -ans apache2 smt}
 exit 0
