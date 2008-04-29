@@ -22,8 +22,7 @@ sub help
     my @files;
     find( sub { push(@files, $1) if $_ =~ /smt\-(.+)/; }, "/usr/sbin");
     
-
-    print "YaST Enterprise Proxy. (c)2007 Novell Inc.\n\n";
+    print "Subscription Management Tool (SMT). (c)2007,2008 Novell Inc.\n\n";
 
     foreach my $cmd (@files)
     {
