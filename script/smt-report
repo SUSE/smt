@@ -5,6 +5,7 @@ use warnings;
 use lib ("/srv/www/perl-lib/");
 use SMT::CLI;
 use SMT::Utils;
+use SMT::NCCRegTools;
 use File::Basename;
 
 use Locale::gettext ();
@@ -20,6 +21,7 @@ my $quiet;   # suppress output to STDOUT
 my $csv;     # export data as csv
 my $file;    # write output to file
 my $logfile;
+my $nonccsync = 0;
 
 # which reports
 my $classreport = 0;
@@ -155,6 +157,7 @@ sub printUsage
     print basename($0) . " : " . __("generate a report")."\n";
     print "  --local        : " . __("force to create a report based on a local calculation")."\n";
     print "  --ncc          : " . __("force to create a report based on NCC data")."\n";
+    print "  --nonccsync    : " . __("do not sync with NCC before creating the report")."\n";
     print "  --mail    (-m) : " . __("enable mailing of report")."\n";
     print "  --attach  (-a) : " . __("attach CSV report files to mail (only together with --mail)")."\n";
     print "  --quiet   (-q) : " . __("suppress output")."\n";
@@ -343,6 +346,7 @@ sub getSeparateReports($)
 &Getopt::Long::GetOptions(
                           'local'      => \$localreport,
                           'ncc'        => \$nccreport,
+                          'nonccsync'  => \$nonccsync,
                           'classreport'=> \$classreport,
                           'debug|d'    => \$debug,
                           'help|h'     => \$help,
@@ -363,9 +367,38 @@ if ( defined $help && ( $help == 1 ) )
 # open the logfile
 $LOG = SMT::Utils::openLog($logfile);
 
-$DATA {'class'}   = SMT::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug) if($classreport);
-$DATA {'prodsub'} = SMT::CLI::productSubscriptionReport(log => $LOG, debug => $debug);
-$DATA {'sub'}     = SMT::CLI::subscriptionReport(log => $LOG, debug => $debug);
+
+# sync current data from NCC
+if(!$nonccsync)
+{
+    my $maxwait = 0;
+    while(!SMT::Utils::openLock("smt-ncc-sync") && $maxwait <= 60 )
+    {
+        # wait for the lock
+        $maxwait++;
+        sleep 5;
+    }
+
+    if($maxwait > 60)
+    {
+        printLog($LOG, "error", __("Cannot create lockfile. Skip syncing current data from NCC"));
+    }
+    elsif($maxwait == 0)
+    {
+        # start sync
+        my $lr= SMT::NCCRegTools->new(debug   => $debug,
+                                      log     => $LOG);
+        
+        printLog($LOG, "info", __("Syncing Subscriptions"));
+        $lr->NCCListSubscriptions();
+        
+        printLog($LOG, "info", __("Syncing Registrations"));
+        $lr->NCCListRegistrations();
+    }
+    # else $maxwait > 0 and <=60 means ncc-sync was running. we do not need to sync again.
+
+    SMT::Utils::unLock("smt-ncc-sync");
+}
 
 
 if(!($localreport || $nccreport || $classreport))
@@ -383,6 +416,21 @@ if(!($localreport || $nccreport || $classreport))
     {
         $localreport = 1;
     }
+}
+
+if($classreport)
+{
+    $DATA {'class'}   = SMT::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug) if($classreport);
+}
+
+if($localreport)
+{
+    $DATA {'prodsub'} = SMT::CLI::productSubscriptionReport(log => $LOG, debug => $debug);
+}
+
+if( $nccreport )
+{
+    $DATA {'sub'}     = SMT::CLI::subscriptionReport(log => $LOG, debug => $debug);
 }
 
 
