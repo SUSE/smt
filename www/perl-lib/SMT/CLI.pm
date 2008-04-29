@@ -28,12 +28,18 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 sub init
 {
-    my $dbh;
+    my $nodbh = shift  || 0;
+
+    my $dbh = undef;
     my $cfg = undef;
     my $nuri;
-    if ( not $dbh=SMT::Utils::db_connect() )
+
+    if(!$nodbh)
     {
-        die __("ERROR: Could not connect to the database");
+        if ( not $dbh=SMT::Utils::db_connect() )
+        {
+            die __("ERROR: Could not connect to the database");
+        }
     }
 
     eval
@@ -504,7 +510,16 @@ sub catalogDoMirrorFlag
 sub setMirrorableCatalogs
 {
     my %opt = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh, $nuri) = ();
+
+    if(defined $opt{todir} && $opt{todir} ne "")
+    {
+      ($cfg, $dbh, $nuri) = init(1);
+    }
+    else
+    {
+      ($cfg, $dbh, $nuri) = init();
+    }
 
     # create a tmpdir to store repoindex.xml
     my $destdir = File::Temp::tempdir(CLEANUP => 1);

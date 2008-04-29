@@ -101,8 +101,9 @@ sub new
     {
 	    $self->{DBH} = $opt{dbh};
     }
-    else
+    elsif(!defined $self->{TODIR} || $self->{TODIR} eq "")
     {
+        # init the database only if we do not sync to a directory
         $self->{DBH} = SMT::Utils::db_connect();
     }
     
