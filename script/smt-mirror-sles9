@@ -246,6 +246,10 @@ Write log messages to B<file>.
 
 Enable debug mode.
 
+=item --help -h
+
+Show a help message.
+
 =back
 
 =head2 CONFIGURATION FILE
