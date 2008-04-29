@@ -314,21 +314,137 @@ sub catalog_handler
 
 =head1 NAME
 
-smt mirror -  
+smt mirror 
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] mirror [options]
+smt [help|--help|-h] mirror
+
+smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug]
+
+smt mirror --clean [--directory path] [--dbreplfile file] [-L file] [--debug]
+
+smt mirror --hardlink size [--directory path] [-L file] [--debug]
 
 =head1 DESCRIPTION
 
-smt mirror
+C<smt mirror> performs the mirroring procedure and downloads catalogs which are set to be mirrored.
+
+If it is called with the B<--clean> parameter it searches inside of the mirrored catalogs for
+obsolete files and remove them.
+
+The B<--hardlink> paramter cause C<smt mirror> to search for files greater then I<size>. If it finds 
+duplicate files it creates hardlinks instead of holding two copies of the same file.
 
 
 =head1 OPTIONS
 
-=head2 
+=head2 MIRROR
 
+=over
+
+=item --directory <path>
+
+Defined the directory (B<path>) to work on. Using this option ignores the configured
+default value in smt.conf
+
+=item --deepverify
+
+Before starting the mirror procedure verify checksums of B<all> files in the catalogs
+and remove broken files. without this option only the metadata are verified.
+
+=item --dryrun -n
+
+Run mirror procedure without downloading the rpms. It shown only the names which would be downloaded.
+
+=item --dbreplfile <file>
+
+Path to XML file to use as database replacement. Such a file can be created with
+the sync-ncc command. This option is only usefull if the smt database is not on the
+same host as this script should run.
+
+=item --logfile -L <file>
+
+Write log messages to B<file>.
+
+=item --debug -d
+
+Enable debug mode.
+
+=back
+
+=head2 CLEAN
+
+=over
+
+=item --clean
+
+Enable clean mode. With this parameter C<smt mirror> searches inside of the mirrored catalogs for
+obsolete files and remove them. It does not mirror new files. 
+
+=item --directory <path>
+
+Defined the directory (B<path>) to work on. Using this option ignores the configured
+default value in smt.conf
+
+=item --dbreplfile <file>
+
+Path to XML file to use as database replacement. Such a file can be created with
+the sync-ncc command. This option is only usefull if the smt database is not on the
+same host as this script should run.
+
+=item --logfile -L <file>
+
+Write log messages to B<file>.
+
+=item --debug -d
+
+Enable debug mode.
+
+=back
+
+=head2 HARDLINK
+
+=over
+
+=item --hardlink <size>
+
+The B<--hardlink> paramter cause C<smt mirror> to search for files greater then I<size> (in kb).
+If it finds duplicate files (equal in name, size and checksum), it creates hardlinks instead
+of holding two copies of the same file.
+
+=item --directory <path>
+
+Defined the directory (B<path>) to work on. Using this option ignores the configured
+default value in smt.conf
+
+=item --logfile -L <file>
+
+Write log messages to B<file>.
+
+=item --debug -d
+
+Enable debug mode.
+
+=back
+
+=head1 EXAMPLES
+
+Start the mirror procedure with logging
+
+ smt mirror --logfile /var/log/smt-mirror.log
+
+run mirror with verifing all checksums and debug mode
+
+ smt mirror -d --deepverify
+
+clean the catalogs from files, which are no longer mentioned in the metadata
+
+ smt mirror --clean 
+
+create hardlinks for all duplicate files greater then 20000 kb
+
+ smt mirror --hardlink 20000
 
 =head1 AUTHORS and CONTRIBUTORS
 

@@ -47,7 +47,7 @@ my $result = GetOptions ("debug|d"     => \$debug,
 
 if($help)
 {
-    print basename($0) . __(" [OPTIONS]\n");
+    print basename($0) . " [--reseterror] [--debug] [--logfile file]\n\n";
     print __("Register all clients at NCC which are currently not registered\n");
     print __("or which data changed since the last registration.\n");
     print "\n";
@@ -166,20 +166,61 @@ exit 0;
 
 =head1 NAME
 
-smt register -  
+smt register 
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] register [options]
+smt [help|--help|-h] register
+
+smt register [--reseterror] [--debug] [--logfile file]
 
 =head1 DESCRIPTION
 
-smt register
+smt register registers all clients at NCC which are currently not registered
+or which data changed since the last registration. It skips all clients which
+registration failed the last time unless the B<--reseterror> parameter is used.
 
 
 =head1 OPTIONS
 
-=head2 
+=over
+
+=item --reseterror
+
+Reset the error flags and register the clients again.
+
+=item --debug
+
+Enable debug mode.
+
+=item --logfile -L  <file>
+
+Write log messages to B<file>.
+
+=item --help -h
+
+Show a help message.
+
+=back
+
+=head1 EXAMPLES
+
+Register all clients which are currently not registered or which
+registration data were updated since the last registration.
+
+ smt register 
+
+with writing a logfile
+
+ smt register --logfile /var/log/smt-register.log
+
+enable debug mode
+
+ smt register --debug
+
+reset the error flag and register all clients which need a new registration
+
+ smt register --reseterror -L /var/log/smt-register.log
 
 
 =head1 AUTHORS and CONTRIBUTORS

@@ -36,7 +36,7 @@ my $result = GetOptions ("debug|d"     => \$debug,
                         );
 if($help)
 {
-    print basename($0) . __(" [OPTIONS]\n");
+    print basename($0) . " [--debug] [--logfile <file>]";
     print "\n";
     print __("Options:\n");
     print "--debug -d        " . __("enable debug mode\n");
@@ -215,20 +215,67 @@ exit 0;
 
 =head1 NAME
 
-smt mirror-sles9 -
+smt mirror-sles9
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] mirror-sles9 [options]
+smt [help|--help|-h] mirror-sles9
+
+smt mirror-sles9 [--debug] [--logfile <file>]
 
 =head1 DESCRIPTION
 
-smt mirror-sles9
+C<smt mirror-sles9> mirror old style update repositories which were used for 
+SUSE LINUX Enterprise Server 9 and similar products. This script mirrores from
+I<you.novell.com>.
+
+The configuration happens in /etc/smt.conf .
 
 
 =head1 OPTIONS
 
-=head2
+=head2 COMMANDLINE
+
+=over
+
+=item --logfile -L <file>
+
+Write log messages to B<file>.
+
+=item --debug -d
+
+Enable debug mode.
+
+=back
+
+=head2 CONFIGURATION FILE
+
+=over
+
+The sections which are used by C<smt mirror-sles9> begin with B<YOU9->. All
+products which are still in maintanence mode are listed. 
+
+=item mirror_prod
+
+The product name.
+
+=item mirror_archs
+
+List of architectures which should be mirrored. The list is seperated by E<,>.
+The default list include all possible architectures. Remove the once you 
+do not want to mirror.
+
+=item mirror_version
+
+The version number.
+
+=item mirror
+
+If set to B<true> C<smt mirror-sles9> will download these repositories.
+
+=item credentials
+
+Configure your credentials here. The format is: <username>:<password>.
 
 
 =head1 AUTHORS and CONTRIBUTORS
