@@ -112,8 +112,9 @@ install:
 	chmod 0755 $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/etc/init.d/smt
 	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/
-	install -m 755 cron/smt-logrun $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 644 cron/smt-cron.conf $(DESTDIR)/etc/smt.d/
 	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 cron/smt-gen-report $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-repeated-register $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 644 logrotate/smt $(DESTDIR)/etc/logrotate.d/
 
