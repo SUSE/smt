@@ -6,15 +6,25 @@
 # It syncs the local SMT with the Novell NCC, creates a daily report
 # and updates the mirrored installation and update sources.
 
-JOBS="ncc-sync report mirror"
-SMTLOGRUN=/usr/lib/SMT/bin/smt-logrun
+SMTCMD=/usr/sbin/smt
+. /etc/smt.d/smt-cron.conf
 
-${SMTLOGRUN} ${JOBS}
-
-if [ $? != 0 ]
+if [ -x ${SMTCMD}-ncc-sync ]
 then
-  echo "Warning: Errors occurred within smt-daily run"
+    ${SMTCMD}-ncc-sync ${NCC_SYNC_PARAMS}
+else
+    echo "WARNING: Could not find the SMT binary ${SMTCMD}-ncc-sync"
+    echo "         Please make sure SMT is properly installed."
 fi
+
+if [ -x ${SMTCMD}-mirror ]
+then
+    ${SMTCMD}-mirror ${MIRROR_PARAMS}
+else
+    echo "WARNING: Could not find the SMT binary ${SMTCMD}-mirror"
+    echo "         Please make sure SMT is properly installed."
+fi
+
 
 # in cronjobs always do an exit 0 - even on errors - exit 1 only in case of real panic
 exit 0

@@ -2,14 +2,16 @@
 #
 # smt-repeated-register
 
-JOBS="register"
-SMTLOGRUN=/usr/lib/SMT/bin/smt-logrun
 
-${SMTLOGRUN} ${JOBS}
+SMTCMD=/usr/sbin/smt
+. /etc/smt.d/smt-cron.conf
 
-if [ $? != 0 ]
+if [ -x ${SMTCMD}-register ]
 then
-  echo "Warning: Errors occurred within smt-repeated-register run"
+    ${SMTCMD}-register ${REGISTER_PARAMS}
+else
+    echo "WARNING: Could not find the SMT binary ${SMTCMD}-register"
+    echo "         Please make sure SMT is properly installed."
 fi
 
 # in cronjobs always do an exit 0 - even on errors - exit 1 only in case of real panic

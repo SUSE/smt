@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+#
+# smt-gen-report
+# This script generate a new report for the SMT service.
+# It syncs subscriptions and registrations from NCC to the local SMT 
+# generate a report and send it via email
+
+SMTCMD=/usr/sbin/smt
+. /etc/smt.d/smt-cron.conf
+
+if [ -x ${SMTCMD}-report ]
+then
+    ${SMTCMD}-report ${REPORT_PARAMS}
+else
+    echo "WARNING: Could not find the SMT binary ${SMTCMD}-report"
+    echo "         Please make sure SMT is properly installed."
+fi
+
+# in cronjobs always do an exit 0 - even on errors - exit 1 only in case of real panic
+exit 0
+
+
+
