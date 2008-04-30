@@ -31,6 +31,7 @@
     map <string, string> smt_cron_scripts = $[
 	"/usr/lib/SMT/bin/smt-repeated-register"	: _("NCC Registration"),
 	"/usr/lib/SMT/bin/smt-daily"			: _("Synchronization of Updates"),
+	"/usr/lib/SMT/bin/smt-gen-report"		: _("Report Generation"),
     ];
 
     term CredentialsDialogContent () {
@@ -440,7 +441,7 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
 	    // TRANSLATORS: LogView label
 	    `LogView (`id ("test_log"), _("&Test Details"), 5, 100),
 	    `VSpacing (1),
-	    `PushButton (`id (`ok), `opt (`default), Label::OKButton())
+	    `PushButton (`id (`ok), `opt (`default, `key_F10), Label::OKButton())
 	)));
 
 	// complex.ycp
@@ -524,12 +525,14 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
 		    _("Editing &E-Mail")
 		), e_mail))),
 		`HBox (
-		    `PushButton (`id (`ok), `opt(`default), Label::OKButton()),
+		    `PushButton (`id (`ok), `opt (`default, `key_F10), Label::OKButton()),
 		    `HSpacing  (2),
-		    `PushButton (`id (`cancel), Label::CancelButton())
+		    `PushButton (`id (`cancel), `opt (`key_F9), Label::CancelButton())
 		)
 	    )
 	);
+
+	UI::SetFocus (`id ("e-mail"));
 
 	any ret = nil;
 	while (true) {
@@ -923,8 +926,9 @@ Should you want to set it up, rerun the current YaST configuration module."));
 		),
 		`VSpacing (1),
 		`HBox (
-		    `PushButton (`id (`ok), (editing ? Label::OKButton():Label::AddButton())),
-		    `PushButton (`id (`cancel), Label::CancelButton())
+		    `PushButton (`id (`ok), `opt (`default, `key_F10), (editing ? Label::OKButton():Label::AddButton())),
+		    `HSpacing (2),
+		    `PushButton (`id (`cancel), `opt (`key_F9), Label::CancelButton())
 		)
 	    )
 	);

@@ -401,7 +401,7 @@ Please, check your SMT installation."), path_to_sync_script));
 <p><b>stdout:</b> %1</p>
 <p><b>stderr:</b> %2</p>"), cmd_out["stdout"]:"", cmd_out["stderr"]:"")
 			),
-			`PushButton (`id (`ok), `opt(`default), Label::OKButton())
+			`PushButton (`id (`ok), `opt (`default, `key_F10), Label::OKButton())
 		    )
 		)
 	    );
@@ -435,15 +435,35 @@ Please, check your SMT installation."), path_to_sync_script));
 	// to get different 'random' numbers :->>>
 	srandom();
 
+	integer hour_smt_daily = 1;
+	integer minute_smt_daily = 0;
+
 	// randomize smt-daily
 	integer counter = -1;
 	foreach (map one_cron_job, GetCronSettings(), {
 	    counter = counter + 1;
 
 	    if (regexpmatch (one_cron_job["command"]:"", "smt-daily")) {
-		// 01 - 02
-		one_cron_job["hour"] = tostring (random (2));
-		one_cron_job["minute"] = tostring (random (59));
+		// 00 - 02
+		hour_smt_daily = random (2);
+		minute_smt_daily = random (59);
+
+		one_cron_job["hour"] = tostring (hour_smt_daily);
+		one_cron_job["minute"] = tostring (minute_smt_daily);
+		y2milestone ("smt-daily randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
+		ReplaceCronJob (counter, one_cron_job);
+	    }
+	});
+
+	// randomize smt-gen-report
+	counter = -1;
+	foreach (map one_cron_job, GetCronSettings(), {
+	    counter = counter + 1;
+
+	    if (regexpmatch (one_cron_job["command"]:"", "smt-gen-report")) {
+		// +4 hours to smt-daily
+		one_cron_job["hour"] = tostring (hour_smt_daily + 4);
+		one_cron_job["minute"] = tostring (minute_smt_daily);
 		y2milestone ("smt-daily randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
 		ReplaceCronJob (counter, one_cron_job);
 	    }
@@ -591,12 +611,14 @@ Server certificate is vitally important for NU server to support SSL."),
 	    ),
 	    `VSpacing (1),
 	    `HBox (
-		`PushButton (`id (`ok), Label::OKButton()),
+		`PushButton (`id (`ok), `opt (`default, `key_F10), Label::OKButton()),
 		`HSpacing (2),
-		`PushButton (`id (`cancel), Label::CancelButton())
+		`PushButton (`id (`cancel), `opt (`key_F9), Label::CancelButton())
 	    ),
 	    `VSpacing (1)
 	));
+
+	UI::SetFocus (`id (`root_password));
 
 	any user_ret = UI::UserInput();
 	if (user_ret == `ok) {
@@ -689,12 +711,14 @@ For security reasons, please, set a new one.")),
 	    ),
 	    `VSpacing (1),
 	    `HBox (
-		`PushButton (`id (`ok), Label::OKButton()),
+		`PushButton (`id (`ok), `opt (`default, `key_F10), Label::OKButton()),
 		`HSpacing (2),
-		`PushButton (`id (`cancel), Label::CancelButton())
+		`PushButton (`id (`cancel), `opt (`key_F9), Label::CancelButton())
 	    ),
 	    `VSpacing (1)
 	));
+
+	UI::SetFocus (`id (`new_root_password_1));
 
 	while (true) {
 	    any user_ret = UI::UserInput();
