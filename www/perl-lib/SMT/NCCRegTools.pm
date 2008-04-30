@@ -828,7 +828,6 @@ sub _listsub_handler
     
     eval
     {
-        # FIXME: We may need to convert the date types
         $statement =  "INSERT INTO Subscriptions (REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT, CONSUMED) ";
         $statement .= "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -837,8 +836,24 @@ sub _listsub_handler
         $sth->bind_param(2, $data->{NAME});
         $sth->bind_param(3, $data->{TYPE});
         $sth->bind_param(4, $data->{STATUS});
-        $sth->bind_param(5, SMT::Utils::getDBTimestamp($data->{STARTDATE}), SQL_TIMESTAMP);
-        $sth->bind_param(6, SMT::Utils::getDBTimestamp($data->{ENDDATE}), SQL_TIMESTAMP);
+        if(int($data->{STARTDATE}) == 0)
+        {
+            $sth->bind_param(5, undef, SQL_TIMESTAMP);
+        }
+        else
+        {        
+            $sth->bind_param(5, SMT::Utils::getDBTimestamp($data->{STARTDATE}), SQL_TIMESTAMP);
+        }
+
+        if(int($data->{ENDDATE}) == 0)
+        {
+            $sth->bind_param(6, undef, SQL_TIMESTAMP);
+        }
+        else
+        {        
+            $sth->bind_param(6, SMT::Utils::getDBTimestamp($data->{ENDDATE}), SQL_TIMESTAMP);
+        }
+        
         $sth->bind_param(7, $data->{DURATION}, SQL_INTEGER);
         $sth->bind_param(8, $data->{SERVERCLASS});
         $sth->bind_param(9, $data->{NODECOUNT}, SQL_INTEGER);
