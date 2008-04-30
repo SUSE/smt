@@ -41,16 +41,11 @@
 		    `VBox (
 			`VWeight(2, `VStretch()),
 			// TRANSLATORS: check box
-			`Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Mamagement Tool service (SMT)"))),
+			`Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Management Tool service (SMT)"))),
 			`Left ("firewall"),
 
 			`VWeight(1, `VStretch()),
 
-			`Left (`HSquash (`MinWidth (
-			    45,
-			    // TRANSLATORS: text entry (URL)
-			    `TextEntry (`id ("NUUrl"), _("NU UR&L"))
-			))),
 			`Left (`HSquash (`MinWidth (
 			    20,
 			    // TRANSLATORS: text entry (User name)
@@ -344,7 +339,7 @@
     }
 
     void InitCredentialsDialog (string id) {
-	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
+	foreach (string one_entry, ["NUUser", "NUPass"], {
 	    string value = SMTData::GetCredentials ("NU", one_entry);
 	    if (value == nil) value = "";
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
@@ -373,7 +368,7 @@
     }
 
     void StoreCredentialsDialog (string id, map event) {
-	foreach (string one_entry, ["NUUrl", "NUUser", "NUPass"], {
+	foreach (string one_entry, ["NUUser", "NUPass"], {
 	    SMTData::SetCredentials ("NU", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
 
@@ -758,7 +753,7 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
 	if (cron_rpms_installed != true) {
 	    DisableScheduledMirroringTable();
 	    // TRANSLATORS: informational message
-	    Report::Message (_("Scheduled mirroring has been disabled due to a missing packages.
+	    Report::Message (_("Scheduled jobs have been disabled due to a missing packages.
 Should you want to set it up, rerun the current YaST configuration module."));
 	    return;
 	}
@@ -899,8 +894,8 @@ Should you want to set it up, rerun the current YaST configuration module."));
 
 	UI::OpenDialog (
 	    `VBox (
-		`HSpacing (30),
-		`Left (`Heading ((editing ? _("Editing a Scheduled Mirroring"):_("Adding New Scheduled Mirroring")))),
+		`HSpacing (35),
+		`Left (`Heading ((editing ? _("Editing a SMT Scheduled Job"):_("Adding New SMT Scheduled Job")))),
 		`VSpacing (1),
 		`HBox (
 		    `Left(`ComboBox (
@@ -923,7 +918,7 @@ Should you want to set it up, rerun the current YaST configuration module."));
 		),
 		`VSpacing (1),
 		`Frame (
-		    _("Mirroring Start Time"),
+		    _("Job Start Time"),
 		    `HBox (
 			`HSpacing (2),
 			`VBox (

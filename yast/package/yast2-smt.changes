@@ -6,6 +6,8 @@ Wed Apr 30 13:00:43 CEST 2008 - locilka@suse.cz
 - Adding support for smt-gen-report.
 - Registering new SCR agents in the beginning of installation
   client (bnc #384994).
+- NUUrl support dropped from UI.
+- Added dialog helps (bnc #384705).
 - 2.13.13
 
 -------------------------------------------------------------------

@@ -73,7 +73,7 @@
 	    ],
 	    "database" : $[
 		// TRANSLATORS: tab-header
-		"header"	: _("Database and Logging"),
+		"header"	: _("Database and Reporting"),
 		"widget_names"	: ["db", "reporting"],
 		"contents"	:   `VBox (
 					DatabaseDialogContent(),
@@ -84,7 +84,7 @@
 	    ],
 	    "scheduled_downloads" : $[
 		// TRANSLATORS: tab-header
-		"header"	: _("Scheduled NU Mirroring"),
+		"header"	: _("Scheduled SMT Jobs"),
 		"widget_names"	: ["sd"],
 		"contents"	: ScheduledDownloadsDialogContent(),
 	    ],

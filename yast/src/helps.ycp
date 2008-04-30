@@ -12,11 +12,39 @@
 
     map <string, string> HELPS = $[
 	"credentials" :
-	    // TRANSLATORS: help 1/x
-	    _("<p>Here enter the NU credentials.</p>") +
-	    // TRANSLATORS: help 2/x
-	    _("<p><b>URL</b> is used to download the list of repositories and their content.</p>") +
-	    // TRANSLATORS: help 3/x
-	    _("<p><b>User</b> and <b>Password</b> is used for the URL when authentication is required there.</p>"),
+	    // TRANSLATORS: help a1
+	    _("<p><big><b>Customer Center Access</b></big><br>
+Here enter the NU credentials.</p>") +
+	    // TRANSLATORS: help a2
+	    _("<p><b>User</b> and <b>Password</b> is used for the Customer Center authentication.
+You can test the entered credentials by simply pressing the <b>Test</b> button.
+SMT would connect to Customer Center server, authenticate and download
+some testing data.</p>") +
+	    // TRANSLATORS: help a3
+	    _("<p>E-mail should be the one you used to register to NCC.</p>"),
+
+	"database" :
+	    // TRANSLATORS: help b1
+	    _("<p><big><b>Database</b></big><br>
+For security reasons, SMT has a special user in database.
+The <b>Database Password</b> can set or change a database
+password for that user. The password should not be empty.</p>"),
+
+	"reporting" :
+	    // TRANSLATORS: help c1
+	    _("<p><big><b>Reporting</b></big><br>
+Here you can set up list of e-mails that SMT will send reports to.</p>"),
+
+	"scheduled_downloads" :
+	    // TRANSLATORS: help d1
+	    _("<p><big><b>Schedule SMT Jobs</b></big><br>
+Here you can edit periodical SMT jobs.</p>") +
+	    // TRANSLATORS: help d2
+	    _("<p>When adding a new job, at first select a <b>Job to Run</b>.</p>") +
+	    // TRANSLATORS: help d3
+	    _("<p>When editing some current job or adding new one, <b>Frequency</b> selection box
+will switch dialog mode according to currently selected value.
+Some fields might get enabled or disabled accordingly, e.g., <b>Day of the Week</b>
+is disabled for <tt>Daily</tt> job frequency.</p>"),
     ];
 }

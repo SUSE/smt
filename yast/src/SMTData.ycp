@@ -552,7 +552,7 @@ Server certificate is vitally important for NU server to support SSL."),
 	    // Package is not installed and couldn't be installed
 	    } else {
 		Report::Error (sformat (
-		    _("Cannot run CA management bacause package %1 is not installed."),
+		    _("Cannot run CA management because package %1 is not installed."),
 		    ca_mgm_package
 		));
 		    return true;
