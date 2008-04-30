@@ -183,6 +183,10 @@ sub handle_end_tag
         {
             $self->{CURRENT}->{NODECOUNT} = $self->{TMP};
         }
+        elsif(lc($element) eq "consumed")
+        {
+            $self->{CURRENT}->{CONSUMED} = $self->{TMP};
+        }
         
         $self->{TMP} = "";
     }
