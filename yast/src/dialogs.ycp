@@ -329,13 +329,14 @@
 	Progress::NextStage();
 	sleep (sl);
 
+	SMTData::WriteFirstRunStatus();
+	sleep (sl);
+
+	Progress::NextStage();
+
 	if (SMTData::GetSMTServiceStatus() == true) {
 	    SMTData::RunSmallSync();
 	}
-
-	Progress::NextStage();
-	SMTData::WriteFirstRunStatus();
-	sleep (sl);
 
 	Progress::Finish();
 
@@ -424,12 +425,25 @@ or cancel the current procedure to change it?")))
 
     boolean ValidateCredentialsDialog (string id, map event) {
 	string url = (string) UI::QueryWidget (`id ("url"), `Value);
-
 	if (url == nil || url == "") {
 	    UI::SetFocus (`id ("url"));
 	    Report::Error (_("The SMT URL must not be empty.
 
 Fill in your SMT server URL in format 'http:://server.name/'."));
+	    return false;
+	}
+
+	string nuuser = (string) UI::QueryWidget (`id ("NUUser"), `Value);
+	if (nuuser == nil || nuuser == "") {
+	    UI::SetFocus (`id ("NUUser"));
+	    Report::Error (_("Filling up NU User is mandatory."));
+	    return false;
+	}
+
+	string nupass = (string) UI::QueryWidget (`id ("NUPass"), `Value);
+	if (nupass == nil || nupass == "") {
+	    UI::SetFocus (`id ("NUPass"));
+	    Report::Error (_("Filling up NU Password is mandatory."));
 	    return false;
 	}
 

@@ -10,9 +10,19 @@
  */
 
 {
+    import "Mode";
+
     textdomain "smt";
 
     include "smt/wizard.ycp";
+
+    // Registering new agents installed during the current 
+    // y2base run, bnc #384994 
+    if (Mode::installation()) {
+	y2milestone ("Registering new SCR Agents");
+	SCR::RegisterNewAgents();
+    }
+
 
     return SMTInstallSequence();
 }
