@@ -907,19 +907,19 @@ sub productSubscriptionReport
     my $now = SMT::Utils::getDBTimestamp();
     my $sth = undef;
 
-    $statement = "select SUBNAME, REGCODE from Subscriptions group by SUBNAME;";
+    $statement = "select SUBNAME, SUBID from Subscriptions group by SUBNAME;";
 
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
 
-    my $res = $dbh->selectall_hashref($statement, "REGCODE");
+    my $res = $dbh->selectall_hashref($statement, "SUBID");
 
-    foreach my $regcode (keys %{$res})
+    foreach my $subid (keys %{$res})
     {
         my $total = 0;
         my $registered = 0;
         
-        $statement = sprintf("SELECT COUNT(DISTINCT r.GUID) AS GUIDCNT, r.NCCREGDATE from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID and p.PRODUCTDATAID IN (SELECT DISTINCT PRODUCTDATAID from ProductSubscriptions ps where ps.REGCODE = %s) GROUP BY r.NCCREGDATE",
-                             $dbh->quote($regcode));
+        $statement = sprintf("SELECT COUNT(DISTINCT r.GUID) AS GUIDCNT, r.NCCREGDATE from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID and p.PRODUCTDATAID IN (SELECT DISTINCT PRODUCTDATAID from ProductSubscriptions ps where ps.SUBID = %s) GROUP BY r.NCCREGDATE",
+                             $dbh->quote($subid));
         
         printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
         
@@ -934,18 +934,18 @@ sub productSubscriptionReport
             }
         }
         
-        $calchash->{$res->{$regcode}->{SUBNAME}}->{MACHINES} = int $total;
-        $calchash->{$res->{$regcode}->{SUBNAME}}->{TOTMACHINES} = int $total;
-        $calchash->{$res->{$regcode}->{SUBNAME}}->{REGMACHINES} = int $registered;
-        $calchash->{$res->{$regcode}->{SUBNAME}}->{ACTIVE} = 0;
-        $calchash->{$res->{$regcode}->{SUBNAME}}->{ESOON} = 0;
+        $calchash->{$res->{$subid}->{SUBNAME}}->{MACHINES} = int $total;
+        $calchash->{$res->{$subid}->{SUBNAME}}->{TOTMACHINES} = int $total;
+        $calchash->{$res->{$subid}->{SUBNAME}}->{REGMACHINES} = int $registered;
+        $calchash->{$res->{$subid}->{SUBNAME}}->{SUM_ACTIVE_SUB} = 0;
+        $calchash->{$res->{$subid}->{SUBNAME}}->{SUM_ESOON_SUB} = 0;
     }
 
     #
     # Active Subscriptions
     #
     
-    $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
+    $statement  = "select SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
     $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL) ";
     $statement .= "group by SUBNAME order by SUBNAME;";
     $sth = $dbh->prepare($statement);
@@ -962,19 +962,18 @@ sub productSubscriptionReport
     foreach my $subname (keys %{$res})
     {
         my $assignedMachines = 0;
-        my $nc = 0;
+        my $nc =  (int $res->{$subname}->{SUM_NODECOUNT});
         
         if($res->{$subname}->{UNLIMITED})
         {
-            $calchash->{$subname}->{ACTIVE} = -1;
-            $assignedMachines = int $calchash->{$subname}->{MACHINES};
+            $calchash->{$subname}->{SUM_ACTIVE_SUB} = -1;
+            $assignedMachines = $calchash->{$subname}->{MACHINES};
             $calchash->{$subname}->{MACHINES} = 0;
             $nc = "unlimited";
         }
         else
         {
-            $nc = (int $res->{$subname}->{SUM_NODECOUNT});
-            $calchash->{$subname}->{ACTIVE} += $nc if($calchash->{$subname}->{ACTIVE} != -1);
+            $calchash->{$subname}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$subname}->{SUM_ACTIVE_SUB} != -1);
 
             if($nc >= (int $calchash->{$subname}->{MACHINES}))
             {
@@ -1000,7 +999,7 @@ sub productSubscriptionReport
     # Expire soon
     #
     
-    $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
+    $statement  = "select SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
     $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ?";
     $statement .= "group by SUBNAME order by SUBNAME;";
     $sth = $dbh->prepare($statement);
@@ -1018,24 +1017,23 @@ sub productSubscriptionReport
     foreach my $subname (keys %{$res})
     {
         my $assignedMachines = 0;
-        my $nc = 0;
+        my $nc = (int $res->{$subname}->{SUM_NODECOUNT});
         
-        if(!exists $expireSoonMachines->{$subname} || ! defined $expireSoonMachines->{$subname})
-        {
-            $expireSoonMachines->{$subname} = 0;
-        }
+        #if(!exists $expireSoonMachines->{$subname} || ! defined $expireSoonMachines->{$subname})
+        #{
+        #    $expireSoonMachines->{$subname} = 0;
+        #}
         
         if($res->{$subname}->{UNLIMITED})
         {
-            $calchash->{$subname}->{ESOON} = -1;
+            $calchash->{$subname}->{SUM_ESOON_SUB} = -1;
             $assignedMachines = $calchash->{$subname}->{MACHINES};
             $calchash->{$subname}->{MACHINES} = 0;
             $nc = "unlimited";
         }
         else
         {
-            $nc = (int $res->{$subname}->{SUM_NODECOUNT});
-            $calchash->{$subname}->{ESOON} += $nc if($calchash->{$subname}->{ESOON} != -1);
+            $calchash->{$subname}->{SUM_ESOON_SUB} += $nc if($calchash->{$subname}->{SUM_ESOON_SUB} != -1);
 
             if($nc >= (int $calchash->{$subname}->{MACHINES}))
             {
@@ -1049,10 +1047,10 @@ sub productSubscriptionReport
             }
         }
 
-        if($assignedMachines > 0)
-        {
-            $expireSoonMachines->{$subname} += int $assignedMachines;
-        }
+        #if($assignedMachines > 0)
+        #{
+        #    $expireSoonMachines->{$subname} += int $assignedMachines;
+        #}
         
         push @SVALUES, [ $res->{$subname}->{SUBNAME},
                          $nc,
@@ -1067,7 +1065,7 @@ sub productSubscriptionReport
     # Expired Subscriptions
     #
     
-    $statement  = "select REGCODE, SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MAX(SUBENDDATE) as MAXENDDATE ";
+    $statement  = "select SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MAX(SUBENDDATE) as MAXENDDATE ";
     $statement .= "from Subscriptions where (SUBSTATUS = 'EXPIRED' or (SUBENDDATE < ? and SUBENDDATE IS NOT NULL)) ";
     $statement .= "group by SUBNAME order by SUBNAME;";
     $sth = $dbh->prepare($statement);
@@ -1083,28 +1081,22 @@ sub productSubscriptionReport
     
     foreach my $subname (keys %{$res})
     {
-        my $assignedMachines = 0;
-        my $nc = 0;
+        my $assignedMachines = int $calchash->{$subname}->{MACHINES};
+        my $nc =  (int $res->{$subname}->{SUM_NODECOUNT});
 
-        if(!exists $expiredMachines->{$subname} || ! defined $expiredMachines->{$subname})
-        {
-            $expiredMachines->{$subname} = 0;
-        }
+        #if(!exists $expiredMachines->{$subname} || ! defined $expiredMachines->{$subname})
+        #{
+        #    $expiredMachines->{$subname} = 0;
+        #}
         
-        $assignedMachines = int $calchash->{$subname}->{MACHINES};
-
         if($res->{$subname}->{UNLIMITED})
         {
             $nc = "unlimited";
         }
-        else
-        {
-            $nc = (int $res->{$subname}->{SUM_NODECOUNT});
-        }
-
+        
         next if($assignedMachines == 0);
 
-        $expiredMachines->{$subname} += int $assignedMachines;
+        #$expiredMachines->{$subname} += int $assignedMachines;
         
         push @EVALUES, [ $res->{$subname}->{SUBNAME},
                          $nc,
@@ -1118,8 +1110,7 @@ sub productSubscriptionReport
     #printLog($options{log}, "debug", "CALCHASH:".Data::Dumper->Dump([$calchash]));
    
     my $alerts = ''; 
-
-    my $ok = 1;
+    my $warning = ''; 
 
     my @SUMHEAD = ( __("Subscription"), __("Locally Registered\nMachines"), __("Active Subscriptions"), __("Soon expiring\nSubscriptions"), __("Missing Subscriptions"));
     my @SUMVALUES = ();
@@ -1128,32 +1119,55 @@ sub productSubscriptionReport
 
     foreach my $subname (keys %{$calchash})
     {
-        my $calc = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{ACTIVE} - $calchash->{$subname}->{ESOON};
-        $calc = 0 if ($calc < 0);
+        my $missing = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{SUM_ACTIVE_SUB} - $calchash->{$subname}->{SUM_ESOON_SUB};
+        $missing = 0 if ($missing < 0);
 
         push @SUMVALUES, [$subname, 
                           $calchash->{$subname}->{TOTMACHINES}, 
-                          $calchash->{$subname}->{ACTIVE},
-                          $calchash->{$subname}->{ESOON},
-                          $calc];
+                          $calchash->{$subname}->{SUM_ACTIVE_SUB},
+                          $calchash->{$subname}->{SUM_ESOON_SUB},
+                          $missing];
 
+        my $used_active = 0;
+        my $used_esoon  = 0;
+        my $used_expired = 0;
+        my $dummy = $calchash->{$subname}->{TOTMACHINES};
         
-        if(exists $expireSoonMachines->{$subname} && defined $expireSoonMachines->{$subname} &&
-           $expireSoonMachines->{$subname} > 0)
+        if($dummy <= $calchash->{$subname}->{SUM_ACTIVE_SUB})
         {
-            $alerts .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
-                               $expireSoonMachines->{$subname},
-                               $subname);
-            $ok = 0;
+            $used_active = $dummy;
+            $dummy = 0;
+        }
+        else
+        {
+            $used_active = $calchash->{$subname}->{SUM_ACTIVE_SUB};
+            $dummy -= $calchash->{$subname}->{SUM_ACTIVE_SUB};
         }
 
-        if(exists $expiredMachines->{$subname} && defined $expiredMachines->{$subname} &&
-           $expiredMachines->{$subname} > 0)
+        if($dummy <= $calchash->{$subname}->{SUM_ESOON_SUB})
         {
-            $alerts .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
-                               $expiredMachines->{$subname},
-                               $subname);
-            $ok = 0;
+            $used_esoon = $dummy;
+            $dummy = 0;
+        }
+        else
+        {
+            $used_esoon = $calchash->{$subname}->{SUM_ESOON_SUB};
+            $dummy -= $calchash->{$subname}->{SUM_ESOON_SUB};
+        }
+
+        $used_expired = $dummy;
+
+        
+        if($used_esoon > 0)
+        {
+            $warning .= sprintf(__("%d Machines uses '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
+                                $used_esoon, $subname);
+        }
+        
+        if($missing > 0)
+        {
+            $alerts .= sprintf(__("%d Machines too much uses '%s' subscriptions. Please order new subscriptions.\n"), 
+                               $missing, $subname);
         }
     }
 
@@ -1171,9 +1185,14 @@ sub productSubscriptionReport
     {
         $report{'alerts'} = __("Alerts:\n").$alerts ;
     }
+    if($warning ne "")
+    {
+        $report{'alerts'} = "\n".__("Warnings:\n").$warning ;
+    }
         
     return \%report;
 }
+
 
 #
 # based on real NCC data
@@ -1190,8 +1209,6 @@ sub subscriptionReport
     my $statement = "";
     my $time = SMT::Utils::getDBTimestamp();
     my $calchash = {};
-    my $expireSoonMachines = {};
-    my $expiredMachines = {};
     my $nowP30day = SMT::Utils::getDBTimestamp((time + (30*24*60*60)));
     my $now = SMT::Utils::getDBTimestamp();
     my $sth = undef;
@@ -1202,62 +1219,47 @@ sub subscriptionReport
 
     my $res = $dbh->selectall_hashref($statement, "SUBNAME");
 
-    $statement = "select SUBNAME, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID group by SUBNAME;";
-    my $res2 = $dbh->selectall_hashref($statement, "SUBNAME");
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
-    
-    
     foreach my $subname (keys %{$res})
     {
         if(!exists $res->{$subname}->{SUM_TOTALCONSUMED} || !defined $res->{$subname}->{SUM_TOTALCONSUMED})
         {
             $res->{$subname}->{SUM_TOTALCONSUMED} = 0;
         }
-        if(!exists $res2->{$subname}->{MACHINES} || !defined $res2->{$subname}->{MACHINES})
-        {
-            $res2->{$subname}->{MACHINES} = 0;
-        }
         
-        $calchash->{$subname}->{MACHINES} = int $res->{$subname}->{SUM_TOTALCONSUMED};
-        $calchash->{$subname}->{TOTMACHINES} = int $calchash->{$subname}->{MACHINES};
-        $calchash->{$subname}->{LOCMACHINES} = int $res2->{$subname}->{MACHINES};
-        $calchash->{$subname}->{ACTIVE} = 0;
-        $calchash->{$subname}->{ESOON} = 0;
-        
-        if($calchash->{$subname}->{MACHINES} == 0)
-        {
-            $calchash->{$subname}->{MACHINES} = int $res2->{$subname}->{MACHINES};
-        }
+        $calchash->{$subname}->{MACHINES}       = int $res->{$subname}->{SUM_TOTALCONSUMED};
+        $calchash->{$subname}->{TOTMACHINES}    = int $calchash->{$subname}->{MACHINES};
+        $calchash->{$subname}->{SUM_ACTIVE_SUB} = 0;
+        $calchash->{$subname}->{SUM_ESOON_SUB}  = 0;
     }
-    
+
     #
     # Active Subscriptions
     #
 
-    $statement  = "select SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL);";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
     $sth->execute;
-    $res = $sth->fetchall_hashref("REGCODE");
+    $res = $sth->fetchall_hashref("SUBID");
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
 
-    $statement  = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
-    $statement .= "where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
-    $statement .= "(s.SUBENDDATE > ? or s.SUBENDDATE IS NULL) group by REGCODE order by SUBENDDATE";
+    $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
+    $statement .= "(s.SUBENDDATE > ? or s.SUBENDDATE IS NULL) group by SUBID order by SUBENDDATE";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
     $sth->execute;
-    my $assigned = $sth->fetchall_hashref("REGCODE");
+    my $assigned = $sth->fetchall_hashref("SUBID");
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
 
-    foreach my $regcode (keys %{$assigned})
+    foreach my $subid (keys %{$assigned})
     {
-        if(exists $res->{$regcode})
+        if(exists $res->{$subid})
         {
-            $res->{$regcode}->{MACHINES} = $assigned->{$regcode}->{MACHINES};
+            $res->{$subid}->{ASSIGNED_MACHINES} = $assigned->{$subid}->{MACHINES};
         }
     }
 
@@ -1292,42 +1294,27 @@ sub subscriptionReport
     
     printLog($options{log}, "debug", "Assigned status: ".Data::Dumper->Dump([$res])) if($debug);
     
-    foreach my $regcode (keys %{$res})
+    foreach my $subid (keys %{$res})
     {
-        my $assignedMachines = 0;
-        my $nc = 0;
-        my $subname = $res->{$regcode}->{SUBNAME};
+        my $nc = (int $res->{$subid}->{NODECOUNT});
+        my $subname = $res->{$subid}->{SUBNAME};
         
-        if($res->{$regcode}->{NODECOUNT} == -1)
+        if($nc == -1)
         {
-            $calchash->{$subname}->{ACTIVE} = -1;
-            $assignedMachines = int $calchash->{$subname}->{MACHINES};
-            $calchash->{$subname}->{MACHINES} = 0;
+            $calchash->{$subname}->{SUM_ACTIVE_SUB} = -1;
             $nc = "unlimited";
         }
         else
         {
-            $nc = (int $res->{$regcode}->{NODECOUNT});
-            $calchash->{$subname}->{ACTIVE} += $nc if($calchash->{$subname}->{ACTIVE} != -1);
-
-            if($nc >= (int $calchash->{$subname}->{MACHINES}))
-            {
-                $assignedMachines = $calchash->{$subname}->{MACHINES};
-                $calchash->{$subname}->{MACHINES} = 0;
-            }
-            else
-            {
-                $assignedMachines = $nc;
-                $calchash->{$subname}->{MACHINES} -= $nc;                
-            }
+            $calchash->{$subname}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$subname}->{SUM_ACTIVE_SUB} != -1);
         }
                 
-        push @AVALUES, [ $res->{$regcode}->{SUBNAME},
-                         $res->{$regcode}->{REGCODE},
-                         ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
-                         $res->{$regcode}->{CONSUMED},
-                         (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
-                         (!defined $res->{$regcode}->{SUBENDDATE})?"never":$res->{$regcode}->{SUBENDDATE}
+        push @AVALUES, [ $res->{$subid}->{SUBNAME},
+                         $res->{$subid}->{REGCODE},
+                         $nc,
+                         $res->{$subid}->{CONSUMED},
+                         (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
+                         (!defined $res->{$subid}->{SUBENDDATE})?"never":$res->{$subid}->{SUBENDDATE}
                        ];
     }
     $report{'active'} = {'cols' => \@AHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @AVALUES], 'opts' => \%AOPTIONS };
@@ -1336,85 +1323,65 @@ sub subscriptionReport
     # Expire soon
     #
 
-    $statement  = "select SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ? ;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
     $sth->bind_param(2, $now, SQL_TIMESTAMP);
     $sth->execute;
-    $res = $sth->fetchall_hashref("REGCODE");
+    $res = $sth->fetchall_hashref("SUBID");
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
 
-    $statement  = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
-    $statement .= "where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
-    $statement .= "s.SUBENDDATE <= ? and s.SUBENDDATE > ? group by REGCODE order by SUBENDDATE";
+    $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
+    $statement .= "s.SUBENDDATE <= ? and s.SUBENDDATE > ? group by SUBID order by SUBENDDATE";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
     $sth->bind_param(2, $now, SQL_TIMESTAMP);
     $sth->execute;
-    $assigned = $sth->fetchall_hashref("REGCODE");
+    $assigned = $sth->fetchall_hashref("SUBID");
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
 
-    foreach my $regcode (keys %{$assigned})
+    foreach my $subid (keys %{$assigned})
     {
-        if(exists $res->{$regcode})
+        if(exists $res->{$subid})
         {
-            $res->{$regcode}->{MACHINES} = $assigned->{$regcode}->{MACHINES};
+            $res->{$subid}->{ASSIGNED_MACHINES} = $assigned->{$subid}->{MACHINES};
         }
     }
 
-    my @SHEAD = ( __('Subscription'), __('Registration Code'), __('Total Subscriptions'), __('Total Used') ,__('Used Locally'), __('Expiring Date') );
+    my @SHEAD = ( __('Subscription'), 
+                  __('Registration Code'), 
+                  __('Total Subscriptions'), 
+                  __('Total Used') ,
+                  __('Used Locally'), 
+                  __('Expiring Date') );
     my @SVALUES = ();
     my %SOPTIONS = ( 'headingText' => __('Subscriptions which expiring within the next 30 Days')." ($time)" );
 
-    foreach my $regcode (keys %{$res})
+    foreach my $subid (keys %{$res})
     {
-        my $assignedMachines = 0;
-        my $nc = 0;
-        my $subname = $res->{$regcode}->{SUBNAME};
+        my $nc = (int $res->{$subid}->{NODECOUNT});
+        my $subname = $res->{$subid}->{SUBNAME};
         
-        if(!exists $expireSoonMachines->{$subname} || ! defined $expireSoonMachines->{$subname})
+        if($nc == -1)
         {
-            $expireSoonMachines->{$subname} = 0;
-        }
-        
-        if($res->{$regcode}->{NODECOUNT} == -1)
-        {
-            $calchash->{$subname}->{ESOON} = -1;
-            $assignedMachines = $calchash->{$subname}->{MACHINES};
-            $calchash->{$subname}->{MACHINES} = 0;
+            $calchash->{$subname}->{SUM_ESOON_SUB} = -1;
             $nc = "unlimited";
         }
         else
         {
-            $nc = (int $res->{$regcode}->{NODECOUNT});
-            $calchash->{$subname}->{ESOON} += $nc if($calchash->{$subname}->{ESOON} != -1);
-            if($nc >= (int $calchash->{$subname}->{MACHINES}))
-            {
-                $assignedMachines = $calchash->{$subname}->{MACHINES};
-                $calchash->{$subname}->{MACHINES} = 0;
-            }
-            else
-            {
-                $assignedMachines = $nc;
-                $calchash->{$subname}->{MACHINES} -= $nc;                
-            }
+            $calchash->{$subname}->{SUM_ESOON_SUB} += $nc if($calchash->{$subname}->{SUM_ESOON_SUB} != -1);
         }
 
-        if($assignedMachines > 0)
-        {
-            $expireSoonMachines->{$subname} += int $assignedMachines;
-        }
-
-        push @SVALUES, [ $res->{$regcode}->{SUBNAME},
-                         $res->{$regcode}->{REGCODE},
-                         ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
-                         $res->{$regcode}->{CONSUMED},
-                         (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
-                         $res->{$regcode}->{SUBENDDATE}
-
+        push @SVALUES, [ $res->{$subid}->{SUBNAME},
+                         $res->{$subid}->{REGCODE},
+                         $nc,
+                         $res->{$subid}->{CONSUMED},
+                         (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
+                         $res->{$subid}->{SUBENDDATE}
                        ];
 
     }
@@ -1424,126 +1391,136 @@ sub subscriptionReport
     # Expired Subscriptions
     #
 
-    $statement  = "select SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where (SUBSTATUS = 'EXPIRED' or (SUBENDDATE < ? and SUBENDDATE IS NOT NULL)) ;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $now, SQL_TIMESTAMP);
     $sth->execute;
-    $res = $sth->fetchall_hashref("REGCODE");
+    $res = $sth->fetchall_hashref("SUBID");
     
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
     
-    $statement  = "select s.SUBNAME, s.REGCODE, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
-    $statement .= "where s.REGCODE = cs.REGCODE and cs.GUID = c.GUID and (s.SUBSTATUS = 'EXPIRED' or ";
-    $statement .= "(s.SUBENDDATE < ? and s.SUBENDDATE IS NOT NULL)) group by REGCODE order by SUBENDDATE";
+    $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and (s.SUBSTATUS = 'EXPIRED' or ";
+    $statement .= "(s.SUBENDDATE < ? and s.SUBENDDATE IS NOT NULL)) group by SUBID order by SUBENDDATE";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $now, SQL_TIMESTAMP);
     $sth->execute;
-    $assigned = $sth->fetchall_hashref("REGCODE");
+    $assigned = $sth->fetchall_hashref("SUBID");
     
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
     
-    foreach my $regcode (keys %{$assigned})
+    foreach my $subid (keys %{$assigned})
     {
-        if(exists $res->{$regcode})
+        if(exists $res->{$subid})
         {
-            $res->{$regcode}->{MACHINES} = $assigned->{$regcode}->{MACHINES};
+            $res->{$subid}->{ASSIGNED_MACHINES} = $assigned->{$subid}->{MACHINES};
         }
     }
 
-    my @EHEAD = ( __('Subscription'), __('Registration Code'), __('Total Subscriptions'), __('Total Used') ,__('Used Locally'), __('Expiring Date'));
+    my @EHEAD = ( __('Subscription'), 
+                  __('Registration Code'),
+                  __('Total Subscriptions'),
+                  __('Total Used') ,
+                  __('Used Locally'), 
+                  __('Expiring Date'));
     my @EVALUES = ();
     my %EOPTIONS = ( 'headingText' => __('Expired Subscriptions')." ($time)" );
     
-    foreach my $regcode (keys %{$res})
+    foreach my $subid (keys %{$res})
     {
-        my $assignedMachines = 0;
-        my $nc = 0;
-        my $subname = $res->{$regcode}->{SUBNAME};
+        my $nc = (int $res->{$subid}->{NODECOUNT});
+        my $subname = $res->{$subid}->{SUBNAME};
 
-        if(!exists $expiredMachines->{$subname} || ! defined $expiredMachines->{$subname})
-        {
-            $expiredMachines->{$subname} = 0;
-        }
-        
-        # All the remaining machines are assigned to a expired subscription
-        $expiredMachines->{$subname} = int $calchash->{$subname}->{MACHINES};
-
-        if($res->{$regcode}->{NODECOUNT} == -1)
+        if($nc == -1)
         {
             $nc = "unlimited";
         }
-        else
-        {
-            $nc = (int $res->{$regcode}->{NODECOUNT});
-        }
-
+        
         #
         # we do not show expired subscriptions which do not have a machine assigned
-        next if($assignedMachines == 0);
+        next if($res->{$subid}->{CONSUMED} == 0 && 
+                (!exists $res->{$subid}->{ASSIGNED_MACHINES} || $res->{$subid}->{ASSIGNED_MACHINES} == 0));
 
-        push @EVALUES, [ $res->{$regcode}->{SUBNAME},
-                         $res->{$regcode}->{REGCODE},
-                         ($res->{$regcode}->{NODECOUNT} == -1)?"unlimited":$res->{$regcode}->{NODECOUNT},
-                         $res->{$regcode}->{CONSUMED},
-                         (exists $res->{$regcode}->{MACHINES})?$res->{$regcode}->{MACHINES}:0,
-                         $res->{$regcode}->{SUBENDDATE}
+        push @EVALUES, [ $res->{$subid}->{SUBNAME},
+                         $res->{$subid}->{REGCODE},
+                         $nc,
+                         $res->{$subid}->{CONSUMED},
+                         (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
+                         $res->{$subid}->{SUBENDDATE}
                        ];
     }
 
     $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @EVALUES], 'opts' => \%EOPTIONS } : undef; 
 
-    #printLog($options{log}, "debug", "CALCHASH:".Data::Dumper->Dump([$calchash]));
 
-    my $alerts = ''; 
-    #my $ok = 1;
-
-    my @SUMHEAD = ( __("Subscription"), __("Registered Machines\nat NCC"), __("Active\nSubscriptions"), __("Soon expiring\nSubscriptions"), __("Missing\nSubscriptions"));
+    #
+    # SUMMARY
+    #
+    my $alerts = '';
+    my $warning = '';
+    my @SUMHEAD = ( __("Subscription"),
+                    __("Registered Machines\nat NCC"),
+                    __("Active\nSubscriptions"), 
+                    __("Soon expiring\nSubscriptions"), 
+                    __("Missing\nSubscriptions"));
     my @SUMVALUES = ();
     my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)" );
 
     foreach my $subname (keys %{$calchash})
     {
-        my $calc = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{ACTIVE} - $calchash->{$subname}->{ESOON};
         
-        $calc = 0 if ($calc < 0);
+        my $missing = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{SUM_ACTIVE_SUB} - $calchash->{$subname}->{SUM_ESOON_SUB};
         
-        push @SUMVALUES, [$subname, $calchash->{$subname}->{TOTMACHINES}, $calchash->{$subname}->{ACTIVE}, $calchash->{$subname}->{ESOON}, $calc];
+        $missing = 0 if ($missing < 0);
         
-        if($calchash->{$subname}->{ESOON} > 0)
+        push @SUMVALUES, [$subname, 
+                          $calchash->{$subname}->{TOTMACHINES}, 
+                          $calchash->{$subname}->{SUM_ACTIVE_SUB}, 
+                          $calchash->{$subname}->{SUM_ESOON_SUB}, 
+                          $missing];
+        my $used_active = 0;
+        my $used_esoon  = 0;
+        my $used_expired = 0;
+        my $dummy = $calchash->{$subname}->{TOTMACHINES};
+        
+        if($dummy <= $calchash->{$subname}->{SUM_ACTIVE_SUB})
         {
-            # FIXME: Not sure if this is correct. Is ESOON the value we want to display here?
-            $alerts .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
-                               $calchash->{$subname}->{ESOON},
-                               $subname);
+            $used_active = $dummy;
+            $dummy = 0;
         }
-        
-        if($calc > 0)
+        else
+        {
+            $used_active = $calchash->{$subname}->{SUM_ACTIVE_SUB};
+            $dummy -= $calchash->{$subname}->{SUM_ACTIVE_SUB};
+        }
+
+        if($dummy <= $calchash->{$subname}->{SUM_ESOON_SUB})
+        {
+            $used_esoon = $dummy;
+            $dummy = 0;
+        }
+        else
+        {
+            $used_esoon = $calchash->{$subname}->{SUM_ESOON_SUB};
+            $dummy -= $calchash->{$subname}->{SUM_ESOON_SUB};
+        }
+
+        $used_expired = $dummy;
+
+        if($used_esoon > 0)
+        {
+            $warning .= sprintf(__("%d Machines uses a '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
+                                $used_esoon, $subname);
+        }
+
+        if($missing > 0)
         {
             # FIXME: These are missing subscriptions, expired is only one cause, another is overloaded subscriptions
             #        (nodecount < consumed)
-            $alerts .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
-                               $calc, $subname);
+            $alerts .= sprintf(__("%d Machines too much uses '%s' subscriptions. Please order new subscriptions.\n"), 
+                               $missing, $subname);
         }
-        
-        
-#         if(exists $expireSoonMachines->{$subname} && defined $expireSoonMachines->{$subname} &&
-#            $expireSoonMachines->{$subname} > 0)
-#         {
-#             $alerts .= sprintf(__("%d Machines are assigned to '%s', which expires within the next 30 Days. Please renew the subscription.\n"), 
-#                                $expireSoonMachines->{$subname},
-#                                $subname);
-#             $ok = 0;
-#         }
-
-#         if(exists $expiredMachines->{$subname} && defined $expiredMachines->{$subname} &&
-#            $expiredMachines->{$subname} > 0)
-#         {
-#             $alerts .= sprintf(__("%d Machines are assigned to '%s', which is expired. Please renew the subscription.\n"), 
-#                                $expiredMachines->{$subname},
-#                                 $subname);
-#             $ok = 0;
-#         }
     }
 
     # search for failed NCC registrations and add them to the alerts
@@ -1553,17 +1530,22 @@ sub subscriptionReport
     {
         $alerts .= sprintf(__("NCC registration failed for %d Machines. \n"), $count->[0]);
     }
-    
+
     $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @SUMVALUES], 'opts' => \%SUMOPTIONS }; 
     $report{'alerts'} = "";
     if($alerts ne "")
     {
         $report{'alerts'} = __("Alerts:\n").$alerts ;
     }
+
+    if($warning ne "")
+    {
+        $report{'alerts'} = "\n".__("Warnings:\n").$warning ;
+    }
     
     return \%report;
-}
 
+}
 
 sub certificateExpireCheck
 {

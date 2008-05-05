@@ -654,11 +654,11 @@ sub _listreg_handler
         {
             delete $guidhash->{$data->{GUID}};
             
-            foreach my $regcode (@{$data->{SUBREF}})
+            foreach my $subid (@{$data->{SUBREF}})
             {
-                $statement = sprintf("INSERT INTO ClientSubscriptions (GUID, REGCODE) VALUES(%s, %s)", 
+                $statement = sprintf("INSERT INTO ClientSubscriptions (GUID, SUBID) VALUES(%s, %s)", 
                                      $self->{DBH}->quote($data->{GUID}),
-                                     $self->{DBH}->quote($regcode));
+                                     $self->{DBH}->quote($subid));
                 
                 $self->{DBH}->do($statement);
                 printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
@@ -814,7 +814,8 @@ sub _listsub_handler
 
     #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$data]));
 
-    if(!exists $data->{REGCODE} || !defined $data->{REGCODE} || $data->{REGCODE} eq "" ||
+    if(!exists $data->{SUBID} || !defined $data->{SUBID} || $data->{SUBID} eq "" ||
+       !exists $data->{REGCODE} || !defined $data->{REGCODE} || $data->{REGCODE} eq "" ||
        !exists $data->{NAME} || !defined $data->{NAME} || $data->{NAME} eq "" ||
        !exists $data->{STATUS} || !defined $data->{STATUS} || $data->{STATUS} eq "" ||
        !exists $data->{ENDDATE} || !defined $data->{ENDDATE} || $data->{ENDDATE} eq "" ||
@@ -828,36 +829,37 @@ sub _listsub_handler
     
     eval
     {
-        $statement =  "INSERT INTO Subscriptions (REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT, CONSUMED) ";
-        $statement .= "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $statement =  "INSERT INTO Subscriptions(SUBID, REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT, CONSUMED)";
+        $statement .= " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         my $sth = $self->{DBH}->prepare($statement);
-        $sth->bind_param(1, $data->{REGCODE});
-        $sth->bind_param(2, $data->{NAME});
-        $sth->bind_param(3, $data->{TYPE});
-        $sth->bind_param(4, $data->{STATUS});
+        $sth->bind_param(1, $data->{SUBID});
+        $sth->bind_param(2, $data->{REGCODE});
+        $sth->bind_param(3, $data->{NAME});
+        $sth->bind_param(4, $data->{TYPE});
+        $sth->bind_param(5, $data->{STATUS});
         if(int($data->{STARTDATE}) == 0)
-        {
-            $sth->bind_param(5, undef, SQL_TIMESTAMP);
-        }
-        else
-        {        
-            $sth->bind_param(5, SMT::Utils::getDBTimestamp($data->{STARTDATE}), SQL_TIMESTAMP);
-        }
-
-        if(int($data->{ENDDATE}) == 0)
         {
             $sth->bind_param(6, undef, SQL_TIMESTAMP);
         }
         else
         {        
-            $sth->bind_param(6, SMT::Utils::getDBTimestamp($data->{ENDDATE}), SQL_TIMESTAMP);
+            $sth->bind_param(6, SMT::Utils::getDBTimestamp($data->{STARTDATE}), SQL_TIMESTAMP);
+        }
+
+        if(int($data->{ENDDATE}) == 0)
+        {
+            $sth->bind_param(7, undef, SQL_TIMESTAMP);
+        }
+        else
+        {        
+            $sth->bind_param(7, SMT::Utils::getDBTimestamp($data->{ENDDATE}), SQL_TIMESTAMP);
         }
         
-        $sth->bind_param(7, $data->{DURATION}, SQL_INTEGER);
-        $sth->bind_param(8, $data->{SERVERCLASS});
-        $sth->bind_param(9, $data->{NODECOUNT}, SQL_INTEGER);
-        $sth->bind_param(10, $data->{CONSUMED}, SQL_INTEGER);
+        $sth->bind_param(8, $data->{DURATION}, SQL_INTEGER);
+        $sth->bind_param(9, $data->{SERVERCLASS});
+        $sth->bind_param(10, $data->{NODECOUNT}, SQL_INTEGER);
+        $sth->bind_param(11, $data->{CONSUMED}, SQL_INTEGER);
         
         my $res = $sth->execute;
         
@@ -867,8 +869,8 @@ sub _listsub_handler
         
         foreach my $id (@productids)
         {
-            $statement = sprintf("INSERT INTO ProductSubscriptions (PRODUCTDATAID, REGCODE) VALUES (%s, %s)",
-                                 $id, $self->{DBH}->quote($data->{REGCODE}));
+            $statement = sprintf("INSERT INTO ProductSubscriptions (PRODUCTDATAID, SUBID) VALUES (%s, %s)",
+                                 $id, $self->{DBH}->quote($data->{SUBID}));
 
             my $res = $self->{DBH}->do($statement);
             printLog($self->{LOG}, "debug", "$statement :$res") if($self->{DEBUG});

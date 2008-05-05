@@ -19,7 +19,8 @@ create table Clients(GUID        CHAR(50) PRIMARY KEY,
                     );
 
 
-create table Subscriptions(REGCODE        VARCHAR(100) PRIMARY KEY,
+create table Subscriptions(SUBID          CHAR(50) PRIMARY KEY, 
+                           REGCODE        VARCHAR(100),
                            SUBNAME        VARCHAR(100) NOT NULL,
                            SUBTYPE        CHAR(20)  DEFAULT "UNKNOWN",
                            SUBSTATUS      CHAR(20)  DEFAULT "UNKNOWN",
@@ -38,9 +39,9 @@ create table Subscriptions(REGCODE        VARCHAR(100) PRIMARY KEY,
 
 
 
-create table ProductSubscriptions(PRODUCTDATAID integer NOT NULL,
-                                  REGCODE       VARCHAR(100) NOT NULL,
-                                  PRIMARY KEY(PRODUCTDATAID, REGCODE)
+create table ProductSubscriptions(PRODUCTDATAID integer  NOT NULL,
+                                  SUBID         CHAR(50) NOT NULL,
+                                  PRIMARY KEY(PRODUCTDATAID, SUBID)
                                  );
 
 -- these statements give the real subscription status of the clients
@@ -51,9 +52,9 @@ create table ProductSubscriptions(PRODUCTDATAID integer NOT NULL,
 -- select c.GUID from Clients c where c.GUID not in (select distinct GUID from ClientSubscriptions);
 
 
-create table ClientSubscriptions(GUID    CHAR(50)     NOT NULL,
-                                 REGCODE VARCHAR(100) NOT NULL,
-                                 PRIMARY KEY(GUID, REGCODE)
+create table ClientSubscriptions(GUID    CHAR(50) NOT NULL,
+                                 SUBID   CHAR(50) NOT NULL,
+                                 PRIMARY KEY(GUID, SUBID)
                                 );
 
 create table Registration(GUID         CHAR(50) NOT NULL,

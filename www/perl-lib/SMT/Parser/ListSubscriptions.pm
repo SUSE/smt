@@ -9,6 +9,7 @@ use IO::Zlib;
 # The handler is called with something like this
 #
 # $VAR1 = {
+#           'SUBID'   => 'SomeID',
 #           'REGCODE' => 'some regcode',
 #           'NAME' => 'SuSE Linux Enterprise Server x86',
 #           'SERVERCLASS' => 'ADDON',
@@ -170,6 +171,10 @@ sub handle_end_tag
         elsif(lc($element) eq "regcode")
         {
             $self->{CURRENT}->{REGCODE} = $self->{TMP};
+        }
+        elsif(lc($element) eq "subid")
+        {
+            $self->{CURRENT}->{SUBID} = $self->{TMP};
         }
         elsif(lc($element) eq "subname")
         {
