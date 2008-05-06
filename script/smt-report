@@ -140,8 +140,12 @@ Used Locally:                Number of used subscriptions from this SMT server.
 Expiring Date:               The date when this subscription expires.
 ";
 
+my $hostname = `/bin/hostname -f 2>/dev/null`;
+$hostname = "unknown" if(!defined $hostname || $hostname eq "");
+chomp($hostname);
 my $footer      = "
 Footer
+(Generated on '$hostname')
 ";
 
 
