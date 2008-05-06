@@ -5,7 +5,7 @@ use warnings;
 
 use Config::IniFiles;
 use DBI qw(:sql_types);
-use Fcntl;
+use Fcntl qw(:DEFAULT);
 use IO::File;
 
 use MIME::Lite;  # sending eMails
@@ -245,7 +245,7 @@ sub openLog
     my $logfile = shift || "/dev/null";
     
     my $LOG;
-    open($LOG, ">> $logfile") or die "Cannot open logfile '$logfile': $!";
+    sysopen($LOG, "$logfile", O_CREAT|O_APPEND|O_WRONLY, 0600) or die "Cannot open logfile '$logfile': $!";
     if($logfile ne "/dev/null")
     {
         $LOG->autoflush(1);
