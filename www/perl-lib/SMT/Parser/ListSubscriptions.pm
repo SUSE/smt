@@ -64,6 +64,9 @@ sub parse()
         exit 1;
     }
 
+    # for security reason strip all | characters.
+    # XML::Parser ->parsefile( $file ) might be problematic
+    $file =~ s/\|//g;
     if (!-e $file)
     {
         printLog($self->{LOG}, "error", "File '$file' does not exist.");

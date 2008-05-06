@@ -116,7 +116,10 @@ sub parse()
     }
     
     $path = $self->{RESOURCE}."/$repodata";
-    
+
+    # for security reason strip all | characters.
+    # XML::Parser ->parsefile( $path ) might be problematic
+    $path =~ s/\|//g;
     if(!-e $path)
     {
         printLog($self->{LOG}, "error", "File not found $path");

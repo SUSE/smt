@@ -87,6 +87,15 @@ sub parse()
     my $handler  = shift;
     
     $self->{HANDLER} = $handler;
+
+    # for security reason strip all | characters.
+    # XML::Parser ->parsefile( $path ) might be problematic
+    $path =~ s/\|//g;
+    if(!-e $path)
+    {
+        printLog($self->{LOG}, "error", "File not found $path");
+        return;
+    }
     
     my $parser;
     
