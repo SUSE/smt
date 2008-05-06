@@ -4,6 +4,6 @@
     notifempty
     maxage 365
     rotate 8
-    weekly
+    size 4096k
     create 0600 root root
 }
