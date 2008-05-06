@@ -193,6 +193,13 @@ sub mirrorTo()
     # we do not want to damage the repodata until we
     # have them all
 
+    # check if $job->localdir() does not have insecure characters
+    if( $job->localdir() =~ /[;&|]/)
+    {
+        printLog($self->{LOG}, "error", sprintf(__("Insecure characters in pathname detected.(%s)"), $job->localdir()));
+        return 1;
+    }
+
     if( -d $job->localdir()."/.repodata" )
     {
         rmtree($job->localdir()."/.repodata", 0, 0);
