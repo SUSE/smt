@@ -37,8 +37,8 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
     print basename($0) . __(" : setup a custom catalog\n");
-    print "    --productid arg     " . __("Product id where this catalog belong to.\n");
-    print "                        " .  __("You can use this option multiple times\n");
+    print "    --productid arg     " . __("Product id this catalog belongs to.\n");
+    print "                        " . __("You can use this option multiple times\n");
     print "                        " . __("to assign a catalog to multiple products \n");
     print "    --name  arg         " . __("The name of this catalog.\n");
     print "    --description arg   " . __("A description\n");
