@@ -906,12 +906,35 @@ sub productSubscriptionReport
     my $nowP30day = SMT::Utils::getDBTimestamp((time + (30*24*60*60)));
     my $now = SMT::Utils::getDBTimestamp();
     my $sth = undef;
-
-    $statement = "select SUBNAME, SUBID from Subscriptions group by SUBNAME;";
+    my $subnamesByProductgroup = {};
+    
+    $statement = "select distinct PRODGROUP, SUBNAME from Subscriptions;";
 
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
 
-    my $res = $dbh->selectall_hashref($statement, "SUBID");
+    my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
+    
+    foreach my $node (@{$res})
+    {
+        my $subname = $node->{SUBNAME};
+        my $prodgroup = $node->{PRODGROUP};
+        
+        if(exists $subnamesByProductgroup->{$prodgroup} && defined $subnamesByProductgroup->{$prodgroup})
+        {
+            $subnamesByProductgroup->{$prodgroup} .= "\n".$subname;
+        }
+        else
+        {
+            $subnamesByProductgroup->{$prodgroup} = "$subname";
+        }
+    }
+    
+
+    $statement = "select PRODGROUP, SUBID from Subscriptions group by PRODGROUP;";
+
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    $res = $dbh->selectall_hashref($statement, "SUBID");
 
     foreach my $subid (keys %{$res})
     {
@@ -934,63 +957,63 @@ sub productSubscriptionReport
             }
         }
         
-        $calchash->{$res->{$subid}->{SUBNAME}}->{MACHINES} = int $total;
-        $calchash->{$res->{$subid}->{SUBNAME}}->{TOTMACHINES} = int $total;
-        $calchash->{$res->{$subid}->{SUBNAME}}->{REGMACHINES} = int $registered;
-        $calchash->{$res->{$subid}->{SUBNAME}}->{SUM_ACTIVE_SUB} = 0;
-        $calchash->{$res->{$subid}->{SUBNAME}}->{SUM_ESOON_SUB} = 0;
+        $calchash->{$res->{$subid}->{PRODGROUP}}->{MACHINES} = int $total;
+        $calchash->{$res->{$subid}->{PRODGROUP}}->{TOTMACHINES} = int $total;
+        $calchash->{$res->{$subid}->{PRODGROUP}}->{REGMACHINES} = int $registered;
+        $calchash->{$res->{$subid}->{PRODGROUP}}->{SUM_ACTIVE_SUB} = 0;
+        $calchash->{$res->{$subid}->{PRODGROUP}}->{SUM_ESOON_SUB} = 0;
     }
 
     #
     # Active Subscriptions
     #
     
-    $statement  = "select SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
+    $statement  = "select PRODGROUP, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
     $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL) ";
-    $statement .= "group by SUBNAME order by SUBNAME;";
+    $statement .= "group by PRODGROUP order by PRODGROUP;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
     $sth->execute;
-    $res = $sth->fetchall_hashref("SUBNAME");
+    $res = $sth->fetchall_hashref("PRODGROUP");
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my @AHEAD = ( __('Subscription'), __('Total Subscriptions'), __('Used Locally'), __('Expiring Date') ); 
+    my @AHEAD = ( __('Subscription'), __("Total\nSubscriptions"), __("Used\nLocally"), __('Expiring Date') ); 
     my @AVALUES = ();
-    my %AOPTIONS = ( 'headingText' => __("Active Subscriptions"." ($time)" ) );
+    my %AOPTIONS = ( 'headingText' => __("Active Subscriptions"." ($time)" ), drawRowLine => 1 );
 
-    foreach my $subname (keys %{$res})
+    foreach my $prodgroup (keys %{$res})
     {
         my $assignedMachines = 0;
-        my $nc =  (int $res->{$subname}->{SUM_NODECOUNT});
+        my $nc =  (int $res->{$prodgroup}->{SUM_NODECOUNT});
         
-        if($res->{$subname}->{UNLIMITED})
+        if($res->{$prodgroup}->{UNLIMITED})
         {
-            $calchash->{$subname}->{SUM_ACTIVE_SUB} = -1;
-            $assignedMachines = $calchash->{$subname}->{MACHINES};
-            $calchash->{$subname}->{MACHINES} = 0;
+            $calchash->{$prodgroup}->{SUM_ACTIVE_SUB} = -1;
+            $assignedMachines = $calchash->{$prodgroup}->{MACHINES};
+            $calchash->{$prodgroup}->{MACHINES} = 0;
             $nc = "unlimited";
         }
         else
         {
-            $calchash->{$subname}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$subname}->{SUM_ACTIVE_SUB} != -1);
+            $calchash->{$prodgroup}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$prodgroup}->{SUM_ACTIVE_SUB} != -1);
 
-            if($nc >= (int $calchash->{$subname}->{MACHINES}))
+            if($nc >= (int $calchash->{$prodgroup}->{MACHINES}))
             {
-                $assignedMachines = $calchash->{$subname}->{MACHINES};
-                $calchash->{$subname}->{MACHINES} = 0;
+                $assignedMachines = $calchash->{$prodgroup}->{MACHINES};
+                $calchash->{$prodgroup}->{MACHINES} = 0;
             }
             else
             {
                 $assignedMachines = $nc;
-                $calchash->{$subname}->{MACHINES} -= $nc;                
+                $calchash->{$prodgroup}->{MACHINES} -= $nc;                
             }
         }
                 
-        push @AVALUES, [ $res->{$subname}->{SUBNAME},
+        push @AVALUES, [ $subnamesByProductgroup->{$prodgroup},
                          $nc,
                          $assignedMachines,
-                         (defined $res->{$subname}->{MINENDDATE})?$res->{$subname}->{MINENDDATE}:"never"
+                         (defined $res->{$prodgroup}->{MINENDDATE})?$res->{$prodgroup}->{MINENDDATE}:"never"
                        ];
     }
     $report{'active'} = {'cols' => \@AHEAD, 'vals' => \@AVALUES, 'opts' => \%AOPTIONS };
@@ -999,63 +1022,63 @@ sub productSubscriptionReport
     # Expire soon
     #
     
-    $statement  = "select SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
+    $statement  = "select PRODGROUP, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
     $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ?";
-    $statement .= "group by SUBNAME order by SUBNAME;";
+    $statement .= "group by PRODGROUP order by PRODGROUP;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
     $sth->bind_param(2, $now, SQL_TIMESTAMP);
     $sth->execute;
-    $res = $sth->fetchall_hashref("SUBNAME");
+    $res = $sth->fetchall_hashref("PRODGROUP");
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my @SHEAD = ( __('Subscription'), __('Total Subscriptions'), __('Used Locally'), __('Expiring Date'));
+    my @SHEAD = ( __('Subscription'), __("Total\nSubscriptions"), __("Used\nLocally"), __('Expiring Date'));
     my @SVALUES = ();
-    my %SOPTIONS = ( 'headingText' => __("Subscriptions which expired within the next 30 days")." ($time)" );
+    my %SOPTIONS = ( 'headingText' => __("Subscriptions which expired within the next 30 days")." ($time)", drawRowLine => 1 );
 
-    foreach my $subname (keys %{$res})
+    foreach my $prodgroup (keys %{$res})
     {
         my $assignedMachines = 0;
-        my $nc = (int $res->{$subname}->{SUM_NODECOUNT});
+        my $nc = (int $res->{$prodgroup}->{SUM_NODECOUNT});
         
-        #if(!exists $expireSoonMachines->{$subname} || ! defined $expireSoonMachines->{$subname})
+        #if(!exists $expireSoonMachines->{$prodgroup} || ! defined $expireSoonMachines->{$prodgroup})
         #{
-        #    $expireSoonMachines->{$subname} = 0;
+        #    $expireSoonMachines->{$prodgroup} = 0;
         #}
         
-        if($res->{$subname}->{UNLIMITED})
+        if($res->{$prodgroup}->{UNLIMITED})
         {
-            $calchash->{$subname}->{SUM_ESOON_SUB} = -1;
-            $assignedMachines = $calchash->{$subname}->{MACHINES};
-            $calchash->{$subname}->{MACHINES} = 0;
+            $calchash->{$prodgroup}->{SUM_ESOON_SUB} = -1;
+            $assignedMachines = $calchash->{$prodgroup}->{MACHINES};
+            $calchash->{$prodgroup}->{MACHINES} = 0;
             $nc = "unlimited";
         }
         else
         {
-            $calchash->{$subname}->{SUM_ESOON_SUB} += $nc if($calchash->{$subname}->{SUM_ESOON_SUB} != -1);
+            $calchash->{$prodgroup}->{SUM_ESOON_SUB} += $nc if($calchash->{$prodgroup}->{SUM_ESOON_SUB} != -1);
 
-            if($nc >= (int $calchash->{$subname}->{MACHINES}))
+            if($nc >= (int $calchash->{$prodgroup}->{MACHINES}))
             {
-                $assignedMachines = $calchash->{$subname}->{MACHINES};
-                $calchash->{$subname}->{MACHINES} = 0;
+                $assignedMachines = $calchash->{$prodgroup}->{MACHINES};
+                $calchash->{$prodgroup}->{MACHINES} = 0;
             }
             else
             {
                 $assignedMachines = $nc;
-                $calchash->{$subname}->{MACHINES} -= $nc;                
+                $calchash->{$prodgroup}->{MACHINES} -= $nc;                
             }
         }
 
         #if($assignedMachines > 0)
         #{
-        #    $expireSoonMachines->{$subname} += int $assignedMachines;
+        #    $expireSoonMachines->{$prodgroup} += int $assignedMachines;
         #}
         
-        push @SVALUES, [ $res->{$subname}->{SUBNAME},
+        push @SVALUES, [ $subnamesByProductgroup->{$prodgroup},
                          $nc,
                          $assignedMachines,
-                         $res->{$subname}->{MINENDDATE}
+                         $res->{$prodgroup}->{MINENDDATE}
                       ];
     }
     $report{'soon'} = (@SVALUES > 0)?{'cols' => \@SHEAD, 'vals' => \@SVALUES, 'opts' => \%SOPTIONS }:undef;
@@ -1065,43 +1088,43 @@ sub productSubscriptionReport
     # Expired Subscriptions
     #
     
-    $statement  = "select SUBNAME, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MAX(SUBENDDATE) as MAXENDDATE ";
+    $statement  = "select PRODGROUP, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MAX(SUBENDDATE) as MAXENDDATE ";
     $statement .= "from Subscriptions where (SUBSTATUS = 'EXPIRED' or (SUBENDDATE < ? and SUBENDDATE IS NOT NULL)) ";
-    $statement .= "group by SUBNAME order by SUBNAME;";
+    $statement .= "group by PRODGROUP order by PRODGROUP;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $now, SQL_TIMESTAMP);
     $sth->execute;
-    $res = $sth->fetchall_hashref("SUBNAME");
+    $res = $sth->fetchall_hashref("PRODGROUP");
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my @EHEAD = ( __('Subscription'), __('Total Subscriptions'), __('Used Locally'), __('Expiring Date'));
+    my @EHEAD = ( __('Subscription'), __("Total\nSubscriptions"), __("Used\nLocally"), __('Expiring Date'));
     my @EVALUES = ();
-    my %EOPTIONS = ( 'headingText' => __("Expired Subscriptions")." ($time)" );
+    my %EOPTIONS = ( 'headingText' => __("Expired Subscriptions")." ($time)", drawRowLine => 1 );
     
-    foreach my $subname (keys %{$res})
+    foreach my $prodgroup (keys %{$res})
     {
-        my $assignedMachines = int $calchash->{$subname}->{MACHINES};
-        my $nc =  (int $res->{$subname}->{SUM_NODECOUNT});
+        my $assignedMachines = int $calchash->{$prodgroup}->{MACHINES};
+        my $nc =  (int $res->{$prodgroup}->{SUM_NODECOUNT});
 
-        #if(!exists $expiredMachines->{$subname} || ! defined $expiredMachines->{$subname})
+        #if(!exists $expiredMachines->{$prodgroup} || ! defined $expiredMachines->{$prodgroup})
         #{
-        #    $expiredMachines->{$subname} = 0;
+        #    $expiredMachines->{$prodgroup} = 0;
         #}
         
-        if($res->{$subname}->{UNLIMITED})
+        if($res->{$prodgroup}->{UNLIMITED})
         {
             $nc = "unlimited";
         }
         
         next if($assignedMachines == 0);
 
-        #$expiredMachines->{$subname} += int $assignedMachines;
+        #$expiredMachines->{$prodgroup} += int $assignedMachines;
         
-        push @EVALUES, [ $res->{$subname}->{SUBNAME},
+        push @EVALUES, [ $subnamesByProductgroup->{$prodgroup},
                          $nc,
                          $assignedMachines,
-                         $res->{$subname}->{MAXENDDATE}
+                         $res->{$prodgroup}->{MAXENDDATE}
                        ];
     }
 
@@ -1112,47 +1135,47 @@ sub productSubscriptionReport
     my $alerts = ''; 
     my $warning = ''; 
 
-    my @SUMHEAD = ( __("Subscription"), __("Locally Registered\nMachines"), __("Active Subscriptions"), __("Soon expiring\nSubscriptions"), __("Missing Subscriptions"));
+    my @SUMHEAD = ( __("Subscription"), __("Locally Registered\nMachines"), __("Active\nSubscriptions"), __("Soon expiring\nSubscriptions"), __("Missing\nSubscriptions"));
     my @SUMVALUES = ();
-    my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)" );
+    my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)", drawRowLine => 1 );
 
 
-    foreach my $subname (keys %{$calchash})
+    foreach my $prodgroup (keys %{$calchash})
     {
-        my $missing = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{SUM_ACTIVE_SUB} - $calchash->{$subname}->{SUM_ESOON_SUB};
+        my $missing = $calchash->{$prodgroup}->{TOTMACHINES} - $calchash->{$prodgroup}->{SUM_ACTIVE_SUB} - $calchash->{$prodgroup}->{SUM_ESOON_SUB};
         $missing = 0 if ($missing < 0);
 
-        push @SUMVALUES, [$subname, 
-                          $calchash->{$subname}->{TOTMACHINES}, 
-                          $calchash->{$subname}->{SUM_ACTIVE_SUB},
-                          $calchash->{$subname}->{SUM_ESOON_SUB},
+        push @SUMVALUES, [$subnamesByProductgroup->{$prodgroup},
+                          $calchash->{$prodgroup}->{TOTMACHINES}, 
+                          $calchash->{$prodgroup}->{SUM_ACTIVE_SUB},
+                          $calchash->{$prodgroup}->{SUM_ESOON_SUB},
                           $missing];
 
         my $used_active = 0;
         my $used_esoon  = 0;
         my $used_expired = 0;
-        my $dummy = $calchash->{$subname}->{TOTMACHINES};
+        my $dummy = $calchash->{$prodgroup}->{TOTMACHINES};
         
-        if($dummy <= $calchash->{$subname}->{SUM_ACTIVE_SUB})
+        if($dummy <= $calchash->{$prodgroup}->{SUM_ACTIVE_SUB})
         {
             $used_active = $dummy;
             $dummy = 0;
         }
         else
         {
-            $used_active = $calchash->{$subname}->{SUM_ACTIVE_SUB};
-            $dummy -= $calchash->{$subname}->{SUM_ACTIVE_SUB};
+            $used_active = $calchash->{$prodgroup}->{SUM_ACTIVE_SUB};
+            $dummy -= $calchash->{$prodgroup}->{SUM_ACTIVE_SUB};
         }
 
-        if($dummy <= $calchash->{$subname}->{SUM_ESOON_SUB})
+        if($dummy <= $calchash->{$prodgroup}->{SUM_ESOON_SUB})
         {
             $used_esoon = $dummy;
             $dummy = 0;
         }
         else
         {
-            $used_esoon = $calchash->{$subname}->{SUM_ESOON_SUB};
-            $dummy -= $calchash->{$subname}->{SUM_ESOON_SUB};
+            $used_esoon = $calchash->{$prodgroup}->{SUM_ESOON_SUB};
+            $dummy -= $calchash->{$prodgroup}->{SUM_ESOON_SUB};
         }
 
         $used_expired = $dummy;
@@ -1161,13 +1184,13 @@ sub productSubscriptionReport
         if($used_esoon > 0)
         {
             $warning .= sprintf(__("%d Machines uses '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
-                                $used_esoon, $subname);
+                                $used_esoon, $prodgroup);
         }
         
         if($missing > 0)
         {
             $alerts .= sprintf(__("%d Machines too much uses '%s' subscriptions. Please order new subscriptions.\n"), 
-                               $missing, $subname);
+                               $missing, $prodgroup);
         }
     }
 
@@ -1213,30 +1236,53 @@ sub subscriptionReport
     my $now = SMT::Utils::getDBTimestamp();
     my $sth = undef;
 
-    $statement = "select SUBNAME, SUM(CONSUMED) AS SUM_TOTALCONSUMED from Subscriptions group by SUBNAME;";
+    my $subnamesByProductgroup = {};
+    
+    $statement = "select distinct PRODGROUP, SUBNAME from Subscriptions;";
 
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
 
-    my $res = $dbh->selectall_hashref($statement, "SUBNAME");
-
-    foreach my $subname (keys %{$res})
+    my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
+    
+    foreach my $node (@{$res})
     {
-        if(!exists $res->{$subname}->{SUM_TOTALCONSUMED} || !defined $res->{$subname}->{SUM_TOTALCONSUMED})
+        my $subname = $node->{SUBNAME};
+        my $prodgroup = $node->{PRODGROUP};
+        
+        if(exists $subnamesByProductgroup->{$prodgroup} && defined $subnamesByProductgroup->{$prodgroup})
         {
-            $res->{$subname}->{SUM_TOTALCONSUMED} = 0;
+            $subnamesByProductgroup->{$prodgroup} .= "\n".$subname;
+        }
+        else
+        {
+            $subnamesByProductgroup->{$prodgroup} = "$subname";
+        }
+    }
+
+    $statement = "select PRODGROUP, SUM(CONSUMED) AS SUM_TOTALCONSUMED from Subscriptions group by PRODGROUP;";
+
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    $res = $dbh->selectall_hashref($statement, "PRODGROUP");
+
+    foreach my $prodgroup (keys %{$res})
+    {
+        if(!exists $res->{$prodgroup}->{SUM_TOTALCONSUMED} || !defined $res->{$prodgroup}->{SUM_TOTALCONSUMED})
+        {
+            $res->{$prodgroup}->{SUM_TOTALCONSUMED} = 0;
         }
         
-        $calchash->{$subname}->{MACHINES}       = int $res->{$subname}->{SUM_TOTALCONSUMED};
-        $calchash->{$subname}->{TOTMACHINES}    = int $calchash->{$subname}->{MACHINES};
-        $calchash->{$subname}->{SUM_ACTIVE_SUB} = 0;
-        $calchash->{$subname}->{SUM_ESOON_SUB}  = 0;
+        $calchash->{$prodgroup}->{MACHINES}       = int $res->{$prodgroup}->{SUM_TOTALCONSUMED};
+        $calchash->{$prodgroup}->{TOTMACHINES}    = int $calchash->{$prodgroup}->{MACHINES};
+        $calchash->{$prodgroup}->{SUM_ACTIVE_SUB} = 0;
+        $calchash->{$prodgroup}->{SUM_ESOON_SUB}  = 0;
     }
 
     #
     # Active Subscriptions
     #
 
-    $statement  = "select SUBID, SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, PRODGROUP, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL);";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
@@ -1272,15 +1318,15 @@ sub subscriptionReport
                    align => "left"
                   },
                   {
-                   name => __('Total Subscriptions'),
+                   name => __("Total\nSubscriptions"),
                    align => "auto"
                   },
                   {
-                   name => __('Total Used'),
+                   name => __("Total\nUsed"),
                    align => "auto"
                   },
                   {
-                   name => __('Used Locally'),
+                   name => __("Used\nLocally"),
                    align => "auto"
                   },
                   {
@@ -1298,15 +1344,16 @@ sub subscriptionReport
     {
         my $nc = (int $res->{$subid}->{NODECOUNT});
         my $subname = $res->{$subid}->{SUBNAME};
+        my $prodgroup = $res->{$subid}->{PRODGROUP};
         
         if($nc == -1)
         {
-            $calchash->{$subname}->{SUM_ACTIVE_SUB} = -1;
+            $calchash->{$prodgroup}->{SUM_ACTIVE_SUB} = -1;
             $nc = "unlimited";
         }
         else
         {
-            $calchash->{$subname}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$subname}->{SUM_ACTIVE_SUB} != -1);
+            $calchash->{$prodgroup}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$prodgroup}->{SUM_ACTIVE_SUB} != -1);
         }
                 
         push @AVALUES, [ $res->{$subid}->{SUBNAME},
@@ -1323,7 +1370,7 @@ sub subscriptionReport
     # Expire soon
     #
 
-    $statement  = "select SUBID, SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, PRODGROUP, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ? ;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
@@ -1354,9 +1401,9 @@ sub subscriptionReport
 
     my @SHEAD = ( __('Subscription'), 
                   __('Registration Code'), 
-                  __('Total Subscriptions'), 
-                  __('Total Used') ,
-                  __('Used Locally'), 
+                  __("Total\nSubscriptions"), 
+                  __("Total\nUsed") ,
+                  __("Used\nLocally"), 
                   __('Expiring Date') );
     my @SVALUES = ();
     my %SOPTIONS = ( 'headingText' => __('Subscriptions which expiring within the next 30 Days')." ($time)" );
@@ -1365,15 +1412,16 @@ sub subscriptionReport
     {
         my $nc = (int $res->{$subid}->{NODECOUNT});
         my $subname = $res->{$subid}->{SUBNAME};
-        
+        my $prodgroup = $res->{$subid}->{PRODGROUP};
+
         if($nc == -1)
         {
-            $calchash->{$subname}->{SUM_ESOON_SUB} = -1;
+            $calchash->{$prodgroup}->{SUM_ESOON_SUB} = -1;
             $nc = "unlimited";
         }
         else
         {
-            $calchash->{$subname}->{SUM_ESOON_SUB} += $nc if($calchash->{$subname}->{SUM_ESOON_SUB} != -1);
+            $calchash->{$prodgroup}->{SUM_ESOON_SUB} += $nc if($calchash->{$prodgroup}->{SUM_ESOON_SUB} != -1);
         }
 
         push @SVALUES, [ $res->{$subid}->{SUBNAME},
@@ -1391,7 +1439,7 @@ sub subscriptionReport
     # Expired Subscriptions
     #
 
-    $statement  = "select SUBID, SUBNAME, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, PRODGROUP, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where (SUBSTATUS = 'EXPIRED' or (SUBENDDATE < ? and SUBENDDATE IS NOT NULL)) ;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $now, SQL_TIMESTAMP);
@@ -1420,9 +1468,9 @@ sub subscriptionReport
 
     my @EHEAD = ( __('Subscription'), 
                   __('Registration Code'),
-                  __('Total Subscriptions'),
-                  __('Total Used') ,
-                  __('Used Locally'), 
+                  __("Total\nSubscriptions"),
+                  __("Total\nUsed") ,
+                  __("Used\nLocally"), 
                   __('Expiring Date'));
     my @EVALUES = ();
     my %EOPTIONS = ( 'headingText' => __('Expired Subscriptions')." ($time)" );
@@ -1465,45 +1513,45 @@ sub subscriptionReport
                     __("Soon expiring\nSubscriptions"), 
                     __("Missing\nSubscriptions"));
     my @SUMVALUES = ();
-    my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)" );
+    my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)", drawRowLine => 1 );
 
-    foreach my $subname (keys %{$calchash})
+    foreach my $prodgroup (keys %{$calchash})
     {
         
-        my $missing = $calchash->{$subname}->{TOTMACHINES} - $calchash->{$subname}->{SUM_ACTIVE_SUB} - $calchash->{$subname}->{SUM_ESOON_SUB};
+        my $missing = $calchash->{$prodgroup}->{TOTMACHINES} - $calchash->{$prodgroup}->{SUM_ACTIVE_SUB} - $calchash->{$prodgroup}->{SUM_ESOON_SUB};
         
         $missing = 0 if ($missing < 0);
         
-        push @SUMVALUES, [$subname, 
-                          $calchash->{$subname}->{TOTMACHINES}, 
-                          $calchash->{$subname}->{SUM_ACTIVE_SUB}, 
-                          $calchash->{$subname}->{SUM_ESOON_SUB}, 
+        push @SUMVALUES, [$subnamesByProductgroup->{$prodgroup}, 
+                          $calchash->{$prodgroup}->{TOTMACHINES}, 
+                          $calchash->{$prodgroup}->{SUM_ACTIVE_SUB}, 
+                          $calchash->{$prodgroup}->{SUM_ESOON_SUB}, 
                           $missing];
         my $used_active = 0;
         my $used_esoon  = 0;
         my $used_expired = 0;
-        my $dummy = $calchash->{$subname}->{TOTMACHINES};
+        my $dummy = $calchash->{$prodgroup}->{TOTMACHINES};
         
-        if($dummy <= $calchash->{$subname}->{SUM_ACTIVE_SUB})
+        if($dummy <= $calchash->{$prodgroup}->{SUM_ACTIVE_SUB})
         {
             $used_active = $dummy;
             $dummy = 0;
         }
         else
         {
-            $used_active = $calchash->{$subname}->{SUM_ACTIVE_SUB};
-            $dummy -= $calchash->{$subname}->{SUM_ACTIVE_SUB};
+            $used_active = $calchash->{$prodgroup}->{SUM_ACTIVE_SUB};
+            $dummy -= $calchash->{$prodgroup}->{SUM_ACTIVE_SUB};
         }
 
-        if($dummy <= $calchash->{$subname}->{SUM_ESOON_SUB})
+        if($dummy <= $calchash->{$prodgroup}->{SUM_ESOON_SUB})
         {
             $used_esoon = $dummy;
             $dummy = 0;
         }
         else
         {
-            $used_esoon = $calchash->{$subname}->{SUM_ESOON_SUB};
-            $dummy -= $calchash->{$subname}->{SUM_ESOON_SUB};
+            $used_esoon = $calchash->{$prodgroup}->{SUM_ESOON_SUB};
+            $dummy -= $calchash->{$prodgroup}->{SUM_ESOON_SUB};
         }
 
         $used_expired = $dummy;
@@ -1511,7 +1559,7 @@ sub subscriptionReport
         if($used_esoon > 0)
         {
             $warning .= sprintf(__("%d Machines uses a '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
-                                $used_esoon, $subname);
+                                $used_esoon, $prodgroup);
         }
 
         if($missing > 0)
@@ -1519,7 +1567,7 @@ sub subscriptionReport
             # FIXME: These are missing subscriptions, expired is only one cause, another is overloaded subscriptions
             #        (nodecount < consumed)
             $alerts .= sprintf(__("%d Machines too much uses '%s' subscriptions. Please order new subscriptions.\n"), 
-                               $missing, $subname);
+                               $missing, $prodgroup);
         }
     }
 

@@ -15,6 +15,7 @@ create table Subscriptions(SUBID          CHAR(50) PRIMARY KEY,
                            SUBENDDATE     TIMESTAMP NULL default CURRENT_TIMESTAMP,
                            SUBDURATION    BIGINT    DEFAULT 0,
                            SERVERCLASS    CHAR(50),
+                           PRODGROUP      VARCHAR(100),
                            NODECOUNT      integer NOT NULL,
                            CONSUMED       integer DEFAULT 0
                           );

@@ -55,6 +55,8 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
 
+    $self->{PRODGROUP} = {};
+    
     if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
     {
         $self->{USERAGENT} = $opt{useragent};
@@ -608,7 +610,12 @@ sub _deleteRegistrationLocal
     {
         $where = sprintf("GUID IN ('%s')", join("','", @guids));
     }
-        
+
+    foreach (@guids)
+    {
+        printLog($self->{LOG}, "info", sprintf("Delete registration: %s", $_));
+    }
+            
     my $statement = "DELETE FROM Registration where ".$where;
     
     my $res = $self->{DBH}->do($statement);
@@ -827,10 +834,26 @@ sub _listsub_handler
         return;
     }
     
+    my @productids = split(/\s*,\s*/, $data->{PRODUCTLIST});
+    
+    my $prodgroup = "";
+    my $pgkey = join(",", sort @productids);
+    
+    if(exists $self->{PRODGROUP}->{$pgkey} && defined $self->{PRODGROUP}->{$pgkey})
+    {
+        $prodgroup = $self->{PRODGROUP}->{$pgkey};
+    }
+    else
+    {
+        $self->{PRODGROUP}->{$pgkey} = $data->{NAME};
+        $prodgroup = $self->{PRODGROUP}->{$pgkey};
+    }    
+    
     eval
     {
-        $statement =  "INSERT INTO Subscriptions(SUBID, REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, SUBDURATION, SERVERCLASS, NODECOUNT, CONSUMED)";
-        $statement .= " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $statement  = "INSERT INTO Subscriptions(SUBID, REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, ";
+        $statement .= "SUBDURATION, SERVERCLASS, PRODGROUP, NODECOUNT, CONSUMED)";
+        $statement .= " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         my $sth = $self->{DBH}->prepare($statement);
         $sth->bind_param(1, $data->{SUBID});
@@ -858,14 +881,15 @@ sub _listsub_handler
         
         $sth->bind_param(8, $data->{DURATION}, SQL_INTEGER);
         $sth->bind_param(9, $data->{SERVERCLASS});
-        $sth->bind_param(10, $data->{NODECOUNT}, SQL_INTEGER);
-        $sth->bind_param(11, $data->{CONSUMED}, SQL_INTEGER);
+
+        $sth->bind_param(10, $prodgroup);
+        
+        $sth->bind_param(11, $data->{NODECOUNT}, SQL_INTEGER);
+        $sth->bind_param(12, $data->{CONSUMED}, SQL_INTEGER);
         
         my $res = $sth->execute;
         
         printLog($self->{LOG}, "debug", $sth->{Statement}." :$res") if($self->{DEBUG});
-        
-        my @productids = split(/\s*,\s*/, $data->{PRODUCTLIST});
         
         foreach my $id (@productids)
         {
