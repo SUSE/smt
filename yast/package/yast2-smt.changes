@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed May  7 16:16:32 CEST 2008 - locilka@suse.cz
+
+- Writing MySQL root password to a temporary file always when
+  requested from user, not only for the first time (bnc #387414).
+- 2.13.14
+
+-------------------------------------------------------------------
 Wed Apr 30 13:00:43 CEST 2008 - locilka@suse.cz
 
 - Adjusting default button in dialogs (bnc #384703).

@@ -845,28 +845,30 @@ For security reasons, please, set a new one.")),
 	    }
 	}
 
-	// /usr/lib/SMT/bin/smt-db setup --yast
-	// * mysql root password
-	// * smt user name
-	// * smt user password
-	// * verify smt user password
-	string smt_db_command = sformat (
-	    "%1\n%2\n%3\n%4\n",
-	    mysql_root_password,
-	    GetCredentials ("DB","user"),
-	    GetCredentials ("DB","pass"),
-	    GetCredentials ("DB","pass")
-	);
-
 	string smt_command_file = sformat ("%1/smt-command-filename", Directory::tmpdir);
 	SCR::Write (.target.string, smt_command_file, "");
 	// rw only for owner
 	SCR::Execute (.target.bash, sformat ("chmod 0600 '%1'", String::Quote (smt_command_file)));
-	SCR::Write (.target.string, smt_command_file, smt_db_command);
 
 	boolean ret = false;
 
 	while (true) {
+	    // /usr/lib/SMT/bin/smt-db setup --yast
+	    // * mysql root password
+	    // * smt user name
+	    // * smt user password
+	    // * verify smt user password
+	    string smt_db_command = sformat (
+		"%1\n%2\n%3\n%4\n",
+		mysql_root_password,
+		GetCredentials ("DB","user"),
+		GetCredentials ("DB","pass"),
+		GetCredentials ("DB","pass")
+	    );
+
+	    // always write it again, bnc 387414
+	    SCR::Write (.target.string, smt_command_file, smt_db_command);
+
 	    y2milestone ("Calling smt-db setup");
 	    integer retcode = (integer) SCR::Execute (.target.bash, sformat ("/usr/lib/SMT/bin/smt-db setup --yast < '%1'", smt_command_file));
 	    y2milestone ("smt-db setup returned: %1", retcode);
