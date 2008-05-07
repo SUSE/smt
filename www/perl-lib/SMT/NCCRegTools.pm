@@ -55,8 +55,6 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
 
-    $self->{PRODGROUP} = {};
-    
     if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
     {
         $self->{USERAGENT} = $opt{useragent};
@@ -408,11 +406,10 @@ sub NCCListSubscriptions
             return 1;
         }
 
-        # The _listsub_handler fill the Subscriptions and ProductSubscriptions table new.
+        # The _listsub_handler fill the Subscriptions table new.
         # Here we need to delete it first
 
         $self->{DBH}->do("DELETE from Subscriptions");
-        $self->{DBH}->do("DELETE from ProductSubscriptions");
         
         my $parser = new SMT::Parser::ListSubscriptions(log => $self->{LOG});
         $parser->parse($destfile, sub{ _listsub_handler($self, @_)});
@@ -821,38 +818,24 @@ sub _listsub_handler
 
     #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$data]));
 
+    # FIXME: require CONSUMED?
     if(!exists $data->{SUBID} || !defined $data->{SUBID} || $data->{SUBID} eq "" ||
-       !exists $data->{REGCODE} || !defined $data->{REGCODE} || $data->{REGCODE} eq "" ||
        !exists $data->{NAME} || !defined $data->{NAME} || $data->{NAME} eq "" ||
        !exists $data->{STATUS} || !defined $data->{STATUS} || $data->{STATUS} eq "" ||
        !exists $data->{ENDDATE} || !defined $data->{ENDDATE} || $data->{ENDDATE} eq "" ||
-       !exists $data->{PRODUCTLIST} || !defined $data->{PRODUCTLIST} || $data->{PRODUCTLIST} eq "" ||
+       !exists $data->{PRODUCTCLASS} || !defined $data->{PRODUCTCLASS} || $data->{PRODUCTCLASS} eq "" ||
        !exists $data->{NODECOUNT} || !defined $data->{NODECOUNT} || $data->{NODECOUNT} eq "")
     {
         # should not happen, but it is better to check it
-        printLog($self->{LOG}, "error", "ListRegistrations: incomplete data set. Skip");
+        printLog($self->{LOG}, "error", "ListSubscriptions: incomplete data set. Skip");
+        printLog($self->{LOG}, "debug", "ListSubscriptions: incomplete data set: ".Data::Dumper->Dump([$data])) if($self->{DEBUG});
         return;
     }
-    
-    my @productids = split(/\s*,\s*/, $data->{PRODUCTLIST});
-    
-    my $prodgroup = "";
-    my $pgkey = join(",", sort @productids);
-    
-    if(exists $self->{PRODGROUP}->{$pgkey} && defined $self->{PRODGROUP}->{$pgkey})
-    {
-        $prodgroup = $self->{PRODGROUP}->{$pgkey};
-    }
-    else
-    {
-        $self->{PRODGROUP}->{$pgkey} = $data->{NAME};
-        $prodgroup = $self->{PRODGROUP}->{$pgkey};
-    }    
     
     eval
     {
         $statement  = "INSERT INTO Subscriptions(SUBID, REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, ";
-        $statement .= "SUBDURATION, SERVERCLASS, PRODGROUP, NODECOUNT, CONSUMED)";
+        $statement .= "SUBDURATION, SERVERCLASS, PRODUCT_CLASS, NODECOUNT, CONSUMED)";
         $statement .= " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         my $sth = $self->{DBH}->prepare($statement);
@@ -882,7 +865,7 @@ sub _listsub_handler
         $sth->bind_param(8, $data->{DURATION}, SQL_INTEGER);
         $sth->bind_param(9, $data->{SERVERCLASS});
 
-        $sth->bind_param(10, $prodgroup);
+        $sth->bind_param(10, $data->{PRODUCTCLASS});
         
         $sth->bind_param(11, $data->{NODECOUNT}, SQL_INTEGER);
         $sth->bind_param(12, $data->{CONSUMED}, SQL_INTEGER);
@@ -890,15 +873,6 @@ sub _listsub_handler
         my $res = $sth->execute;
         
         printLog($self->{LOG}, "debug", $sth->{Statement}." :$res") if($self->{DEBUG});
-        
-        foreach my $id (@productids)
-        {
-            $statement = sprintf("INSERT INTO ProductSubscriptions (PRODUCTDATAID, SUBID) VALUES (%s, %s)",
-                                 $id, $self->{DBH}->quote($data->{SUBID}));
-
-            my $res = $self->{DBH}->do($statement);
-            printLog($self->{LOG}, "debug", "$statement :$res") if($self->{DEBUG});
-        }
     };
     if($@)
     {

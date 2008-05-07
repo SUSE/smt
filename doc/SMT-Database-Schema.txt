@@ -208,49 +208,30 @@ Subscriptions(SUBID          CHAR(50) PRIMARY KEY,
               SUBENDDATE     TIMESTAMP NOT NULL,
               SUBDURATION    BIGINT    DEFAULT 0,
               SERVERCLASS    CHAR(50),
-              PRODGROUP      VARCHAR(100),
+              PRODUCT_CLASS  VARCHAR(100),
               NODECOUNT      integer NOT NULL,
               CONSUMED       integer DEFAULT 0
             );
 
-SUBID        A unique id for this subscription
-REGCODE      The registration code for a subscription
-SUBNAME      The name of the subscription
-SUBTYPE      The type of the subscription 
-             FULL, PROVISIONAL, EVALUATION (maybe more if needed)
-SUBSTATUS    The status of this subscription 
-             ACTIVE, EXPIRED (maybe more if needed)
-SUBSTARTDATE time when the customer buy this subscription
-SUBENDDATE   time when this subscription expires
-SUBDURATION  valid period of this subscription
-SERVERCLASS  The class of this subscription (OS or ADDON)
-PRODGROUP    Name for the productgroup, generated from SMT
-NODECOUNT    The number how many installations can be assigned to this 
-             subscription. The value “-1” is defined as “unlimited”
-CONSUMED     How many clients are assigned to this subscription 
-             (value from NCC). This is a total value over the company.
-             It includes also clients from other SMT servers then
-             this one. 
-This table is changed during an ncc-sync (maybe once a day). 
-This table will be setup new during this operation, which means 
-first all entries are deleted and then filled new with the current data.
-
-Expected table size: Depends on how many subscriptions the customer has.
-
--------------------------------------------------------------------------------
-
-ProductSubscriptions(PRODUCTDATAID integer NOT NULL,
-                     SUBID         CHAR(50) NOT NULL,
-                     PRIMARY KEY(PRODUCTDATAID, SUBID)
-                    );
-
-
-PRODUCTDATAID  The ProductID
-SUBID          The id of a subscription
-
-This table define which subscriptions can be used for which products.
-It is used for "self auditing" in case of NCC registration is disabled.
-
+SUBID          A unique id for this subscription
+REGCODE        The registration code for a subscription
+SUBNAME        The name of the subscription
+SUBTYPE        The type of the subscription 
+               FULL, PROVISIONAL, EVALUATION (maybe more if needed)
+SUBSTATUS      The status of this subscription 
+               ACTIVE, EXPIRED (maybe more if needed)
+SUBSTARTDATE   time when the customer buy this subscription
+SUBENDDATE     time when this subscription expires
+SUBDURATION    valid period of this subscription
+SERVERCLASS    The class of this subscription (OS or ADDON)
+PRODUCT_CLASS  Define which products are valid for this subscription. 
+               See also Products(PRODUCT_CLASS)
+NODECOUNT      The number how many installations can be assigned to this 
+               subscription. The value “-1” is defined as “unlimited”
+CONSUMED       How many clients are assigned to this subscription 
+               (value from NCC). This is a total value over the company.
+               It includes also clients from other SMT servers then
+               this one. 
 This table is changed during an ncc-sync (maybe once a day). 
 This table will be setup new during this operation, which means 
 first all entries are deleted and then filled new with the current data.

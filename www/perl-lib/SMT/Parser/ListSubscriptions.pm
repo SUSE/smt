@@ -13,6 +13,7 @@ use IO::Zlib;
 #           'REGCODE' => 'some regcode',
 #           'NAME' => 'SuSE Linux Enterprise Server x86',
 #           'SERVERCLASS' => 'ADDON',
+#           'PRODUCTCLASS' => 'SLES',
 #           'DURATION' => '60',
 #           'STATUS' => 'ACTIVE',
 #           'TYPE' => 'FULL',
@@ -170,6 +171,10 @@ sub handle_end_tag
         elsif(lc($element) eq "server-class")
         {
             $self->{CURRENT}->{SERVERCLASS} = $self->{TMP};
+        }
+        elsif(lc($element) eq "product-class")
+        {
+            $self->{CURRENT}->{PRODUCTCLASS} = $self->{TMP};
         }
         elsif(lc($element) eq "regcode")
         {
