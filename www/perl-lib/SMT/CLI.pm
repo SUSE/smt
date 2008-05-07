@@ -317,7 +317,7 @@ sub getProducts
     $sth->execute();
 
 
-    my @HEAD = ( __('Name'), __('Version'), __('Target'), __('Release'), __('Usage') );
+    my @HEAD = ( __('Name'), __('Version'), __('Architecture'), __('Release'), __('Usage') );
     my @VALUES = ();
 
     if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
@@ -453,12 +453,19 @@ sub enableCatalogsByProduct
     {
         $st1 .= sprintf(" and REL=%s ", $dbh->quote($release));
     }
-    
+
+    my $arr = $dbh->selectall_arrayref($st1, {Slice => {}});
+    if(@{$arr} == 0)
+    {
+        print sprintf(__("Error: Product (%s) not found.\n"),$opts{prodStr});
+        return 1;
+    }
+        
     my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE from ProductCatalogs pc, Catalogs c where PRODUCTDATAID IN ($st1) and pc.CATALOGID = c.CATALOGID order by NAME,TARGET;";
     
     #print "$statement \n";
 
-    my $arr = $dbh->selectall_arrayref($statement, {Slice => {}});
+    $arr = $dbh->selectall_arrayref($statement, {Slice => {}});
     
     foreach my $row (@{$arr})
     {
