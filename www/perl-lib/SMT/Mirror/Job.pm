@@ -194,6 +194,11 @@ sub mirror
 
     if( $response->is_success )
     {
+        if (my $lm = $response->last_modified)
+        {
+            # make sure the file has the same last modification time
+            utime $lm, $lm, $self->local();
+        }
         return 0;
     }
     else
