@@ -265,7 +265,7 @@ The product name.
 
 =item mirror_archs
 
-List of architectures which should be mirrored. The list is seperated by E<,>.
+List of architectures which should be mirrored. The list is seperated by B<,>.
 The default list include all possible architectures. Remove the once you 
 do not want to mirror.
 
