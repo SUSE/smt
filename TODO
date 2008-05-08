@@ -73,6 +73,13 @@ TODO next SP or SLE11 version
 
 - write a function to create a LWP::UserAgent object
 
+- idea to speed-up mirroring by integrating the hardlink feature.
+  * create a table in DB with key = <rpm-name>-<checksum> and path
+    column
+  * during mirror, when fetching a new rpm, first look into DB if we
+    have it already. If yes, create a hardlink (or copy) instead of
+    downloading it from the network.
+    If we do not have it yet, download it and create a database entry
 
 DONE:
 =====
