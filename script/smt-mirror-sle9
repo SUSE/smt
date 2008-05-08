@@ -47,9 +47,9 @@ if($help)
 
 # get a lock
 
-if(!SMT::Utils::openLock("smt-mirror-sles9"))
+if(!SMT::Utils::openLock("smt-mirror-sle9"))
 {
-    print __("SLES9 Mirror process is still running.\n");
+    print __("SLE9 Mirror process is still running.\n");
     exit 0;
 }
 
@@ -69,7 +69,7 @@ eval {
 };
 if($@)
 {
-    if(!SMT::Utils::unLock("smt-mirror-sles9"))
+    if(!SMT::Utils::unLock("smt-mirror-sle9"))
     {
         SMT::Utils::printLog($log, "error",  __("Cannot remove lockfile."));
     }
@@ -201,7 +201,7 @@ foreach my $sname (@sections)
 }
 
 
-if(!SMT::Utils::unLock("smt-mirror-sles9"))
+if(!SMT::Utils::unLock("smt-mirror-sle9"))
 {
     SMT::Utils::printLog($log, "error", __("Cannot remove lockfile."));
     exit 1;
@@ -215,17 +215,17 @@ exit 0;
 
 =head1 NAME
 
-smt mirror-sles9
+smt mirror-sle9
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] mirror-sles9
+smt [help|--help|-h] mirror-sle9
 
-smt mirror-sles9 [--debug] [--logfile <file>]
+smt mirror-sle9 [--debug] [--logfile <file>]
 
 =head1 DESCRIPTION
 
-C<smt mirror-sles9> mirror old style update repositories which were used for 
+C<smt mirror-sle9> mirror old style update repositories which were used for 
 SUSE LINUX Enterprise Server 9 and similar products. This script mirrores from
 I<you.novell.com>.
 
@@ -256,7 +256,7 @@ Show a help message.
 
 =over
 
-The sections which are used by C<smt mirror-sles9> begin with B<YOU9->. All
+The sections which are used by C<smt mirror-sle9> begin with B<YOU9->. All
 products which are still in maintanence mode are listed. 
 
 =item mirror_prod
@@ -275,7 +275,7 @@ The version number.
 
 =item mirror
 
-If set to B<true> C<smt mirror-sles9> will download these repositories.
+If set to B<true> C<smt mirror-sle9> will download these repositories.
 
 =item credentials
 
