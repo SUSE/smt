@@ -1179,7 +1179,7 @@ sub productSubscriptionReport
         
         if($missing > 0)
         {
-            $alerts .= sprintf(__("%d Machines too much uses '%s' subscriptions. Please order new subscriptions.\n"), 
+            $alerts .= sprintf(__("%d Machines uses too many '%s' subscriptions. Please order new subscriptions.\n"), 
                                $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
     }
@@ -1556,7 +1556,7 @@ sub subscriptionReport
         {
             # FIXME: These are missing subscriptions, expired is only one cause, another is overloaded subscriptions
             #        (nodecount < consumed)
-            $alerts .= sprintf(__("%d Machines too much uses '%s' subscriptions. Please order new subscriptions.\n"), 
+            $alerts .= sprintf(__("%d Machines uses too many '%s' subscriptions. Please order new subscriptions.\n"), 
                                $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
     }
