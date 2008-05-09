@@ -33,8 +33,8 @@ sub handler {
     
     if(! defined $args)
     {
-        $r->warn("Registration called without args.");
-	return Apache2::Const::SERVER_ERROR;
+        $r->log_error("Registration called without args.");
+        return Apache2::Const::SERVER_ERROR;
     }
 
     foreach my $a (split(/\&/, $args))
@@ -43,7 +43,7 @@ sub handler {
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
     }
-    $r->warn("Registration called with command: ".$hargs->{command});
+    $r->log->info("Registration called with command: ".$hargs->{command});
     
     if(exists $hargs->{command} && defined $hargs->{command})
     {
@@ -85,7 +85,7 @@ sub register
 
     my $usetestenv = 0;
     
-    $r->warn("register called.");
+    $r->log->info("register called");
 
     if(exists $hargs->{testenv} && $hargs->{testenv})
     {
@@ -152,8 +152,8 @@ sub register
 
     if($dat->{INFOCOUNT} > 0)
     {
-        $r->warn("Return NEEDINFO: ".$output);
-        
+        $r->log->info("Return NEEDINFO: $output");
+
         # we need to send the <needinfo>
         print $output;
     }
@@ -177,8 +177,8 @@ sub register
 
         my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $usetestenv);
 
-        $r->warn("Return ZMDCONFIG: ".$zmdconfig);
-
+        $r->log->info("Return ZMDCONFIG: $zmdconfig");
+        
         print $zmdconfig;
     }
     $dbh->disconnect();
@@ -195,8 +195,8 @@ sub listproducts
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn("listproducts called.");
-    
+    $r->log->info("listproducts called");
+
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
@@ -223,8 +223,8 @@ sub listproducts
     }
     $writer->endTag("productlist");
     
-    $r->warn("Return PRODUCTLIST: ".$output);
-
+    $r->log->info("Return PRODUCTLIST: $output");
+    
     print $output;
 
     $dbh->disconnect();
@@ -241,8 +241,8 @@ sub listparams
     my $r     = shift;
     my $hargs = shift;
 
-    $r->warn("listparams called.");
-    
+    $r->log->info("listparams called");
+
     my $lpreq = read_post($r);
     my $dbh = SMT::Utils::db_connect();
 
@@ -263,10 +263,10 @@ sub listparams
     
     my $xml = SMT::Registration::parseFromProducts($r, $dbh, $data->{PRODUCTS}, "PARAMLIST");
     
-    $r->warn("Return PARAMLIST:".$xml);
-
+    $r->log->info("Return PARAMLIST: $xml");
+    
     print $xml;
-
+    
     $dbh->disconnect();
 
     return;
@@ -431,8 +431,7 @@ sub insertRegistration
     my @list = findColumnsForProducts($r, $dbh, $regdata->{register}->{product}, "PRODUCTDATAID");
 
     my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
-    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                   APR::Const::SUCCESS,"STATEMENT: $statement");
+    $r->log->info("STATEMENT: $statement");
     eval {
         $existingpids = $dbh->selectall_hashref($statement, "PRODUCTID");
         
@@ -479,8 +478,7 @@ sub insertRegistration
         
         eval {
             $cnt = $dbh->do($statement);
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: $statement  Affected rows: $cnt");
+            $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
         };
         if($@)
         {
@@ -497,8 +495,7 @@ sub insertRegistration
             $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
             $cnt = $sth->execute;
             
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: ".$sth->{Statement}." Affected rows: $cnt");
+            $r->log->info("STATEMENT: ".$sth->{Statement}." Affected rows: $cnt");
         };
         if($@)
         {
@@ -524,8 +521,7 @@ sub insertRegistration
             $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
             $sth->bind_param(2, $regdata->{register}->{guid});
             $cnt = $sth->execute;
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
+            $r->log->info("STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
         };
         if($@)
         {
@@ -541,8 +537,7 @@ sub insertRegistration
     $statement = sprintf("DELETE from MachineData where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
     eval {
         $cnt = $dbh->do($statement);
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS, "STATEMENT: $statement  Affected rows: $cnt");
+        $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
     };
     if($@)
     {
@@ -564,8 +559,7 @@ sub insertRegistration
                                 $dbh->quote($regdata->{register}->{guid}), 
                                 $dbh->quote($key),
                                 $dbh->quote($regdata->{register}->{$key}));
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement");
+        $r->log->info("STATEMENT: $statement");
         eval {
             $dbh->do($statement);
         };
@@ -590,8 +584,7 @@ sub insertRegistration
             $sth->bind_param(4, $regdata->{register}->{guid});
             $aff = $sth->execute;
             
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: $statement");
+            $r->log->info("STATEMENT: $statement");
         };
         if($@)
         {
@@ -605,8 +598,7 @@ sub insertRegistration
                                  $dbh->quote($regdata->{register}->{guid}),
                                  $dbh->quote($hostname),
                                  $dbh->quote($target));
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: $statement");
+            $r->log->info("STATEMENT: $statement");
             eval
             {
                 $aff = $dbh->do($statement);
@@ -628,8 +620,7 @@ sub insertRegistration
             $sth->bind_param(3, $regdata->{register}->{guid});
             $aff = $sth->execute;
             
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: $statement");
+            $r->log->info("STATEMENT: $statement");
         };
         if($@)
         {
@@ -642,8 +633,7 @@ sub insertRegistration
             $statement = sprintf("INSERT INTO Clients (GUID, TARGET) VALUES (%s, %s)", 
                                  $dbh->quote($regdata->{register}->{guid}),
                                  $dbh->quote($target));
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS,"STATEMENT: $statement");
+            $r->log->info("STATEMENT: $statement");
             eval
             {
                 $aff = $dbh->do($statement);
@@ -671,8 +661,7 @@ sub findTarget
        $regroot->{register}->{ostarget} ne "")
     {
         my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($regroot->{register}->{ostarget})) ;
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement");
+        $r->log->info("STATEMENT: $statement");
 
         my $target = $dbh->selectcol_arrayref($statement);
         
@@ -689,8 +678,7 @@ sub findTarget
         $targetString =~ s/"\s*$//;
 
         my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($targetString)) ;
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"STATEMENT: $statement");
+        $r->log->info("STATEMENT: $statement");
 
         my $target = $dbh->selectcol_arrayref($statement);
         
@@ -740,13 +728,11 @@ sub findCatalogs
         return $result;
     }
     
-    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                   APR::Const::SUCCESS,"STATEMENT: $statement");
+    $r->log->info("STATEMENT: $statement");
 
     $result = $dbh->selectall_hashref($statement, "CATALOGID");
 
-    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                   APR::Const::SUCCESS, "RESULT: ".Data::Dumper->Dump([$result]));
+    $r->log->info("RESULT: ".Data::Dumper->Dump([$result]));
 
     return $result;
 }
@@ -936,7 +922,6 @@ sub findColumnsForProducts
             }
         }
     }
-
     return @list;
 }
 
@@ -973,6 +958,8 @@ sub read_post {
     
     $bb->destroy;
     
+    $r->log->info("Got content: $data");
+
     return $data;
 }
 
@@ -1261,8 +1248,7 @@ sub nif_handle_end_tag
             {
                 $msg .= " id=".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id}
             }
-            $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                   APR::Const::SUCCESS, $msg);
+            $data->{R}->log->info($msg);
             my $entry = pop @{$data->{CACHE}};
             if($entry->{RESETMAND})
             {
@@ -1285,8 +1271,7 @@ sub nif_handle_end_tag
             {
                 $msg .= " id=".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id}
             }
-            $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                   APR::Const::SUCCESS, $msg);
+            $data->{R}->log->info($msg);
             my $entry = pop @{$data->{CACHE}};
             if($entry->{RESETMAND})
             {
@@ -1305,8 +1290,7 @@ sub nif_handle_end_tag
                     $msg .= " id=".$data->{CACHE}->[$i]->{ATTRS}->{id}
                 }
                                 
-                $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                       APR::Const::SUCCESS, $msg);
+                $data->{R}->log->info($msg);
                 $data->{WRITER}->startTag($data->{CACHE}->[$i]->{ELEMENT}, %{$data->{CACHE}->[$i]->{ATTRS}});
                 $data->{CACHE}->[$i]->{WRITTEN} = 1;
                 $data->{CACHE}->[$i]->{MUST} = 1;
@@ -1318,8 +1302,7 @@ sub nif_handle_end_tag
         
         if($d->{WRITTEN})
         {
-            $data->{R}->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                                   APR::Const::SUCCESS, "Write CACHE END element:".$d->{ELEMENT});
+            $data->{R}->log->info("Write CACHE END element:".$d->{ELEMENT});
             $data->{WRITER}->endTag($d->{ELEMENT});
         }
         if($d->{RESETMAND})

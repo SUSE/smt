@@ -58,8 +58,7 @@ sub handler {
 
     my $regtimestring = SMT::Utils::getDBTimestamp();
 
-    $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                   APR::Const::SUCCESS,"repoindex.xml requested");
+    $r->log->info("repoindex.xml requested");
 
     # try to connect to the database - else report server error
     if ( not $dbh=SMT::Utils::db_connect() ) 
@@ -101,8 +100,7 @@ sub handler {
     # create repos
     foreach my $val (values %{$catalogs})
     {
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS,"repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
+        $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
          $writer->emptyTag('repo',
                            'name' => ${$val}{'NAME'},
