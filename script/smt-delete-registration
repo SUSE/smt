@@ -52,7 +52,6 @@ if($help)
     print "--guid -g        " . __("Unique ID of the client which should be deleted.\n");
     print "                 " . __("This option can be used multiple times.\n");
     print "--debug -d       " . __("enable debug mode\n");
-    print "--help -h        " . __("show this message\n");
     exit 0;
 }
 

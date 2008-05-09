@@ -192,7 +192,6 @@ sub printUsage
     print "  --file    (-F) [<file>] : " . __("write report to a file")."\n";
     print "            " . __("in csv mode <file> expands to [<dir>/]<file-name>-reportname[.<file-extension>]\n");
     print "  --logfile (-L) <file>   : " . __("Path to logfile")."\n";
-    print "  --help    (-h) : " . __("print this help")."\n";
     print "  --debug   (-d) : " . __("enable debug mode")."\n";
 }
 

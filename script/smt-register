@@ -55,7 +55,6 @@ if($help)
     print "--reseterror      ".__("reset the NCC registration error flag and try to submit failed registrations again.\n");
     print "--debug -d        ".__("enable debug mode\n");
     print "--logfile -L file ".__("Path to logfile\n");
-    print "--help -h         ".__("show this message\n");
     exit 0;
 }
 

@@ -69,7 +69,6 @@ if($help)
     print "                  " . __("the sync-ncc command. This option is only usefull if the smt database is not on the \n");
     print "                  " . __("same host as this script should run\n"); 
     print "--logfile -L file " . __("Path to logfile\n");
-    print "--help -h         " . __("show this message\n");
     exit 0;
 }
 

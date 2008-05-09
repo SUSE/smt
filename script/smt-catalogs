@@ -37,14 +37,14 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
-  print "    -enable-miror    (-e) :     " . __("enable catalog mirorring for \$catalog\n");
-  print "    -enable-by-prod  (-p) arg : " . __("enable catalog mirroring by giving product data\n");
+  print "   --enable-miror    (-e) :     " . __("enable catalog mirorring for \$catalog\n");
+  print "   --enable-by-prod  (-p) arg : " . __("enable catalog mirroring by giving product data\n");
   print "                                Product[,Version[,Architecture[,Release]]]\n";
   print "                                (call smt list-products to get a list of known products)\n";
-  print "    -disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
-  print "    -only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
-  print "    -only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
-  print "    -verbose         (-v) :     " . __("show detailed catalog information\n");
+  print "   --disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
+  print "   --only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
+  print "   --only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
+  print "   --verbose         (-v) :     " . __("show detailed catalog information\n");
   exit 0;
 }
 
