@@ -1,5 +1,5 @@
 NAME         = smt
-VERSION      = 0.9.1
+VERSION      = 0.9.2
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -157,11 +157,16 @@ dist: clean
                   -o \
                   \( -type f -exec install -m644 \{\} $(NAME)-$(VERSION)/\{\} \; \) \
                 \)
-	@cp doc/* $(NAME)-$(VERSION)/doc/
+	@cp doc/High-Level-Architecture.odp $(NAME)-$(VERSION)/doc/
+	@cp doc/NCC-Client-Registration-via-YEP.odt $(NAME)-$(VERSION)/doc/
+	@cp doc/Registrationdata-NCC-YEP.odt $(NAME)-$(VERSION)/doc/
+	@cp doc/Server-Tuning.txt $(NAME)-$(VERSION)/doc/
+	@cp doc/SMT-Database-Schema.odg $(NAME)-$(VERSION)/doc/
+	@cp doc/SMT-Database-Schema.txt $(NAME)-$(VERSION)/doc/
+
 	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
 	@cp tests/SMT/Mirror/*.pl $(NAME)-$(VERSION)/tests/SMT/Mirror/
 	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
-	@cp www/README $(NAME)-$(VERSION)/www/
 	@cp script/* $(NAME)-$(VERSION)/script/
 	@cp logrotate/smt $(NAME)-$(VERSION)/logrotate/
 	find www -name ".svn" -prune -o \
@@ -170,7 +175,8 @@ dist: clean
                   -o \
                   \( -type f -exec install -m644 \{\} $(NAME)-$(VERSION)/\{\} \; \) \
                 \)
-	@cp HACKING Makefile README COPYING $(NAME)-$(VERSION)/
+	@cp Makefile README COPYING $(NAME)-$(VERSION)/
+	@rm $(NAME)-$(VERSION)/www/README
 
 	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/
 

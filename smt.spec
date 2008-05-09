@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 0.9.1)
+# spec file for package smt (Version 0.9.2)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -13,7 +13,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl
-Version:        0.9.1
+Version:        0.9.2
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       apache2
@@ -136,8 +136,11 @@ exit 0
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
 %{_datadir}/schemas/smt/*
-%attr(644, root, root) %{_mandir}/man1/*
+%doc %attr(644, root, root) %{_mandir}/man1/*
 %doc README COPYING script/clientSetup4SMT.sh
+%doc doc/High-Level-Architecture.odp doc/Registrationdata-NCC-YEP.odt
+%doc doc/SMT-Database-Schema.odg doc/NCC-Client-Registration-via-YEP.odt
+%doc doc/Server-Tuning.txt doc/SMT-Database-Schema.txt
 
 %changelog
 * Fri Apr 25 2008 - mc@suse.de
