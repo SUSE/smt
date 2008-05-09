@@ -108,46 +108,69 @@ my %conf = (
            );
 
 my $legendLocal = "
-Legend:
-
-Subscription:                The name of the subscription.
-Locally Registered Machines: The number of clients which are registered against this subscription.
-Active Subscriptions:        The number of allowed clients for this subscriptions.
-Soon expiring Subscriptions: Like 'Active Subscriptions', but these are expiring soon.
-Missing Subscriptions:       The number of clients which require a subscription of this type
-                             but no free subscription is available.
-
-Total Subscriptions:         Number of Subscriptions of this type
-Used Locally:                Number of clients which are assigned to this type
-Expiring Date:               The date when this subscription expires.
+Subscription:                Novell product which customer may be entitled to 
+                             receive patches, updates or technical support 
+                             during the period covered by the subscription.
+Locally Registered Machines: the registered machines connected to the SMT 
+                             with access to patches, updates or technical 
+                             support.
+Active Subscriptions:        the number of active subscriptions not requiring
+                             renewal in 30 days.
+Soon expiring Subscriptions: active subscriptions requiring renewal in
+                             next 30 days.
+Missing Subscriptions:       the registered machines not covered by
+                             subscription, meaning the customer must purchase
+                             additional subscriptions of the product.
+Total Subscriptions:         the total number of subscriptions the customer
+                             has purchased.
+Used Locally:                the locally registered machines connected to the
+                             SMT with access to patches, updates or technical 
+                             support.
+Expiring Date:               the ending date of subscription coverage.
+ 
+1.  This report may not represent all of the SMT servers or machines in
+    your environment.
+2.  If Customer purchases Upgrade Protection, Customer must purchase
+    Upgrade Protection for all copies of the Novell product(s) installed
+    (per Novell Terms and Conditions of Suse Linux).
 ";
 
 my $legendNCC   = "
 Legend:
 
-Subscription:                The name of the subscription.
-Registered Machines at NCC:  The number of clients which are assigned to this subscription.
-                             This is a total number over the company, not only this SMT server.
-Active Subscriptions:        The number of allowed clients for this subscriptions.
-Soon expiring Subscriptions: Like 'Active Subscriptions', but these are expiring soon.
-Missing Subscriptions:       The number of clients which require a subscription of this type
-                             but no free subscription is available.
-
-Registration Code:           The registration code for this subscription.
-Total Subscriptions:         Number of Subscriptions of this type
-Total Used:                  Number of used subscriptions (company wide)
-Used Locally:                Number of used subscriptions from this SMT server.
-Expiring Date:               The date when this subscription expires.
+Subscription:                Novell product which customer may be entitled to 
+                             receive patches, updates or technical support 
+                             during the period covered by the subscription.
+Registered Machines at NCC:  the active number of machines registered
+                             by the customer at Novell Customer Center.
+Active Subscriptions:        the number of active subscriptions not requiring
+                             renewal in 30 days.
+Soon expiring Subscriptions: active subscriptions requiring renewal in
+                             next 30 days.
+Missing Subscriptions:       the registered machines not covered by
+                             subscription, meaning the customer must purchase
+                             additional subscriptions of the product.
+Registration Code:           the key to validate the product on Novell Customer
+                             Center.
+Total Subscriptions:         the total number of subscriptions the customer
+                             has purchased.
+Total Used:                  the number of machines registered to receive 
+                             patches, updates, or technical support.
+Used Locally:                the registered machines connected to the SMT 
+                             with access to patches, updates or technical 
+                             support.
+Expiring Date:               the ending date of subscription coverage.
+ 
+1.  This report may not represent all of the SMT servers or machines in
+    your environment.
+2.  If Customer purchases Upgrade Protection, Customer must purchase
+    Upgrade Protection for all copies of the Novell product(s) installed
+    (per Novell Terms and Conditions of Suse Linux).
 ";
 
-my $hostname = `/bin/hostname -f 2>/dev/null`;
-$hostname = "unknown" if(!defined $hostname || $hostname eq "");
-chomp($hostname);
-my $footer      = "
+my $footer = "
 Footer
-(Generated on '$hostname')
 ";
-
 
 
 # main hashes that keep the report data
@@ -408,7 +431,6 @@ if(!$nonccsync)
 if(!($localreport || $nccreport || $classreport))
 {
     # calculate best report
-
     my $cfg = SMT::Utils::getSMTConfig();
     
     my $fwdr = $cfg->val("LOCAL", "forwardRegistration");
@@ -421,6 +443,22 @@ if(!($localreport || $nccreport || $classreport))
         $localreport = 1;
     }
 }
+
+{
+    my $hostname = `/bin/hostname -f 2>/dev/null`;
+    $hostname = "unknown" if(!defined $hostname || $hostname eq "");
+    chomp($hostname);
+    
+    my ($uri, $NUUser, $NUPass) = SMT::Utils::getLocalRegInfos();
+    my $smtguid = SMT::Utils::getSMTGuid();
+    
+    $footer      .= "
+Generated on: $hostname
+Site ID:      $NUUser
+SMT ID:       $smtguid
+";
+}
+
 
 if($classreport)
 {
