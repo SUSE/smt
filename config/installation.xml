@@ -34,12 +34,6 @@
 		    <enable_back>yes</enable_back>
 		    <enable_next>yes</enable_next>
 		</module>
-		<module>
-		    <label>Registration</label>
-		    <name>inst_suse_register</name>
-		    <enable_back>yes</enable_back>
-		    <enable_next>yes</enable_next>
-		</module>
 	    </modules>
 	</workflow>
     </workflows>
