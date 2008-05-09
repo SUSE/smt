@@ -15,16 +15,33 @@ RM=/bin/rm
 SSLDIR=/etc/ssl/certs/
 ZMDSSLDIR=/etc/zmd/trusted-certs/
 
-REGURL=$1
-
-if [ -z "$REGURL" ]; then
-	echo "Missing registration URL. Abort."
+function usage()
+{
     echo ""
     echo "Usage: $0 <registration URL>"
+    echo "Usage: $0 --host <hostname of the SMT server>"
     echo "       configures a SLE10 client to register against a different registration server"
     echo ""
     echo "Example: $0 https://smt.example.com/center/regsvc"
-	exit 1;
+    echo "Example: $0 --host smt.example.com"
+}
+
+REGURL=$1
+
+if [ "$REGURL" == "--host" ]; then
+   HOSTNAME=$2
+   if [ -z $HOSTNAME ]; then
+	   echo "Missing Hostname. Abort."
+           usage
+           exit 1;
+   fi
+   REGURL="https://$HOSTNAME/center/regsvc"
+fi
+
+if [ -z "$REGURL" ]; then
+    echo "Missing registration URL. Abort."
+    usage
+    exit 1;
 fi
 
 if ! echo $REGURL | grep "^https" > /dev/null ; then
