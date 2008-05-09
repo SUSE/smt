@@ -768,7 +768,12 @@ sub buildZmdConfig
     {
         $LocalNUUrl    .= "/testing/";
     }
-    
+
+    my $nuCatCount = 0;
+    foreach my $cat (keys %{$catalogs})
+    {
+        $nuCatCount++ if(lc($catalogs->{$cat}->{CATALOGTYPE}) eq "nu");
+    }
 
     my $output = "";
     my $writer = new XML::Writer(OUTPUT => \$output);
@@ -783,33 +788,35 @@ sub buildZmdConfig
     $writer->endTag("guid");
     
     # first write all catalogs of type NU
-
-    $writer->startTag("service", 
-                      "id"          => "local_nu_server",
-                      "description" => "Local NU Server",
-                      "type"        => "nu");
-    $writer->startTag("param", "id" => "url");
-    $writer->characters($LocalNUUrl);
-    $writer->endTag("param");
-    
-    foreach my $cat (keys %{$catalogs})
+    if($nuCatCount > 0)
     {
-        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
-        if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
-           $catalogs->{$cat}->{LOCALPATH} eq "")
-        {
-            $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
-            next;
-        }
-        
-        $writer->startTag("param", 
-                          "name" => "catalog",
-                          "url"  => "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH}
-                         );
-        $writer->characters($catalogs->{$cat}->{NAME});
+        $writer->startTag("service", 
+                          "id"          => "local_nu_server",
+                          "description" => "Local NU Server",
+                          "type"        => "nu");
+        $writer->startTag("param", "id" => "url");
+        $writer->characters($LocalNUUrl);
         $writer->endTag("param");
+        
+        foreach my $cat (keys %{$catalogs})
+        {
+            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
+            if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
+               $catalogs->{$cat}->{LOCALPATH} eq "")
+            {
+                $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
+                next;
+            }
+            
+            $writer->startTag("param", 
+                              "name" => "catalog",
+                              "url"  => "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH}
+                             );
+            $writer->characters($catalogs->{$cat}->{NAME});
+            $writer->endTag("param");
+        }
+        $writer->endTag("service");
     }
-    $writer->endTag("service");
     
     # and now the zypp Repositories
 
