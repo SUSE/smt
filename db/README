@@ -1,7 +1,0 @@
-
-How to setup the sqlite3 database
----------------------------------
-
-sqlite3 -init setupdb.init smt.db
-
-
