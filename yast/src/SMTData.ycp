@@ -632,6 +632,9 @@ Server certificate is vitally important for NU server to support SSL."),
 
     string mysql_root_password = "";
 
+    // bnc #389804
+    boolean database_already_exists = false;
+
     /**
      * @return boolean whether to try again
      */
@@ -660,6 +663,7 @@ The root password was probably wrong."));
 
 	// 5 : SMT database already exists
 	} else if (retcode_was == 5) {
+	    database_already_exists = true;
 	    y2milestone ("SMT database already exists");
 	    return false;
 
@@ -911,6 +915,14 @@ For security reasons, please, set a new one.")),
 	// Keeping the service stopped
 	if (smt_enabled_initial == false && ! GetSMTServiceStatus()) {
 	    y2milestone ("SMT is disabled, not adjusting database...");
+	    return true;
+	}
+
+	// bnc #389804
+	// exit 5 from smt-db setup means that database exists and cpw
+	// should be called
+	if (database_already_exists != true) {
+	    y2milestone ("Database and user were just created, skipping cpw ...");
 	    return true;
 	}
 

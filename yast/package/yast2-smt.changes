@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Tue May 13 16:43:50 CEST 2008 - locilka@suse.cz
+
+- Checking 'smt-db setup' exit code for '5' which means 'database
+  already exists' and thus 'smt-db cpw' should be called if smt
+  password has been changed. Command 'setup' not only creates the
+  database but also creates the user with new password. If database
+  exists, user is not created and/or password is not changed
+  (bnc #389804).
+- 2.13.15
+
+-------------------------------------------------------------------
 Wed May  7 16:16:32 CEST 2008 - locilka@suse.cz
 
 - Writing MySQL root password to a temporary file always when
