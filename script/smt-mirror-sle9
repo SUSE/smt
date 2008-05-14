@@ -98,10 +98,10 @@ foreach my $sname (@sections)
     {
         foreach my $version (@mirror_versions)
         {
-           # reset error variable
-           $errors = 0;
-           my $t0 = [gettimeofday] ;
-
+            # reset error variable
+            $errors = 0;
+            my $t0 = [gettimeofday] ;
+            
             my $uri = URI->new("https://you.novell.com/");
             $uri->userinfo($credentials);
             $uri->path("/update/$arch/update/$mirror_prod/$version/");
@@ -114,6 +114,9 @@ foreach my $sname (@sections)
             
             my   $cmd = "/usr/bin/wget";
             my   @cmdargs = ("--mirror", "--no-parent", "--no-host-directories");
+            push @cmdargs, "--dns-timeout", "30";
+            push @cmdargs, "--connect-timeout", "30";
+            push @cmdargs, "--read-timeout", "60";
             push @cmdargs, "--directory-prefix", $destdir;
             push @cmdargs, "--cut-dirs", "5"; #, "-nv";
             push @cmdargs, "-i", "-";
