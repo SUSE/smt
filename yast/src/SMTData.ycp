@@ -464,7 +464,7 @@ Please, check your SMT installation."), path_to_sync_script));
 		// +4 hours to smt-daily
 		one_cron_job["hour"] = tostring (hour_smt_daily + 4);
 		one_cron_job["minute"] = tostring (minute_smt_daily);
-		y2milestone ("smt-daily randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
+		y2milestone ("smt-gen-report randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
 		ReplaceCronJob (counter, one_cron_job);
 	    }
 	});
