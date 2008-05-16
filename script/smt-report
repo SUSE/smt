@@ -182,6 +182,7 @@ my %DATA = ();
 sub printUsage
 {
     print basename($0) . " : " . __("generate a report")."\n";
+    print "  --classreport  : " . __("force to create a product class report")."\n";
     print "  --local        : " . __("force to create a report based on a local calculation")."\n";
     print "  --ncc          : " . __("force to create a report based on NCC data")."\n";
     print "  --nonccsync    : " . __("do not sync with NCC before creating the report")."\n";
@@ -586,20 +587,120 @@ exit 0;
 
 =head1 NAME
 
-smt report -  
+smt report
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] report [options]
+smt report [help|--help|-h]
+
+smt report [--mail|-m] [--attach|-a] [--quiet|-q] [--csv|-c] [--file|-F [file]] [--logfile|-L file] [--debug|-d]
+
+smt report [--classreport] [--local] [--ncc] [--nonccsync]
 
 =head1 DESCRIPTION
 
-smt report
+I<smt report> creates reports on SMT and NCC data. Reports of the kinds class report, local report and ncc report can be created.
+The reports can be printed to STDOUT, exported to one or multiple files as well as mailed to the administrator(s).
+
+The kind of the report is computed automatically based on your SMT setup but can as well be defined by parameters.
+Using the parameter B<--classreport> will force the creation of a product class report, B<--local> will force a report based on local data whereas B<--ncc> will force a report based on NCC data. These parameters can be used in combination and do not exclude each other.
 
 
 =head1 OPTIONS
 
-=head2 
+=head2 REPORT TYPES
+
+=over
+
+=item --classreport
+
+Enforces the creation of a product class report.
+
+=item --local
+
+Enforces the creation of a report based on local data.
+
+=item --ncc
+
+Enforces the creation of a report based on NCC data.
+
+=item --nonccsync
+
+Prevents the report module from syncing the data with NCC when creating the report. This may be used in combination with B<--local>.
+
+=back
+
+=head2 OUTPUT FORMAT and TARGET
+
+=over
+
+=item --quiet|-q
+
+Creates a report in quiet mode which supresses any output to STDOUT. No report will be printed to STDOUT.
+
+=item --file|-F [file]
+
+Writes the report to a file (or files). By default the report will be written to a single file rendered as tables. In csv mode (see B<--csv> section) each report will be written to its own file in csv format.
+
+The B<file> name is optional and may as well define a path where to create the report file(s). If no file name is specified a default will be used which contains a timestamp. It will however not be checked if the file(s) already exist(s).
+
+In csv mode the file name will expand to [path/]B<filename->I<reportname>[.extension] for every report.
+
+B<Note:> If the file name contains I<.csv> as extension the report format will be csv (same as using B<--csv>).
+
+
+=item --csv|-c
+
+Export the report data in csv format to multiple files. Only to be used with B<--file> (see B<--file> section).
+The first line of each csv file consists of the column names, data starts on line two.
+
+=item --mail|-m
+
+Activate mailing of the report. The report will be mailed rendered as table to the address(es) defined via the SMT YaST module.
+The recipient list and optional mail relay settings can be setup in the I<REPORT> section in B</etc/smt.conf>.
+
+=item --attach|-a
+
+Reports rendered in csv format will be attached to the mailing. The files that would be created using B<--file ./ --csv> will be attached to the mail. Only to be used with B<--mail>.
+
+=back
+
+=head2 DEBUG
+
+=over
+
+=item --debug|-d
+
+Enable debug mode for verbose logging.
+
+=item --logfile|-L file
+
+Write log messages to B<file>.
+
+=back
+
+
+=head1 EXAMPLES
+
+Print all three reports to STDOUT
+
+ smt report --classreport --local --ncc
+
+Only mail the default report to the administrator(s) and suppress console output
+
+ smt report --mail --quiet
+
+Export all reports as separate files in B<csv> format to B<./reports/>
+
+ smt report --classreport --local --ncc --file ./reports/ --csv
+
+Mail all reports including csv attachments to the administrators and suppress console output (convenient for a cron job)
+
+ smt report --classreport --local --ncc --mail --attach --quiet
+
+Start the report procedure with logging
+
+ smt report --logfile /var/log/smt-report.log
 
 
 =head1 AUTHORS and CONTRIBUTORS

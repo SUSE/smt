@@ -49,9 +49,10 @@ if($help)
     print __("Delete one or more registration from NCC and SMT\n");
     print "\n";
     print __("Options:\n");
-    print "--guid -g        " . __("Unique ID of the client which should be deleted.\n");
-    print "                 " . __("This option can be used multiple times.\n");
-    print "--debug -d       " . __("enable debug mode\n");
+    print "  --guid (-g)            :" . __("Unique ID of the client which should be deleted.\n");
+    print "                          " . __("This option can be used multiple times.\n");
+    print "  --debug (-d)           :" . __("enable debug mode\n");
+    print "  --logfile (-L) <file>  : " . __("Path to logfile")."\n";
     exit 0;
 }
 
@@ -130,20 +131,45 @@ exit 0;
 
 =head1 NAME
 
-smt delete-registration -  
+smt delete-registration
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] delete-registration [options]
+smt delete-registration [help|--help|-h]
+
+smt delete-registration --guid|-g id1 [--guid|-g id2] ...
+
+smt delete-registration --debug --guid id1
 
 =head1 DESCRIPTION
 
-smt delete-registration
-
+I<smt delete-registration> deletes one or more registrations from SMT and NCC. It will deregister machines from the system.
 
 =head1 OPTIONS
 
-=head2 
+=head2 MACHINE GUID
+
+=over
+
+=item --guid|-g id
+
+Deletes the machine with guid B<id> from the system. This parameter can be used multiple times.
+
+=back
+
+=head2 DEBUG
+
+=over
+
+=item --debug|-d
+
+Enable debug mode for verbose logging.
+
+=item --logfile|-L file
+
+Write log messages to B<file>.
+
+=back
 
 
 =head1 AUTHORS and CONTRIBUTORS
