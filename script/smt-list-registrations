@@ -41,21 +41,29 @@ exit 0;
 
 =head1 NAME
 
-smt list-registrations -  
+smt list-registrations
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] list-registrations [options]
+smt [help|--help|-h] list-registrations
+
+smt list-registrations [--verbose|-v]
 
 =head1 DESCRIPTION
 
-smt list-registrations
-
+I<smt list-registrations> lists all active registrations in a SMT setup.
 
 =head1 OPTIONS
 
-=head2 
+=head2 VERBOSE
 
+=over
+
+=item --verbose|-v
+
+Show detailed registration information in listing.
+
+=back
 
 =head1 AUTHORS and CONTRIBUTORS
 
