@@ -126,7 +126,7 @@ foreach my $sname (@sections)
 
             #printLog($log, "debug", "Execute $cmd ".join(" ", @cmdargs)) if($debug);
             
-            my $pid = open3(\*IN, \*OUT, \*ERR, $cmd, @cmdargs) or do
+            my $pid = open3(\*IN, \*ERR, \*ERR, $cmd, @cmdargs) or do
             {
                 SMT::Utils::printLog($log, "error", "Cannot execute $cmd ".join(" ", @cmdargs).": $!");
                 return 1;
@@ -135,7 +135,6 @@ foreach my $sname (@sections)
             
             close IN;
             
-            my $out = "";
             my $err = "";
             my $currentfile="";
             
@@ -179,14 +178,6 @@ foreach my $sname (@sections)
                     }
                 }
             }
-            while (<OUT>)
-            {
-                $out = $_;
-                chomp($out);
-                next if($out =~ /^\s*$/);
-                SMT::Utils::printLog($log, "info", "$out");
-            }
-            close OUT;
             close ERR;
             waitpid $pid, 0;
             if(($?>>8) != 0)
