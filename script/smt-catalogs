@@ -45,6 +45,7 @@ if ( defined $help and ( $help == 1 ) )
   print "   --only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
   print "   --only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
   print "   --verbose         (-v) :     " . __("show detailed catalog information\n");
+  print "   --help            (-v) :     " . __("show this help\n");
   exit 0;
 }
 
@@ -203,17 +204,53 @@ smt catalogs -
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] catalogs [options]
+smt [--help|-h] catalogs [options] [name] [target]
 
 =head1 DESCRIPTION
 
-smt catalogs
-
+C<smt catalogs> shows information about known catalogs allowing filtering by varous criteria, and allows to activate or deactivate catalogs for mirroring.
 
 =head1 OPTIONS
 
-=head2 
 
+=head2 COMMANDLINE
+
+=over
+
+=item [name]
+
+Filters by catalog name.
+
+=item [target]
+
+Additionally to catalog name, filter by catalog target.
+
+=item --enable-mirror -e
+
+Enables or disables mirroring of a catalog.
+
+=item --enable-by-prod -p arg
+
+Enables catalog mirroring by giving product data.
+
+Product[,Version[,Architecture[,Release]]]
+(call smt list-products to get a list of known products)
+
+=item --only-mirrorable -m
+
+Shows mirrorable catalogs only.
+
+=item --only-enabled -o 
+
+Shows catalogs set to be mirrored only.
+
+=item --verbose -v
+
+Shows detailed catalog information.
+
+=item --help -v
+
+Shows help.
 
 =head1 AUTHORS and CONTRIBUTORS
 
