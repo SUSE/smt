@@ -204,7 +204,7 @@ smt catalogs -
 
 =head1 SYNOPSIS
 
-smt [--help|-h] catalogs [options] [name] [target]
+smt catalogs [options] [name] [target]
 
 =head1 DESCRIPTION
 
@@ -247,10 +247,6 @@ Shows catalogs set to be mirrored only.
 =item --verbose -v
 
 Shows detailed catalog information.
-
-=item --help -v
-
-Shows help.
 
 =head1 AUTHORS and CONTRIBUTORS
 
