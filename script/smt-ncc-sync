@@ -32,7 +32,6 @@ use Getopt::Long;
                           'todir=s'   => \$todir,
                           'createdbreplacementfile=s' => \$createdbreplfile,
                           "logfile|L=s" => \$logfile,
-                          'help|h' => \$help,
                           'debug|d'  => \$debug
                          );
 
@@ -40,10 +39,8 @@ if ( defined $help and ( $help == 1 ) )
 {
     print basename($0) . " : " . __("Get data from NCC and update the local database.\n\n");
     print __("Usage:\n");
-    print basename($0)." \n";
-    print basename($0).__(" --fromdir directory\n");
-    print basename($0).__(" --todir directory\n");
-    print basename($0).__(" --createdbreplacementfile filename\n\n");
+    print basename($0) . " [options]";
+    print "\n\n";
     print __("Options:\n");
     print "--fromdir                 ".__("read NCC informations from directory instead of downloading it from NCC\n");
     print "                          ".__("and update the database.\n");
@@ -187,7 +184,6 @@ if (!SMT::Utils::unLock("smt-ncc-sync"))
 
 exit 0;
 
-
 #
 # Manpage
 #
@@ -198,17 +194,37 @@ smt ncc-sync -
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] ncc-sync [options]
+smt ncc-sync [options]
 
 =head1 DESCRIPTION
 
-smt ncc-sync
-
+C<smt ncc-sync> gets data from Novell Customer Center and updates the local database.
 
 =head1 OPTIONS
 
 =head2 
 
+=head1 COMMANDLINE
+
+=item --fromdir directory
+
+Reads NCC information from directory instead of downloading it from NCC and update the database.
+
+=item --todir directory
+
+Write NCC informations to directory without updating the database.
+
+=item --createdbreplacementfile
+
+Creates a database replacement file for using smt-mirror without database.
+
+=item --logfile -L file
+
+Path to logfile.
+
+=item --debug
+
+Enable display of debug information.
 
 =head1 AUTHORS and CONTRIBUTORS
 
