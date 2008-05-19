@@ -416,10 +416,10 @@ if(!$nonccsync)
         my $lr= SMT::NCCRegTools->new(debug   => $debug,
                                       log     => $LOG);
         
-        printLog($LOG, "info", __("Syncing Subscriptions"));
+        printLog($LOG, "info", __("Downloading Subscription information"));
         $lr->NCCListSubscriptions();
         
-        printLog($LOG, "info", __("Syncing Registrations"));
+        printLog($LOG, "info", __("Downloading Registration information"));
         $lr->NCCListRegistrations();
     }
     # else $maxwait > 0 and <=60 means ncc-sync was running. we do not need to sync again.
