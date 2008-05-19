@@ -311,13 +311,13 @@ sub getProducts
     my %options = @_;
     my ($cfg, $dbh, $nuri) = init();
 
-    my $sql = "select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID=p.PRODUCTDATAID) AS registered_machines from Products p where 1";
+    my $sql = "select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID=p.PRODUCTDATAID) AS registered_machines from Products p where 1 order by PRODUCT,VERSION,REL,ARCH";
 
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
 
-    my @HEAD = ( __('Name'), __('Version'), __('Architecture'), __('Release'), __('Usage') );
+    my @HEAD = ( __('ID'), __('Name'), __('Version'), __('Architecture'), __('Release'), __('Usage') );
     my @VALUES = ();
 
     if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
@@ -354,7 +354,8 @@ sub getProducts
             # else some are available, some not => not all catalogs available
             
             
-            push @VALUES, [ $value->{PRODUCT}, 
+            push @VALUES, [ $value->{PRODUCTDATAID}, 
+                            $value->{PRODUCT}, 
                             $value->{VERSION} || "-", 
                             $value->{ARCH}    || "-", 
                             $value->{REL}     || "-", 
@@ -363,7 +364,8 @@ sub getProducts
         }
         else
         {
-            push @VALUES, [ $value->{PRODUCT}, 
+            push @VALUES, [ $value->{PRODUCTDATAID}, 
+                            $value->{PRODUCT}, 
                             $value->{VERSION} || "-", 
                             $value->{ARCH}    || "-", 
                             $value->{REL}     || "-", 
