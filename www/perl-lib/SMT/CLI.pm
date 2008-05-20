@@ -598,6 +598,7 @@ sub setMirrorableCatalogs
                    }
     );
 
+    my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
     my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
     my $values = $dbh->selectall_arrayref($sql);
     foreach my $v (@{$values})
@@ -618,13 +619,37 @@ sub setMirrorableCatalogs
             else
             {
     	        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
-                my $job = SMT::Mirror::Job->new();
-                $job->uri($catUrl);
-                $job->localdir($tempdir);
-                $job->resource("/repodata/repomd.xml");
+                my $remote = $catUrl."/repodata/repomd.xml";
+                my $local = $tempdir."/repodata/repomd.xml";
+                # make sure the container destination exists
+                &File::Path::mkpath( dirname($local) );
+
+                my $redirects = 0;
+                my $response;
                 
-                # if no error
-                $ret = $job->mirror();
+                do
+                {
+                    $response = $useragent->get( $remote, ':content_file' => $local );
+                    
+                    if ( $response->is_redirect )
+                    {
+                        $redirects++;
+                        if($redirects > 2)
+                        {
+                            $ret = 1;
+                            last
+                        }
+                        
+                        my $newuri = $response->header("location");
+                        
+                        #printLog($opt{log}, "debug", "Redirected to $newuri") if($opt{debug});
+                        $remote = URI->new($newuri);
+                    }
+                    elsif($response->is_success)
+                    {
+                        $ret = 0;
+                    }
+                } while($response->is_redirect);
             }
             printLog($opt{log}, "debug", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' ))) if($opt{debug});
             my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
