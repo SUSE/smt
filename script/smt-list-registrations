@@ -27,11 +27,10 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " : " . __("list active registrations\n");
-  print "    -verbose    (-v) : " . __("show detailed registration information\n");
   exit 0;
 }
 
-SMT::CLI::listRegistrations(verbose => $verbose);
+SMT::CLI::listRegistrations();
 
 exit 0;
 
@@ -47,23 +46,10 @@ smt list-registrations
 
 smt [help|--help|-h] list-registrations
 
-smt list-registrations [--verbose|-v]
-
 =head1 DESCRIPTION
 
-I<smt list-registrations> lists all active registrations in a SMT setup.
+I<smt list-registrations> shows detailled information about active registrations in SMT.
 
-=head1 OPTIONS
-
-=head2 VERBOSE
-
-=over
-
-=item --verbose|-v
-
-Show detailed registration information in listing.
-
-=back
 
 =head1 AUTHORS and CONTRIBUTORS
 
