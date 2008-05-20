@@ -33,7 +33,8 @@ sub new
     $self->{RESOURCEEXT}   = undef;   # if we need to set a different resource remote and local
     $self->{CHECKSUM}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:LWP::UserAgent->new(keep_alive => 1);
+    $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:SMT::Utils::createUserAgent(keep_alive => 1);
+;
     $self->{DEBUG}      = 0;
     $self->{LOG}        = undef;
     $self->{JOBTYPE}    = undef;

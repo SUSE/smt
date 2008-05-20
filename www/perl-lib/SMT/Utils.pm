@@ -16,6 +16,8 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
+use English;
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw(__ printLog);
 
@@ -408,6 +410,106 @@ sub sendMailToAdmins
 
     return;
 }
+
+
+sub createUserAgent
+{
+    my %opts = @_;
+    
+    my $user = undef;
+    my $pass = undef;
+    
+    if($UID == 0 && -e "/root/.curlrc")
+    {
+        # read /root/.curlrc
+        open(RC, "< /root/.curlrc") or return (undef,undef);
+        while(<RC>)
+        {
+            if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
+            {
+                ($user, $pass) = split(":", $1, 2);
+            }
+        }
+        close RC;
+    }
+    elsif($UID != 0 &&
+          exists $ENV{HOME} && defined  $ENV{HOME} &&
+          $ENV{HOME} ne "" && -e "$ENV{HOME}/.curlrc")
+    {
+        # read ~/.curlrc
+        open(RC, "< $ENV{HOME}/.curlrc") or return (undef,undef);
+        while(<RC>)
+        {
+            if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
+            {
+                ($user, $pass) = split(":", $1, 2);
+            }
+        }
+        close RC;
+    }
+
+    if(exists $ENV{https_proxy})
+    {
+        # required for Crypt::SSLeay HTTPS Proxy support
+        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
+        
+        if(defined $user && defined $pass)
+        {
+            $ENV{HTTPS_PROXY_USERNAME} = $user;
+            $ENV{HTTPS_PROXY_PASSWORD} = $pass;
+        }
+        elsif(exists $ENV{HTTPS_PROXY_USERNAME} && exists $ENV{HTTPS_PROXY_PASSWORD})
+        {
+            delete $ENV{HTTPS_PROXY_USERNAME};
+            delete $ENV{HTTPS_PROXY_PASSWORD};
+        }
+    }
+    
+    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
+
+    {
+        package RequestAgent;
+        @RequestAgent::ISA = qw(LWP::UserAgent);
+        
+        sub new
+        {
+            my($class, $puser, $ppass, %cnf) = @_;
+            
+            my $self = $class->SUPER::new(%cnf);
+            
+            bless {
+                   puser => $puser,
+                   ppass => $ppass
+                  }, $class;
+        }
+
+        sub get_basic_credentials
+        {
+            my($self, $realm, $uri, $proxy) = @_;
+            
+            if($proxy)
+            {
+                if(defined $self->{puser} && defined $self->{ppass})
+                {
+                    return ($self->{puser}, $self->{ppass});
+                }
+            }
+            return (undef, undef);
+        }
+    }
+    
+    my $ua = RequestAgent->new($user, $pass, %opts);
+
+    # mirroring ATI/NVidia repos requires HTTP; so we do not forbid it here
+    #$ua->protocols_allowed( [ 'https' ] );
+    #$ua->default_headers->push_header('Content-Type' => 'text/xml');
+
+    # required to workaround a bug in LWP::UserAgent
+    $ua->no_proxy();
+    
+    return $ua;
+}
+
 
 
 1;

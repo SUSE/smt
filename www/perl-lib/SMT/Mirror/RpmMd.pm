@@ -49,7 +49,7 @@ sub new
     $self->{MIRRORSRC} = 1;
 
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
+    $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
     if(exists $ENV{http_proxy})
     {
         $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});

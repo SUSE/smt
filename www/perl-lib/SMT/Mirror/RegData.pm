@@ -34,16 +34,12 @@ sub new
     $self->{DEBUG} = 0;
     $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = LWP::UserAgent->new(keep_alive => 1);
+    $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
     $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
     $self->{USERAGENT}->protocols_allowed( [ 'https'] );
-
+    
     $self->{MAX_REDIRECTS} = 2;
     
-    # This does not work, we have to deal with redirects ourself
-    #push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
-
-
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
     

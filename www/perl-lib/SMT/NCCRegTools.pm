@@ -61,12 +61,9 @@ sub new
     }
     else
     {
-        $self->{USERAGENT} = LWP::UserAgent->new(keep_alive => 1);
+        $self->{USERAGENT} = SMT::Utils::createUserAgent(keep_alive => 1);
         $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
         $self->{USERAGENT}->protocols_allowed( [ 'https'] );
-
-        # This does not work, we have to deal with redirects ourself
-        #push @{ $self->{USERAGENT}->requests_redirectable }, 'POST';
     }
     
     if(exists $ENV{http_proxy})

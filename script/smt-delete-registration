@@ -63,15 +63,9 @@ if(@guids == 0)
     exit 1;
 }
 
-#print Data::Dumper->Dump([@guids]);
-
-
-my $useragent = LWP::UserAgent->new(keep_alive => 1);
+my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
 $useragent->protocols_allowed( [ 'https' ] );
 $useragent->default_headers->push_header('Content-Type' => 'text/xml');
-
-# This does not work, we have to deal with redirects ourself
-#push @{ $useragent->requests_redirectable }, 'POST';
 
 if(!SMT::Utils::openLock("smt-delete-registration"))
 {
