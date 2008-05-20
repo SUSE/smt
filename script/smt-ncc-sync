@@ -160,7 +160,7 @@ eval
     }
     
     SMT::CLI::resetCatalogsStatus();
-    printLog($LOG, "info", __("Flag Catalogs which can be mirrored"));
+    printLog($LOG, "info", __("Flagged Catalogs which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
                                     todir   => ($todir ne "")?$todir:undef,
                                     log     => $LOG,
@@ -202,9 +202,9 @@ C<smt ncc-sync> gets data from Novell Customer Center and updates the local data
 
 =head1 OPTIONS
 
-=head2 
+=head2 COMMANDLINE
 
-=head1 COMMANDLINE
+=over
 
 =item --fromdir directory
 
@@ -225,6 +225,8 @@ Path to logfile.
 =item --debug
 
 Enable display of debug information.
+
+=back
 
 =head1 AUTHORS and CONTRIBUTORS
 
