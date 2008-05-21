@@ -57,7 +57,7 @@ if($help)
     print __("Options:\n");
     print "--debug -d        " . __("enable debug mode\n");
     print "--clean -c        " . __("cleanup all mirrored repositories.\n");
-    print "                  " . __("Remove all files not longer mention in the metadata.\n");
+    print "                  " . __("Remove all files no longer mentioned in the metadata.\n");
     print "                  " . __("This mode do no mirror before cleanup.\n");
     print "--hardlink size   " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     print "                  " . __("for them\n");
