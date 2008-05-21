@@ -65,9 +65,10 @@ if($help)
     print "                  " . __("default value in smt.conf\n");
     print "--deepverify      " . __("Verify all checksums \n");
     print "--dryrun -n       " . __("Run mirror algorithm without downloading the rpms. It shown only the names which would be downloaded \n");
-    print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can be created with\n");
-    print "                  " . __("the sync-ncc command. This option is only usefull if the smt database is not on the \n");
-    print "                  " . __("same host as this script should run\n"); 
+    print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can\n");
+    print "                  " . __("be created with the sync-ncc command. This option is only\n");
+    print "                  " . __("useful if the smt database does not exist on the host from\n"); 
+    print "                  " . __("which the smt-mirror script is being executed.\n"); 
     print "--logfile -L file " . __("Path to logfile\n");
     exit 0;
 }
@@ -358,9 +359,10 @@ Run mirror procedure without downloading the rpms. It shown only the names which
 
 =item --dbreplfile <file>
 
-Path to XML file to use as database replacement. Such a file can be created with
-the sync-ncc command. This option is only usefull if the smt database is not on the
-same host as this script should run.
+Path to XML file to use as database replacement. Such a file can      
+be created with the sync-ncc command. This option is only
+useful if the smt database does not exist on the host from 
+which the smt-mirror script is being executed.
 
 =item --logfile -L <file>
 
