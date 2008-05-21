@@ -35,6 +35,8 @@ sub new
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:SMT::Utils::createUserAgent(keep_alive => 1);
 ;
+
+    $self->{MAX_REDIRECTS} = 2;
     $self->{DEBUG}      = 0;
     $self->{LOG}        = undef;
     $self->{JOBTYPE}    = undef;
@@ -185,50 +187,89 @@ sub mirror
     # make sure the container destination exists
     &File::Path::mkpath( dirname($self->local()) );
 
-    my $response = $self->{USERAGENT}->get( $self->remote(), ':content_file' => $self->local() );
+    my $redirects = 0;
+    my $response;
+    my $remote = $self->remote();
+    do
+    {
+        $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->local() );
     
-    if ( $response->is_redirect )
-    {
-        printLog($self->{LOG}, "debug", "Redirected") if($self->{DEBUG});
-        return 1;
-    }
-
-    if( $response->is_success )
-    {
-        if (my $lm = $response->last_modified)
+        if ( $response->is_redirect )
         {
-            # make sure the file has the same last modification time
-            utime $lm, $lm, $self->local();
+            $redirects++;
+            if($redirects > $self->{MAX_REDIRECTS})
+            {
+                printLog($self->{LOG}, "error", __("Too many redirects"));
+                return 1;
+            }
+            
+            my $newuri = $response->header("location");
+            
+            #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
+            $remote = URI->new($newuri);
         }
-        return 0;
-    }
-    else
-    {
-        my $saveuri = URI->new($self->remote());
-        $saveuri->userinfo(undef);
+        elsif( $response->is_success )
+        {
+            if (my $lm = $response->last_modified)
+            {
+                # make sure the file has the same last modification time
+                utime $lm, $lm, $self->local();
+            }
+            return 0;
+        }
+        else
+        {
+            my $saveuri = URI->new($remote);
+            $saveuri->userinfo(undef);
+            
+            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
+                                                    $saveuri->as_string(), $response->status_line));
+            return 1;
+        }
         
-        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
-                                                $saveuri->as_string(), $response->status_line));
-        return 1;
-    }
+    } while($response->is_redirect);
 }
 
 # remote modification timestamp
 sub modified
 {
     my $self = shift;
-    
-    my $response = $self->{USERAGENT}->head( $self->remote() );
-    
-    $response->is_success or do 
-    {
-        my $saveuri = URI->new($self->remote());
-        $saveuri->userinfo(undef);
-        printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
-                                                $saveuri->as_string() , $response->status_line));
-        return undef;
-    };
 
+    my $redirects = 0;
+    my $response;
+    my $remote = $self->remote();
+    do
+    {
+        $response = $self->{USERAGENT}->head( $remote );
+
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > $self->{MAX_REDIRECTS})
+            {
+                printLog($self->{LOG}, "error", __("Too many redirects"));
+                return undef;
+            }
+            
+            my $newuri = $response->header("location");
+            
+            #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
+            $remote = URI->new($newuri);
+        }
+        elsif( $response->is_success )
+        {
+            return Date::Parse::str2time($response->header( "Last-Modified" ));
+        }
+        else 
+        {
+            my $saveuri = URI->new($self->remote());
+            $saveuri->userinfo(undef);
+            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
+                                                    $saveuri->as_string() , $response->status_line));
+            return undef;
+        }
+        
+    } while($response->is_redirect);
     return Date::Parse::str2time($response->header( "Last-Modified" ));
 }
 
