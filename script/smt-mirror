@@ -58,7 +58,7 @@ if($help)
     print "--debug -d        " . __("enable debug mode\n");
     print "--clean -c        " . __("cleanup all mirrored repositories.\n");
     print "                  " . __("Remove all files no longer mentioned in the metadata.\n");
-    print "                  " . __("This mode do no mirror before cleanup.\n");
+    print "                  " . __("It does not mirror new files.\n");
     print "--hardlink size   " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     print "                  " . __("for them\n");
     print "--directory arg   " . __("The directory to work on. Using this option ignores the configured\n");
