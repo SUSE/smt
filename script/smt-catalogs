@@ -142,10 +142,11 @@ while ( my $v = $sth->fetchrow_hashref() )
   
   if (defined($verbose))
   {
-      print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") . "\n";
+      print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
       print "          (" . $v->{DESCRIPTION} .")\n";
       print "          " . $v->{EXTURL} ."\n";
       print "          " . $v->{LOCALPATH} ."\n";
+      print "          CatalogID: " . $v->{CATALOGID} ."\n";
   }
 
 }
