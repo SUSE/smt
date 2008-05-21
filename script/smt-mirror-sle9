@@ -187,7 +187,7 @@ foreach my $sname (@sections)
 
             SMT::Utils::printLog($log, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
             SMT::Utils::printLog($log, "info", sprintf(__("=> Errors           : %s"), $errors));
-            SMT::Utils::printLog($log, "info", sprintf(__("=> Mirror Time      : %s seconds"), (tv_interval($t0))));
+            SMT::Utils::printLog($log, "info", sprintf(__("=> Mirror Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
             print "\n";
         }
     }

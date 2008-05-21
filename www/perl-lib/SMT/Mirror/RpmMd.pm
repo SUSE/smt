@@ -381,12 +381,15 @@ sub mirrorTo()
     else
     {
         printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
-        printLog($self->{LOG}, "info", sprintf(__("=> Downloaded Files : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files Downloaded: %s"), $self->{STATISTIC}->{DOWNLOAD}));
     }
     
-    printLog($self->{LOG}, "info", sprintf(__("=> Up to date Files : %s"), $self->{STATISTIC}->{UPTODATE}));
+    if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
+    {
+        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date : %s"), $self->{STATISTIC}->{UPTODATE}));
+    }
     printLog($self->{LOG}, "info", sprintf(__("=> Errors           : %s"), $self->{STATISTIC}->{ERROR}));
-    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time      : %s seconds"), (tv_interval($t0))));
+    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
     print "\n";
 
     return $self->{STATISTIC}->{ERROR};
@@ -446,7 +449,7 @@ sub clean()
 
     printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->{LOCALPATH}));
     printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt));
-    printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s seconds"), (tv_interval($t0))));
+    printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
     print "\n";
 }
 
@@ -516,7 +519,7 @@ sub verify()
     printLog($self->{LOG}, "info", sprintf(__("=> Finished verifying: %s"), $self->{LOCALPATH}));
     printLog($self->{LOG}, "info", sprintf(__("=> Files             : %s"), $cnt));
     printLog($self->{LOG}, "info", sprintf(__("=> Errors            : %s"), $self->{STATISTIC}->{ERROR}));
-    printLog($self->{LOG}, "info", sprintf(__("=> Verify Time       : %s seconds"), (tv_interval($t0))));
+    printLog($self->{LOG}, "info", sprintf(__("=> Verify Time       : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
     print "\n";
     
     $self->{REMOVEINVALID}  = 0;

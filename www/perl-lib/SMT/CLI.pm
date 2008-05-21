@@ -823,7 +823,7 @@ sub hardlink
             }
         }
     }
-    printLog($options{log}, "info", sprintf(__("Hardlink Time      : %s seconds"), (tv_interval($t0))));
+    printLog($options{log}, "info", sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
 }
 
 sub productClassReport

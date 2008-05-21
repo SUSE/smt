@@ -238,6 +238,32 @@ sub getDBTimestamp
     return $timestamp;
 }
 
+sub timeFormat
+{
+    my $time = shift;
+
+    $time = 1 if($time < 1);
+
+    my $sec = $time % 60;
+    
+    $time = int($time / 60);
+    
+    my $min = $time % 60;
+    
+    $time = int($time / 60);
+    
+    my $hour = $time % 24;
+    
+    $time = int($time /24);
+    
+    my $str = "";
+    
+    $str .= "$time ".__("Day(s)")." " if ($time > 0);
+
+    $str .= sprintf("%02d:%02d:%02d", $hour, $min, $sec);
+    return $str;
+}
+
 
 #
 # open logfile
