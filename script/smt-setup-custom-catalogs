@@ -188,21 +188,63 @@ else
 
 =head1 NAME
 
-smt setup-custom-catalogs -  
+smt setup-custom-catalogs
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] setup-custom-catalogs [options]
+smt [help|--help|-h] setup-custom-catalogs 
+smt setup-custom-catalogs --delete <catalogid>
+smt-setup-custom-catalogs --productid <product_id> --name <catalog name> --exturl <url>
 
 =head1 DESCRIPTION
 
-smt setup-custom-catalogs
+The smt-setup-custom-catalogs script is a tool for setup custom catalogs 
+(catalogs not present in NU) to be used with SMT. 
+It can be used for adding a new catalog to the SMT database or to delete a catalog
+from the database.
 
 
 =head1 OPTIONS
 
 =head2 
 
+=over
+
+=item --productid <id>
+
+ID of a product the catalog belongs to. If the catalog should belong to multiple
+products, use this option multiple times to assign catalog to all relevant products.
+
+=item --name <catalog name>
+
+The name of the custom catalog.
+
+=item --description <description>
+
+The description of the custom catalog.
+
+=item --exturl <url>
+
+The URL where this catalog can be mirrored from.
+
+=item --delete <catalogID>
+
+The command smt-setup-custom-catalogs --delete ID removes a
+custom catalog with a given ID from the SMT database.
+
+=back
+
+=head1 EXAMPLES
+
+Configure a new custom catalog:
+
+ smt-setup-custom-catalogs --productid 431 --productid 432 --productid 433 --productid 434 --productid 435 \
+ --name 'My_Catalog' --exturl 'http://my.domain.top/My_Catalog'
+
+
+Remove the catalog with the id I<1cf336d819e8e5904f4d4b05ee081971a0cc8afc>:
+
+  smt-setup-custom-catalogs --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc
 
 =head1 AUTHORS and CONTRIBUTORS
 
