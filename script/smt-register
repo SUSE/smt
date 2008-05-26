@@ -200,12 +200,12 @@ Show a help message.
 
 =head1 EXAMPLES
 
-Register all clients which are currently not registered or which
-registration data were updated since the last registration.
+Register all clients which are currently not registered or whose
+registration data was updated since the last registration.
 
  smt register 
 
-with writing a logfile
+with writing to a logfile
 
  smt register --logfile /var/log/smt-register.log
 

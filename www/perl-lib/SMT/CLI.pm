@@ -1200,13 +1200,13 @@ sub productSubscriptionReport
         
         if($used_esoon > 0)
         {
-            $warning .= sprintf(__("%d Machines uses '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
+            $warning .= sprintf(__("%d Machines use '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
                                 $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
         
         if($missing > 0)
         {
-            $alerts .= sprintf(__("%d Machines uses too many '%s' subscriptions. Please order new subscriptions.\n"), 
+            $alerts .= sprintf(__("%d Machines use too many '%s' subscriptions. please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
                                $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
     }
