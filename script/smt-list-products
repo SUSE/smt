@@ -33,7 +33,7 @@ if ( defined $help and ( $help == 1 ) )
   print basename($0) . " : " . __("list known products\n");
   print "    -used       (-u) : " . __("show only used products\n");
   print "    -catstat    (-c) : " . __("show catalog status. Are all catalogs localy mirrored, which are required for this product?\n");
-  print "    -verbose    (-v) : " . __("show detailed product information\n");
+#  print "    -verbose    (-v) : " . __("show detailed product information\n");
   print "   --help            (-v) :     " . __("show this help\n");
   exit 0;
 }
@@ -67,10 +67,6 @@ Shows only used products.
 =item -catstat -c
 
 Shows catalog status. Are all catalogs localy mirrored, which are required for this product?.
-
-=item -verbose -v
-
-Shows detailed product information.
 
 =head1 AUTHORS and CONTRIBUTORS
 
