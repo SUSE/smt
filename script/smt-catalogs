@@ -171,7 +171,7 @@ elsif ( $count == 1 )
 }
 else
 {
-  print __(sprintf("Select catalog number (or all) to change,  (0-". $count.",a) :") );
+  print __(sprintf("Select catalog number (or all) to change,  (1-". $count.",a) :") );
 
   my $answer = <STDIN>;
   chomp($answer);
@@ -181,7 +181,7 @@ else
     SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
     exit 0;
   }
-  elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count)
+  elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
   {
     my $number = int($answer);
     SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
