@@ -91,12 +91,12 @@
 		    `VStretch(),
 
 		    `Left (`HSquash (`MinWidth (
-			20,
+			32,
 			// TRANSLATORS: password entry
 			`Password (`id ("DB-password-1"), _("Database &Password"))
 		    ))),
 		    `Left (`HSquash (`MinWidth (
-			20,
+			32,
 			// TRANSLATORS: password entry
 			`Password (`id ("DB-password-2"), _("Database Password &Once Again"))
 		    ))),
@@ -384,6 +384,15 @@
     void InitDatabaseDialog (string id) {
 	string value = SMTData::GetCredentials ("DB", "pass");
 	if (value == nil) value = "";
+
+	// bnc #390085
+	UI::ChangeWidget (`id ("DB-password-1"), `Label,
+	    sformat ("Database Password for %1 User", SMTData::GetCredentials ("DB", "user"))
+	);
+	UI::ChangeWidget (`id ("DB-password-2"), `Label,
+	    sformat ("Database Password for %1 User Once Again", SMTData::GetCredentials ("DB", "user"))
+	);
+
 	UI::ChangeWidget (`id ("DB-password-1"), `Value, value);
 	UI::ChangeWidget (`id ("DB-password-2"), `Value, value);
     }
@@ -507,6 +516,10 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
 	});
 
 	UI::ChangeWidget (`id (`report_table), `Items, items);
+
+	boolean edit_delete_stat = (size (items) > 0);
+	UI::ChangeWidget (`id (`edit), `Enabled, edit_delete_stat);
+	UI::ChangeWidget (`id (`delete), `Enabled, edit_delete_stat);
     }
 
     void InitReportEmailTableDialog (string id) {

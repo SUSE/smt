@@ -597,6 +597,8 @@ Server certificate is vitally important for NU server to support SSL."),
 
 	UI::OpenDialog (`VBox (
 	    `VSpacing (1),
+	    `Heading (_("Database root Password Required")),
+	    `VSpacing (1),
 	    `HBox (
 		`HSpacing (2),
 		`VBox (
@@ -700,6 +702,8 @@ Press Retry to try again."),
 	string ret = nil;
 
 	UI::OpenDialog (`VBox (
+	    `VSpacing (1),
+	    `Heading (_("Adjusting New Database root Password")),
 	    `VSpacing (1),
 	    `HBox (
 		`HSpacing (2),
