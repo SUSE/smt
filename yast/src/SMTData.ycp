@@ -504,7 +504,7 @@ Please, check your SMT installation."), path_to_sync_script));
 	if (! Service::Restart (service_name)) {
 	    y2error ("Reloading %1 failed", service_name);
 	    // TRANSLATORS: error message, %1 is replaced with a service-name
-	    Report::Error (sformat (_("Reloading service has %1 failed."), service_name));
+	    Report::Error (sformat (_("Reloading service %1 has failed."), service_name));
 	    return false;
 	}
 
@@ -527,10 +527,11 @@ Please, check your SMT installation."), path_to_sync_script));
 	    // TRANSLATORS: Pop-up question headline
 	    _("Missing Server Certificate"),
 	    // TRANSLATORS: Pop-up question, %1 is replaced with a file name
-	    sformat (_("Server certificate %1 doesn't exist.
+	    sformat (_("Server certificate %1 does not exist.
 Would you like to run CA management to create one?
 
-Server certificate is vitally important for NU server to support SSL."),
+The server certificate is vitally important for the NU server to support SSL.
+"),
 		server_cert),
 		_("&Run CA management"),
 		_("&Skip"),
@@ -645,10 +646,11 @@ Server certificate is vitally important for NU server to support SSL."),
 	if (retcode_was == 2) {
 	    return Report::AnyQuestion (
 		sformat (_("Unable to read %1"), "/etc/smt.conf"),
-		_("SMT was unable to read the configuration file.
-Please, check the file and press Retry button.
+		_("SMT was not able to read the configuration file.
+Please, check the file and click Retry.
 
-To skip this, press Skip button."),
+To skip this, click Skip.
+"),
 		_("&Retry"),
 		_("&Skip"),
 		`yes_button
@@ -656,8 +658,9 @@ To skip this, press Skip button."),
 
 	// 4 : Cannot connect to database (wrong mysql root password?)
 	} else if (retcode_was == 4) {
-	    mysql_root_password = AskForRootPassword (_("SMT was unable to connect to database.
-The root password was probably wrong."));
+	    mysql_root_password = AskForRootPassword (_("SMT was not able to connect to the database.
+The root password was probably wrong.
+"));
 	    if (mysql_root_password != nil)
 		return true;
 	    else
@@ -673,8 +676,9 @@ The root password was probably wrong."));
 	} else if (retcode_was == 7) {
 	    return Report::AnyQuestion (
 		_("Cannot create database"),
-		_("SMT was unable to create the database.
-Press Retry to try again."),
+		_("SMT was not able to create the database.
+Click Retry to try again.
+"),
 		_("&Retry"),
 		_("&Skip"),
 		`yes_button
@@ -685,7 +689,8 @@ Press Retry to try again."),
 	    return Report::AnyQuestion (
 		_("Database migration failed"),
 		_("SMT has failed to migrate the database.
-Press Retry to try again."),
+Click Retry to try again.
+"),
 		_("&Retry"),
 		_("&Skip"),
 		`yes_button
@@ -744,7 +749,7 @@ For security reasons, please, set a new one.")),
 		    continue;
 		} else if (pass_1 != pass_2) {
 		    UI::SetFocus (`id (`new_root_password_2));
-		    Report::Error (_("The first and the second passwords do not match."));
+		    Report::Error (_("The first and the second password do not match."));
 		    continue;
 		}
 
@@ -846,7 +851,7 @@ For security reasons, please, set a new one.")),
 	// root password has been already set
 	} else {
 	    y2milestone ("mysql root password is not empty, asking for it...");
-	    mysql_root_password = AskForRootPassword (_("SMT needs to set the database up."));
+	    mysql_root_password = AskForRootPassword (_("SMT needs to set up the database."));
 	    if (mysql_root_password == nil) {
 		y2error ("Root password not provided");
 		return false;
@@ -960,7 +965,7 @@ For security reasons, please, set a new one.")),
 	y2milestone ("smt-db setup returned: %1", retcode);
 
 	if (retcode != 0) {
-	    Report::Error (_("Unable to change SMT-user password."));
+	    Report::Error (_("Cannot change SMT user password."));
 	    return false;
 	} else {
 	    return true;

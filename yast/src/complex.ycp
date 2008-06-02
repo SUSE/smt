@@ -70,7 +70,7 @@ user=\\\"\\\"\" > '%1'", String::Quote (test_file)));
 
 	if (cmd_exit != 0) {
 	    // TRANSLATORS: LogView line
-	    LogThis (sformat (_("Unable to create a temporary file %1."), test_file));
+	    LogThis (sformat (_("Cannot create a temporary file %1."), test_file));
 
 	    return false;
 	}
@@ -124,7 +124,7 @@ user=\\\"\\\"\" > '%1'", String::Quote (test_file)));
 
 	if (cmd["exit"]:-1 != 0) {
 	    // TRANSLATORS: LogView line
-	    LogThis (_("Unable to download list of repositories."));
+	    LogThis (_("Cannot download list of repositories."));
 	    if (cmd["stderr"]:"" != "") {
 		// TRANSLATORS: LogView line
 		LogThis (sformat (_("Reason: %1"), cmd["stderr"]:""));
@@ -142,7 +142,7 @@ user=\\\"\\\"\" > '%1'", String::Quote (test_file)));
 
 	if (cmd["exit"]:-1 != 0) {
 	    // TRANSLATORS: LogView line
-	    LogThis (_("Unable to check the list of repositories"));
+	    LogThis (_("Cannot check the list of repositories"));
 
 	    return false;
 	}
@@ -150,7 +150,7 @@ user=\\\"\\\"\" > '%1'", String::Quote (test_file)));
 	list <string> list_of_repos = splitstring (cmd["stdout"]:"", "\n");
 	if (list_of_repos == nil || size (list_of_repos) == 0) {
 	    // TRANSLATORS: LogView line
-	    LogThis (_("No repositories were found."));
+	    LogThis (_("Could not find any repositories."));
 
 	    return false;
 	}

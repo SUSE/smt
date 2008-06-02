@@ -31,7 +31,7 @@
     map <string, string> smt_cron_scripts = $[
 	"/usr/lib/SMT/bin/smt-repeated-register"	: _("NCC Registration"),
 	"/usr/lib/SMT/bin/smt-daily"			: _("Synchronization of Updates"),
-	"/usr/lib/SMT/bin/smt-gen-report"		: _("Report Generation"),
+	"/usr/lib/SMT/bin/smt-gen-report"		: _("Generation of Reports"),
     ];
 
     term CredentialsDialogContent () {
@@ -41,7 +41,7 @@
 		    `VBox (
 			`VWeight(2, `VStretch()),
 			// TRANSLATORS: check box
-			`Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Management Tool service (SMT)"))),
+			`Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Management Tool Service (SMT)"))),
 			`Left ("firewall"),
 
 			`VWeight(1, `VStretch()),
@@ -98,7 +98,7 @@
 		    `Left (`HSquash (`MinWidth (
 			32,
 			// TRANSLATORS: password entry
-			`Password (`id ("DB-password-2"), _("Database Password &Once Again"))
+			`Password (`id ("DB-password-2"), _("C&onfirm Password"))
 		    ))),
 		    
 		    `VStretch()
@@ -144,7 +144,7 @@
 		`Table (
 		    `id (`report_table),
 		    `header (
-			_("E-mails to send reports to")
+			_("E-mail addresses to send reports to")
 		    ),
 		    []
 		),
@@ -171,23 +171,23 @@
 	    " ",
 	    4,
 	    [
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Read SMT configuration"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Read SMT status"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Read firewall settings"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Read cron settings"),
 	    ],
 	    [
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Reading SMT configuration..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Reading SMT status..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Reading firewall settings..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Reading cron settings..."),
 		Message::Finished(),
 	    ],
@@ -240,39 +240,39 @@
 	    " ",
 	    8,
 	    [
+		// TRANSLATORS: Progress stage
 		_("Adjust SMT configuration"),
-		// TRANSLATORS: Progress step
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Adjust database configuration"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Check and install server certificate"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Adjust Web-server configuration"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Adjust SMT service"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Write firewall settings"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Write cron settings"),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Progress stage
 		_("Run synchronization check"),
 	    ],
 	    [
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Adjusting SMT configuration..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Adjusting database configuration..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Checking and installing server certificate..."),
-		// TRANSLATORS: Progress step
-		_("Adjusting Web-server configuration..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
+		_("Adjusting Web server configuration..."),
+		// TRANSLATORS: Bussy message /progress/
 		_("Adjusting SMT service..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Writing firewall settings..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Writing cron settings..."),
-		// TRANSLATORS: Progress step
+		// TRANSLATORS: Bussy message /progress/
 		_("Running synchronization check..."),
 		Message::Finished(),
 	    ],
@@ -408,7 +408,7 @@
 	if (pass_1 != pass_2) {
 	    UI::SetFocus (`id ("DB-password-1"));
 	    // TRANSLATORS: error report
-	    Report::Error (_("The first password and the second password don't match."));
+	    Report::Error (_("The first and the second password do not match."));
 	    return false;
 	}
 
@@ -418,8 +418,7 @@
 	    // TRANSLATORS: error report, actually containing a question
 	    if (! Popup::ContinueCancel (_("Password should not be empty.
 
-Would you like to continue even if the password is empty
-or cancel the current procedure to change it?")))
+Would you like to continue nevertheless?")))
 		return false;
 	}
 
@@ -433,21 +432,22 @@ or cancel the current procedure to change it?")))
 	    UI::SetFocus (`id ("url"));
 	    Report::Error (_("The SMT URL must not be empty.
 
-Fill in your SMT server URL in format 'http:://server.name/'."));
+Enter your SMT server URL in the following format: http:://server.name/
+"));
 	    return false;
 	}
 
 	string nuuser = (string) UI::QueryWidget (`id ("NUUser"), `Value);
 	if (nuuser == nil || nuuser == "") {
 	    UI::SetFocus (`id ("NUUser"));
-	    Report::Error (_("Filling up NU User is mandatory."));
+	    Report::Error (_("NU User must not be empty."));
 	    return false;
 	}
 
 	string nupass = (string) UI::QueryWidget (`id ("NUPass"), `Value);
 	if (nupass == nil || nupass == "") {
 	    UI::SetFocus (`id ("NUPass"));
-	    Report::Error (_("Filling up NU Password is mandatory."));
+	    Report::Error (_("NU Password must not be empty."));
 	    return false;
 	}
 
@@ -470,7 +470,7 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
 	    UI::ChangeWidget (`id ("test_log"), `LastLine, "\n" + _("Test result: success") + "\n");
 	} else {
 	    // TRANSLATORS: LogView line
-	    UI::ChangeWidget (`id ("test_log"), `LastLine, "\n" + _("Test result: failed") + "\n");
+	    UI::ChangeWidget (`id ("test_log"), `LastLine, "\n" + _("Test result: failure") + "\n");
 	}
 
 	UI::UserInput();
@@ -766,8 +766,9 @@ Fill in your SMT server URL in format 'http:://server.name/'."));
 	if (cron_rpms_installed != true) {
 	    DisableScheduledMirroringTable();
 	    // TRANSLATORS: informational message
-	    Report::Message (_("Scheduled jobs have been disabled due to a missing packages.
-Should you want to set it up, rerun the current YaST configuration module."));
+	    Report::Message (_("Scheduled jobs have been disabled due to missing packages.
+Should you want to set it up, rerun the current YaST configuration module.
+"));
 	    return;
 	}
 
