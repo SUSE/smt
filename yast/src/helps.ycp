@@ -14,7 +14,7 @@
 	"credentials" :
 	    // TRANSLATORS: help a1
 	    _("<p><big><b>Customer Center Access</b></big><br>
-Enter the NU credentials here.</p>
+Enter the credentials for Novell Updates (NU) here.</p>
 ") +
 	    // TRANSLATORS: help a2
 	    _("<p><b>User</b> and <b>Password</b> is needed for Novell Customer Center authentication.

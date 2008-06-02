@@ -762,13 +762,12 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    y2milestone ("cron RPM is installed: %1", cron_rpms_installed);
 	}
 
-	// 
 	if (cron_rpms_installed != true) {
 	    DisableScheduledMirroringTable();
-	    // TRANSLATORS: informational message
+	    // TRANSLATORS: informational message (Report::Message)
 	    Report::Message (_("Scheduled jobs have been disabled due to missing packages.
-Should you want to set it up, rerun the current YaST configuration module.
-"));
+To install the missing packages and set up the scheduled jobs,
+you need to restart the YaST SMT Configuration module."));
 	    return;
 	}
 
