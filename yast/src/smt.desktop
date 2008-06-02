@@ -16,7 +16,7 @@ X-SuSE-YaST-Geometry=
 X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=smt
 
-Icon=yast
+Icon=yast-SMT
 Exec=/sbin/yast2 smt
 
 Name=SMT Configuration

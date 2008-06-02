@@ -40,3 +40,15 @@ Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 @desktopdir@/smt.desktop
 @scrconfdir@/smt*.scr
 %doc @docdir@
+%dir @themedir@
+%dir @themedir@/current
+%dir @themedir@/current/icons
+%dir @themedir@/current/icons/22x22/
+%dir @themedir@/current/icons/22x22/apps/
+%dir @themedir@/current/icons/32x32/
+%dir @themedir@/current/icons/32x32/apps/
+%dir @themedir@/current/icons/48x48/
+%dir @themedir@/current/icons/48x48/apps/
+@themedir@/current/icons/22x22/apps/yast-SMT.png
+@themedir@/current/icons/32x32/apps/yast-SMT.png
+@themedir@/current/icons/48x48/apps/yast-SMT.png

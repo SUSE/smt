@@ -193,7 +193,7 @@
 	    ],
 	    ""
 	);
-	Wizard::SetTitleIcon("yast");
+	Wizard::SetTitleIcon("yast-SMT");
 	Wizard::RestoreHelp(HELPS["read"]:"");
 
 	Progress::NextStage();
@@ -278,7 +278,7 @@
 	    ],
 	    ""
 	);
-	Wizard::SetTitleIcon("yast");
+	Wizard::SetTitleIcon("yast-SMT");
 	Wizard::RestoreHelp(HELPS["write"]:"");
 
 	SMTData::WriteCredentials();
