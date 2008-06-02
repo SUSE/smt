@@ -197,9 +197,22 @@ sub renderReport($$)
         # no header in csv file - first row must be cols
 
         # add title/cols row
-        $res .= escapeCSVRow(\@{$data{'cols'}});
-        $res .= "\n";
-
+        if(ref($data{'cols'}->[0]) ne "HASH")
+        {
+            $res .= escapeCSVRow(\@{$data{'cols'}});
+            $res .= "\n";
+        }
+        else
+        {
+            my @cols = ();
+            foreach my $col (@{$data{'cols'}})
+            {
+                push @cols, $col->{name};
+            }
+            $res .= escapeCSVRow(\@cols);
+            $res .= "\n";
+        }
+        
         foreach my $valrow (@{$data{'vals'}})
         {
             $res .= escapeCSVRow(\@{$valrow});
