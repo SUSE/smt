@@ -125,6 +125,7 @@ sub renderReport($$)
     my $d    = shift; 
     my $mode = shift;
     my $res = '';
+    my $headingFmt = '';
 
     # return empty string in case needed data is missing
     if ( ! defined $d || ! defined $mode) { return ''; }
@@ -134,7 +135,7 @@ sub renderReport($$)
          ! exists  $data{'vals'} ||
          ! defined $data{'cols'} ||  
          ! defined $data{'vals'}    )  { return ''; }
-   
+
     # general handling of header string 
     my $heading  = undef;
     if (exists $data{'opts'}{'headingText'}  &&  defined $data{'opts'}{'headingText'})
@@ -152,15 +153,20 @@ sub renderReport($$)
         {
             while (my ($key,$val) = each(%{$data{'opts'}}))
             {
-                $t->setOptions($key,$val);
+                # do not set headingText in ASCIITable, it makes rendering veeeeeery slow  (bnc#396702)
+                if ($key ne 'headingText')
+                {
+                    $t->setOptions($key,$val);
+                }
             }
         }
 
-        # overwrite heading if defined
-        if (defined $heading)
-        {
-            $t->setOptions('headingText', $heading);
-        }
+        # setting heading in ASCIITable is deactivated because of (bnc#396702)
+        ##if (defined $heading)
+        ##{
+        ##     $t->setOptions('headingText', $heading);
+        ##}
+
         if(ref($data{'cols'}->[0]) ne "HASH")
         {
             $t->setCols(@{$data{'cols'}});
@@ -172,23 +178,40 @@ sub renderReport($$)
             {
                 push @cols, $col->{name};
             }
-            
+
             $t->setCols(@cols);
             foreach my $col (@{$data{'cols'}})
             {
                 $t->alignCol($col->{name}, $col->{align});
             }
         }
-               
-        
+
+
         # addRow may fail with long lists, so do it one by one
         foreach my $row (@{$data{'vals'}})
         {
             $t->addRow($row);
         }
 
+        # draw the table now, because we need to work with it
         $res = $t->draw();
-        
+
+        # manually add the heading (bnc#396702)
+        if (defined $heading)
+        {
+            my $hstrlen = length($heading);
+            if ($hstrlen > 0 )
+            {
+                my $hoff = 0;
+                my $tlen = length(substr($res, 0, index($res, "\n")));
+                $hoff = int(($tlen - $hstrlen - 2)/2);
+                if ($hoff < 0 ) { $hoff = 0 }
+
+                $headingFmt = "\n " . ' ' x $hoff . $heading . "\n";
+
+                $res = $headingFmt.$res;
+            }
+        }
     }
     elsif ($mode eq 'csv') 
     {
