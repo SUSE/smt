@@ -533,7 +533,10 @@ sub createUserAgent
     # required to workaround a bug in LWP::UserAgent
     $ua->no_proxy();
     $ua->max_redirect(2);
-    
+
+    # set timeout to the same value as the iChain timeout
+    $ua->timeout(130);
+
     return $ua;
 }
 
