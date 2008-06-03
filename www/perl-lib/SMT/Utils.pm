@@ -523,7 +523,7 @@ sub createUserAgent
             return (undef, undef);
         }
     }
-    
+
     my $ua = RequestAgent->new($user, $pass, %opts);
 
     # mirroring ATI/NVidia repos requires HTTP; so we do not forbid it here
@@ -532,6 +532,7 @@ sub createUserAgent
 
     # required to workaround a bug in LWP::UserAgent
     $ua->no_proxy();
+    $ua->max_redirect(2);
     
     return $ua;
 }
