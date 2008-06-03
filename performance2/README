@@ -1,0 +1,19 @@
+
+scp -r performance2 root@my.test.host:
+
+If you want to start only on client which performs
+registrations again and again, then call:
+
+my.test.host:performance2> ./repeatedStart.pl 0 100
+
+This performes 100 registrations with GUIDs from 0 - 99
+
+
+If you want to start registrations in parallel on one client
+call:
+
+my.test.host:performance2> ./launch.sh 2 100
+
+This starts 2 clients. Every client performes 100 registrations.
+The first starting with GUID 0 the second with GUID 100.
+

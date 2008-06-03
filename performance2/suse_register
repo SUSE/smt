@@ -1,0 +1,481 @@
+#! /usr/bin/perl -w
+
+#
+# Copyright (c) 2006 SUSE LINUX Products GmbH, Nuernberg, Germany.
+#
+
+BEGIN 
+{
+    push @INC, ".";
+}
+
+use strict;
+use Data::Dumper;
+use Getopt::Long;
+use Encode;
+use Time::HiRes qw(gettimeofday tv_interval);
+use Sys::Syslog;
+use SUSE::SuseRegister;
+use File::Copy;
+
+my $time = 0;
+my $programStartTime = [gettimeofday];
+
+my $locale          = undef;
+my $interactive     = 0;
+my $listParams      = 0;
+my $xmlout          = 0;
+my $dumpfilehack    = "";
+my $dumpxmlfilehack = "";
+my $nozypp          = 0;
+my $norug           = 0;
+my $nozypper        = 0;
+my $nooptional      = 0;
+my $forcereg        = 0;
+my $nohwdata        = 0;
+my $batch           = 0;
+my $logfile         = undef;
+my $browser         = undef;
+my $noproxy         = 0;
+my $help            = 0;
+my $debug           = 0;
+my $yastcall        = 0;
+my $registerinpatch = 0;
+my $zmdallowfile    = "/var/run/zmd/.allow";
+
+# the fake guid for testing
+my $fakeguid = undef;
+
+my %args          = (
+                     processor => undef,
+                     platform => undef,
+                     timezone => undef,
+                    );
+my @comlineProducts = ();
+my @extraCurlOption = ();
+
+my $mirrorCount     = 1;
+my $ignoreCache     = 0;
+
+sub logPrintExit
+{
+    my $ctx = shift;
+    my $message = shift || undef;
+    my $code    = shift || 42;
+
+    if(exists $ctx->{args}->{password})
+    {
+        $ctx->{args}->{password}->{value} = "secret";
+    }
+    if(exists $ctx->{args}->{passwd})
+    {
+        $ctx->{args}->{passwd}->{value} = "secret";
+    }
+    if(exists $ctx->{args}->{secret})
+    {
+        $ctx->{args}->{secret}->{value} = "secret";
+    }
+    my $cmdtxt = "Commandline params: no-optional:$ctx->{nooptional}  forceregistration:$ctx->{forcereg}  ";
+    $cmdtxt .= "no-hw-data:$ctx->{nohwdata} batch:$ctx->{batch} ";
+
+    syslog("err", $cmdtxt);
+    syslog("err", "Argument Dump: ".Data::Dumper->Dump([$ctx->{args}]));
+    syslog("err", "Products Dump: ".Data::Dumper->Dump([$ctx->{products}]));
+    syslog("err", "$message($code)");
+    print STDERR $message;
+
+    closelog;
+    close $ctx->{LOGDESCR} if(defined $ctx->{LOGDESCR});
+
+
+    if($batch)
+    {
+        mailToRoot($ctx, "Error during registration", $message);
+    }
+        
+    unlink $zmdallowfile if(-e $zmdallowfile);
+    print STDERR "total time: ".(tv_interval($ctx->{programStartTime}))."\n" if($ctx->{time});
+    
+    exit $code;
+}
+
+sub mailToRoot
+{
+    my $ctx     = shift;
+    my $subject = shift || undef;
+    my $message = shift || undef;
+
+    if(!defined $subject || $subject eq ""|| 
+       !defined $message || $message eq "")
+    {
+        return;
+    }
+
+    if($subject =~ /^[a-zA-Z0-9\s._-]+$/)
+    {
+        my @cmdArgs = ("-s", "$subject", "root");
+        open(MAIL, "|-", "mail", @cmdArgs) or return;
+        
+        print MAIL $message;
+        
+        close MAIL;
+    }
+}    
+
+
+sub usage 
+{
+    print STDERR "usage: suse_register.pl [-i [-b <path>]] [-n] [--xml-output] [-a <key>=<value> -a ...] [-L <file>] \n";
+    print STDERR "       suse_register.pl -p [--xml-output] [--locale=<locale>] [-L <file>]\n";
+    print STDERR "       suse_register.pl -h\n\n";
+    print STDERR "Options:\n";
+    print STDERR "         -i [--interactive]        enable interactive mode\n";
+    print STDERR "             --product <product>   product to register\n";
+    print STDERR "                                   You can use this option multiple times.\n";
+    print STDERR "         -n [--no-optional]        do not send optional data\n";
+    print STDERR "         -f [--force-registration] mark all required parameters mandatory\n";
+    print STDERR "                                   for registration even though registration itself\n";
+    print STDERR "                                   might be optional\n";
+    print STDERR "             --no-hw-data          do not send hardware data, even if they are mandatory\n";
+    print STDERR "         -r [--restore-repos]      restore all repositories, also deleted once by the user\n";
+    print STDERR "      -h -? [--help]               show this help\n";
+    print STDERR "         -a [--arg] <key>=<value>  provide an additional argument 'key'\n";
+    print STDERR "                                   with the value 'value'\n";
+    print STDERR "                                   You can use this option multiple times.\n";
+    print STDERR "         -b [--browser] <path>     path to the browser to use for interactive mode\n";
+    print STDERR "                                   if <path> is 'default', it tries to start your\n";
+    print STDERR "                                   default browser.\n";
+    print STDERR "\n";
+    print STDERR "         -p [--list-parameters]    show list of parameters\n\n";
+    print STDERR "             --xml-output          print XML output\n";
+    print STDERR "         -L [--log] <file>         log all network traffic to <file>\n";
+    print STDERR "            [--no-proxy]           do not use proxies\n";
+    print STDERR "             --locale=<locale>     define a locale e.g. en-US.utf-8\n\n";
+    
+    print STDERR "Example:\n\n";
+    print STDERR " suse_register.pl -n -a email=company\@example.com -a regcode-sles=03474hdkndg3934957340\n";
+    print STDERR "\n";
+    exit 2;
+}
+
+#########################################################
+### Main Program
+#########################################################
+
+
+my $result = GetOptions ("interactive|i"     => \$interactive,
+                         "list-parameters|p" => \$listParams,
+                         "product=s"         => \@comlineProducts,
+                         "xml-output"        => \$xmlout,
+                         "dumpfile=s"        => \$dumpfilehack,
+                         "dumpxmlfile=s"     => \$dumpxmlfilehack,
+                         "nozypp"            => \$nozypp,
+                         "norug"             => \$norug,
+                         "nozypper"          => \$nozypper,
+                         "batch"             => \$batch,
+                         "no-optional|n"     => \$nooptional,
+                         "force-registration|f" => \$forcereg,
+                         "no-hw-data"        => \$nohwdata,
+                         "restore-repos|r"   => \$ignoreCache,
+                         "log|L=s"           => \$logfile,
+                         "locale=s"          => \$locale,
+                         "browser|b=s"       => \$browser,
+                         "no-proxy"          => \$noproxy,
+                         "yast|y"            => \$yastcall,
+                         "maxmirrors=i"      => \$mirrorCount,
+                         "help|?|h"          => \$help,
+                         "debug|d=i"         => \$debug,
+                         "arg|a=s"           => \%args,
+                         "extra-curl-options=s" => \@extraCurlOption,
+                         "t"                 => \$time,
+                         "rip"               => \$registerinpatch,
+                         "fakeguid=s"        => \$fakeguid);
+
+if ($help) 
+{
+    usage();
+}
+
+
+
+$ENV{'PATH'} = '/bin:/usr/bin:/sbin:/usr/sbin:/opt/kde3/bin:/opt/gnome/bin';
+
+my $data = {};
+$data->{products} = \@comlineProducts;
+$data->{xmlout} = $xmlout;
+$data->{dumpfilehack} = $dumpfilehack;
+$data->{dumpxmlfilehack} = $dumpxmlfilehack;
+$data->{nozypp} = $nozypp;
+$data->{norug} = $norug;
+$data->{nozypper} = $nozypper;
+$data->{nooptional} = $nooptional;
+$data->{nohwdata} = $nohwdata;
+$data->{logfile} = $logfile;
+$data->{locale} = $locale;
+$data->{forcereg} = $forcereg;
+$data->{ignoreCache} = $ignoreCache;
+$data->{batch} = $batch;
+$data->{noproxy} = $noproxy;
+$data->{yastcall} = $yastcall;
+$data->{mirrorCount} = $mirrorCount;
+$data->{debug} = $debug;
+$data->{args} = \%args;
+$data->{extraCurlOption} = \@extraCurlOption;
+$data->{time} = $time;
+
+if($batch)
+{
+    $interactive = 0;
+}
+
+$data->{interactive} = $interactive;
+
+
+my $ctx = SUSE::SuseRegister::init_ctx($data);
+if($ctx->{errorcode} != 0)
+{
+    logPrintExit($ctx, $ctx->{errormsg}, $ctx->{errorcode});
+}
+
+# fake the GUID for performance testing
+
+$ctx->{guid} = $fakeguid;
+
+if($batch && $registerinpatch && !$listParams && $ctx->{rugzmdInstalled})
+{
+    open(ALLOWFILE, "> $zmdallowfile") or logPrintExit($ctx, "Cannot open zmd allow file: $!", 12);
+    print ALLOWFILE "";
+    close ALLOWFILE;
+
+    print STDERR "Wrote zmd allow file\n" if($ctx->{debug});
+}
+
+my $ret = 0;
+
+if ($listParams)
+{
+    $ret = SUSE::SuseRegister::listParams($ctx);
+    if($ctx->{errorcode} != 0)
+    {
+        logPrintExit($ctx, $ctx->{errormsg}, $ctx->{errorcode});
+    }
+
+    print $ret;
+}
+else 
+{
+    $ret = SUSE::SuseRegister::register($ctx);
+    if($ctx->{errorcode} != 0)
+    {
+        logPrintExit($ctx, $ctx->{errormsg}, $ctx->{errorcode});
+    }
+
+    #print Data::Dumper->Dump([$ctx])."\n";
+
+
+    # clean lastResponse only in this case. When this register
+    # call returns only interactive needinfos the next will fail.
+    $ctx->{lastResponse} = "";
+    
+
+    if($ret == 1)
+    {
+        $ret = SUSE::SuseRegister::register($ctx);
+        if($ctx->{errorcode} != 0)
+        {
+            logPrintExit($ctx, $ctx->{errormsg}, $ctx->{errorcode});
+        }
+
+        if($ret == 1)
+        {
+            if(!$interactive)
+            {
+                if($xmlout == 1 && 
+                   exists $ctx->{xmloutput} && 
+                   defined $ctx->{xmloutput})
+                {
+                    print STDERR $ctx->{xmloutput};
+                    unlink $zmdallowfile if(-e $zmdallowfile);
+                    
+                    exit $ret;
+                }
+                else
+                {
+                    if($batch)
+                    {
+                        mailToRoot($ctx, "Manual registration required", 
+                                   join("", @{$ctx->{registerReadableText}})."\n");
+                    }
+                    else
+                    {
+                        print STDERR join("", @{$ctx->{registerReadableText}})."\n";
+                        print $ctx->{registerManuallyURL}."\n";
+                    }
+                    unlink $zmdallowfile if(-e $zmdallowfile);
+                    exit 1;
+                }
+            }
+            else
+            {
+                my @url = ();
+                
+                push @url, $ctx->{registerManuallyURL};
+                
+                
+                if (@url == 0)
+                {
+                    logPrintExit($ctx, "Missing URL.\n", 14);
+                }
+
+                if (defined $browser)
+                {
+                    if($browser eq "default")
+                    {
+                        print STDERR "search for default browser\n" if($debug >=2);
+                        # some magic to find the default browser
+                        if(exists $ENV{DESKTOP_LAUNCH} &&
+                           defined $ENV{DESKTOP_LAUNCH})
+                        {
+                            $browser = SUSE::SuseRegister::fullpathOf($ctx, $ENV{DESKTOP_LAUNCH});
+                        }
+                        else
+                        {
+                            if(exists $ENV{DISPLAY}  &&
+                               defined $ENV{DISPLAY} &&
+                               $ENV{DISPLAY} ne "" )
+                            {
+                                # GUI Browser
+                                
+                                $browser = SUSE::SuseRegister::fullpathOf($ctx, "firefox");
+                                
+                                if(!defined $browser)
+                                {
+                                    $browser = SUSE::SuseRegister::fullpathOf($ctx, "konqueror");
+                                }
+                            }
+                            else
+                            {
+                                $browser = SUSE::SuseRegister::fullpathOf($ctx, "lynx");
+                                
+                                if(!defined $browser)
+                                {
+                                    $browser = SUSE::SuseRegister::fullpathOf($ctx, "w3m");
+                                }
+                            }
+                        }
+                    }
+                    print STDERR "Want to call browser: $browser\n" if($debug);
+
+                    if(defined $browser && -e $browser)
+                    {
+                        system($browser, @url);
+                        if( ($?>>8) != 0)
+                        {
+                            print STDERR "Starting browser '$browser' failed. Disable interactive mode\n";
+                            $interactive = 0;
+                            $ctx->{lastResponse} = "";
+                        }
+                        else
+                        {
+                            logPrintExit($ctx, "When you have finished your registration, ".
+                                         "start suse_register\n".
+                                         "again to get the current configuration for ".
+                                         "the update mechanism.\n", 0);
+                        }
+                    }
+                    else
+                    {
+                        print STDERR "Browser not found. Disable interactive mode\n";
+                        $interactive  = 0;
+                        $ctx->{lastResponse} = "";
+                    }
+                }
+                else
+                {
+                    my @defBrowser = ("lynx", "w3m");
+                    my $foundBrowser = 0;
+                    
+                    foreach my $b (@defBrowser)
+                    {
+                        my $fullpath = SUSE::SuseRegister::fullpathOf($ctx, $b);
+                        if (defined $fullpath && $fullpath ne "")
+                        {
+                            system($fullpath, @url);
+                            if( ($?>>8) == 0)
+                            {
+                                $foundBrowser = 1;
+                                last;
+                            }
+                        }
+                    }
+                    if(!$foundBrowser)
+                    {
+                        print STDERR "Starting browser failed. Disable interactive mode\n";
+                        $interactive = 0;
+                    }
+                }
+                # FIXME: other logic?
+                #
+                # do not ask for interactive optional again,
+                # because then optional become mandatory
+                $ctx->{acceptmand} = 1;
+
+                # browser was called, so reset force-registration
+                $ctx->{forcereg}   = 0;
+
+                $ctx->{lastResponse} = "";
+                
+                $ret = SUSE::SuseRegister::register($ctx);
+            }
+        }
+    }
+    
+    if($ret == 0)
+    {
+        if(!defined $ctx->{querypool})
+        {
+            # SLES 9 - finished successful
+            unlink $zmdallowfile if(-e $zmdallowfile);
+            exit 0;
+        }
+        
+
+        if($xmlout == 1 && 
+           exists $ctx->{xmloutput} && 
+           defined $ctx->{xmloutput})
+        {
+            print STDERR $ctx->{xmloutput};
+            unlink $zmdallowfile if(-e $zmdallowfile);
+            exit $ret;
+        }
+
+	#SUSE::SuseRegister::configureZMD($ctx);
+	#if($ctx->{errorcode} != 0)
+	#{
+	#    logPrintExit($ctx, $ctx->{errormsg}, $ctx->{errorcode});
+	#}
+
+        #print Data::Dumper->Dump([$ctx])."\n";
+        
+    }
+    else
+    {
+        logPrintExit($ctx, $ctx->{errormsg}, $ret);
+    }
+    
+    if($ret == 0 && $yastcall)
+    {
+        foreach my $service (keys %{$ctx->{zmdConfig}}) 
+        {
+            next if($service eq "globalzmdoptions");
+        
+            print STDERR $ctx->{zmdConfig}->{$service}->{url}."\n";
+        }
+    }
+}
+
+unlink $zmdallowfile if(-e $zmdallowfile);
+print STDERR "total time: ".(tv_interval($programStartTime))."\n" if($ctx->{time});
+
+exit 0;
+
