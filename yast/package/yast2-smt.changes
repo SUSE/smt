@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jun  3 16:35:05 CEST 2008 - locilka@suse.cz
+
+- Reading NetworkDevices configuration after reading SuSEfirewall
+  configuration (bnc #396646).
+- 2.13.18
+
+-------------------------------------------------------------------
 Mon Jun  2 11:48:18 CEST 2008 - locilka@suse.cz
 
 - Texts proofread by taroth.
