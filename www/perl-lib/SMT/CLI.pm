@@ -718,7 +718,9 @@ sub removeCustomCatalog
     my $affected1 = $dbh->do(sprintf("DELETE from Catalogs where CATALOGID=%s", $dbh->quote($options{catalogid})));
     my $affected2 = $dbh->do(sprintf("DELETE from ProductCatalogs where CATALOGID=%s", $dbh->quote($options{catalogid})));
 
-    return ($affected1 || $affected2);
+    $affected1=0 if($affected1 != 1);
+
+    return $affected1;
 }
 
 sub setupCustomCatalogs
