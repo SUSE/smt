@@ -49,9 +49,9 @@ if($help)
     print __("Delete one or more registration from NCC and SMT\n");
     print "\n";
     print __("Options:\n");
-    print "  --guid (-g)            :" . __("Unique ID of the client which should be deleted.\n");
-    print "                          " . __("This option can be used multiple times.\n");
-    print "  --debug (-d)           :" . __("enable debug mode\n");
+    print "  --guid (-g)            : " . __("Unique ID of the client which should be deleted.\n");
+    print "                           " . __("This option can be used multiple times.\n");
+    print "  --debug (-d)           : " . __("enable debug mode\n");
     print "  --logfile (-L) <file>  : " . __("Path to logfile")."\n";
     exit 0;
 }
