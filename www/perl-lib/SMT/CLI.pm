@@ -204,7 +204,7 @@ sub renderReport($$)
             {
                 my $hoff = 0;
                 my $tlen = length(substr($res, 0, index($res, "\n")));
-                $hoff = int(($tlen - $hstrlen - 2)/2);
+                $hoff = int(($tlen - $hstrlen)/2);
                 if ($hoff < 0 ) { $hoff = 0 }
 
                 $headingFmt = "\n " . ' ' x $hoff . $heading . "\n";
