@@ -162,8 +162,8 @@ sub NCCRegister
         
         while(@$allguids > 0)
         {
-            # register only 25 clients in one bulkop call
-            my @guids = splice(@{$allguids}, 0, 25);
+            # register only 15 clients in one bulkop call
+            my @guids = splice(@{$allguids}, 0, 15);
         
             my $output = "";
             
