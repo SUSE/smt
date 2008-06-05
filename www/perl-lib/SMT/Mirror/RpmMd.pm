@@ -222,13 +222,16 @@ sub mirrorTo()
     {
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
+
+    my $repoIsSigned = 1;
     
     $job->remoteresource("/repodata/repomd.xml.asc");
     $job->resource( "/.repodata/repomd.xml.asc" );
     $result = $job->mirror();
     if( $result == 1 )
     {
-        $self->{STATISTIC}->{ERROR} += 1;
+        $repoIsSigned = 0;
+        printLog($self->{LOG}, "info", sprintf(__("Found unsigned repository. Ignore previous error.")));
     }
     elsif( $result == 2 )
     {
@@ -239,22 +242,25 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
-    $job->remoteresource("/repodata/repomd.xml.key");
-    $job->resource( "/.repodata/repomd.xml.key" );
-    $result = $job->mirror();
-    if( $result == 1 )
+    if($repoIsSigned)
     {
-        $self->{STATISTIC}->{ERROR} += 1;
+        $job->remoteresource("/repodata/repomd.xml.key");
+        $job->resource( "/.repodata/repomd.xml.key" );
+        $result = $job->mirror();
+        if( $result == 1 )
+        {
+            $self->{STATISTIC}->{ERROR} += 1;
+        }
+        elsif( $result == 2 )
+        {
+            $self->{STATISTIC}->{UPTODATE} += 1;
+        }
+        else
+        {
+            $self->{STATISTIC}->{DOWNLOAD} += 1;
+        }
     }
-    elsif( $result == 2 )
-    {
-        $self->{STATISTIC}->{UPTODATE} += 1;
-    }
-    else
-    {
-        $self->{STATISTIC}->{DOWNLOAD} += 1;
-    }
-
+    
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
