@@ -4,17 +4,6 @@
 ## Copyright (c) 2007 SUSE LINUX Products GmbH, Nuernberg, Germany.
 ###########################################################################
 
-BEGIN
-{
-    if(exists $ENV{https_proxy})
-    {
-        # required for Crypt::SSLeay HTTPS Proxy support
-        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
-    }
-    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
-    #$ENV{HTTPS_DEBUG} = 1;
-}
-
 
 use strict;
 use SMT::Utils;

@@ -81,6 +81,25 @@ $mirrorTo .= "/repo/YOU9/";
 
 my @sections = $cfg->Sections();
 
+
+# search for proxy settings
+my ($httpProxy, $httpsProxy, $proxyUser) = SMT::Utils::getProxySettings();
+
+if(defined $httpProxy)
+{
+    $ENV{http_proxy} = $httpProxy;
+}
+if(defined $httpsProxy)
+{
+    $ENV{https_proxy} = $httpsProxy;
+}
+#
+# we do not set proxyUser! If you need this, write this into your .wgetrc
+#
+# proxy_user=username
+# proxy_password=password
+#
+
 foreach my $sname (@sections)
 {
     next if($sname !~ /^YOU9-/);
@@ -176,6 +195,11 @@ foreach my $sname (@sections)
                     {
                         SMT::Utils::printLog($log, "info", "$currentfile - HTTP Status $code: $msg");
                     }
+                }
+                elsif($err =~ /failed/i)
+                {
+                    SMT::Utils::printLog($log, "error", $err);
+                    $errors += 1;
                 }
             }
             close ERR;

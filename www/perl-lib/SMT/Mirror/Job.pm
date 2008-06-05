@@ -9,18 +9,6 @@ use Crypt::SSLeay;
 use Digest::SHA1  qw(sha1 sha1_hex);
 use SMT::Utils;
 
-BEGIN 
-{
-    if(exists $ENV{https_proxy})
-    {
-        # required for Crypt::SSLeay HTTPS Proxy support
-        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
-    }
-    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
-    #$ENV{HTTPS_DEBUG} = 1;
-
-}
-
 sub new
 {
     my $pkgname = shift;
@@ -41,11 +29,6 @@ sub new
     $self->{LOG}        = undef;
     $self->{JOBTYPE}    = undef;
 
-    if(exists $ENV{http_proxy})
-    {
-        $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});
-    }
-    
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;

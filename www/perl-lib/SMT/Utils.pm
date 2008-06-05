@@ -437,6 +437,86 @@ sub sendMailToAdmins
     return;
 }
 
+#
+# return ($httpProxy, $httpsProxy, $proxyUser)
+#
+# If no values are found these values are undef
+#
+sub getProxySettings
+{
+    my $cfg = getSMTConfig;
+
+    my $httpProxy  = $cfg->val('LOCAL', 'HTTPProxy');
+    my $httpsProxy = $cfg->val('LOCAL', 'HTTPSProxy');
+    my $proxyUser  = $cfg->val('LOCAL', 'ProxyUser');
+    
+    $httpProxy  = undef if(defined $httpProxy  && $httpProxy =~ /^\s*$/);
+    $httpsProxy = undef if(defined $httpsProxy && $httpsProxy =~ /^\s*$/);
+    $proxyUser  = undef if(defined $proxyUser  && $proxyUser =~ /^\s*$/);
+    
+    if(! defined $httpProxy)
+    {
+        if(exists $ENV{http_proxy} && defined $ENV{http_proxy} && $ENV{http_proxy} =~ /^http/)
+        {
+            $httpProxy = $ENV{http_proxy};
+        }
+    }
+    
+    if(! defined $httpsProxy)
+    {
+        if(exists $ENV{https_proxy} && defined $ENV{https_proxy} && $ENV{https_proxy} =~ /^http/)
+        {
+            # required for Crypt::SSLeay HTTPS Proxy support
+            $httpsProxy = $ENV{https_proxy};
+        }
+    }
+
+    if(! defined $proxyUser)
+    {
+        if($UID == 0 && -e "/root/.curlrc")
+        {
+            # read /root/.curlrc
+            open(RC, "< /root/.curlrc") or return (undef,undef);
+            while(<RC>)
+            {
+                if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
+                {
+                    $proxyUser = $1;
+                }
+            }
+            close RC;
+        }
+        elsif($UID != 0 &&
+              exists $ENV{HOME} && defined  $ENV{HOME} &&
+              $ENV{HOME} ne "" && -e "$ENV{HOME}/.curlrc")
+        {
+            # read ~/.curlrc
+            open(RC, "< $ENV{HOME}/.curlrc") or return (undef,undef);
+            while(<RC>)
+            {
+                if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
+                {
+                    $proxyUser = $1;
+                }
+            }
+            close RC;
+        }
+    }
+    else
+    {
+        if($proxyUser =~ /^\s*"?(.+)"?\s*$/ && defined $1)
+        {
+            $proxyUser = $1;
+        }
+        else 
+        {
+            $proxyUser = undef;
+        }
+    }
+
+    return ($httpProxy, $httpsProxy, $proxyUser);
+}
+
 
 sub createUserAgent
 {
@@ -444,40 +524,18 @@ sub createUserAgent
     
     my $user = undef;
     my $pass = undef;
-    
-    if($UID == 0 && -e "/root/.curlrc")
-    {
-        # read /root/.curlrc
-        open(RC, "< /root/.curlrc") or return (undef,undef);
-        while(<RC>)
-        {
-            if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
-            {
-                ($user, $pass) = split(":", $1, 2);
-            }
-        }
-        close RC;
-    }
-    elsif($UID != 0 &&
-          exists $ENV{HOME} && defined  $ENV{HOME} &&
-          $ENV{HOME} ne "" && -e "$ENV{HOME}/.curlrc")
-    {
-        # read ~/.curlrc
-        open(RC, "< $ENV{HOME}/.curlrc") or return (undef,undef);
-        while(<RC>)
-        {
-            if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
-            {
-                ($user, $pass) = split(":", $1, 2);
-            }
-        }
-        close RC;
-    }
 
-    if(exists $ENV{https_proxy})
+    my ($httpProxy, $httpsProxy, $proxyUser) = getProxySettings();
+    
+    if(defined $proxyUser)
+    {
+        ($user, $pass) = split(":", $proxyUser, 2);
+    }
+    
+    if(defined $httpsProxy)
     {
         # required for Crypt::SSLeay HTTPS Proxy support
-        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
+        $ENV{HTTPS_PROXY} = $httpsProxy;
         
         if(defined $user && defined $pass)
         {
@@ -490,8 +548,11 @@ sub createUserAgent
             delete $ENV{HTTPS_PROXY_PASSWORD};
         }
     }
-    
+
     $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
+    
+    # uncomment, if you want SSL debuging
+    #$ENV{HTTPS_DEBUG} = 1;
 
     {
         package RequestAgent;
@@ -530,8 +591,15 @@ sub createUserAgent
     #$ua->protocols_allowed( [ 'https' ] );
     #$ua->default_headers->push_header('Content-Type' => 'text/xml');
 
+
     # required to workaround a bug in LWP::UserAgent
     $ua->no_proxy();
+
+    if(defined $httpProxy)
+    {
+        $ua->proxy("http", $httpProxy);
+    }
+    
     $ua->max_redirect(2);
 
     # set timeout to the same value as the iChain timeout

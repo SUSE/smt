@@ -19,6 +19,20 @@ MirrorSRC=true
 forwardRegistration=true
 rndRegister=0
 
+# specify proxy settings here, if you do not want to use the global proxy settings
+# If you leave these options empty the global options are used.
+# 
+# specify which proxy you want to use for HTTP connection
+# in the form http://proxy.example.com:3128
+HTTPProxy=
+# specify which proxy you want to use for HTTPS connection
+# in the form http://proxy.example.com:3128
+HTTPSProxy=
+# specify username and password if your proxy requires authentication
+# in the form username:password
+ProxyUser=
+
+
 [REPORT]
 # comma separated list of eMail addresses where the status reports will be sent to
 reportEmail=

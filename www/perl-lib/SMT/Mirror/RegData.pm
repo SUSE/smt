@@ -11,16 +11,6 @@ use File::Temp;
 
 use Data::Dumper;
 
-BEGIN
-{
-    if(exists $ENV{https_proxy})
-    {
-        # required for Crypt::SSLeay HTTPS Proxy support
-        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
-    }
-    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
-    #$ENV{HTTPS_DEBUG} = 1;
-}
 
 # constructor
 sub new
@@ -56,11 +46,6 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
     
-    if(exists $ENV{http_proxy})
-    {
-        $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});
-    }
-
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;

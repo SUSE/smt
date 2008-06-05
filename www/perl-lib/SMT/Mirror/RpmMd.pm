@@ -14,16 +14,6 @@ use SMT::Mirror::Job;
 use SMT::Parser::RpmMd;
 use SMT::Utils;
 
-BEGIN 
-{
-    if(exists $ENV{https_proxy})
-    {
-        # required for Crypt::SSLeay HTTPS Proxy support
-        $ENV{HTTPS_PROXY} = $ENV{https_proxy};
-    }
-    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
-    #$ENV{HTTPS_DEBUG} = 1;
-}
 
 # constructor
 sub new
@@ -50,10 +40,6 @@ sub new
 
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
-    if(exists $ENV{http_proxy})
-    {
-        $self->{USERAGENT}->proxy("http",  $ENV{http_proxy});
-    }
 
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
