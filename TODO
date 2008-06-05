@@ -2,8 +2,6 @@
 TODO:
 =====
 
-- review packaged documentation in /usr/share/doc/packages/smt/
-  and remove useless things or add something which is missing.
 
 - default permissions of smt.conf are now 640, root, wwwrun
   -- Which means that getting the content of the file is quite trivial with
@@ -14,38 +12,6 @@ TODO:
 - review help texts of our commandline tools.
 
 - write helps texts for YaST
-
-- write man pages for commandline tools
-
-- Doku: describe how to renew the server certificate.
-        * using yast2-ca-management module
-        * importing an own cert with common-server-certificate module
-        
-        Say also, that no changes on the clients are necessary as long
-        as they use the same CA certificate. 
-        (Our generated CA is valid for 10 years)
-
-        Everybody using SMT have to do it after one year.
-        To reduce support calls, we should describe this
-        in our manual. 
-
-        If the CA changes, every client must newly accept the certificate
-        using the yast2 registration module.
-
-        A new CA (on SMT server) must be copied to /srv/www/htdocs/smt.crt
-        This is now done by the smt init script during "start"
-
-        Explain the hostname problem.
-
-        The server certificate must contain the correct hostname.
-        If the client request https://some.hostname/ then "some.hostname"
-        must be part of the certificate.
-        Two places are possible:
-        1.) as common name (CN in the subject) 
-        2.) as "Subject Alternative Name" 
-                DNS:some.hostname    and/or 
-                IP:<ipaddress>
-
 
 - usability tests of our commandline tools. 
   * What functionaly customers might miss.
@@ -335,3 +301,36 @@ About nccEmail: here is the help text which come from NCC if you enter
   If we have more, start again.
 
 
+- review packaged documentation in /usr/share/doc/packages/smt/
+  and remove useless things or add something which is missing.
+
+- write man pages for commandline tools
+
+- Doku: describe how to renew the server certificate.
+        * using yast2-ca-management module
+        * importing an own cert with common-server-certificate module
+        
+        Say also, that no changes on the clients are necessary as long
+        as they use the same CA certificate. 
+        (Our generated CA is valid for 10 years)
+
+        Everybody using SMT have to do it after one year.
+        To reduce support calls, we should describe this
+        in our manual. 
+
+        If the CA changes, every client must newly accept the certificate
+        using the yast2 registration module.
+
+        A new CA (on SMT server) must be copied to /srv/www/htdocs/smt.crt
+        This is now done by the smt init script during "start"
+
+        Explain the hostname problem.
+
+        The server certificate must contain the correct hostname.
+        If the client request https://some.hostname/ then "some.hostname"
+        must be part of the certificate.
+        Two places are possible:
+        1.) as common name (CN in the subject) 
+        2.) as "Subject Alternative Name" 
+                DNS:some.hostname    and/or 
+                IP:<ipaddress>
