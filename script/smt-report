@@ -182,7 +182,6 @@ my %DATA = ();
 sub printUsage
 {
     print basename($0) . " : " . __("generate a report")."\n";
-    print "  --classreport  : " . __("force to create a product class report")."\n";
     print "  --local        : " . __("force to create a report based on a local calculation")."\n";
     print "  --ncc          : " . __("force to create a report based on NCC data")."\n";
     print "  --nonccsync    : " . __("do not sync with NCC before creating the report")."\n";
@@ -595,15 +594,15 @@ smt [help|--help|-h] report
 
 smt report [--mail|-m] [--attach|-a] [--quiet|-q] [--csv|-c] [--file|-F [file]] [--logfile|-L file] [--debug|-d]
 
-smt report [--classreport] [--local] [--ncc] [--nonccsync]
+smt report [--local] [--ncc] [--nonccsync]
 
 =head1 DESCRIPTION
 
-I<smt report> creates reports on SMT and NCC data. Reports of the kinds class report, local report and ncc report can be created.
+I<smt report> creates reports on SMT and NCC data. Reports of the kinds local report and ncc report can be created.
 The reports can be printed to STDOUT, exported to one or multiple files as well as mailed to the administrator(s).
 
 The kind of the report is computed automatically based on your SMT setup but can as well be defined by parameters.
-Using the parameter B<--classreport> will force the creation of a product class report, B<--local> will force a report based on local data whereas B<--ncc> will force a report based on NCC data. These parameters can be used in combination and do not exclude each other.
+Using the parameter B<--local> will force a report based on local data whereas B<--ncc> will force a report based on NCC data. These parameters can be used in combination and do not exclude each other.
 
 
 =head1 OPTIONS
@@ -611,10 +610,6 @@ Using the parameter B<--classreport> will force the creation of a product class 
 =head2 REPORT TYPES
 
 =over
-
-=item --classreport
-
-Enforces the creation of a product class report.
 
 =item --local
 
@@ -684,7 +679,7 @@ Write log messages to B<file>.
 
 Print all three reports to STDOUT
 
- smt report --classreport --local --ncc
+ smt report --local --ncc
 
 Only mail the default report to the administrator(s) and suppress console output
 
@@ -692,11 +687,11 @@ Only mail the default report to the administrator(s) and suppress console output
 
 Export all reports as separate files in B<csv> format to B<./reports/>
 
- smt report --classreport --local --ncc --file ./reports/ --csv
+ smt report --local --ncc --file ./reports/ --csv
 
 Mail all reports including csv attachments to the administrators and suppress console output (convenient for a cron job)
 
- smt report --classreport --local --ncc --mail --attach --quiet
+ smt report --local --ncc --mail --attach --quiet
 
 Start the report procedure with logging
 
