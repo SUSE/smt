@@ -621,7 +621,7 @@ Enforces the creation of a report based on NCC data.
 
 =item --nonccsync
 
-Prevents the report module from syncing the data with NCC when creating the report. This may be used in combination with B<--local>.
+Prevents the report module from syncing the data with NCC when creating the report. This can be used in combination with B<--local> or B<--ncc>.
 
 =back
 
