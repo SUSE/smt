@@ -677,7 +677,7 @@ Write log messages to B<file>.
 
 =head1 EXAMPLES
 
-Print all three reports to STDOUT
+Print all reports to STDOUT
 
  smt report --local --ncc
 
