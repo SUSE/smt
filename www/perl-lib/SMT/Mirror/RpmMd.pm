@@ -149,12 +149,16 @@ sub mirrorTo()
     # get the file
     $job->resource( "/repodata/repomd.xml" );
 
-    # check if we need to mirror first
+    # check if we need to mirror first (if repomd.xml is outdated verify does not work)
     if (!$force &&  ! $job->outdated() )
     {
+        my $removeinvalid = 1;
+        $removeinvalid = 0 if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun});
+                
+
       # repomd is the same
       # check if the local repository is valid
-      if ( $self->verify($self->{LOCALPATH}, {removeinvalid => 1}) )
+      if ( $self->verify($self->{LOCALPATH}, {removeinvalid => $removeinvalid }) )
       {
           printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
           print "\n";
@@ -172,6 +176,9 @@ sub mirrorTo()
           $self->{STATISTIC}->{ERROR}    = 0;
           $self->{STATISTIC}->{UPTODATE} = 0;
           $self->{STATISTIC}->{DOWNLOAD} = 0;
+
+          # reset deepverify. It was done so we do not need it during mirror again.
+          $self->deepverify(0);
       }
     }
 
@@ -220,6 +227,10 @@ sub mirrorTo()
     }
     else
     {
+        if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
+        {
+            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
+        }
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
@@ -239,6 +250,10 @@ sub mirrorTo()
     }
     else
     {
+        if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
+        {
+            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
+        }
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
@@ -257,6 +272,10 @@ sub mirrorTo()
         }
         else
         {
+            if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
+            {
+                printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
+            }
             $self->{STATISTIC}->{DOWNLOAD} += 1;
         }
     }
@@ -271,7 +290,13 @@ sub mirrorTo()
     {
         if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
         {
-            if( $self->{JOBS}->{$r}->outdated() )
+            #
+            # this reduce the time we need for a dryrun
+            # but needs lots of more resources
+            #
+            #if( ! $self->{JOBS}->{$r}->verify() )
+
+            if( ($self->deepverify() && (!$self->{JOBS}->{$r}->verify())) || ((!$self->deepverify()) && $self->{JOBS}->{$r}->outdated()) )
             {
                 printLog($self->{LOG}, "info",  sprintf("New File [%s]", $r));
                 $self->{STATISTIC}->{DOWNLOAD} += 1;
@@ -303,8 +328,16 @@ sub mirrorTo()
             }
             elsif( $mres == 2 )
             {
-                $self->{STATISTIC}->{UPTODATE} += 1;
-                $tries = 0;
+                if($self->deepverify() && !$self->{JOBS}->{$r}->verify())
+                {
+                    # remove broken file and download it again
+                    unlink($self->{JOBS}->{$r}->local());
+                }
+                else
+                {
+                    $self->{STATISTIC}->{UPTODATE} += 1;
+                    $tries = 0;
+                }
             }
             else
             {
@@ -373,7 +406,7 @@ sub mirrorTo()
     else
     {
         printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
-        printLog($self->{LOG}, "info", sprintf(__("=> Files Downloaded: %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files Downloaded : %s"), $self->{STATISTIC}->{DOWNLOAD}));
     }
     
     if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
@@ -611,8 +644,16 @@ sub download_handler
                 }
                 elsif( $mres == 2 )
                 {
-                    $self->{STATISTIC}->{UPTODATE} += 1;
-                    $tries = 0;
+                    if(!$job->verify())
+                    {
+                        # remove broken file and download it again
+                        unlink($job->local());
+                    }
+                    else
+                    {
+                        $self->{STATISTIC}->{UPTODATE} += 1;
+                        $tries = 0;
+                    }
                 }
                 else
                 {
