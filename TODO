@@ -2,13 +2,6 @@
 TODO:
 =====
 
-
-- default permissions of smt.conf are now 640, root, wwwrun
-  -- Which means that getting the content of the file is quite trivial with
-     user html directories and mod_perl or mod_php or ...
-     User can easily create some script which is executed by accessing it over
-     HTTP. Apache should be somehow limited and/or behavior documented.
-
 - review help texts of our commandline tools.
 
 - write helps texts for YaST
@@ -20,7 +13,6 @@ TODO:
 
 Nice-To-Have but not so important
 =================================
-
 
 - verify checksum of /repodata/repomd.xml
 
@@ -37,7 +29,6 @@ TODO next SP or SLE11 version
 - provide --config <configfile> options for the smt commands to
   use a different configfile then /etc/smt.conf 
 
-- write a function to create a LWP::UserAgent object
 
 - idea to speed-up mirroring by integrating the hardlink feature.
   * create a table in DB with key = <rpm-name>-<checksum> and path
@@ -46,6 +37,10 @@ TODO next SP or SLE11 version
     have it already. If yes, create a hardlink (or copy) instead of
     downloading it from the network.
     If we do not have it yet, download it and create a database entry
+
+- idea to speep-up mirroring by "diffing" repodata/
+  * parse repodata/ and .repodata/ and find out which files are changed or 
+    new. After having this list, download only these files.
 
 DONE:
 =====
@@ -334,3 +329,14 @@ About nccEmail: here is the help text which come from NCC if you enter
         2.) as "Subject Alternative Name" 
                 DNS:some.hostname    and/or 
                 IP:<ipaddress>
+
+
+- write a function to create a LWP::UserAgent object
+
+- default permissions of smt.conf are now 640, root, wwwrun
+  -- Which means that getting the content of the file is quite trivial with
+     user html directories and mod_perl or mod_php or ...
+     User can easily create some script which is executed by accessing it over
+     HTTP. Apache should be somehow limited and/or behavior documented.
+
+
