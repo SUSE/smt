@@ -64,7 +64,9 @@ if($help)
     print "--directory arg   " . __("The directory to work on. Using this option ignores the configured\n");
     print "                  " . __("default value in smt.conf\n");
     print "--deepverify      " . __("Verify all checksums \n");
-    print "--dryrun -n       " . __("Run mirror algorithm without downloading the rpms. It shows only the names which would be downloaded \n");
+    print "--dryrun -n       " . __("Run mirror algorithm without downloading the rpms \n");
+    print "                  " . __("(but it needs to download the metadata into a temporary directory).\n");
+    print "                  " . __("It shows only the names which would be downloaded \n");
     print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can\n");
     print "                  " . __("be created with the sync-ncc command. This option is only\n");
     print "                  " . __("useful if the smt database does not exist on the host from\n"); 
@@ -355,7 +357,8 @@ and remove broken files. without this option only the metadata are verified.
 
 =item --dryrun -n
 
-Run mirror procedure without downloading the rpms. It shows only the names which would be downloaded.
+Run mirror procedure without downloading the rpms (but it needs to download the metadata into a temporary directory).
+It shows only the names which would be downloaded.
 
 =item --dbreplfile <file>
 
