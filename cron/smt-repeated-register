@@ -6,6 +6,35 @@
 SMTCMD=/usr/sbin/smt
 . /etc/smt.d/smt-cron.conf
 
+while read line ; do
+    case "$line" in
+    \#*|"") continue ;;
+    esac
+    eval val=${line#*=}
+    case "$line" in
+    PROXY_ENABLED=*)
+        PROXY_ENABLED="${val}"
+        ;;
+    HTTP_PROXY=*)
+        test -n "$val" || continue
+        http_proxy="${val}"
+        export http_proxy
+        ;;
+    HTTPS_PROXY=*)
+        test -n "$val" || continue
+        https_proxy="${val}"
+        export https_proxy
+        ;;
+        esac
+done < /etc/sysconfig/proxy
+unset sys line val
+
+if test "$PROXY_ENABLED" != "yes" ; then
+    unset http_proxy https_proxy
+fi
+unset PROXY_ENABLED
+
+
 if [ -x ${SMTCMD}-register ]
 then
     ${SMTCMD}-register ${REGISTER_PARAMS}
