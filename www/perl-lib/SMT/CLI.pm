@@ -1199,11 +1199,16 @@ sub productSubscriptionReport
     {
         my $missing = $calchash->{$product_class}->{TOTMACHINES} - $calchash->{$product_class}->{SUM_ACTIVE_SUB} - $calchash->{$product_class}->{SUM_ESOON_SUB};
         $missing = 0 if ($missing < 0);
-
+        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
+           $calchash->{$product_class}->{SUM_ESOON_SUB}  == -1)
+        {
+            $missing = 0;
+        }
+        
         push @SUMVALUES, [$subnamesByProductClass->{$product_class},
                           $calchash->{$product_class}->{TOTMACHINES}, 
-                          $calchash->{$product_class}->{SUM_ACTIVE_SUB},
-                          $calchash->{$product_class}->{SUM_ESOON_SUB},
+                          ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB},
+                          ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB},
                           $missing];
 
         my $used_active = 0;
@@ -1211,7 +1216,8 @@ sub productSubscriptionReport
         my $used_expired = 0;
         my $dummy = $calchash->{$product_class}->{TOTMACHINES};
         
-        if($dummy <= $calchash->{$product_class}->{SUM_ACTIVE_SUB})
+        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
+           $dummy <= $calchash->{$product_class}->{SUM_ACTIVE_SUB})
         {
             $used_active = $dummy;
             $dummy = 0;
@@ -1222,7 +1228,8 @@ sub productSubscriptionReport
             $dummy -= $calchash->{$product_class}->{SUM_ACTIVE_SUB};
         }
 
-        if($dummy <= $calchash->{$product_class}->{SUM_ESOON_SUB})
+        if($calchash->{$product_class}->{SUM_ESOON_SUB} == -1 ||
+           $dummy <= $calchash->{$product_class}->{SUM_ESOON_SUB})
         {
             $used_esoon = $dummy;
             $dummy = 0;
@@ -1574,20 +1581,27 @@ sub subscriptionReport
     {
         
         my $missing = $calchash->{$product_class}->{TOTMACHINES} - $calchash->{$product_class}->{SUM_ACTIVE_SUB} - $calchash->{$product_class}->{SUM_ESOON_SUB};
+
+        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
+           $calchash->{$product_class}->{SUM_ESOON_SUB}  == -1)
+        {
+            $missing = 0;
+        }
         
         $missing = 0 if ($missing < 0);
         
         push @SUMVALUES, [$subnamesByProductClass->{$product_class}, 
                           $calchash->{$product_class}->{TOTMACHINES}, 
-                          $calchash->{$product_class}->{SUM_ACTIVE_SUB}, 
-                          $calchash->{$product_class}->{SUM_ESOON_SUB}, 
+                          ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB}, 
+                          ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB}, 
                           $missing];
         my $used_active = 0;
         my $used_esoon  = 0;
         my $used_expired = 0;
         my $dummy = $calchash->{$product_class}->{TOTMACHINES};
         
-        if($dummy <= $calchash->{$product_class}->{SUM_ACTIVE_SUB})
+        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 || 
+           $dummy <= $calchash->{$product_class}->{SUM_ACTIVE_SUB})
         {
             $used_active = $dummy;
             $dummy = 0;
@@ -1598,7 +1612,8 @@ sub subscriptionReport
             $dummy -= $calchash->{$product_class}->{SUM_ACTIVE_SUB};
         }
 
-        if($dummy <= $calchash->{$product_class}->{SUM_ESOON_SUB})
+        if($calchash->{$product_class}->{SUM_ESOON_SUB} == -1 ||
+           $dummy <= $calchash->{$product_class}->{SUM_ESOON_SUB})
         {
             $used_esoon = $dummy;
             $dummy = 0;
