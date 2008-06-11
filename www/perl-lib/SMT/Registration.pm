@@ -866,41 +866,23 @@ sub findColumnsForProducts
         {
             my $statement = "SELECT $column FROM Products where ";
 
-            $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($phash->{name}))." AND ";
+            $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($phash->{name}));
 
-            $statement .= "VERSIONLOWER ";
-
-            if(!defined $phash->{version})
+            if(defined $phash->{version})
             {
-                $statement .= "IS NULL AND ";
+                $statement .= " AND VERSIONLOWER = ".$dbh->quote(lc($phash->{version}));
             }
-            else
+
+            if(defined $phash->{arch})
             {
-                $statement .= "= ".$dbh->quote(lc($phash->{version}))." AND ";
+                $statement .= " AND ARCHLOWER = ".$dbh->quote(lc($phash->{arch}));
+            }
+
+            if(defined $phash->{release})
+            {
+                $statement .= " AND RELLOWER = ".$dbh->quote(lc($phash->{release}));
             }
             
-            $statement .= "ARCHLOWER ";
-            
-            if(!defined $phash->{arch})
-            {
-                $statement .= "IS NULL AND ";
-            }
-            else
-            {
-                $statement .= "= ".$dbh->quote(lc($phash->{arch}))." AND ";
-            }
-            
-            $statement .= "RELLOWER ";
-
-            if(!defined $phash->{release})
-            {
-                $statement .= "IS NULL";
-            }
-            else
-            {
-                $statement .= "= ".$dbh->quote(lc($phash->{release}));
-            }
-                        
             $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                            APR::Const::SUCCESS, "STATEMENT: $statement");
             
