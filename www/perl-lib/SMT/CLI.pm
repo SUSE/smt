@@ -1033,7 +1033,22 @@ sub productSubscriptionReport
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my @AHEAD = ( __('Subscription'), __("Total\nSubscriptions"), __("Used\nLocally"), __('Expiring Date') ); 
+    my @AHEAD = ( {
+                   name => __("Subscriptions"),
+                   align => "auto"
+                  },
+                  {
+                   name => __("Total\nPurchase Count"),
+                   align => "right"
+                  },
+                  {
+                   name => __("Used\nLocally"),
+                   align => "auto"
+                  },
+                  {
+                   name => __("Subscription\nExpires"),
+                   align => "auto"
+                  });
     my @AVALUES = ();
     my %AOPTIONS = ( 'headingText' => __("Active Subscriptions"." ($time)" ), drawRowLine => 1 );
 
@@ -1088,7 +1103,22 @@ sub productSubscriptionReport
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my @SHEAD = ( __('Subscription'), __("Total\nSubscriptions"), __("Used\nLocally"), __('Expiring Date'));
+    my @SHEAD = ( {
+                   name => __("Subscriptions"),
+                   align => "auto"
+                  },
+                  {
+                   name => __("Total\nPurchase Count"),
+                   align => "right"
+                  },
+                  {
+                   name => __("Used\nLocally"),
+                   align => "auto"
+                  },
+                  {
+                   name => __("Subscription\nExpires"),
+                   align => "auto"
+                  });
     my @SVALUES = ();
     my %SOPTIONS = ( 'headingText' => __("Subscriptions which expired within the next 30 days")." ($time)", drawRowLine => 1 );
 
@@ -1153,7 +1183,22 @@ sub productSubscriptionReport
 
     printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
     
-    my @EHEAD = ( __('Subscription'), __("Total\nSubscriptions"), __("Used\nLocally"), __('Expiring Date'));
+    my @EHEAD = ( {
+                   name => __("Subscriptions"),
+                   align => "auto"
+                  },
+                  {
+                   name => __("Total\nPurchase Count"),
+                   align => "right"
+                  },
+                  {
+                   name => __("Used\nLocally"),
+                   align => "auto"
+                  },
+                  {
+                   name => __("Subscription\nExpires"),
+                   align => "auto"
+                  });
     my @EVALUES = ();
     my %EOPTIONS = ( 'headingText' => __("Expired Subscriptions")." ($time)", drawRowLine => 1 );
     
@@ -1172,7 +1217,7 @@ sub productSubscriptionReport
             $nc = "unlimited";
         }
         
-        next if($assignedMachines == 0);
+        #next if($assignedMachines == 0);
 
         #$expiredMachines->{$product_class} += int $assignedMachines;
         
@@ -1190,7 +1235,27 @@ sub productSubscriptionReport
     my $alerts = ''; 
     my $warning = ''; 
 
-    my @SUMHEAD = ( __("Subscription"), __("Locally Registered\nMachines"), __("Active\nSubscriptions"), __("Soon expiring\nSubscriptions"), __("Missing\nSubscriptions"));
+    my @SUMHEAD = ( {
+                     name => __("Subscription Type"), 
+                     align => "auto"
+                    },
+                    {
+                     name => __("Locally Registered\nSystems"),
+                     align => "auto"
+                    },
+                    {
+                     name => __("Active\nPurchase Count"), 
+                     align => "right"
+                    },
+                    {
+                     name => __("Soon expiring\nPurchase Counts"), 
+                     align => "right"
+                    },
+                    {
+                     name => __("Over\nLimit"),
+                     align => "right"
+                    });
+
     my @SUMVALUES = ();
     my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)", drawRowLine => 1 );
 
@@ -1372,16 +1437,16 @@ sub subscriptionReport
     }
 
     my @AHEAD = ( {
-                   name => __('Subscription'),
+                   name => __("Subscriptions"),
                    align => "auto"
                   },
                   {
-                   name =>__('Registration Code'),
+                   name =>__("Activation Code"),
                    align => "left"
                   },
                   {
-                   name => __("Total\nSubscriptions"),
-                   align => "auto"
+                   name => __("Total\nPurchase Count"),
+                   align => "right"
                   },
                   {
                    name => __("Total\nUsed"),
@@ -1392,7 +1457,7 @@ sub subscriptionReport
                    align => "auto"
                   },
                   {
-                   name => __('Expiring Date'),
+                   name => __("Subscription\nExpires"),
                    align => "auto"
                   }
                 );
@@ -1461,12 +1526,29 @@ sub subscriptionReport
         }
     }
 
-    my @SHEAD = ( __('Subscription'), 
-                  __('Registration Code'), 
-                  __("Total\nSubscriptions"), 
-                  __("Total\nUsed") ,
-                  __("Used\nLocally"), 
-                  __('Expiring Date') );
+    my @SHEAD = ( {
+                   name => __("Subscriptions"), 
+                   align => "auto"
+                  },
+                  {
+                   name => __("Activation Code"), 
+                   align => "left"
+                  },
+                  {
+                   name => __("Total\nPurchase Count"), 
+                   align => "right"
+                  },
+                  {
+                   name => __("Total\nUsed") ,
+                   align => "auto"
+                  },
+                  {
+                   name => __("Used\nLocally"), 
+                   align => "auto"
+                  },
+                  {
+                   name => __("Subscription\nExpires"),
+                  align => "auto" } );
     my @SVALUES = ();
     my %SOPTIONS = ( 'headingText' => __('Subscriptions which expiring within the next 30 Days')." ($time)" );
 
@@ -1528,12 +1610,29 @@ sub subscriptionReport
         }
     }
 
-    my @EHEAD = ( __('Subscription'), 
-                  __('Registration Code'),
-                  __("Total\nSubscriptions"),
-                  __("Total\nUsed") ,
-                  __("Used\nLocally"), 
-                  __('Expiring Date'));
+    my @EHEAD = ( {
+                   name => __("Subscriptions"), 
+                   align => "auto"
+                  },
+                  {
+                   name => __("Activation Code"), 
+                   align => "left"
+                  },
+                  {
+                   name => __("Total\nPurchase Count"), 
+                   align => "right"
+                  },
+                  {
+                   name => __("Total\nUsed") ,
+                   align => "auto"
+                  },
+                  {
+                   name => __("Used\nLocally"), 
+                   align => "auto"
+                  },
+                  {
+                   name => __("Subscription\nExpires"),
+                  align => "auto" } );
     my @EVALUES = ();
     my %EOPTIONS = ( 'headingText' => __('Expired Subscriptions')." ($time)" );
     
@@ -1549,8 +1648,8 @@ sub subscriptionReport
         
         #
         # we do not show expired subscriptions which do not have a machine assigned
-        next if($res->{$subid}->{CONSUMED} == 0 && 
-                (!exists $res->{$subid}->{ASSIGNED_MACHINES} || $res->{$subid}->{ASSIGNED_MACHINES} == 0));
+        #next if($res->{$subid}->{CONSUMED} == 0 && 
+        #        (!exists $res->{$subid}->{ASSIGNED_MACHINES} || $res->{$subid}->{ASSIGNED_MACHINES} == 0));
 
         push @EVALUES, [ $res->{$subid}->{SUBNAME},
                          $res->{$subid}->{REGCODE},
@@ -1569,11 +1668,26 @@ sub subscriptionReport
     #
     my $alerts = '';
     my $warning = '';
-    my @SUMHEAD = ( __("Subscription"),
-                    __("Registered Machines\nat NCC"),
-                    __("Active\nSubscriptions"), 
-                    __("Soon expiring\nSubscriptions"), 
-                    __("Missing\nSubscriptions"));
+    my @SUMHEAD = ( {
+                     name => __("Subscription Type"),
+                     align => "auto"
+                    },
+                    {
+                     name => __("Total Systems\nRegistered with NCC"),
+                     align => "auto"
+                    },
+                    {
+                     name => __("Active\nPurchase Count"),
+                     align => "right"
+                    },
+                    {
+                     name => __("Soon expiring\nPurchase Counts"), 
+                     align => "right"
+                    },
+                    {
+                     name => __("Over\nLimit"),
+                     align => "right"
+                    });
     my @SUMVALUES = ();
     my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)", drawRowLine => 1 );
 
