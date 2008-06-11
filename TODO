@@ -4,8 +4,6 @@ TODO:
 
 - review help texts of our commandline tools.
 
-- write helps texts for YaST
-
 - usability tests of our commandline tools. 
   * What functionaly customers might miss.
   * Is the "how to use them" clear and obvious?
@@ -29,6 +27,7 @@ TODO next SP or SLE11 version
 - provide --config <configfile> options for the smt commands to
   use a different configfile then /etc/smt.conf 
 
+- use new installation.xml and test it according to bnc #377154
 
 - idea to speed-up mirroring by integrating the hardlink feature.
   * create a table in DB with key = <rpm-name>-<checksum> and path
@@ -339,4 +338,5 @@ About nccEmail: here is the help text which come from NCC if you enter
      User can easily create some script which is executed by accessing it over
      HTTP. Apache should be somehow limited and/or behavior documented.
 
+- write helps texts for YaST
 
