@@ -20,13 +20,11 @@
 		    <name>sw_single</name>
 		    <enable_back>yes</enable_back>
 		    <enable_next>yes</enable_next>
-		    <!--
-			Nice to have: some parameter that would make
-			software manager start in `patterns
-
+		    <!-- bnc #377154, new functionality in SLE 10 SP3 -->
 		    <arguments>
+			<dialog_type config:type="symbol">patternSelector</dialog_type>
+			<ask_again config:type="boolean">false</ask_again>
 		    </arguments>
-		    -->
 		</module>
 		<module>
 		    <label>SMT Configuration</label>
