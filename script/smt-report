@@ -108,25 +108,39 @@ my %conf = (
            );
 
 my $legendLocal = "
-Subscription:                Novell product which customer may be entitled to 
-                             receive patches, updates or technical support 
-                             during the period covered by the subscription.
-Locally Registered Machines: the registered machines connected to the SMT 
-                             with access to patches, updates or technical 
-                             support.
-Active Subscriptions:        the number of active subscriptions not requiring
-                             renewal in 30 days.
-Soon expiring Subscriptions: active subscriptions requiring renewal in
-                             next 30 days.
-Missing Subscriptions:       the registered machines not covered by
-                             subscription, meaning the customer must purchase
-                             additional subscriptions of the product.
-Total Subscriptions:         the total number of subscriptions the customer
-                             has purchased.
-Used Locally:                the locally registered machines connected to the
-                             SMT with access to patches, updates or technical 
-                             support.
-Expiring Date:               the ending date of subscription coverage.
+Legend:
+
+Subscription Type:       Group of Novell products which customer may be 
+                         entitled to receive patches, updates or technical 
+                         support during the period covered by the subscription.
+
+Locally Registered       the registered machines connected to the SMT 
+Systems:                 with access to patches, updates or technical 
+                         support.
+
+Active Purchase Count:   the number of active subscriptions not requiring
+                         renewal in 30 days.
+
+Soon expiring            active subscriptions requiring renewal in
+Purchase Counts:         next 30 days.
+
+Over Limit:              the registered machines not covered by
+                         subscription, meaning the customer must purchase
+                         additional subscriptions of the product.
+
+Subscriptions:           Novell product which customer may be entitled to 
+                         receive patches, updates or technical support 
+                         during the period covered by the subscription.
+
+Total Purchase Count:    the total number of subscriptions the customer
+                         has purchased.
+
+Used Locally:            the registered machines connected to the SMT 
+                         with access to patches, updates or technical 
+                         support.
+
+Subscription Expires:    the ending date of subscription coverage.
+
  
 1.  This report may not represent all of the SMT servers or machines in
     your environment.
@@ -138,28 +152,41 @@ Expiring Date:               the ending date of subscription coverage.
 my $legendNCC   = "
 Legend:
 
-Subscription:                Novell product which customer may be entitled to 
-                             receive patches, updates or technical support 
-                             during the period covered by the subscription.
-Registered Machines at NCC:  the active number of machines registered
-                             by the customer at Novell Customer Center.
-Active Subscriptions:        the number of active subscriptions not requiring
-                             renewal in 30 days.
-Soon expiring Subscriptions: active subscriptions requiring renewal in
-                             next 30 days.
-Missing Subscriptions:       the registered machines not covered by
-                             subscription, meaning the customer must purchase
-                             additional subscriptions of the product.
-Registration Code:           the key to validate the product on Novell Customer
-                             Center.
-Total Subscriptions:         the total number of subscriptions the customer
-                             has purchased.
-Total Used:                  the number of machines registered to receive 
-                             patches, updates, or technical support.
-Used Locally:                the registered machines connected to the SMT 
-                             with access to patches, updates or technical 
-                             support.
-Expiring Date:               the ending date of subscription coverage.
+Subscription Type:       Group of Novell products which customer may be 
+                         entitled to receive patches, updates or technical 
+                         support during the period covered by the subscription.
+
+Total Systems            the active number of machines registered
+Registered with NCC:     by the customer at Novell Customer Center.
+
+Active Purchase Count:   the number of active subscriptions not requiring
+                         renewal in 30 days.
+
+Soon expiring            active subscriptions requiring renewal in
+Purchase Counts:         next 30 days.
+
+Over Limit:              the registered machines not covered by
+                         subscription, meaning the customer must purchase
+                         additional subscriptions of the product.
+
+Subscriptions:           Novell product which customer may be entitled to 
+                         receive patches, updates or technical support 
+                         during the period covered by the subscription.
+
+Activation Code:         the key to validate the product on Novell Customer
+                         Center.
+
+Total Purchase Count:    the total number of subscriptions the customer
+                         has purchased.
+
+Total Used:              the number of machines registered to receive 
+                         patches, updates, or technical support.
+
+Used Locally:            the registered machines connected to the SMT 
+                         with access to patches, updates or technical 
+                         support.
+
+Subscription Expires:    the ending date of subscription coverage.
  
 1.  This report may not represent all of the SMT servers or machines in
     your environment.
