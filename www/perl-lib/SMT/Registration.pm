@@ -862,53 +862,61 @@ sub findColumnsForProducts
 
     foreach my $phash (@{$parray})
     {
-        foreach my $cnt (1..3)
+        my $statement = "SELECT $column, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
+        
+        $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($phash->{name}));
+        
+        $statement .= " AND (";
+        $statement .= "VERSIONLOWER=".$dbh->quote(lc($phash->{version}))." OR " if(defined $phash->{version} && $phash->{version} ne "");
+        $statement .= "VERSIONLOWER IS NULL)";
+        
+        $statement .= " AND (";
+        $statement .= "RELLOWER=".$dbh->quote(lc($phash->{release}))." OR " if(defined $phash->{release} && $phash->{release} ne "");
+        $statement .= "RELLOWER IS NULL)";
+        
+        $statement .= " AND (";
+        $statement .= "ARCHLOWER=".$dbh->quote(lc($phash->{arch}))." OR " if(defined $phash->{arch} && $phash->{arch} ne "");
+        $statement .= "ARCHLOWER IS NULL)";
+        
+        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
+                       APR::Const::SUCCESS, "STATEMENT: $statement");
+        
+        my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
+        
+        #$r->log_error("RESULT: ".Data::Dumper->Dump([$pl]));
+        #$r->log_error("RESULT: not defined ") if(!defined $pl);
+        #$r->log_error("RESULT: empty ") if(@$pl == 0);
+        
+        if(@$pl == 1)
         {
-            my $statement = "SELECT $column FROM Products where ";
-
-            $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($phash->{name}));
-
-            if(defined $phash->{version})
+            # Only one match found. 
+            push @list, $pl->[0]->{$column};
+        }
+        elsif(@$pl > 1)
+        {
+            my $found = 0;
+            # Do we have an exact match?
+            foreach my $prod (@$pl)
             {
-                $statement .= " AND VERSIONLOWER = ".$dbh->quote(lc($phash->{version}));
+                if(lc($prod->{VERSIONLOWER}) eq lc($phash->{version}) &&
+                   lc($prod->{ARCHLOWER}) eq  lc($phash->{arch})&&
+                   lc($prod->{RELLOWER}) eq lc($phash->{release}))
+                {
+                    # Exact match found.
+                    push @list, $prod->{$column};
+                    $found = 1;
+                    last;
+                }
             }
-
-            if(defined $phash->{arch})
+            if(!$found)
             {
-                $statement .= " AND ARCHLOWER = ".$dbh->quote(lc($phash->{arch}));
-            }
-
-            if(defined $phash->{release})
-            {
-                $statement .= " AND RELLOWER = ".$dbh->quote(lc($phash->{release}));
-            }
-            
-            $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                           APR::Const::SUCCESS, "STATEMENT: $statement");
-            
-            my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
-            
-            #$r->log_error("RESULT: ".Data::Dumper->Dump([$pl]));
-            #$r->log_error("RESULT: not defined ") if(!defined $pl);
-            #$r->log_error("RESULT: empty ") if(@$pl == 0);
-
-            if(@$pl == 0 && $cnt == 1)
-            {
-                $phash->{release} = undef;
-            }
-            elsif(@$pl == 0 && $cnt == 2)
-            {
-                $phash->{arch} = undef;
-            }
-            elsif(@$pl == 0 && $cnt == 3)
-            {
-                $phash->{version} = undef;
-            }
-            elsif(@$pl == 1 && exists $pl->[0]->{$column})
-            {
+                $r->log_error("No exact match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}." Choose the first one.");
                 push @list, $pl->[0]->{$column};
-                last;
             }
+        }
+        else
+        {
+            $r->log_error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
         }
     }
     return @list;
