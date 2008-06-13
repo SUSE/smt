@@ -30,7 +30,7 @@ if ( defined $help and ( $help == 1 ) )
   exit 0;
 }
 
-SMT::CLI::listRegistrations();
+SMT::CLI::listRegistrations(verbose => $verbose);
 
 exit 0;
 

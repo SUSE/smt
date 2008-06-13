@@ -458,7 +458,63 @@ sub getRegistrations
 #
 sub listRegistrations
 {
-    print renderReport(getRegistrations(@_), 'asciitable');
+    my %options = @_;
+    
+    if(exists $options{verbose} && defined $options{verbose} && $options{verbose})
+    {
+        my ($cfg, $dbh, $nuri) = init();
+
+        my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
+
+
+    
+        foreach my $clnt (@{$clients})
+        {
+            my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH, r.REGDATE, r.NCCREGDATE, r.NCCREGERROR from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", 
+                                                            $dbh->quote($clnt->{GUID})), {Slice => {}});
+        
+            print __('Unique ID')." : $clnt->{GUID}\n";
+            print __('Hostname')." : $clnt->{HOSTNAME}\n";
+            print __('Last Contact')." : $clnt->{LASTCONTACT}\n";
+
+            my $prdstr = "";
+            foreach my $product (@{$products})
+            {
+                $prdstr .= $product->{PRODUCT} if(defined $product->{PRODUCT});
+                $prdstr .= " ".$product->{VERSION} if(defined $product->{VERSION});
+                $prdstr .= " ".$product->{REL} if(defined $product->{REL});
+                $prdstr .= " ".$product->{ARCH} if(defined $product->{ARCH});
+
+                print __('Product')." : $prdstr\n" if($prdstr ne "");
+                $prdstr = "";
+
+
+                print "        ".__('Local Registration Date')." : $product->{REGDATE}\n";
+                print "        ".__('NCC Registration Date')." : ".((defined $product->{NCCREGDATE})?$product->{NCCREGDATE}:"")."\n";
+                if (defined $product->{NCCREGERROR} && $product->{NCCREGERROR})
+                {
+                    print "        ".__('NCC Registration Errors')." : YES\n";
+                }
+            }
+            
+            my $subscr = $dbh->selectall_arrayref(sprintf("select s.SUBNAME , s.REGCODE, s.SUBSTATUS, s.SUBENDDATE, s.NODECOUNT, s.CONSUMED, s.SERVERCLASS  from ClientSubscriptions cs, Subscriptions s where cs.GUID = %s and cs.SUBID = s.SUBID order by SERVERCLASS DESC;", 
+                                                          $dbh->quote($clnt->{GUID})), {Slice => {}});
+            
+            foreach my $sub (@{$subscr})
+            {
+                print  __("Subscription")." : ".$sub->{SUBNAME}."\n";
+                print  "        ".__("Activation Code")." : ".$sub->{REGCODE}."\n";
+                print  "        ".__("Status")." : ".$sub->{SUBSTATUS}."\n";
+                print  "        ".__("Expiration Date")." : ".$sub->{SUBENDDATE}."\n";
+                print  "        ".__("Purchase Count/Used")." : ".$sub->{NODECOUNT}."/".$sub->{CONSUMED}."\n";
+            }
+            print "-----------------------------------------------------------------------\n";
+        }
+    }
+    else
+    {
+        print renderReport(getRegistrations(), 'asciitable');
+    }
 }
 
 
