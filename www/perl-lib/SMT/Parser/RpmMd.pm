@@ -151,6 +151,8 @@ sub parse()
           chomp($@);
           printLog($self->{LOG}, "error", "SMT::Parser::RpmMd Invalid XML in '$path': $@");
       }
+      $fh->close;
+      undef $fh;
     }
     else
     {

@@ -145,6 +145,7 @@ sub realchecksum()
     $sha1 = Digest::SHA1->new;
     $sha1->addfile(*FILE);
     $digest = $sha1->hexdigest();
+    close FILE;
     return $digest;
 }
 

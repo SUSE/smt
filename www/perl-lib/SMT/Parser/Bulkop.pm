@@ -89,6 +89,8 @@ sub parse()
             chomp($@);
             printLog($self->{LOG}, "error", "SMT::Parser::ListReg Invalid XML in '$file': $@");
         }
+        $fh->close;
+        undef $fh;
     }
     else
     {

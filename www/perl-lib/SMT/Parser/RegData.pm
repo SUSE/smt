@@ -72,6 +72,8 @@ sub parse()
             chomp($@);
             printLog($self->{LOG}, "error", "SMT::Parser::RegData Invalid XML in '$file': $@");
         }
+        $fh->close;
+        undef $fh;
     }
     else
     {

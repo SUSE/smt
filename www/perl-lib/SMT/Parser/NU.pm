@@ -115,6 +115,8 @@ sub parse()
           chomp($@);
           printLog($self->{LOG}, "error", "SMT::Parser::NU Invalid XML in '$path': $@");
       }
+      $fh->close;
+      undef $fh;
     }
     else
     {
