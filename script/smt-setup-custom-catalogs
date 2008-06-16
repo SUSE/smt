@@ -44,6 +44,8 @@ if ( defined $help and ( $help == 1 ) )
     print "    --description arg   " . __("A description\n");
     print "    --exturl arg        " . __("The URL where this catalog can be mirrored from\n");
     print "    --delete arg        " . __("Remove a custom catalog with the given ID\n");
+    print "                        " . __("Call 'smt catalogs --verbose' to find out the Catalog ID\n");
+    print "                        " . __("of the catalog you want to delete.\n");
     print "\n\n";
     print __("Examples:\n\n");
     print "  smt-setup-custom-catalogs --productid 434 --name 'My_Catalog' --exturl 'http://my.domain.top/My_Catalog'\n";
@@ -231,6 +233,9 @@ The URL where this catalog can be mirrored from.
 
 The command smt-setup-custom-catalogs --delete ID removes a
 custom catalog with a given ID from the SMT database.
+
+Call B<smt catalogs --verbose> to find out the Catalog ID of the catalog
+you want to delete.
 
 =back
 
