@@ -24,6 +24,7 @@
     import "Progress";
     import "Directory";
     import "RunlevelEd";
+    import "ProductControl";
 
     map <string, map <string, string> > all_credentials = $[];
 
@@ -544,7 +545,25 @@ The server certificate is vitally important for the NU server to support SSL.
 
 		Wizard::OpenNextBackDialog();
 		boolean progress_orig = Progress::set (false);
+
+		// bnc #400782
+		// Custom control file can make ProductControl not to find anything
+		string previous_custom_control_file = ProductControl::custom_control_file;
+		if (previous_custom_control_file != "") {
+		    y2milestone ("Previous custom_control_file: %1", previous_custom_control_file);
+		    ProductControl::custom_control_file = "";
+		    ProductControl::Init();
+		}
+
+		// Call installation proposal (service-LDAP+CA)
 		any ret = WFM::call ("inst_proposal", [$["proposal":"service"]]);
+
+		if (previous_custom_control_file != "") {
+		    y2milestone ("Restoring previous custom_control_file: %1", previous_custom_control_file);
+		    ProductControl::custom_control_file = previous_custom_control_file;
+		    ProductControl::Init();
+		}
+
 		y2milestone ("Service proposal returned: %1", ret);
 		Progress::set (progress_orig);
 		Wizard::CloseDialog();

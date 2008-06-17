@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Jun 17 12:38:21 CEST 2008 - locilka@suse.cz
+
+- Temporarily disabling custom_control_file defined by Dirinstall
+  module in contructor. This change enables ProductControl module
+  to find the proposal:service in product control file.
+- 2.13.19
+
+-------------------------------------------------------------------
 Tue Jun  3 16:35:05 CEST 2008 - locilka@suse.cz
 
 - Reading NetworkDevices configuration after reading SuSEfirewall
