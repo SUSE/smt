@@ -721,7 +721,19 @@ sub setMirrorableCatalogs
                 
                 do
                 {
-                    $response = $useragent->get( $remote, ':content_file' => $local );
+                    eval
+                    {
+                        $response = $useragent->get( $remote, ':content_file' => $local );
+                    };
+                    if($@)
+                    {
+                        if($opt{debug})
+                        {
+                            printLog($opt{log}, "debug", $@);
+                        }
+                        $ret = 1;
+                        last;
+                    }
                     
                     if ( $response->is_redirect )
                     {

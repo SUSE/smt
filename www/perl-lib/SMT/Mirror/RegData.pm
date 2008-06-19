@@ -214,10 +214,23 @@ sub _requestData
     {
         printLog($self->{LOG}, "debug", "Send to '$uri' content: $content") if($self->{DEBUG});
 
-        $response = $self->{USERAGENT}->post( $uri->as_string(), {},
-                                              ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
-                                              'Content' => $content);
-        
+        eval
+        {
+            $response = $self->{USERAGENT}->post( $uri->as_string(), {},
+                                                  ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
+                                                  'Content' => $content);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, "error", sprintf(__("Failed to POST '%s'"), 
+                                                    $uri->as_string()));
+            if($self->{DEBUG})
+            {
+                printLog($self->{LOG}, "debug", $@);
+            }
+            return undef;
+        }
+
         # enable this if you want to have a trace
         #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$response]));
         

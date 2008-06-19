@@ -946,8 +946,21 @@ sub _sendData
     {
         printLog($self->{LOG}, "debug", "SEND TO: ".$regurl->as_string()) if($self->{DEBUG});
         printLog($self->{LOG}, "debug", "XML:\n$data") if($self->{DEBUG});
-        
-        $response = $self->{USERAGENT}->post( $regurl->as_string(), {}, %params);
+
+        eval
+        {
+            $response = $self->{USERAGENT}->post( $regurl->as_string(), {}, %params);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s'"), 
+                                                    $regurl->as_string()));
+            if($self->{DEBUG})
+            {
+                printLog($self->{LOG}, "debug", $@);
+            }
+            return 0;
+        }
         
         # enable this if you want to have a trace
         #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$response]));

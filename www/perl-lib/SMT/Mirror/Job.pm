@@ -176,8 +176,24 @@ sub mirror
     my $remote = $self->remote();
     do
     {
-        $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->local() );
-    
+        eval
+        {
+            $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->local() );
+        };
+        if($@)
+        {
+            my $saveuri = URI->new($remote);
+            $saveuri->userinfo(undef);
+            
+            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s'"), 
+                                                    $saveuri->as_string()));
+            if($self->{DEBUG})
+            {
+                printLog($self->{LOG}, "debug", $@);
+            }
+            return 1;
+        }
+        
         if ( $response->is_redirect )
         {
             $redirects++;
