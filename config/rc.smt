@@ -129,10 +129,11 @@ function link_smt_plugins () {
 		echo "Adding apache2 plugin ${smt_apache_plugindir}${filename}"
 		ln -s ${smt_d}${filename} ${smt_apache_plugindir}${filename}
 
-		# SMT should be started, 'reload' will reload apache
-		# if more configuration files are added
+		# SMT should be started, 'restart' will reload apache
+		# if more configuration files are added and start it
+                # if it is not started
 		if [ "$action" == "start" ]; then
-		    action="reload"
+		    action="restart"
 		fi
 	    else
 		# Linked file doesn't exist
@@ -149,10 +150,11 @@ function link_smt_plugins () {
 		echo "Adding apache2 plugin ${smt_apache_vhostdir}${filename}"
 		ln -s ${smt_d}${filename} ${smt_apache_vhostdir}${filename}
 
-		# SMT should be started, 'reload' will reload apache
-		# if more configuration files are added
+		# SMT should be started, 'restart' will reload apache
+		# if more configuration files are added and start it
+                # if it is not started
 		if [ "$action" == "start" ]; then
-		    action="reload"
+		    action="restart"
 		fi
 	    else
 		# Linked file doesn't exist
@@ -169,10 +171,11 @@ function link_smt_plugins () {
 		echo "Adding cron plugin ${smt_crondir}${filename}"
 		ln -s ${smt_d}${filename} ${smt_crondir}${filename}
 
-		# SMT should be started, 'reload' will reload apache
-		# if more configuration files are added
+		# SMT should be started, 'restart' will reload cron
+		# if more configuration files are added and start it
+                # if it is not started
 		if [ "$action" == "start" ]; then
-		    action="reload"
+		    action="restart"
 		fi
 	    else
 		# Linked file doesn't exist
