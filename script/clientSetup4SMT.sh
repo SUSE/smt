@@ -28,6 +28,11 @@ function usage()
 
 REGURL=$1
 
+if [ `id -u` != 0 ]; then
+    echo "You must be root. Abort."
+    exit 1;
+fi
+
 if [ "$REGURL" == "--host" ]; then
    HOSTNAME=$2
    if [ -z $HOSTNAME ]; then
