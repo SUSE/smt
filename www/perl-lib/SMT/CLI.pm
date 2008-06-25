@@ -1840,7 +1840,7 @@ sub subscriptionReport
 
     if($warning ne "")
     {
-        $report{'alerts'} = "\n".__("Warnings:\n").$warning ;
+        $report{'alerts'} .= "\n".__("Warnings:\n").$warning ;
     }
     
     return \%report;
