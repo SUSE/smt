@@ -570,6 +570,14 @@ sub insertRegistration
     }
 
     #
+    # if we do not have the hostname, try to get the IP address
+    #
+    if($hostname eq "")
+    {
+        $hostname = $r->connection()->remote_ip();
+    }
+
+    #
     # update Clients table
     #
     my $aff = 0;
