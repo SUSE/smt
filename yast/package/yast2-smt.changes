@@ -3,7 +3,8 @@ Tue Jun 17 12:38:21 CEST 2008 - locilka@suse.cz
 
 - Temporarily disabling custom_control_file defined by Dirinstall
   module in contructor. This change enables ProductControl module
-  to find the proposal:service in product control file.
+  to find the proposal:service in product control file
+  (bnc #400782).
 - 2.13.19
 
 -------------------------------------------------------------------
