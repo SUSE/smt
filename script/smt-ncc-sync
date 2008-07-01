@@ -32,7 +32,8 @@ use Getopt::Long;
                           'todir=s'   => \$todir,
                           'createdbreplacementfile=s' => \$createdbreplfile,
                           "logfile|L=s" => \$logfile,
-                          'debug|d'  => \$debug
+                          'debug|d'  => \$debug,
+			  'help|h'   => \$help
                          );
 
 if ( defined $help and ( $help == 1 ) )
