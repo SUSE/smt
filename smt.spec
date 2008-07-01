@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.0.4)
+# spec file for package smt (Version 1.0.5)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -13,7 +13,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl
-Version:        1.0.4
+Version:        1.0.5
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       apache2
@@ -143,6 +143,150 @@ exit 0
 %doc doc/Server-Tuning.txt doc/SMT-Database-Schema.txt
 
 %changelog
+* Mon Jun 30 2008 - mc@suse.de
+- version 1.0.4
+  * get client IP if no hostname was send and store it in the
+  client table (bnc#403695)
+  * smt-report: warnings should not drop alerts. (bnc#403703)
+* Tue Jun 24 2008 - mc@suse.de
+- version 1.0.3
+  * catch SSL errors on download and provide nice error message
+  instead of a perl backtrace. (bnc#401607)
+  * add check for root user to clientSetup4SMT.sh
+  * fix not running apache after rcsmt start (bnc#403104)
+* Wed Jun 18 2008 - mc@suse.de
+- version 1.0.2
+  * smt-setup-custom-catalog: enhance help text and man page:
+  add info about how to find out the Catalog ID (bnc#400501)
+  * close filehandles if we do not need them anymore (bnc#399260)
+* Fri Jun 13 2008 - mc@suse.de
+- version 1.0.1
+  * fix "unlimited" handling in the report summary table
+  (bnc#398875)
+  * adding a DISCLAIMER to the bottom of a report
+  * show also unused expired subscriptions in report
+  to match NCC report (bnc#398120)
+  * change column titles to improve the report
+  (first step to fix bnc#398130)
+  * fix product detection (bnc#398817)
+  * add verbose mode to list-registrations, which shows also
+  the subscriptions where this client is assigned to, if
+  NCC registration is enabled. (bnc#398166)
+* Mon Jun 09 2008 - mc@suse.de
+- version 1.0.0
+  * fix some per warnings
+  * set a UserAgent timeout
+  * manually adding a header to an ASCIITable to speed up
+  rendering (bnc#396702)
+  * reduce max register requests in one bulkop to 15.
+  * small fixes in man pages and help texts
+  * fix return, in case of no catalog were removed
+  (part of bnc#397100)
+  * move proxy settings into a seperate function
+  * implement own proxy variables in smt.conf (bnc#397369)
+  * allow to mirror not signed repositories (bnc#397118)
+  * fix some problems with --dryrun
+  * fix some problems with verify and deepverify
+  * read global proxy settings inside of cron scripts
+  (bnc#398589)
+* Mon Jun 02 2008 - mc@suse.de
+- version 0.9.7
+  * fix wrong SQL statement with NODCOUNT = -1 (bnc#396291)
+  * fix csv headlines
+* Wed May 28 2008 - dmacvicar@suse.de
+- version 0.9.6
+  * changes on man pages, texts and command
+  line options
+  * (bnc#393776)
+  * (bnc#393778)
+  * (bnc#390085)
+  * (bnc#393075)
+* Wed May 21 2008 - mc@suse.de
+- version 0.9.5
+  * changes on man pages and texts.
+* Tue May 20 2008 - mc@suse.de
+- version 0.9.4
+  * mirror-sle9: add timeout options to wget (bnc#390240)
+  * mirror-sle9: use same filehandle for OUT and ERR (bnc#390240)
+  * new man page drafts
+  * fix some messages (bnc#391439)
+  * implement proxy authentication support (bnc#392495)
+  * follow redirects when flagging mirrorable catalogs (bnc#392509)
+  * show productIDs in list-products output (bnc#391997)
+* Tue May 13 2008 - mc@suse.de
+- version 0.9.3
+  * do not send a NU service if we do not have a catalog for the
+  client (maybe fix bnc#388406)
+* Fri May 09 2008 - mc@suse.de
+- version 0.9.2
+  * fix incorrect time stamps on mirrored files (bnc#388227)
+  * change logging in SMT::Registration and NU::RepoIndex
+  * use different logging function
+  * no informational logging by default(only errors)
+  * write Site ID and SMT ID into the report
+  * second draft for the legend
+  * fix help of smt scripts (bnc#387402)
+  * mark some documentation to be installed
+  * mark man-pages as %%doc
+  * add --host <smt hostname> option to clientSetup4SMT.sh
+  to generate the URL based on the provided hostname
+* Thu May 08 2008 - mc@suse.de
+- version 0.9.1
+  * create logfiles with 600 permissions
+  * rotate if logfile size is above 4MB
+  * show an error if no product were found during
+  smt catalogs -enable-by-prod
+  * add hint to smt catalogs --help how to find
+  valid product names
+  * fix column name in list-products. A product
+  has an architecture, no target
+  * calculate locally used Subscriptions directly via
+  PRODUCT_CLASS columns in Subscriptions and Products table.
+  * parse <product-class> from NCC result
+  * rename smt-mirror-sles9 to smt-mirror-sle9 (bnc#387405)
+  - Database version 0.09
+    - drop ProductSubscriptions table
+    - rename PRODGROUP to PRODUCT_CLASS in Subscriptions table
+* Tue May 06 2008 - mc@suse.de
+- version 0.9.0
+  * fix smt ncc-sync does not enable zypp catalogs (bnc#384363)
+  * sync with ncc before generate report
+  * add parameter --nonccsync to disable ncc sync during
+  report generation
+  * create only reports we want to show
+  * add smt-gen-report
+  * remove report from smt-daily
+  * get commandline options from smt-cron.conf
+  The admin has now the possibility to change the parameters
+  * add smt-gen-report to cron
+  * rename YEP => SMT in smt help
+  * fixes to be able to run smt-ncc-sync --todir <dir> without
+  database
+  * fix parsing of <consumed>
+  * If start-date and/or end-date of a subscription is 0, this
+  subscriptions expires never
+  * parse SUBID from listsubscriptions call
+  * generate PRODGROUP during listsubscriptions
+  * modify report to use SUBID instead of REGCODE and PRODGROUP
+  instead of SUBNAME
+  * strip | character from path before using it for XML::Parser
+  (bnc#383759)
+  * add check of localdir() (bnc#383759)
+  - Database version 0.08
+    - Subscription table:
+    - SUBSTARTDATE and SUBENDATE can be NULL
+    - Add SUBID as primary key
+    - add PRODGROUP
+    - modify ProductSubscriptions and ClientSubscriptions table
+  to use SUBID as reference to Subscriptions
+* Mon Apr 28 2008 - mc@suse.de
+- version 0.8.0
+  * fix disable catalogs if only the target is provided
+  * set HTTPS_CA_DIR and enable certificate checking
+  * set NCCREGERROR if registration at NCC failed
+  * do not register clients at NCC which registration failed before
+  * add --reseterror parameter to smt-register
+  * add alert to report, with the number of failed NCC registrations
 * Fri Apr 25 2008 - mc@suse.de
 - version 0.7.1
   * send ostarget and ostarget-bak with de-register call
