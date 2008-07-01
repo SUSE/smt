@@ -1376,15 +1376,26 @@ sub productSubscriptionReport
         $used_expired = $dummy;
 
         
-        if($used_esoon > 0)
+        if($used_esoon == 1)
         {
-            $warning .= sprintf(__("%d Machines use '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
+            $warning .= sprintf(__("%d machine use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
                                 $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
-        
-        if($missing > 0)
+        elsif($used_esoon > 1)
         {
-            $alerts .= sprintf(__("%d Machines use too many '%s' subscriptions. please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
+            $warning .= sprintf(__("%d machines use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
+                                $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+        }
+
+        
+        if($missing == 1)
+        {
+            $alerts .= sprintf(__("%d machine use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
+                               $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+        }
+        elsif($missing > 1)
+        {
+            $alerts .= sprintf(__("%d machines use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
                                $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
     }
@@ -1808,17 +1819,25 @@ sub subscriptionReport
 
         $used_expired = $dummy;
 
-        if($used_esoon > 0)
+        if($used_esoon == 1)
         {
-            $warning .= sprintf(__("%d Machines uses a '%s' subscriptions, which expires within the next 30 Days. Please renew the subscription.\n"), 
+            $warning .= sprintf(__("%d machine use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
+                                $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+        }
+        elsif($used_esoon > 1)
+        {
+            $warning .= sprintf(__("%d machines use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
                                 $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
 
-        if($missing > 0)
+        if($missing == 1)
         {
-            # FIXME: These are missing subscriptions, expired is only one cause, another is overloaded subscriptions
-            #        (nodecount < consumed)
-            $alerts .= sprintf(__("%d Machines uses too many '%s' subscriptions. Please order new subscriptions.\n"), 
+            $alerts .= sprintf(__("%d machine use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
+                               $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+        }
+        elsif($missing > 1)
+        {
+            $alerts .= sprintf(__("%d machines use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
                                $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
     }
