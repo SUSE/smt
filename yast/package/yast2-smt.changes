@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jul 18 13:35:21 CEST 2008 - locilka@suse.cz
+
+- Added "NCC Mirroring Credentials" around NUUser and NUPassword
+  entries to make that dialog more obvious (bnc #409349).
+
+-------------------------------------------------------------------
 Tue Jun 17 12:38:21 CEST 2008 - locilka@suse.cz
 
 - Temporarily disabling custom_control_file defined by Dirinstall

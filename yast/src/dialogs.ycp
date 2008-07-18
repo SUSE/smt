@@ -47,19 +47,21 @@
 
 			`VWeight(1, `VStretch()),
 
-			`Left (`HSquash (`MinWidth (
-			    20,
-			    // TRANSLATORS: text entry (User name)
-			    `TextEntry (`id ("NUUser"), _("NU &User"))
-			))),
-			`Left (`HSquash (`MinWidth (
-			    20,
-			    // TRANSLATORS: password entry
-			    `Password (`id ("NUPass"), _("NU &Password"))
-			))),
-			`VSpacing (1),
-			// TRANSLATORS: push button
-			`PushButton (`id ("test_NU_credentials"), `opt(`key_F6), _("&Test...")),
+			`Left (`Frame (_("NCC Mirroring Credentials"), (`VBox (
+			    `HSquash (`MinWidth (
+				25,
+				// TRANSLATORS: text entry (User name)
+				`TextEntry (`id ("NUUser"), _("&User"))
+			    )),
+			    `HSquash (`MinWidth (
+				25,
+				// TRANSLATORS: password entry
+				`Password (`id ("NUPass"), _("&Password"))
+			    )),
+			    `VSpacing (1),
+			    // TRANSLATORS: push button
+			    `PushButton (`id ("test_NU_credentials"), `opt(`key_F6), _("&Test..."))
+			)))),
 
 			`VWeight(1, `VStretch()),
 
