@@ -55,8 +55,10 @@ sub getUsernameFromRequest($)
 sub handler {
     my $r = shift;
     my $dbh = undef;
-
+    
     my $regtimestring = SMT::Utils::getDBTimestamp();
+
+    my $LocalBasePath = "";
 
     $r->log->info("repoindex.xml requested");
 
@@ -64,6 +66,23 @@ sub handler {
     if ( not $dbh=SMT::Utils::db_connect() ) 
     {  return Apache2::Const::SERVER_ERROR; }
 
+    eval
+    {
+        my $cfg = SMT::Utils::getSMTConfig();
+        $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
+        if(!defined $LocalBasePath || $LocalBasePath eq "")
+        {
+            $LocalBasePath = "";
+        }
+    };
+    if($@)
+    {
+        # for whatever reason we cannot read this
+        # log the error and continue
+        $r->log->error("Cannot read config file: $@");
+        $LocalBasePath = "";
+    }
+    
     $r->content_type('text/xml');
 
     $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
@@ -102,18 +121,29 @@ sub handler {
     {
         $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
-         $writer->emptyTag('repo',
-                           'name' => ${$val}{'NAME'},
-                           'alias' => ${$val}{'NAME'},                 # Alias == Name
-                           'description' => ${$val}{'DESCRIPTION'},
-                           'distro_target' => ${$val}{'TARGET'},
-                           'path' => ${$val}{'LOCALPATH'},
-                           'priority' => 0,
-                           'pub' => 0
+        if(defined $LocalBasePath && $LocalBasePath ne "")
+        {
+            if(!-e $LocalBasePath."/repo/".${$val}{'LOCALPATH'}."/repodata/repomd.xml")
+            {
+                # catalog does not exists on this server. Log it, that the admin has a chance 
+                # to find the error.
+                $r->log->warn("Return a catalog, which does not exists on this server (".$LocalBasePath."/repo/".${$val}{'LOCALPATH'}.")");
+                $r->log->warn("Run smt-mirror to create this catalog.");
+            }
+        }
+        
+        $writer->emptyTag('repo',
+                          'name' => ${$val}{'NAME'},
+                          'alias' => ${$val}{'NAME'},                 # Alias == Name
+                          'description' => ${$val}{'DESCRIPTION'},
+                          'distro_target' => ${$val}{'TARGET'},
+                          'path' => ${$val}{'LOCALPATH'},
+                          'priority' => 0,
+                          'pub' => 0
                          );
-         # don't laugh, zmd requires a special look of the XML :-(
-         print "\n";
-
+        # don't laugh, zmd requires a special look of the XML :-(
+        print "\n";
+        
     }
 
     $writer->endTag("repoindex");
