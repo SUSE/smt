@@ -104,7 +104,7 @@ if($@ || !defined $cfg)
     exit 1;
 }
 
-if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
+if(!defined $LocalBasePath || $LocalBasePath eq "" )
 {
     $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
     if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
@@ -117,6 +117,26 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
         exit 1;
     }
 }
+else
+{
+    if(!-d $LocalBasePath)
+    {
+        # directory does not exists, try to create it.
+        eval {
+            &File::Path::mkpath($LocalBasePath);
+        };
+        if ($@) 
+        {
+            SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot create %s: %s"), $LocalBasePath, $@));
+            if(!SMT::Utils::unLock("smt-mirror"))
+            {
+                SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+            }
+            exit 1;
+        }
+    }
+}
+
 
 if($hardlink > 0)
 {
