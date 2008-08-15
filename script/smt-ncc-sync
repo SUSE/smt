@@ -65,15 +65,6 @@ if($fromdir ne "" && $todir ne "")
     $todir   = "";
 }
 
-if($fromdir ne "" && ! -d $fromdir)
-{
-	die "Directory '$fromdir' does not exist";
-}
-if($todir ne "" && ! -d $todir)
-{
-	die "Directory '$fromdir' does not exist";
-}
-
 if(!SMT::Utils::openLock("smt-ncc-sync"))
 {
     print __("Syncronization process is still running.\n");
@@ -83,6 +74,25 @@ if(!SMT::Utils::openLock("smt-ncc-sync"))
 # open the logfile
 
 my $LOG = SMT::Utils::openLog($logfile);
+
+if($fromdir ne "" && ! -d $fromdir)
+{
+	SMT::Utils::printLog($LOG, "error", sprintf(__("Directory '%s' does not exist."), $fromdir));
+    exit 1;
+}
+
+if($todir ne "" && ! -d $todir)
+{
+    # directory does not exists, try to create it.
+    eval {
+        &File::Path::mkpath($todir);
+    };
+    if ($@) 
+    {
+        SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot create %s: %s"), $todir, $@));
+        exit 1;
+    }
+}
 
 eval
 {
