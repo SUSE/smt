@@ -196,13 +196,18 @@ sub mirrorTo()
     printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string));
     printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->{LOCALPATH}));
 
-    my $destfile = join( "/", ( $self->{LOCALPATH}, "repo/repoindex.xml" ) );
+    #
+    # store the repoindex to a temdir. It is needed only for mirroring.
+    # To have it later in LOCALPATH may confuse our customers.
+    #
+    my $destdir = File::Temp::tempdir(CLEANUP => 1);
+    my $destfile = join( "/", ( $destdir, "repo/repoindex.xml" ) );
 
     # get the repository index
     my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG});
     $job->uri( $self->{URI} );
     $job->resource( "/repo/repoindex.xml" );
-    $job->localdir( $self->{LOCALPATH} );
+    $job->localdir( $destdir );
     
     # get the file
     $job->mirror();
