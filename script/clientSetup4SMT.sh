@@ -17,41 +17,68 @@ ZMDSSLDIR=/etc/zmd/trusted-certs/
 
 function usage()
 {
-    echo ""
-    echo "Usage: $0 <registration URL>"
-    echo "Usage: $0 --host <hostname of the SMT server>"
-    echo "       configures a SLE10 client to register against a different registration server"
-    echo ""
-    echo "Example: $0 https://smt.example.com/center/regsvc"
-    echo "Example: $0 --host smt.example.com"
+    if [ -n "$1" ] ; then
+        echo "$1" >&2
+        echo ""
+    fi
+
+    cat << EOT >&2
+
+  Usage: $0 <registration URL> [--regcert <url>]
+  Usage: $0 --host <hostname of the SMT server> [--regcert <url>]
+         configures a SLE10 client to register against a different registration server
+
+  Example: $0 https://smt.example.com/center/regsvc
+  Example: $0 --host smt.example.com
+  Example: $0 --host smt.example.com --regcert http://smt.example.com/certs/smt.crt
+EOT
+
+exit 1
 }
 
-REGURL=$1
+REGURL=""
+VARIABLE=""
+while true ; do
+    case "$1" in
+        --host) VARIABLE=S_HOSTNAME;;
+        --regcert) VARIABLE=REGCERT;;
+        "") break ;;
+        -h|--help) usage;;
+        https*) REGURL=$1;;
+        *) usage "Unknown option $1";;
+    esac
+    if [ -n "$VARIABLE" ] ; then
+        test -z "$2" && usage "Option $1 needs an argument"
+        eval $VARIABLE=\$2
+        shift
+        VARIABLE=""
+    fi
+    shift
+done
 
 if [ `id -u` != 0 ]; then
     echo "You must be root. Abort."
     exit 1;
 fi
 
-if [ "$REGURL" == "--host" ]; then
-   HOSTNAME=$2
-   if [ -z $HOSTNAME ]; then
-	   echo "Missing Hostname. Abort."
-           usage
-           exit 1;
-   fi
-   REGURL="https://$HOSTNAME/center/regsvc"
+if [ -n "$S_HOSTNAME" ]; then
+    REGURL="https://$S_HOSTNAME/center/regsvc"
 fi
 
 if [ -z "$REGURL" ]; then
     echo "Missing registration URL. Abort."
     usage
-    exit 1;
 fi
 
 if ! echo $REGURL | grep "^https" > /dev/null ; then
     echo "The registration URL must be a HTTPS URL. Abort."
     exit 1
+fi
+
+if [ -z "$REGCERT" ]; then
+    CERTURL=`echo "$REGURL" | awk -F/ '{print "https://" $3 "/smt.crt"}'`
+else
+    CERTURL="$REGCERT"
 fi
 
 if [ ! -x $OPENSSL ]; then
@@ -89,7 +116,6 @@ if [ ! -x $CHMOD ]; then
 	exit 1;
 fi
 
-CERTURL=`echo "$REGURL" | awk -F/ '{print "https://" $3 "/smt.crt"}'`
 TEMPFILE=`mktemp /tmp/smt.crt.XXXXXX`
 
 if [ -x $WGET ]; then
