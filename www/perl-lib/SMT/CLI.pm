@@ -466,8 +466,6 @@ sub listRegistrations
 
         my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
-
-    
         foreach my $clnt (@{$clients})
         {
             my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH, r.REGDATE, r.NCCREGDATE, r.NCCREGERROR from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", 
@@ -1070,23 +1068,72 @@ sub productSubscriptionReport
 
         $calchash->{$product_class}->{MACHINES}       = 0;
         $calchash->{$product_class}->{TOTMACHINES}    = 0;
+        $calchash->{$product_class}->{VMCOUNT}        = 0;
         $calchash->{$product_class}->{SUM_ACTIVE_SUB} = 0;
         $calchash->{$product_class}->{SUM_ESOON_SUB}  = 0;
     }
     
-
-    $statement = "SELECT PRODUCT_CLASS, COUNT(DISTINCT r.GUID) AS GUIDCNT from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID group by PRODUCT_CLASS;";
+    $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID";
 
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
 
-    $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
+    $res = $dbh->selectall_arrayref($statement, {Slice => {}});
+    my $dhash = {};
 
-    foreach my $prodclass (keys %{$res})
+    #
+    # You need one subscription for every physical machine per product_class.
+    # So we need to filter out virtual machines which running on the same hardware 
+    # We should not count them multiple times.
+    #
+    foreach my $set (@{$res})
     {
-        $calchash->{$prodclass}->{MACHINES} = int $res->{$prodclass}->{GUIDCNT};
-        $calchash->{$prodclass}->{TOTMACHINES} = int $res->{$prodclass}->{GUIDCNT};
-    }
+        my $key = $set->{PRODUCT_CLASS}." ".$set->{GUID};
+        
+        #
+        # we have this combination already => skip it.
+        #
+        next if(exists $dhash->{$key});
+        
+        $statement = sprintf("select VALUE from MachineData where GUID='%s' and KEYNAME='host';", $set->{GUID});
+        my $arr = $dbh->selectcol_arrayref($statement);
+        
+        if( exists $arr->[0] && defined $arr->[0] && $arr->[0] ne "")
+        {
+            #
+            # this is a VM, count it
+            #
+            $calchash->{$set->{PRODUCT_CLASS}}->{VMCOUNT} += 1;
 
+            #
+            # currently we do not count subscriptions for VMs
+            #
+            next;
+            
+            #my $newkey =  $set->{PRODUCT_CLASS}." ".$arr->[0];
+            #if(exists $dhash->{$newkey})
+            #{
+                #
+                # This is a virtual machine and this PRODUCT_CLASS/ID combination
+                # has already a subscription. Skip the rest.
+                #
+            #    next;
+            #}
+            
+            #
+            # this is a VM which do not have a subscription. So use the PRODUCT_CLASS/hostGUID as key
+            # and add it to the dhash.
+            #
+            #$key = $newkey;
+        }
+        $dhash->{$key} = $set;
+        
+        #
+        # count the machines which need a subscription
+        #
+        $calchash->{$set->{PRODUCT_CLASS}}->{MACHINES}    += 1;
+        $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINES} += 1;
+    }
+    
     #
     # Active Subscriptions
     #
@@ -1330,6 +1377,13 @@ sub productSubscriptionReport
 
     foreach my $product_class (keys %{$calchash})
     {
+        #
+        # not exists means no subscription dataset from NCC available
+        # this happens for "free" products like the SDK
+        # skip these in the summary
+        #
+        next if(! exists $calchash->{$product_class}->{SUM_ACTIVE_SUB});
+        
         my $missing = $calchash->{$product_class}->{TOTMACHINES} - $calchash->{$product_class}->{SUM_ACTIVE_SUB} - $calchash->{$product_class}->{SUM_ESOON_SUB};
         $missing = 0 if ($missing < 0);
         if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
@@ -1338,8 +1392,12 @@ sub productSubscriptionReport
             $missing = 0;
         }
         
+        #my $vmtext = (exists $calchash->{$product_class}->{VMCOUNT} &&
+        #              defined $calchash->{$product_class}->{VMCOUNT} &&
+        #              $calchash->{$product_class}->{VMCOUNT} > 0)?"  (+ ".$calchash->{$product_class}->{VMCOUNT}." VMs)":"";
+
         push @SUMVALUES, [$subnamesByProductClass->{$product_class},
-                          $calchash->{$product_class}->{TOTMACHINES}, 
+                          $calchash->{$product_class}->{TOTMACHINES},
                           ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB},
                           ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB},
                           $missing];
