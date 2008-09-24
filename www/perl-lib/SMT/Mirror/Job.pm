@@ -240,7 +240,15 @@ sub modified
     my $remote = $self->remote();
     do
     {
-        $response = $self->{USERAGENT}->head( $remote );
+        eval
+        {
+            $response = $self->{USERAGENT}->head( $remote );
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, "warn", "head request failed: $@");
+            return undef;
+        }
 
         if ( $response->is_redirect )
         {
