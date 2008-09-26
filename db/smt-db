@@ -298,7 +298,7 @@ sub setup
 	return 6;
     }
 
-    $r = $dbh->do("create database if not exists smt");
+    $r = $dbh->do("create database if not exists smt character set = 'latin1'");
     if($r != 1)
     {
         print STDERR "Cannot create Database smt.\n";
