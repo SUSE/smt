@@ -514,6 +514,10 @@ sub getProxySettings
         }
     }
 
+    # strip trailing /
+      $httpsProxy =~ s/\/*$// if(defined $httpsProxy);
+      $httpProxy  =~ s/\/*$// if(defined $httpProxy);
+    
     return ($httpProxy, $httpsProxy, $proxyUser);
 }
 
