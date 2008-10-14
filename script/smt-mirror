@@ -238,6 +238,13 @@ foreach my $id (keys %{$hash})
     
     if( $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
     {
+        
+        my $zuri = URI->new($hash->{$id}->{EXTURL});
+        if($zuri->host eq "nu.novell.com")
+        {
+            $zuri->userinfo("$nuUser:$nuPass");
+        }
+        
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
@@ -248,7 +255,7 @@ foreach my $id (keys %{$hash})
         }
         else
         {
-            $zyppMirror->uri( $hash->{$id}->{EXTURL} );
+            $zyppMirror->uri( $zuri->as_string );
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
         }

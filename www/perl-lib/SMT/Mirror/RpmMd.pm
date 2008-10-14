@@ -37,7 +37,8 @@ sub new
     $self->{LASTUPTODATE} = 0;
     $self->{REMOVEINVALID} = 0;
     $self->{MIRRORSRC} = 1;
-
+    $self->{HAVEYUMHEADER} = 0;  # 0 = unknown, 1 = yes, -1 = no
+    
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
 
@@ -169,6 +170,7 @@ sub mirrorTo()
       {
           # we should continue here
           printLog($self->{LOG}, "info", __("repomd.xml is the same, but repo is not valid. Start mirroring."));
+          unlink($job->local);
 
           # just in case
           $self->{LASTUPTODATE} = 0;
@@ -280,11 +282,61 @@ sub mirrorTo()
         }
     }
     
+    # find out if we have old style yum repo with headers directoy
+
+    $job->remoteresource("/headers/header.info");
+    $job->resource( "/headers/header.info" );
+    $result = $job->modified(1);
+    if( ! defined $result )
+    {
+        $self->{HAVEYUMHEADER} = -1;
+    }
+    else
+    {
+        $self->{HAVEYUMHEADER} = 1;
+        $job->mirror();
+    }
+
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->specialmdlocation(1);
     $parser->parse(".repodata/repomd.xml", sub { download_handler($self, @_)});
+
+    if($self->{HAVEYUMHEADER} && -e $self->{LOCALPATH}."/headers/header.info" )
+    {
+        open(HDR, "< $self->{LOCALPATH}/headers/header.info") and do
+        {
+            while(<HDR>)
+            {
+                if($_ =~ /^(\d+):([^=]+)/)
+                {
+                    my $epoch = $1;
+                    my $file  = $2;
+                    
+                    if($file =~ /^(.+)-([^-]+)-([^-]+)\.([a-zA-Z0-9_]+)$/)
+                    {
+                        my $name = $1;
+                        my $version = $2;
+                        my $release = $3;
+                        my $arch = $4;
+                        
+                        my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
+                        
+                        my $hjob = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+                        $hjob->resource( $hdrLocation );
+                        $hjob->localdir( $self->{LOCALPATH} );
+                        $hjob->uri( $self->{URI} );
+                        $hjob->noChecksumCheck(1);
+                        my $hdrdest = $self->{LOCALPATH}."/$hdrLocation";
+                        
+                        $self->{JOBS}->{$hdrdest} = $hjob;
+                    }
+                }
+            }
+            close HDR;
+        }
+    }
  
     foreach my $r ( sort keys %{$self->{JOBS}})
     {
@@ -361,7 +413,7 @@ sub mirrorTo()
             }
         } while $tries > 0;
     }
-
+   
     # dryrun - remove .repodata directory
     if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
     {
@@ -444,11 +496,12 @@ sub clean()
     find ( { wanted =>
              sub
              {
-                 if ( -f $File::Find::name )
+                 if ( $File::Find::dir !~ /\/headers/ && -f $File::Find::name )
                  { 
                      my $name = $File::Find::name;
                      $name =~ s/\/\.?\//\//g;
-                     $self->{CLEANLIST}->{$name} = 1; 
+
+                     $self->{CLEANLIST}->{$name} = 1;
                  }
              }
              , no_chdir => 1 }, $self->{LOCALPATH} );

@@ -708,12 +708,22 @@ sub setMirrorableCatalogs
             }
             else
             {
+                # on nu.novell.com we need to authenticate, so put the
+                # userinfo into this url
+                my $url = URI->new($catUrl);
+                if($url->host eq "nu.novell.com")
+                {
+                    my $uuri = URL->new($nuri);
+                    my $userinfo = $uuri->userinfo;
+                    $url->userinfo($userinfo);
+                }
+
     	        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
-                my $remote = $catUrl."/repodata/repomd.xml";
+                my $remote = $url->as_string()."/repodata/repomd.xml";
                 my $local = $tempdir."/repodata/repomd.xml";
                 # make sure the container destination exists
                 &File::Path::mkpath( dirname($local) );
-
+                
                 my $redirects = 0;
                 my $response;
                 
