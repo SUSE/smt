@@ -20,6 +20,8 @@ sub new
     $self->{RESOURCE}   = undef;
     $self->{RESOURCEEXT}   = undef;   # if we need to set a different resource remote and local
     $self->{CHECKSUM}   = undef;
+    $self->{NO_CHECKSUM_CHECK}   = 0;
+    
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:SMT::Utils::createUserAgent(keep_alive => 1);
 ;
@@ -120,13 +122,27 @@ sub checksum()
     return $self->{CHECKSUM};
 }
 
+# no_checksum_check property
+sub noChecksumCheck
+{
+    my $self = shift;
+    if(@_) 
+    {
+        $self->{NO_CHECKSUM_CHECK} = shift 
+    }
+    return $self->{NO_CHECKSUM_CHECK};
+}
+
+
 # verify the local copy of the job with the known
 # checksum without accesing the network
 sub verify()
 {
     my $self = shift;
-     
-    return 0 if ( not $self->checksum() eq  $self->realchecksum() );
+    
+    return 1 if($self->{NO_CHECKSUM_CHECK});
+
+    return 0 if ( $self->checksum() ne  $self->realchecksum() );
     return 1;
 }
 
@@ -234,7 +250,8 @@ sub mirror
 sub modified
 {
     my $self = shift;
-
+    my $doNotLog = shift || 0;
+    
     my $redirects = 0;
     my $response;
     my $remote = $self->remote();
@@ -246,7 +263,7 @@ sub modified
         };
         if($@)
         {
-            printLog($self->{LOG}, "warn", "head request failed: $@");
+            printLog($self->{LOG}, "warn", "head request failed: $@") if(!$doNotLog);
             return undef;
         }
 
@@ -273,7 +290,7 @@ sub modified
             my $saveuri = URI->new($self->remote());
             $saveuri->userinfo(undef);
             printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
-                                                    $saveuri->as_string() , $response->status_line));
+                                                    $saveuri->as_string() , $response->status_line))  if(!$doNotLog);
             return undef;
         }
         
