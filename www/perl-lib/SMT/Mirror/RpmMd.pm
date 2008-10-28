@@ -236,49 +236,58 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
-    my $repoIsSigned = 1;
-    
     $job->remoteresource("/repodata/repomd.xml.asc");
     $job->resource( "/.repodata/repomd.xml.asc" );
-    $result = $job->mirror();
-    if( $result == 1 )
-    {
-        $repoIsSigned = 0;
-        printLog($self->{LOG}, "info", sprintf(__("Found unsigned repository. Ignore previous error.")));
-    }
-    elsif( $result == 2 )
-    {
-        $self->{STATISTIC}->{UPTODATE} += 1;
-    }
-    else
+
+    if( defined $job->modified(1) )
     {
         if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
         {
             printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
+            $self->{STATISTIC}->{DOWNLOAD} += 1;
         }
-        $self->{STATISTIC}->{DOWNLOAD} += 1;
+        else
+        {        
+            $result = $job->mirror();
+            if( $result == 1 )
+            {
+                $self->{STATISTIC}->{ERROR} += 1;
+            }
+            elsif( $result == 2 )
+            {
+                $self->{STATISTIC}->{UPTODATE} += 1;
+            }
+            else
+            {
+                $self->{STATISTIC}->{DOWNLOAD} += 1;
+            }
+        }
     }
-
-    if($repoIsSigned)
+    
+    $job->remoteresource("/repodata/repomd.xml.key");
+    $job->resource( "/.repodata/repomd.xml.key" );
+    if( defined $job->modified(1) )
     {
-        $job->remoteresource("/repodata/repomd.xml.key");
-        $job->resource( "/.repodata/repomd.xml.key" );
-        $result = $job->mirror();
-        if( $result == 1 )
+        if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
         {
-            $self->{STATISTIC}->{ERROR} += 1;
-        }
-        elsif( $result == 2 )
-        {
-            $self->{STATISTIC}->{UPTODATE} += 1;
+            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
+            $self->{STATISTIC}->{DOWNLOAD} += 1;
         }
         else
         {
-            if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
+            $result = $job->mirror();
+            if( $result == 1 )
             {
-                printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
+                $self->{STATISTIC}->{ERROR} += 1;
             }
-            $self->{STATISTIC}->{DOWNLOAD} += 1;
+            elsif( $result == 2 )
+            {
+                $self->{STATISTIC}->{UPTODATE} += 1;
+            }
+            else
+            {
+                $self->{STATISTIC}->{DOWNLOAD} += 1;
+            }
         }
     }
     
