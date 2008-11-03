@@ -224,7 +224,7 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $hash = $dbh->selectall_hashref( "select CATALOGID, LOCALPATH, EXTURL, CATALOGTYPE from Catalogs where CATALOGTYPE='zypp' and MIRRORABLE='Y' and DOMIRROR='Y'", "CATALOGID" );
+    $hash = $dbh->selectall_hashref( "select CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE from Catalogs where (CATALOGTYPE='zypp' or CATALOGTYPE='yum') and MIRRORABLE='Y' and DOMIRROR='Y'", "CATALOGID" );
 }
 else
 {
@@ -233,17 +233,41 @@ else
 
 foreach my $id (keys %{$hash})
 {
-    next if(!exists $hash->{$id}->{CATALOGTYPE} || ! defined $hash->{$id}->{CATALOGTYPE} ||
-            lc($hash->{$id}->{CATALOGTYPE}) ne "zypp");
-    
-    if( $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
+    next if(!exists $hash->{$id}->{CATALOGTYPE} || ! defined $hash->{$id}->{CATALOGTYPE});
+
+    if( lc($hash->{$id}->{CATALOGTYPE}) eq "zypp" && 
+        $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
     {
-        
         my $zuri = URI->new($hash->{$id}->{EXTURL});
         if($zuri->host eq "nu.novell.com")
         {
             $zuri->userinfo("$nuUser:$nuPass");
         }
+        
+        my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
+        &File::Path::mkpath( $fullpath );
+
+        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc);
+        if($clean)
+        {
+            $zyppMirror->clean( $fullpath );
+        }
+        else
+        {
+            $zyppMirror->uri( $zuri->as_string );
+            $zyppMirror->deepverify($deepverify);
+            $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
+        }
+    }
+    elsif( lc($hash->{$id}->{CATALOGTYPE}) eq "yum" && 
+           $hash->{$id}->{EXTHOST} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
+    {
+        my $zuri = URI->new($hash->{$id}->{EXTHOST});
+        if($zuri->host eq "nu.novell.com")
+        {
+            $zuri->userinfo("$nuUser:$nuPass");
+        }
+        $zuri->path("/repo/".$hash->{$id}->{LOCALPATH});
         
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );

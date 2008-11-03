@@ -414,7 +414,7 @@ sub _updateDB
         # LOCALPATH is required
         if(lc($table) eq "catalogs")
         {
-            if(lc($row->{CATALOGTYPE}) eq "nu")
+            if(lc($row->{CATALOGTYPE}) eq "nu" || lc($row->{CATALOGTYPE}) eq "yum")
             {
                 $row->{LOCALPATH} = '$RCE/'.$row->{NAME}."/".$row->{TARGET};
             }
