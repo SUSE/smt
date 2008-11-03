@@ -190,6 +190,14 @@ sub mirror
     my $redirects = 0;
     my $response;
     my $remote = $self->remote();
+
+    if( -e $self->local() )
+    {
+        # LWP::UserAgent modify the file, but we need to replace it
+        # so we better remove it, if it exists
+        unlink $self->local();
+    }
+    
     do
     {
         eval

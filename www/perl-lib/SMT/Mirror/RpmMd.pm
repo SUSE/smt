@@ -202,7 +202,7 @@ sub mirrorTo()
     
     if( -d $job->localdir()."/repodata" )
     {
-        my $cmd = "cp -a '".$job->localdir()."/repodata' '".$job->localdir()."/.repodata'";
+        my $cmd = "cp -al '".$job->localdir()."/repodata' '".$job->localdir()."/.repodata'";
         printLog($self->{LOG}, "debug", "$cmd") if($self->{DEBUG});
         my $ret = `$cmd`;
         my $resource = $job->resource();
