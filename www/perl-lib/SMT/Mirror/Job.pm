@@ -24,7 +24,6 @@ sub new
     
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:SMT::Utils::createUserAgent(keep_alive => 1);
-;
 
     $self->{MAX_REDIRECTS} = 2;
     $self->{DEBUG}      = 0;
@@ -140,7 +139,7 @@ sub verify()
 {
     my $self = shift;
     
-    return 1 if($self->{NO_CHECKSUM_CHECK});
+    return 1 if($self->{NO_CHECKSUM_CHECK} || !defined $self->checksum());
 
     return 0 if ( $self->checksum() ne  $self->realchecksum() );
     return 1;
@@ -197,7 +196,16 @@ sub mirror
         # so we better remove it, if it exists
         unlink $self->local();
     }
+
+    my $tries  = 3;
     
+    #
+    # 0 = ok
+    # 1 = error
+    # 2 = up-to-date
+    #
+    my $errorcode = 0;
+    my $errormsg  = "";
     do
     {
         eval
@@ -209,49 +217,70 @@ sub mirror
             my $saveuri = URI->new($remote);
             $saveuri->userinfo(undef);
             
-            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s'"), 
-                                                    $saveuri->as_string()));
+            $tries--;
+            $errorcode = 1;
+            $errormsg = sprintf(__("Failed to download '%s'"), $saveuri->as_string());
+            printLog($self->{LOG}, "error", $errormsg);
             if($self->{DEBUG})
             {
                 printLog($self->{LOG}, "debug", $@);
             }
-            return 1;
         }
-        
-        if ( $response->is_redirect )
+        elsif ( $response->is_redirect )
         {
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                printLog($self->{LOG}, "error", __("Too many redirects"));
-                return 1;
+                $tries = 0;
+                $errorcode = 1;
+                $errormsg = __("Too many redirects");
+
+                printLog($self->{LOG}, "error", $errormsg);
             }
-            
-            my $newuri = $response->header("location");
-            
-            #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
-            $remote = URI->new($newuri);
+            else
+            {
+                my $newuri = $response->header("location");
+                
+                #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
+                $remote = URI->new($newuri);
+            }
         }
         elsif( $response->is_success )
         {
-            if (my $lm = $response->last_modified)
+            if($self->verify())
             {
-                # make sure the file has the same last modification time
-                utime $lm, $lm, $self->local();
+                if (my $lm = $response->last_modified)
+                {
+                    # make sure the file has the same last modification time
+                    utime $lm, $lm, $self->local();
+                }
+                return 0;
             }
-            return 0;
+            else
+            {
+                $tries--;
+                $errorcode = 1;
+                $errormsg = sprintf(__("Checksum mismatch '%s' vs '%s'"), $self->checksum(), $self->realchecksum());
+                printLog($self->{LOG}, "error", $errormsg);
+                if($tries > 0)
+                {
+                    unlink($self->local());
+                }
+            }
         }
         else
         {
             my $saveuri = URI->new($remote);
             $saveuri->userinfo(undef);
             
-            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
-                                                    $saveuri->as_string(), $response->status_line));
-            return 1;
+            $tries--;
+            $errorcode = 1;
+            $errormsg = sprintf(__("Failed to download '%s': %s"), $saveuri->as_string(), $response->status_line);
+            printLog($self->{LOG}, "error", $errormsg);
         }
-        
-    } while($response->is_redirect);
+    } while($tries > 0);
+
+    return 1;
 }
 
 # remote modification timestamp
