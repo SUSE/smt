@@ -177,6 +177,8 @@ foreach my $sname (@sections)
                 {
                     next if("$1" eq "$currentfile");
                     $currentfile=$1;
+                    $currentfile =~ s/`//;
+                    $currentfile =~ s/'//;
                 }
                 elsif($err =~ /request sent, awaiting response\.\.\.\s(\d+)\s+(.*)/)
                 {
@@ -186,7 +188,7 @@ foreach my $sname (@sections)
                     if(int($code) >= 400)
                     {
                         # ignore "403 Forbidden" for index.html and robots.txt 
-                        next if(int($code) >= 403 && ($currentfile =~ /index\.html/ || $currentfile =~ /robots\.txt/));
+                        next if(int($code) >= 403 && ($currentfile =~ /index\.html/ || $currentfile =~ /robots\.txt/) && $currentfile ne "$destdir"."index.html" );
 
                         SMT::Utils::printLog($log, "error", sprintf(__("Failed to download '%s': %s"), $currentfile, "$code: $msg"));
                         $errors += 1;
