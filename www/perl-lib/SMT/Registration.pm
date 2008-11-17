@@ -1052,6 +1052,10 @@ sub reg_handle_start_tag
         $data->{CURRENTELEMENT} = lc($element);
         # empty host is allowed, so we create the node here
         $data->{register}->{$data->{CURRENTELEMENT}} = "";
+        if(exists $attrs{type} && defined $attrs{type} && $attrs{type} ne "")
+        {
+            $data->{register}->{virttype} = $attrs{type};
+        }
     }
     else
     {

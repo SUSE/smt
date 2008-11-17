@@ -1033,22 +1033,43 @@ sub _buildRegisterXML
     $writer->characters($guid);
     $writer->endTag("guid");
 
+    my $host = "";
+    my $virtType = "";
+
     foreach my $pair (@{$regdata})
     {
-        if($pair->{KEYNAME} eq "host")
+        if($pair->{KEYNAME} eq "host" && defined $pair->{VALUE} && $pair->{VALUE} ne "")
         {
-            if(defined $pair->{VALUE} && $pair->{VALUE} ne "")
-            {
-                $writer->startTag("host");
-                $writer->characters($pair->{VALUE});
-                $writer->endTag("host");
-            }
-            else
-            {
-                $writer->emptyTag("host");
-            }
-            last;
+            $host = $pair->{VALUE};
         }
+        if($pair->{KEYNAME} eq "virttype" && defined $pair->{VALUE} && $pair->{VALUE} ne "")
+        {
+            $virtType = $pair->{VALUE};
+        }
+    }
+
+    if(defined $host && $host ne "")
+    {
+        if(defined $virtType && $virtType ne "")
+        {
+            $writer->startTag("host", type => $virtType );
+            $writer->characters($host);
+            $writer->endTag("host");
+        }
+        else
+        {
+            $writer->startTag("host");
+            $writer->characters($host);
+            $writer->endTag("host");
+        }
+    }
+    elsif(defined $virtType && $virtType ne "")
+    {
+        $writer->emptyTag("host", type => $virtType );
+    }
+    else
+    {
+        $writer->emptyTag("host");
     }
     
     $writer->startTag("authuser");
@@ -1088,7 +1109,7 @@ sub _buildRegisterXML
     
     foreach my $pair (@{$regdata})
     {
-        next if($pair->{KEYNAME} eq "host");
+        next if($pair->{KEYNAME} eq "host" || $pair->{KEYNAME} eq "virttype");
         
         if(!defined $pair->{VALUE})
         {
