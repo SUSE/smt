@@ -13,6 +13,7 @@ GREP=/usr/bin/grep
 RM=/bin/rm
 
 SSLDIR=/etc/ssl/certs/
+CAFILE=("/etc/pki/tls/cert.pem" "/usr/share/ssl/cert.pem")
 ZMDSSLDIR=/etc/zmd/trusted-certs/
 
 function usage()
@@ -86,11 +87,6 @@ if [ ! -x $OPENSSL ]; then
 	exit 1;
 fi
 
-if [ ! -x $CREHASH ]; then
-	echo "c_rehash command not found. Abort.";
-	exit 1;
-fi
-
 if [ ! -x $CP ]; then
 	echo "cp command not found. Abort.";
 	exit 1;
@@ -102,8 +98,12 @@ if [ ! -x $CAT ]; then
 fi
 
 if [ ! -x $GREP ]; then
-	echo "grep command not found. Abort.";
-	exit 1;
+    if [ -x "/bin/grep" ]; then
+        GREP=/bin/grep
+    else
+        echo "grep command not found. Abort.";
+        exit 1;
+    fi
 fi
 
 if [ ! -x $RM ]; then
@@ -145,15 +145,31 @@ if [ "$YN" != "Y" -a "$YN" != "y" ]; then
 	exit 1;
 fi
 
-$CP $TEMPFILE $SSLDIR/registration-server.pem
-$CHMOD 0644 $SSLDIR/registration-server.pem
-$CP $TEMPFILE $ZMDSSLDIR/registration-server.cer
-$CHMOD 0644 $ZMDSSLDIR/registration-server.cer
 
-$CREHASH $SSLDIR > /dev/null
+if [ -d $SSLDIR ]; then
+    $CP $TEMPFILE $SSLDIR/registration-server.pem
+    $CHMOD 0644 $SSLDIR/registration-server.pem
 
-if [ -x $ZMDINIT ]; then
-	$ZMDINIT restart > /dev/null
+    if [ ! -x $CREHASH ]; then
+        echo "c_rehash command not found.";
+    else
+        $CREHASH $SSLDIR > /dev/null
+    fi
+else
+    for f in "${CAFILE[@]}"; do
+        if [ -e $f ]; then
+            $CAT $TEMPFILE >> $f;
+            break;
+        fi
+    done
+fi
+
+if [ -d $ZMDSSLDIR ]; then
+    $CP $TEMPFILE $ZMDSSLDIR/registration-server.cer
+    $CHMOD 0644 $ZMDSSLDIR/registration-server.cer
+    if [ -x $ZMDINIT ]; then
+        $ZMDINIT restart > /dev/null
+    fi
 fi
 
 SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
