@@ -854,6 +854,35 @@ sub buildZmdConfig
         $writer->endTag("service");
     }
 
+    # and now the yum Repositories
+
+    foreach my $cat (keys %{$catalogs})
+    {
+        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "yum");
+        if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
+           $catalogs->{$cat}->{LOCALPATH} eq "")
+        {
+            $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
+            next;
+        }
+
+        $writer->startTag("service", 
+                          "id"          => $catalogs->{$cat}->{NAME},
+                          "description" => $catalogs->{$cat}->{DESCRIPTION},
+                          "type"        => "yum");
+        $writer->startTag("param", "id" => "url");
+        $writer->characters("$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH});
+        $writer->endTag("param");
+        
+
+        $writer->startTag("param", "name" => "catalog");
+        $writer->characters($catalogs->{$cat}->{NAME});
+        $writer->endTag("param");
+
+        $writer->endTag("service");
+    }
+
+
     $writer->endTag("zmdconfig");
 
     return $output;
