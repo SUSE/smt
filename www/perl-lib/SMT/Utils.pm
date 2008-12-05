@@ -88,7 +88,7 @@ sub openLock
     my $progname = shift;
     my $pid = $$;
     
-    my $path = "/var/run/$progname.pid";
+    my $path = "/var/run/smt/$progname.pid";
     
     if( -e $path )
     {
@@ -145,7 +145,7 @@ sub unLock
     my $progname = shift;
     my $pid = $$;
     
-    my $path = "/var/run/$progname.pid";
+    my $path = "/var/run/smt/$progname.pid";
     
     if(! -e $path )
     {

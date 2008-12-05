@@ -88,6 +88,7 @@ cd man
 for manp in smt*.1; do
     install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man1/$manp
 done
+mkdir -p $RPM_BUILD_ROOT/var/run/smt
 # ---------------------------------------------------------------------------
 
 %clean
@@ -118,6 +119,7 @@ exit 0
 %dir /usr/lib/SMT/bin/
 %dir %{_datadir}/schemas/
 %dir %{_datadir}/schemas/smt
+%dir /var/run/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
