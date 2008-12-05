@@ -648,7 +648,7 @@ sub setMirrorableCatalogs
     }
 
     # create a tmpdir to store repoindex.xml
-    my $destdir = File::Temp::tempdir(CLEANUP => 1);
+    my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1);
     my $indexfile = "";
     if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
     {
@@ -718,7 +718,7 @@ sub setMirrorableCatalogs
                     $url->userinfo($userinfo);
                 }
 
-    	        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
+    	        my $tempdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1);
                 my $remote = $url->as_string()."/repodata/repomd.xml";
                 my $local = $tempdir."/repodata/repomd.xml";
                 # make sure the container destination exists

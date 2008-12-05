@@ -36,6 +36,10 @@ my $LocalBasePath = "";
 my $help     = 0;
 my $logfile = "/dev/null";
 
+my $download = 0;
+my $errors = 0;
+my $size = 0;
+
 my $result = GetOptions ("debug|d"     => \$debug,
                          "cleanup|c"   => \$clean,
                          "hardlink=i"  => \$hardlink,
@@ -257,6 +261,11 @@ foreach my $id (keys %{$hash})
             $zyppMirror->uri( $zuri->as_string );
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
+
+            my $s = $zyppMirror->statistic();
+            $download += $s->{DOWNLOAD};
+            $errors   += $s->{ERROR};
+            $size     += $s->{DOWNLOAD_SIZE};
         }
     }
     elsif( lc($hash->{$id}->{CATALOGTYPE}) eq "yum" && 
@@ -282,6 +291,11 @@ foreach my $id (keys %{$hash})
             $zyppMirror->uri( $zuri->as_string );
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
+
+            my $s = $zyppMirror->statistic();
+            $download += $s->{DOWNLOAD};
+            $errors   += $s->{ERROR};
+            $size     += $s->{DOWNLOAD_SIZE};
         }
     }
 }
@@ -304,6 +318,11 @@ else
     
     $mirror->uri( $uri->as_string );
     $mirror->mirrorTo( $LocalBasePath, { urltree => 0, dryrun => $dryrun } );
+
+    my $s = $mirror->statistic();
+    $download += $s->{DOWNLOAD};
+    $errors   += $s->{ERROR};
+    $size     += $s->{DOWNLOAD_SIZE};
 }
 
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
@@ -311,25 +330,19 @@ if(!defined $dbreplfile)
 {
     $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE from Catalogs where MIRRORABLE='N' and DOMIRROR='Y'", "CATALOGID" );
     
-    if(keys %{$hash} == 0)
+    if(keys %{$hash} > 0)
     {
-        if(!SMT::Utils::unLock("smt-mirror"))
+    
+        my $warning = __("WARNING: The following Catalogs cannot be mirrored.\n");
+        $warning   .= __("         Maybe you have not enough permissions to download these Catalogs?\n\n");
+        
+        foreach my $id (keys %{$hash})
         {
-            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
-            exit 1;
+            $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
         }
-        exit 0;
-    }
-    
-    my $warning = __("WARNING: The following Catalogs cannot be mirrored.\n");
-    $warning   .= __("         Maybe you have not enough permissions to download these Catalogs?\n\n");
-    
-    foreach my $id (keys %{$hash})
-    {
-        $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
-    }
 
-    SMT::Utils::printLog($LOG, "info", $warning);
+        SMT::Utils::printLog($LOG, "info", $warning);
+    }
 }
 
 if(!SMT::Utils::unLock("smt-mirror"))
@@ -337,6 +350,12 @@ if(!SMT::Utils::unLock("smt-mirror"))
     SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
     exit 1;
 }
+
+SMT::Utils::printLog($LOG, "info", __("Summary"));
+SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered files    : %d "), $download ));
+SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
+SMT::Utils::printLog($LOG, "info", sprintf(__("Errors:                   : %d"), $errors));
+                                          
 
 exit 0;
 

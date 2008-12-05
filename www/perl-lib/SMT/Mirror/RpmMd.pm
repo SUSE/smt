@@ -31,6 +31,7 @@ sub new
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
     $self->{CLEANLIST} = {};
     $self->{DEBUG} = 0;
     $self->{LOG}   = undef;
@@ -38,6 +39,7 @@ sub new
     $self->{REMOVEINVALID} = 0;
     $self->{MIRRORSRC} = 1;
     $self->{HAVEYUMHEADER} = 0;  # 0 = unknown, 1 = yes, -1 = no
+
     
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
@@ -98,6 +100,12 @@ sub lastUpToDate()
     return $self->{LASTUPTODATE};
 }
 
+sub statistic
+{
+    my $self = shift;
+    return $self->{STATISTIC};
+}
+
 # mirrors the repository to destination
 sub mirrorTo()
 {
@@ -115,6 +123,7 @@ sub mirrorTo()
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{DOWNLOAD} = 0;
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
 
     # extract the url components to create
     # the destination directory
@@ -159,7 +168,7 @@ sub mirrorTo()
         
         # repomd is the same
         # check if the local repository is valid
-        if ( $self->verify($self->{LOCALPATH}, {removeinvalid => $removeinvalid }) )
+        if ( $self->verify($self->{LOCALPATH}, {removeinvalid => $removeinvalid, quiet => 1 }) )
         {
             printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
             print "\n";
@@ -178,6 +187,7 @@ sub mirrorTo()
             $self->{STATISTIC}->{ERROR}    = 0;
             $self->{STATISTIC}->{UPTODATE} = 0;
             $self->{STATISTIC}->{DOWNLOAD} = 0;
+            $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
             
             # reset deepverify. It was done so we do not need it during mirror again.
             $self->deepverify(0);
@@ -219,6 +229,7 @@ sub mirrorTo()
     }
     
     my $result = $job->mirror();
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
     if( $result == 1 )
     {
         $self->{STATISTIC}->{ERROR} += 1;
@@ -249,6 +260,7 @@ sub mirrorTo()
         else
         {        
             $result = $job->mirror();
+            $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
             if( $result == 1 )
             {
                 $self->{STATISTIC}->{ERROR} += 1;
@@ -276,6 +288,7 @@ sub mirrorTo()
         else
         {
             $result = $job->mirror();
+            $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
             if( $result == 1 )
             {
                 $self->{STATISTIC}->{ERROR} += 1;
@@ -304,6 +317,7 @@ sub mirrorTo()
     {
         $self->{HAVEYUMHEADER} = 1;
         $job->mirror();
+        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
     }
 
     # parse it and find more resources
@@ -372,6 +386,7 @@ sub mirrorTo()
         }
         
         my $mres = $self->{JOBS}->{$r}->mirror();
+        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($self->{JOBS}->{$r}->downloadSize());
         if( $mres == 1 )
         {
             $self->{STATISTIC}->{ERROR} += 1;
@@ -383,6 +398,7 @@ sub mirrorTo()
                 # remove broken file and download it again
                 unlink($self->{JOBS}->{$r}->local());
                 $mres = $self->{JOBS}->{$r}->mirror();
+                $self->{DOWNLOAD_SIZE} += int($self->{JOBS}->{$r}->downloadSize());
                 if($mres = 0)
                 {
                     $self->{STATISTIC}->{DOWNLOAD} += 1;
@@ -443,20 +459,22 @@ sub mirrorTo()
     if(exists $options->{dryrun} && defined $options->{dryrun} && $options->{dryrun})
     {
         printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun '%s'"), $saveuri->as_string));
-        printLog($self->{LOG}, "info", sprintf(__("=> Files to download: %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD}));
     }
     else
     {
         printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
-        printLog($self->{LOG}, "info", sprintf(__("=> Files Downloaded : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
+                                               $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE})));
     }
     
     if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date : %s"), $self->{STATISTIC}->{UPTODATE}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
     }
-    printLog($self->{LOG}, "info", sprintf(__("=> Errors           : %s"), $self->{STATISTIC}->{ERROR}));
-    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+    printLog($self->{LOG}, "info", sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
+    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
     print "\n";
 
     return $self->{STATISTIC}->{ERROR};
@@ -549,7 +567,7 @@ sub verify()
         exit 1;
     }
     
-    printLog($self->{LOG}, "info", sprintf(__("Verifying: %s"), $self->{LOCALPATH}));
+    printLog($self->{LOG}, "info", sprintf(__("Verifying: %s"), $self->{LOCALPATH})) if(!(exists $options->{quiet} && defined $options->{quiet} && $options->{quiet}));
 
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
@@ -566,7 +584,7 @@ sub verify()
     {
         $job = $self->{VERIFYJOBS}->{$_};
         
-        my $ok = $job->verify();
+        my $ok = ( (-e $job->local()) && $job->verify());
         $cnt++;
         if ($ok || ($job->resource eq "/repodata/repomd.xml") )
         {
@@ -574,21 +592,32 @@ sub verify()
         }
         else
         {
-            printLog($self->{LOG}, "info", "Verify: ". $job->resource . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum, $job->realchecksum));
-            $self->{STATISTIC}->{ERROR} += 1;
-            if ($self->{REMOVEINVALID} == 1)
+            if(!-e $job->local())
             {
-                printLog($self->{LOG}, "info", sprintf(__("Deleting %s"), $job->resource));
-                unlink($job->local);
+                printLog($self->{LOG}, "error", "Verify: ". $job->resource . ": FAILED ( file not found )");
             }
+            else
+            {
+                printLog($self->{LOG}, "error", "Verify: ". $job->resource . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum, $job->realchecksum));
+                if ($self->{REMOVEINVALID} == 1)
+                {
+                    printLog($self->{LOG}, "debug", sprintf(__("Deleting %s"), $job->resource)) if ($self->{DEBUG});
+                    unlink($job->local);
+                }
+            }
+            
+            $self->{STATISTIC}->{ERROR} += 1;
         }
     }
 
-    printLog($self->{LOG}, "info", sprintf(__("=> Finished verifying: %s"), $self->{LOCALPATH}));
-    printLog($self->{LOG}, "info", sprintf(__("=> Files             : %s"), $cnt));
-    printLog($self->{LOG}, "info", sprintf(__("=> Errors            : %s"), $self->{STATISTIC}->{ERROR}));
-    printLog($self->{LOG}, "info", sprintf(__("=> Verify Time       : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-    print "\n";
+    if(!(exists $options->{quiet} && defined $options->{quiet} && $options->{quiet}))
+    {
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished verifying: %s"), $self->{LOCALPATH}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files             : %s"), $cnt));
+        printLog($self->{LOG}, "info", sprintf(__("=> Errors            : %s"), $self->{STATISTIC}->{ERROR}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Verify Time       : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+        print "\n";
+    }
     
     $self->{REMOVEINVALID}  = 0;
     return ($self->{STATISTIC}->{ERROR} == 0);
@@ -670,6 +699,7 @@ sub download_handler
 
             # mirror it first, so we can parse it
             my $mres = $job->mirror();
+            $self->{DOWNLOAD_SIZE} += int($job->downloadSize());
             if( $mres == 1 )
             {
                 $self->{STATISTIC}->{ERROR} += 1;

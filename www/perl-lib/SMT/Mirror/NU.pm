@@ -107,7 +107,12 @@ sub new
     $self->{DEEPVERIFY} = 0;
     $self->{DBREPLACEMENT} = undef;
     $self->{MIRRORSRC} = 1;
-    
+
+    $self->{STATISTIC}->{DOWNLOAD} = 0;
+    $self->{STATISTIC}->{UPTODATE} = 0;
+    $self->{STATISTIC}->{ERROR}    = 0;
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
+
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
@@ -165,6 +170,12 @@ sub localUrlPath()
   return $repodest;
 }
 
+sub statistic
+{
+    my $self = shift;
+    return $self->{STATISTIC};
+}
+
 # mirrors the repository to destination
 sub mirrorTo()
 {
@@ -200,7 +211,7 @@ sub mirrorTo()
     # store the repoindex to a temdir. It is needed only for mirroring.
     # To have it later in LOCALPATH may confuse our customers.
     #
-    my $destdir = File::Temp::tempdir(CLEANUP => 1);
+    my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1);
     my $destfile = join( "/", ( $destdir, "repo/repoindex.xml" ) );
 
     # get the repository index
@@ -210,7 +221,11 @@ sub mirrorTo()
     $job->localdir( $destdir );
     
     # get the file
-    $job->mirror();
+    if($job->mirror() == 1)
+    {
+        $self->{STATISTIC}->{ERROR} +=1;
+    }
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
 
     my $dbh = undef;
     
@@ -234,6 +249,7 @@ sub mirrorTo()
     {
         $dbh->disconnect;
     }
+    return $self->{STATISTIC}->{ERROR};
 }
 
 # deletes all files not referenced in
@@ -312,6 +328,12 @@ sub mirror_handler
         $mirror->uri( $catalogURI );
         $mirror->deepverify($self->{DEEPVERIFY});
         $mirror->mirrorTo( $localPath, {dryrun => $dryrun} );
+        my $s = $mirror->statistic();
+        
+        $self->{STATISTIC}->{DOWNLOAD} += $s->{DOWNLOAD};
+        $self->{STATISTIC}->{UPTODATE} += $s->{UPTODATE};
+        $self->{STATISTIC}->{ERROR}    += $s->{ERROR};
+        $self->{STATISTIC}->{DOWNLOAD_SIZE} += $s->{DOWNLOAD_SIZE};
     }
 }
 

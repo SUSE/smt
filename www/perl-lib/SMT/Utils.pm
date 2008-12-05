@@ -265,6 +265,27 @@ sub timeFormat
 }
 
 
+sub byteFormat
+{
+    my $size = shift;
+    my $div = 1024;
+    
+    return "$size Bytes" if($size < $div);
+    
+    $size = $size / $div;
+    return sprintf("%.2f KB", $size) if($size < $div);
+
+    $size = $size / $div;
+    return sprintf("%.2f MB", $size) if($size < $div);
+    
+    $size = $size / $div;
+    return sprintf("%.2f GB", $size) if($size < $div);
+
+    $size = $size / $div;
+    return sprintf("%.2f TB", $size);
+}
+
+
 #
 # open logfile
 #

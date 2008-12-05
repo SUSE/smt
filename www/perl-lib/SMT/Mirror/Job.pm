@@ -30,6 +30,9 @@ sub new
     $self->{LOG}        = undef;
     $self->{JOBTYPE}    = undef;
 
+
+    $self->{DOWNLOAD_SIZE} = 0;
+    
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
@@ -133,6 +136,13 @@ sub noChecksumCheck
 }
 
 
+sub downloadSize
+{
+    my $self = shift;
+    return $self->{DOWNLOAD_SIZE};
+}
+
+
 # verify the local copy of the job with the known
 # checksum without accesing the network
 sub verify()
@@ -165,22 +175,21 @@ sub realchecksum()
 }
 
 # mirror the resource to the local destination
+#
+# Returns:
+# 0 = ok
+# 1 = error
+# 2 = up-to-date
+#
 sub mirror
 {
     my $self = shift;
 
     if ( not $self->outdated() )
     {
-        printLog($self->{LOG}, "debug", sprintf("----> %s is up to date", $self->{RESOURCE})) if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", sprintf("U %s", $self->{RESOURCE})) if($self->{DEBUG});
         # no need to mirror
         return 2;
-    }
-    else
-    {
-        if($self->{DEBUG})
-        {
-            printLog($self->{LOG}, "debug", sprintf("Fetch [%s]", $self->resource()));
-        }
     }
     
     # make sure the container destination exists
@@ -197,45 +206,36 @@ sub mirror
         unlink $self->local();
     }
 
-    my $tries  = 3;
+    my $tries  = 1;
     
-    #
-    # 0 = ok
-    # 1 = error
-    # 2 = up-to-date
-    #
-    my $errorcode = 0;
+    my $errorcode = 1;
     my $errormsg  = "";
     do
     {
         eval
         {
             $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->local() );
+            $self->{DOWNLOAD_SIZE} += int($response->header("Content-Length"));
         };
         if($@)
         {
             my $saveuri = URI->new($remote);
             $saveuri->userinfo(undef);
             
-            $tries--;
-            $errorcode = 1;
-            $errormsg = sprintf(__("Failed to download '%s'"), $saveuri->as_string());
-            printLog($self->{LOG}, "error", $errormsg);
-            if($self->{DEBUG})
-            {
-                printLog($self->{LOG}, "debug", $@);
-            }
+            $errormsg = sprintf(__("E '%s'"), $saveuri->as_string());
+            printLog($self->{LOG}, "error", $errormsg." (Try $tries)", 0, 1);
+            printLog($self->{LOG}, "error", $@, 0, 1);
+            $tries++;
         }
         elsif ( $response->is_redirect )
         {
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                $tries = 0;
-                $errorcode = 1;
+                $tries = 4;
                 $errormsg = __("Too many redirects");
 
-                printLog($self->{LOG}, "error", $errormsg);
+                printLog($self->{LOG}, "error", $errormsg, 0, 1);
             }
             else
             {
@@ -254,18 +254,23 @@ sub mirror
                     # make sure the file has the same last modification time
                     utime $lm, $lm, $self->local();
                 }
-                return 0;
+                
+                printLog($self->{LOG}, "info", sprintf("D %s", $self->resource()));
+                $errorcode = 0;
+                $errormsg = "";
+                $tries = 4;
             }
             else
             {
-                $tries--;
-                $errorcode = 1;
-                $errormsg = sprintf(__("Checksum mismatch '%s' vs '%s'"), $self->checksum(), $self->realchecksum());
-                printLog($self->{LOG}, "error", $errormsg);
+                $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->resource());
+                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->{DEBUG});
+                
+                printLog($self->{LOG}, "error", $errormsg." (Try $tries)", 0, 1);
                 if($tries > 0)
                 {
                     unlink($self->local());
                 }
+                $tries++;
             }
         }
         else
@@ -273,14 +278,19 @@ sub mirror
             my $saveuri = URI->new($remote);
             $saveuri->userinfo(undef);
             
-            $tries--;
-            $errorcode = 1;
-            $errormsg = sprintf(__("Failed to download '%s': %s"), $saveuri->as_string(), $response->status_line);
-            printLog($self->{LOG}, "error", $errormsg);
+            $errormsg = sprintf(__("E '%s': %s"), $saveuri->as_string(), $response->status_line);
+            printLog($self->{LOG}, "error", $errormsg." (Try $tries)" , 0, 1);
+            $tries++;
         }
-    } while($tries > 0);
+    } while($tries < 4);
 
-    return 1;
+    if($errorcode != 0)
+    {
+        printLog($self->{LOG}, "error", $errormsg, 1, 0);
+        return $errorcode;
+    }
+    
+    return 0;
 }
 
 # remote modification timestamp
