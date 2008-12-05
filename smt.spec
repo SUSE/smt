@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.0.6)
+# spec file for package smt (Version 1.1.0)
 #
 # Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 # This file and all modifications and additions to the pristine
@@ -13,11 +13,9 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl
-Version:        1.0.6
+Version:        1.1.0
 Release:        0.2
 Requires:       perl = %{perl_version}
-Requires:       apache2
-Requires:       apache2-mod_perl
 Requires:       perl-DBI
 Requires:       perl-Crypt-SSLeay
 Requires:       perl-Config-IniFiles
@@ -32,6 +30,7 @@ Requires:       perl-MIME-Lite
 Requires:       limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
+Requires:       logrotate
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
@@ -79,6 +78,7 @@ cd -
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
+mkdir $RPM_BUILD_ROOT
 make DESTDIR=$RPM_BUILD_ROOT install
 make DESTDIR=$RPM_BUILD_ROOT install_conf
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
