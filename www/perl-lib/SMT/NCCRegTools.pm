@@ -1086,6 +1086,36 @@ sub _buildRegisterXML
     
     foreach my $PHash (@{$products})
     {
+        if(!exists $PHash->{PRODUCTDATAID} || ! defined $PHash->{PRODUCTDATAID} ||
+           $PHash->{PRODUCTDATAID} eq "")
+        {
+            next;
+        }
+
+        foreach my $pair (@{$regdata})
+        {
+            if($pair->{KEYNAME} eq "product-name-".$PHash->{PRODUCTDATAID} &&
+               defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            {
+                $PHash->{PRODUCT} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{PRODUCTDATAID} &&
+                  defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            {
+                $PHash->{VERSION} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{PRODUCTDATAID} &&
+                  defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            {
+                $PHash->{ARCH} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{PRODUCTDATAID} &&
+                  defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            {
+                $PHash->{REL} = $pair->{VALUE};
+            }
+        }
+        
         if(defined $PHash->{PRODUCT} && $PHash->{PRODUCT} ne "" &&
            defined $PHash->{VERSION} && $PHash->{VERSION} ne "")
         {
@@ -1110,6 +1140,7 @@ sub _buildRegisterXML
     foreach my $pair (@{$regdata})
     {
         next if($pair->{KEYNAME} eq "host" || $pair->{KEYNAME} eq "virttype");
+        next if($pair->{KEYNAME} =~ /^product-/);
         
         if(!defined $pair->{VALUE})
         {
