@@ -432,9 +432,9 @@ sub insertRegistration
 
     my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
     $r->log->info("STATEMENT: $statement");
-    eval {
+    eval 
+    {
         $existingpids = $dbh->selectall_hashref($statement, "PRODUCTID");
-        
     };
     if($@)
     {
@@ -569,6 +569,60 @@ sub insertRegistration
         }
     }
 
+    for(my $i = 0; $i < @{$regdata->{register}->{product}}; $i++)
+    {
+        my $ph = @{$regdata->{register}->{product}}[$i];
+
+        my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                                $dbh->quote($regdata->{register}->{guid}), 
+                                $dbh->quote("product-name-".$list[$i]),
+                                $dbh->quote($ph->{name}));
+        $r->log->info("STATEMENT: $statement");
+        eval {
+            $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+        $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                             $dbh->quote($regdata->{register}->{guid}), 
+                             $dbh->quote("product-version-".$list[$i]),
+                             $dbh->quote($ph->{version}));
+        $r->log->info("STATEMENT: $statement");
+        eval {
+            $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+        $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                             $dbh->quote($regdata->{register}->{guid}), 
+                             $dbh->quote("product-arch-".$list[$i]),
+                             $dbh->quote($ph->{arch}));
+        $r->log->info("STATEMENT: $statement");
+        eval {
+            $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+        $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                             $dbh->quote($regdata->{register}->{guid}), 
+                             $dbh->quote("product-rel-".$list[$i]),
+                             $dbh->quote($ph->{release}));
+        $r->log->info("STATEMENT: $statement");
+        eval {
+            $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+    }
+    
     #
     # if we do not have the hostname, try to get the IP address
     #
@@ -592,7 +646,7 @@ sub insertRegistration
             $sth->bind_param(4, $regdata->{register}->{guid});
             $aff = $sth->execute;
             
-            $r->log->info("STATEMENT: $statement");
+            $r->log->info("STATEMENT: ".$sth->{Statement});
         };
         if($@)
         {
@@ -628,7 +682,7 @@ sub insertRegistration
             $sth->bind_param(3, $regdata->{register}->{guid});
             $aff = $sth->execute;
             
-            $r->log->info("STATEMENT: $statement");
+            $r->log->info("STATEMENT: ".$sth->{Statement});
         };
         if($@)
         {
