@@ -228,7 +228,11 @@ Additionally to catalog name, filter by catalog target.
 
 =item --enable-mirror -e
 
-Enables or disables mirroring of a catalog.
+Enables mirroring of a catalog.
+
+=item --disable-mirror -d
+
+Disables mirroring of a catalog.
 
 =item --enable-by-prod -p arg
 
