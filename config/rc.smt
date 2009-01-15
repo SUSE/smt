@@ -260,7 +260,6 @@ function check_smt_plugins () {
 }
 
 function check_copy_cert {
-    smtcrthash=`openssl x509 -noout -subject_hash -in /srv/www/htdocs/smt.crt 2>/dev/null`
     ok="false"
     calink=""
     for filename in ${apache_vhosts}; do
@@ -268,24 +267,36 @@ function check_copy_cert {
         if [ -e ${smt_apache_vhostdir}${filename} -a -e ${smt_d}${filename} ]; then
 
             servercert=`grep -P "^\sSSLCertificateFile" ${smt_apache_vhostdir}${filename} | sed 's/^[[:space:]]*SSLCertificateFile[[:space:]]*//'`
-            hashval=""
+            calink="${servercert}"
+            issuerhash=""
+            subjecthash=""
 
             if [ -e ${servercert} ]; then
 
-                hashval=`openssl x509 -issuer_hash -noout -in ${servercert}`
+                issuerhash=`openssl x509 -issuer_hash -noout -in ${servercert}`
+                subjecthash=`openssl x509 -subject_hash -noout -in ${servercert}`
 
-                if [ -n "${smtcrthash}" -a "${smtcrthash}" = "${hashval}" ]; then
-                    ok="true"
-                    break;
-                fi
+                while [ ${issuerhash} != ${subjecthash} ]; do
+                    suffix=0
+                    calink="/etc/ssl/certs/${issuerhash}.${suffix}"
+                    while [ ! -e "${calink}" ]; do
+                        ((suffix++))
+                        calink="/etc/ssl/certs/${issuerhash}.${suffix}"
+                        if [ ${suffix} -gt 100 ]; then
+                            echo "Setting smt certificate failed"
+                            exit_code=1
+                            return
+                        fi
+                    done
 
-                suffix=0
-                while [ -e "/etc/ssl/certs/${hashval}.${suffix}" ]; do
-                    calink="/etc/ssl/certs/${hashval}.${suffix}"
-                    ((suffix++))
+                    issuerhash=`openssl x509 -issuer_hash -noout -in ${calink}`
+                    subjecthash=`openssl x509 -subject_hash -noout -in ${calink}`
+
                 done
 
-                if [ -e ${calink} ]; then
+                if cmp /srv/www/htdocs/smt.crt ${calink} > /dev/null 2>&1 ; then
+                        ok="true"
+                elif [ -e ${calink} ]; then
                     echo "Copy SMT certificate"
                     ok="true"
                     cp ${calink} /srv/www/htdocs/smt.crt
