@@ -503,7 +503,7 @@ sub listRegistrations
                 print  __("Subscription")." : ".$sub->{SUBNAME}."\n";
                 print  "        ".__("Activation Code")." : ".$sub->{REGCODE}."\n";
                 print  "        ".__("Status")." : ".$sub->{SUBSTATUS}."\n";
-                print  "        ".__("Expiration Date")." : ".$sub->{SUBENDDATE}."\n";
+                print  "        ".__("Expiration Date")." : ".((defined $sub->{SUBENDDATE})?"$sub->{SUBENDDATE}":"")."\n";
                 print  "        ".__("Purchase Count/Used")." : ".$sub->{NODECOUNT}."/".$sub->{CONSUMED}."\n";
             }
             print "-----------------------------------------------------------------------\n";
