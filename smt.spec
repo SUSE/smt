@@ -38,6 +38,7 @@ Requires:       limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
 Requires:       logrotate
+Requires:       suseRegister
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
