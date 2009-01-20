@@ -1,10 +1,17 @@
 #
 # spec file for package smt (Version 1.1.0)
 #
-# Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
-# This file and all modifications and additions to the pristine
-# package are under the same license as the package itself.
+# Copyright (c) 2008,2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
+# All modifications and additions to the file contributed by third parties
+# remain the property of their copyright owners, unless otherwise agreed
+# upon. The license for this file, and modifications and additions to the
+# file, is the same license as for the pristine package itself (unless the
+# license for the pristine package is not an Open Source License, in which
+# case the license is the MIT License). An "Open Source License" is a
+# license that conforms to the Open Source Definition (Version 1.9)
+# published by the Open Source Initiative.
+
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
@@ -145,6 +152,37 @@ exit 0
 %doc doc/Server-Tuning.txt doc/SMT-Database-Schema.txt
 
 %changelog
+* Thu Dec 04 2008 - mc@suse.de
+- version 1.0.8
+  * do not suppress forbidden error when trying to mirror
+  non-entitled catalogs with smt-mirror-sle9. (bnc#445607)
+  * improve speed when copying metadata (bnc#430808)
+  * parse virttype from host element
+  * improve clientSetup4SMT to detect several possible places
+  where the certificate has to be stored.
+  * do not try to put a certificate to zmd/trusted-certs/ if zmd
+  is not installed.
+* Wed Oct 29 2008 - mc@suse.de
+- version 1.0.7
+  * create database with charset latin1 (bnc#430146)
+  * proxy urls should not have a trailing / (bnc#433508)
+  * support for older yum repository format
+  * do not require repomd.xml.key if repomd.xml.asc exists
+  (bnc#439154)
+* Thu Sep 11 2008 - mc@suse.de
+- version 1.0.6
+  * create todir if it does not exists.(bnc#406328)
+  * create extra mirror directory if it does not exists. (bnc#406304)
+  * write logmessage if repoindex return a directory which is marked
+  for mirroring but is currently not available. (bnc#416737)
+  * store repoindex.xml to a tmp directory (may fix bnc#416737)
+  * add option --regcert to clientSetup4SMT.sh (bnc#421079)
+  * fix local SMT Virtual Machine Report (bnc#413757)
+  * catch error on head request (bnc#425387)
+* Tue Jul 01 2008 - mc@suse.de
+- version 1.0.5
+  * smt-ncc-sync: honor --help
+  * fix texts in report (bnc#405148, bnc#393776)
 * Mon Jun 30 2008 - mc@suse.de
 - version 1.0.4
   * get client IP if no hostname was send and store it in the
