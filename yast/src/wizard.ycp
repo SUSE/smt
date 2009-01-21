@@ -59,7 +59,7 @@
 	    ],
 	    "firewall" : CWMFirewallInterfaces::CreateOpenFirewallWidget ($[
 		// renamed in SLES11
-		"services" : [ "http", "https" ],
+		"services" : [ "service:apache2", "service:apache2-ssl" ],
 		"display_details" : false,
 	    ]),
     ];

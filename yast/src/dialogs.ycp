@@ -25,7 +25,6 @@
     import "Label";
     import "RunlevelEd";
     import "SuSEFirewall";
-    import "NetworkDevices";
 
     integer sl = 100;
 
@@ -51,7 +50,7 @@
 			    `HSquash (`MinWidth (
 				25,
 				// TRANSLATORS: text entry (User name)
-				`TextEntry (`id ("NUUser"), _("&User"))
+				`InputField (`id ("NUUser"), _("&User"))
 			    )),
 			    `HSquash (`MinWidth (
 				25,
@@ -68,13 +67,13 @@
 			`Left (`HSquash (`MinWidth (
 			    45,
 			    // TRANSLATORS: text entry (e-mail)
-			    `TextEntry (`id ("nccEmail"), _("&NCC E-mail Used for Registration"))
+			    `InputField (`id ("nccEmail"), _("&NCC E-mail Used for Registration"))
 			))),
 
 			`Left (`HSquash (`MinWidth (
 			    45,
 			    // TRANSLATORS: text entry (URL)
-			    `TextEntry (`id ("url"), _("&Your SMT Server URL"))
+			    `InputField (`id ("url"), _("&Your SMT Server URL"))
 			))),
 
 			`VWeight(1, `VStretch()),
@@ -220,7 +219,6 @@
 
 	orig = Progress::set (false);
 	SuSEFirewall::Read();
-	NetworkDevices::Read();
 	Progress::set (orig);
 
 	Progress::NextStage();
@@ -545,7 +543,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 
 	UI::OpenDialog (
 	    `VBox (
-		`HSquash (`MinWidth (40, `TextEntry (`id ("e-mail"), (e_mail == "" ?
+		`HSquash (`MinWidth (40, `InputField (`id ("e-mail"), (e_mail == "" ?
 		    _("New &E-Mail")
 		    :
 		    _("Editing &E-Mail")

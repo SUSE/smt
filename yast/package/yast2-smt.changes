@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jan 21 17:18:11 CET 2009 - locilka@suse.cz
+
+- Adapted to SLE 11 code-base.
+- 2.17.0
+
+-------------------------------------------------------------------
 Fri Jul 18 13:35:21 CEST 2008 - locilka@suse.cz
 
 - Added "NCC Mirroring Credentials" around NUUser and NUPassword
