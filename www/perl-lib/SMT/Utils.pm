@@ -598,6 +598,10 @@ sub getProxySettings
                 {
                     $proxyUser = $1;
                 }
+                elsif($_ =~ /^\s*--proxy-user\s+"(.+)"\s*$/ && defined $1 && $1 ne "")
+                {
+                    $proxyUser = $1;
+                }
             }
             close RC;
         }
@@ -613,6 +617,10 @@ sub getProxySettings
                 {
                     $proxyUser = $1;
                 }
+                elsif($_ =~ /^\s*--proxy-user\s+"(.+)"\s*$/ && defined $1 && $1 ne "")
+                {
+                    $proxyUser = $1;
+	        }
             }
             close RC;
         }
