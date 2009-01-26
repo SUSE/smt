@@ -29,7 +29,6 @@ Requires:       perl-Config-IniFiles
 Requires:       perl-XML-Parser
 Requires:       perl-XML-Writer
 Requires:       perl-libwww-perl
-Requires:       perl-IO-Zlib
 Requires:       perl-URI
 Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
@@ -46,7 +45,7 @@ PreReq:         %fillup_prereq apache2 apache2-mod_perl
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
 License:        GPL v2 or later
-Summary:        YaST Enterprise Proxy
+Summary:        Subscription Management Tool
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.apache2-smt
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
