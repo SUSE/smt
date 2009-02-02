@@ -298,10 +298,12 @@ sub writeXML
     my $writer = shift;
 
     my $element = ref($node);
+    return if($element !~ /^smt::/);
+
     $element =~ s/^smt:://;
     
     return if($element eq "Characters");
-
+    
     my %attr = %{$node};
     delete $attr{Kids};
     
@@ -320,7 +322,7 @@ sub mergeXML
 {
     my $node1 = shift;
     my $node2 = shift;
-    
+
     foreach my $child2 (@{$node2->{Kids}})
     {
         my $found = 0;
@@ -1008,6 +1010,7 @@ sub findColumnsForProducts
         else
         {
             $r->log_error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
+            die "Product not found";
         }
     }
     return @list;
