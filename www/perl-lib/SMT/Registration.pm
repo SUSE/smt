@@ -1010,7 +1010,7 @@ sub findColumnsForProducts
         else
         {
             $r->log_error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
-            die "Product not found";
+            die "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found in the database.";
         }
     }
     return @list;
