@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Feb  3 15:42:04 CET 2009 - locilka@suse.cz
+
+- Moving CA-management proposal definition to a special control
+  file which is owned by yast2-smt.
+- Using new control file to call the CA-management proposal if
+  CA is missing.
+- 2.13.20
+
+-------------------------------------------------------------------
 Fri Jul 18 13:35:21 CEST 2008 - locilka@suse.cz
 
 - Added "NCC Mirroring Credentials" around NUUser and NUPassword

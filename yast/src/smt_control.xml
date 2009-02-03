@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<productDefines  xmlns="http://www.suse.com/1.0/yast2ns"
+    xmlns:config="http://www.suse.com/1.0/configns">
+
+    <proposals config:type="list">
+	<proposal>
+	    <name>smt_ca</name>
+	    <stage>continue,normal</stage>
+	    <proposal_modules config:type="list">
+		<proposal_module>ca_mgm</proposal_module>
+	    </proposal_modules>
+	</proposal>
+    </proposals>
+</productDefines>

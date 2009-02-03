@@ -14,6 +14,9 @@ ynclude_DATA = \
 	complex.ycp \
 	wizard.ycp
 
+control_DATA = \
+	smt_control.xml
+
 desktop_DATA = $(wildcard *.desktop)
 
 module_DATA = $(wildcard SMT*.ycp)
@@ -23,6 +26,8 @@ smt:
 	ln -sf . $@
 ycpchook = smt
 
-EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(desktop_DATA)
+controldir = $(yast2dir)/control
+
+EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(desktop_DATA) $(control_DATA)
 
 include $(top_srcdir)/Makefile.am.common

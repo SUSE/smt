@@ -13,6 +13,9 @@ Recommends:	mysql
 Recommends:	cron
 Recommends:	apache2
 
+# If CA is missing, SMT offers to create one
+Recommends:	yast2-ca-management
+
 BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite yast2-runlevel
 
 BuildArchitectures:	noarch
@@ -52,3 +55,7 @@ Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 @themedir@/current/icons/22x22/apps/yast-SMT.png
 @themedir@/current/icons/32x32/apps/yast-SMT.png
 @themedir@/current/icons/48x48/apps/yast-SMT.png
+%dir /usr/share/YaST2/control
+/usr/share/YaST2/control/smt_control.xml
+%dir /usr/share/YaST2/control
+/usr/share/YaST2/control/smt_control.xml

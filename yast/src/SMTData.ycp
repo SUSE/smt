@@ -39,6 +39,9 @@
     string server_cert = "/etc/ssl/certs/YaST-CA.pem";
     string apache_cert = "/srv/www/htdocs/smt.crt";
 
+    // own control file
+    string smt_control_file = "/usr/share/YaST2/control/smt_control.xml";
+
     list <map> smt_cron_settings = [];
 
     boolean first_run = nil;
@@ -551,18 +554,19 @@ The server certificate is vitally important for the NU server to support SSL.
 		string previous_custom_control_file = ProductControl::custom_control_file;
 		if (previous_custom_control_file != "") {
 		    y2milestone ("Previous custom_control_file: %1", previous_custom_control_file);
-		    ProductControl::custom_control_file = "";
-		    ProductControl::Init();
 		}
 
-		// Call installation proposal (service-LDAP+CA)
-		any ret = WFM::call ("inst_proposal", [$["proposal":"service"]]);
+		// bnc #471162
+		// Use own control file (do not depend on the system one which might be missing)
+		ProductControl::custom_control_file = smt_control_file;
+		ProductControl::Init();
 
-		if (previous_custom_control_file != "") {
-		    y2milestone ("Restoring previous custom_control_file: %1", previous_custom_control_file);
-		    ProductControl::custom_control_file = previous_custom_control_file;
-		    ProductControl::Init();
-		}
+		// Call installation proposal (service: CA)
+		any ret = WFM::call ("inst_proposal", [$["proposal":"smt_ca"]]);
+
+		y2milestone ("Restoring previous custom_control_file: %1", previous_custom_control_file);
+		ProductControl::custom_control_file = previous_custom_control_file;
+		ProductControl::Init();
 
 		y2milestone ("Service proposal returned: %1", ret);
 		Progress::set (progress_orig);
