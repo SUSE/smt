@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Feb  3 15:42:04 CET 2009 - locilka@suse.cz
+
+- Moving CA-management proposal definition to a special control
+  file which is owned by yast2-smt.
+- Using new control file to call the CA-management proposal if
+  CA is missing.
+- 2.17.1
+
+-------------------------------------------------------------------
 Wed Jan 21 17:18:11 CET 2009 - locilka@suse.cz
 
 - Adapted to SLE 11 code-base.
