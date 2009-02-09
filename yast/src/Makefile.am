@@ -1,7 +1,5 @@
 # Makefile.am for smt/src
 
-SUBDIRS = icons
-
 yncludedir = @yncludedir@/smt
 
 client_DATA = \
