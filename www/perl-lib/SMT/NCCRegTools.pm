@@ -40,7 +40,7 @@ sub new
 
     $self->{DBH} = undef;
 
-    $self->{TEMPDIR} = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1);
+    $self->{TEMPDIR} = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
 
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;

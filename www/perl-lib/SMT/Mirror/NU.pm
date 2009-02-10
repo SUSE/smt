@@ -211,7 +211,7 @@ sub mirrorTo()
     # store the repoindex to a temdir. It is needed only for mirroring.
     # To have it later in LOCALPATH may confuse our customers.
     #
-    my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1);
+    my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
     my $destfile = join( "/", ( $destdir, "repo/repoindex.xml" ) );
 
     # get the repository index

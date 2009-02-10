@@ -35,7 +35,7 @@ sub new
     
     $self->{SMTGUID} = SMT::Utils::getSMTGuid();
 
-    $self->{TEMPDIR} = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1);
+    $self->{TEMPDIR} = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
 
     $self->{ELEMENT} = "";
     $self->{TABLE}   = "";
