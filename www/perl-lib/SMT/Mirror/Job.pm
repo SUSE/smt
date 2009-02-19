@@ -8,6 +8,8 @@ use Date::Parse;
 use Crypt::SSLeay;
 use Digest::SHA1  qw(sha1 sha1_hex);
 use SMT::Utils;
+use File::Basename;
+use File::Copy;
 
 sub new
 {
@@ -28,14 +30,23 @@ sub new
     $self->{MAX_REDIRECTS} = 2;
     $self->{DEBUG}      = 0;
     $self->{LOG}        = undef;
-    $self->{JOBTYPE}    = undef;
+    #$self->{JOBTYPE}    = undef;
 
+    $self->{DBH}        = undef;
 
+    # outdated() will set this to the last modification date of the remote file
+    $self->{modifiedAt} = undef;
+    
     $self->{DOWNLOAD_SIZE} = 0;
     
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
+    }
+
+    if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
+    {
+        $self->{DBH} = $opt{dbh};
     }
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
@@ -61,12 +72,21 @@ sub uri
 }
 
 # job type
-sub type
+#sub type
+#{
+#    my $self = shift;
+#    if (@_) { $self->{JOBTYPE} = shift }
+#    
+#    return $self->{JOBTYPE};
+#}
+
+# database handle
+sub dbh
 {
     my $self = shift;
-    if (@_) { $self->{JOBTYPE} = shift }
+    if (@_) { $self->{DBH} = shift }
     
-    return $self->{JOBTYPE};
+    return $self->{DBH};
 }
 
 # local resource container
@@ -90,7 +110,7 @@ sub remoteresource
 sub local
 {
     my $self = shift;
-    my $local = join( "/", ( $self->{LOCALDIR}, $self->{RESOURCE} ) );
+    my $local = SMT::Utils::cleanPath($self->{LOCALDIR}."/".$self->{RESOURCE} );
     return $local;
 }
 
@@ -206,6 +226,12 @@ sub mirror
         unlink $self->local();
     }
 
+    if( $self->copyFromLocalIfAvailable() )
+    {
+        return 0;
+    }
+    
+
     my $tries  = 1;
     
     my $errorcode = 1;
@@ -256,6 +282,41 @@ sub mirror
                 }
                 
                 printLog($self->{LOG}, "info", sprintf("D %s", $self->resource()));
+                eval 
+                {
+                    if( defined $self->checksum() && $self->checksum() ne "")
+                    {
+                        my $statement = sprintf("SELECT checksum from RepositoryContentData where localpath = %s", 
+                                                $self->{DBH}->quote( $self->local() ));
+                        my $existChecksum = $self->{DBH}->selectcol_arrayref($statement);
+                        
+
+                        if( !exists $existChecksum->[0] || !defined $existChecksum->[0] )
+                        {
+                            #insert
+                            $self->{DBH}->do(sprintf("INSERT INTO RepositoryContentData (name, checksum, localpath) VALUES (%s, %s, %s)",
+                                                     $self->{DBH}->quote( basename( $self->local() ) ),
+                                                     $self->{DBH}->quote( $self->checksum() ),
+                                                     $self->{DBH}->quote( $self->local() )
+                                                    ));
+                        }
+                        elsif( $existChecksum->[0] ne $self->checksum() )
+                        {
+                            #update
+                            $self->{DBH}->do(sprintf("UPDATE RepositoryContentData set name=%s, checksum=%s where localpath=%s",
+                                                     $self->{DBH}->quote( basename( $self->local() ) ),
+                                                     $self->{DBH}->quote( $self->checksum() ),
+                                                     $self->{DBH}->quote( $self->local() )
+                                                    ));
+                        }
+                    }
+                };
+                if($@)
+                {
+                    #ignore errors
+                    printLog($self->{LOG}, "debug", "Insert failed: $@" ) if($self->{DEBUG});
+                }
+                
                 $errorcode = 0;
                 $errormsg = "";
                 $tries = 4;
@@ -357,16 +418,52 @@ sub outdated
     }
     
     my $date = (stat $self->local())[9];
-    my $modifiedAt = $self->modified();
+    $self->{modifiedAt} = $self->modified();
     
-    return (!defined $modifiedAt || $date < $modifiedAt);
+    return (!defined $self->{modifiedAt} || $date < $self->{modifiedAt});
 }
 
-sub print
+sub copyFromLocalIfAvailable
 {
     my $self = shift;
-    print "[", $self->resource(), "]\n";
+
+    return 0 if(!defined $self->{DBH});
+
+    my $name = basename($self->local());
+    my $checksum = $self->checksum();
+    
+    return 0 if(!defined $name || $name eq "" || !defined $checksum || $checksum eq "");
+
+    my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s", 
+                            $self->{DBH}->quote($name), $self->{DBH}->quote($checksum));
+
+    printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
+    my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
+
+    if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )
+    {
+        my $otherpath = $existingpath->[0];
+      
+        return 0 if( ! -e "$otherpath" );
+  
+        copy($otherpath, $self->local()) or do
+        {
+            printLog($self->{LOG}, "debug", "copy($otherpath, ".$self->local().") failed: $!") if($self->{DEBUG});
+            return 0;
+        };
+
+        if(defined $self->{modifiedAt})
+        {
+            # make sure the file has the same last modification time
+            utime $self->{modifiedAt}, $self->{modifiedAt}, $self->local();
+        }
+        
+        printLog($self->{LOG}, "info", sprintf("C %s", $self->resource()));
+        return 1;
+    }
+    return 0;
 }
+
 
 =head1 NAME
 

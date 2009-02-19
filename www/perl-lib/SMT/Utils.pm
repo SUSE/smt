@@ -396,6 +396,14 @@ sub openLog
     return $LOG;
 }
 
+sub cleanPath
+{
+    my $path = shift;
+    $path =~ s/\/\.?\/+/\//g;
+    return $path;
+}
+
+
 sub printLog
 {
     my $LOG      = shift;

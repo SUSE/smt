@@ -39,7 +39,8 @@ sub new
     $self->{REMOVEINVALID} = 0;
     $self->{MIRRORSRC} = 1;
     $self->{HAVEYUMHEADER} = 0;  # 0 = unknown, 1 = yes, -1 = no
-
+    $self->{DBH} = undef;
+    
     
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
@@ -47,6 +48,11 @@ sub new
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
+    }
+
+    if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
+    {
+        $self->{DBH} = $opt{dbh};
     }
     
     if(exists $opt{log} && defined $opt{log} && $opt{log})
@@ -80,6 +86,15 @@ sub deepverify
     my $self = shift;
     if (@_) { $self->{DEEPVERIFY} = shift }
     return $self->{DEEPVERIFY};
+}
+
+# database handle
+sub dbh
+{
+    my $self = shift;
+    if (@_) { $self->{DBH} = shift }
+    
+    return $self->{DBH};
 }
 
 # creates a path from a url
@@ -134,11 +149,11 @@ sub mirrorTo()
     
     if ( defined $options && exists $options->{ urltree } && $options->{ urltree } == 1 )
     {
-      $self->{LOCALPATH} = join( "/", ( $dest, $self->localUrlPath() ) );
+        $self->{LOCALPATH} = SMT::Utils::cleanPath( $dest."/".$self->localUrlPath() );
     }
     else
     {
-      $self->{LOCALPATH} = $dest;
+        $self->{LOCALPATH} = SMT::Utils::cleanPath($dest);
     }
 
     if ( defined $options && exists $options->{ force } && $options->{ force } == 1 )
@@ -152,7 +167,7 @@ sub mirrorTo()
     my $destfile = join( "/", ( $self->{LOCALPATH}, "repodata/repomd.xml" ) );
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
     $job->uri( $self->{URI} );
     $job->localdir( $self->{LOCALPATH} );
 
@@ -168,7 +183,8 @@ sub mirrorTo()
         
         # repomd is the same
         # check if the local repository is valid
-        if ( $self->verify($self->{LOCALPATH}, {removeinvalid => $removeinvalid, quiet => 1 }) )
+        # ! deepverify; do not verify the metadata it reports directly success.
+        if (!$self->deepverify() || $self->verify($self->{LOCALPATH}, {removeinvalid => $removeinvalid, quiet => 1 }) )
         {
             printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
             print "\n";
@@ -320,11 +336,20 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
     }
 
+    # create a hash with filename => checksum
+    my $statement = sprintf("SELECT localpath, checksum from RepositoryContentData where localpath like %s",
+                            $self->{DBH}->quote($self->{LOCALPATH}."%"));
+    $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
+    #printLog($self->{LOG}, "debug", "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
+    
+
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->{LOCALPATH});
     $parser->specialmdlocation(1);
     $parser->parse(".repodata/repomd.xml", sub { download_handler($self, @_)});
+
+    $self->{EXISTS} = undef;
 
     if($self->{HAVEYUMHEADER} && -e $self->{LOCALPATH}."/headers/header.info" )
     {
@@ -346,7 +371,7 @@ sub mirrorTo()
                         
                         my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
                         
-                        my $hjob = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+                        my $hjob = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
                         $hjob->resource( $hdrLocation );
                         $hjob->localdir( $self->{LOCALPATH} );
                         $hjob->uri( $self->{URI} );
@@ -506,8 +531,7 @@ sub clean()
              {
                  if ( $File::Find::dir !~ /\/headers/ && -f $File::Find::name )
                  { 
-                     my $name = $File::Find::name;
-                     $name =~ s/\/\.?\//\//g;
+                     my $name = SMT::Utils::cleanPath($File::Find::name);
 
                      $self->{CLEANLIST}->{$name} = 1;
                  }
@@ -518,9 +542,7 @@ sub clean()
     $parser->resource($self->{LOCALPATH});
     $parser->parse("/repodata/repomd.xml", sub { clean_handler($self, @_)});
     
-    my $path = $self->{LOCALPATH}."/repodata/repomd.xml";
-    # strip out /./ and //
-    $path =~ s/\/\.?\//\//g;
+    my $path = SMT::Utils::cleanPath($self->{LOCALPATH}."/repodata/repomd.xml");
     
     delete $self->{CLEANLIST}->{$path} if (exists $self->{CLEANLIST}->{$path});
     delete $self->{CLEANLIST}->{$path.".asc"} if (exists $self->{CLEANLIST}->{$path.".asc"});;
@@ -531,6 +553,8 @@ sub clean()
     {
         printLog($self->{LOG}, "debug", "Delete: $file") if ($self->{DEBUG});
         $cnt += unlink $file;
+        
+        $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
     }
 
     printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->{LOCALPATH}));
@@ -605,6 +629,7 @@ sub verify()
                     unlink($job->local);
                 }
             }
+            $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($job->local() ) ) );
             
             $self->{STATISTIC}->{ERROR} += 1;
         }
@@ -633,10 +658,8 @@ sub clean_handler
        $data->{LOCATION} ne "" )
     {
         # get the repository index
-        my $resource = $self->{LOCALPATH}."/".$data->{LOCATION};
-        # strip out /./ and //
-        $resource =~ s/\/\.?\//\//g;
-
+        my $resource = SMT::Utils::cleanPath($self->{LOCALPATH}."/".$data->{LOCATION});
+        
         # if this path is in the CLEANLIST, delete it
         delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
     }
@@ -648,9 +671,7 @@ sub clean_handler
                $file->{LOCATION} ne "" )
             {
                 # get the repository index
-                my $resource = $self->{LOCALPATH}."/".$file->{LOCATION};
-                # strip out /./ and //
-                $resource =~ s/\/\.?\//\//g;
+                my $resource = SMT::Utils::cleanPath($self->{LOCALPATH}."/".$file->{LOCATION});
                 
                 # if this path is in the CLEANLIST, delete it
                 delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
@@ -676,10 +697,19 @@ sub download_handler
             
             return;
         }
-        
 
+        my $fullpath = SMT::Utils::cleanPath($self->{LOCALPATH}."/".$data->{LOCATION});
+                
+        if( exists $self->{EXISTS}->{$fullpath} && 
+            $self->{EXISTS}->{$fullpath}->{checksum} eq $data->{CHECKSUM} && 
+            -e "$fullpath" )
+        {
+            $self->{STATISTIC}->{UPTODATE} += 1;
+            return;
+        }
+        
         # get the repository index
-        my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+        my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
         $job->resource( $data->{LOCATION} );
         $job->checksum( $data->{CHECKSUM} );
         $job->localdir( $self->{LOCALPATH} );
@@ -754,7 +784,7 @@ sub download_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
                 $job->resource( $file->{LOCATION} );
                 $job->checksum( $file->{CHECKSUM} );
                 $job->localdir( $self->{LOCALPATH} );
@@ -784,7 +814,7 @@ sub verify_handler
     {
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+            my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH});
             $job->resource( $data->{LOCATION} );
             $job->checksum( $data->{CHECKSUM} );
             $job->localdir( $self->{LOCALPATH} );
@@ -802,7 +832,7 @@ sub verify_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG});
+                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
                 $job->resource( $file->{LOCATION} );
                 $job->checksum( $file->{CHECKSUM} );
                 $job->localdir( $self->{LOCALPATH} );

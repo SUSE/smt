@@ -1,5 +1,5 @@
 NAME         = smt
-VERSION      = 1.1.0
+VERSION      = 1.1.1
 DESTDIR      = /
 PERL        ?= perl
 PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -109,6 +109,7 @@ install:
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	cp db/smt-db $(DESTDIR)/usr/lib/SMT/bin/smt-db
+	cp script/repo2db.pl $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/etc/init.d/smt
 	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/

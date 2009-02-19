@@ -107,7 +107,8 @@ sub new
     $self->{DEEPVERIFY} = 0;
     $self->{DBREPLACEMENT} = undef;
     $self->{MIRRORSRC} = 1;
-
+    $self->{DBH} = undef;
+    
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
@@ -116,6 +117,11 @@ sub new
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
+    }
+
+    if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
+    {
+        $self->{DBH} = $opt{dbh};
     }
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
@@ -149,6 +155,15 @@ sub deepverify
     my $self = shift;
     if (@_) { $self->{DEEPVERIFY} = shift }
     return $self->{DEEPVERIFY};
+}
+
+# database handle
+sub dbh
+{
+    my $self = shift;
+    if (@_) { $self->{DBH} = shift }
+    
+    return $self->{DBH};
 }
 
 sub dbreplacement
@@ -215,7 +230,7 @@ sub mirrorTo()
     my $destfile = join( "/", ( $destdir, "repo/repoindex.xml" ) );
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG});
+    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG}, dbh => $self->{DBH} );
     $job->uri( $self->{URI} );
     $job->resource( "/repo/repoindex.xml" );
     $job->localdir( $destdir );
@@ -227,28 +242,12 @@ sub mirrorTo()
     }
     $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
 
-    my $dbh = undef;
-    
-    if(!defined $self->{DBREPLACEMENT} || ref($self->{DBREPLACEMENT}) ne "HASH")
-    {
-        $dbh = SMT::Utils::db_connect();
-        if(!$dbh)
-        {
-            printLog($self->{LOG}, "error", __("Cannot connect to database"));
-            exit 1;
-        }
-    }
-    
     # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
     # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     
     my $parser = SMT::Parser::NU->new(log => $self->{LOG});
-    $parser->parse($destfile, sub{ mirror_handler($self, $dbh, $options->{dryrun}, @_) });
+    $parser->parse($destfile, sub{ mirror_handler($self, $options->{dryrun}, @_) });
 
-    if($dbh)
-    {
-        $dbh->disconnect;
-    }
     return $self->{STATISTIC}->{ERROR};
 }
 
@@ -269,34 +268,32 @@ sub clean()
 
     $self->{LOCALPATH} = $dest;
 
-    my $path = $self->{LOCALPATH}."/repo/repoindex.xml";
-
-    my $dbh = SMT::Utils::db_connect();
-    if(!$dbh)
-    {
-        printLog($self->{LOG}, "error", __("Cannot connect to database"));
-        exit 1;
-    }
-
-    my $parser = SMT::Parser::NU->new(log => $self->{LOG});
-    $parser->parse($path, sub{ clean_handler($self, $dbh, @_) });
+    my $res = $self->{DBH}->selectcol_arrayref("select LOCALPATH from Catalogs where CATALOGTYPE='nu' and DOMIRROR='Y' and MIRRORABLE='Y'");
     
-    $dbh->disconnect;
+    foreach my $path (@{$res})
+    {
+        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
+        
+        my $localPath = SMT::Utils::cleanPath($self->{LOCALPATH}."/repo/".$path);
+        
+        $rpmmd->deepverify($self->{DEEPVERIFY});
+        
+        $rpmmd->clean( $localPath );
+    }
 }
 
 sub mirror_handler
 {
     my $self   = shift;
-    my $dbh    = shift;
     my $dryrun = shift;
     my $data   = shift;
 
     my $domirror = 0;
 
-    if(defined $dbh && $dbh)
+    if(defined $self->{DBH} && $self->{DBH})
     {
-        my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where MIRRORABLE='Y' and CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-                                                    $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ) );
+        my $res = $self->{DBH}->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where MIRRORABLE='Y' and CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
+                                                            $self->{DBH}->quote($data->{NAME}), $self->{DBH}->quote($data->{DISTRO_TARGET}) ) );
 
         if(defined $res && exists $res->[0] && 
            defined $res->[0] && $res->[0] eq "Y")
@@ -318,7 +315,7 @@ sub mirror_handler
     if($domirror)
     {
         # get the repository index
-        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC});
+        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
         
         my $catalogURI = join("/", $self->{URI}, "repo", $data->{PATH});
         my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
@@ -334,29 +331,6 @@ sub mirror_handler
         $self->{STATISTIC}->{UPTODATE} += $s->{UPTODATE};
         $self->{STATISTIC}->{ERROR}    += $s->{ERROR};
         $self->{STATISTIC}->{DOWNLOAD_SIZE} += $s->{DOWNLOAD_SIZE};
-    }
-}
-
-
-sub clean_handler
-{
-    my $self = shift;
-    my $dbh  = shift;
-    my $data = shift;
-
-    my $res = $dbh->selectcol_arrayref( sprintf("select DOMIRROR from Catalogs where CATALOGTYPE='nu' and NAME=%s and TARGET=%s", 
-                                                $dbh->quote($data->{NAME}), $dbh->quote($data->{DISTRO_TARGET}) ) );
-    
-    if(defined $res && exists $res->[0] &&
-       defined $res->[0] && $res->[0] eq "Y")
-    {
-        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC});
-        
-        my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
-        $localPath =~ s/\/\.?\//\//g;
-        $rpmmd->deepverify($self->{DEEPVERIFY});
-        
-        $rpmmd->clean( $localPath );
     }
 }
 

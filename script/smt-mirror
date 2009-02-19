@@ -251,7 +251,7 @@ foreach my $id (keys %{$hash})
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
-        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc);
+        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
         if($clean)
         {
             $zyppMirror->clean( $fullpath );
@@ -281,7 +281,7 @@ foreach my $id (keys %{$hash})
         my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
         &File::Path::mkpath( $fullpath );
 
-        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc);
+        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
         if($clean)
         {
             $zyppMirror->clean( $fullpath );
@@ -303,7 +303,7 @@ foreach my $id (keys %{$hash})
 #
 # Now mirror the NU catalogs
 #
-my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc);
+my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
 $mirror->deepverify($deepverify);
 if($clean)
 {
