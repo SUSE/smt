@@ -398,7 +398,9 @@ sub openLog
 
 sub cleanPath
 {
-    my $path = shift;
+    return "" if(!exists $_[0] || !defined $_[0]);
+    my $path = join( "/", @_);
+    die "Path not defined" if(! defined $path || $path eq "");
     $path =~ s/\/\.?\/+/\//g;
     return $path;
 }

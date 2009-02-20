@@ -281,7 +281,7 @@ sub mirror
                     utime $lm, $lm, $self->local();
                 }
                 
-                printLog($self->{LOG}, "info", sprintf("D %s", $self->resource()));
+                printLog($self->{LOG}, "info", sprintf("D %s", $self->local()));
                 eval 
                 {
                     if( defined $self->checksum() && $self->checksum() ne "")
@@ -458,7 +458,7 @@ sub copyFromLocalIfAvailable
             utime $self->{modifiedAt}, $self->{modifiedAt}, $self->local();
         }
         
-        printLog($self->{LOG}, "info", sprintf("C %s", $self->resource()));
+        printLog($self->{LOG}, "info", sprintf("C %s", $self->local()));
         return 1;
     }
     return 0;

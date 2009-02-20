@@ -100,8 +100,10 @@ sub new
     
     my $self  = {};
     $self->{URI}   = undef;
-    # local destination ie: /var/repo/download.suse.org/foo/10.3
-    $self->{LOCALPATH}   = undef;
+
+    # starting with / upto  repo/
+    $self->{LOCALBASEPATH} = undef;
+    
     $self->{DEBUG}  = 0;
     $self->{LOG}    = 0;
     $self->{DEEPVERIFY} = 0;
@@ -157,6 +159,13 @@ sub deepverify
     return $self->{DEEPVERIFY};
 }
 
+sub localBasePath
+{
+    my $self = shift;
+    if (@_) { $self->{LOCALBASEPATH} = shift }
+    return $self->{LOCALBASEPATH};
+}
+
 # database handle
 sub dbh
 {
@@ -173,16 +182,12 @@ sub dbreplacement
     return $self->{DBREPLACEMENT};
 }    
 
-# creates a path from a url
-sub localUrlPath()
+sub debug
 {
-  my $self = shift;
-  my $uri;
-  my $repodest;
-
-  $uri = URI->new($self->{URI});
-  $repodest = join( "/", ( $uri->host, $uri->path ) );
-  return $repodest;
+    my $self = shift;
+    if (@_) { $self->{DEBUG} = shift }
+    
+    return $self->{DEBUG};
 }
 
 sub statistic
@@ -195,12 +200,11 @@ sub statistic
 sub mirrorTo()
 {
     my $self = shift;
-    my $dest = shift;
-    my $options = shift;
+    my %options = @_;
   
-    if ( not -e $dest )
+    if ( ! -d $self->localBasePath() )
     { 
-        printLog($self->{LOG}, "error", $dest . " does not exist");
+        printLog($self->{LOG}, "error", $self->localBasePath()." does not exist");
         exit 1;
     }
 
@@ -208,26 +212,18 @@ sub mirrorTo()
     # the destination directory
     # so we save the repo to:
     # $destdir/hostname.com/path
-    my $saveuri = URI->new($self->{URI});
+    my $saveuri = URI->new( $self->uri() );
     $saveuri->userinfo(undef);
     
-    if ( $$options{ urltree } eq 1 )
-    {
-      $self->{LOCALPATH} = join( "/", ( $dest, $self->localUrlPath() ) );
-    }
-    else
-    {
-      $self->{LOCALPATH} = $dest;
-    }
-    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string));
-    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->{LOCALPATH}));
+    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string ));
+    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->localBasePath() ));
 
     #
     # store the repoindex to a temdir. It is needed only for mirroring.
     # To have it later in LOCALPATH may confuse our customers.
     #
     my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-    my $destfile = join( "/", ( $destdir, "repo/repoindex.xml" ) );
+    my $destfile = SMT::Utils::cleanPath( $destdir, "repo/repoindex.xml" );
 
     # get the repository index
     my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG}, dbh => $self->{DBH} );
@@ -246,7 +242,7 @@ sub mirrorTo()
     # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     
     my $parser = SMT::Parser::NU->new(log => $self->{LOG});
-    $parser->parse($destfile, sub{ mirror_handler($self, $options->{dryrun}, @_) });
+    $parser->parse($destfile, sub{ mirror_handler($self, $options{dryrun}, @_) });
 
     return $self->{STATISTIC}->{ERROR};
 }
@@ -256,29 +252,25 @@ sub mirrorTo()
 sub clean()
 {
     my $self = shift;
-    my $dest = shift;
 
     # algorithm
     
-    if ( not -e $dest )
+    if ( ! -d $self->localBasePath() )
     { 
-        printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $dest));
+        printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $self->localBasePath() ));
         exit 1;
     }
-
-    $self->{LOCALPATH} = $dest;
 
     my $res = $self->{DBH}->selectcol_arrayref("select LOCALPATH from Catalogs where CATALOGTYPE='nu' and DOMIRROR='Y' and MIRRORABLE='Y'");
     
     foreach my $path (@{$res})
     {
         my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
+        $rpmmd->localBasePath( $self->localBasePath() );
+        $rpmmd->localRepoPath( $path );
+        $rpmmd->deepverify( $self->deepverify() );
         
-        my $localPath = SMT::Utils::cleanPath($self->{LOCALPATH}."/repo/".$path);
-        
-        $rpmmd->deepverify($self->{DEEPVERIFY});
-        
-        $rpmmd->clean( $localPath );
+        $rpmmd->clean( );
     }
 }
 
@@ -314,17 +306,19 @@ sub mirror_handler
     
     if($domirror)
     {
+        my $catalogURI = join("/", $self->uri(), "repo", $data->{PATH});
+        
+        &File::Path::mkpath( SMT::Utils::cleanPath( $self->localBasePath(), $data->{PATH} ) );
+
         # get the repository index
         my $mirror = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
-        
-        my $catalogURI = join("/", $self->{URI}, "repo", $data->{PATH});
-        my $localPath = $self->{LOCALPATH}."/repo/".$data->{PATH};
-        
-        &File::Path::mkpath( $localPath );
-        
+        $mirror->localBasePath( $self->localBasePath() );
+        $mirror->localRepoPath( $data->{PATH} );        
         $mirror->uri( $catalogURI );
-        $mirror->deepverify($self->{DEEPVERIFY});
-        $mirror->mirrorTo( $localPath, {dryrun => $dryrun} );
+        $mirror->deepverify( $self->deepverify() );
+
+        $mirror->mirrorTo( dryrun => $dryrun );
+
         my $s = $mirror->statistic();
         
         $self->{STATISTIC}->{DOWNLOAD} += $s->{DOWNLOAD};

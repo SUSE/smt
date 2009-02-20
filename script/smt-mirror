@@ -239,7 +239,7 @@ foreach my $id (keys %{$hash})
 {
     next if(!exists $hash->{$id}->{CATALOGTYPE} || ! defined $hash->{$id}->{CATALOGTYPE});
 
-    if( lc($hash->{$id}->{CATALOGTYPE}) eq "zypp" && 
+    if( (lc($hash->{$id}->{CATALOGTYPE}) eq "zypp" || lc($hash->{$id}->{CATALOGTYPE}) eq "yum") && 
         $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
     {
         my $zuri = URI->new($hash->{$id}->{EXTURL});
@@ -248,49 +248,21 @@ foreach my $id (keys %{$hash})
             $zuri->userinfo("$nuUser:$nuPass");
         }
         
-        my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
-        &File::Path::mkpath( $fullpath );
+        &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $hash->{$id}->{LOCALPATH} ) );
 
         my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
-        if($clean)
-        {
-            $zyppMirror->clean( $fullpath );
-        }
-        else
-        {
-            $zyppMirror->uri( $zuri->as_string );
-            $zyppMirror->deepverify($deepverify);
-            $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
-
-            my $s = $zyppMirror->statistic();
-            $download += $s->{DOWNLOAD};
-            $errors   += $s->{ERROR};
-            $size     += $s->{DOWNLOAD_SIZE};
-        }
-    }
-    elsif( lc($hash->{$id}->{CATALOGTYPE}) eq "yum" && 
-           $hash->{$id}->{EXTHOST} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
-    {
-        my $zuri = URI->new($hash->{$id}->{EXTHOST});
-        if($zuri->host eq "nu.novell.com")
-        {
-            $zuri->userinfo("$nuUser:$nuPass");
-        }
-        $zuri->path("/repo/".$hash->{$id}->{LOCALPATH});
+        $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
+        $zyppMirror->localRepoPath( $hash->{$id}->{LOCALPATH} );
         
-        my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
-        &File::Path::mkpath( $fullpath );
-
-        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
         if($clean)
         {
-            $zyppMirror->clean( $fullpath );
+            $zyppMirror->clean();
         }
         else
         {
             $zyppMirror->uri( $zuri->as_string );
             $zyppMirror->deepverify($deepverify);
-            $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
+            $zyppMirror->mirrorTo( dryrun => $dryrun );
 
             my $s = $zyppMirror->statistic();
             $download += $s->{DOWNLOAD};
@@ -298,6 +270,43 @@ foreach my $id (keys %{$hash})
             $size     += $s->{DOWNLOAD_SIZE};
         }
     }
+
+    #
+    # There was a time where EXTURL of a YUM source was wrong so we used
+    # EXTHOST + repo + LOCALPATH
+    # It looks like this is now fixed so we can use EXTURL like we do for
+    # RpmMd
+    #
+    #elsif( lc($hash->{$id}->{CATALOGTYPE}) eq "yum" && 
+    #       $hash->{$id}->{EXTHOST} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
+    #{
+    #    my $zuri = URI->new($hash->{$id}->{EXTHOST});
+    #    if($zuri->host eq "nu.novell.com")
+    #    {
+    #        $zuri->userinfo("$nuUser:$nuPass");
+    #    }
+    #    $zuri->path("/repo/".$hash->{$id}->{LOCALPATH});
+    #    
+    #    my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
+    #    &File::Path::mkpath( $fullpath );
+    #
+    #    my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
+    #    if($clean)
+    #    {
+    #        $zyppMirror->clean( $fullpath );
+    #    }
+    #    else
+    #    {
+    #        $zyppMirror->uri( $zuri->as_string );
+    #        $zyppMirror->deepverify($deepverify);
+    #        $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
+    #
+    #        my $s = $zyppMirror->statistic();
+    #        $download += $s->{DOWNLOAD};
+    #        $errors   += $s->{ERROR};
+    #        $size     += $s->{DOWNLOAD_SIZE};
+    #    }
+    #}
 }
 
 #
@@ -305,9 +314,10 @@ foreach my $id (keys %{$hash})
 #
 my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
 $mirror->deepverify($deepverify);
+$mirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
 if($clean)
 {
-    $mirror->clean( $LocalBasePath );
+    $mirror->clean();
 }
 else
 {
@@ -317,7 +327,7 @@ else
     }
     
     $mirror->uri( $uri->as_string );
-    $mirror->mirrorTo( $LocalBasePath, { urltree => 0, dryrun => $dryrun } );
+    $mirror->mirrorTo( dryrun => $dryrun );
 
     my $s = $mirror->statistic();
     $download += $s->{DOWNLOAD};
@@ -355,7 +365,7 @@ SMT::Utils::printLog($LOG, "info", __("Summary"));
 SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered files    : %d "), $download ));
 SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
 SMT::Utils::printLog($LOG, "info", sprintf(__("Errors:                   : %d"), $errors));
-                                          
+
 
 exit 0;
 
