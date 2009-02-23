@@ -6,6 +6,7 @@
 
 use SMT::Mirror::NU;
 use SMT::Mirror::RpmMd;
+use SMT::Mirror::Yum;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Parser::RegData;
@@ -252,7 +253,15 @@ foreach my $id (keys %{$hash})
         
         &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $hash->{$id}->{LOCALPATH} ) );
 
-        my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
+        my $zyppMirror = undef;
+        if( lc($hash->{$id}->{CATALOGTYPE}) eq "yum")
+        {
+            $zyppMirror = SMT::Mirror::Yum->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
+        }
+        else
+        {
+            $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
+        }        
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $hash->{$id}->{LOCALPATH} );
         
