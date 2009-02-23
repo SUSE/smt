@@ -207,7 +207,7 @@ sub mirror
 
     if ( not $self->outdated() )
     {
-        printLog($self->{LOG}, "debug", sprintf("U %s", $self->{RESOURCE})) if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", sprintf("U %s", $self->local() )) if($self->{DEBUG});
         # no need to mirror
         return 2;
     }
@@ -323,7 +323,7 @@ sub mirror
             }
             else
             {
-                $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->resource());
+                $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->local() );
                 $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->{DEBUG});
                 
                 printLog($self->{LOG}, "error", $errormsg." (Try $tries)", 0, 1);
@@ -437,7 +437,7 @@ sub copyFromLocalIfAvailable
     my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s", 
                             $self->{DBH}->quote($name), $self->{DBH}->quote($checksum));
 
-    printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
+    #printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
     my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
 
     if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )

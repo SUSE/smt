@@ -183,63 +183,67 @@ sub mirrorTo()
     $job->localdir( $self->fullLocalRepoPath() );
     $job->resource( "repodata/repomd.xml" );
 
-    # check if we need to mirror first (if repomd.xml is outdated verify does not work)
-    my $outdated = $job->outdated();
-    if ( ! $outdated && $self->deepverify() )
+    # We expect the data are ok. If repomd.xml does not exist we downlaod everything new
+    # which is like deepverify
+    my $verifySuccess = 1;
+    
+    if ( $self->deepverify() && -e $job->local() )
     {
         # a deep verify check is requested 
 
         my $removeinvalid = 1;
         $removeinvalid = 0 if( $dryrun );
 
-        if( $self->verify( removeinvalid => $removeinvalid, quiet => $self->debug() ) )
-        {
-            printLog($self->{LOG}, "debug", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if($self->debug());
-            return 0;
-        }
-
+        $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => $self->debug() );
+        
         $self->{STATISTIC}->{ERROR}    = 0;
         $self->{STATISTIC}->{UPTODATE} = 0;
         $self->{STATISTIC}->{DOWNLOAD} = 0;
         $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-
+        
         if ( ! $dryrun )
         {
             # reset deepverify. It was done so we do not need it during mirror again.
             $self->deepverify(0);
         }
     }
-    elsif ( !$outdated && !$self->deepverify() )
+
+    if ( !$job->outdated() && $verifySuccess )
     {
-        printLog($self->{LOG}, "debug", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if($self->debug());
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
         return 0;
     }
-    # else $outdated; we must download repomd.xml first
+    # else $outdated or verify failed; we must download repomd.xml
 
     # copy repodata to .repodata 
     # we do not want to damage the repodata until we
     # have them all
 
-    if( -d $job->localdir()."/.repodata" )
+    my $metatempdir = SMT::Utils::cleanPath( $job->localdir(), ".repodata" );
+
+    if( -d "$metatempdir" )
     {
-        rmtree($job->localdir()."/.repodata", 0, 0);
+        rmtree($metatempdir, 0, 0);
     }
 
-    #my $metatempdir = File::Temp::tempdir($job->localdir()."/.repodata", CLEANUP => 1);
-    my $metatempdir = SMT::Utils::cleanPath( $job->localdir(), ".repodata" );
-    
+    &File::Path::mkpath( $metatempdir );
+
     if( -d $job->localdir()."/repodata" )
     {
         opendir(DIR, $job->localdir()."/repodata") or return 1;
         foreach my $entry (readdir(DIR))
         {
-            next if ($entry =~ /^./);
+            next if ($entry =~ /^\./);
             
             my $fullpath = $job->localdir()."/repodata/$entry";
             if( -f $fullpath )
             {
-                link( $fullpath, $metatempdir."/$entry");
-                printLog($self->{LOG}, "debug", "link $fullpath, $metatempdir/$entry") if($self->{DEBUG});
+                my $r = link( $fullpath, $metatempdir."/$entry");
+                printLog($self->{LOG}, "debug", "link $fullpath, $metatempdir/$entry  result:$r") if($self->{DEBUG});
+                if(!$r)
+                {
+                    printLog($self->{LOG}, "Linking $entry failed: $!");
+                }
             }
         }
     }
@@ -270,79 +274,23 @@ sub mirrorTo()
     $job->remoteresource("repodata/repomd.xml.asc");
     $job->resource( ".repodata/repomd.xml.asc" );
 
+    # if modified return undef, the file might not exist on the server
+    # This is ok, signed repodata are not mandatory. So we do not try
+    # to mirror it
     if( defined $job->modified(1) )
     {
-        $result = $job->mirror();
-        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
-        if( $result == 1 )
-        {
-            $self->{STATISTIC}->{ERROR} += 1;
-        }
-        elsif( $result == 2 )
-        {
-            $self->{STATISTIC}->{UPTODATE} += 1;
-        }
-        else
-        {
-            if( $dryrun )
-            {
-                printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
-            }
-            $self->{STATISTIC}->{DOWNLOAD} += 1;
-        }
+        $self->{JOBS}->{".repodata/repomd.xml.asc"} = $job;
     }
-    
+
     $job->remoteresource("repodata/repomd.xml.key");
     $job->resource( ".repodata/repomd.xml.key" );
+
+    # if modified return undef, the file might not exist on the server
+    # This is ok, signed repodata are not mandatory. So we do not try
+    # to mirror it
     if( defined $job->modified(1) )
     {
-        $result = $job->mirror();
-        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
-        if( $result == 1 )
-        {
-            $self->{STATISTIC}->{ERROR} += 1;
-        }
-        elsif( $result == 2 )
-        {
-            $self->{STATISTIC}->{UPTODATE} += 1;
-        }
-        else
-        {
-            if( $dryrun )
-            {
-                printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
-            }
-            $self->{STATISTIC}->{DOWNLOAD} += 1;
-        }
-    }
-
-    # ok, we have the remomd.xml. Now check if deepverify was set and execute it.
-
-    # FIXME: can this work? we have a new repomd.xml but the rest of the
-    #        metadata are old.
-    if ( $self->deepverify() )
-    {
-        # a deep verify check is requested 
-
-        my $removeinvalid = 1;
-        $removeinvalid = 0 if( $dryrun );
-
-        if( $self->verify( removeinvalid => $removeinvalid, quiet => $self->debug() ) )
-        {
-            printLog($self->{LOG}, "debug", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if($self->debug());
-            return 0;
-        }
-
-        $self->{STATISTIC}->{ERROR}    = 0;
-        $self->{STATISTIC}->{UPTODATE} = 0;
-        $self->{STATISTIC}->{DOWNLOAD} = 0;
-        $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-
-        if ( ! $dryrun )
-        {
-            # reset deepverify. It was done so we do not need it during mirror again.
-            $self->deepverify(0);
-        }
+        $self->{JOBS}->{".repodata/repomd.xml.key"} = $job;
     }
 
     # create a hash with filename => checksum
@@ -360,7 +308,6 @@ sub mirrorTo()
 
     $self->{EXISTS} = undef;
 
- 
     foreach my $r ( sort keys %{$self->{JOBS}})
     {
         if( $dryrun )
@@ -634,7 +581,16 @@ sub download_handler
         $job->localdir( $self->fullLocalRepoPath() );
         $job->uri( $self->{URI} );
         
-        my $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), $data->{LOCATION} );
+        my $fullpath = "";
+
+        if($data->{LOCATION} =~ /^repodata/)
+        {
+            $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), ".".$data->{LOCATION} );
+        }
+        else
+        {
+            $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), $data->{LOCATION} );
+        }
         
         if( exists $self->{EXISTS}->{$fullpath} && 
             $self->{EXISTS}->{$fullpath}->{checksum} eq $data->{CHECKSUM} && 
@@ -642,17 +598,19 @@ sub download_handler
         {
             # file exists and is up-to-date. 
             # with deepverify call a verify 
-            if( $self->deepverify() && $job->verify() )
+            if( $self->deepverify() && !$job->verify() )
             {
-                $self->{STATISTIC}->{UPTODATE} += 1;
-                return;
+                #printLog($self->{LOG}, "debug", "deepverify: verify failed") if($self->{DEBUG});
+                unlink ( $job->local() ) if( !$dryrun );
             }
             else
             {
-                unlink ( $job->local() ) if( !$dryrun );
+                printLog($self->{LOG}, "debug", sprintf("U %s", $job->resource() )) if($self->{DEBUG});
+                $self->{STATISTIC}->{UPTODATE} += 1;
+                return;
             }
         }
-                
+        
         # if it is an xml file we have to download it now and
         # process it
         if (  $job->resource =~ /(.+)\.xml(.*)/ )
