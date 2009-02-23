@@ -664,11 +664,12 @@ sub setMirrorableCatalogs
         # get the file
         my $job = SMT::Mirror::Job->new(debug => $opt{debug}, log => $opt{log});
         $job->uri($nuri);
-        $job->localdir($destdir);
+        $job->localBasePath( "/" );
+        $job->localRepoPath( $destdir );
         $job->resource("/repo/repoindex.xml");
-    
+        
         $job->mirror();
-        $indexfile = $job->local();
+        $indexfile = $job->fullLocalPath();
     }
 
     if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})

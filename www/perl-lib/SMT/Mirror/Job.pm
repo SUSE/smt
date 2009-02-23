@@ -18,9 +18,21 @@ sub new
     
     my $self  = {};
     $self->{URI}        = undef;
-    $self->{LOCALDIR}   = undef;
-    $self->{RESOURCE}   = undef;
-    $self->{RESOURCEEXT}   = undef;   # if we need to set a different resource remote and local
+
+    # starting with / upto  repo/
+    $self->{LOCALBASEPATH} = undef;
+
+    # catalog Path like LOCALPATH in the DB.
+    # e.g. $RCE/SLES11-Updates/sle-11-i586/
+    $self->{LOCALREPOPATH}   = undef;
+
+    # Local file location in the catalog
+    $self->{LOCALFILELOCATION} = undef;
+
+    # File location on the server
+    # used if this is different from LOCALFILELOCATION
+    $self->{REMOTEFILELOCATION} = undef;
+
     $self->{CHECKSUM}   = undef;
     $self->{NO_CHECKSUM_CHECK}   = 0;
     
@@ -30,7 +42,6 @@ sub new
     $self->{MAX_REDIRECTS} = 2;
     $self->{DEBUG}      = 0;
     $self->{LOG}        = undef;
-    #$self->{JOBTYPE}    = undef;
 
     $self->{DBH}        = undef;
 
@@ -71,14 +82,58 @@ sub uri
     return $self->{URI};
 }
 
-# job type
-#sub type
-#{
-#    my $self = shift;
-#    if (@_) { $self->{JOBTYPE} = shift }
-#    
-#    return $self->{JOBTYPE};
-#}
+sub localBasePath
+{
+    my $self = shift;
+    if (@_) { $self->{LOCALBASEPATH} = shift }
+    return $self->{LOCALBASEPATH};
+}
+
+sub localRepoPath
+{
+    my $self = shift;
+    if (@_) { $self->{LOCALREPOPATH} = shift }
+    return $self->{LOCALREPOPATH};
+}
+
+sub localFileLocation
+{
+    my $self = shift;
+    if (@_) { $self->{LOCALFILELOCATION} = shift }
+    return $self->{LOCALFILELOCATION};
+}
+
+sub remoteFileLocation
+{
+    my $self = shift;
+    if (@_) { $self->{REMOTEFILELOCATION} = shift }
+    
+    # if REMOTEFILELOCATION is not available return LOCALFILELOCATION
+    if(defined $self->{REMOTEFILELOCATION}  &&
+       $self->{REMOTEFILELOCATION} ne "" )
+    {
+        return $self->{REMOTEFILELOCATION};
+    }
+    else
+    {
+        return $self->{LOCALFILELOCATION};
+    }
+}
+
+sub fullLocalRepoPath
+{
+    my $self = shift;
+
+    return SMT::Utils::cleanPath($self->localBasePath(), $self->localRepoPath());
+}
+
+# local full path
+sub fullLocalPath
+{
+    my $self = shift;
+    my $local = SMT::Utils::cleanPath( $self->localBasePath(), $self->localRepoPath(), $self->localFileLocation() );
+    return $local;
+}
 
 # database handle
 sub dbh
@@ -89,51 +144,12 @@ sub dbh
     return $self->{DBH};
 }
 
-# local resource container
-sub localdir
-{
-    my $self = shift;
-    if (@_) { $self->{LOCALDIR} = shift }
-    return $self->{LOCALDIR};
-}
 
-sub remoteresource
+# full remote URI
+sub fullRemoteURI
 {
     my $self = shift;
-    
-    if(@_) { $self->{RESOURCEEXT} = shift }
-    return $self->{RESOURCEEXT};
-}
-    
-
-# local full path
-sub local
-{
-    my $self = shift;
-    my $local = SMT::Utils::cleanPath($self->{LOCALDIR}."/".$self->{RESOURCE} );
-    return $local;
-}
-
-# local full path
-sub remote
-{
-    my $self = shift;
-    if(defined $self->{RESOURCEEXT} && $self->{RESOURCEEXT} ne "")
-    {
-        return $self->{URI}."/".$self->{RESOURCEEXT};
-    }
-    else
-    {
-        return $self->{URI}."/".$self->{RESOURCE};
-    }
-}
-
-# resource property
-sub resource
-{
-    my $self = shift;
-    if (@_) { $self->{RESOURCE} = shift }
-    return $self->{RESOURCE};
+    return $self->{URI}."/".$self->remoteFileLocation();
 }
 
 # checksum property
@@ -162,6 +178,12 @@ sub downloadSize
     return $self->{DOWNLOAD_SIZE};
 }
 
+sub debug
+{
+    my $self = shift;
+    if (@_) { $self->{DEBUG} = shift }
+    return $self->{DEBUG};
+}
 
 # verify the local copy of the job with the known
 # checksum without accesing the network
@@ -181,9 +203,9 @@ sub realchecksum()
     
     my $sha1;
     my $digest;
-    my $filename = $self->local;
+    my $filename = $self->fullLocalPath();
     open(FILE, "< $filename") or do {
-        printLog($self->{LOG}, "debug", "Cannot open '$filename': $!") if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "Cannot open '$filename': $!") if($self->debug());
         return "";
     };
     
@@ -205,25 +227,25 @@ sub mirror
 {
     my $self = shift;
 
-    if ( not $self->outdated() )
+    if ( !$self->outdated() )
     {
-        printLog($self->{LOG}, "debug", sprintf("U %s", $self->local() )) if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", sprintf("U %s", $self->fullLocalPath() )) if($self->debug() );
         # no need to mirror
         return 2;
     }
     
     # make sure the container destination exists
-    &File::Path::mkpath( dirname($self->local()) );
+    &File::Path::mkpath( dirname($self->fullLocalPath()) );
 
     my $redirects = 0;
     my $response;
-    my $remote = $self->remote();
+    my $remote = $self->fullRemoteURI();
 
-    if( -e $self->local() )
+    if( -e $self->fullLocalPath() )
     {
         # LWP::UserAgent modify the file, but we need to replace it
         # so we better remove it, if it exists
-        unlink $self->local();
+        unlink $self->fullLocalPath();
     }
 
     if( $self->copyFromLocalIfAvailable() )
@@ -240,7 +262,7 @@ sub mirror
     {
         eval
         {
-            $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->local() );
+            $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->fullLocalPath() );
             $self->{DOWNLOAD_SIZE} += int($response->header("Content-Length"));
         };
         if($@)
@@ -258,16 +280,17 @@ sub mirror
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                $tries = 4;
-                $errormsg = __("Too many redirects");
+                my $saveuri = URI->new($remote);
+                $saveuri->userinfo(undef);
 
-                printLog($self->{LOG}, "error", $errormsg, 0, 1);
+                $tries = 4;
+                $errormsg = sprintf(__("E '%s': Too many redirects"), $saveuri->as_string());
             }
             else
             {
                 my $newuri = $response->header("location");
                 
-                #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
+                #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->debug());
                 $remote = URI->new($newuri);
             }
         }
@@ -278,16 +301,16 @@ sub mirror
                 if (my $lm = $response->last_modified)
                 {
                     # make sure the file has the same last modification time
-                    utime $lm, $lm, $self->local();
+                    utime $lm, $lm, $self->fullLocalPath();
                 }
                 
-                printLog($self->{LOG}, "info", sprintf("D %s", $self->local()));
+                printLog($self->{LOG}, "info", sprintf("D %s", $self->fullLocalPath()));
                 eval 
                 {
                     if( defined $self->checksum() && $self->checksum() ne "")
                     {
                         my $statement = sprintf("SELECT checksum from RepositoryContentData where localpath = %s", 
-                                                $self->{DBH}->quote( $self->local() ));
+                                                $self->{DBH}->quote( $self->fullLocalPath() ));
                         my $existChecksum = $self->{DBH}->selectcol_arrayref($statement);
                         
 
@@ -295,18 +318,18 @@ sub mirror
                         {
                             #insert
                             $self->{DBH}->do(sprintf("INSERT INTO RepositoryContentData (name, checksum, localpath) VALUES (%s, %s, %s)",
-                                                     $self->{DBH}->quote( basename( $self->local() ) ),
+                                                     $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
                                                      $self->{DBH}->quote( $self->checksum() ),
-                                                     $self->{DBH}->quote( $self->local() )
+                                                     $self->{DBH}->quote( $self->fullLocalPath() )
                                                     ));
                         }
                         elsif( $existChecksum->[0] ne $self->checksum() )
                         {
                             #update
                             $self->{DBH}->do(sprintf("UPDATE RepositoryContentData set name=%s, checksum=%s where localpath=%s",
-                                                     $self->{DBH}->quote( basename( $self->local() ) ),
+                                                     $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
                                                      $self->{DBH}->quote( $self->checksum() ),
-                                                     $self->{DBH}->quote( $self->local() )
+                                                     $self->{DBH}->quote( $self->fullLocalPath() )
                                                     ));
                         }
                     }
@@ -314,7 +337,7 @@ sub mirror
                 if($@)
                 {
                     #ignore errors
-                    printLog($self->{LOG}, "debug", "Insert failed: $@" ) if($self->{DEBUG});
+                    printLog($self->{LOG}, "debug", "Insert failed: $@" ) if($self->debug());
                 }
                 
                 $errorcode = 0;
@@ -323,13 +346,13 @@ sub mirror
             }
             else
             {
-                $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->local() );
-                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->{DEBUG});
+                $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->fullLocalPath() );
+                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->debug());
                 
                 printLog($self->{LOG}, "error", $errormsg." (Try $tries)", 0, 1);
                 if($tries > 0)
                 {
-                    unlink($self->local());
+                    unlink($self->fullLocalPath());
                 }
                 $tries++;
             }
@@ -362,7 +385,7 @@ sub modified
     
     my $redirects = 0;
     my $response;
-    my $remote = $self->remote();
+    my $remote = $self->fullRemoteURI();
     do
     {
         eval
@@ -380,13 +403,15 @@ sub modified
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                printLog($self->{LOG}, "error", __("Too many redirects"));
+                my $saveuri = URI->new($self->fullRemoteURI());
+                $saveuri->userinfo(undef);
+                printLog($self->{LOG}, "error", sprintf(__("E '%s': Too many redirects", $saveuri->as_string()) ));
                 return undef;
             }
             
             my $newuri = $response->header("location");
             
-            #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
+            #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->debug());
             $remote = URI->new($newuri);
         }
         elsif( $response->is_success )
@@ -395,9 +420,9 @@ sub modified
         }
         else 
         {
-            my $saveuri = URI->new($self->remote());
+            my $saveuri = URI->new($self->fullRemoteURI());
             $saveuri->userinfo(undef);
-            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s': %s"), 
+            printLog($self->{LOG}, "error", sprintf(__("E '%s': %s"), 
                                                     $saveuri->as_string() , $response->status_line))  if(!$doNotLog);
             return undef;
         }
@@ -412,12 +437,12 @@ sub outdated
 {
     my $self = shift;
     
-    if ( not -e $self->local() )
+    if ( ! -e $self->fullLocalPath() )
     {
         return 1;
     }
     
-    my $date = (stat $self->local())[9];
+    my $date = (stat $self->fullLocalPath())[9];
     $self->{modifiedAt} = $self->modified();
     
     return (!defined $self->{modifiedAt} || $date < $self->{modifiedAt});
@@ -429,7 +454,7 @@ sub copyFromLocalIfAvailable
 
     return 0 if(!defined $self->{DBH});
 
-    my $name = basename($self->local());
+    my $name = basename( $self->localFileLocation() );
     my $checksum = $self->checksum();
     
     return 0 if(!defined $name || $name eq "" || !defined $checksum || $checksum eq "");
@@ -437,7 +462,7 @@ sub copyFromLocalIfAvailable
     my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s", 
                             $self->{DBH}->quote($name), $self->{DBH}->quote($checksum));
 
-    #printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
+    #printLog($self->{LOG}, "debug", "$statement") if($self->debug());
     my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
 
     if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )
@@ -446,20 +471,28 @@ sub copyFromLocalIfAvailable
       
         return 0 if( ! -e "$otherpath" );
   
-        copy($otherpath, $self->local()) or do
+        copy($otherpath, $self->fullLocalPath()) or do
         {
-            printLog($self->{LOG}, "debug", "copy($otherpath, ".$self->local().") failed: $!") if($self->{DEBUG});
+            printLog($self->{LOG}, "debug", "copy($otherpath, ".$self->fullLocalPath().") failed: $!") if($self->debug());
             return 0;
         };
 
         if(defined $self->{modifiedAt})
         {
             # make sure the file has the same last modification time
-            utime $self->{modifiedAt}, $self->{modifiedAt}, $self->local();
+            utime $self->{modifiedAt}, $self->{modifiedAt}, $self->fullLocalPath();
         }
-        
-        printLog($self->{LOG}, "info", sprintf("C %s", $self->local()));
-        return 1;
+
+        if($self->verify())
+        {
+            printLog($self->{LOG}, "info", sprintf("C %s", $self->fullLocalPath()));
+            return 1;
+        }
+        else
+        {
+            # checksum missmatch. Remove the file and try to download it
+            unlink($self->fullLocalPath());
+        }
     }
     return 0;
 }

@@ -178,23 +178,24 @@ sub mirrorTo()
     printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+    my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
     $job->uri( $self->uri() );
-    $job->localdir( $self->fullLocalRepoPath() );
-    $job->resource( "repodata/repomd.xml" );
+    $job->localBasePath( $self->localBasePath() );
+    $job->localRepoPath( $self->localRepoPath() );
+    $job->localFileLocation( "repodata/repomd.xml" );
 
     # We expect the data are ok. If repomd.xml does not exist we downlaod everything new
     # which is like deepverify
     my $verifySuccess = 1;
     
-    if ( $self->deepverify() && -e $job->local() )
+    if ( $self->deepverify() && -e $job->fullLocalPath() )
     {
         # a deep verify check is requested 
 
         my $removeinvalid = 1;
         $removeinvalid = 0 if( $dryrun );
 
-        $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => $self->debug() );
+        $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => !$self->debug() );
         
         $self->{STATISTIC}->{ERROR}    = 0;
         $self->{STATISTIC}->{UPTODATE} = 0;
@@ -211,6 +212,7 @@ sub mirrorTo()
     if ( !$job->outdated() && $verifySuccess )
     {
         printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
+        print "\n";
         return 0;
     }
     # else $outdated or verify failed; we must download repomd.xml
@@ -219,7 +221,7 @@ sub mirrorTo()
     # we do not want to damage the repodata until we
     # have them all
 
-    my $metatempdir = SMT::Utils::cleanPath( $job->localdir(), ".repodata" );
+    my $metatempdir = SMT::Utils::cleanPath( $job->fullLocalRepoPath(), ".repodata" );
 
     if( -d "$metatempdir" )
     {
@@ -228,29 +230,30 @@ sub mirrorTo()
 
     &File::Path::mkpath( $metatempdir );
 
-    if( -d $job->localdir()."/repodata" )
+    if( -d $job->fullLocalRepoPath()."/repodata" )
     {
-        opendir(DIR, $job->localdir()."/repodata") or return 1;
+        opendir(DIR, $job->fullLocalRepoPath()."/repodata") or return 1;
         foreach my $entry (readdir(DIR))
         {
             next if ($entry =~ /^\./);
             
-            my $fullpath = $job->localdir()."/repodata/$entry";
+            my $fullpath = $job->fullLocalRepoPath()."/repodata/$entry";
             if( -f $fullpath )
             {
                 my $r = link( $fullpath, $metatempdir."/$entry");
-                printLog($self->{LOG}, "debug", "link $fullpath, $metatempdir/$entry  result:$r") if($self->{DEBUG});
+                printLog($self->{LOG}, "debug", "link $fullpath, $metatempdir/$entry  result:$r") if($self->debug());
                 if(!$r)
                 {
-                    printLog($self->{LOG}, "Linking $entry failed: $!");
+                    printLog($self->{LOG}, "error", "Linking $entry failed: $!");
                 }
             }
         }
+        closedir(DIR);
     }
-    my $resource = $job->resource();
-    $job->remoteresource($resource);
+    my $resource = $job->localFileLocation();
+    $job->remoteFileLocation($resource);
     $resource =~ s/repodata/.repodata/;
-    $job->resource($resource);
+    $job->localFileLocation($resource);
     
     my $result = $job->mirror();
     $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
@@ -266,13 +269,13 @@ sub mirrorTo()
     {
         if( $dryrun )
         {
-            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->remoteresource()));
+            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->fillLocalFile()) );
         }
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
-    $job->remoteresource("repodata/repomd.xml.asc");
-    $job->resource( ".repodata/repomd.xml.asc" );
+    $job->remoteFileLocation("repodata/repomd.xml.asc");
+    $job->localFileLocation(".repodata/repomd.xml.asc" );
 
     # if modified return undef, the file might not exist on the server
     # This is ok, signed repodata are not mandatory. So we do not try
@@ -282,8 +285,8 @@ sub mirrorTo()
         $self->{JOBS}->{".repodata/repomd.xml.asc"} = $job;
     }
 
-    $job->remoteresource("repodata/repomd.xml.key");
-    $job->resource( ".repodata/repomd.xml.key" );
+    $job->remoteFileLocation("repodata/repomd.xml.key");
+    $job->localFileLocation(".repodata/repomd.xml.key" );
 
     # if modified return undef, the file might not exist on the server
     # This is ok, signed repodata are not mandatory. So we do not try
@@ -315,7 +318,7 @@ sub mirrorTo()
             #
             # we have here only outdated files, so dryrun can display them all as "New File"
             #
-            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $r));
+            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $self->{JOBS}->{$r}->fullLocalPath() ));
             $self->{STATISTIC}->{DOWNLOAD} += 1;
             
             next;
@@ -338,28 +341,28 @@ sub mirrorTo()
     }
     
     # if no error happens copy .repodata to repodata
-    if(!$dryrun && $self->{STATISTIC}->{ERROR} == 0 && -d $job->localdir()."/.repodata")
+    if(!$dryrun && $self->{STATISTIC}->{ERROR} == 0 && -d $job->fullLocalRepoPath()."/.repodata")
     {
-        if( -d $job->localdir()."/.old.repodata")
+        if( -d $job->fullLocalRepoPath()."/.old.repodata")
         {
-            rmtree($job->localdir()."/.old.repodata", 0, 0);
+            rmtree($job->fullLocalRepoPath()."/.old.repodata", 0, 0);
         }
         my $success = 1;
-        if( -d $job->localdir()."/repodata" )
+        if( -d $job->fullLocalRepoPath()."/repodata" )
         {
-            $success = rename( $job->localdir()."/repodata", $job->localdir()."/.old.repodata");
+            $success = rename( $job->fullLocalRepoPath()."/repodata", $job->fullLocalRepoPath()."/.old.repodata");
             if(!$success)
             {
-                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->localdir()."/repodata"));
+                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/repodata"));
                 $self->{STATISTIC}->{ERROR} += 1;
             }
         }
         if($success)
         {
-            $success = rename( $job->localdir()."/.repodata", $job->localdir()."/repodata");
+            $success = rename( $job->fullLocalRepoPath()."/.repodata", $job->fullLocalRepoPath()."/repodata");
             if(!$success)
             {
-                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->localdir()."/.repodata"));
+                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/.repodata"));
                 $self->{STATISTIC}->{ERROR} += 1;
             }
         }
@@ -434,7 +437,7 @@ sub clean()
     my $cnt = 0;
     foreach my $file ( keys %{$self->{CLEANLIST}} )
     {
-        printLog($self->{LOG}, "debug", "Delete: $file") if ($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "Delete: $file") if ($self->debug());
         $cnt += unlink $file;
         
         $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
@@ -484,28 +487,28 @@ sub verify()
     {
         $job = $self->{VERIFYJOBS}->{$_};
         
-        my $ok = ( (-e $job->local()) && $job->verify());
+        my $ok = ( (-e $job->fullLocalPath()) && $job->verify());
         $cnt++;
-        if ($ok || ($job->resource =~ /repomd\.xml$/ ) )
+        if ($ok || ($job->localFileLocation() =~ /repomd\.xml$/ ) )
         {
-            printLog($self->{LOG}, "debug", "Verify: ". $job->resource . ": OK") if ($self->{DEBUG});
+            printLog($self->{LOG}, "debug", "Verify: ". $job->fullLocalPath() . ": OK") if ($self->debug());
         }
         else
         {
-            if(!-e $job->local())
+            if(!-e $job->fullLocalPath())
             {
-                printLog($self->{LOG}, "error", "Verify: ". $job->resource . ": FAILED ( file not found )");
+                printLog($self->{LOG}, "error", "Verify: ". $job->fullLocalPath() . ": FAILED ( file not found )");
             }
             else
             {
-                printLog($self->{LOG}, "error", "Verify: ". $job->resource . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum, $job->realchecksum));
+                printLog($self->{LOG}, "error", "Verify: ". $job->fullLocalPath() . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum(), $job->realchecksum()));
                 if ($removeinvalid)
                 {
-                    printLog($self->{LOG}, "debug", sprintf(__("Deleting %s"), $job->resource)) if ($self->{DEBUG});
-                    unlink($job->local);
+                    printLog($self->{LOG}, "debug", sprintf(__("Deleting %s"), $job->fullLocalPath())) if ($self->debug());
+                    unlink($job->fullLocalPath());
                 }
             }
-            $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($job->local() ) ) );
+            $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($job->fullLocalPath() ) ) );
             
             $self->{STATISTIC}->{ERROR} += 1;
         }
@@ -569,17 +572,18 @@ sub download_handler
         if(!$self->{MIRRORSRC} && exists $data->{ARCH} && defined $data->{ARCH} && lc($data->{ARCH}) eq "src")
         {
             # we do not want source rpms - skip
-            printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->{DEBUG});
+            printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->debug());
             
             return;
         }
 
         # get the repository index
-        my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
-        $job->resource( $data->{LOCATION} );
-        $job->checksum( $data->{CHECKSUM} );
-        $job->localdir( $self->fullLocalRepoPath() );
+        my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
         $job->uri( $self->{URI} );
+        $job->localBasePath( $self->localBasePath() );
+        $job->localRepoPath( $self->localRepoPath() );
+        $job->localFileLocation( $data->{LOCATION} );
+        $job->checksum( $data->{CHECKSUM} );
         
         my $fullpath = "";
 
@@ -589,7 +593,7 @@ sub download_handler
         }
         else
         {
-            $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), $data->{LOCATION} );
+            $fullpath = $job->fullLocalPath();
         }
         
         if( exists $self->{EXISTS}->{$fullpath} && 
@@ -600,12 +604,12 @@ sub download_handler
             # with deepverify call a verify 
             if( $self->deepverify() && !$job->verify() )
             {
-                #printLog($self->{LOG}, "debug", "deepverify: verify failed") if($self->{DEBUG});
-                unlink ( $job->local() ) if( !$dryrun );
+                #printLog($self->{LOG}, "debug", "deepverify: verify failed") if($self->debug());
+                unlink ( $job->fullLocalPath() ) if( !$dryrun );
             }
             else
             {
-                printLog($self->{LOG}, "debug", sprintf("U %s", $job->resource() )) if($self->{DEBUG});
+                printLog($self->{LOG}, "debug", sprintf("U %s", $job->fullLocalPath() )) if($self->debug());
                 $self->{STATISTIC}->{UPTODATE} += 1;
                 return;
             }
@@ -613,15 +617,15 @@ sub download_handler
         
         # if it is an xml file we have to download it now and
         # process it
-        if (  $job->resource =~ /(.+)\.xml(.*)/ )
+        if (  $job->localFileLocation() =~ /(.+)\.xml(.*)/ )
         {
             # metadata! change the download area
 
             my $localres = $data->{LOCATION};
             
             $localres =~ s/repodata/.repodata/;
-            $job->remoteresource( $data->{LOCATION} );
-            $job->resource( $localres );
+            $job->remoteFileLocation( $data->{LOCATION} );
+            $job->localFileLocation( $localres );
 
             # mirror it first, so we can parse it
             my $mres = $job->mirror();
@@ -635,7 +639,7 @@ sub download_handler
                 if($self->deepverify() && !$job->verify())
                 {
                     # remove broken file and download it again
-                    unlink($job->local());
+                    unlink($job->fullLocalPath());
                     $mres = $job->mirror();
                     if($mres = 0)
                     {
@@ -660,7 +664,7 @@ sub download_handler
         else
         {
             # download it later
-            if ( $job->resource )
+            if ( $job->localFileLocation() )
             {
                 if(!exists $self->{JOBS}->{$data->{LOCATION}})
                 {
@@ -669,7 +673,7 @@ sub download_handler
             }
             else
             {
-                printLog($self->{LOG}, "error", "no resource on $job->local");
+                printLog($self->{LOG}, "error", "no file location set on ".$job->fullLocalPath());
             }
         }
     }
@@ -680,17 +684,18 @@ sub download_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
-                $job->resource( $file->{LOCATION} );
-                $job->checksum( $file->{CHECKSUM} );
-                $job->localdir( $self->fullLocalRepoPath() );
+                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
                 $job->uri( $self->{URI} );
+                $job->localBasePath( $self->localBasePath() );
+                $job->localRepoPath( $self->localRepoPath() );
+                $job->localFileLocation( $file->{LOCATION} );
+                $job->checksum( $file->{CHECKSUM} );
                 
-                my $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), $file->{LOCATION} );
+                #my $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), $file->{LOCATION} );
         
-                if( exists $self->{EXISTS}->{$fullpath} && 
-                    $self->{EXISTS}->{$fullpath}->{checksum} eq $file->{CHECKSUM} && 
-                    -e "$fullpath" )
+                if( exists $self->{EXISTS}->{$job->fullLocalPath()} && 
+                    $self->{EXISTS}->{$job->fullLocalPath()}->{checksum} eq $file->{CHECKSUM} && 
+                    -e $job->fullLocalPath() )
                 {
                     # file exists and is up-to-date. 
                     # with deepverify call a verify 
@@ -701,7 +706,7 @@ sub download_handler
                     }
                     else
                     {
-                        unlink ( $job->local() ) if( !$dryrun );
+                        unlink ( $job->fullLocalPath() ) if( !$dryrun );
                     }
                 }
                 
@@ -719,7 +724,7 @@ sub verify_handler
     if(!$self->{MIRRORSRC} && exists $data->{ARCH} && defined $data->{ARCH} && lc($data->{ARCH}) eq "src")
     {
         # we do not want source rpms - skip
-        printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->{DEBUG});
+        printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->debug());
         
         return;
     }
@@ -732,14 +737,15 @@ sub verify_handler
         # all other files (rpms) are verified only if deepverify is requested.
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH});
-            $job->resource( $data->{LOCATION} );
+            my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH});
+            $job->localBasePath( $self->localBasePath() );
+            $job->localRepoPath( $self->localRepoPath() );
+            $job->localFileLocation( $data->{LOCATION} );
             $job->checksum( $data->{CHECKSUM} );
-            $job->localdir( $self->fullLocalRepoPath() );
             
-            if(!exists $self->{VERIFYJOBS}->{$job->local()})
+            if(!exists $self->{VERIFYJOBS}->{$job->fullLocalPath()})
             {
-                $self->{VERIFYJOBS}->{$job->local()} = $job;
+                $self->{VERIFYJOBS}->{$job->fullLocalPath()} = $job;
             }
         }
     }
@@ -750,12 +756,16 @@ sub verify_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
-                $job->resource( $file->{LOCATION} );
+                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+                $job->localBasePath( $self->localBasePath() );
+                $job->localRepoPath( $self->localRepoPath() );
+                $job->localFileLocation( $file->{LOCATION} );
                 $job->checksum( $file->{CHECKSUM} );
-                $job->localdir( $self->fullLocalRepoPath() );
                 
-                $self->{VERIFYJOBS}->{$job->local()} = $job;
+                if(!exists $self->{VERIFYJOBS}->{$job->fullLocalPath()})
+                {
+                    $self->{VERIFYJOBS}->{$job->fullLocalPath()} = $job;
+                }
             }
         }
     }

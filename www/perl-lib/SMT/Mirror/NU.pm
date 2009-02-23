@@ -226,24 +226,29 @@ sub mirrorTo()
     my $destfile = SMT::Utils::cleanPath( $destdir, "repo/repoindex.xml" );
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG}, dbh => $self->{DBH} );
+    my $job = SMT::Mirror::Job->new(debug => $self->debug(), log => $self->{LOG}, dbh => $self->{DBH} );
     $job->uri( $self->{URI} );
-    $job->resource( "/repo/repoindex.xml" );
-    $job->localdir( $destdir );
+    $job->localBasePath( "/" );
+    $job->localRepoPath( $destdir );
+    $job->localFileLocation( "/repo/repoindex.xml" );
     
     # get the file
     if($job->mirror() == 1)
     {
         $self->{STATISTIC}->{ERROR} +=1;
     }
-    $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
-
-    # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
-    # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
+    else
+    {
+        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
+        $self->{STATISTIC}->{DOWNLOAD} += 1;
     
-    my $parser = SMT::Parser::NU->new(log => $self->{LOG});
-    $parser->parse($destfile, sub{ mirror_handler($self, $options{dryrun}, @_) });
-
+        # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
+        # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
+    
+        my $parser = SMT::Parser::NU->new(log => $self->{LOG});
+        $parser->parse($destfile, sub{ mirror_handler($self, $options{dryrun}, @_) });
+    }
+    
     return $self->{STATISTIC}->{ERROR};
 }
 
@@ -265,7 +270,7 @@ sub clean()
     
     foreach my $path (@{$res})
     {
-        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
+        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
         $rpmmd->localBasePath( $self->localBasePath() );
         $rpmmd->localRepoPath( $path );
         $rpmmd->deepverify( $self->deepverify() );
@@ -311,7 +316,7 @@ sub mirror_handler
         &File::Path::mkpath( SMT::Utils::cleanPath( $self->localBasePath(), $data->{PATH} ) );
 
         # get the repository index
-        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->{DEBUG}, log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
+        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
         $mirror->localBasePath( $self->localBasePath() );
         $mirror->localRepoPath( $data->{PATH} );        
         $mirror->uri( $catalogURI );
