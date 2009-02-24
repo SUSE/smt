@@ -212,7 +212,8 @@ sub mirrorTo()
     if ( ! -d $self->localBasePath() )
     { 
         printLog($self->{LOG}, "error", $self->localBasePath()." does not exist");
-        exit 1;
+        $self->{STATISTIC}->{ERROR} += 1;
+        return $self->{STATISTIC}->{ERROR};
     }
 
     # extract the url components to create
@@ -271,7 +272,7 @@ sub clean()
     if ( ! -d $self->localBasePath() )
     { 
         printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $self->localBasePath() ));
-        exit 1;
+        return;
     }
 
     my $res = $self->{DBH}->selectcol_arrayref("select LOCALPATH from Catalogs where CATALOGTYPE='nu' and DOMIRROR='Y' and MIRRORABLE='Y'");

@@ -36,10 +36,9 @@ sub getSMTConfig
     my $cfg = new Config::IniFiles( -file => $filename );
     if(!defined $cfg)
     {
-        # FIXME: is die correct here?
+        # die is ok here.
         die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
     }
-
     return $cfg;
 }
 
@@ -58,7 +57,7 @@ sub db_connect
     my $pass   = $cfg->val('DB', 'pass');
     if(!defined $config || $config eq "")
     {
-        # FIXME: is die correct here?
+        # should be ok to die here
         die __("Invalid Database configuration. Missing value for DB/config.");
     }
 

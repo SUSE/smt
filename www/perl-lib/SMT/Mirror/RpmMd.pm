@@ -152,27 +152,32 @@ sub mirrorTo()
     my $self = shift;
     my %options = @_;
     my $dryrun  = 0;
-    $dryrun = 1 if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
-    
-    my $dest = $self->fullLocalRepoPath();
-   
-    if ( ! -d $dest )
-    { 
-        die $dest . " does not exist"; 
-    }
-    if ( !defined $self->uri() || $self->uri() !~ /^http/ )
-    {
-        die "Invalid URL: ".$self->uri();
-    }
-    
     my $t0 = [gettimeofday] ;
-    
+
+    $dryrun = 1 if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
+
     # reset the counter
     $self->{STATISTIC}->{ERROR}         = 0;
     $self->{STATISTIC}->{UPTODATE}      = 0;
     $self->{STATISTIC}->{DOWNLOAD}      = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-
+    
+    my $dest = $self->fullLocalRepoPath();
+   
+    if ( ! -d $dest )
+    {
+        printLog($self->{LOG}, "error", "'$dest' does not exist");
+        $self->{STATISTIC}->{ERROR} += 1;
+        return $self->{STATISTIC}->{ERROR};
+    }
+    if ( !defined $self->uri() || $self->uri() !~ /^http/ )
+    {
+        printLog($self->{LOG}, "error", "Invalid URL: ".((defined $self->uri())?$self->uri():"") );
+        $self->{STATISTIC}->{ERROR} += 1;
+        return $self->{STATISTIC}->{ERROR};
+    }
+    
+    
     # extract the url components to create
     # the destination directory
     # so we save the repo to:
@@ -240,7 +245,12 @@ sub mirrorTo()
 
     if( -d $job->fullLocalRepoPath()."/repodata" )
     {
-        opendir(DIR, $job->fullLocalRepoPath()."/repodata") or return 1;
+        opendir(DIR, $job->fullLocalRepoPath()."/repodata") or do 
+        {
+            $self->{STATISTIC}->{ERROR} += 1;
+            return $self->{STATISTIC}->{ERROR};
+        };
+        
         foreach my $entry (readdir(DIR))
         {
             next if ($entry =~ /^\./);
@@ -258,7 +268,8 @@ sub mirrorTo()
                     copy( $fullpath, $metatempdir."/$entry" ) or do
                     {
                         printLog($self->{LOG}, "error", "copy metadata failed: $!");
-                        return 1;
+                        $self->{STATISTIC}->{ERROR} += 1;
+                        return $self->{STATISTIC}->{ERROR};
                     };
                 }
             }
@@ -432,7 +443,7 @@ sub clean()
     if ( ! -d $self->fullLocalRepoPath() )
     { 
         printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
-        exit 1;
+        return;
     }
 
     printLog($self->{LOG}, "info", sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) );
@@ -489,7 +500,8 @@ sub verify()
     if ( ! -d $self->fullLocalRepoPath() )
     {
         printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
-        return 1;
+        $self->{STATISTIC}->{ERROR} += 1;
+        return ($self->{STATISTIC}->{ERROR} == 0);
     }
 
     # remove invalid packages?
