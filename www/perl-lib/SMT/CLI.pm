@@ -34,14 +34,6 @@ sub init
     my $cfg = undef;
     my $nuri;
 
-    if(!$nodbh)
-    {
-        if ( not $dbh=SMT::Utils::db_connect() )
-        {
-            die __("ERROR: Could not connect to the database");
-        }
-    }
-
     eval
     {
         $cfg = SMT::Utils::getSMTConfig();
@@ -49,6 +41,14 @@ sub init
     if($@ || !defined $cfg)
     {
         die __("Cannot read the SMT configuration file: ").$@;
+    }
+
+    if(!$nodbh)
+    {
+        if ( not $dbh=SMT::Utils::db_connect($cfg) )
+        {
+            die __("ERROR: Could not connect to the database");
+        }
     }
 
     # TODO move the url assembling code out
@@ -666,7 +666,7 @@ sub setMirrorableCatalogs
         $job->uri($nuri);
         $job->localBasePath( "/" );
         $job->localRepoPath( $destdir );
-        $job->resource("/repo/repoindex.xml");
+        $job->localFileLocation("/repo/repoindex.xml");
         
         $job->mirror();
         $indexfile = $job->fullLocalPath();
