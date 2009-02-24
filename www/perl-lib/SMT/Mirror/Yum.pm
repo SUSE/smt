@@ -15,66 +15,11 @@ use base 'SMT::Mirror::RpmMd'; # sets @SMT::Mirror::Yum::ISA = ('SMT::Mirror::Rp
 sub new
 {
     my $pkgname = shift;
-    my %opt   = @_;
-    
     my $self  = {};
 
-    # FIXME: is this really necessary to do this twice?
-    $self->{URI}   = undef;
-
-    # starting with / upto  repo/
-    $self->{LOCALBASEPATH} = undef;
-    
-    # catalog Path like LOCALPATH in the DB.
-    # e.g. $RCE/SLES11-Updates/sle-11-i586/
-    $self->{LOCALREPOPATH}   = undef;
-
-
-    $self->{JOBS}   = {};
-    $self->{VERIFYJOBS}   = {};
-    $self->{CLEANLIST} = {};
-
-    $self->{STATISTIC}->{DOWNLOAD} = 0;
-    $self->{STATISTIC}->{UPTODATE} = 0;
-    $self->{STATISTIC}->{ERROR}    = 0;
-    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-
-    $self->{DEBUG} = 0;
-    $self->{LOG}   = undef;
-    $self->{MIRRORSRC} = 1;
-    $self->{DEEPVERIFY}   = 0;
-    $self->{DBH} = undef;
-    
-    
-    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
-
-    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
-    {
-        $self->{DEBUG} = 1;
-    }
-
-    if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
-    {
-        $self->{DBH} = $opt{dbh};
-    }
-    
-    if(exists $opt{log} && defined $opt{log} && $opt{log})
-    {
-        $self->{LOG} = $opt{log};
-    }
-    else
-    {
-        $self->{LOG} = SMT::Utils::openLog();
-    }
-    
-    if(exists $opt{mirrorsrc} && defined $opt{mirrorsrc} && !$opt{mirrorsrc})
-    {
-        $self->{MIRRORSRC} = 0;
-    }    
-
     bless($self);
-    $self->SUPER::new(@_);
+    $self = $self->SUPER::new(@_);
+    bless($self);
     
     return $self;
 }
@@ -233,6 +178,10 @@ sub clean
                      }
                  }
                  , no_chdir => 1 }, $self->fullLocalRepoPath() );
+
+        # remove headers/header.info first
+        my $hdrLocation = SMT::Utils::cleanPath($self->fullLocalRepoPath(), "headers/header.info");
+        delete $self->{CLEANLIST}->{$hdrLocation} if (exists $self->{CLEANLIST}->{$hdrLocation});
         
         open(HDR, "< $headerFile") and do
         {
@@ -250,7 +199,7 @@ sub clean
                         my $release = $3;
                         my $arch = $4;
                         
-                        my $hdrLocation = SMT::Utils::cleanPath($self->fullLocalRepoPath(), "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr");
+                        $hdrLocation = SMT::Utils::cleanPath($self->fullLocalRepoPath(), "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr");
                         
                         # if this path is in the CLEANLIST, delete it
                         delete $self->{CLEANLIST}->{$hdrLocation} if (exists $self->{CLEANLIST}->{$hdrLocation});
@@ -258,6 +207,7 @@ sub clean
                 }
             }
         };
+        close HDR;
         
         my $cnt = 0;
         foreach my $file ( keys %{$self->{CLEANLIST}} )
