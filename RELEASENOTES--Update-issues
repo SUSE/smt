@@ -1,0 +1,7 @@
+
+* new value "requiredAuthType" in /etc/smt.conf
+* /etc/apache2/conf.d/nu_server.conf got an update
+  and replaces the installed version on update.
+* (repo2db script)
+
+
