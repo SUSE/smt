@@ -43,10 +43,11 @@ sub new
 
     $self->{DEBUG} = 0;
     $self->{LOG}   = undef;
-    $self->{MIRRORSRC} = 1;
     $self->{DEEPVERIFY}   = 0;
     $self->{DBH} = undef;
-    
+
+    $self->{MIRRORSRC} = 1;
+    $self->{NOHARDLINK} = 0;
     
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
@@ -74,6 +75,11 @@ sub new
     {
         $self->{MIRRORSRC} = 0;
     }    
+
+    if(exists $opt{nohardlink} && defined $opt{nohardlink} && $opt{nohardlink})
+    {
+        $self->{NOHARDLINK} = 1;
+    }
 
     bless($self);
     return $self;
@@ -178,11 +184,13 @@ sub mirrorTo()
     printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+    my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG},
+                                    dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
     $job->localFileLocation( "repodata/repomd.xml" );
+
 
     # We expect the data are ok. If repomd.xml does not exist we downlaod everything new
     # which is like deepverify
@@ -240,16 +248,24 @@ sub mirrorTo()
             my $fullpath = $job->fullLocalRepoPath()."/repodata/$entry";
             if( -f $fullpath )
             {
-                my $r = link( $fullpath, $metatempdir."/$entry");
-                printLog($self->{LOG}, "debug", "link $fullpath, $metatempdir/$entry  result:$r") if($self->debug());
-                if(!$r)
+                my $success = 0;
+                if(!$self->{NOHARDLINK})
                 {
-                    printLog($self->{LOG}, "error", "Linking $entry failed: $!");
+                    $success = link( $fullpath, $metatempdir."/$entry" );
+                }
+                if(!$success)
+                {
+                    copy( $fullpath, $metatempdir."/$entry" ) or do
+                    {
+                        printLog($self->{LOG}, "error", "copy metadata failed: $!");
+                        return 1;
+                    };
                 }
             }
         }
         closedir(DIR);
     }
+
     my $resource = $job->localFileLocation();
     $job->remoteFileLocation($resource);
     $resource =~ s/repodata/.repodata/;
@@ -274,6 +290,11 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
+    $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+    $job->uri( $self->uri() );
+    $job->localBasePath( $self->localBasePath() );
+    $job->localRepoPath( $self->localRepoPath() );
     $job->remoteFileLocation("repodata/repomd.xml.asc");
     $job->localFileLocation(".repodata/repomd.xml.asc" );
 
@@ -285,6 +306,11 @@ sub mirrorTo()
         $self->{JOBS}->{".repodata/repomd.xml.asc"} = $job;
     }
 
+    $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+    $job->uri( $self->uri() );
+    $job->localBasePath( $self->localBasePath() );
+    $job->localRepoPath( $self->localRepoPath() );
     $job->remoteFileLocation("repodata/repomd.xml.key");
     $job->localFileLocation(".repodata/repomd.xml.key" );
 
@@ -296,13 +322,14 @@ sub mirrorTo()
         $self->{JOBS}->{".repodata/repomd.xml.key"} = $job;
     }
 
+    
+    # we ignore errors. The code work also without this variable set
     # create a hash with filename => checksum
     my $statement = sprintf("SELECT localpath, checksum from RepositoryContentData where localpath like %s",
                             $self->{DBH}->quote($self->fullLocalRepoPath()."%"));
     $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
     #printLog($self->{LOG}, "debug", "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
     
-
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->fullLocalRepoPath());
@@ -578,7 +605,8 @@ sub download_handler
         }
 
         # get the repository index
-        my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+        my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, 
+                                        log => $self->{LOG}, dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
         $job->uri( $self->{URI} );
         $job->localBasePath( $self->localBasePath() );
         $job->localRepoPath( $self->localRepoPath() );
@@ -684,7 +712,8 @@ sub download_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG},
+                                                dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
                 $job->uri( $self->{URI} );
                 $job->localBasePath( $self->localBasePath() );
                 $job->localRepoPath( $self->localRepoPath() );
@@ -737,7 +766,8 @@ sub verify_handler
         # all other files (rpms) are verified only if deepverify is requested.
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH});
+            my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+                                            dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
             $job->localBasePath( $self->localBasePath() );
             $job->localRepoPath( $self->localRepoPath() );
             $job->localFileLocation( $data->{LOCATION} );
@@ -756,7 +786,8 @@ sub verify_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+                                                dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
                 $job->localBasePath( $self->localBasePath() );
                 $job->localRepoPath( $self->localRepoPath() );
                 $job->localFileLocation( $file->{LOCATION} );

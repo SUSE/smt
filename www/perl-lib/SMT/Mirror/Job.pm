@@ -49,7 +49,9 @@ sub new
     $self->{modifiedAt} = undef;
     
     $self->{DOWNLOAD_SIZE} = 0;
-    
+
+    $self->{NOHARDLINK} = 0;
+
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
@@ -67,6 +69,11 @@ sub new
     else
     {
         $self->{LOG} = SMT::Utils::openLog();
+    }
+
+    if(exists $opt{nohardlink} && defined $opt{nohardlink} && $opt{nohardlink})
+    {
+        $self->{NOHARDLINK} = 1;
     }
 
     bless($self);
@@ -185,6 +192,7 @@ sub debug
     return $self->{DEBUG};
 }
 
+
 # verify the local copy of the job with the known
 # checksum without accesing the network
 sub verify()
@@ -213,8 +221,50 @@ sub realchecksum()
     $sha1->addfile(*FILE);
     $digest = $sha1->hexdigest();
     close FILE;
+
     return $digest;
 }
+
+sub updateDB
+{
+    my $self = shift;
+    
+    eval 
+    {
+        if( defined $self->checksum() && $self->checksum() ne "")
+        {
+            my $statement = sprintf("SELECT checksum from RepositoryContentData where localpath = %s", 
+                                    $self->{DBH}->quote( $self->fullLocalPath() ));
+            my $existChecksum = $self->{DBH}->selectcol_arrayref($statement);
+            
+            
+            if( !exists $existChecksum->[0] || !defined $existChecksum->[0] )
+            {
+                #insert
+                $self->{DBH}->do(sprintf("INSERT INTO RepositoryContentData (name, checksum, localpath) VALUES (%s, %s, %s)",
+                                         $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
+                                         $self->{DBH}->quote( $self->checksum() ),
+                                         $self->{DBH}->quote( $self->fullLocalPath() )
+                                        ));
+            }
+            elsif( $existChecksum->[0] ne $self->checksum() )
+            {
+                #update
+                $self->{DBH}->do(sprintf("UPDATE RepositoryContentData set name=%s, checksum=%s where localpath=%s",
+                                         $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
+                                         $self->{DBH}->quote( $self->checksum() ),
+                                         $self->{DBH}->quote( $self->fullLocalPath() )
+                                        ));
+            }
+        }
+    };
+    if($@)
+    {
+        #ignore errors
+        printLog($self->{LOG}, "debug", "Updating the database failed: $@" ) if($self->debug());
+    }
+}
+
 
 # mirror the resource to the local destination
 #
@@ -305,40 +355,7 @@ sub mirror
                 }
                 
                 printLog($self->{LOG}, "info", sprintf("D %s", $self->fullLocalPath()));
-                eval 
-                {
-                    if( defined $self->checksum() && $self->checksum() ne "")
-                    {
-                        my $statement = sprintf("SELECT checksum from RepositoryContentData where localpath = %s", 
-                                                $self->{DBH}->quote( $self->fullLocalPath() ));
-                        my $existChecksum = $self->{DBH}->selectcol_arrayref($statement);
-                        
-
-                        if( !exists $existChecksum->[0] || !defined $existChecksum->[0] )
-                        {
-                            #insert
-                            $self->{DBH}->do(sprintf("INSERT INTO RepositoryContentData (name, checksum, localpath) VALUES (%s, %s, %s)",
-                                                     $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
-                                                     $self->{DBH}->quote( $self->checksum() ),
-                                                     $self->{DBH}->quote( $self->fullLocalPath() )
-                                                    ));
-                        }
-                        elsif( $existChecksum->[0] ne $self->checksum() )
-                        {
-                            #update
-                            $self->{DBH}->do(sprintf("UPDATE RepositoryContentData set name=%s, checksum=%s where localpath=%s",
-                                                     $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
-                                                     $self->{DBH}->quote( $self->checksum() ),
-                                                     $self->{DBH}->quote( $self->fullLocalPath() )
-                                                    ));
-                        }
-                    }
-                };
-                if($@)
-                {
-                    #ignore errors
-                    printLog($self->{LOG}, "debug", "Insert failed: $@" ) if($self->debug());
-                }
+                $self->updateDB();
                 
                 $errorcode = 0;
                 $errormsg = "";
@@ -458,41 +475,62 @@ sub copyFromLocalIfAvailable
     my $checksum = $self->checksum();
     
     return 0 if(!defined $name || $name eq "" || !defined $checksum || $checksum eq "");
-
-    my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s", 
-                            $self->{DBH}->quote($name), $self->{DBH}->quote($checksum));
-
+    my $otherpath = undef;
+    
+    my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and localpath not like %s", 
+                            $self->{DBH}->quote($name), 
+                            $self->{DBH}->quote($checksum), 
+                            $self->{DBH}->quote($self->fullLocalRepoPath()."%") );
+    
     #printLog($self->{LOG}, "debug", "$statement") if($self->debug());
     my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
-
+    
     if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )
     {
-        my $otherpath = $existingpath->[0];
-      
-        return 0 if( ! -e "$otherpath" );
-  
+        $otherpath = $existingpath->[0];
+    }
+    
+    return 0 if( !defined $otherpath || $otherpath eq "" || ! -e "$otherpath" );
+
+    my $success = 0;
+
+    if(!$self->{NOHARDLINK})
+    {
+        $success = link($otherpath, $self->fullLocalPath());
+    }
+    
+    if(!$success)
+    {
         copy($otherpath, $self->fullLocalPath()) or do
         {
             printLog($self->{LOG}, "debug", "copy($otherpath, ".$self->fullLocalPath().") failed: $!") if($self->debug());
             return 0;
         };
-
+    
         if(defined $self->{modifiedAt})
         {
             # make sure the file has the same last modification time
             utime $self->{modifiedAt}, $self->{modifiedAt}, $self->fullLocalPath();
         }
-
-        if($self->verify())
+    }
+    
+    if($self->verify())
+    {
+        if($success)
         {
-            printLog($self->{LOG}, "info", sprintf("C %s", $self->fullLocalPath()));
-            return 1;
+            printLog($self->{LOG}, "info", sprintf("L %s", $self->fullLocalPath()));
         }
         else
         {
-            # checksum missmatch. Remove the file and try to download it
-            unlink($self->fullLocalPath());
+            printLog($self->{LOG}, "info", sprintf("C %s", $self->fullLocalPath()));
         }
+        $self->updateDB();
+        return 1;
+    }
+    else
+    {
+        # checksum missmatch. Remove the file and try to download it
+        unlink($self->fullLocalPath());
     }
     return 0;
 }

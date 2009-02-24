@@ -42,21 +42,24 @@ my $download = 0;
 my $errors = 0;
 my $size = 0;
 
-my $result = GetOptions ("debug|d"     => \$debug,
-                         "cleanup|c"   => \$clean,
-                         "hardlink=i"  => \$hardlink,
-                         "directory=s" => \$LocalBasePath,
-                         "deepverify"  => \$deepverify,
-                         "dryrun|n"    => \$dryrun,
+my $nolink = 0;
+
+my $result = GetOptions ("debug|d"      => \$debug,
+                         "cleanup|c"    => \$clean,
+                         "hardlink=i"   => \$hardlink,
+                         "directory=s"  => \$LocalBasePath,
+                         "deepverify"   => \$deepverify,
+                         "dryrun|n"     => \$dryrun,
+                         "nohardlink"   => \$nohardlink,
                          "dbreplfile=s" => \$dbreplfile,
-                         "logfile|L=s" => \$logfile,
-                         "help|h"      => \$help
+                         "logfile|L=s"  => \$logfile,
+                         "help|h"       => \$help
                         );
 
 
 if($help)
 {
-    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug]\n";
+    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--nohardlink]\n";
     print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
     print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
@@ -73,6 +76,8 @@ if($help)
     print "--dryrun -n       " . __("Run mirror algorithm without downloading the rpms \n");
     print "                  " . __("(but it needs to download the metadata into a temporary directory).\n");
     print "                  " . __("It shows only the names which would be downloaded \n");
+    print "--nohardlink      " . __("If a file already exists on the local harddisk do not link it into the\n");
+    print "                  " . __("mirrored repository, but copy it.\n");
     print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can\n");
     print "                  " . __("be created with the sync-ncc command. This option is only\n");
     print "                  " . __("useful if the smt database does not exist on the host from\n"); 
@@ -161,7 +166,7 @@ my $dbh = undef;
 
 if(!defined $dbreplfile)
 {
-    $dbh = SMT::Utils::db_connect();
+    $dbh = SMT::Utils::db_connect($cfg);
     
     if(!$dbh)
     {
@@ -256,11 +261,13 @@ foreach my $id (keys %{$hash})
         my $zyppMirror = undef;
         if( lc($hash->{$id}->{CATALOGTYPE}) eq "yum")
         {
-            $zyppMirror = SMT::Mirror::Yum->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
+            $zyppMirror = SMT::Mirror::Yum->new(debug => $debug, log => $LOG, dbh => $dbh,
+                                               mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
         }
         else
         {
-            $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
+            $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, dbh => $dbh,
+                                                  mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
         }        
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $hash->{$id}->{LOCALPATH} );
@@ -281,49 +288,12 @@ foreach my $id (keys %{$hash})
             $size     += $s->{DOWNLOAD_SIZE};
         }
     }
-
-    #
-    # There was a time where EXTURL of a YUM source was wrong so we used
-    # EXTHOST + repo + LOCALPATH
-    # It looks like this is now fixed so we can use EXTURL like we do for
-    # RpmMd
-    #
-    #elsif( lc($hash->{$id}->{CATALOGTYPE}) eq "yum" && 
-    #       $hash->{$id}->{EXTHOST} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
-    #{
-    #    my $zuri = URI->new($hash->{$id}->{EXTHOST});
-    #    if($zuri->host eq "nu.novell.com")
-    #    {
-    #        $zuri->userinfo("$nuUser:$nuPass");
-    #    }
-    #    $zuri->path("/repo/".$hash->{$id}->{LOCALPATH});
-    #    
-    #    my $fullpath = $LocalBasePath."/repo/".$hash->{$id}->{LOCALPATH};
-    #    &File::Path::mkpath( $fullpath );
-    #
-    #    my $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
-    #    if($clean)
-    #    {
-    #        $zyppMirror->clean( $fullpath );
-    #    }
-    #    else
-    #    {
-    #        $zyppMirror->uri( $zuri->as_string );
-    #        $zyppMirror->deepverify($deepverify);
-    #        $zyppMirror->mirrorTo( $fullpath, { urltree => 0, dryrun => $dryrun } );
-    #
-    #        my $s = $zyppMirror->statistic();
-    #        $download += $s->{DOWNLOAD};
-    #        $errors   += $s->{ERROR};
-    #        $size     += $s->{DOWNLOAD_SIZE};
-    #    }
-    #}
 }
 
 #
 # Now mirror the NU catalogs
 #
-my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh);
+my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh, nohardlink => $nohardlink);
 $mirror->deepverify($deepverify);
 $mirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
 if($clean)

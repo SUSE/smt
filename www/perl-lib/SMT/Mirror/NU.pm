@@ -108,13 +108,15 @@ sub new
     $self->{LOG}    = 0;
     $self->{DEEPVERIFY} = 0;
     $self->{DBREPLACEMENT} = undef;
-    $self->{MIRRORSRC} = 1;
     $self->{DBH} = undef;
     
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
+
+    $self->{MIRRORSRC} = 1;
+    $self->{NOHARDLINK} = 0;
 
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
@@ -139,6 +141,11 @@ sub new
     {
         $self->{MIRRORSRC} = 0;
     }    
+
+    if(exists $opt{nohardlink} && defined $opt{nohardlink} && $opt{nohardlink})
+    {
+        $self->{NOHARDLINK} = 1;
+    }
 
     bless($self);
     return $self;
@@ -226,7 +233,8 @@ sub mirrorTo()
     my $destfile = SMT::Utils::cleanPath( $destdir, "repo/repoindex.xml" );
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->debug(), log => $self->{LOG}, dbh => $self->{DBH} );
+    my $job = SMT::Mirror::Job->new(debug => $self->debug(), log => $self->{LOG}, 
+                                    dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->{URI} );
     $job->localBasePath( "/" );
     $job->localRepoPath( $destdir );
@@ -270,7 +278,8 @@ sub clean()
     
     foreach my $path (@{$res})
     {
-        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
+        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC},
+                                            dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
         $rpmmd->localBasePath( $self->localBasePath() );
         $rpmmd->localRepoPath( $path );
         $rpmmd->deepverify( $self->deepverify() );
@@ -316,7 +325,8 @@ sub mirror_handler
         &File::Path::mkpath( SMT::Utils::cleanPath( $self->localBasePath(), $data->{PATH} ) );
 
         # get the repository index
-        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC}, dbh => $self->{DBH});
+        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC},
+                                             dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
         $mirror->localBasePath( $self->localBasePath() );
         $mirror->localRepoPath( $data->{PATH} );        
         $mirror->uri( $catalogURI );
