@@ -26,6 +26,9 @@ our @EXPORT = qw(__ printLog);
 # read SMT config file and return a hash
 #        will result in a "die" on error
 #
+# there is no need to close $cfg . Config::IniFiles
+# read the file into the memory and close the handle self
+#
 sub getSMTConfig
 {
     my $filename = shift || "/etc/smt.conf";
@@ -48,8 +51,8 @@ sub getSMTConfig
 #
 sub db_connect
 {
-    my $cfg = getSMTConfig;
-
+    my $cfg = shift || getSMTConfig();
+    
     my $config = $cfg->val('DB', 'config');
     my $user   = $cfg->val('DB', 'user');
     my $pass   = $cfg->val('DB', 'pass');
