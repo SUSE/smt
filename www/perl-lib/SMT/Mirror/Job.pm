@@ -11,6 +11,67 @@ use SMT::Utils;
 use File::Basename;
 use File::Copy;
 
+=head1 NAME
+
+SMT::Mirror::Job - represents a single resource mirror job
+
+=head1 SYNOPSIS
+
+  $job = SMT::Mirror::Job->new(dbh => $dbh);
+  $job->uri("http://foo.com/");
+  $job->localBaseDir("/srv/www/htdocs/repo/");
+  $job->localRepoDir("$RCE/SLES11-Updates/sle-11-i586/");
+  $job->localFileLocation("/repodata/repomd.xml");
+  # when was it last time modified remotely
+  print $job->modified()
+  # is the local version outdated?
+  print $job->outdated()
+  $job->mirror();
+
+=head1 DESCRIPTION
+
+Represents a remote resource mirror job and provice
+useful mehods to check if the resource exists local
+or if it needs refresh and to transfer it.
+
+=head1 METHODS
+
+=over 4
+
+=item new(%params)
+
+Create a new SMT::Mirror::Job object:
+
+  my $mirror = SMT::Mirror::Job->new(debug => 1);
+
+Arguments are an anonymous hash array of parameters:
+
+=over 4
+
+=item debug <0|1>
+
+Set to 1 to enable debug. 
+
+=item UserAgent
+
+LWP::UserAgent object to use for this job. Usefull for keep_alive. 
+
+=item dbh
+
+DBI database handle.
+
+=item log
+
+Logfile handle
+
+=item nohardlink
+
+Set to 1 to disable the use of hardlinks. Copy is used instead of it.
+
+=back
+
+=cut
+
 sub new
 {
     my $pkgname = shift;
@@ -37,7 +98,7 @@ sub new
     $self->{NO_CHECKSUM_CHECK}   = 0;
     
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = (defined $opt{UserAgent} && $opt{UserAgent})?$opt{UserAgent}:SMT::Utils::createUserAgent(keep_alive => 1);
+    $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
 
     $self->{MAX_REDIRECTS} = 2;
     $self->{DEBUG}      = 0;
@@ -80,7 +141,12 @@ sub new
     return $self;
 }
 
-# URI property
+=item uri([url])
+
+Set and get the remote repository URI.
+
+=cut
+
 sub uri
 {
     my $self = shift;
@@ -89,12 +155,26 @@ sub uri
     return $self->{URI};
 }
 
+=item localBasePath([path])
+
+Set and get the base path on the local system. Typically starting
+with / upto repo/
+
+=cut
+
 sub localBasePath
 {
     my $self = shift;
     if (@_) { $self->{LOCALBASEPATH} = shift }
     return $self->{LOCALBASEPATH};
 }
+
+=item localRepoPath([path])
+
+Set and get the repository path on the local system. 
+E.g. $RCE/SLES11-Updates/sle-11-i586/
+
+=cut
 
 sub localRepoPath
 {
@@ -103,12 +183,28 @@ sub localRepoPath
     return $self->{LOCALREPOPATH};
 }
 
+=item localFileLocation([path])
+
+Set and get the file location in the repository on the local system.
+E.g. repodata/repomd.xml
+
+=cut
+
 sub localFileLocation
 {
     my $self = shift;
     if (@_) { $self->{LOCALFILELOCATION} = shift }
     return $self->{LOCALFILELOCATION};
 }
+
+=item remoteFileLocation([path])
+
+Set and get the file location in the repository on the remote system.
+E.g. repodata/repomd.xml
+
+If a special location is not defined B<remoteFileLocation> returns B<localFileLocation>.
+
+=cut
 
 sub remoteFileLocation
 {
@@ -127,6 +223,13 @@ sub remoteFileLocation
     }
 }
 
+=item fullLocalRepoPath()
+
+Returns the full path to the repository on the local system. It concatenate
+localBasePath() and localRepoPath().
+
+=cut
+
 sub fullLocalRepoPath
 {
     my $self = shift;
@@ -134,7 +237,13 @@ sub fullLocalRepoPath
     return SMT::Utils::cleanPath($self->localBasePath(), $self->localRepoPath());
 }
 
-# local full path
+=item fullLocalPath()
+
+Return the full path to the file on the local system. It concatenate
+localBasePath(), localRepoPath() and localFileLocation().
+
+=cut
+
 sub fullLocalPath
 {
     my $self = shift;
@@ -142,7 +251,12 @@ sub fullLocalPath
     return $local;
 }
 
-# database handle
+=item dbh([handle])
+
+Set and get the database handle.
+
+=cut
+
 sub dbh
 {
     my $self = shift;
@@ -151,15 +265,27 @@ sub dbh
     return $self->{DBH};
 }
 
+=item fullRemoteURI()
 
-# full remote URI
+Return the full URL of the file on the remote system. It concatenate
+uri() and remoteFileLocation().
+
+=cut
+
 sub fullRemoteURI
 {
     my $self = shift;
-    return $self->{URI}."/".$self->remoteFileLocation();
+    my $url = $self->uri();
+    $url =~ s/\/*$//;
+    return "$url/".$self->remoteFileLocation();
 }
 
-# checksum property
+=item checksum([checksum])
+
+Set and get the expected checksum for this file.
+
+=cut
+
 sub checksum()
 {
     my $self = shift;
@@ -167,7 +293,13 @@ sub checksum()
     return $self->{CHECKSUM};
 }
 
-# no_checksum_check property
+=item noChecksumCheck([0|1])
+
+Enable or disable checksum check for this job.
+Returns the current state.
+
+=cut
+
 sub noChecksumCheck
 {
     my $self = shift;
@@ -178,12 +310,24 @@ sub noChecksumCheck
     return $self->{NO_CHECKSUM_CHECK};
 }
 
+=item downloadSize()
+
+Return the download size in bytes.
+
+=cut
 
 sub downloadSize
 {
     my $self = shift;
     return $self->{DOWNLOAD_SIZE};
 }
+
+=item debug([0|1])
+
+Enable or disable debug mode for this job.
+Returns the current state.
+
+=cut
 
 sub debug
 {
@@ -192,10 +336,18 @@ sub debug
     return $self->{DEBUG};
 }
 
+=item verify()
 
-# verify the local copy of the job with the known
-# checksum without accesing the network
-sub verify()
+Verify the local copy of the file with the known
+checksum without accesing the network.
+
+Returns 0 (false) if the checksums do not match.
+Returns 1 (true) if the checksums match or the checksum check is disabled or no
+expected checksum is available.
+
+=cut
+
+sub verify
 {
     my $self = shift;
     
@@ -204,6 +356,12 @@ sub verify()
     return 0 if ( $self->checksum() ne  $self->realchecksum() );
     return 1;
 }
+
+=item realchecksum()
+
+Calculate the real checksum of the file and return the value.
+
+=cut
 
 sub realchecksum()
 {
@@ -224,6 +382,13 @@ sub realchecksum()
 
     return $digest;
 }
+
+=item updateDB()
+
+Update the database with the current job informations.
+(for internal use)
+
+=cut
 
 sub updateDB
 {
@@ -266,13 +431,16 @@ sub updateDB
 }
 
 
-# mirror the resource to the local destination
-#
-# Returns:
-# 0 = ok
-# 1 = error
-# 2 = up-to-date
-#
+=item mirror()
+
+Mirror the file.
+Returns 
+ 0 on success, 
+ 1 on error and 
+ 2 if the file is up to date
+
+=cut
+
 sub mirror
 {
     my $self = shift;
@@ -394,6 +562,14 @@ sub mirror
     return 0;
 }
 
+=item modified([nolog])
+
+Return the remote modification timestamp or undef on error. 
+
+If I<nolog> is 1, logging is disabled in this function.
+
+=cut
+
 # remote modification timestamp
 sub modified
 {
@@ -448,8 +624,12 @@ sub modified
     return Date::Parse::str2time($response->header( "Last-Modified" ));
 }
 
-# true if remote is newer than local version
-# or if local does not exists
+=item outdated()
+
+Returns 1 (true) if a newer version is available, otherwise 0 (false).
+
+=cut
+
 sub outdated
 {
     my $self = shift;
@@ -464,6 +644,15 @@ sub outdated
     
     return (!defined $self->{modifiedAt} || $date < $self->{modifiedAt});
 }
+
+=item copyFromLocalIfAvailable()
+
+Search if a file is available on the local system and hardlink or copy
+the file (depends on the option I<nohardlink> in new()).
+If a file was found and hardlink or copy was successfull this function 
+return 1 (true), otherwise 0 (false)
+
+=cut
 
 sub copyFromLocalIfAvailable
 {
@@ -535,66 +724,15 @@ sub copyFromLocalIfAvailable
     return 0;
 }
 
-
-=head1 NAME
-
-SMT::Mirror::Job - represents a single resource mirror job
-
-=head1 SYNOPSIS
-
-  $job = SMT::Mirror::Job->new();
-  $job->uri("http://foo.com/");
-  $job->localdir("/tmp");
-  $job->resource("/file.txt");
-  # when was it last time modified remotely
-  print $job->modified()
-  # is the local version outdated?
-  print $job->outdated()
-  $job->mirror();
-
-=head1 DESCRIPTION
-
-Represents a remote resource mirror job and provice
-useful mehods to check if the resource exists local
-or if it needs refresh and to transfer it.
-
-=head1 METHODS
-
-=over 4
-
-=item new([$params])
-
-Create a new SMT::Mirror::Job object:
-
-  my $mirror = SMT::Mirror::Job->new(debug => 1);
-
-Arguments are an anonymous hash array of parameters:
-
-=over 4
-
-=item debug
-
-Set to 1 to enable debug. 
-
-=item UserAgent
-
-LWP::UserAgent object to use for this job. Usefull for keep_alive. 
-
-=back
-
-=item mirror()
-
-Returns 0 on success, 1 on error and 2 if the file is up to date
-
 =back
 
 =head1 AUTHOR
 
-dmacvicar@suse.de
+dmacvicar@suse.de, mc@suse.de
 
 =head1 COPYRIGHT
 
-Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
+Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 =cut
 

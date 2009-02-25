@@ -21,8 +21,9 @@ SMT::Mirror::NU - mirroring of a Novell Update repository
   use SMT::Mirror::NU;
 
   $mirror = SMT::Mirror::NU->new();
-  $mirror->uri( 'https://username:password@nu.novell.com');
-  $mirror->mirrorTo( "/srv/www/htdocs/");
+  $mirror->uri( 'https://nu.novell.com');
+  $mirror->localBaseDir("/srv/www/htdocs/repo/");
+  $mirror->mirrorTo();
 
 =head1 DESCRIPTION
 
@@ -39,60 +40,43 @@ which are not mentioned in the metadata, you can use the clean method:
 
 =over 4
 
-=item new([$params])
+=item new([%params])
 
-Create a new SMT::Mirror::RpmMd object:
+Create a new SMT::Mirror::NU object:
 
-  my $mirror = SMT::Mirror::RpmMd->new(debug => 1);
+  my $mirror = SMT::Mirror::NU->new();
 
 Arguments are an anonymous hash array of parameters:
 
 =over 4
 
-=item debug
+=item debug <0|1>
 
 Set to 1 to enable debug. 
 
-=back
+=item useragent
 
-=item uri()
+LWP::UserAgent object to use for this job. Usefull for keep_alive. 
 
- $mirror->uri( 'https://user:pass@nu.novell.com/' );
+=item dbh
 
- Specify the NU source where to mirror from.
+DBI database handle.
 
-=item mirrorTo()
+=item log
 
- $mirror->mirrorTo( "/somedir", { urltree => 1 });
+Logfile handle
 
- Sepecify the target directory where to place the mirrored files.
+=item nohardlink
 
-=over 4
+Set to 1 to disable the use of hardlinks. Copy is used instead of it.
 
-=item urltree
+=item mirrorsrc
 
-The option urltree of the mirror method controls 
-how the repo is mirrored. If urltree is true, then subdirectories
-with the hostname and path of the repo url are created inside the
-target directory.
-If urltree is false, then the repo is mirrored right below the target
-directory.
+Set to 0 to disable mirroring of source rpms.
 
 =back
-
-=back
-
-=head1 AUTHOR
-
-mc@suse.de
-
-=head1 COPYRIGHT
-
-Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
-
 =cut
 
-# constructor
 sub new
 {
     my $pkgname = shift;
@@ -109,6 +93,9 @@ sub new
     $self->{DEEPVERIFY} = 0;
     $self->{DBREPLACEMENT} = undef;
     $self->{DBH} = undef;
+
+    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
+    $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
     
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
@@ -151,13 +138,26 @@ sub new
     return $self;
 }
 
-# URI property
+=item uri()
+
+ $mirror->uri( 'https://user:pass@nu.novell.com/' );
+
+ Specify the NU source where to mirror from.
+
+=cut
 sub uri
 {
     my $self = shift;
     if (@_) { $self->{URI} = shift }
     return $self->{URI};
 }
+
+=item deepverify()
+
+Enable or disable deepverify mode. 
+Returns the current state.
+
+=cut
 
 sub deepverify
 {
@@ -166,6 +166,12 @@ sub deepverify
     return $self->{DEEPVERIFY};
 }
 
+=item localBasePath([path])
+
+Set and get the base path on the local system. Typically starting
+with / upto repo/
+
+=cut
 sub localBasePath
 {
     my $self = shift;
@@ -173,7 +179,11 @@ sub localBasePath
     return $self->{LOCALBASEPATH};
 }
 
-# database handle
+=item dbh([handle])
+
+Set and get the database handle.
+
+=cut
 sub dbh
 {
     my $self = shift;
@@ -182,6 +192,11 @@ sub dbh
     return $self->{DBH};
 }
 
+=item dbreplacement([$hash])
+
+Set and get the database replacement hash.
+
+=cut
 sub dbreplacement
 {
     my $self = shift;
@@ -189,6 +204,12 @@ sub dbreplacement
     return $self->{DBREPLACEMENT};
 }    
 
+=item debug([0|1])
+
+Enable or disable debug mode for this job.
+Returns the current state.
+
+=cut
 sub debug
 {
     my $self = shift;
@@ -197,13 +218,56 @@ sub debug
     return $self->{DEBUG};
 }
 
+=item statistic()
+
+Returns the statistic hash reference. 
+Available keys in this has are:
+
+=over 4
+
+=item DOWNLOAD
+
+Number of new files (downloaded, hardlinked or copied)   
+
+=item UPTODATE
+
+Number of files which are up-to-date
+
+=item ERROR
+
+Number of errors.
+
+=item DOWNLOAD_SIZE
+
+Size of files downloaded (in bytes)
+
+=back
+
+=cut
+
 sub statistic
 {
     my $self = shift;
     return $self->{STATISTIC};
 }
 
-# mirrors the repository to destination
+=item mirrorTo()
+
+Iterate over all catalogs which are enabled for mirroring and start the mirror process for them. 
+Returns the number of errors.
+
+=over 4
+
+=item dryrun
+
+If set to 1, only the metadata are downloaded to a temporary directory and all
+files which are outdated are reported. After this is finished, the directory 
+containing the metadata is removed.
+
+=back
+
+=cut
+
 sub mirrorTo()
 {
     my $self = shift;
@@ -234,7 +298,7 @@ sub mirrorTo()
     my $destfile = SMT::Utils::cleanPath( $destdir, "repo/repoindex.xml" );
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->debug(), log => $self->{LOG}, 
+    my $job = SMT::Mirror::Job->new(debug => $self->debug(), log => $self->{LOG}, useragent => $self->{USERAGENT},
                                     dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->{URI} );
     $job->localBasePath( "/" );
@@ -261,8 +325,12 @@ sub mirrorTo()
     return $self->{STATISTIC}->{ERROR};
 }
 
-# deletes all files not referenced in
-# the rpmmd resource chain
+=item clean()
+
+Iterate over all catalogs which are enabled for mirroring and 
+deletes all files not referenced in the rpmmd resource chain.
+
+=cut
 sub clean()
 {
     my $self = shift;
@@ -327,7 +395,7 @@ sub mirror_handler
 
         # get the repository index
         my $mirror = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC},
-                                             dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
+                                             useragent => $self->{USERAGENT}, dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
         $mirror->localBasePath( $self->localBasePath() );
         $mirror->localRepoPath( $data->{PATH} );        
         $mirror->uri( $catalogURI );
@@ -343,5 +411,18 @@ sub mirror_handler
         $self->{STATISTIC}->{DOWNLOAD_SIZE} += $s->{DOWNLOAD_SIZE};
     }
 }
+
+
+=back
+
+=head1 AUTHOR
+
+mc@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
 
 1;

@@ -14,8 +14,76 @@ use SMT::Mirror::Job;
 use SMT::Parser::RpmMd;
 use SMT::Utils;
 
+=head1 NAME
 
-# constructor
+SMT::Mirror::RpmMd - mirroring of a rpm metadata repository
+
+=head1 SYNOPSIS
+
+  use SMT::Mirror::RpmMd;
+
+  $mirror = SMT::Mirror::RpmMd->new();
+  $mirror->uri( "http://repo.com/10.3" );
+  $mirror->localBaseDir("/srv/www/htdocs/repo/");
+  $mirror->localRepoDir("RPMMD/10.3/");
+
+  $mirror->mirrorTo();
+
+  $mirror->clean();
+
+=head1 DESCRIPTION
+
+Mirroring of a rpm metadata repository.
+
+The mirror function will not download the same files twice.
+
+In order to clean the repository, that is removing all files
+which are not mentioned in the metadata, you can use the clean method:
+
+ $mirror->clean();
+
+=head1 METHODS
+
+=over 4
+
+=item new([%params])
+
+Create a new SMT::Mirror::RpmMd object:
+
+  my $mirror = SMT::Mirror::RpmMd->new();
+
+Arguments are an anonymous hash array of parameters:
+
+=over 4
+
+=item debug <0|1>
+
+Set to 1 to enable debug. 
+
+=item useragent
+
+LWP::UserAgent object to use for this job. Usefull for keep_alive. 
+
+=item dbh
+
+DBI database handle.
+
+=item log
+
+Logfile handle
+
+=item nohardlink
+
+Set to 1 to disable the use of hardlinks. Copy is used instead of it.
+
+=item mirrorsrc
+
+Set to 0 to disable mirroring of source rpms.
+
+=back
+
+=cut
+
 sub new
 {
     my $pkgname = shift;
@@ -50,7 +118,7 @@ sub new
     $self->{NOHARDLINK} = 0;
     
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
+    $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
 
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
@@ -85,13 +153,27 @@ sub new
     return $self;
 }
 
-# URI property
+=item uri([url])
+
+ $mirror->uri( "http://repo.com/10.3" );
+
+ Specify the RpmMd source where to mirror from.
+
+=cut
+
 sub uri
 {
     my $self = shift;
     if (@_) { $self->{URI} = shift }
     return $self->{URI};
 }
+
+=item localBasePath([path])
+
+Set and get the base path on the local system. Typically starting
+with / upto repo/
+
+=cut
 
 sub localBasePath
 {
@@ -100,12 +182,26 @@ sub localBasePath
     return $self->{LOCALBASEPATH};
 }
 
+=item localRepoPath([path])
+
+Set and get the repository path on the local system. 
+E.g. $RCE/SLES11-Updates/sle-11-i586/
+
+=cut
+
 sub localRepoPath
 {
     my $self = shift;
     if (@_) { $self->{LOCALREPOPATH} = shift }
     return $self->{LOCALREPOPATH};
 }
+
+=item fullLocalRepoPath()
+
+Returns the full path to the repository on the local system. It concatenate
+localBasePath() and localRepoPath().
+
+=cut
 
 sub fullLocalRepoPath
 {
@@ -114,7 +210,12 @@ sub fullLocalRepoPath
     return SMT::Utils::cleanPath($self->localBasePath(), $self->localRepoPath());
 }
 
+=item deepverify()
 
+Enable or disable deepverify mode. 
+Returns the current state.
+
+=cut
 sub deepverify
 {
     my $self = shift;
@@ -122,7 +223,11 @@ sub deepverify
     return $self->{DEEPVERIFY};
 }
 
-# database handle
+=item dbh([handle])
+
+Set and get the database handle.
+
+=cut
 sub dbh
 {
     my $self = shift;
@@ -131,11 +236,45 @@ sub dbh
     return $self->{DBH};
 }
 
+=item statistic()
+
+Returns the statistic hash reference. 
+Available keys in this has are:
+
+=over 4
+
+=item DOWNLOAD
+
+Number of new files (downloaded, hardlinked or copied)   
+
+=item UPTODATE
+
+Number of files which are up-to-date
+
+=item ERROR
+
+Number of errors.
+
+=item DOWNLOAD_SIZE
+
+Size of files downloaded (in bytes)
+
+=back
+=cut
+
 sub statistic
 {
     my $self = shift;
     return $self->{STATISTIC};
 }
+
+
+=item debug([0|1])
+
+Enable or disable debug mode for this job.
+Returns the current state.
+
+=cut
 
 sub debug
 {
@@ -146,7 +285,21 @@ sub debug
 }
 
 
-# mirrors the repository to destination
+=item mirrorTo()
+
+ Start the mirror process.
+ Returns the count of errors.
+
+=over 4
+
+=item dryrun
+
+If set to 1, only the metadata are downloaded to a temporary directory and all
+files which are outdated are reported. After this is finished, the directory 
+containing the metadata is removed.
+
+=back
+=cut
 sub mirrorTo()
 {
     my $self = shift;
@@ -189,7 +342,7 @@ sub mirrorTo()
     printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG},
+    my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                     dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -301,7 +454,7 @@ sub mirrorTo()
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
-    $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+    $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                  dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -317,7 +470,7 @@ sub mirrorTo()
         $self->{JOBS}->{".repodata/repomd.xml.asc"} = $job;
     }
 
-    $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+    $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                  dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -432,8 +585,11 @@ sub mirrorTo()
     return $self->{STATISTIC}->{ERROR};
 }
 
-# deletes all files not referenced in
-# the rpmmd resource chain
+=item clean()
+
+Deletes all files not referenced in the rpmmd resource chain
+
+=cut
 sub clean()
 {
     my $self = shift;
@@ -487,7 +643,25 @@ sub clean()
     print "\n";
 }
 
-# verifies the repository on path
+=item verify([%params])
+
+ $mirror->verify();
+
+ Returns 1 (true), if the repo is valid, otherwise 0 (false).
+
+=over 4
+
+=item removeinvalid
+
+If set to 1, invalid files are removed from the local harddisk.
+
+=item quiet
+
+If set to 1, no reports are printed.
+
+=back
+=cut
+
 sub verify()
 {
     my $self = shift;
@@ -617,7 +791,7 @@ sub download_handler
         }
 
         # get the repository index
-        my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, 
+        my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, 
                                         log => $self->{LOG}, dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
         $job->uri( $self->{URI} );
         $job->localBasePath( $self->localBasePath() );
@@ -724,7 +898,7 @@ sub download_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG},
+                my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
                 $job->uri( $self->{URI} );
                 $job->localBasePath( $self->localBasePath() );
@@ -778,7 +952,7 @@ sub verify_handler
         # all other files (rpms) are verified only if deepverify is requested.
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+            my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                             dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
             $job->localBasePath( $self->localBasePath() );
             $job->localRepoPath( $self->localRepoPath() );
@@ -798,7 +972,7 @@ sub verify_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, 
+                my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
                 $job->localBasePath( $self->localBasePath() );
                 $job->localRepoPath( $self->localRepoPath() );
@@ -814,97 +988,15 @@ sub verify_handler
     }
 }
 
-
-=head1 NAME
-
-SMT::Mirror::RpmMd - mirroring of a rpm metadata repository
-
-=head1 SYNOPSIS
-
-  use SMT::Mirror::RpmMd;
-
-  $mirror = SMT::Mirror::RpmMd->new();
-  $mirror->uri( "http://repo.com/10.3" );
-
-  $mirror->mirrorTo( "/somedir", { urltree => 1 });
-  $mirror->verify("/somedir/www.foo.com/repo");
-
-  $mirror->mirrorTo( "/somedir", { urltree => 0 });
-  $mirror->verify("/somedir");
-
-=head1 DESCRIPTION
-
-Mirroring of a rpm metadata repository.
-
-The mirror function will not download the same files twice.
-
-In order to clean the repository, that is removing all files
-which are not mentioned in the metadata, you can use the clean method:
-
- $mirror->clean();
-
-=head1 METHODS
-
-=over 4
-
-=item new([$params])
-
-Create a new SMT::Mirror::RpmMd object:
-
-  my $mirror = SMT::Mirror::RpmMd->new(debug => 1);
-
-Arguments are an anonymous hash array of parameters:
-
-=over 4
-
-=item debug
-
-Set to 1 to enable debug. 
-
-=back
-
-=item uri()
-
- $mirror->uri( "http://repo.com/10.3" );
-
- Specify the RpmMd source where to mirror from.
-
-=item mirrorTo()
-
- $mirror->mirrorTo( "/somedir", { urltree => 1 });
-
- Sepecify the target directory where to place the mirrored files.
- Returns the count of errors.
-
-=over 4
-
-=item urltree
-
-The option urltree of the mirror method controls 
-how the repo is mirrored. If urltree is true, then subdirectories
-with the hostname and path of the repo url are created inside the
-target directory.
-If urltree is false, then the repo is mirrored right below the target
-directory.
-
-=back
-
-=item verify()
-
- $mirror->verify();
-
- Returns true, if the repo is valid, otherwise false
-
 =back
 
 =head1 AUTHOR
 
-dmacvicar@suse.de
+dmacvicar@suse.de, mc@suse.de
 
 =head1 COPYRIGHT
 
-Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
-
+Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 =cut
 
