@@ -10,7 +10,29 @@ use SMT::Mirror::Job;
 
 use base 'SMT::Mirror::RpmMd'; # sets @SMT::Mirror::Yum::ISA = ('SMT::Mirror::RpmMd')
 
+=head1 NAME
 
+SMT::Mirror::Yum - mirroring of a yum metadata repository
+
+=head1 SYNOPSIS
+
+  use SMT::Mirror::Yum;
+
+  $mirror = SMT::Mirror::Yum->new();
+  $mirror->uri( "http://repo.com/yum" );
+  $mirror->localBaseDir("/srv/www/htdocs/repo/");
+  $mirror->localRepoDir("RPMMD/yum/");
+
+  $mirror->mirrorTo();
+
+  $mirror->clean();
+
+=head1 DESCRIPTION
+
+Mirroring of a yum metadata repository.
+All functions and options are the same as in SMT::Mirror::RpmMd.
+
+=cut
 # constructor
 sub new
 {
@@ -225,6 +247,20 @@ sub clean
         print "\n";
     }
 }
+
+=head1 SEE ALSO
+
+SMT::Mirror::RpmMd
+
+=head1 AUTHOR
+
+mc@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
 
 
 1;

@@ -21,7 +21,7 @@ SMT::Mirror::NU - mirroring of a Novell Update repository
   use SMT::Mirror::NU;
 
   $mirror = SMT::Mirror::NU->new();
-  $mirror->uri( 'https://nu.novell.com');
+  $mirror->uri( "https://nu.novell.com");
   $mirror->localBaseDir("/srv/www/htdocs/repo/");
   $mirror->mirrorTo();
 
@@ -75,6 +75,7 @@ Set to 1 to disable the use of hardlinks. Copy is used instead of it.
 Set to 0 to disable mirroring of source rpms.
 
 =back
+
 =cut
 
 sub new

@@ -11,6 +11,68 @@ use File::Temp;
 
 use Data::Dumper;
 
+=head1 NAME
+
+SMT::Mirror::RegData - Get data from Registration Server
+
+=head1 SYNOPSIS
+
+  use SMT::Mirror::RegData;
+
+    my $rd= SMT::Mirror::RegData->new(element => "productdata",
+                                      table   => "Products",
+                                      key     => "PRODUCTDATAID");
+    my $res = $rd->sync();
+
+=head1 DESCRIPTION
+
+Sync data from registration server
+
+=head1 METHODS
+
+=over 4
+
+=item new([%params])
+
+Create a new SMT::Mirror::RegData object:
+
+  my $rd = SMT::Mirror::RegData->new();
+
+Arguments are an anonymous hash array of parameters:
+
+=over 4
+
+=item debug <0|1>
+
+Set to 1 to enable debug. 
+
+=item log
+
+Logfile handle
+
+=item element
+
+Requested element name
+
+=item table
+
+Table name
+
+=item key
+
+Primary key of the table. If more then one column build the primary key, provide 
+a array reference. 
+
+=item fromdir
+
+Data are in fromdir. Do not contact registration server to get the data.
+
+=item todir
+
+Write data into todir. Do not update the database.
+
+=back
+=cut
 
 # constructor
 sub new
@@ -93,11 +155,15 @@ sub new
     {
         $self->key($opt{key});
     }
-    
+
     return $self;
 }
 
-# element property
+=item element([name])
+
+Set or get the element name
+
+=cut
 sub element
 {
     my $self = shift;
@@ -106,7 +172,11 @@ sub element
     return $self->{ELEMENT};
 }
 
-# table property
+=item table([name])
+
+Set or get the table name
+
+=cut
 sub table
 {
     my $self = shift;
@@ -115,7 +185,11 @@ sub table
     return $self->{TABLE};
 }
 
-# keyproperty
+=item key([$key|@key])
+
+Set or get the key name(s). 
+
+=cut
 sub key
 {
     my $self = shift;
@@ -135,6 +209,11 @@ sub key
 }
 
 
+=item sync
+
+Start the sync process
+
+=cut
 sub sync
 {
     my $self = shift;
@@ -548,8 +627,16 @@ sub _updateDB
     return 0;
 }
 
+=back
+
+=head1 AUTHOR
+
+mc@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
+
 1;
-
-
-
-

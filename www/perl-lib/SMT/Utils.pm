@@ -21,10 +21,30 @@ use English;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(__ printLog);
 
+=head1 NAME
 
-#
-# read SMT config file and return a hash
-#        will result in a "die" on error
+SMT::Utils - Utility library
+
+=head1 SYNOPSIS
+
+  use SMT::Utils;
+
+=head1 DESCRIPTION
+
+Utility library.
+
+=head1 METHODS
+
+=over 4
+
+=item getSMTConfig([path])
+
+Read SMT config file and return a Config::IniFiles object.
+This function will "die" on error
+If I<path> to the configfile is omitted, the default 
+I</etc/smt.conf> is used.
+
+=cut
 #
 # there is no need to close $cfg . Config::IniFiles
 # read the file into the memory and close the handle self
@@ -43,11 +63,14 @@ sub getSMTConfig
 }
 
 
+=item db_connect([cfg])
 
-#
-# read db values from the smt configuration file,
-# open the database and returns the database handle
-#
+Read database values from the smt configuration file,
+open the database and returns the database handle
+
+If cfg is omitted, I<getSMTConfig> is called.
+
+=cut
 sub db_connect
 {
     my $cfg = shift || getSMTConfig();
@@ -66,10 +89,12 @@ sub db_connect
     return $dbh;
 }
 
-#
-# localization function
-#
-sub __ 
+=item __()
+
+Localization function
+
+=cut
+sub __
 {
     my $msgid = shift;
     my $package = caller;
@@ -81,10 +106,12 @@ sub __
 # lock file support
 #
 
-#
-# try to create a lock file in /var/run/
-# Return TRUE on success, otherwise FALSE
-#
+=item openLock($progname)
+
+Try to create a lock file in /var/run/smt/$progname.pid .
+Return TRUE on success, otherwise FALSE.
+
+=cut
 sub openLock
 {
     my $progname = shift;
@@ -138,10 +165,12 @@ sub openLock
     return 1;
 }
 
-#
-# try to remove the lockfile
-# Return TRUE on success, otherwise false
-#
+=item unLock($progname)
+
+Try to remove the lockfile
+Return TRUE on success, otherwise false
+
+=cut
 sub unLock
 {
     my $progname = shift;
@@ -169,9 +198,11 @@ sub unLock
     return 0;
 }
 
-#
-# Return an array with ($url, $guid, $secret)
-#
+=item getLocalRegInfos()
+
+Return an array with ($NCCurl, $NUUser, $NUPassword)
+
+=cut
 sub getLocalRegInfos
 {
     my $uri    = "";
@@ -206,9 +237,12 @@ sub getLocalRegInfos
     return ($uri, $user, $pass);  
 }
 
-#
-# Return deviceid (guid) of the SMT server
-#
+=item getSMTGuid()
+
+Return guid of the SMT server. If it not exists
+it creates new credentials.
+
+=cut
 sub getSMTGuid
 {
     my $guid   = "";
@@ -316,13 +350,14 @@ sub getSMTGuid
 }
 
 
-#
-# You can provide a parameter in seconds from 1970-01-01 00:00:00
-# If you do not provide a parameter the current time is used.
-#
-# return the timestamp in database format
-# YYY-MM-DD hh:mm:ss
-#
+=item getDBTimestamp($time)
+
+You can provide a parameter in seconds from 1970-01-01 00:00:00 as $time.
+If you do not provide a parameter the current time is used.
+
+Returns the timestamp in database format "YYY-MM-DD hh:mm:ss"
+
+=cut
 sub getDBTimestamp
 {
     my $time = shift || time;
@@ -334,6 +369,12 @@ sub getDBTimestamp
     return $timestamp;
 }
 
+=item timeFormat($time)
+
+If you provide $time in seconds, this function returns the interval
+in a human readable format "X Day(s) HH:MM:SS"
+
+=cut
 sub timeFormat
 {
     my $time = shift;
@@ -361,6 +402,15 @@ sub timeFormat
 }
 
 
+=item byteFormat($size)
+
+Returns $size (size in bytes) as human readable format, like:
+
+ 640.8 KB
+ 3.2 MB
+ 1.9 GB
+
+=cut
 sub byteFormat
 {
     my $size = shift;
@@ -382,9 +432,12 @@ sub byteFormat
 }
 
 
-#
-# open logfile
-#
+=item openLog($file)
+
+Open logfile. If $file is omitted we log to /dev/null .
+Returns a log handle.
+
+=cut
 sub openLog
 {
     my $logfile = shift || "/dev/null";
@@ -398,6 +451,12 @@ sub openLog
     return $LOG;
 }
 
+=item cleanPath(@pathlist)
+
+Concatenate all parts of the pathlist, remove double slashes and return
+the result.
+
+=cut
 sub cleanPath
 {
     return "" if(!exists $_[0] || !defined $_[0]);
@@ -407,7 +466,12 @@ sub cleanPath
     return $path;
 }
 
+=item printlog($loghandle, $category, $message [, $doprint [, $dolog]])
 
+Print a log message. If $doprint is true the message is printed on stderr or stdout.
+If $dolog is true the message is printed into the given $loghandle. 
+
+=cut
 sub printLog
 {
     my $LOG      = shift;
@@ -442,10 +506,12 @@ sub printLog
 }
 
 
-#
-# sends an eMail with the passed content to the administrators defined in smt.conf as "reportEmail"
-#                                   this function will do nothing if no eMail address is specified
-#
+=item sendMailToAdmins($message [, $attachements])
+
+Sends an eMail with the passed content to the administrators defined in smt.conf as "reportEmail".
+This function will do nothing if no eMail address is specified
+
+=cut
 sub sendMailToAdmins
 {
     my $message = shift;
@@ -564,11 +630,13 @@ sub sendMailToAdmins
     return;
 }
 
-#
-# return ($httpProxy, $httpsProxy, $proxyUser)
-#
-# If no values are found these values are undef
-#
+=item getProxySettings()
+
+Return ($httpProxy, $httpsProxy, $proxyUser)
+
+If no values are found these values are undef
+
+=cut
 sub getProxySettings
 {
     my $cfg = getSMTConfig;
@@ -598,12 +666,16 @@ sub getProxySettings
         }
     }
 
+    # strip trailing /
+    $httpsProxy =~ s/\/*$// if(defined $httpsProxy);
+    $httpProxy  =~ s/\/*$// if(defined $httpProxy);
+
     if(! defined $proxyUser)
     {
         if($UID == 0 && -e "/root/.curlrc")
         {
             # read /root/.curlrc
-            open(RC, "< /root/.curlrc") or return (undef,undef);
+            open(RC, "< /root/.curlrc") or return ($httpProxy, $httpsProxy, undef);
             while(<RC>)
             {
                 if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
@@ -622,7 +694,7 @@ sub getProxySettings
               $ENV{HOME} ne "" && -e "$ENV{HOME}/.curlrc")
         {
             # read ~/.curlrc
-            open(RC, "< $ENV{HOME}/.curlrc") or return (undef,undef);
+            open(RC, "< $ENV{HOME}/.curlrc") or return ($httpProxy, $httpsProxy, undef);
             while(<RC>)
             {
                 if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
@@ -649,14 +721,16 @@ sub getProxySettings
         }
     }
 
-    # strip trailing /
-      $httpsProxy =~ s/\/*$// if(defined $httpsProxy);
-      $httpProxy  =~ s/\/*$// if(defined $httpProxy);
-    
     return ($httpProxy, $httpsProxy, $proxyUser);
 }
 
 
+=item createUserAgent([%options])
+
+Return a LWP::UserAgent object using some defaults. %options are passed to
+the UserAgent constructor. 
+
+=cut
 sub createUserAgent
 {
     my %opts = @_;
@@ -747,6 +821,16 @@ sub createUserAgent
     return $ua;
 }
 
+=back
 
+=head1 AUTHOR
+
+mc@suse.de, jdsn@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
 
 1;
