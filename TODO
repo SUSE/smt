@@ -23,6 +23,17 @@ TODO next SP or SLE11 version
 
 - use new installation.xml and test it according to bnc #377154
 
+- better mirror report. Shorter with more informations. 
+
+- In the parser we print errors if we found invalid XML syntax but ignore them. 
+  We should return errors and count them in SLE11.
+
+DONE:
+=====
+
+- move the re-try on error loops into Job::mirror() function. Then we have the
+  code one time and not X times in the code.
+
 - idea to speed-up mirroring by integrating the hardlink feature.
   * create a table in DB with key = <rpm-name>-<checksum> and path
     column
@@ -34,19 +45,9 @@ TODO next SP or SLE11 version
 - idea to speep-up mirroring by "diffing" repodata/
   * parse repodata/ and .repodata/ and find out which files are changed or 
     new. After having this list, download only these files.
+    [implemented in a different way]
 
 - Add Yum.pm, which mirror the headers/ dir and then call RpmMd.pm
   This is more straight forward then doing everything in RpmMd.pm 
-
-- better mirror report. Shorter with more informations. 
-
-- In the parser we print errors if we found invalid XML syntax but ignore them. 
-  We should return errors and count them in SLE11.
-
-DONE:
-=====
-
-- move the re-try on error loops into Job::mirror() function. Then we have the
-  code one time and not X times in the code.
 
 
