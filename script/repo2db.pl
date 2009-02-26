@@ -1,5 +1,12 @@
 #!/usr/bin/perl
 
+#
+# Maybe this is not needed anymore. I implemented
+# filling the database in the mirror script.
+#
+
+
+
 use strict;
 use warnings;
 use SMT::Mirror::NU;
