@@ -120,6 +120,7 @@ sub new
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
 
+
     if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
     {
         $self->{DEBUG} = 1;
@@ -260,6 +261,7 @@ Number of errors.
 Size of files downloaded (in bytes)
 
 =back
+
 =cut
 
 sub statistic
@@ -299,14 +301,16 @@ files which are outdated are reported. After this is finished, the directory
 containing the metadata is removed.
 
 =back
+
 =cut
 sub mirrorTo()
 {
     my $self = shift;
     my %options = @_;
     my $dryrun  = 0;
+    my $isYum = (ref($self) eq "SMT::Mirror::Yum");
     my $t0 = [gettimeofday] ;
-
+    
     $dryrun = 1 if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
 
     # reset the counter
@@ -338,8 +342,8 @@ sub mirrorTo()
     my $saveuri = URI->new($self->{URI});
     $saveuri->userinfo(undef);
     
-    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string ));
-    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
+    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string )) if(!$isYum);
+    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() )) if(!$isYum);
 
     # get the repository index
     my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG},
@@ -377,8 +381,8 @@ sub mirrorTo()
 
     if ( !$job->outdated() && $verifySuccess )
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
-        print "\n";
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if(!$isYum);
+        print "\n" if(!$isYum);
         return 0;
     }
     # else $outdated or verify failed; we must download repomd.xml
@@ -563,24 +567,24 @@ sub mirrorTo()
     {
         rmtree( $metatempdir, 0, 0 );
         
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun '%s'"), $saveuri->as_string));
-        printLog($self->{LOG}, "info", sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun '%s'"), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, "info", sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
     }
     else
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
-        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
         printLog($self->{LOG}, "info", sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
-                                               $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE})));
+                                               $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
     }
     
     if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE})) if(!$isYum);
     }
-    printLog($self->{LOG}, "info", sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
-    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-    print "\n";
+    printLog($self->{LOG}, "info", sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR})) if(!$isYum);
+    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
+    print "\n" if(!$isYum);
 
     return $self->{STATISTIC}->{ERROR};
 }
@@ -593,6 +597,7 @@ Deletes all files not referenced in the rpmmd resource chain
 sub clean()
 {
     my $self = shift;
+    my $isYum = (ref($self) eq "SMT::Mirror::Yum");
     
     my $t0 = [gettimeofday] ;
 
@@ -602,7 +607,7 @@ sub clean()
         return;
     }
 
-    printLog($self->{LOG}, "info", sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) );
+    printLog($self->{LOG}, "info", sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) ) if(!$isYum);
 
     # algorithm
     
@@ -637,10 +642,10 @@ sub clean()
         $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
     }
 
-    printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath() ));
-    printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt));
-    printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-    print "\n";
+    printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath() )) if(!$isYum);
+    printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt)) if(!$isYum);
+    printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
+    print "\n" if(!$isYum);
 }
 
 =item verify([%params])
@@ -660,6 +665,7 @@ If set to 1, invalid files are removed from the local harddisk.
 If set to 1, no reports are printed.
 
 =back
+
 =cut
 
 sub verify()
@@ -826,6 +832,23 @@ sub download_handler
                 printLog($self->{LOG}, "debug", sprintf("U %s", $job->fullLocalPath() )) if($self->debug());
                 $self->{STATISTIC}->{UPTODATE} += 1;
                 return;
+            }
+        }
+        elsif( -e "$fullpath" )
+        {
+            # file exists but is not in the database. Check if it is valid.
+            if( $job->verify() )
+            {
+                # File is ok, so update the database and go to the next file
+                $job->updateDB();
+                printLog($self->{LOG}, "debug", sprintf("U %s", $job->fullLocalPath() )) if($self->debug());
+                $self->{STATISTIC}->{UPTODATE} += 1;
+                return;
+            }
+            else
+            {
+                # hmmm, invalid. Remove it if we are not in dryrun mode
+                unlink ( $job->fullLocalPath() ) if( !$dryrun );
             }
         }
         

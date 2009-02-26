@@ -4,6 +4,7 @@ use strict;
 use URI;
 use File::Path;
 use File::Find;
+use Time::HiRes qw(gettimeofday tv_interval);
 
 use SMT::Utils;
 use SMT::Mirror::Job;
@@ -53,7 +54,18 @@ sub mirrorTo()
     my $self = shift;
     my %options = @_;
     my $dryrun  = 0;
+    my $t0 = [gettimeofday] ;
     $dryrun = 1 if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
+
+    # extract the url components to create
+    # the destination directory
+    # so we save the repo to:
+    # $destdir/hostname.com/path
+    my $saveuri = URI->new($self->{URI});
+    $saveuri->userinfo(undef);
+
+    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string ));
+    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
 
     my $errors = $self->SUPER::mirrorTo(%options);
 
@@ -78,108 +90,111 @@ sub mirrorTo()
     if( $mres == 1 )
     {
         $self->{STATISTIC}->{ERROR} += 1;
-        return $self->{STATISTIC}->{ERROR};
     }
     elsif( $mres == 2 )
     {
-        $self->{STATISTIC}->{UPTODATE} += 1;
-        return $self->{STATISTIC}->{ERROR};
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
+        print "\n";
+        return 0;
     }
     else
     {
         $self->{STATISTIC}->{DOWNLOAD} += 1;
-    }
 
-    if( -e $job->fullLocalPath() )
-    {
-        open(HDR, "< ".$job->fullLocalPath()) and do
+        if( -e $job->fullLocalPath() )
         {
-            while(<HDR>)
+            open(HDR, "< ".$job->fullLocalPath()) and do
             {
-                if($_ =~ /^(\d+):([^=]+)/)
+                while(<HDR>)
                 {
-                    my $epoch = $1;
-                    my $file  = $2;
-                    
-                    if($file =~ /^(.+)-([^-]+)-([^-]+)\.([a-zA-Z0-9_]+)$/)
+                    if($_ =~ /^(\d+):([^=]+)/)
                     {
-                        my $name = $1;
-                        my $version = $2;
-                        my $release = $3;
-                        my $arch = $4;
+                        my $epoch = $1;
+                        my $file  = $2;
                         
-                        my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
-                        
-                        my $hjob = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
-                        $hjob->uri( $self->uri() );
-                        $hjob->localBasePath( $self->localBasePath() );
-                        $hjob->localRepoPath( $self->localRepoPath() );
-                        $hjob->localFileLocation( $hdrLocation );
-                        $hjob->noChecksumCheck(1);
-
-                        if( $dryrun )
+                        if($file =~ /^(.+)-([^-]+)-([^-]+)\.([a-zA-Z0-9_]+)$/)
                         {
-                            if( $hjob->outdated() )
+                            my $name = $1;
+                            my $version = $2;
+                            my $release = $3;
+                            my $arch = $4;
+                            
+                            my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
+                            
+                            my $hjob = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+                            $hjob->uri( $self->uri() );
+                            $hjob->localBasePath( $self->localBasePath() );
+                            $hjob->localRepoPath( $self->localRepoPath() );
+                            $hjob->localFileLocation( $hdrLocation );
+                            $hjob->noChecksumCheck(1);
+                            
+                            if( $dryrun )
                             {
-                                printLog($self->{LOG}, "info",  sprintf("New File [%s]", $hjob->fullLocalPath() ));
-                                $self->{STATISTIC}->{DOWNLOAD} += 1;
+                                if( $hjob->outdated() )
+                                {
+                                    printLog($self->{LOG}, "info",  sprintf("New File [%s]", $hjob->fullLocalPath() ));
+                                    $self->{STATISTIC}->{DOWNLOAD} += 1;
+                                }
+                                else
+                                {
+                                    printLog($self->{LOG}, "debug", sprintf("U '%s'", $hjob->fullLocalPath() )) if($self->debug());
+                                    $self->{STATISTIC}->{UPTODATE} += 1;
+                                }
+                                next;
+                            }
+                            
+                            $mres = $hjob->mirror();
+                            $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($hjob->downloadSize());
+                            if( $mres == 1 )
+                            {
+                                $self->{STATISTIC}->{ERROR} += 1;
+                            }
+                            elsif( $mres == 2 )
+                            {
+                                $self->{STATISTIC}->{UPTODATE} += 1;
                             }
                             else
                             {
-                                printLog($self->{LOG}, "debug", sprintf("U '%s'", $hjob->fullLocalPath() )) if($self->debug());
-                                $self->{STATISTIC}->{UPTODATE} += 1;
+                                $self->{STATISTIC}->{DOWNLOAD} += 1;
                             }
-                            next;
-                        }
-        
-                        $mres = $hjob->mirror();
-                        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($hjob->downloadSize());
-                        if( $mres == 1 )
-                        {
-                            $self->{STATISTIC}->{ERROR} += 1;
-                        }
-                        elsif( $mres == 2 )
-                        {
-                            $self->{STATISTIC}->{UPTODATE} += 1;
-                        }
-                        else
-                        {
-                            $self->{STATISTIC}->{DOWNLOAD} += 1;
                         }
                     }
                 }
-            }
-            close HDR;
-        };
+                close HDR;
+            };
+        }
+    }    
 
-        if( $dryrun )
-        {
-            printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun ")));
-            printLog($self->{LOG}, "info", sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD}));
-        }
-        else
-        {
-            printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring ")));
-            printLog($self->{LOG}, "info", sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
-            printLog($self->{LOG}, "info", sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
-                                                   $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE})));
-        }
-    
-        if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
-        {
-            printLog($self->{LOG}, "info", sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
-        }
-        printLog($self->{LOG}, "info", sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
-        #printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-        print "\n";
-
+    if( $dryrun )
+    {
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun ")));
+        printLog($self->{LOG}, "info", sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD}));
     }
+    else
+    {
+        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring ")));
+        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
+                                               $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE})));
+    }
+    
+    if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
+    {
+        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
+    }
+    printLog($self->{LOG}, "info", sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
+    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+    print "\n";
+    
     return $self->{STATISTIC}->{ERROR};
 }
 
 sub clean
 {
     my $self = shift;
+    my $t0 = [gettimeofday] ;
+
+    printLog($self->{LOG}, "info", sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) );
 
     $self->SUPER::clean();
 
@@ -243,7 +258,7 @@ sub clean
         
         printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath()."/headers/" ));
         printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt));
-        #printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+        printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
         print "\n";
     }
 }
