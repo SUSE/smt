@@ -342,12 +342,15 @@ if(!SMT::Utils::unLock("smt-mirror"))
     exit 1;
 }
 
-SMT::Utils::printLog($LOG, "info", __("Summary"));
-SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered files    : %d "), $download ));
-SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
-SMT::Utils::printLog($LOG, "info", sprintf(__("Errors:                   : %d"), $errors));
-SMT::Utils::printLog($LOG, "info", sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
-
+if(!$clean && !$hardlink)
+{
+    # print summary only when mirroring
+    SMT::Utils::printLog($LOG, "info", __("Summary"));
+    SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered files    : %d "), $download ));
+    SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
+    SMT::Utils::printLog($LOG, "info", sprintf(__("Errors:                   : %d"), $errors));
+    SMT::Utils::printLog($LOG, "info", sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
+}
 
 exit 0;
 
