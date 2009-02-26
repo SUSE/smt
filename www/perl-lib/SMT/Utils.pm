@@ -19,7 +19,25 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 use English;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(__ printLog);
+our @EXPORT = qw(__ printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2);
+
+use constant LOG_ERROR  => 0x0001;
+use constant LOG_WARN   => 0x0002;
+use constant LOG_INFO1  => 0x0004;
+use constant LOG_INFO2  => 0x0008;
+use constant LOG_DEBUG  => 0x0010;
+use constant LOG_DEBUG2 => 0x0020;
+
+use constant TOK2STRING => {
+                            1  => "error",
+                            2  => "warn",
+                            4  => "info",
+                            8  => "info",
+                            16 => "debug",
+                            32 => "debug"
+                           };
+
+                            
 
 =head1 NAME
 
@@ -475,6 +493,7 @@ If $dolog is true the message is printed into the given $loghandle.
 sub printLog
 {
     my $LOG      = shift;
+    my $vblevel  = shift;
     my $category = shift;
     my $message  = shift;
     my $doprint  = shift;
@@ -482,9 +501,11 @@ sub printLog
     if (! defined $doprint) { $doprint = 1;}
     if (! defined $dolog)   { $dolog   = 1;}
 
+    return if( !($vblevel & $category) );
+
     if($doprint)
     {
-        if(lc($category) eq "error")
+        if(TOK2STRING->{$category} eq "error")
         {
             print STDERR "$message\n";
         }
@@ -499,7 +520,7 @@ sub printLog
         my ($package, $filename, $line) = caller;
         foreach (split(/\n/, $message))
         {
-            print $LOG getDBTimestamp()." $package - [$category]  $_\n";
+            print $LOG getDBTimestamp()." $package - [".TOK2STRING->{$category}."]  $_\n";
         }
     }
     return;

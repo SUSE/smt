@@ -13,7 +13,8 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-my $debug;
+my $debug    = 0;
+my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $help;
 my $mail;    # activate sending of report mail
 my $attach;  # attach csv report to report mail
@@ -24,7 +25,6 @@ my $logfile;
 my $nonccsync = 0;
 
 # which reports
-my $classreport = 0;
 my $localreport = 0;
 my $nccreport   = 0;
 
@@ -34,78 +34,6 @@ use Getopt::Long;
 my $LOG = undef;
 
 # configuration
-my %conf = (
-            SUSE         => { 
-                             NAME => "openSUSE",
-                             ARCHGROUPS => {}
-                            },
-            SLES         => {
-                             NAME => "SUSE Linux Enterprise Server",
-                             ARCHGROUPS => {
-                                            "x86/x86_64" => ['i386', 'i486', 'i586', 'i686', 'x86_64'],
-                                            "ppc"        => ['ppc', 'ppc64'],
-                                            "s390"       => ['s390', 's390x'],
-                                            "ia64"       => ['ia64'],
-                                            "unknown"    => [undef]
-                                           }
-                            },
-            SLED         => {
-                             NAME => "SUSE Linux Enterprise Desktop",
-                             ARCHGROUPS => {}
-                            },
-            ZlmSatellite => {
-                             NAME => "Zenworks Linux Management",
-                             ARCHGROUPS => {}
-                            },
-            SDK          => {
-                             NAME => "SUSE Linux Enterprise Software Development Kit",
-                             ARCHGROUPS => {}
-                            },
-            SLERT        => {
-                             NAME => "SUSE Linux Enterprise Server RT Solution",
-                             ARCHGROUPS => {}
-                            },
-            OES          => {
-                             NAME => "Novell Open Enterprise Server",
-                             ARCHGROUPS => {}
-                            },
-            VMDP         => {
-                             NAME => "SUSE Linux Enterprise Virtual Machine Driver Pack",
-                             ARCHGROUPS => {}
-                            },
-            Pulsar       => {
-                             NAME => "ZENworks Pulsar",
-                             ARCHGROUPS => {}
-                            },
-            "SLES-HA"    => {
-                             NAME => "SUSE Linux Enterprise HA Server",
-                             ARCHGROUPS => {}
-                            },
-            ZOS          => {
-                             NAME => "ZENworks Orchestrator",
-                             ARCHGROUPS => {}
-                            },
-            SLEDC        => {
-                             NAME => "SUSE Linux Enterprise Data Center",
-                             ARCHGROUPS => {
-                                            "x86/x86_64" => ['i386', 'i486', 'i586', 'i686', 'x86_64'],
-                                            "ppc"        => ['ppc', 'ppc64'],
-                                            "s390"       => ['s390', 's390x'],
-                                            "ia64"       => ['ia64'],
-                                            "unknown"    => [undef]
-                                           }
-                            },
-            SMT_DEFAULT  => {
-                             NAME => undef,
-                             ARCHGROUPS => {
-                                            "x86/x86_64" => ['i386', 'i486', 'i586', 'i686', 'x86_64'],
-                                            "ppc"        => ['ppc', 'ppc64'],
-                                            "s390"       => ['s390', 's390x'],
-                                            "ia64"       => ['ia64'],
-                                            "unknown"    => [undef]
-                                           }
-                            }
-           );
 
 my $legendLocal = "
 Legend:
@@ -229,6 +157,7 @@ sub printUsage
     print "            " . __("in csv mode <file> expands to [<dir>/]<file-name>-reportname[.<file-extension>]\n");
     print "  --logfile (-L) <file>   : " . __("Path to logfile")."\n";
     print "  --debug   (-d) : " . __("enable debug mode")."\n";
+    print "  --verboselevel (-v) level " . __("set the verbose level\n");
 }
 
 
@@ -245,21 +174,21 @@ sub certificateCheck($$)
     my $messageBlock = '';
 
     my @msg = ();
-    my $days = SMT::CLI::certificateExpireCheck(log => $LOG, debug => $debug);
+    my $days = SMT::CLI::certificateExpireCheck(log => $LOG, vblevel => $vblevel);
     if(defined $days && $days > 0 && $days <= 10)
     {
-        push @msg, { 'warn' => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) };
+        push @msg, { LOG_WARN => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) };
     }
     elsif(defined $days && $days <= 0)
     {
-        push @msg, { 'error' =>  __("ERROR: SMT server certificate is expired!") };
+        push @msg, { LOG_ERROR =>  __("ERROR: SMT server certificate is expired!") };
     }
 
     foreach my $message (@msg)
     {
         while (my ($type, $message) = each(%{$message}) )
         {
-            printLog($LOG, $type, $message, $printIt, $logIt);
+            printLog($LOG, $vblevel, $type, $message, $printIt, $logIt);
             $messageBlock .= $message."\n";
         }
     }
@@ -320,20 +249,12 @@ sub getMergedReport($)
     my $renderMode = shift;
     if (! defined $renderMode) { return ''; }
     my %headings = (
-                    'class'   =>  __("Product Class Report"),
                     'sub'     =>  __("Subscription Report based on NCC registrations"),
                     'prodsub' =>  __("Subscription Report based on a local calculation")
                    );
 
     my $res = '';
-    if($classreport)
-    {
-        $res .= $headings{'class'}."\n";
-        $res .= sprintf '=' x length($headings{'class'})."\n\n";
-        $res .= getReportRenderedAs($renderMode, 'class');
-        $res .= "\n\n";
-    }
-    
+   
     if($localreport)
     {
         $res .= $headings{'prodsub'}."\n";
@@ -377,8 +298,6 @@ sub getSeparateReports($)
     my %res = ();
     if (! defined $renderMode) { return %res; }
 
-    $res{'product_class'} = getReportRenderedAs($renderMode, 'class') if($classreport);
-
     if($localreport)
     {
         $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'prodsub', 'active');
@@ -409,8 +328,8 @@ sub getSeparateReports($)
                           'local'      => \$localreport,
                           'ncc'        => \$nccreport,
                           'nonccsync'  => \$nonccsync,
-                          'classreport'=> \$classreport,
                           'debug|d'    => \$debug,
+                          "verboselevel|v=i" => \$vblevel,
                           'help|h'     => \$help,
                           'mail|m'     => \$mail,
                           'attach|a'   => \$attach,
@@ -425,6 +344,8 @@ if ( defined $help && ( $help == 1 ) )
     printUsage();  
     exit 0;
 }
+
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 # open the logfile
 $LOG = SMT::Utils::openLog($logfile);
@@ -443,18 +364,18 @@ if(!$nonccsync)
 
     if($maxwait > 60)
     {
-        printLog($LOG, "error", __("Cannot create lockfile. Skip syncing current data from NCC"));
+        printLog($LOG, $vblevel, LOG_ERROR, __("Cannot create lockfile. Skip syncing current data from NCC"));
     }
     elsif($maxwait == 0)
     {
         # start sync
-        my $lr= SMT::NCCRegTools->new(debug   => $debug,
+        my $lr= SMT::NCCRegTools->new(vblevel => $vblevel,
                                       log     => $LOG);
         
-        printLog($LOG, "info", __("Downloading Subscription information"));
+        printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
         $lr->NCCListSubscriptions();
         
-        printLog($LOG, "info", __("Downloading Registration information"));
+        printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
         $lr->NCCListRegistrations();
     }
     # else $maxwait > 0 and <=60 means ncc-sync was running. we do not need to sync again.
@@ -463,7 +384,7 @@ if(!$nonccsync)
 }
 
 
-if(!($localreport || $nccreport || $classreport))
+if(!($localreport || $nccreport))
 {
     # calculate best report
     my $cfg = SMT::Utils::getSMTConfig();
@@ -495,19 +416,14 @@ SMT ID:       $smtguid
 }
 
 
-if($classreport)
-{
-    $DATA {'class'}   = SMT::CLI::productClassReport(conf => \%conf, log => $LOG, debug => $debug) if($classreport);
-}
-
 if($localreport)
 {
-    $DATA {'prodsub'} = SMT::CLI::productSubscriptionReport(log => $LOG, debug => $debug);
+    $DATA {'prodsub'} = SMT::CLI::productSubscriptionReport(log => $LOG, vblevel => $vblevel);
 }
 
 if( $nccreport )
 {
-    $DATA {'sub'}     = SMT::CLI::subscriptionReport(log => $LOG, debug => $debug);
+    $DATA {'sub'}     = SMT::CLI::subscriptionReport(log => $LOG, vblevel => $vblevel);
 }
 
 
@@ -526,7 +442,7 @@ if (defined $quiet && $quiet == 1)
 }
 
 # print and log the ascii report if wanted
-printLog($LOG, "info", getMergedReport('asciitable'), $doPrint, $doLog);
+printLog($LOG, $vblevel, LOG_INFO1, getMergedReport('asciitable'), $doPrint, $doLog);
 
 # print, log and get the certificate check results
 $certErrors = certificateCheck($doPrint, $doLog);

@@ -48,9 +48,9 @@ Arguments are an anonymous hash array of parameters:
 
 =over 4
 
-=item debug <0|1>
+=item vblevel <level>
 
-Set to 1 to enable debug. 
+Set the verbose level. 
 
 =item UserAgent
 
@@ -101,10 +101,10 @@ sub new
     $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
 
     $self->{MAX_REDIRECTS} = 2;
-    $self->{DEBUG}      = 0;
-    $self->{LOG}        = undef;
+    $self->{VBLEVEL}       = 0;
+    $self->{LOG}           = undef;
 
-    $self->{DBH}        = undef;
+    $self->{DBH}           = undef;
 
     # outdated() will set this to the last modification date of the remote file
     $self->{modifiedAt} = undef;
@@ -113,9 +113,9 @@ sub new
 
     $self->{NOHARDLINK} = 0;
 
-    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
+    if(exists $opt{vblevel} && defined $opt{vblevel})
     {
-        $self->{DEBUG} = 1;
+        $self->{VBLEVEL} = $opt{vblevel};
     }
 
     if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
@@ -322,18 +322,17 @@ sub downloadSize
     return $self->{DOWNLOAD_SIZE};
 }
 
-=item debug([0|1])
+=item vblevel([level])
 
-Enable or disable debug mode for this job.
-Returns the current state.
+Set or get the verbose level.
 
 =cut
 
-sub debug
+sub vblevel
 {
     my $self = shift;
-    if (@_) { $self->{DEBUG} = shift }
-    return $self->{DEBUG};
+    if (@_) { $self->{VBLEVEL} = shift }
+    return $self->{VBLEVEL};
 }
 
 =item verify()
@@ -371,7 +370,7 @@ sub realchecksum()
     my $digest;
     my $filename = $self->fullLocalPath();
     open(FILE, "< $filename") or do {
-        printLog($self->{LOG}, "debug", "Cannot open '$filename': $!") if($self->debug());
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Cannot open '$filename': $!") ;
         return "";
     };
     
@@ -426,7 +425,7 @@ sub updateDB
     if($@)
     {
         #ignore errors
-        printLog($self->{LOG}, "debug", "Updating the database failed: $@" ) if($self->debug());
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Updating the database failed: $@" ) ;
     }
 }
 
@@ -447,7 +446,7 @@ sub mirror
 
     if ( !$self->outdated() )
     {
-        printLog($self->{LOG}, "debug", sprintf("U %s", $self->fullLocalPath() )) if($self->debug() );
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf("U %s", $self->fullLocalPath() ));
         # no need to mirror
         return 2;
     }
@@ -489,8 +488,8 @@ sub mirror
             $saveuri->userinfo(undef);
             
             $errormsg = sprintf(__("E '%s'"), $saveuri->as_string());
-            printLog($self->{LOG}, "error", $errormsg." (Try $tries)", 0, 1);
-            printLog($self->{LOG}, "error", $@, 0, 1);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)", 0, 1);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@, 0, 1);
             $tries++;
         }
         elsif ( $response->is_redirect )
@@ -508,7 +507,7 @@ sub mirror
             {
                 my $newuri = $response->header("location");
                 
-                #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->debug());
+                #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
                 $remote = URI->new($newuri);
             }
         }
@@ -522,7 +521,7 @@ sub mirror
                     utime $lm, $lm, $self->fullLocalPath();
                 }
                 
-                printLog($self->{LOG}, "info", sprintf("D %s", $self->fullLocalPath()));
+                printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("D %s", $self->fullLocalPath()));
                 $self->updateDB();
                 
                 $errorcode = 0;
@@ -532,9 +531,9 @@ sub mirror
             else
             {
                 $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->fullLocalPath() );
-                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->debug());
+                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->vblevel() == LOG_DEBUG);
                 
-                printLog($self->{LOG}, "error", $errormsg." (Try $tries)", 0, 1);
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)", 0, 1);
                 if($tries > 0)
                 {
                     unlink($self->fullLocalPath());
@@ -548,14 +547,14 @@ sub mirror
             $saveuri->userinfo(undef);
             
             $errormsg = sprintf(__("E '%s': %s"), $saveuri->as_string(), $response->status_line);
-            printLog($self->{LOG}, "error", $errormsg." (Try $tries)" , 0, 1);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)" , 0, 1);
             $tries++;
         }
     } while($tries < 4);
 
     if($errorcode != 0)
     {
-        printLog($self->{LOG}, "error", $errormsg, 1, 0);
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg, 1, 0);
         return $errorcode;
     }
     
@@ -587,7 +586,7 @@ sub modified
         };
         if($@)
         {
-            printLog($self->{LOG}, "warn", "head request failed: $@") if(!$doNotLog);
+            printLog($self->{LOG}, $self->vblevel(), "warn", "head request failed: $@") if(!$doNotLog);
             return undef;
         }
 
@@ -598,13 +597,13 @@ sub modified
             {
                 my $saveuri = URI->new($self->fullRemoteURI());
                 $saveuri->userinfo(undef);
-                printLog($self->{LOG}, "error", sprintf(__("E '%s': Too many redirects", $saveuri->as_string()) ));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("E '%s': Too many redirects", $saveuri->as_string()) ));
                 return undef;
             }
             
             my $newuri = $response->header("location");
             
-            #printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->debug());
+            #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
             $remote = URI->new($newuri);
         }
         elsif( $response->is_success )
@@ -615,7 +614,7 @@ sub modified
         {
             my $saveuri = URI->new($self->fullRemoteURI());
             $saveuri->userinfo(undef);
-            printLog($self->{LOG}, "error", sprintf(__("E '%s': %s"), 
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("E '%s': %s"), 
                                                     $saveuri->as_string() , $response->status_line))  if(!$doNotLog);
             return undef;
         }
@@ -671,7 +670,7 @@ sub copyFromLocalIfAvailable
                             $self->{DBH}->quote($checksum), 
                             $self->{DBH}->quote($self->fullLocalRepoPath()."%") );
     
-    #printLog($self->{LOG}, "debug", "$statement") if($self->debug());
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$statement") ;
     my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
     
     if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )
@@ -692,7 +691,7 @@ sub copyFromLocalIfAvailable
     {
         copy($otherpath, $self->fullLocalPath()) or do
         {
-            printLog($self->{LOG}, "debug", "copy($otherpath, ".$self->fullLocalPath().") failed: $!") if($self->debug());
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "copy($otherpath, ".$self->fullLocalPath().") failed: $!") ;
             return 0;
         };
     
@@ -707,11 +706,11 @@ sub copyFromLocalIfAvailable
     {
         if($success)
         {
-            printLog($self->{LOG}, "info", sprintf("L %s", $self->fullLocalPath()));
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("L %s", $self->fullLocalPath()));
         }
         else
         {
-            printLog($self->{LOG}, "info", sprintf("C %s", $self->fullLocalPath()));
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("C %s", $self->fullLocalPath()));
         }
         $self->updateDB();
         return 1;

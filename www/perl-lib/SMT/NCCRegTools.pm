@@ -24,7 +24,7 @@ sub new
     my $self  = {};
 
     $self->{URI}   = undef;
-    $self->{DEBUG} = 0;
+    $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = undef; 
@@ -56,9 +56,9 @@ sub new
         $self->{USERAGENT}->protocols_allowed( [ 'https'] );
     }
 
-    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
+    if(exists $opt{vblevel} && defined $opt{vblevel})
     {
-        $self->{DEBUG} = 1;
+        $self->{VBLEVEL} = $opt{vblevel};
     }
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
@@ -105,6 +105,19 @@ sub new
     return $self;
 }
 
+=item vblevel([level])
+
+Set or get the verbose level.
+
+=cut
+
+sub vblevel
+{
+    my $self = shift;
+    if (@_) { $self->{VBLEVEL} = shift }
+    return $self->{VBLEVEL};
+}
+
 #
 # return count of errors. 0 == success
 #
@@ -117,13 +130,13 @@ sub NCCRegister
     
     if(! defined $self->{DBH} || !$self->{DBH})
     {
-        printLog($self->{LOG}, "error", __("Database handle is not available."));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Database handle is not available."));
         return 1;
     }
     
     if(!defined $self->{NCCEMAIL} || $self->{NCCEMAIL} eq "")
     {
-        printLog($self->{LOG}, "error", __("No email address for registration available."));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("No email address for registration available."));
         return 1;
     }
     
@@ -137,7 +150,7 @@ sub NCCRegister
             # we have something to register, check for random sleep value
             sleep(int($sleeptime));
             
-            printLog($self->{LOG}, "info", sprintf("Register %s new clients.", $#{@$allguids}+1 ));
+            printLog($self->{LOG}, $self->vblevel(), "info", sprintf("Register %s new clients.", $#{@$allguids}+1 ));
         }
         else
         {
@@ -176,7 +189,7 @@ sub NCCRegister
                 
                 if(defined $regdata && ref($regdata) eq "ARRAY")
                 {
-                    printLog($self->{LOG}, "debug", "Register '$guid'") if($self->{DEBUG});
+                    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Register '$guid'") ;
                     
                     my $out = "";
                     
@@ -184,7 +197,7 @@ sub NCCRegister
                 }
                 else
                 {
-                    printLog($self->{LOG}, "error", sprintf(__("Incomplete registration found. GUID:%s"), $guid));
+                    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Incomplete registration found. GUID:%s"), $guid));
                     $errors++;
                     next;
                 }
@@ -194,7 +207,7 @@ sub NCCRegister
             
             if(!defined $output || $output eq "")
             {
-                printLog($self->{LOG}, "error", __("Unable to generate XML"));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Unable to generate XML"));
                 $errors++;
                 next;
             }
@@ -217,7 +230,7 @@ sub NCCRegister
     };
     if($@)
     {
-        printLog($self->{LOG}, "error", $@);
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@);
         $errors++;
     }
     return $errors;
@@ -271,7 +284,7 @@ sub NCCListRegistrations
     
         if(!$ok || !-e $destfile)
         {
-            printLog($self->{LOG}, "error", "List registrations request failed.");
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "List registrations request failed.");
             return 1;
         }
     }
@@ -284,13 +297,13 @@ sub NCCListRegistrations
     {
         if(! defined $self->{DBH} || !$self->{DBH})
         {
-            printLog($self->{LOG}, "error", __("Database handle is not available."));
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Database handle is not available."));
             return 1;
         }
 
         if(! defined $destfile || ! -e $destfile)
         {
-            printLog($self->{LOG}, "error", sprintf(__("File '%s' does not exist."), $destfile));
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("File '%s' does not exist."), $destfile));
             return 1;
         }
         
@@ -365,7 +378,7 @@ sub NCCListSubscriptions
     
         if(!$ok || !-e $destfile)
         {
-            printLog($self->{LOG}, "error", "List subscriptions request failed.");
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "List subscriptions request failed.");
             return 1;
         }
     }
@@ -378,13 +391,13 @@ sub NCCListSubscriptions
     {
         if(! defined $self->{DBH} || !$self->{DBH})
         {
-            printLog($self->{LOG}, "error", __("Database handle is not available."));
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Database handle is not available."));
             return 1;
         }
 
         if(! defined $destfile || ! -e $destfile)
         {
-            printLog($self->{LOG}, "error", sprintf(__("File '%s' does not exist."), $destfile));
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("File '%s' does not exist."), $destfile));
             return 1;
         }
 
@@ -418,7 +431,7 @@ sub NCCDeleteRegistration
     
     if(! defined $self->{DBH} || !$self->{DBH})
     {
-        printLog($self->{LOG}, "error", __("Database handle is not available."));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Database handle is not available."));
         return 1;
     }
 
@@ -433,7 +446,7 @@ sub NCCDeleteRegistration
     };
     if($@ || !defined $cfg)
     {
-        SMT::Utils::printLog($self->{LOG}, "error", sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+        SMT::Utils::printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
         return 1;
     }
 
@@ -457,13 +470,13 @@ sub NCCDeleteRegistration
         $sth->execute;
 
         my $result = $sth->fetchrow_arrayref();
-        printLog($self->{LOG}, "debug", "Statement: ".$sth->{Statement}) if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: ".$sth->{Statement}) ;
         
         my $s = sprintf("SELECT KEYNAME, VALUE from MachineData where GUID=%s",
                         $self->{DBH}->quote($guid));
 
         my $ost = $self->{DBH}->selectall_arrayref($s, {Slice=>{}});
-        printLog($self->{LOG}, "debug", "Statement: $s") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $s") ;
 
         my $ostarget = "";
         my $ostargetbak = "";
@@ -490,7 +503,7 @@ sub NCCDeleteRegistration
 
         if(!(defined $allowRegister && $allowRegister eq "true"))
         {
-            printLog($self->{LOG}, "warn", "Forward registration is disabled. '$guid' deleted only locally. ");
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "Forward registration is disabled. '$guid' deleted only locally. ");
             next;
         }
 
@@ -540,7 +553,7 @@ sub NCCDeleteRegistration
 
     if(!defined $output || $output eq "")
     {
-        printLog($self->{LOG}, "error", __("Unable to generate XML"));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Unable to generate XML"));
         $errors++;
         return $errors;
     }
@@ -550,7 +563,7 @@ sub NCCDeleteRegistration
     
     if(!$ok)
     {
-        #printLog($self->{LOG}, "error", sprintf(__("Delete registration request failed: %s."), $guid));
+        #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Delete registration request failed: %s."), $guid));
         $errors++;
         return $errors;
     }
@@ -592,26 +605,26 @@ sub _deleteRegistrationLocal
 
     foreach (@guids)
     {
-        printLog($self->{LOG}, "info", sprintf("Delete registration: %s", $_));
+        printLog($self->{LOG}, $self->vblevel(), "info", sprintf("Delete registration: %s", $_));
     }
             
     my $statement = "DELETE FROM Registration where ".$where;
     
     my $res = $self->{DBH}->do($statement);
     
-    printLog($self->{LOG}, "debug", "Statement: $statement Result: $res") if($self->{DEBUG});
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
 
     $statement = "DELETE FROM Clients where ".$where;
 
     $res = $self->{DBH}->do($statement);
 
-    printLog($self->{LOG}, "debug", "Statement: $statement Result: $res") if($self->{DEBUG});
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
     
     $statement = "DELETE FROM MachineData where ".$where;
     
     $res = $self->{DBH}->do($statement);
     
-    printLog($self->{LOG}, "debug", "Statement: $statement Result: $res") if($self->{DEBUG});
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
 
     #FIXME: does it make sense to remove this GUID from ClientSubscriptions ?
 
@@ -647,7 +660,7 @@ sub _listreg_handler
                                      $self->{DBH}->quote($subid));
                 
                 $self->{DBH}->do($statement);
-                printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$statement") ;
             }
         }
         else
@@ -657,12 +670,12 @@ sub _listreg_handler
             #
             # We found a registration from SMT in NCC which does not exist in SMT anymore
             # print and error. The admin has to delete it in NCC by hand.
-            printLog($self->{LOG}, "error", sprintf(__("WARNING: Found a Client in NCC which is not available here: '%s'"), $data->{GUID}));
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, sprintf(__("WARNING: Found a Client in NCC which is not available here: '%s'"), $data->{GUID}));
         }
     };
     if($@)
     {
-        printLog($self->{LOG}, "error", $@);
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@);
         return;
     }
     return;
@@ -678,12 +691,12 @@ sub _bulkop_handler
     
     $regtimestring = SMT::Utils::getDBTimestamp() if(!defined $regtimestring || $regtimestring eq "");
 
-    #printLog($self->{LOG}, "debug", "BULKOP_HANDLER:".Data::Dumper->Dump([$data]));
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "BULKOP_HANDLER:".Data::Dumper->Dump([$data]));
     
     if(!exists $data->{GUID} || ! defined $data->{GUID} || $data->{GUID} eq "")
     {
         # something goes wrong
-        printLog($self->{LOG}, "error", "No GUID");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No GUID");
         return;
     }
     my $guid = $data->{GUID};
@@ -693,7 +706,7 @@ sub _bulkop_handler
        !($data->{OPERATION} eq "register" || $data->{OPERATION} eq "de-register"))
     {
         # this should not happen
-        printLog($self->{LOG}, "error", sprintf(__("Unknown bulk operation '%s'."), $data->{OPERATION}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Unknown bulk operation '%s'."), $data->{OPERATION}));
     }
     $operation = $data->{OPERATION};
     
@@ -702,13 +715,13 @@ sub _bulkop_handler
     if(! exists $data->{RESULT} || ! defined $data->{RESULT} || $data->{RESULT} eq "")
     {
         # something goes wrong
-        printLog($self->{LOG}, "error", "No RESULT");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No RESULT");
         return;
     }
     
     if($data->{RESULT} eq "error")
     {
-        printLog($self->{LOG}, "error", 
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, 
                  sprintf(__("Operation %s[%s] failed: %s"), $operation, $guid, $data->{MESSAGE}));
         if($operation ne "register")
         {
@@ -718,7 +731,7 @@ sub _bulkop_handler
     }
     elsif($data->{RESULT} eq "warning")
     {
-        printLog($self->{LOG}, "warn", sprintf(__("Operation: %s[%s] : %s"), $operation, $guid, $data->{MESSAGE}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_WARN, sprintf(__("Operation: %s[%s] : %s"), $operation, $guid, $data->{MESSAGE}));
     }
     # else success
    
@@ -754,13 +767,13 @@ sub _bulkop_handler
             else
             {
                 # this should not happen
-                printLog($self->{LOG}, "error", __("No products found."));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("No products found."));
                 return 0;
             }
             my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
             $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
             $sth->execute;
-            printLog($self->{LOG}, "info", sprintf(__("Registration success: '%s'."), $guid));
+            printLog($self->{LOG}, $self->vblevel(), "info", sprintf(__("Registration success: '%s'."), $guid));
         }
         else  # error
         {
@@ -777,16 +790,16 @@ sub _bulkop_handler
             else
             {
                 # this should not happen
-                printLog($self->{LOG}, "error", __("No products found."));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("No products found."));
                 return 0;
             }
             my $res = $self->{DBH}->do(sprintf("$statement", $self->{DBH}->quote($guid)));
-            printLog($self->{LOG}, "debug",  sprintf("$statement", $self->{DBH}->quote($guid))) if($self->{DEBUG});
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,  sprintf("$statement", $self->{DBH}->quote($guid))) ;
         }
     }
     elsif(exists $data->{OPERATION} && defined $data->{OPERATION} && $data->{OPERATION} eq "de-register")
     {
-        printLog($self->{LOG}, "info", sprintf(__("Delete registration success: '%s'."), $guid));
+        printLog($self->{LOG}, $self->vblevel(), "info", sprintf(__("Delete registration success: '%s'."), $guid));
     }
 }
 
@@ -798,7 +811,7 @@ sub _listsub_handler
     
     my $statement = "";
 
-    #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$data]));
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, Data::Dumper->Dump([$data]));
 
     # FIXME: require CONSUMED?
     if(!exists $data->{SUBID} || !defined $data->{SUBID} || $data->{SUBID} eq "" ||
@@ -809,8 +822,8 @@ sub _listsub_handler
        !exists $data->{NODECOUNT} || !defined $data->{NODECOUNT} || $data->{NODECOUNT} eq "")
     {
         # should not happen, but it is better to check it
-        printLog($self->{LOG}, "error", "ListSubscriptions: incomplete data set. Skip");
-        printLog($self->{LOG}, "debug", "ListSubscriptions: incomplete data set: ".Data::Dumper->Dump([$data])) if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "ListSubscriptions: incomplete data set. Skip");
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "ListSubscriptions: incomplete data set: ".Data::Dumper->Dump([$data])) ;
         return;
     }
     
@@ -854,12 +867,12 @@ sub _listsub_handler
         
         my $res = $sth->execute;
         
-        printLog($self->{LOG}, "debug", $sth->{Statement}." :$res") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, $sth->{Statement}." :$res") ;
     };
     if($@)
     {
-        #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$data]));
-        printLog($self->{LOG}, "error", $@);
+        #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, Data::Dumper->Dump([$data]));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@);
         return;
     }
     return;
@@ -876,19 +889,19 @@ sub _updateRegistrationBulk
     
     if(!defined $guidHash)
     {
-        printLog($self->{LOG}, "error", __("Invalid GUIDHASH parameter"));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Invalid GUIDHASH parameter"));
         return 0;
     }
     
     if(!defined $regtimestring)
     {
-        printLog($self->{LOG}, "error", __("Invalid time string"));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Invalid time string"));
         return 0;
     }
 
     if(! defined $respfile || ! -e $respfile)
     {
-        printLog($self->{LOG}, "error", __("Invalid server response"));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Invalid server response"));
         return 0;
     }
      
@@ -896,7 +909,7 @@ sub _updateRegistrationBulk
     # A parser for the answer is required here and everything below this comment
     # should be part of the handler
    
-    my $parser = new SMT::Parser::Bulkop(debug => $self->{DEBUG}, log => $self->{LOG});
+    my $parser = new SMT::Parser::Bulkop(vblevel => $self->vblevel(), log => $self->{LOG});
     $parser->parse($respfile, sub{ _bulkop_handler($self, $guidHash, $regtimestring, @_)});
 
     return 1;
@@ -914,12 +927,12 @@ sub _sendData
 
     if (! defined $self->{URI})
     {
-        printLog($self->{LOG}, "error", __("Cannot send data to registration server. Missing URL."));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("Cannot send data to registration server. Missing URL."));
         return 0;
     }
     if($self->{URI} =~ /^-/)
     {
-        printLog($self->{LOG}, "error", sprintf(__("Invalid protocol(%s)."), $self->{URI}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Invalid protocol(%s)."), $self->{URI}));
         return 0;
     }
 
@@ -944,8 +957,8 @@ sub _sendData
     
     do
     {
-        printLog($self->{LOG}, "debug", "SEND TO: ".$regurl->as_string()) if($self->{DEBUG});
-        printLog($self->{LOG}, "debug", "XML:\n$data") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "SEND TO: ".$regurl->as_string()) ;
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "XML:\n$data") ;
 
         eval
         {
@@ -953,32 +966,29 @@ sub _sendData
         };
         if($@)
         {
-            printLog($self->{LOG}, "error", sprintf(__("Failed to download '%s'"), 
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Failed to download '%s'"), 
                                                     $regurl->as_string()));
-            if($self->{DEBUG})
-            {
-                printLog($self->{LOG}, "debug", $@);
-            }
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, $@);
             return 0;
         }
         
         # enable this if you want to have a trace
-        #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$response]));
+        #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, Data::Dumper->Dump([$response]));
 
-        printLog($self->{LOG}, "debug", "Result: ".$response->code()." ".$response->message()) if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Result: ".$response->code()." ".$response->message()) ;
         
         if ( $response->is_redirect )
         {
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                printLog($self->{LOG}, "error", "Reach maximal redirects. Abort");
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Reach maximal redirects. Abort");
                 return undef;
             }
             
             my $newuri = $response->header("location");
             
-            printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
             $regurl = URI->new($newuri);
         }
     } while($response->is_redirect);
@@ -986,20 +996,20 @@ sub _sendData
 
     if($response->is_success && -e $destfile)
     {
-        if($self->{DEBUG})
+        if($self->vblevel() == LOG_DEBUG)
         {
             open(CONT, "< $destfile") and do
             {
                 my @c = <CONT>;
                 close CONT;
-                printLog($self->{LOG}, "debug", "Content:".join("\n", @c));
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Content:".join("\n", @c));
             };
         }
         return 1;
     }
     else
     {
-        printLog($self->{LOG}, "error", "Invalid response:".$response->status_line);
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid response:".$response->status_line);
         return 0;
     }
 }

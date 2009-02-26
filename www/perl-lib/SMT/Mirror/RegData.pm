@@ -42,9 +42,9 @@ Arguments are an anonymous hash array of parameters:
 
 =over 4
 
-=item debug <0|1>
+=item vblevel <level>
 
-Set to 1 to enable debug. 
+Set the verbose level. 
 
 =item log
 
@@ -72,6 +72,7 @@ Data are in fromdir. Do not contact registration server to get the data.
 Write data into todir. Do not update the database.
 
 =back
+
 =cut
 
 # constructor
@@ -83,7 +84,7 @@ sub new
     my $self  = {};
 
     $self->{URI}   = undef;
-    $self->{DEBUG} = 0;
+    $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
@@ -108,9 +109,9 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
     
-    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
+    if(exists $opt{vblevel} && defined $opt{vblevel})
     {
-        $self->{DEBUG} = 1;
+        $self->{VBLEVEL} = $opt{vblevel};
     }
 
     if(exists $opt{element} && defined $opt{element} && $opt{element} ne "")
@@ -158,6 +159,20 @@ sub new
 
     return $self;
 }
+
+=item vblevel([level])
+
+Set or get the verbose level.
+
+=cut
+
+sub vblevel
+{
+    my $self = shift;
+    if (@_) { $self->{VBLEVEL} = shift }
+    return $self->{VBLEVEL};
+}
+
 
 =item element([name])
 
@@ -291,7 +306,7 @@ sub _requestData
     
     do
     {
-        printLog($self->{LOG}, "debug", "Send to '$uri' content: $content") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Send to '$uri' content: $content") ;
 
         eval
         {
@@ -301,45 +316,42 @@ sub _requestData
         };
         if($@)
         {
-            printLog($self->{LOG}, "error", sprintf(__("Failed to POST '%s'"), 
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Failed to POST '%s'"), 
                                                     $uri->as_string()));
-            if($self->{DEBUG})
-            {
-                printLog($self->{LOG}, "debug", $@);
-            }
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, $@);
             return undef;
         }
 
         # enable this if you want to have a trace
-        #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$response]));
+        #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, Data::Dumper->Dump([$response]));
         
-        printLog($self->{LOG}, "debug", "Result: ".$response->code()." ".$response->message()) if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Result: ".$response->code()." ".$response->message()) ;
 
         if ( $response->is_redirect )
         {
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                printLog($self->{LOG}, "error", "Reach maximal redirects. Abort");
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Reach maximal redirects. Abort");
                 return undef;
             }
             
             my $newuri = $response->header("location");
             
-            printLog($self->{LOG}, "debug", "Redirected to $newuri") if($self->{DEBUG});
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
             $uri = URI->new($newuri);
         }
     } while($response->is_redirect);
     
     if( $response->is_success && -e $destdir."/".$self->{ELEMENT}.".xml")
     {
-        if($self->{DEBUG})
+        if($self->vblevel() == LOG_DEBUG)
         {
             open(CONT, "< $destdir/".$self->{ELEMENT}.".xml") and do
             {
                 my @c = <CONT>;
                 close CONT;
-                printLog($self->{LOG}, "debug", "Content:".join("\n", @c));
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Content:".join("\n", @c));
             };
         }
         
@@ -348,7 +360,7 @@ sub _requestData
     else
     {
         # FIXME: was 'die'; check if we should stop if a download failed
-        printLog($self->{LOG}, "error", "Failed to POST '".$uri->as_string()."': ".$response->status_line);
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Failed to POST '".$uri->as_string()."': ".$response->status_line);
         return undef;
     }
 }
@@ -360,7 +372,7 @@ sub _parseXML
 
     if(! -e $xmlfile)
     {
-        printLog($self->{LOG}, "error", "File '$xmlfile' does not exist.");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File '$xmlfile' does not exist.");
         return 1;
     }
 
@@ -420,33 +432,33 @@ sub _updateDB
     
     if(!defined $table || $table eq "")
     {
-        printLog($self->{LOG}, "error", "Invalid table name");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid table name");
         return 1;
     }
     if(!defined $key || ref($key) ne "ARRAY")
     {
-        printLog($self->{LOG}, "error", "Invalid key element.");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid key element.");
         return 1;
     }
     
     if(! exists $self->{XML}->{DATA}->{$self->{ELEMENT}})
     {
         # data not available; no need to update the database
-        printLog($self->{LOG}, "warn", "WARNING: No content for $self->{ELEMENT}");
+        printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "WARNING: No content for $self->{ELEMENT}");
         return 1;
     }
     
     my $dbh = SMT::Utils::db_connect();
     if(!defined $dbh)
     {
-        printLog($self->{LOG}, "error", "Cannot connect to database.");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
         return 1;
     }
 
     # get all datasets which are from NCC
     my $stm = sprintf("SELECT %s FROM %s WHERE SRC='N'", join(',', @$key), $table);
     
-    printLog($self->{LOG}, "debug", "STATEMENT: $stm") if($self->{DEBUG});
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $stm") ;
     
     my $alln = $dbh->selectall_arrayref($stm, {Slice=>{}});
     
@@ -483,11 +495,11 @@ sub _updateDB
         my $st = sprintf("SELECT %s FROM %s WHERE %s", 
                          join(',', @$key), $table, join(' AND ', @primkeys_where));
         
-        printLog($self->{LOG}, "debug", "STATEMENT: $st") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st") ;
                     
         my $all = $dbh->selectall_arrayref($st);
 
-        printLog($self->{LOG}, "debug", Data::Dumper->Dump([$all]))  if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, Data::Dumper->Dump([$all]))  ;
 
         # special handling for catalogs table
         # LOCALPATH is required
@@ -543,7 +555,7 @@ sub _updateDB
 
             $statement .= " WHERE ".join(' AND ', @primkeys_where);
             
-            printLog($self->{LOG}, "debug", "STATEMENT: $statement") if($self->{DEBUG});
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement") ;
 
             eval
             {
@@ -551,7 +563,7 @@ sub _updateDB
             };
             if($@)
             {
-                printLog($self->{LOG}, "error", "$@");
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
             }
         }
         # PRIMARY KEY does not exists in DB, do insert
@@ -578,7 +590,7 @@ sub _updateDB
             $statement .= join(',', @v);
             $statement .= ")";
             
-            printLog($self->{LOG}, "debug", "STATEMENT: $statement") if($self->{DEBUG});
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement") ;
             
             eval
             {
@@ -586,17 +598,17 @@ sub _updateDB
             };
             if($@)
             {
-                printLog($self->{LOG}, "error", "$@");
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
             }
         }
         else
         {
             # more then one element by selecting the keyvalue - evil
-            printLog($self->{LOG}, "error", "ERROR: invalid key value '$key'");
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "ERROR: invalid key value '$key'");
         }
     }
 
-    #printLog($self->{LOG}, "debug", "ALLHASH END: ".Data::Dumper->Dump([$allhash]));
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "ALLHASH END: ".Data::Dumper->Dump([$allhash]));
 
     # delete all which where not touched but from NCC and no custom value
     foreach my $set (keys %{$allhash})
@@ -620,7 +632,7 @@ sub _updateDB
                     
         my $res = $dbh->do($delstr);
 
-        printLog($self->{LOG}, "debug", "STATEMENT: $delstr Result: $res") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $delstr Result: $res") ;
     }
     
     $dbh->disconnect;

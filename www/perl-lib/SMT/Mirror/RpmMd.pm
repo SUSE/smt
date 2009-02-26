@@ -56,9 +56,9 @@ Arguments are an anonymous hash array of parameters:
 
 =over 4
 
-=item debug <0|1>
+=item vblevel <level>
 
-Set to 1 to enable debug. 
+Set the verbose level. 
 
 =item useragent
 
@@ -109,7 +109,7 @@ sub new
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
 
-    $self->{DEBUG} = 0;
+    $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
     $self->{DEEPVERIFY}   = 0;
     $self->{DBH} = undef;
@@ -121,9 +121,9 @@ sub new
     $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
 
 
-    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
+    if(exists $opt{vblevel} && defined $opt{vblevel})
     {
-        $self->{DEBUG} = 1;
+        $self->{VBLEVEL} = $opt{vblevel};
     }
 
     if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
@@ -271,19 +271,18 @@ sub statistic
 }
 
 
-=item debug([0|1])
+=item vblevel([level])
 
-Enable or disable debug mode for this job.
-Returns the current state.
+Set or get the verbose level.
 
 =cut
 
-sub debug
+sub vblevel
 {
     my $self = shift;
-    if (@_) { $self->{DEBUG} = shift }
+    if (@_) { $self->{VBLEVEL} = shift }
     
-    return $self->{DEBUG};
+    return $self->{VBLEVEL};
 }
 
 
@@ -323,13 +322,13 @@ sub mirrorTo()
    
     if ( ! -d $dest )
     {
-        printLog($self->{LOG}, "error", "'$dest' does not exist");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "'$dest' does not exist");
         $self->{STATISTIC}->{ERROR} += 1;
         return $self->{STATISTIC}->{ERROR};
     }
     if ( !defined $self->uri() || $self->uri() !~ /^http/ )
     {
-        printLog($self->{LOG}, "error", "Invalid URL: ".((defined $self->uri())?$self->uri():"") );
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid URL: ".((defined $self->uri())?$self->uri():"") );
         $self->{STATISTIC}->{ERROR} += 1;
         return $self->{STATISTIC}->{ERROR};
     }
@@ -342,11 +341,11 @@ sub mirrorTo()
     my $saveuri = URI->new($self->{URI});
     $saveuri->userinfo(undef);
     
-    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string )) if(!$isYum);
-    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() )) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string )) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Target:    %s"), $self->fullLocalRepoPath() )) if(!$isYum);
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG},
+    my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                     dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -365,7 +364,7 @@ sub mirrorTo()
         my $removeinvalid = 1;
         $removeinvalid = 0 if( $dryrun );
 
-        $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => !$self->debug() );
+        $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => ($self->vblevel() != LOG_DEBUG) );
         
         $self->{STATISTIC}->{ERROR}    = 0;
         $self->{STATISTIC}->{UPTODATE} = 0;
@@ -381,7 +380,7 @@ sub mirrorTo()
 
     if ( !$job->outdated() && $verifySuccess )
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if(!$isYum);
         print "\n" if(!$isYum);
         return 0;
     }
@@ -424,7 +423,7 @@ sub mirrorTo()
                 {
                     copy( $fullpath, $metatempdir."/$entry" ) or do
                     {
-                        printLog($self->{LOG}, "error", "copy metadata failed: $!");
+                        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "copy metadata failed: $!");
                         $self->{STATISTIC}->{ERROR} += 1;
                         return $self->{STATISTIC}->{ERROR};
                     };
@@ -453,12 +452,12 @@ sub mirrorTo()
     {
         if( $dryrun )
         {
-            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $job->fillLocalFile()) );
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("New File [%s]", $job->fillLocalFile()) );
         }
         $self->{STATISTIC}->{DOWNLOAD} += 1;
     }
 
-    $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+    $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                  dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -474,7 +473,7 @@ sub mirrorTo()
         $self->{JOBS}->{".repodata/repomd.xml.asc"} = $job;
     }
 
-    $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+    $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                  dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -496,7 +495,7 @@ sub mirrorTo()
     my $statement = sprintf("SELECT localpath, checksum from RepositoryContentData where localpath like %s",
                             $self->{DBH}->quote($self->fullLocalRepoPath()."%"));
     $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
-    #printLog($self->{LOG}, "debug", "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
     
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
@@ -513,7 +512,7 @@ sub mirrorTo()
             #
             # we have here only outdated files, so dryrun can display them all as "New File"
             #
-            printLog($self->{LOG}, "info",  sprintf("New File [%s]", $self->{JOBS}->{$r}->fullLocalPath() ));
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("New File [%s]", $self->{JOBS}->{$r}->fullLocalPath() ));
             $self->{STATISTIC}->{DOWNLOAD} += 1;
             
             next;
@@ -548,7 +547,7 @@ sub mirrorTo()
             $success = rename( $job->fullLocalRepoPath()."/repodata", $job->fullLocalRepoPath()."/.old.repodata");
             if(!$success)
             {
-                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/repodata"));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/repodata"));
                 $self->{STATISTIC}->{ERROR} += 1;
             }
         }
@@ -557,7 +556,7 @@ sub mirrorTo()
             $success = rename( $job->fullLocalRepoPath()."/.repodata", $job->fullLocalRepoPath()."/repodata");
             if(!$success)
             {
-                printLog($self->{LOG}, "error", sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/.repodata"));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/.repodata"));
                 $self->{STATISTIC}->{ERROR} += 1;
             }
         }
@@ -567,23 +566,23 @@ sub mirrorTo()
     {
         rmtree( $metatempdir, 0, 0 );
         
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun '%s'"), $saveuri->as_string)) if(!$isYum);
-        printLog($self->{LOG}, "info", sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished dryrun '%s'"), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
     }
     else
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string)) if(!$isYum);
-        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
-        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
                                                $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
     }
     
     if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE})) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE})) if(!$isYum);
     }
-    printLog($self->{LOG}, "info", sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR})) if(!$isYum);
-    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR})) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
     print "\n" if(!$isYum);
 
     return $self->{STATISTIC}->{ERROR};
@@ -603,11 +602,11 @@ sub clean()
 
     if ( ! -d $self->fullLocalRepoPath() )
     { 
-        printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
         return;
     }
 
-    printLog($self->{LOG}, "info", sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) ) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) ) if(!$isYum);
 
     # algorithm
     
@@ -636,15 +635,15 @@ sub clean()
     my $cnt = 0;
     foreach my $file ( keys %{$self->{CLEANLIST}} )
     {
-        printLog($self->{LOG}, "debug", "Delete: $file") if ($self->debug());
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Delete: $file");
         $cnt += unlink $file;
         
         $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
     }
 
-    printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath() )) if(!$isYum);
-    printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt)) if(!$isYum);
-    printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath() )) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Removed files : %s"), $cnt)) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
     print "\n" if(!$isYum);
 }
 
@@ -679,7 +678,7 @@ sub verify()
     # mirror destination dir
     if ( ! -d $self->fullLocalRepoPath() )
     {
-        printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
         $self->{STATISTIC}->{ERROR} += 1;
         return ($self->{STATISTIC}->{ERROR} == 0);
     }
@@ -691,7 +690,7 @@ sub verify()
     my $quiet = 0;
     $quiet = 1 if( exists $options{quiet} && defined $options{quiet} && $options{quiet} );
 
-    printLog($self->{LOG}, "info", sprintf(__("Verifying: %s"), $self->fullLocalRepoPath() )) if(!$quiet);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Verifying: %s"), $self->fullLocalRepoPath() )) if(!$quiet);
 
     $self->{STATISTIC}->{ERROR} = 0;
     
@@ -710,20 +709,20 @@ sub verify()
         $cnt++;
         if ($ok || ($job->localFileLocation() =~ /repomd\.xml$/ ) )
         {
-            printLog($self->{LOG}, "debug", "Verify: ". $job->fullLocalPath() . ": OK") if ($self->debug());
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Verify: ". $job->fullLocalPath() . ": OK");
         }
         else
         {
             if(!-e $job->fullLocalPath())
             {
-                printLog($self->{LOG}, "error", "Verify: ". $job->fullLocalPath() . ": FAILED ( file not found )");
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Verify: ". $job->fullLocalPath() . ": FAILED ( file not found )");
             }
             else
             {
-                printLog($self->{LOG}, "error", "Verify: ". $job->fullLocalPath() . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum(), $job->realchecksum()));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Verify: ". $job->fullLocalPath() . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum(), $job->realchecksum()));
                 if ($removeinvalid)
                 {
-                    printLog($self->{LOG}, "debug", sprintf(__("Deleting %s"), $job->fullLocalPath())) if ($self->debug());
+                    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf(__("Deleting %s"), $job->fullLocalPath()));
                     unlink($job->fullLocalPath());
                 }
             }
@@ -735,10 +734,10 @@ sub verify()
 
     if( !$quiet )
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished verifying: %s"), $self->fullLocalRepoPath() ));
-        printLog($self->{LOG}, "info", sprintf(__("=> Files             : %s"), $cnt ));
-        printLog($self->{LOG}, "info", sprintf(__("=> Errors            : %s"), $self->{STATISTIC}->{ERROR} ));
-        printLog($self->{LOG}, "info", sprintf(__("=> Verify Time       : %s"), SMT::Utils::timeFormat(tv_interval($t0)) ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished verifying: %s"), $self->fullLocalRepoPath() ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files             : %s"), $cnt ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors            : %s"), $self->{STATISTIC}->{ERROR} ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Verify Time       : %s"), SMT::Utils::timeFormat(tv_interval($t0)) ));
         print "\n";
     }
     
@@ -791,13 +790,13 @@ sub download_handler
         if(!$self->{MIRRORSRC} && exists $data->{ARCH} && defined $data->{ARCH} && lc($data->{ARCH}) eq "src")
         {
             # we do not want source rpms - skip
-            printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->debug());
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Skip source RPM: ".$data->{LOCATION});
             
             return;
         }
 
         # get the repository index
-        my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, 
+        my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, 
                                         log => $self->{LOG}, dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
         $job->uri( $self->{URI} );
         $job->localBasePath( $self->localBasePath() );
@@ -824,12 +823,12 @@ sub download_handler
             # with deepverify call a verify 
             if( $self->deepverify() && !$job->verify() )
             {
-                #printLog($self->{LOG}, "debug", "deepverify: verify failed") if($self->debug());
+                #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "deepverify: verify failed");
                 unlink ( $job->fullLocalPath() ) if( !$dryrun );
             }
             else
             {
-                printLog($self->{LOG}, "debug", sprintf("U %s", $job->fullLocalPath() )) if($self->debug());
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf("U %s", $job->fullLocalPath() ));
                 $self->{STATISTIC}->{UPTODATE} += 1;
                 return;
             }
@@ -841,7 +840,7 @@ sub download_handler
             {
                 # File is ok, so update the database and go to the next file
                 $job->updateDB();
-                printLog($self->{LOG}, "debug", sprintf("U %s", $job->fullLocalPath() )) if($self->debug());
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf("U %s", $job->fullLocalPath() ));
                 $self->{STATISTIC}->{UPTODATE} += 1;
                 return;
             }
@@ -910,7 +909,7 @@ sub download_handler
             }
             else
             {
-                printLog($self->{LOG}, "error", "no file location set on ".$job->fullLocalPath());
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "no file location set on ".$job->fullLocalPath());
             }
         }
     }
@@ -921,7 +920,7 @@ sub download_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG},
+                my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
                 $job->uri( $self->{URI} );
                 $job->localBasePath( $self->localBasePath() );
@@ -962,7 +961,7 @@ sub verify_handler
     if(!$self->{MIRRORSRC} && exists $data->{ARCH} && defined $data->{ARCH} && lc($data->{ARCH}) eq "src")
     {
         # we do not want source rpms - skip
-        printLog($self->{LOG}, "debug", "Skip source RPM: ".$data->{LOCATION}) if($self->debug());
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Skip source RPM: ".$data->{LOCATION});
         
         return;
     }
@@ -975,7 +974,7 @@ sub verify_handler
         # all other files (rpms) are verified only if deepverify is requested.
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+            my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                             dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
             $job->localBasePath( $self->localBasePath() );
             $job->localRepoPath( $self->localRepoPath() );
@@ -995,7 +994,7 @@ sub verify_handler
             if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
-                my $job = SMT::Mirror::Job->new(debug => $self->debug(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+                my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
                                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
                 $job->localBasePath( $self->localBasePath() );
                 $job->localRepoPath( $self->localRepoPath() );

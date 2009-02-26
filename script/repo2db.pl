@@ -26,10 +26,12 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 use Data::Dumper;
 
 my $debug   = 0;
+my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $help    = 0;
 my $logfile = "/dev/null";
 
 my $result = GetOptions ("debug|d"     => \$debug,
+                         "verboselevel|v=i" => \$vblevel,
                          "logfile|L=s" => \$logfile,
                          "help|h"      => \$help
                         );
@@ -40,13 +42,13 @@ if($help)
     print __("Write repository data into the database\n");
     print "\n";
     print __("Options:\n");
-    print "--debug -d        ".__("enable debug mode\n");
-    print "--logfile -L file ".__("Path to logfile\n");
+    print "--debug -d              ".__("enable debug mode\n");
+    print "--verboselevel -v level " . __("set the verbose level\n");
+    print "--logfile -L file       ".__("Path to logfile\n");
     exit 0;
 }
 
-
-
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 # get a lock
 
@@ -70,9 +72,9 @@ if($@ || !defined $cfg)
 {
     if(!SMT::Utils::unLock("repo2db"))
     {
-        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
     exit 1;
 }
 
@@ -81,9 +83,9 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
 {
     if(!SMT::Utils::unLock("repo2db"))
     {
-        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", __("Cannot read the local base path"));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the local base path"));
     exit 1;
 }
 
@@ -96,9 +98,9 @@ if(!$dbh)
 {
     if(!SMT::Utils::unLock("repo2db"))
     {
-        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", __("Cannot connect to database"));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot connect to database"));
     exit 1;
 }
 
@@ -116,15 +118,15 @@ foreach my $id (keys %{$hash})
     
     $localdir =~ s/\/$//;
 
-    SMT::Utils::printLog($LOG, "debug", "Parse '$localdir'")  if($debug);
+    SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Parse '$localdir'");
 
     my $self = {};
     $self->{DBH} = $dbh;
     $self->{LOG} = $LOG;
-    $self->{DEBUG} = $debug;
+    $self->{VBLEVEL} = $vblevel;
     $self->{LOCALDIR} = $localdir;
     
-    my $parser = SMT::Parser::RpmMd->new(log => $LOG);
+    my $parser = SMT::Parser::RpmMd->new(vblevel => $vblevel, log => $LOG);
     $parser->resource($localdir);
     $parser->parse("repodata/repomd.xml", sub { toDB_handler($self, @_)});
 }
@@ -134,7 +136,7 @@ sub toDB_handler
     my $self = shift;
     my $data = shift;
 
-    #printLog($self->{LOG}, "debug", Data::Dumper->Dump([$data]) ) if($self->{DEBUG});
+    #printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, Data::Dumper->Dump([$data]) );
 
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "" )
@@ -145,7 +147,7 @@ sub toDB_handler
         my $statement = "";
         $statement = sprintf("SELECT localpath from RepositoryContentData where localpath = %s", $self->{DBH}->quote($fullpath));
 
-        printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, "$statement");
         my $existingpath = $dbh->selectcol_arrayref($statement);
 
         if(exists $existingpath->[0])
@@ -166,7 +168,7 @@ sub toDB_handler
         }
         
         $self->{DBH}->do($statement);
-        printLog($self->{LOG}, "debug", "$statement") if($self->{DEBUG});
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, "$statement");
     }
     
 }

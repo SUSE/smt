@@ -19,6 +19,7 @@ my $mirrorable;
 my $domirror;
 
 my $debug   = 0;
+my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $logfile = "/dev/null";
 my $help    = 0;
 my $fromdir = "";
@@ -33,7 +34,8 @@ use Getopt::Long;
                           'createdbreplacementfile=s' => \$createdbreplfile,
                           "logfile|L=s" => \$logfile,
                           'debug|d'  => \$debug,
-			  'help|h'   => \$help
+                          "verboselevel|v=i" => \$vblevel,
+                          'help|h'   => \$help
                          );
 
 if ( defined $help and ( $help == 1 ) )
@@ -49,8 +51,11 @@ if ( defined $help and ( $help == 1 ) )
     print "--createdbreplacementfile ".__("create a database replacement file for using smt-mirror without database.\n");
     print "--logfile -L file         ".__("Path to logfile\n");
     print "--debug                   ".__("Enable debug mode\n");
+    print "--verboselevel -v level   " . __("set the verbose level\n");
   exit 0;
 }
+
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 if($createdbreplfile ne "")
 {
@@ -77,7 +82,7 @@ my $LOG = SMT::Utils::openLog($logfile);
 
 if($fromdir ne "" && ! -d $fromdir)
 {
-	SMT::Utils::printLog($LOG, "error", sprintf(__("Directory '%s' does not exist."), $fromdir));
+	SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Directory '%s' does not exist."), $fromdir));
     exit 1;
 }
 
@@ -89,26 +94,26 @@ if($todir ne "" && ! -d $todir)
     };
     if ($@) 
     {
-        SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot create %s: %s"), $todir, $@));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
         exit 1;
     }
 }
 
 eval
 {
-    my $rd= SMT::Mirror::RegData->new(debug   => $debug,
+    my $rd= SMT::Mirror::RegData->new(vblevel => $vblevel,
                                       log     => $LOG,
                                       element => "productdata",
                                       table   => "Products",
                                       key     => "PRODUCTDATAID",
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
-    printLog($LOG, "info", __("Downloading Product information"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product information"));
     
     my $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, "error", __("Error while fetching Products data."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Products data."));
     }
     
     
@@ -116,45 +121,45 @@ eval
     $rd->table("Targets");
     $rd->key("OS");
     
-    printLog($LOG, "info", __("Downloading Target information"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Target information"));
     $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, "error", __("Error while fetching Targets data."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Targets data."));
     }
     
     $rd->element("catalogs");
     $rd->table("Catalogs");
     $rd->key("CATALOGID");
     
-    printLog($LOG, "info", __("Downloading Catalog information"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Catalog information"));
     $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, "error", __("Error while fetching Catalogs data."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Catalogs data."));
     }
     
     $rd->element("productcatalogs");
     $rd->table("ProductCatalogs");
     $rd->key(['PRODUCTDATAID', 'CATALOGID']);
     
-    printLog($LOG, "info", __("Downloading Product/Catalog relations"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product/Catalog relations"));
     $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, "error", __("Error while fetching ProductCatalogs data."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching ProductCatalogs data."));
     }
     
     
-    my $lr= SMT::NCCRegTools->new(debug   => $debug,
+    my $lr= SMT::NCCRegTools->new(vblevel => $vblevel,
                                   log     => $LOG,
                                   fromdir => (($fromdir ne "")?$fromdir:undef),
                                   todir   => (($todir ne "")?$todir:undef));
 
-    printLog($LOG, "info", __("Downloading Subscription information"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
     $lr->NCCListSubscriptions();
     
-    printLog($LOG, "info", __("Downloading Registration information"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
     $lr->NCCListRegistrations();
     
     
@@ -165,32 +170,32 @@ eval
         
         if (!SMT::Utils::unLock("smt-ncc-sync"))
         {
-            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
         }
         exit 0;
     }
     
     SMT::CLI::resetCatalogsStatus();
-    printLog($LOG, "info", __("Flagged Catalogs which can be mirrored"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged Catalogs which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
                                     todir   => ($todir ne "")?$todir:undef,
                                     log     => $LOG,
-                                    debug   => $debug);
+                                    vblevel => $vblevel);
     
 };
 if ($@)
 {
     if (!SMT::Utils::unLock("smt-ncc-sync"))
     {
-        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", $@);
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, $@);
     exit 1;
 }
 
 if (!SMT::Utils::unLock("smt-ncc-sync"))
 {
-    SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
 }
 
 exit 0;

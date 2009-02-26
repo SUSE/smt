@@ -25,6 +25,8 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 #use Data::Dumper;
 
 my $debug    = 0;
+my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
+
 my $clean    = 0;
 my $hardlink = 0;
 my $deepverify = 0;
@@ -45,6 +47,7 @@ my $size = 0;
 my $nolink = 0;
 
 my $result = GetOptions ("debug|d"      => \$debug,
+                         "verboselevel|v=i" => \$vblevel,
                          "cleanup|c"    => \$clean,
                          "hardlink=i"   => \$hardlink,
                          "directory=s"  => \$LocalBasePath,
@@ -59,34 +62,37 @@ my $result = GetOptions ("debug|d"      => \$debug,
 
 if($help)
 {
-    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--nohardlink]\n";
+    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink]\n";
     print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
     print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
     print __("Options:\n");
-    print "--debug -d        " . __("enable debug mode\n");
-    print "--clean -c        " . __("cleanup all mirrored repositories.\n");
-    print "                  " . __("Remove all files no longer mentioned in the metadata.\n");
-    print "                  " . __("It does not mirror new files.\n");
-    print "--hardlink size   " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
-    print "                  " . __("for them\n");
-    print "--directory arg   " . __("The directory to work on. Using this option ignores the configured\n");
-    print "                  " . __("default value in smt.conf\n");
-    print "--deepverify      " . __("Verify all checksums \n");
-    print "--dryrun -n       " . __("Run mirror algorithm without downloading the rpms \n");
-    print "                  " . __("(but it needs to download the metadata into a temporary directory).\n");
-    print "                  " . __("It shows only the names which would be downloaded \n");
-    print "--nohardlink      " . __("If a file already exists on the local harddisk do not link it into the\n");
-    print "                  " . __("mirrored repository, but copy it.\n");
-    print "--dbreplfile arg  " . __("Path to XML file to use as database replacement. Such a file can\n");
-    print "                  " . __("be created with the sync-ncc command. This option is only\n");
-    print "                  " . __("useful if the smt database does not exist on the host from\n"); 
-    print "                  " . __("which the smt-mirror script is being executed.\n"); 
-    print "--logfile -L file " . __("Path to logfile\n");
+    print "--debug -d              " . __("enable debug mode\n");
+    print "--verboselevel -v level " . __("set the verbose level\n");
+    print "--clean -c              " . __("cleanup all mirrored repositories.\n");
+    print "                        " . __("Remove all files no longer mentioned in the metadata.\n");
+    print "                        " . __("It does not mirror new files.\n");
+    print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
+    print "                        " . __("for them\n");
+    print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
+    print "                        " . __("default value in smt.conf\n");
+    print "--deepverify            " . __("Verify all checksums \n");
+    print "--dryrun -n             " . __("Run mirror algorithm without downloading the rpms \n");
+    print "                        " . __("(but it needs to download the metadata into a temporary directory).\n");
+    print "                        " . __("It shows only the names which would be downloaded \n");
+    print "--nohardlink            " . __("If a file already exists on the local harddisk do not link it into the\n");
+    print "                        " . __("mirrored repository, but copy it.\n");
+    print "--dbreplfile arg        " . __("Path to XML file to use as database replacement. Such a file can\n");
+    print "                        " . __("be created with the sync-ncc command. This option is only\n");
+    print "                        " . __("useful if the smt database does not exist on the host from\n"); 
+    print "                        " . __("which the smt-mirror script is being executed.\n"); 
+    print "--logfile -L file       " . __("Path to logfile\n");
     exit 0;
 }
 
 my $mirrorStartTime = [gettimeofday] ;
+
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 # get a lock
 
@@ -110,9 +116,9 @@ if($@ || !defined $cfg)
 {
     if(!SMT::Utils::unLock("smt-mirror"))
     {
-        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
     exit 1;
 }
 
@@ -123,9 +129,9 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" )
     {
         if(!SMT::Utils::unLock("smt-mirror"))
         {
-            SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
         }
-        SMT::Utils::printLog($LOG, "error", __("Cannot read the local base path"));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the local base path"));
         exit 1;
     }
 }
@@ -139,10 +145,10 @@ else
         };
         if ($@) 
         {
-            SMT::Utils::printLog($LOG, "error", sprintf(__("Cannot create %s: %s"), $LocalBasePath, $@));
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $LocalBasePath, $@));
             if(!SMT::Utils::unLock("smt-mirror"))
             {
-                SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+                SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
             }
             exit 1;
         }
@@ -152,11 +158,11 @@ else
 
 if($hardlink > 0)
 {
-    SMT::CLI::hardlink(log => $LOG, size => $hardlink, debug => $debug, basepath => $LocalBasePath);
+    SMT::CLI::hardlink(log => $LOG, size => $hardlink, vblevel => $vblevel, basepath => $LocalBasePath);
     
     if(!SMT::Utils::unLock("smt-mirror"))
     {
-        SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
     }
     exit 0;
 }
@@ -172,9 +178,9 @@ if(!defined $dbreplfile)
     {
         if(!SMT::Utils::unLock("smt-mirror"))
         {
-            SMT::Utils::printLog($LOG, "error",  __("Cannot remove lockfile."));
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
         }
-        SMT::Utils::printLog($LOG, "error",  __("Cannot connect to database"));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot connect to database"));
         exit 1;
     }
 }
@@ -196,9 +202,9 @@ if(!defined $NUUrl || $NUUrl eq "")
 {
     if(!SMT::Utils::unLock("smt-mirror"))
     {
-        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", __("Cannot read NU Url"));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read NU Url"));
 }
 
 my $nuUser = $cfg->val("NU", "NUUser");
@@ -209,9 +215,9 @@ if(!defined $nuUser || $nuUser eq "" ||
 {
     if(!SMT::Utils::unLock("smt-mirror"))
     {
-        SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($LOG, "error", __("Cannot read the Mirror Credentials"));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the Mirror Credentials"));
     exit 1;
 }
 
@@ -261,12 +267,12 @@ foreach my $id (keys %{$hash})
         my $zyppMirror = undef;
         if( lc($hash->{$id}->{CATALOGTYPE}) eq "yum")
         {
-            $zyppMirror = SMT::Mirror::Yum->new(debug => $debug, log => $LOG, dbh => $dbh,
-                                               mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
+            $zyppMirror = SMT::Mirror::Yum->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
+                                                mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
         }
         else
         {
-            $zyppMirror = SMT::Mirror::RpmMd->new(debug => $debug, log => $LOG, dbh => $dbh,
+            $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                   mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
         }        
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
@@ -293,7 +299,7 @@ foreach my $id (keys %{$hash})
 #
 # Now mirror the NU catalogs
 #
-my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh, nohardlink => $nohardlink);
+my $mirror = SMT::Mirror::NU->new(vblevel => $vblevel, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh, nohardlink => $nohardlink);
 $mirror->deepverify($deepverify);
 $mirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
 if($clean)
@@ -332,24 +338,24 @@ if(!defined $dbreplfile)
             $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
         }
 
-        SMT::Utils::printLog($LOG, "info", $warning);
+        SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, $warning);
     }
 }
 
 if(!SMT::Utils::unLock("smt-mirror"))
 {
-    SMT::Utils::printLog($LOG, "error", __("Cannot remove lockfile."));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     exit 1;
 }
 
 if(!$clean && !$hardlink)
 {
     # print summary only when mirroring
-    SMT::Utils::printLog($LOG, "info", __("Summary"));
-    SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered files    : %d "), $download ));
-    SMT::Utils::printLog($LOG, "info", sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
-    SMT::Utils::printLog($LOG, "info", sprintf(__("Errors:                   : %d"), $errors));
-    SMT::Utils::printLog($LOG, "info", sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, __("Summary"));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total transfered files    : %d "), $download ));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Errors:                   : %d"), $errors));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
 }
 
 exit 0;

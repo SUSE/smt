@@ -662,7 +662,7 @@ sub setMirrorableCatalogs
     else
     {
         # get the file
-        my $job = SMT::Mirror::Job->new(debug => $opt{debug}, log => $opt{log});
+        my $job = SMT::Mirror::Job->new(vblevel => $opt{vblevel}, log => $opt{log});
         $job->uri($nuri);
         $job->localBasePath( "/" );
         $job->localRepoPath( $destdir );
@@ -678,12 +678,12 @@ sub setMirrorableCatalogs
         return;
     }
 
-    my $parser = SMT::Parser::NU->new(debug => $opt{debug}, log => $opt{log});
+    my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
     $parser->parse($indexfile, 
                    sub {
                        my $repodata = shift;
-                       printLog($opt{log}, "debug", sprintf(__("* set [%s %s] as mirrorable."), 
-                                                           $repodata->{NAME}, $repodata->{DISTRO_TARGET})) if($opt{debug});
+                       printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, 
+                                sprintf(__("* set [%s %s] as mirrorable."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
                        my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
                                                    $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                    }
@@ -736,10 +736,7 @@ sub setMirrorableCatalogs
                     };
                     if($@)
                     {
-                        if($opt{debug})
-                        {
-                            printLog($opt{log}, "debug", $@);
-                        }
+                        printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $@);
                         $ret = 1;
                         last;
                     }
@@ -755,7 +752,7 @@ sub setMirrorableCatalogs
                         
                         my $newuri = $response->header("location");
                         
-                        #printLog($opt{log}, "debug", "Redirected to $newuri") if($opt{debug});
+                        #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
                         $remote = URI->new($newuri);
                     }
                     elsif($response->is_success)
@@ -764,7 +761,7 @@ sub setMirrorableCatalogs
                     }
                 } while($response->is_redirect);
             }
-            printLog($opt{log}, "debug", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' ))) if($opt{debug});
+            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' )));
             my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
                                     ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), 
                                     $dbh->quote($catName)); 
@@ -874,8 +871,11 @@ sub hardlink
     my ($cfg, $dbh, $nuri) = init();
     my $t0 = [gettimeofday] ;
 
-    my $debug = 0;
-    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
+    my $vblevel = 0;
+    if(exists $options{debug} && defined $options{debug})
+    {
+        $vblevel = $options{vblevel};
+    }
     
     my $dir = "";
     if(! exists $options{basepath} || ! defined $options{basepath} || ! -d $options{basepath})
@@ -883,7 +883,7 @@ sub hardlink
         $dir = $cfg->val("LOCAL", "MirrorTo");
         if(!defined $dir || $dir eq "" || ! -d $dir)
         {
-            printLog($options{log}, "error", sprintf("Wrong mirror directory: %s", $dir));
+            printLog($options{log}, $vblevel, LOG_ERROR, sprintf("Wrong mirror directory: %s", $dir));
             return 1;
         }
     }
@@ -893,7 +893,7 @@ sub hardlink
     }
     
     my $cmd = "find $dir -xdev -iname '*.rpm' -type f -size +$options{size}k ";
-    printLog($options{log}, "info", "$cmd") if($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "$cmd");
     
     my $filelist = `$cmd`;
     my @files = sort split(/\n/, $filelist);
@@ -907,28 +907,28 @@ sub hardlink
 
             if( $NN ne $MM  &&  basename($MM) eq basename($NN) )
             {
-                printLog($options{log}, "info", "$MM ");
-                printLog($options{log}, "info", "$NN ");
+                printLog($options{log}, $vblevel, LOG_INFO1, "$MM ");
+                printLog($options{log}, $vblevel, LOG_INFO1, "$NN ");
                 if( (stat($MM))[1] != (stat($NN))[1] )
                 {
                     my $sha1MM = _sha1sum($MM);
                     my $sha1NN = _sha1sum($NN);
                     if(defined $sha1MM && defined $sha1NN && $sha1MM eq $sha1NN)
                     {
-                        printLog($options{log}, "info", "Do hardlink");
+                        printLog($options{log}, $vblevel, LOG_INFO2, "Hardlink $NN");
                         #my $ret = link $MM, $NN;
                         #print "RET: $ret\n";
-                        `ln -f '$MM' '$NN'`;
+                        link( $MM, $NN );
                         $NN = undef;
                     }
                     else
                     {
-                        printLog($options{log}, "info", "Checksums does not match $sha1MM != $sha1NN.");
+                        printLog($options{log}, $vblevel, LOG_DEBUG, "Checksums does not match $sha1MM != $sha1NN.");
                     }
                 }
                 else
                 {
-                    printLog($options{log}, "info", "Files are hard linked. Nothing to do.");
+                    printLog($options{log}, $vblevel, LOG_DEBUG, "Files are hard linked. Nothing to do.");
                     $NN = undef;
                 }
             }
@@ -938,7 +938,7 @@ sub hardlink
             }
         }
     }
-    printLog($options{log}, "info", sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+    printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
 }
 
 sub productClassReport
@@ -947,8 +947,11 @@ sub productClassReport
     my ($cfg, $dbh, $nuri) = init();
     my %conf;
     
-    my $debug = 0;
-    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
+    my $vblevel = 0;
+    if(exists $options{vblevel} && defined $options{vblevel})
+    {
+        $vblevel = $options{vblevel};
+    }    
     
     if(exists $options{conf} && defined $options{conf} && ref($options{conf}) eq "HASH")
     {
@@ -956,7 +959,7 @@ sub productClassReport
     }
     else
     {
-        printLog($options{log}, "error", "Invalid configuration provided.");
+        printLog($options{log}, $vblevel, LOG_ERROR, "Invalid configuration provided.");
         return undef;
     }
    
@@ -1003,7 +1006,7 @@ sub productClassReport
             
             $statement .= ")";
             
-            printLog($options{log}, "debug", "STATEMENT: $statement") if($debug);
+            printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
             
             my $count = $dbh->selectcol_arrayref($statement);
             
@@ -1021,7 +1024,7 @@ sub productClassReport
             $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s)", 
                                   $dbh->quote($class));
             
-            printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+            printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
             
             my $count = $dbh->selectcol_arrayref($statement);
             
@@ -1044,9 +1047,12 @@ sub productSubscriptionReport
     my ($cfg, $dbh, $nuri) = init();
     my %report = ();
     
-    my $debug = 0;
-    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
-
+    my $vblevel = 0;
+    if(exists $options{vblevel} && defined $options{vblevel})
+    {
+        $vblevel = $options{vblevel};
+    }
+    
     my $statement = "";
     my $time = SMT::Utils::getDBTimestamp();
     my $calchash = {};
@@ -1059,7 +1065,7 @@ sub productSubscriptionReport
     
     $statement = "select distinct PRODUCT_CLASS, SUBNAME from Subscriptions;";
 
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
     my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
     
@@ -1086,7 +1092,7 @@ sub productSubscriptionReport
     
     $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID";
 
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
     $res = $dbh->selectall_arrayref($statement, {Slice => {}});
     my $dhash = {};
@@ -1157,7 +1163,7 @@ sub productSubscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("PRODUCT_CLASS");
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement});
     
     my @AHEAD = ( {
                    name => __("Subscriptions"),
@@ -1227,7 +1233,7 @@ sub productSubscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("PRODUCT_CLASS");
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement});
     
     my @SHEAD = ( {
                    name => __("Subscriptions"),
@@ -1307,7 +1313,7 @@ sub productSubscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("PRODUCT_CLASS");
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement});
     
     my @EHEAD = ( {
                    name => __("Subscriptions"),
@@ -1356,7 +1362,7 @@ sub productSubscriptionReport
 
     $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => \@EVALUES, 'opts' => \%EOPTIONS } : undef; 
 
-    #printLog($options{log}, "debug", "CALCHASH:".Data::Dumper->Dump([$calchash]));
+    #printLog($options{log}, $vblevel, LOG_DEBUG, "CALCHASH:".Data::Dumper->Dump([$calchash]));
    
     my $alerts = ''; 
     my $warning = ''; 
@@ -1501,9 +1507,12 @@ sub subscriptionReport
     my ($cfg, $dbh, $nuri) = init();
     my %report = ();
     
-    my $debug = 0;
-    $debug = $options{debug} if(exists $options{debug} && defined $options{debug});
-
+    my $vblevel = 0;
+    if(exists $options{vblevel} && defined $options{vblevel})
+    {
+        $vblevel = $options{vblevel};
+    }
+    
     my $statement = "";
     my $time = SMT::Utils::getDBTimestamp();
     my $calchash = {};
@@ -1515,7 +1524,7 @@ sub subscriptionReport
     
     $statement = "select distinct PRODUCT_CLASS, SUBNAME from Subscriptions;";
 
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
     my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
     
@@ -1536,7 +1545,7 @@ sub subscriptionReport
 
     $statement = "select PRODUCT_CLASS, SUM(CONSUMED) AS SUM_TOTALCONSUMED from Subscriptions group by PRODUCT_CLASS;";
 
-    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
     $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
 
@@ -1564,7 +1573,7 @@ sub subscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("SUBID");
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
     $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
     $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
@@ -1574,7 +1583,7 @@ sub subscriptionReport
     $sth->execute;
     my $assigned = $sth->fetchall_hashref("SUBID");
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
     foreach my $subid (keys %{$assigned})
     {
@@ -1613,7 +1622,7 @@ sub subscriptionReport
     my @AVALUES = ();
     my %AOPTIONS = ( 'headingText' => __("Active Subscriptions")." ($time)" );
     
-    printLog($options{log}, "debug", "Assigned status: ".Data::Dumper->Dump([$res])) if($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "Assigned status: ".Data::Dumper->Dump([$res]));
     
     foreach my $subid (keys %{$res})
     {
@@ -1653,7 +1662,7 @@ sub subscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("SUBID");
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
     $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
     $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
@@ -1664,7 +1673,7 @@ sub subscriptionReport
     $sth->execute;
     $assigned = $sth->fetchall_hashref("SUBID");
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
     foreach my $subid (keys %{$assigned})
     {
@@ -1738,7 +1747,7 @@ sub subscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("SUBID");
     
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
     
     $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
     $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and (s.SUBSTATUS = 'EXPIRED' or ";
@@ -1748,7 +1757,7 @@ sub subscriptionReport
     $sth->execute;
     $assigned = $sth->fetchall_hashref("SUBID");
     
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day") if ($debug);
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
     
     foreach my $subid (keys %{$assigned})
     {
@@ -1965,7 +1974,7 @@ sub certificateExpireCheck
    
     my $days = int( ($endtime-$currentTime) / ( 60*60*24) );
 
-    printLog($options{log}, "debug", "Check $certfile: Valid for $days days") if($options{debug});
+    printLog($options{log}, $options{vblevel}, LOG_DEBUG, "Check $certfile: Valid for $days days");
     
     return $days;
 }

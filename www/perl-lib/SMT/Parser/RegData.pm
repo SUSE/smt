@@ -16,6 +16,7 @@ sub new
     $self->{CURRENT}   = undef;
     $self->{HANDLER}   = undef;
     $self->{LOG}       = undef;
+    $self->{VBLEVEL}   = 0;
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
@@ -26,8 +27,20 @@ sub new
         $self->{LOG} = SMT::Utils::openLog();
     }
 
+    if(exists $opt{vblevel} && defined $opt{vblevel})
+    {
+        $self->{VBLEVEL} = $opt{vblevel};
+    }
+
     bless($self);
     return $self;
+}
+
+sub vblevel
+{
+    my $self = shift;
+    if (@_) { $self->{VBLEVEL} = shift }
+    return $self->{VBLEVEL};
 }
 
 # parses a xml resource
@@ -41,7 +54,7 @@ sub parse()
     
     if (!defined $file)
     {
-        printLog($self->{LOG}, "error", "Invalid filename");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid filename");
         exit 1;
     }
 
@@ -50,7 +63,7 @@ sub parse()
     $file =~ s/\|//g;
     if (!-e $file)
     {
-        printLog($self->{LOG}, "error", "File '$file' does not exist.");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File '$file' does not exist.");
         exit 1;
     }
 
@@ -70,7 +83,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            printLog($self->{LOG}, "error", "SMT::Parser::RegData Invalid XML in '$file': $@");
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::RegData Invalid XML in '$file': $@");
         }
         $fh->close;
         undef $fh;
@@ -83,7 +96,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            printLog($self->{LOG}, "error", "SMT::Parser::RegData Invalid XML in '$file': $@");
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::RegData Invalid XML in '$file': $@");
         }
     }
 }

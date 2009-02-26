@@ -64,8 +64,8 @@ sub mirrorTo()
     my $saveuri = URI->new($self->{URI});
     $saveuri->userinfo(undef);
 
-    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string ));
-    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string ));
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
 
     my $errors = $self->SUPER::mirrorTo(%options);
 
@@ -73,7 +73,7 @@ sub mirrorTo()
     
     # find out if we have old style yum repo with headers directoy
 
-    my $job = SMT::Mirror::Job->new(debug => $self->debug(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+    my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
@@ -93,7 +93,7 @@ sub mirrorTo()
     }
     elsif( $mres == 2 )
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
         print "\n";
         return 0;
     }
@@ -121,7 +121,7 @@ sub mirrorTo()
                             
                             my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
                             
-                            my $hjob = SMT::Mirror::Job->new(debug => $self->{DEBUG}, UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+                            my $hjob = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
                             $hjob->uri( $self->uri() );
                             $hjob->localBasePath( $self->localBasePath() );
                             $hjob->localRepoPath( $self->localRepoPath() );
@@ -132,12 +132,12 @@ sub mirrorTo()
                             {
                                 if( $hjob->outdated() )
                                 {
-                                    printLog($self->{LOG}, "info",  sprintf("New File [%s]", $hjob->fullLocalPath() ));
+                                    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("New File [%s]", $hjob->fullLocalPath() ));
                                     $self->{STATISTIC}->{DOWNLOAD} += 1;
                                 }
                                 else
                                 {
-                                    printLog($self->{LOG}, "debug", sprintf("U '%s'", $hjob->fullLocalPath() )) if($self->debug());
+                                    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf("U '%s'", $hjob->fullLocalPath() ));
                                     $self->{STATISTIC}->{UPTODATE} += 1;
                                 }
                                 next;
@@ -167,23 +167,23 @@ sub mirrorTo()
 
     if( $dryrun )
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished dryrun ")));
-        printLog($self->{LOG}, "info", sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished dryrun ")));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD}));
     }
     else
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Finished mirroring ")));
-        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
-        printLog($self->{LOG}, "info", sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring ")));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
                                                $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE})));
     }
     
     if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
     {
-        printLog($self->{LOG}, "info", sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
     }
-    printLog($self->{LOG}, "info", sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
-    printLog($self->{LOG}, "info", sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
     print "\n";
     
     return $self->{STATISTIC}->{ERROR};
@@ -194,7 +194,7 @@ sub clean
     my $self = shift;
     my $t0 = [gettimeofday] ;
 
-    printLog($self->{LOG}, "info", sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) );
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) );
 
     $self->SUPER::clean();
 
@@ -249,16 +249,16 @@ sub clean
         my $cnt = 0;
         foreach my $file ( keys %{$self->{CLEANLIST}} )
         {
-            printLog($self->{LOG}, "debug", "Delete: $file") if ($self->debug());
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Delete: $file");
             $cnt += unlink $file;
         
             # header do not have a checksum, so they are not in the DB
             #$self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
         }
         
-        printLog($self->{LOG}, "info", sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath()."/headers/" ));
-        printLog($self->{LOG}, "info", sprintf(__("=> Removed files : %s"), $cnt));
-        printLog($self->{LOG}, "info", sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath()."/headers/" ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Removed files : %s"), $cnt));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
         print "\n";
     }
 }

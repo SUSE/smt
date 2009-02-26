@@ -10,7 +10,7 @@ use SMT::Mirror::Job;
 use SMT::Mirror::RpmMd;
 use SMT::Utils;
 
-use Data::Dumper;
+#use Data::Dumper;
 
 =head1 NAME
 
@@ -89,7 +89,7 @@ sub new
     # starting with / upto  repo/
     $self->{LOCALBASEPATH} = undef;
     
-    $self->{DEBUG}  = 0;
+    $self->{VBLEVEL}  = 0;
     $self->{LOG}    = 0;
     $self->{DEEPVERIFY} = 0;
     $self->{DBREPLACEMENT} = undef;
@@ -106,9 +106,9 @@ sub new
     $self->{MIRRORSRC} = 1;
     $self->{NOHARDLINK} = 0;
 
-    if(exists $opt{debug} && defined $opt{debug} && $opt{debug})
+    if(exists $opt{vblevel} && defined $opt{vblevel})
     {
-        $self->{DEBUG} = 1;
+        $self->{VBLEVEL} = $opt{vblevel};
     }
 
     if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
@@ -205,18 +205,17 @@ sub dbreplacement
     return $self->{DBREPLACEMENT};
 }    
 
-=item debug([0|1])
+=item vblevel([level])
 
-Enable or disable debug mode for this job.
-Returns the current state.
+Set or get the verbose level.
 
 =cut
-sub debug
+sub vblevel
 {
     my $self = shift;
-    if (@_) { $self->{DEBUG} = shift }
+    if (@_) { $self->{VBLEVEL} = shift }
     
-    return $self->{DEBUG};
+    return $self->{VBLEVEL};
 }
 
 =item statistic()
@@ -275,8 +274,8 @@ sub mirrorTo()
     my %options = @_;
   
     if ( ! -d $self->localBasePath() )
-    { 
-        printLog($self->{LOG}, "error", $self->localBasePath()." does not exist");
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $self->localBasePath()." does not exist");
         $self->{STATISTIC}->{ERROR} += 1;
         return $self->{STATISTIC}->{ERROR};
     }
@@ -288,8 +287,8 @@ sub mirrorTo()
     my $saveuri = URI->new( $self->uri() );
     $saveuri->userinfo(undef);
     
-    printLog($self->{LOG}, "info", sprintf(__("Mirroring: %s"), $saveuri->as_string ));
-    printLog($self->{LOG}, "info", sprintf(__("Target:    %s"), $self->localBasePath() ));
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string ));
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Target:    %s"), $self->localBasePath() ));
 
     #
     # store the repoindex to a temdir. It is needed only for mirroring.
@@ -299,7 +298,7 @@ sub mirrorTo()
     my $destfile = SMT::Utils::cleanPath( $destdir, "repo/repoindex.xml" );
 
     # get the repository index
-    my $job = SMT::Mirror::Job->new(debug => $self->debug(), log => $self->{LOG}, useragent => $self->{USERAGENT},
+    my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), log => $self->{LOG}, useragent => $self->{USERAGENT},
                                     dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
     $job->uri( $self->{URI} );
     $job->localBasePath( "/" );
@@ -340,7 +339,7 @@ sub clean()
     
     if ( ! -d $self->localBasePath() )
     { 
-        printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $self->localBasePath() ));
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Destination '%s' does not exist"), $self->localBasePath() ));
         return;
     }
 
@@ -348,7 +347,7 @@ sub clean()
     
     foreach my $path (@{$res})
     {
-        my $rpmmd = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC},
+        my $rpmmd = SMT::Mirror::RpmMd->new(vblevel => $self->vblevel(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC},
                                             dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
         $rpmmd->localBasePath( $self->localBasePath() );
         $rpmmd->localRepoPath( $path );
@@ -395,7 +394,7 @@ sub mirror_handler
         &File::Path::mkpath( SMT::Utils::cleanPath( $self->localBasePath(), $data->{PATH} ) );
 
         # get the repository index
-        my $mirror = SMT::Mirror::RpmMd->new(debug => $self->debug(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC},
+        my $mirror = SMT::Mirror::RpmMd->new(vblevel => $self->vblevel(), log => $self->{LOG}, mirrorsrc => $self->{MIRRORSRC},
                                              useragent => $self->{USERAGENT}, dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
         $mirror->localBasePath( $self->localBasePath() );
         $mirror->localRepoPath( $data->{PATH} );        
