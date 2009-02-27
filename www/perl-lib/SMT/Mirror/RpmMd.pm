@@ -381,7 +381,7 @@ sub mirrorTo()
     if ( !$job->outdated() && $verifySuccess )
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if(!$isYum);
-        print "\n" if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
         return 0;
     }
     # else $outdated or verify failed; we must download repomd.xml
@@ -583,7 +583,7 @@ sub mirrorTo()
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR})) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
-    print "\n" if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
 
     return $self->{STATISTIC}->{ERROR};
 }
@@ -644,7 +644,7 @@ sub clean()
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath() )) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Removed files : %s"), $cnt)) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
-    print "\n" if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
 }
 
 =item verify([%params])

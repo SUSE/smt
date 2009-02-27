@@ -94,7 +94,7 @@ sub mirrorTo()
     elsif( $mres == 2 )
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
-        print "\n";
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
         return 0;
     }
     else
@@ -184,7 +184,7 @@ sub mirrorTo()
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-    print "\n";
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
     
     return $self->{STATISTIC}->{ERROR};
 }
@@ -259,7 +259,7 @@ sub clean
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath()."/headers/" ));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Removed files : %s"), $cnt));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-        print "\n";
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
     }
 }
 
