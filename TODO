@@ -23,13 +23,13 @@ TODO next SP or SLE11 version
 
 - use new installation.xml and test it according to bnc #377154
 
-- better mirror report. Shorter with more informations. 
-
 - In the parser we print errors if we found invalid XML syntax but ignore them. 
   We should return errors and count them in SLE11.
 
 DONE:
 =====
+
+- better mirror report. Shorter with more informations. 
 
 - move the re-try on error loops into Job::mirror() function. Then we have the
   code one time and not X times in the code.
