@@ -484,10 +484,46 @@ sub cleanPath
     return $path;
 }
 
-=item printlog($loghandle, $category, $message [, $doprint [, $dolog]])
+=item printlog($loghandle, $vblevel, $category, $message [, $doprint [, $dolog]])
 
 Print a log message. If $doprint is true the message is printed on stderr or stdout.
 If $dolog is true the message is printed into the given $loghandle. 
+
+$category describe the category of this message. $vblevel is the verbose level the user
+choose to output. The following constants exists:
+
+=over 4
+
+=item LOG_ERROR  ( 0x0001 )
+
+Error messages. ( 1 )
+
+=item LOG_WARN   ( 0x0002 )
+
+Warning message ( 2 )
+
+=item LOG_INFO1  ( 0x0004 )
+
+Informational message 1. ( 4 )
+
+=item LOG_INFO2  ( 0x0008 ) 
+
+Informational message 2. ( 8 )
+
+=item LOG_DEBUG  ( 0x0010 )
+
+Debug message. ( 16 )
+
+=item LOG_DEBUG2 ( 0x0020 )
+
+Debug message 2. ( 32 )
+
+=back
+
+These constants can be bitwise-or'd to use as verbose level to control the output.
+
+ my $vblevel = LOG_ERROR | LOG_WARN | LOG_INFO1;
+ printLog( $log, $vblevel, LOG_INFO1, "This is a information message");
 
 =cut
 sub printLog
