@@ -407,11 +407,11 @@ smt mirror
 
 smt [help|--help|-h] mirror
 
-smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug]
+smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink]
 
-smt mirror --clean [--directory path] [--dbreplfile file] [-L file] [--debug]
+smt mirror --clean [--directory path] [--dbreplfile file] [-L file] [--debug] [--verboselevel level]
 
-smt mirror --hardlink size [--directory path] [-L file] [--debug]
+smt mirror --hardlink size [--directory path] [-L file] [--debug] [--verboselevel level]
 
 =head1 DESCRIPTION
 
@@ -460,6 +460,46 @@ Write log messages to B<file>.
 
 Enable debug mode.
 
+=item --verboselevel -v <level>
+
+Set the output verbose level. The following categories exists. 
+These categories can be bitwise-or'd to use as verbose level.
+
+=over 4
+
+=item error messages
+
+Value: 0x0001 == 1
+
+=item warning messages
+
+Value: 0x0002 == 2
+
+=item info messages 1
+
+Value: 0x0004 == 4
+
+=item info messages 2
+
+Value: 0x0008 == 8
+
+=item debug messages 1
+
+Value: 0x0010 == 16
+
+=item debug messages 2
+
+Value: 0x0020 == 32
+
+=back
+
+The default verbose level is 15 (error, warning and all info messages).
+B<--debug> set the verbose level to 63.
+
+=item --nohardlink
+
+Instead of using hardlinks, copy the files.
+
 =back
 
 =head2 CLEAN
@@ -490,6 +530,10 @@ Write log messages to B<file>.
 
 Enable debug mode.
 
+=item --verboselevel -v <level>
+
+Set the output verbose level. 
+
 =back
 
 =head2 HARDLINK
@@ -515,6 +559,10 @@ Write log messages to B<file>.
 
 Enable debug mode.
 
+=item --verboselevel -v <level>
+
+Set the output verbose level. 
+
 =back
 
 =head1 EXAMPLES
@@ -522,6 +570,10 @@ Enable debug mode.
 Start the mirror procedure with logging
 
  smt mirror --logfile /var/log/smt-mirror.log
+
+start the mirror procedure with logging and a different verbose level
+
+ smt mirror -v 11 --logfile /var/log/smt-mirror.log
 
 run mirror with verifing all checksums and debug mode
 
