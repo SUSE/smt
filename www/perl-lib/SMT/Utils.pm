@@ -33,6 +33,7 @@ use constant TOK2STRING => {
                             2  => "warn",
                             4  => "info",
                             8  => "info",
+                            12 => "info", # info1 + info2
                             16 => "debug",
                             32 => "debug"
                            };
@@ -538,7 +539,8 @@ sub printLog
     if (! defined $dolog)   { $dolog   = 1;}
 
     return if( !($vblevel & $category) );
-
+    $category = ($vblevel & $category);
+    
     if($doprint)
     {
         if(TOK2STRING->{$category} eq "error")

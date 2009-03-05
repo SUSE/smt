@@ -344,7 +344,7 @@ if(!defined $dbreplfile)
             $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
         }
 
-        SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, $warning);
+        SMT::Utils::printLog($LOG, $vblevel, LOG_WARN, $warning);
     }
 }
 
@@ -357,13 +357,13 @@ if(!SMT::Utils::unLock("smt-mirror"))
 if(!$clean && !$hardlink)
 {
     # print summary only when mirroring
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, __("Summary"));
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total transfered files    : %d "), $download ));
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total linked files        : %s"), $link));
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total copied files        : %s"), $copy));
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Errors:                   : %d"), $errors));
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
+    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), __("Summary"));
+    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total transfered files    : %d "), $download ));
+    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
+    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total linked files        : %s"), $link));
+    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total copied files        : %s"), $copy));
+    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Errors:                   : %d"), $errors));
+    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
 
     #
     # does not make sense here. If a complete repo is up-to-date we do not have the number of files
