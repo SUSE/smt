@@ -99,6 +99,8 @@ sub new
     $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
     
     $self->{STATISTIC}->{DOWNLOAD} = 0;
+    $self->{STATISTIC}->{LINK} = 0;
+    $self->{STATISTIC}->{COPY} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
@@ -251,6 +253,48 @@ sub statistic
     return $self->{STATISTIC};
 }
 
+sub job2statistic
+{
+    my $self = shift;
+    my $job  = shift || return;
+
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
+    if( $job->wasError() )
+    {
+        $self->{STATISTIC}->{ERROR} += 1;
+    }
+    elsif( $job->wasUpToDate() )
+    {
+        $self->{STATISTIC}->{UPTODATE} += 1;
+    }
+    elsif( $job->wasDownload() )
+    {
+        $self->{STATISTIC}->{DOWNLOAD} += 1;
+    }
+    elsif( $job->wasLink() )
+    {
+        $self->{STATISTIC}->{LINK} += 1;
+    }
+    elsif( $job->wasCopy() )
+    {
+        $self->{STATISTIC}->{COPY} += 1;
+    }
+} 
+
+sub statistic2statistic
+{
+    my $self = shift;
+    my $statistic  = shift || return;
+    
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($statistic->{DOWNLOAD_SIZE});
+    $self->{STATISTIC}->{DOWNLOAD} += int($statistic->{DOWNLOAD});
+    $self->{STATISTIC}->{LINK} += int($statistic->{LINK});
+    $self->{STATISTIC}->{COPY} += int($statistic->{COPY});
+    $self->{STATISTIC}->{ERROR} += int($statistic->{ERROR});
+    $self->{STATISTIC}->{UPTODATE} += int($statistic->{UPTODATE});
+}
+
+
 =item mirror()
 
 Iterate over all catalogs which are enabled for mirroring and start the mirror process for them. 
@@ -306,15 +350,10 @@ sub mirror()
     $job->localFileLocation( "/repo/repoindex.xml" );
     
     # get the file
-    if($job->mirror() == 1)
+    my $mres = $job->mirror();
+    $self->job2statistic($job);
+    if( $mres != 1 )
     {
-        $self->{STATISTIC}->{ERROR} +=1;
-    }
-    else
-    {
-        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
-        $self->{STATISTIC}->{DOWNLOAD} += 1;
-    
         # changing the MIRRORABLE flag is done by ncc-sync, no need to do it here too
         # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     
@@ -403,12 +442,7 @@ sub mirror_handler
 
         $mirror->mirror( dryrun => $dryrun );
 
-        my $s = $mirror->statistic();
-        
-        $self->{STATISTIC}->{DOWNLOAD} += $s->{DOWNLOAD};
-        $self->{STATISTIC}->{UPTODATE} += $s->{UPTODATE};
-        $self->{STATISTIC}->{ERROR}    += $s->{ERROR};
-        $self->{STATISTIC}->{DOWNLOAD_SIZE} += $s->{DOWNLOAD_SIZE};
+        $self->statistic2statistic( $mirror->statistic() );
     }
 }
 

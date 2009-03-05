@@ -110,7 +110,17 @@ sub new
     $self->{modifiedAt} = undef;
     
     $self->{DOWNLOAD_SIZE} = 0;
-
+    
+    #
+    # 0 unknown
+    # 1 error
+    # 2 up-to-date
+    # 3 download
+    # 4 link
+    # 5 copy
+    #
+    $self->{DOWNLOAD_TYPE} = 0;
+    
     $self->{NOHARDLINK} = 0;
 
     if(exists $opt{vblevel} && defined $opt{vblevel})
@@ -322,6 +332,44 @@ sub downloadSize
     return $self->{DOWNLOAD_SIZE};
 }
 
+
+sub wasUnknown()
+{
+    my $self = shift;
+    return ($self->{DOWNLOAD_TYPE} == 0);
+}
+
+sub wasError()
+{
+    my $self = shift;
+    return ($self->{DOWNLOAD_TYPE} == 1);
+}
+
+sub wasUpToDate()
+{
+    my $self = shift;
+    return ($self->{DOWNLOAD_TYPE} == 2);
+}
+
+sub wasDownload()
+{
+    my $self = shift;
+    return ($self->{DOWNLOAD_TYPE} == 3);
+}
+
+sub wasLink()
+{
+    my $self = shift;
+    return ($self->{DOWNLOAD_TYPE} == 4);
+}
+
+sub wasCopy()
+{
+    my $self = shift;
+    return ($self->{DOWNLOAD_TYPE} == 5);
+}
+
+
 =item vblevel([level])
 
 Set or get the verbose level.
@@ -448,6 +496,7 @@ sub mirror
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf("U %s", $self->fullLocalPath() ));
         # no need to mirror
+        $self->{DOWNLOAD_TYPE} = 2;
         return 2;
     }
     
@@ -555,9 +604,11 @@ sub mirror
     if($errorcode != 0)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg, 1, 0);
+        $self->{DOWNLOAD_TYPE} = 1;
         return $errorcode;
     }
     
+    $self->{DOWNLOAD_TYPE} = 3;    
     return 0;
 }
 
@@ -707,10 +758,12 @@ sub copyFromLocalIfAvailable
         if($success)
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("L %s", $self->fullLocalPath()));
+            $self->{DOWNLOAD_TYPE} = 4;
         }
         else
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("C %s", $self->fullLocalPath()));
+            $self->{DOWNLOAD_TYPE} = 5;
         }
         $self->updateDB();
         return 1;

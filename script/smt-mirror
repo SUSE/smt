@@ -25,7 +25,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 #use Data::Dumper;
 
 my $debug    = 0;
-my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
+my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 
 my $clean    = 0;
 my $hardlink = 0;
@@ -41,6 +41,8 @@ my $help     = 0;
 my $logfile = "/dev/null";
 
 my $download = 0;
+my $link = 0;
+my $copy = 0;
 my $errors = 0;
 my $size = 0;
 
@@ -290,6 +292,8 @@ foreach my $id (keys %{$hash})
 
             my $s = $zyppMirror->statistic();
             $download += $s->{DOWNLOAD};
+            $link     += $s->{LINK};
+            $copy     += $s->{COPY};
             $errors   += $s->{ERROR};
             $size     += $s->{DOWNLOAD_SIZE};
         }
@@ -318,6 +322,8 @@ else
 
     my $s = $mirror->statistic();
     $download += $s->{DOWNLOAD};
+    $link     += $s->{LINK};
+    $copy     += $s->{COPY};
     $errors   += $s->{ERROR};
     $size     += $s->{DOWNLOAD_SIZE};
 }
@@ -354,8 +360,16 @@ if(!$clean && !$hardlink)
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, __("Summary"));
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total transfered files    : %d "), $download ));
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total linked files        : %s"), $link));
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total copied files        : %s"), $copy));
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Errors:                   : %d"), $errors));
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
+
+    #
+    # does not make sense here. If a complete repo is up-to-date we do not have the number of files
+    #
+    #SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Files up to date          : %s"), $uptodate));
+
 }
 
 exit 0;

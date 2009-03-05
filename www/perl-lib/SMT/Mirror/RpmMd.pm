@@ -105,6 +105,8 @@ sub new
     $self->{CLEANLIST} = {};
 
     $self->{STATISTIC}->{DOWNLOAD} = 0;
+    $self->{STATISTIC}->{LINK} = 0;
+    $self->{STATISTIC}->{COPY} = 0;
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
@@ -286,6 +288,34 @@ sub vblevel
 }
 
 
+sub job2statistic
+{
+    my $self = shift;
+    my $job  = shift || return;
+
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
+    if( $job->wasError() )
+    {
+        $self->{STATISTIC}->{ERROR} += 1;
+    }
+    elsif( $job->wasUpToDate() )
+    {
+        $self->{STATISTIC}->{UPTODATE} += 1;
+    }
+    elsif( $job->wasDownload() )
+    {
+        $self->{STATISTIC}->{DOWNLOAD} += 1;
+    }
+    elsif( $job->wasLink() )
+    {
+        $self->{STATISTIC}->{LINK} += 1;
+    }
+    elsif( $job->wasCopy() )
+    {
+        $self->{STATISTIC}->{COPY} += 1;
+    }
+} 
+
 =item mirror()
 
  Start the mirror process.
@@ -316,6 +346,8 @@ sub mirror()
     $self->{STATISTIC}->{ERROR}         = 0;
     $self->{STATISTIC}->{UPTODATE}      = 0;
     $self->{STATISTIC}->{DOWNLOAD}      = 0;
+    $self->{STATISTIC}->{LINK}          = 0;
+    $self->{STATISTIC}->{COPY}          = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
     
     my $dest = $self->fullLocalRepoPath();
@@ -369,6 +401,8 @@ sub mirror()
         $self->{STATISTIC}->{ERROR}    = 0;
         $self->{STATISTIC}->{UPTODATE} = 0;
         $self->{STATISTIC}->{DOWNLOAD} = 0;
+        $self->{STATISTIC}->{LINK}     = 0;
+        $self->{STATISTIC}->{COPY}     = 0;
         $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
         
         if ( ! $dryrun )
@@ -439,22 +473,11 @@ sub mirror()
     $job->localFileLocation($resource);
     
     my $result = $job->mirror();
-    $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
-    if( $result == 1 )
+    $self->job2statistic($job);
+    
+    if( $result == 0 && $dryrun )
     {
-        $self->{STATISTIC}->{ERROR} += 1;
-    }
-    elsif( $result == 2 )
-    {
-        $self->{STATISTIC}->{UPTODATE} += 1;
-    }
-    else
-    {
-        if( $dryrun )
-        {
-            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("New File [%s]", $job->fillLocalFile()) );
-        }
-        $self->{STATISTIC}->{DOWNLOAD} += 1;
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("N %s", $job->fillLocalFile()) );
     }
 
     $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
@@ -512,26 +535,14 @@ sub mirror()
             #
             # we have here only outdated files, so dryrun can display them all as "New File"
             #
-            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("New File [%s]", $self->{JOBS}->{$r}->fullLocalPath() ));
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("N %s", $self->{JOBS}->{$r}->fullLocalPath() ));
             $self->{STATISTIC}->{DOWNLOAD} += 1;
             
             next;
         }
         
         my $mres = $self->{JOBS}->{$r}->mirror();
-        $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($self->{JOBS}->{$r}->downloadSize());
-        if( $mres == 1 )
-        {
-            $self->{STATISTIC}->{ERROR} += 1;
-        }
-        elsif( $mres == 2 ) # up-to-date should never happen
-        {
-            $self->{STATISTIC}->{UPTODATE} += 1;
-        }
-        else
-        {
-            $self->{STATISTIC}->{DOWNLOAD} += 1;
-        }
+        $self->job2statistic($self->{JOBS}->{$r});
     }
     
     # if no error happens copy .repodata to repodata
@@ -575,12 +586,11 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
                                                $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
-    }
-    
-    if( int ($self->{STATISTIC}->{UPTODATE}) > 0)
-    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total linked files          : %s"), $self->{STATISTIC}->{LINK})) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total copied files          : %s"), $self->{STATISTIC}->{COPY})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE})) if(!$isYum);
     }
+    
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR})) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
@@ -865,37 +875,13 @@ sub download_handler
 
             # mirror it first, so we can parse it
             my $mres = $job->mirror();
-            $self->{DOWNLOAD_SIZE} += int($job->downloadSize());
-            if( $mres == 1 )
+            if( $mres == 2 && $self->deepverify() && !$job->verify() ) # up-to-date
             {
-                $self->{STATISTIC}->{ERROR} += 1;
+                # remove broken file and download it again
+                unlink($job->fullLocalPath());
+                $mres = $job->mirror();
             }
-            elsif( $mres == 2 ) # up-to-date
-            {
-                if($self->deepverify() && !$job->verify())
-                {
-                    # remove broken file and download it again
-                    unlink($job->fullLocalPath());
-                    $mres = $job->mirror();
-                    if($mres = 0)
-                    {
-                        $self->{STATISTIC}->{DOWNLOAD} += 1;
-                    }
-                    else
-                    {
-                        # error
-                        $self->{STATISTIC}->{ERROR} += 1;
-                    }
-                }
-                else
-                {
-                    $self->{STATISTIC}->{UPTODATE} += 1;
-                }
-            }
-            else
-            {
-                $self->{STATISTIC}->{DOWNLOAD} += 1;
-            }
+            $self->job2statistic($job);
         }
         else
         {
