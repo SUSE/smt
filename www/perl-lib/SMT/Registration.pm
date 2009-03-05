@@ -83,14 +83,19 @@ sub register
     my $r          = shift;
     my $hargs      = shift;
 
-    my $usetestenv = 0;
+    my $namespace  = "";
     
     $r->log->info("register called");
 
+    # to be compatible with SMT10
     if(exists $hargs->{testenv} && $hargs->{testenv})
     {
-        $usetestenv = 1;
+        $namespace = "testing";
     }
+    if(exists $hargs->{namespace} && defined $hargs->{namespace} && $hargs->{namespace} ne "")
+    {
+        $namespace = $hargs->{namespace};
+    }    
     
     my $data = read_post($r);
     my $dbh = SMT::Utils::db_connect();
@@ -167,7 +172,7 @@ sub register
 
         # insert new registration data
 
-        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot, $target);
+        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot, $namespace, $target);
 
         # get the catalogs
 
@@ -175,7 +180,7 @@ sub register
 
         # send new <zmdconfig>
 
-        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $usetestenv);
+        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $namespace);
 
         $r->log->info("Return ZMDCONFIG: $zmdconfig");
         
@@ -420,11 +425,12 @@ sub mergeDocuments
 
 sub insertRegistration
 {
-    my $r       = shift;
-    my $dbh     = shift;
-    my $regdata = shift;
-    my $target  = shift || '';
-    
+    my $r         = shift;
+    my $dbh       = shift;
+    my $regdata   = shift;
+    my $namespace = shift || '';
+    my $target    = shift || '';
+
     my $cnt     = 0;
     my $existingpids = {};
     my $regtimestring = "";
@@ -637,76 +643,42 @@ sub insertRegistration
     # update Clients table
     #
     my $aff = 0;
-    if($hostname ne "")
+    eval
     {
-        eval
-        {
-            my $sth = $dbh->prepare("UPDATE Clients SET HOSTNAME=?, TARGET=?, LASTCONTACT=? WHERE GUID=?");
-            $sth->bind_param(1, $hostname);
-            $sth->bind_param(2, $target);
-            $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
-            $sth->bind_param(4, $regdata->{register}->{guid});
-            $aff = $sth->execute;
+        my $sth = $dbh->prepare("UPDATE Clients SET HOSTNAME=?, TARGET=?, LASTCONTACT=?, NAMESPACE=?, SECRET=? WHERE GUID=?");
+        $sth->bind_param(1, $hostname);
+        $sth->bind_param(2, $target);
+        $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
+        $sth->bind_param(4, $namespace );
+        $sth->bind_param(5, $regdata->{register}->{secret});
+        $sth->bind_param(6, $regdata->{register}->{guid});
+        $aff = $sth->execute;
             
-            $r->log->info("STATEMENT: ".$sth->{Statement});
-        };
-        if($@)
-        {
-            $r->log_error("DBERROR: ".$dbh->errstr);
-            $aff = 0;
-        }
-        if($aff == 0)
-        {
-            # New registration; we need an insert
-            $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET) VALUES (%s, %s, %s)", 
-                                 $dbh->quote($regdata->{register}->{guid}),
-                                 $dbh->quote($hostname),
-                                 $dbh->quote($target));
-            $r->log->info("STATEMENT: $statement");
-            eval
-            {
-                $aff = $dbh->do($statement);
-            };
-            if($@)
-            {
-                $r->log_error("DBERROR: ".$dbh->errstr);
-                $aff = 0;
-            }
-        }
+        $r->log->info("STATEMENT: ".$sth->{Statement});
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+        $aff = 0;
     }
-    else
+    if ($aff == 0)
     {
+        # New registration; we need an insert
+        $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET) VALUES (%s, %s, %s, %s, %s)", 
+                             $dbh->quote($regdata->{register}->{guid}),
+                             $dbh->quote($hostname),
+                             $dbh->quote($target),
+                             $dbh->quote($namespace),
+                             $dbh->quote($regdata->{register}->{guid}));
+        $r->log->info("STATEMENT: $statement");
         eval
         {
-            my $sth = $dbh->prepare("UPDATE Clients SET TARGET=?, LASTCONTACT=? WHERE GUID=?");
-            $sth->bind_param(1, $target);
-            $sth->bind_param(2, $regtimestring, SQL_TIMESTAMP);
-            $sth->bind_param(3, $regdata->{register}->{guid});
-            $aff = $sth->execute;
-            
-            $r->log->info("STATEMENT: ".$sth->{Statement});
+            $aff = $dbh->do($statement);
         };
-        if($@)
+        if ($@)
         {
             $r->log_error("DBERROR: ".$dbh->errstr);
             $aff = 0;
-        }
-        if($aff == 0)
-        {
-            # New registration; we need an insert
-            $statement = sprintf("INSERT INTO Clients (GUID, TARGET) VALUES (%s, %s)", 
-                                 $dbh->quote($regdata->{register}->{guid}),
-                                 $dbh->quote($target));
-            $r->log->info("STATEMENT: $statement");
-            eval
-            {
-                $aff = $dbh->do($statement);
-            };
-            if($@)
-            {
-                $r->log_error("DBERROR: ".$dbh->errstr);
-                $aff = 0;
-            }
         }
     }
     
@@ -806,7 +778,7 @@ sub buildZmdConfig
     my $r          = shift;
     my $guid       = shift;
     my $catalogs   = shift;
-    my $usetestenv = shift || 0;
+    my $namespace  = shift || '';
     
     my $cfg = undef;
 
@@ -828,9 +800,9 @@ sub buildZmdConfig
         die "SMT server is missconfigured. Please contact your administrator.";
     }
     
-    if($usetestenv)
+    if($namespace ne "")
     {
-        $LocalNUUrl    .= "/testing/";
+        $LocalNUUrl    .= "/$namespace/";
     }
 
     my $nuCatCount = 0;

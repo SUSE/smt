@@ -68,18 +68,26 @@ sub handler {
         return Apache2::Const::SERVER_ERROR;
     }
     
-    # FIXME: we should move "secret" into the client table and do the check there
-    my $statement = sprintf("SELECT GUID from MachineData where GUID = %s and KEYNAME = 'secret' and VALUE = %s",
+    my $statement = sprintf("SELECT SECRET from Clients where GUID = %s and SECRET = %s",
                             $dbh->quote($r->user()), $dbh->quote($password));
-    my $existuser = $dbh->selectcol_arrayref($statement);
-
-    if( !exists $existuser->[0] || !defined $existuser->[0] || $existuser->[0] ne $r->user() )
+    my $existsecret = $dbh->selectcol_arrayref($statement);
+    
+    if( !exists $existsecret->[0] || !defined $existsecret->[0] || $existsecret->[0] eq "" )
     {
-        $r->log->error( "Invalid user: ".$r->user() );
-        $r->note_basic_auth_failure;
-        return Apache2::Const::AUTH_REQUIRED;
-    }
+                            
+        # Fallback to MachineData: secret in the clients table is very new and might be empty
+        $statement = sprintf("SELECT GUID from MachineData where GUID = %s and KEYNAME = 'secret' and VALUE = %s",
+                             $dbh->quote($r->user()), $dbh->quote($password));
+        my $existuser = $dbh->selectcol_arrayref($statement);
 
+        if( !exists $existuser->[0] || !defined $existuser->[0] || $existuser->[0] ne $r->user() )
+        {
+            $r->log->error( "Invalid user: ".$r->user() );
+            $r->note_basic_auth_failure;
+            return Apache2::Const::AUTH_REQUIRED;
+        }
+    }
+    
     if($requiredAuth eq "lazy" )
     {
         $r->log->info("Access granted");
@@ -91,29 +99,43 @@ sub handler {
     # access to the requested URI
     #
 
-    my $targetselect = sprintf("select TARGET from Clients c where c.GUID=%s", $dbh->quote($r->user()) );
-    my $target = $dbh->selectcol_arrayref($targetselect);
+    $statement = sprintf("select GUID, TARGET, NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($r->user()) );
+    my $cdata = $dbh->selectall_hashref($statement, "GUID");
 
     $statement  = " select c.LOCALPATH from Catalogs c, ProductCatalogs pc, Registration r ";
     $statement .= sprintf(" where r.GUID=%s ", $dbh->quote($r->user()) );
     $statement .= " and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y' ";
     # add a filter by target architecture if it is defined
-    if (defined $target && defined ${$target}[0] )
+    if (exists $cdata->{$r->user()}->{TARGET} && defined $cdata->{$r->user()}->{TARGET} &&
+        $cdata->{$r->user()}->{TARGET} ne "" )
     {
-        $statement .= sprintf(" and c.TARGET=%s", $dbh->quote( ${$target}[0] ));
+        $statement .= sprintf(" and c.TARGET=%s", $dbh->quote( $cdata->{$r->user()}->{TARGET} ));
     }
 
     # evil things like "dir/../../otherdir" are solved by apache.
     # we get here the resulting path
     # we only need to strip out "somedir////nextdir"
-    $requestedPath = SMT::Utils::cleanPath($requestedPath);
+    $requestedPath = SMT::Utils::cleanPath("/", $requestedPath);
+
+    $r->log->info($r->user()." requests path '$requestedPath'");
 
     my $localRepoPath = $dbh->selectall_hashref($statement, 'LOCALPATH');
     foreach my $path ( keys %{$localRepoPath} )
     {
+        if (exists $cdata->{$r->user()}->{NAMESPACE} && defined $cdata->{$r->user()}->{NAMESPACE} &&
+            $cdata->{$r->user()}->{NAMESPACE} ne "" )
+        {
+            $path = SMT::Utils::cleanPath("/", $cdata->{$r->user()}->{NAMESPACE}, "repo", $path);
+        }
+        else
+        {
+            $path = SMT::Utils::cleanPath("/repo", $path);
+        }
+        
+        
         $r->log->info($r->user()." has access to '$path'");
         
-        if( index($requestedPath, $path) >= 0 )
+        if( index($requestedPath, $path) == 0 )
         {
             $r->log->info("Access granted");
             return Apache2::Const::OK;

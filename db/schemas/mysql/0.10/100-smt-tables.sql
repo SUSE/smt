@@ -10,7 +10,6 @@ drop table if exists Clients;
 drop table if exists Subscriptions;
 drop table if exists ClientSubscriptions;
 
--- this table is dropped
 drop table if exists RepositoryContentData;
 
 
@@ -18,7 +17,9 @@ create table Clients(GUID        CHAR(50) PRIMARY KEY,
                      HOSTNAME    VARCHAR(100) DEFAULT '',
                      TARGET      VARCHAR(100),
                      DESCRIPTION VARCHAR(500) DEFAULT '',
-                     LASTCONTACT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                     LASTCONTACT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                     NAMESPACE   VARCHAR(300) NOT NULL DEFAULT '',
+                     SECRET      CHAR(50) NOT NULL DEFAULT ''
                     );
 
 
