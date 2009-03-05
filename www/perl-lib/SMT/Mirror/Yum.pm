@@ -24,7 +24,7 @@ SMT::Mirror::Yum - mirroring of a yum metadata repository
   $mirror->localBaseDir("/srv/www/htdocs/repo/");
   $mirror->localRepoDir("RPMMD/yum/");
 
-  $mirror->mirrorTo();
+  $mirror->mirror();
 
   $mirror->clean();
 
@@ -49,7 +49,7 @@ sub new
 
 
 # mirrors the repository to destination
-sub mirrorTo()
+sub mirror()
 {
     my $self = shift;
     my %options = @_;
@@ -67,7 +67,7 @@ sub mirrorTo()
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string ));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
 
-    my $errors = $self->SUPER::mirrorTo(%options);
+    my $errors = $self->SUPER::mirror(%options);
 
     return $errors if( $errors );
     

@@ -286,7 +286,7 @@ foreach my $id (keys %{$hash})
         {
             $zyppMirror->uri( $zuri->as_string );
             $zyppMirror->deepverify($deepverify);
-            $zyppMirror->mirrorTo( dryrun => $dryrun );
+            $zyppMirror->mirror( dryrun => $dryrun );
 
             my $s = $zyppMirror->statistic();
             $download += $s->{DOWNLOAD};
@@ -314,7 +314,7 @@ else
     }
     
     $mirror->uri( $uri->as_string );
-    $mirror->mirrorTo( dryrun => $dryrun );
+    $mirror->mirror( dryrun => $dryrun );
 
     my $s = $mirror->statistic();
     $download += $s->{DOWNLOAD};

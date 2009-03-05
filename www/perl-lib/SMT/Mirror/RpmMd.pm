@@ -27,7 +27,7 @@ SMT::Mirror::RpmMd - mirroring of a rpm metadata repository
   $mirror->localBaseDir("/srv/www/htdocs/repo/");
   $mirror->localRepoDir("RPMMD/10.3/");
 
-  $mirror->mirrorTo();
+  $mirror->mirror();
 
   $mirror->clean();
 
@@ -286,7 +286,7 @@ sub vblevel
 }
 
 
-=item mirrorTo()
+=item mirror()
 
  Start the mirror process.
  Returns the count of errors.
@@ -302,7 +302,7 @@ containing the metadata is removed.
 =back
 
 =cut
-sub mirrorTo()
+sub mirror()
 {
     my $self = shift;
     my %options = @_;

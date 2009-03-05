@@ -23,7 +23,7 @@ SMT::Mirror::NU - mirroring of a Novell Update repository
   $mirror = SMT::Mirror::NU->new();
   $mirror->uri( "https://nu.novell.com");
   $mirror->localBaseDir("/srv/www/htdocs/repo/");
-  $mirror->mirrorTo();
+  $mirror->mirror();
 
 =head1 DESCRIPTION
 
@@ -251,7 +251,7 @@ sub statistic
     return $self->{STATISTIC};
 }
 
-=item mirrorTo()
+=item mirror()
 
 Iterate over all catalogs which are enabled for mirroring and start the mirror process for them. 
 Returns the number of errors.
@@ -268,7 +268,7 @@ containing the metadata is removed.
 
 =cut
 
-sub mirrorTo()
+sub mirror()
 {
     my $self = shift;
     my %options = @_;
@@ -401,7 +401,7 @@ sub mirror_handler
         $mirror->uri( $catalogURI );
         $mirror->deepverify( $self->deepverify() );
 
-        $mirror->mirrorTo( dryrun => $dryrun );
+        $mirror->mirror( dryrun => $dryrun );
 
         my $s = $mirror->statistic();
         
