@@ -15,6 +15,7 @@ use File::Path;
 use URI;
 use Getopt::Long;
 use File::Basename;
+use File::Temp;
 use Time::HiRes qw(gettimeofday tv_interval);
 
 use Locale::gettext ();
@@ -39,6 +40,8 @@ my $LocalBasePath = "";
 
 my $help     = 0;
 my $logfile = "/dev/null";
+my $mail     = 0;
+my $mailtempfile = undef;
 
 my $download = 0;
 my $link = 0;
@@ -58,7 +61,8 @@ my $result = GetOptions ("debug|d"      => \$debug,
                          "nohardlink"   => \$nohardlink,
                          "dbreplfile=s" => \$dbreplfile,
                          "logfile|L=s"  => \$logfile,
-                         "help|h"       => \$help
+                         "help|h"       => \$help,
+                         "mail|m"       => \$mail
                         );
 
 
@@ -95,6 +99,16 @@ if($help)
 my $mirrorStartTime = [gettimeofday] ;
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
+
+
+if($mail)
+{
+    my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+    $mailtempfile = "$dir/mail";
+    open(STDOUT, "> $mailtempfile") or die "Cannot open file:$!";
+    open(STDERR, ">&STDOUT") or die "Cannot dup:$!";
+}
+
 
 # get a lock
 
@@ -354,23 +368,59 @@ if(!SMT::Utils::unLock("smt-mirror"))
     exit 1;
 }
 
+
 if(!$clean && !$hardlink)
 {
     # print summary only when mirroring
-    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), __("Summary"));
-    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total transfered files    : %d "), $download ));
-    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size)));
-    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total linked files        : %s"), $link));
-    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total copied files        : %s"), $copy));
-    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Errors:                   : %d"), $errors));
-    SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime))));
-
+    my @summary = ();
+    
+    push @summary, __("Summary");
+    push @summary, sprintf(__("Total transfered files    : %d "), $download );
+    push @summary, sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size));
+    push @summary, sprintf(__("Total linked files        : %s"), $link);
+    push @summary, sprintf(__("Total copied files        : %s"), $copy);
+    push @summary, sprintf(__("Errors:                   : %d"), $errors);
+    push @summary, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime)));
+    
+    if(!$mail)
+    {
+        foreach my $str (@summary)
+        {
+            SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), $str);
+        }
+    }
+    else
+    {
+        my $body = "";
+        foreach my $str (@summary)
+        {
+            SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), $str, 0, 1);
+            $body .= $str."\n";
+        }
+        $body .= "\n";
+        
+        close (STDOUT);
+        
+        open(MAIL, "< $mailtempfile") and do
+        {
+            while(<MAIL>)
+            {
+                $body .= $_;
+            }
+            close MAIL;
+        };
+        my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+        my $subject = "SMT Mirror Report $datestring -- $errors Errors";
+        SMT::Utils::sendMailToAdmins($subject, $body);
+    }
+    
     #
     # does not make sense here. If a complete repo is up-to-date we do not have the number of files
     #
     #SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Files up to date          : %s"), $uptodate));
 
 }
+
 
 exit 0;
 
