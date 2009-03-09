@@ -61,8 +61,8 @@ my $result = GetOptions ("debug|d"      => \$debug,
                          "nohardlink"   => \$nohardlink,
                          "dbreplfile=s" => \$dbreplfile,
                          "logfile|L=s"  => \$logfile,
-                         "help|h"       => \$help,
-                         "mail|m"       => \$mail
+                         "mail|m"       => \$mail,
+                         "help|h"       => \$help
                         );
 
 
@@ -401,7 +401,7 @@ if(!$clean && !$hardlink)
         }
         $body .= "\n";
         
-        close (STDOUT);
+        close ($mailtempfile);
         
         open(MAIL, "< $mailtempfile") and do
         {
