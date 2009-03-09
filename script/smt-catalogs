@@ -9,7 +9,7 @@ use SMT::Utils;
 use Text::ASCIITable;
 
 use Locale::gettext ();
-use POSIX ();     # Needed for setlocale()
+use POSIX ();                   # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -24,32 +24,32 @@ my $help;
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
-         'enable-mirror|e'         => \$enable,
-         'enable-by-prod|p=s'        => \$enableByProduct,
-         'disable-mirror|d'        => \$disable,
-         'only-mirrorable|m'         => \$mirrorable,
-         'only-enabled|o'        => \$domirror,
-         'verbose|v'        => \$verbose,
-         'help|h' => \$help
-);
+                          'enable-mirror|e'      => \$enable,
+                          'enable-by-prod|p=s'   => \$enableByProduct,
+                          'disable-mirror|d'     => \$disable,
+                          'only-mirrorable|m'    => \$mirrorable,
+                          'only-enabled|o'       => \$domirror,
+                          'verbose|v'            => \$verbose,
+                          'help|h'               => \$help
+                         );
 
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
-  print "   --enable-mirror   (-e) :     " . __("enable catalog mirorring for \$catalog\n");
-  print "   --enable-by-prod  (-p) arg : " . __("enable catalog mirroring by giving product data\n");
-  print "                                Product[,Version[,Architecture[,Release]]]\n";
-  print "                                (call smt list-products to get a list of known products)\n";
-  print "   --disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
-  print "   --only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
-  print "   --only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
-  print "   --verbose         (-v) :     " . __("show detailed catalog information\n");
-  print "   --help            (-v) :     " . __("show this help\n");
-  exit 0;
+    print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
+    print "   --enable-mirror   (-e) :     " . __("enable catalog mirorring for \$catalog\n");
+    print "   --enable-by-prod  (-p) arg : " . __("enable catalog mirroring by giving product data\n");
+    print "                                Product[,Version[,Architecture[,Release]]]\n";
+    print "                                (call smt list-products to get a list of known products)\n";
+    print "   --disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
+    print "   --only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
+    print "   --only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
+    print "   --verbose         (-v) :     " . __("show detailed catalog information\n");
+    print "   --help            (-v) :     " . __("show this help\n");
+    exit 0;
 }
 
-if( $enableByProduct ne "" )
+if ( $enableByProduct ne "" )
 {
     my $ret = SMT::CLI::enableCatalogsByProduct( verbose => $verbose, prodStr => $enableByProduct);
     exit $ret;
@@ -59,18 +59,18 @@ my $name = shift(@ARGV);
 
 if ( defined $disable && defined $enable )
 {
-  die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
+    die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
 }
 
 my $bool;
 if ( defined $disable )
 {
-  $bool = ( $disable == 1 ? 0 : 1 );
+    $bool = ( $disable == 1 ? 0 : 1 );
 }
 
 if ( defined $enable )
 {
-  $bool = ( $enable == 1 ? 1 : 0 );
+    $bool = ( $enable == 1 ? 1 : 0 );
 }
 
 my $target = shift(@ARGV);
@@ -85,31 +85,31 @@ $sql = $sql . " where 1";
 
 if ( defined($mirrorable) )
 {
-      if (  $mirrorable == 1 )
-      {
+    if (  $mirrorable == 1 )
+    {
         $sql = $sql . " and MIRRORABLE='Y'";
-      }
-      else
-      {
+    }
+    else
+    {
         $sql = $sql . " and MIRRORABLE='N'";
-      }
+    }
 }
 
 if ( defined($domirror) )
 {
-      if (  $domirror == 1 )
-      {
+    if (  $domirror == 1 )
+    {
         $sql = $sql . " and DOMIRROR='Y'";
-      }
-      else
-      {
+    }
+    else
+    {
         $sql = $sql . " and DOMIRROR='N'";
-      }
+    }
 }
 
 if (defined $name && $name ne "")
 {
-  $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($name) );
+    $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($name) );
 }
 # if target was given, limit the search even more
 if (defined $target && $target ne "")
@@ -129,68 +129,80 @@ $t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("D
 
 while ( my $v = $sth->fetchrow_hashref() )
 {
-  $count++;
-  my $catId = $v->{CATALOGID};
-  push(@idnumbers, $catId);
-  my $catName = $v->{NAME};
-  my $catTarget = $v->{TARGET};
-  my $catType = $v->{CATALOGTYPE};
-  my $catDesc = $v->{DESCRIPTION};
-  my $catMA   = $v->{MIRRORABLE};
-  $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
-              $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")));
+    $count++;
+    my $catId = $v->{CATALOGID};
+    push(@idnumbers, $catId);
+    my $catName = $v->{NAME};
+    my $catTarget = $v->{TARGET};
+    my $catType = $v->{CATALOGTYPE};
+    my $catDesc = $v->{DESCRIPTION};
+    my $catMA   = $v->{MIRRORABLE};
+    $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
+                $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")));
   
-  if (defined($verbose))
-  {
-      print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
-      print "          (" . $v->{DESCRIPTION} .")\n";
-      print "          " . $v->{EXTURL} ."\n";
-      print "          " . $v->{LOCALPATH} ."\n";
-      print "          CatalogID: " . $v->{CATALOGID} ."\n";
-  }
-
+    if (defined($verbose))
+    {
+        my $st = sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.ARCH, p.REL, pc.OPTIONAL from Products p, ProductCatalogs pc where pc.CATALOGID=%s and p.PRODUCTDATAID = pc.PRODUCTDATAID order by p.PRODUCT, p.VERSION, p.ARCH, p.REL",
+                         $dbh->quote($catId));
+        my $products = $dbh->selectall_arrayref($st,{Slice=>{}} );
+      
+        print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
+        print "          (" . $v->{DESCRIPTION} .")\n";
+        print "          " . $v->{EXTURL} ."\n";
+        print "          " . $v->{LOCALPATH} ."\n";
+        print "          CatalogID: " . $v->{CATALOGID} ."\n";
+        foreach my $h (@{$products})
+        {
+            my $product = (defined $h->{PRODUCT}?$h->{PRODUCT}:"");
+            my $version = (defined $h->{VERSION}?$h->{VERSION}:"");
+            my $arch    = (defined $h->{ARCH}?$h->{ARCH}:"");
+            my $rel     = (defined $h->{REL}?$h->{REL}:"");
+                           
+            print "          Assigned to product: $product $version $arch $rel\n";
+        }
+    }
 }
 
 print $t->draw() if not defined($verbose);
 
 if ( (not defined $disable) && (not defined $enable) )
 {
-  # not do any action, display was enough
-  exit 0;
+    # not do any action, display was enough
+    exit 0;
 }
 
 if ( $count == 0 )
 {
-  die __(sprintf("no catalog named %s\n", $name));
+    die __(sprintf("no catalog named %s\n", $name));
 }
 elsif ( $count == 1 )
 {
-  # we are lucky, only one
-  SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
-  exit 0;
+    # we are lucky, only one
+    SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
+    exit 0;
 }
 else
 {
-  print __(sprintf("Select catalog number (or all) to change,  (1-". $count.",a) :") );
+    print __(sprintf("Select catalog number (or all) to change,  (1-". $count.",a) :") );
 
-  my $answer = <STDIN>;
-  chomp($answer);
+    my $answer = <STDIN>;
+    chomp($answer);
   
-  if(lc($answer) eq __("a"))
-  {
-    SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
-    exit 0;
-  }
-  elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
-  {
-    my $number = int($answer);
-    SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
-    exit 0;
-  }
-  else
-  {
-      print __("canceled.\n");
-  }
+    if (lc($answer) eq __("a"))
+    {
+        SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+        exit 0;
+    }
+    elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
+    {
+        my $number = int($answer);
+        SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
+        exit 0;
+    }
+    else
+    {
+        print __("canceled.\n");
+    }
 }
 
 exit 0;
