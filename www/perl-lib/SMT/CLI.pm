@@ -516,19 +516,25 @@ sub listRegistrations
 }
 
 
-sub enableCatalogsByProduct
+sub setCatalogsByProduct
 {
     my %opts = @_;
     
     my ($cfg, $dbh, $nuri) = init();
+    my $enable = 0;
     
-    #( verbose => $verbose, prodStr => $enableByProduct)
+    #( verbose => $verbose, prodStr => $enableByProduct, enable => [1,0])
     
     if(! exists $opts{prodStr} || ! defined $opts{prodStr} || $opts{prodStr} eq "")
     {
         print __("Invalid product string.\n");
         return 1;
     }
+    if(exists $opts{enable} && defined $opts{enable})
+    {
+        $enable = $opts{enable};
+    }
+    
     my ($product, $version, $arch, $release) = split(/\s*,\s*/, $opts{prodStr}, 4);
     
     my $st1 = sprintf("select PRODUCTDATAID from Products where PRODUCT=%s ", $dbh->quote($product));
@@ -553,7 +559,7 @@ sub enableCatalogsByProduct
         return 1;
     }
         
-    my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE from ProductCatalogs pc, Catalogs c where PRODUCTDATAID IN ($st1) and pc.CATALOGID = c.CATALOGID order by NAME,TARGET;";
+    my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where PRODUCTDATAID IN ($st1) and pc.CATALOGID = c.CATALOGID order by NAME,TARGET;";
     
     #print "$statement \n";
 
@@ -561,7 +567,10 @@ sub enableCatalogsByProduct
     
     foreach my $row (@{$arr})
     {
-        if(uc($row->{MIRRORABLE}) ne "Y")
+        next if($enable && uc($row->{DOMIRROR}) eq "Y");
+        next if(!$enable && uc($row->{DOMIRROR}) eq "N");
+        
+        if($enable && uc($row->{MIRRORABLE}) ne "Y")
         {
             print sprintf(__("Catalog [%s %s] cannot be enabled. Access on the server denied.\n"), 
                           $row->{NAME}, 
@@ -569,10 +578,11 @@ sub enableCatalogsByProduct
         }
         else
         {
-            SMT::CLI::setCatalogDoMirror(enabled => 1, name => $row->{NAME}, target => $row->{TARGET});
-            print sprintf(__("Catalog [%s %s] enabled.\n"),
+            SMT::CLI::setCatalogDoMirror(enabled => $enable, name => $row->{NAME}, target => $row->{TARGET});
+            print sprintf(__("Catalog [%s %s] %s.\n"),
                           $row->{NAME}, 
-                          ($row->{TARGET}) ? $row->{TARGET} : "");
+                          ($row->{TARGET}) ? $row->{TARGET} : "",
+                          ($enable?__("enabled"):__("disabled")));
         }
     }
     return 0;
@@ -617,12 +627,14 @@ sub setCatalogDoMirror
         
         #print $sql . "\n";
         my $rows = $dbh->do($sql);
-        print sprintf(__("%d Catalog(s) %s.\n"), ((defined $rows && $rows >=0)?$rows:0), ($opt{enabled}?__("enabled"):__("disabled")));
+        $rows = 0 if(!defined $rows || $rows < 0);
+        return $rows;
     }
     else
     {
         die __("enabled option missing");
     }
+    return 0;
 }
 
 sub catalogDoMirrorFlag

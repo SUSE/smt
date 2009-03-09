@@ -15,6 +15,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 my $enable;
 my $enableByProduct = "";
+my $disableByProduct = "";
 my $disable;
 my $mirrorable;
 my $domirror;
@@ -26,6 +27,7 @@ use Getopt::Long;
 &Getopt::Long::GetOptions(
                           'enable-mirror|e'      => \$enable,
                           'enable-by-prod|p=s'   => \$enableByProduct,
+                          'disable-by-prod=s'    => \$disableByProduct,
                           'disable-mirror|d'     => \$disable,
                           'only-mirrorable|m'    => \$mirrorable,
                           'only-enabled|o'       => \$domirror,
@@ -41,6 +43,9 @@ if ( defined $help and ( $help == 1 ) )
     print "   --enable-by-prod  (-p) arg : " . __("enable catalog mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
+    print "   --disable-by-prod  arg :     " . __("disable catalog mirroring by giving product data\n");
+    print "                                Product[,Version[,Architecture[,Release]]]\n";
+    print "                                (call smt list-products to get a list of known products)\n";
     print "   --disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
     print "   --only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
     print "   --only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
@@ -51,7 +56,12 @@ if ( defined $help and ( $help == 1 ) )
 
 if ( $enableByProduct ne "" )
 {
-    my $ret = SMT::CLI::enableCatalogsByProduct( verbose => $verbose, prodStr => $enableByProduct);
+    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $enableByProduct, enable => 1);
+    exit $ret;
+}
+elsif ( $disableByProduct ne "" )
+{
+    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $disableByProduct, enable => 0);
     exit $ret;
 }
 
@@ -178,7 +188,8 @@ if ( $count == 0 )
 elsif ( $count == 1 )
 {
     # we are lucky, only one
-    SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
+    my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
+    print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
     exit 0;
 }
 else
@@ -190,13 +201,15 @@ else
   
     if (lc($answer) eq __("a"))
     {
-        SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+        my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
         exit 0;
     }
     elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
     {
         my $number = int($answer);
-        SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
+        my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
+        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
         exit 0;
     }
     else
