@@ -21,7 +21,7 @@ my $catalogid = "";
 my $name = "";
 my $description = "";
 my $exturl = "";
-my $delete = "";
+my @delete = ();
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
@@ -30,7 +30,7 @@ use Getopt::Long;
                           'name=s'        => \$name,
                           'description=s' => \$description,
                           'exturl=s'      => \$exturl,
-                          'delete=s'      => \$delete,
+                          'delete=s'      => \@delete,
                           'help|h'        => \$help
                          );
 
@@ -43,7 +43,7 @@ if ( defined $help and ( $help == 1 ) )
     print "    --name  arg         " . __("The name of this catalog.\n");
     print "    --description arg   " . __("A description\n");
     print "    --exturl arg        " . __("The URL where this catalog can be mirrored from\n");
-    print "    --delete arg        " . __("Remove a custom catalog with the given ID\n");
+    print "    --delete arg        " . __("Remove a custom catalog with the given ID. You can use this option multiple times.\n");
     print "                        " . __("Call 'smt catalogs --verbose' to find out the Catalog ID\n");
     print "                        " . __("of the catalog you want to delete.\n");
     print "\n\n";
@@ -54,16 +54,40 @@ if ( defined $help and ( $help == 1 ) )
     exit 0;
 }
 
-if($delete ne "")
+my $dbh = SMT::Utils::db_connect();
+if(!$dbh)
 {
-    print __(sprintf("Realy delete the catalog with ID '%s' (y/n)?", $delete));
+    die __("Cannot connect the database\n");
+}
+
+if(@delete > 0)
+{
+    my $statement = sprintf("SELECT CATALOGID, NAME, TARGET from Catalogs where CATALOGID IN ('%s')", join("','", @delete));
+    my $arr = $dbh->selectall_arrayref($statement, {Slice=>{}});
+
+    print __("Realy delete the following catalogs:\n");
+    foreach my $entry (@$arr)
+    {
+        print " ".$entry->{CATALOGID}.":".$entry->{NAME};
+        if(defined $entry->{TARGET})
+        {
+            print " ".$entry->{TARGET};
+        }
+        print "\n";
+    }
+    print __("[y/n] ");
+    
 
     my $yn = <STDIN>;
     chomp($yn);
     
     if(lc($yn) eq __("y"))
     {
-        my $removed = SMT::CLI::removeCustomCatalog(catalogid => $delete);
+        my $removed = 0;
+        foreach my $del (@delete)
+        {
+            $removed += SMT::CLI::removeCustomCatalog(catalogid => $del);
+        }
         if(!$removed)
         {
             print __("No catalog removed.\n");
@@ -71,19 +95,11 @@ if($delete ne "")
         }
         else
         {
-            print __(sprintf("Catalog with ID '%s' removed.\n", $delete));
+            print __(sprintf("%d Catalogs removed.\n", $removed));
         }
     }
     exit 0;
 }
-
-
-my $dbh = SMT::Utils::db_connect();
-if(!$dbh)
-{
-    die __("Cannot connect the database\n");
-}
-
 
 while($name !~ /^[a-zA-Z\d_-]+$/)
 {
