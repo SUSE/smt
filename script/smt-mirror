@@ -68,7 +68,7 @@ my $result = GetOptions ("debug|d"      => \$debug,
 
 if($help)
 {
-    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink]\n";
+    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail]\n";
     print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
     print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
@@ -91,7 +91,9 @@ if($help)
     print "--dbreplfile arg        " . __("Path to XML file to use as database replacement. Such a file can\n");
     print "                        " . __("be created with the sync-ncc command. This option is only\n");
     print "                        " . __("useful if the smt database does not exist on the host from\n"); 
-    print "                        " . __("which the smt-mirror script is being executed.\n"); 
+    print "                        " . __("which the smt-mirror script is being executed.\n");
+    print "--mail -m               " . __("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
+    print "                        " . __("The output on stdout and stderr will be suppressed.\n");
     print "--logfile -L file       " . __("Path to logfile\n");
     exit 0;
 }
@@ -457,7 +459,7 @@ smt mirror
 
 smt [help|--help|-h] mirror
 
-smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink]
+smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail]
 
 smt mirror --clean [--directory path] [--dbreplfile file] [-L file] [--debug] [--verboselevel level]
 
@@ -549,6 +551,11 @@ B<--debug> set the verbose level to 63.
 =item --nohardlink
 
 Instead of using hardlinks, copy the files.
+
+=item --mail -m
+
+Send output as e-mail to the administrators defined in reportEmail in smt.conf .
+The output on stdout and stderr will be suppressed in this mode.
 
 =back
 
