@@ -588,42 +588,41 @@ sub resetCatalogsStatus
 
 sub setCatalogDoMirror
 {
-  my %opt = @_;
-  my ($cfg, $dbh, $nuri) = init();
-
-  if(exists $opt{enabled} && defined $opt{enabled} )
-  {
-    my $sql = "update Catalogs";
-    $sql .= sprintf(" set Domirror=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
-
-    $sql .= " where 1";
-
-    $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
-
-    if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
+    my %opt = @_;
+    my ($cfg, $dbh, $nuri) = init();
+    
+    if(exists $opt{enabled} && defined $opt{enabled} )
     {
-      $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
+        my $sql = "update Catalogs";
+        $sql .= sprintf(" set Domirror=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
+        
+        $sql .= " where 1";
+        
+        $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+        
+        if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
+        {
+            $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
+        }
+        
+        if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
+        {
+            $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
+        }
+        
+        if(exists $opt{id} && defined $opt{id} )
+        {
+            $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
+        }
+        
+        #print $sql . "\n";
+        my $rows = $dbh->do($sql);
+        print sprintf(__("%d Catalog(s) %s.\n"), ((defined $rows && $rows >=0)?$rows:0), ($opt{enabled}?__("enabled"):__("disabled")));
     }
-
-    if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
+    else
     {
-      $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
+        die __("enabled option missing");
     }
-
-    if(exists $opt{id} && defined $opt{id} )
-    {
-      $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
-    }
-
-    #print $sql . "\n";
-    my $sth = $dbh->prepare($sql);
-    $sth->execute();
-
-  }
-  else
-  {
-    die __("enabled option missing");
-  }
 }
 
 sub catalogDoMirrorFlag
