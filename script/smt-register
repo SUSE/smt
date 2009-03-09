@@ -13,6 +13,7 @@ use LWP::UserAgent;
 use Crypt::SSLeay;
 #use XML::Writer;
 use File::Basename;
+use File::Temp;
 use Data::Dumper;
 
 use Locale::gettext ();
@@ -27,23 +28,28 @@ my $help    = 0;
 my $random  = 0;
 my $reseterror = 0;
 my $logfile = "/dev/null";
+my $mail     = 0;
+my $mailtempfile = undef;
 
 my $result = GetOptions ("debug|d"     => \$debug,
                          "verboselevel|v=i" => \$vblevel,
                          "logfile|L=s" => \$logfile,
                          "randomStart|r" => \$random,
                          "reseterror"  => \$reseterror,
+                         "mail|m"       => \$mail,
                          "help|h"      => \$help
                         );
 
 if($help)
 {
-    print basename($0) . " [--reseterror] [--debug] [--logfile file]\n\n";
+    print basename($0) . " [--reseterror] [--debug] [--logfile file] [--mail]\n\n";
     print __("Register all clients at NCC which are currently not registered\n");
     print __("or which data changed since the last registration.\n");
     print "\n";
     print __("Options:\n");
     print "--reseterror            ".__("reset the NCC registration error flag and try to submit failed registrations again.\n");
+    print "--mail -m               ".__("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
+    print "                        ".__("The output on stdout and stderr will be suppressed.\n");
     print "--debug -d              ".__("enable debug mode\n");
     print "--verboselevel -v level " . __("set the verbose level\n");
     print "--logfile -L file       ".__("Path to logfile\n");
@@ -51,6 +57,14 @@ if($help)
 }
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
+
+if($mail)
+{
+    my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+    $mailtempfile = "$dir/mail";
+    open(STDOUT, "> $mailtempfile") or die "Cannot open file:$!";
+    open(STDERR, ">&STDOUT") or die "Cannot dup:$!";
+}
 
 my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
 $useragent->protocols_allowed( [ 'https' ] );
@@ -113,6 +127,7 @@ if(!$dbh)
     exit 1;
 }
 
+my $exitcode = 0;
 eval
 {
     if($reseterror)
@@ -130,7 +145,7 @@ eval
         {
             SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
         }
-        exit 1;
+        $exitcode = 1;
     }
 };
 if($@)
@@ -139,14 +154,42 @@ if($@)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
-    exit 1;
+    $exitcode = 1;
 }
 
 if(!SMT::Utils::unLock("smt-register"))
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
 }
-exit 0;
+
+if($mail)
+{
+    close ($mailtempfile);
+    my $body = "";
+    
+    open(MAIL, "< $mailtempfile") and do
+    {
+        while(<MAIL>)
+        {
+            $body .= $_;
+        }
+        close MAIL;
+    };
+    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+    my $subject = "SMT NCC register Report $datestring -- ";
+    if($exitcode > 0)
+    {
+        $subject .= "Registration failed";
+    }
+    else
+    {
+        $subject .= "Registration successful";
+    }
+
+    SMT::Utils::sendMailToAdmins($subject, $body);
+}
+
+exit $exitcode;
 
 
 #
@@ -161,7 +204,7 @@ smt register
 
 smt [help|--help|-h] register
 
-smt register [--reseterror] [--debug] [--logfile file]
+smt register [--reseterror] [--debug] [--logfile file] [--mail]
 
 =head1 DESCRIPTION
 
@@ -177,6 +220,11 @@ registration failed the last time unless the B<--reseterror> parameter is used.
 =item --reseterror
 
 Reset the error flags and register the clients again.
+
+=item --mail -m
+
+Send output as e-mail to the administrators defined in reportEmail in smt.conf .
+The output on stdout and stderr will be suppressed in this mode.
 
 =item --debug
 
