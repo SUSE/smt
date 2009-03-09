@@ -9,6 +9,7 @@ use SMT::Utils;
 use SMT::Mirror::RegData;
 use SMT::NCCRegTools;
 use File::Basename;
+use File::Temp;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -25,6 +26,8 @@ my $help    = 0;
 my $fromdir = "";
 my $todir   = "";
 my $createdbreplfile = "";
+my $mail     = 0;
+my $mailtempfile = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
@@ -35,6 +38,7 @@ use Getopt::Long;
                           "logfile|L=s" => \$logfile,
                           'debug|d'  => \$debug,
                           "verboselevel|v=i" => \$vblevel,
+                          "mail|m"       => \$mail,
                           'help|h'   => \$help
                          );
 
@@ -51,11 +55,21 @@ if ( defined $help and ( $help == 1 ) )
     print "--createdbreplacementfile ".__("create a database replacement file for using smt-mirror without database.\n");
     print "--logfile -L file         ".__("Path to logfile\n");
     print "--debug                   ".__("Enable debug mode\n");
-    print "--verboselevel -v level   " . __("set the verbose level\n");
+    print "--verboselevel -v level   ".__("set the verbose level\n");
+    print "--mail -m                 ".__("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
+    print "                          ".__("The output on stdout and stderr will be suppressed.\n");
   exit 0;
 }
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
+
+if($mail)
+{
+    my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+    $mailtempfile = "$dir/mail";
+    open(STDOUT, "> $mailtempfile") or die "Cannot open file:$!";
+    open(STDERR, ">&STDOUT") or die "Cannot dup:$!";
+}
 
 if($createdbreplfile ne "")
 {
@@ -183,6 +197,7 @@ eval
                                     vblevel => $vblevel);
     
 };
+my $exitcode = 0;
 if ($@)
 {
     if (!SMT::Utils::unLock("smt-ncc-sync"))
@@ -190,7 +205,7 @@ if ($@)
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, $@);
-    exit 1;
+    $exitcode = 1;
 }
 
 if (!SMT::Utils::unLock("smt-ncc-sync"))
@@ -198,7 +213,34 @@ if (!SMT::Utils::unLock("smt-ncc-sync"))
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
 }
 
-exit 0;
+if($mail)
+{
+    close ($mailtempfile);
+    my $body = "";
+    
+    open(MAIL, "< $mailtempfile") and do
+    {
+        while(<MAIL>)
+        {
+            $body .= $_;
+        }
+        close MAIL;
+    };
+    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+    my $subject = "SMT ncc-sync Report $datestring -- Sync ";
+    if($exitcode > 0)
+    {
+        $subject .= "failed";
+    }
+    else
+    {
+        $subject .= "successful";
+    }
+
+    SMT::Utils::sendMailToAdmins($subject, $body);
+}
+
+exit $exitcode;
 
 #
 # Manpage
@@ -241,6 +283,11 @@ Path to logfile.
 =item --debug
 
 Enable display of debug information.
+
+=item --mail -m
+
+Send output as e-mail to the administrators defined in reportEmail in smt.conf .
+The output on stdout and stderr will be suppressed in this mode.
 
 =back
 
