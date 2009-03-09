@@ -45,6 +45,8 @@ sub new
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
 
+    $self->{ERRORS} = 0;
+
     if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
     {
         $self->{USERAGENT} = $opt{useragent};
@@ -144,13 +146,13 @@ sub NCCRegister
     {
         # get all GUIDs which need a (re-)registration but not the once which failed before.
         my $allguids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE (REGDATE > NCCREGDATE || NCCREGDATE IS NULL) && NCCREGERROR=0");
-
+        
         if(@{$allguids} > 0)
         {
             # we have something to register, check for random sleep value
             sleep(int($sleeptime));
             
-            printLog($self->{LOG}, $self->vblevel(), "info", sprintf("Register %s new clients.", $#{@$allguids}+1 ));
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Register %d new clients.", ($#{$allguids}+1) ) );
         }
         else
         {
@@ -605,7 +607,7 @@ sub _deleteRegistrationLocal
 
     foreach (@guids)
     {
-        printLog($self->{LOG}, $self->vblevel(), "info", sprintf("Delete registration: %s", $_));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Delete registration: %s", $_));
     }
             
     my $statement = "DELETE FROM Registration where ".$where;
@@ -697,6 +699,7 @@ sub _bulkop_handler
     {
         # something goes wrong
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No GUID");
+        $self->{ERRORS} += 1;
         return;
     }
     my $guid = $data->{GUID};
@@ -707,6 +710,7 @@ sub _bulkop_handler
     {
         # this should not happen
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Unknown bulk operation '%s'."), $data->{OPERATION}));
+        $self->{ERRORS} += 1;
     }
     $operation = $data->{OPERATION};
     
@@ -716,6 +720,7 @@ sub _bulkop_handler
     {
         # something goes wrong
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No RESULT");
+        $self->{ERRORS} += 1;
         return;
     }
     
@@ -723,6 +728,7 @@ sub _bulkop_handler
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, 
                  sprintf(__("Operation %s[%s] failed: %s"), $operation, $guid, $data->{MESSAGE}));
+        $self->{ERRORS} += 1;
         if($operation ne "register")
         {
             # on registration we have to update the registration table even on error.
@@ -768,12 +774,13 @@ sub _bulkop_handler
             {
                 # this should not happen
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("No products found."));
-                return 0;
+                $self->{ERRORS} += 1;
+                return;
             }
             my $sth = $self->{DBH}->prepare(sprintf("$statement", $self->{DBH}->quote($guid)));
             $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
             $sth->execute;
-            printLog($self->{LOG}, $self->vblevel(), "info", sprintf(__("Registration success: '%s'."), $guid));
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Registration success: '%s'."), $guid));
         }
         else  # error
         {
@@ -791,7 +798,8 @@ sub _bulkop_handler
             {
                 # this should not happen
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __("No products found."));
-                return 0;
+                $self->{ERRORS} += 1;
+                return;
             }
             my $res = $self->{DBH}->do(sprintf("$statement", $self->{DBH}->quote($guid)));
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,  sprintf("$statement", $self->{DBH}->quote($guid))) ;
@@ -799,7 +807,7 @@ sub _bulkop_handler
     }
     elsif(exists $data->{OPERATION} && defined $data->{OPERATION} && $data->{OPERATION} eq "de-register")
     {
-        printLog($self->{LOG}, $self->vblevel(), "info", sprintf(__("Delete registration success: '%s'."), $guid));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Delete registration success: '%s'."), $guid));
     }
 }
 
@@ -908,10 +916,16 @@ sub _updateRegistrationBulk
 
     # A parser for the answer is required here and everything below this comment
     # should be part of the handler
+
+    $self->{ERRORS} = 0;
    
     my $parser = new SMT::Parser::Bulkop(vblevel => $self->vblevel(), log => $self->{LOG});
     $parser->parse($respfile, sub{ _bulkop_handler($self, $guidHash, $regtimestring, @_)});
 
+    if( $self->{ERRORS} > 0 )
+    {
+        return 0;
+    }
     return 1;
 }
 
