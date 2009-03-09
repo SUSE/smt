@@ -527,7 +527,9 @@ if (defined $mail  &&  $mail == 1)
     if ($certErrors ne '') { $MailBody .= $certErrors."\n\n"; }
     $MailBody .= getMergedReport('asciitable');
 
-    SMT::Utils::sendMailToAdmins($MailBody, \%ATTACH);
+    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+    my $subject = "SMT Report $datestring"
+    SMT::Utils::sendMailToAdmins($subject, $MailBody, \%ATTACH);
 }
 
 exit 0;
