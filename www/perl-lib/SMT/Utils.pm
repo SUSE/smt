@@ -565,16 +565,18 @@ sub printLog
 }
 
 
-=item sendMailToAdmins($message [, $attachements])
+=item sendMailToAdmins($subject, $message [, $attachements])
 
-Sends an eMail with the passed content to the administrators defined in smt.conf as "reportEmail".
+Sends an eMail with the passed subject and content to the administrators defined in smt.conf as "reportEmail".
 This function will do nothing if no eMail address is specified
 
 =cut
 sub sendMailToAdmins
 {
+    my $subject = shift;
     my $message = shift;
     my $attachments = shift;
+    if (! defined $subject)  { return; }
     if (! defined $message)  { return; }
     
     my $cfg = getSMTConfig;
@@ -602,8 +604,6 @@ sub sendMailToAdmins
 
     if (! defined $reportEmailFrom  || $reportEmailFrom eq '')
     { $reportEmailFrom = "$ENV{'USER'}\@".`/bin/hostname --fqdn`; }
-
-    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
 
     # create the mail config
     my $mtype = 'sendmail';   # default to send eMail directly
@@ -644,7 +644,7 @@ sub sendMailToAdmins
     # create the message
     my $msg = MIME::Lite->new( 'From'    => $reportEmailFrom,
                                'To'      => $reportEmailTo,
-                               'Subject' => "SMT Report $datestring",
+                               'Subject' => $subject,
                                'Type'    => 'multipart/mixed'
                              );
 
