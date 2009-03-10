@@ -62,8 +62,12 @@ if($mail)
 {
     my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
     $mailtempfile = "$dir/mail";
-    open(STDOUT, "> $mailtempfile") or die "Cannot open file:$!";
-    open(STDERR, ">&STDOUT") or die "Cannot dup:$!";
+    open(MAILTEMPFILE, "> $mailtempfile") or die "Cannot open file:$!";
+    open(STDOUT, ">& MAILTEMPFILE") or die "Cannot dup:$!";
+    open(STDERR, ">& MAILTEMPFILE") or die "Cannot dup:$!";
+    select STDERR; $| = 1;      # make unbuffered
+    select STDOUT; $| = 1;      # make unbuffered
+    select MAILTEMPFILE; $| = 1;        # make unbuffered
 }
 
 my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
@@ -164,29 +168,35 @@ if(!SMT::Utils::unLock("smt-register"))
 
 if($mail)
 {
-    close ($mailtempfile);
+    close (STDERR);
+    close (STDOUT);
+    close (MAILTEMPFILE);
     my $body = "";
-    
-    open(MAIL, "< $mailtempfile") and do
-    {
-        while(<MAIL>)
-        {
-            $body .= $_;
-        }
-        close MAIL;
-    };
-    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-    my $subject = "SMT NCC register Report $datestring -- ";
-    if($exitcode > 0)
-    {
-        $subject .= "Registration failed";
-    }
-    else
-    {
-        $subject .= "Registration successful";
-    }
 
-    SMT::Utils::sendMailToAdmins($subject, $body);
+    # we want to send only a mail, if there is something to send.
+    if( -s $mailtempfile )
+    {
+        open(MAIL, "< $mailtempfile") and do
+        {
+            while(<MAIL>)
+            {
+                $body .= $_;
+            }
+            close MAIL;
+        };
+        my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+        my $subject = "SMT NCC register Report $datestring -- ";
+        if($exitcode > 0)
+        {
+            $subject .= "Registration failed";
+        }
+        else
+        {
+            $subject .= "Registration successful";
+        }
+        
+        SMT::Utils::sendMailToAdmins($subject, $body);
+    }
 }
 
 exit $exitcode;
