@@ -23,11 +23,11 @@ TODO next SP or SLE11 version
 
 - use new installation.xml and test it according to bnc #377154
 
-- In the parser we print errors if we found invalid XML syntax but ignore them. 
-  We should return errors and count them in SLE11.
-
 DONE:
 =====
+
+- In the parser we print errors if we found invalid XML syntax but ignore them. 
+  We should return errors and count them in SLE11.
 
 - better mirror report. Shorter with more informations. 
 

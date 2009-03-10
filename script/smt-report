@@ -373,10 +373,19 @@ if(!$nonccsync)
                                       log     => $LOG);
         
         printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
-        $lr->NCCListSubscriptions();
+        my $res = $lr->NCCListSubscriptions();
+        if ($res)
+        {
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
+        }
         
         printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
-        $lr->NCCListRegistrations();
+        $res = $lr->NCCListRegistrations();
+        if ($res)
+        {
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
+        }
+
     }
     # else $maxwait > 0 and <=60 means ncc-sync was running. we do not need to sync again.
 
@@ -528,7 +537,7 @@ if (defined $mail  &&  $mail == 1)
     $MailBody .= getMergedReport('asciitable');
 
     my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-    my $subject = "SMT Report $datestring"
+    my $subject = "SMT Report $datestring";
     SMT::Utils::sendMailToAdmins($subject, $MailBody, \%ATTACH);
 }
 

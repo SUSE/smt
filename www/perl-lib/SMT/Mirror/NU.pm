@@ -358,7 +358,8 @@ sub mirror()
         # $dbh->do("UPDATE Catalogs SET MIRRORABLE = 'N' where CATALOGTYPE='nu'");
     
         my $parser = SMT::Parser::NU->new(log => $self->{LOG});
-        $parser->parse($destfile, sub{ mirror_handler($self, $options{dryrun}, @_) });
+        my $err = $parser->parse($destfile, sub{ mirror_handler($self, $options{dryrun}, @_) });
+        $self->{STATISTIC}->{ERROR} += $err;
     }
     
     return $self->{STATISTIC}->{ERROR};

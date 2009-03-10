@@ -66,6 +66,7 @@ sub new
     $self->{HANDLER}   = undef;
     $self->{LOG}    = 0;
     $self->{VBLEVEL}   = 0;
+    $self->{ERRORS} = 0;
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
@@ -104,44 +105,49 @@ sub parse()
     # for security reason strip all | characters.
     # XML::Parser ->parsefile( $path ) might be problematic
     $path =~ s/\|//g;
-    if(!-e $path)
+    if (!-e $path)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File not found $path");
-        return;
+        $self->{ERRORS} += 1;
+        return $self->{ERRORS};
     }
     
     my $parser;
     
     $parser = XML::Parser->new( Handlers =>
-                                { Start=> sub { handle_start_tag($self, @_) },
-                                  End=> sub { handle_end_tag($self, @_) },
+                                {
+                                 Start=> sub { handle_start_tag($self, @_) },
+                                 End=> sub { handle_end_tag($self, @_) },
                                 });
     
     if ( $path =~ /(.+)\.gz/ )
     {
-      my $fh = IO::Zlib->new($path, "rb");
-      eval {
-          $parser->parse( $fh );
-      };
-      if($@) {
-          # ignore the errors, but print them
-          chomp($@);
-          printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::NU Invalid XML in '$path': $@");
-      }
-      $fh->close;
-      undef $fh;
+        my $fh = IO::Zlib->new($path, "rb");
+        eval {
+            $parser->parse( $fh );
+        };
+        if ($@) {
+            # ignore the errors, but print them
+            chomp($@);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::NU Invalid XML in '$path': $@");
+            $self->{ERRORS} += 1;
+        }
+        $fh->close;
+        undef $fh;
     }
     else
     {
-      eval {
-          $parser->parsefile( $path );
-      };
-      if($@) {
-          # ignore the errors, but print them
-          chomp($@);
-          printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::NU Invalid XML in '$path': $@");
-      }
-   }
+        eval {
+            $parser->parsefile( $path );
+        };
+        if ($@) {
+            # ignore the errors, but print them
+            chomp($@);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::NU Invalid XML in '$path': $@");
+            $self->{ERRORS} += 1;
+        }
+    }
+    return $self->{ERRORS};
 }
 
 # handles XML reader start tag events

@@ -524,8 +524,9 @@ sub mirror()
     my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
     $parser->resource($self->fullLocalRepoPath());
     $parser->specialmdlocation(1);
-    $parser->parse(".repodata/repomd.xml", sub { download_handler($self, $dryrun, @_)});
-
+    my $err = $parser->parse(".repodata/repomd.xml", sub { download_handler($self, $dryrun, @_)});
+    $self->{STATISTIC}->{ERROR} += $err;
+    
     $self->{EXISTS} = undef;
 
     foreach my $r ( sort keys %{$self->{JOBS}})

@@ -70,7 +70,8 @@ sub new
     $self->{LOCATIONHACK} = 0;
     $self->{LOG}    = 0;
     $self->{VBLEVEL}   = 0;
-
+    $self->{ERRORS}   = 0;
+    
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
@@ -125,7 +126,8 @@ sub parse()
     if(!defined $self->{RESOURCE})
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid resource");
-        return;
+        $self->{ERRORS} += 1;
+        return $self->{ERRORS};
     }
     
     $path = $self->{RESOURCE}."/$repodata";
@@ -136,13 +138,14 @@ sub parse()
     if(!-e $path)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File not found $path");
-        return;
+        $self->{ERRORS} += 1;
+        return $self->{ERRORS};
     }
     
     # if we need these data sometimes later then we have to find
     # a new solution. But this save us 80% time.
-    return if($repodata =~ /other\.xml[\.gz]*$/);
-    return if($repodata =~ /filelists\.xml[\.gz]*$/);
+    return $self->{ERRORS} if($repodata =~ /other\.xml[\.gz]*$/);
+    return $self->{ERRORS} if($repodata =~ /filelists\.xml[\.gz]*$/);
     
 
     my $parser;
@@ -163,6 +166,7 @@ sub parse()
           # ignore the errors, but print them
           chomp($@);
           printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::RpmMd Invalid XML in '$path': $@");
+          $self->{ERRORS} += 1;
       }
       $fh->close;
       undef $fh;
@@ -176,8 +180,10 @@ sub parse()
           # ignore the errors, but print them
           chomp($@);
           printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::RpmMd Invalid XML in '$path': $@");
+          $self->{ERRORS} += 1;
       }
     }
+    return $self->{ERRORS};
 }
 
 # handles XML reader start tag events

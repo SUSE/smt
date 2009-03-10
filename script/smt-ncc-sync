@@ -27,6 +27,8 @@ my $createdbreplfile = "";
 my $mail     = 0;
 my $mailtempfile = undef;
 
+my $exitcode = 0;
+
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
@@ -130,6 +132,7 @@ eval
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Products data."));
+        $exitcode = 1;
     }
     
     
@@ -142,6 +145,7 @@ eval
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Targets data."));
+        $exitcode = 1;
     }
     
     $rd->element("catalogs");
@@ -153,6 +157,7 @@ eval
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Catalogs data."));
+        $exitcode = 1;
     }
     
     $rd->element("productcatalogs");
@@ -164,6 +169,7 @@ eval
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching ProductCatalogs data."));
+        $exitcode = 1;
     }
     
     
@@ -173,11 +179,20 @@ eval
                                   todir   => (($todir ne "")?$todir:undef));
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
-    $lr->NCCListSubscriptions();
+    $res = $lr->NCCListSubscriptions();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
+        $exitcode = 1;
+    }
     
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
-    $lr->NCCListRegistrations();
-    
+    $res = $lr->NCCListRegistrations();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
+        $exitcode = 1;
+    }    
     
     if ($todir ne "")
     {
@@ -199,7 +214,6 @@ eval
                                     vblevel => $vblevel);
     
 };
-my $exitcode = 0;
 if ($@)
 {
     if (!SMT::Utils::unLock("smt-ncc-sync"))

@@ -320,8 +320,12 @@ sub NCCListRegistrations
         $self->{DBH}->do("DELETE from ClientSubscriptions");
         
         my $parser = new SMT::Parser::ListReg(log => $self->{LOG});
-        $parser->parse($destfile, sub{ _listreg_handler($self, $guidhash, @_)});
-    
+        my $err = $parser->parse($destfile, sub{ _listreg_handler($self, $guidhash, @_)});
+        if($err)
+        {
+            return $err;
+        }
+            
         # $guidhash includes now a list of GUIDs which are no longer in NCC
         # A customer may have removed them via NCC web page. 
         # So remove them also here in SMT
@@ -409,7 +413,8 @@ sub NCCListSubscriptions
         $self->{DBH}->do("DELETE from Subscriptions");
         
         my $parser = new SMT::Parser::ListSubscriptions(log => $self->{LOG});
-        $parser->parse($destfile, sub{ _listsub_handler($self, @_)});
+        my $err = $parser->parse($destfile, sub{ _listsub_handler($self, @_)});
+        return $err if($err);
         
         return 0;
     }
@@ -920,8 +925,9 @@ sub _updateRegistrationBulk
     $self->{ERRORS} = 0;
    
     my $parser = new SMT::Parser::Bulkop(vblevel => $self->vblevel(), log => $self->{LOG});
-    $parser->parse($respfile, sub{ _bulkop_handler($self, $guidHash, $regtimestring, @_)});
-
+    my $err = $parser->parse($respfile, sub{ _bulkop_handler($self, $guidHash, $regtimestring, @_)});
+    $self->{ERRORS} += $err;
+    
     if( $self->{ERRORS} > 0 )
     {
         return 0;

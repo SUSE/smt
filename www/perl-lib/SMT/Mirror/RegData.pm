@@ -377,9 +377,9 @@ sub _parseXML
     }
 
     my $parser = SMT::Parser::RegData->new();
-    $parser->parse($xmlfile, sub { ncc_handler($self, @_); });
+    my $err = $parser->parse($xmlfile, sub { ncc_handler($self, @_); });
 
-    return 0;
+    return $err;
 }
 
 sub ncc_handler

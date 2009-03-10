@@ -34,6 +34,7 @@ sub new
     $self->{REGCODE}   = "";
     $self->{LOG}       = undef;
     $self->{VBLEVEL}   = 0;
+    $self->{ERRORS}    = 0;
     
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
@@ -73,7 +74,8 @@ sub parse()
     if (!defined $file)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid filename");
-        exit 1;
+        $self->{ERRORS} += 1;
+        return $self->{ERRORS};
     }
 
     # for security reason strip all | characters.
@@ -82,7 +84,8 @@ sub parse()
     if (!-e $file)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File '$file' does not exist.");
-        exit 1;
+        $self->{ERRORS} += 1;
+        return $self->{ERRORS};
     }
     
     my $parser = XML::Parser->new( Handlers =>
@@ -102,6 +105,7 @@ sub parse()
             # ignore the errors, but print them
             chomp($@);
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::ListReg Invalid XML in '$file': $@");
+            $self->{ERRORS} += 1;
         }
         $fh->close;
         undef $fh;
@@ -115,8 +119,10 @@ sub parse()
             # ignore the errors, but print them
             chomp($@);
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::ListReg Invalid XML in '$file': $@");
+            $self->{ERRORS} += 1;
         }
     }
+    return $self->{ERRORS};
 }
 
 # handles XML reader start tag events
