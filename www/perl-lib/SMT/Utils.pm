@@ -13,6 +13,7 @@ use Net::SMTP;   # sending eMails via smtp relay
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
+use User::pwent;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -136,8 +137,11 @@ sub openLock
     my $progname = shift;
     my $pid = $$;
     
-    my $path = "/var/run/smt/$progname.pid";
+    my $dir  = "/var/run/smt";
+    my $path = "$dir/$progname.pid";
     
+    return 0 if( !-d $dir || !-w $dir );
+
     if( -e $path )
     {
         # check if the process is still running
@@ -731,7 +735,7 @@ sub getProxySettings
 
     if(! defined $proxyUser)
     {
-        if($UID == 0 && -e "/root/.curlrc")
+        if($UID == 0 && -r "/root/.curlrc")
         {
             # read /root/.curlrc
             open(RC, "< /root/.curlrc") or return ($httpProxy, $httpsProxy, undef);
@@ -750,7 +754,7 @@ sub getProxySettings
         }
         elsif($UID != 0 &&
               exists $ENV{HOME} && defined  $ENV{HOME} &&
-              $ENV{HOME} ne "" && -e "$ENV{HOME}/.curlrc")
+              $ENV{HOME} ne "" && -r "$ENV{HOME}/.curlrc")
         {
             # read ~/.curlrc
             open(RC, "< $ENV{HOME}/.curlrc") or return ($httpProxy, $httpsProxy, undef);
@@ -879,6 +883,39 @@ sub createUserAgent
 
     return $ua;
 }
+
+=item dropPrivileges
+
+If current user id is I<root>, drop the privileges and switch to user I<smt>.
+If the current user id B<is not> I<root>, this function return without any action.
+
+Returns false in case a privileges drop should happen, but cannot. Otherwise true.
+
+=cut
+
+sub dropPrivileges
+{
+    my $euid = POSIX::geteuid();
+    return 0 if( !defined $euid );
+
+    # if we do not run as root, we do not need to drop privileges
+    return 1 if( $euid != 0 );
+    
+    my $pw = getpwnam("smt") || return 0;
+
+    POSIX::setgid( $pw->gid() ) || return 0;
+    POSIX::setuid( $pw->uid() ) || return 0;
+    
+    # test is euid is correct
+    return 0 if( POSIX::geteuid() != $pw->uid() );
+    # test is egid is correct
+    return 0 if( POSIX::getegid() != $pw->gid() );
+
+    chdir "/";
+    
+    return 1;
+}
+
 
 =back
 

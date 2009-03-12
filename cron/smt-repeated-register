@@ -3,6 +3,7 @@
 # smt-repeated-register
 
 
+PATH="/sbin:/usr/sbin:/usr/bin:/bin"
 SMTCMD=/usr/sbin/smt
 . /etc/smt.d/smt-cron.conf
 

@@ -1,17 +1,16 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
-###########################################################################
-## Copyright (c) 2007 SUSE LINUX Products GmbH, Nuernberg, Germany.
-###########################################################################
-
+###############################################################################
+## Copyright (c) 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
 
 use strict;
+use warnings;
 use SMT::Utils;
 use SMT::NCCRegTools;
 use Getopt::Long;
 use LWP::UserAgent;
 use Crypt::SSLeay;
-#use XML::Writer;
 use File::Basename;
 use File::Temp;
 use Data::Dumper;
@@ -21,6 +20,14 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
+#
+# FIXME: what about /root/.curlrc for proxy settings?
+#
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR "Unable to drop privileges. Abort!\n";
+    exit 1;
+}
 
 my $debug   = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;

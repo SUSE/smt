@@ -1,8 +1,11 @@
 #!/usr/bin/perl
 
+###############################################################################
+## Copyright (c) 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
+
 use strict;
 use warnings;
-use lib ("/srv/www/perl-lib/");
 use SMT::CLI;
 use File::Basename;
 use SMT::Utils;
@@ -12,6 +15,12 @@ use Locale::gettext ();
 use POSIX ();                   # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR "Unable to drop privileges. Abort!\n";
+    exit 1;
+}
 
 my $enable;
 my $enableByProduct = "";

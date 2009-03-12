@@ -1,10 +1,11 @@
-NAME         = smt
-VERSION      = 1.1.1
-DESTDIR      = /
-PERL        ?= perl
-PERLMODDIR   = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
+NAME          = smt
+VERSION       = 1.1.1
+DESTDIR       = /
+PERL         ?= perl
+PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
 SMT_SQLITE_DB = $(DESTDIR)/var/lib/SMT/db/smt.db
-TEMPF = $(shell mktemp)
+TEMPF         = $(shell mktemp)
+DOCDIR        = /usr/share/doc/packages
 
 install_all: install install_conf install_db
 	@echo "==========================================================="
@@ -76,21 +77,20 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
 	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
-	cp apache2/smt-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
-	cp apache2/conf.d/*.conf $(DESTDIR)/etc/smt.d/
-	cp apache2/vhosts.d/*.conf $(DESTDIR)/etc/smt.d/
-	cp script/smt $(DESTDIR)/usr/sbin/
-	cp script/smt-* $(DESTDIR)/usr/sbin/
-	chmod 0755 $(DESTDIR)/usr/sbin/smt
-	chmod 0755 $(DESTDIR)/usr/sbin/smt-*
-	cp www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
-	cp www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
-	cp www/perl-lib/SMT/Utils.pm $(DESTDIR)$(PERLMODDIR)/SMT/
-	cp www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
-	cp www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
-	cp www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
-	cp www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
-	cp www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
+	mkdir -p $(DESTDIR)$(DOCDIR)/smt
+	install -m 644 apache2/smt-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
+	install -m 644 apache2/conf.d/*.conf $(DESTDIR)/etc/smt.d/
+	install -m 644 apache2/vhosts.d/*.conf $(DESTDIR)/etc/smt.d/
+	install -m 755 script/smt $(DESTDIR)/usr/sbin/
+	install -m 755 script/smt-* $(DESTDIR)/usr/sbin/
+	install -m 644 www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
+	install -m 644 www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	install -m 644 www/perl-lib/SMT/Utils.pm $(DESTDIR)$(PERLMODDIR)/SMT/
+	install -m 644 www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
+	install -m 644 www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
+	install -m 644 www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
+	install -m 644 www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
+	install -m 644 www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
 	cd db/schemas; \
 	find mysql/ -name ".svn" -prune -o \
                 \( \
@@ -105,19 +105,28 @@ install:
                   -o \
                   \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
                 \)
-	cp config/rc.smt $(DESTDIR)/etc/init.d/smt
+	install -m 755 config/rc.smt $(DESTDIR)/etc/init.d/smt
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
-	cp db/smt-db $(DESTDIR)/usr/lib/SMT/bin/smt-db
-	cp script/repo2db.pl $(DESTDIR)/usr/lib/SMT/bin/smt-db
-	chmod 0755 $(DESTDIR)/usr/lib/SMT/bin/smt-db
-	chmod 0755 $(DESTDIR)/etc/init.d/smt
+	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 script/repo2db.pl $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 script/changeSMTUserPermissions.sh $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/
 	install -m 644 cron/smt-cron.conf $(DESTDIR)/etc/smt.d/
 	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-gen-report $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-repeated-register $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 644 logrotate/smt $(DESTDIR)/etc/logrotate.d/
+
+	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
+	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/smt/
+	install -m 644 doc/High-Level-Architecture.odp $(DESTDIR)$(DOCDIR)/smt/
+	install -m 644 doc/Registrationdata-NCC-YEP.odt $(DESTDIR)$(DOCDIR)/smt/
+	install -m 644 doc/SMT-Database-Schema.odg $(DESTDIR)$(DOCDIR)/smt/
+	install -m 644 doc/NCC-Client-Registration-via-YEP.odt $(DESTDIR)$(DOCDIR)/smt/
+	install -m 644 doc/Server-Tuning.txt $(DESTDIR)$(DOCDIR)/smt/
+	install -m 644 doc/SMT-Database-Schema.txt $(DESTDIR)$(DOCDIR)/smt/
 
 test: clean
 	cd tests; perl tests.pl && cd -

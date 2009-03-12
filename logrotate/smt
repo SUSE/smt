@@ -1,9 +1,9 @@
-/var/log/smt-*.log {
+/var/log/smt/smt-*.log {
     compress
     missingok
     notifempty
     maxage 365
     rotate 8
     size 4096k
-    create 0600 root root
+    #create 0600 root root
 }

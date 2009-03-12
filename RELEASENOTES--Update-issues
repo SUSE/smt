@@ -3,5 +3,10 @@
 * /etc/apache2/conf.d/nu_server.conf got an update
   and replaces the installed version on update.
 * (repo2db script)
-
+* new smt user
+* inform the user about how to change permissions on
+  some files and directories after update SMT10 => SMT11
+  (do automatically via init script or postinstall?)
+* changed novell.com-smt cron script (we need a way to preserve 
+  the random time start values)
 

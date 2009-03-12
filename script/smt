@@ -1,11 +1,11 @@
 #!/usr/bin/perl
-###########################################################################
-## Copyright (c) 2007 Novell Inc.
-###########################################################################
+
+###############################################################################
+## Copyright (c) 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
 
 use strict;
 use warnings;
-use lib ("/srv/www/perl-lib/");
 use SMT::CLI;
 use SMT::Utils;
 use File::Basename;
@@ -16,13 +16,19 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR "Unable to drop privileges. Abort!\n";
+    exit 1;
+}
+
 sub help
 {
     print __("show help\n");
     my @files;
-    find( sub { push(@files, $1) if $_ =~ /smt\-(.+)/; }, "/usr/sbin");
+    find( {wanted => sub { push(@files, $1) if $_ =~ /smt\-(.+)/; }, no_chdir => 1}, "/usr/sbin");
     
-    print "Subscription Management Tool (SMT). (c)2007,2008 Novell Inc.\n\n";
+    print "Subscroption Management Tool (SMT). (c)2007,2008 Novell Inc.\n\n";
 
     foreach my $cmd (@files)
     {
@@ -98,7 +104,7 @@ exit 0;
 
 =head1 NAME
 
-smt - "Subscription Management Tool" for SLE 10 Maintenance
+smt - "Subscroption Management Tool" for SLE 10 Maintenance
 
 =head1 SYNOPSIS
 
@@ -106,15 +112,15 @@ smt [help|--help|-h] <subcommand> [options]
 
 =head1 DESCRIPTION
 
-smt calles various subcommands to administrate your SMT Server.
+smt calls various subcommands to administrate your SMT Server.
 
 
 =head1 OPTIONS
 
 =head2 help --help -h
 
-If this option is used without subcommand, it showes the list of availbale subcommands. 
-If this iption is used with a subcommand, it showes the help text of the subcommand.
+If this option is used without subcommand, it shows the list of available subcommands.
+If this option is used with a subcommand, it shows the help text of the subcommand.
 
 =head1 AUTHORS and CONTRIBUTORS
 

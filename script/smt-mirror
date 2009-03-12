@@ -1,10 +1,11 @@
 #!/usr/bin/perl
 
-###########################################################################
-## Copyright (c) 2007 SUSE LINUX Products GmbH, Nuernberg, Germany.
-###########################################################################
+###############################################################################
+## Copyright (c) 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
 
 use strict;
+use warnings;
 use SMT::Mirror::NU;
 use SMT::Mirror::RpmMd;
 use SMT::Mirror::Yum;
@@ -19,12 +20,21 @@ use File::Basename;
 use File::Temp;
 use Time::HiRes qw(gettimeofday tv_interval);
 
+#use Data::Dumper;
+
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-#use Data::Dumper;
+#
+# FIXME: what about /root/.curlrc for proxy settings?
+#
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR "Unable to drop privileges. Abort!\n";
+    exit 1;
+}
 
 my $debug    = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;

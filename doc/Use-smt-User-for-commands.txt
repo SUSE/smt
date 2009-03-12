@@ -1,0 +1,37 @@
+Proposal:
+
+How to use a special user (e.g. smt) to execute the commands,
+instead of "root".
+
+* create a system user "smt" in RPM pre section and give him
+  permissions to read/write directories and files where neccesary.
+
+* this user get the home /var/lib/empty and as bash /bin/false.
+
+* customer still login as root to call the smt commands.
+
+* the smt commands switch to the smt user, if the calling uid is 0 (root)
+  In case a normal user is calling the smt commands, no switch happens.
+
+* we should provide a script which is doing all the chown/chmod things for
+  customers who want to use there special user for alling smt commands.
+  (e.g. there user is in global ldap directory to prevent switching uidnumbers,
+   when mirroring to a NFS mounted directory)
+
+
+===============================================================================
+
+Files and Directories which need different owners:
+
+* 0644 smt,www /var/log/smt
+* 0644 smt,www /var/run/smt
+* 0600 smt,root /etc/zypp/credentials.d/NCCcredentials
+* what about /root/.curlrc ? Because of the proxy user password?
+* smt.conf [LOCAL] MirrorTo: 0644 smt,root (recursive)
+  (or better group www? If we download a new file it is created with
+   group www) 
+
+
+
+  
+

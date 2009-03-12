@@ -6,6 +6,8 @@
 # It syncs the local SMT with the Novell NCC, creates a daily report
 # and updates the mirrored installation and update sources.
 
+PATH="/sbin:/usr/sbin:/usr/bin:/bin"
+
 SMTCMD=/usr/sbin/smt
 . /etc/smt.d/smt-cron.conf
 

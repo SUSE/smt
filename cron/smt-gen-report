@@ -6,6 +6,7 @@
 # It syncs subscriptions and registrations from NCC to the local SMT 
 # generate a report and send it via email
 
+PATH="/sbin:/usr/sbin:/usr/bin:/bin"
 SMTCMD=/usr/sbin/smt
 . /etc/smt.d/smt-cron.conf
 

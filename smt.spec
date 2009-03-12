@@ -41,13 +41,14 @@ Requires:       suseRegister
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
-PreReq:         %fillup_prereq apache2 apache2-mod_perl
+PreReq:         %fillup_prereq apache2 apache2-mod_perl pwdutils
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
 License:        GPL v2 or later
 Summary:        Subscription Management Tool
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.apache2-smt
+Source2:        smt-rpmlintrc
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -84,10 +85,12 @@ cd -
 # ---------------------------------------------------------------------------
 
 %install
-[ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
-mkdir $RPM_BUILD_ROOT
-make DESTDIR=$RPM_BUILD_ROOT install
+
+/usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d /var/lib/empty smt 2> /dev/null || :
+
+make DESTDIR=$RPM_BUILD_ROOT DOCDIR=%{_docdir} install
 make DESTDIR=$RPM_BUILD_ROOT install_conf
+
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
@@ -96,10 +99,20 @@ for manp in smt*.1; do
     install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man1/$manp
 done
 mkdir -p $RPM_BUILD_ROOT/var/run/smt
+mkdir -p $RPM_BUILD_ROOT/var/log/smt
+mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt/
+
+ln -s /usr/lib/SMT/bin/clientSetup4SMT.sh $RPM_BUILD_ROOT%{_docdir}/smt/clientSetup4SMT.sh
+
 # ---------------------------------------------------------------------------
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
+
+%pre
+if ! usr/bin/getent passwd smt >/dev/null; then
+  usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d /var/lib/empty smt 2> /dev/null || :
+fi
 
 %preun
 %stop_on_removal smt
@@ -110,6 +123,7 @@ exit 0
 
 %postun
 %restart_on_update smt
+%insserv_cleanup
 
 %files
 %defattr(-,root,root)
@@ -117,16 +131,18 @@ exit 0
 %dir %{perl_vendorlib}/SMT/Mirror
 %dir %{perl_vendorlib}/SMT/Parser
 %dir /etc/smt.d
-%dir /srv/www/htdocs/repo/
+%dir %attr(755, smt, www)/srv/www/htdocs/repo/
 %dir /srv/www/htdocs/testing/
-%dir /srv/www/htdocs/testing/repo/
+%dir %attr(755, smt, www)/srv/www/htdocs/testing/repo/
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/SMT/
 %dir /usr/lib/SMT/
 %dir /usr/lib/SMT/bin/
 %dir %{_datadir}/schemas/
 %dir %{_datadir}/schemas/smt
-%dir /var/run/smt
+%dir %{_docdir}/smt/
+%dir %attr(755, smt, www)/var/run/smt
+%dir %attr(755, smt, www)/var/log/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
@@ -146,10 +162,7 @@ exit 0
 /usr/lib/SMT/bin/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
-%doc README COPYING script/clientSetup4SMT.sh
-%doc doc/High-Level-Architecture.odp doc/Registrationdata-NCC-YEP.odt
-%doc doc/SMT-Database-Schema.odg doc/NCC-Client-Registration-via-YEP.odt
-%doc doc/Server-Tuning.txt doc/SMT-Database-Schema.txt
+%doc %{_docdir}/smt/*
 
 %changelog
 * Thu Dec 04 2008 - mc@suse.de

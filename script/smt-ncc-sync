@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+###############################################################################
+## Copyright (c) 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
+
 use strict;
 use warnings;
 use SMT::CLI;
@@ -13,6 +17,15 @@ use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+#
+# FIXME: what about /root/.curlrc for proxy settings?
+#
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR "Unable to drop privileges. Abort!\n";
+    exit 1;
+}
 
 my $mirrorable;
 my $domirror;
