@@ -11,6 +11,7 @@ CAT=/bin/cat
 CHMOD=/bin/chmod
 GREP=/usr/bin/grep
 RM=/bin/rm
+SUSEREGISTER=/usr/bin/suse_register
 
 SSLDIR=/etc/ssl/certs/
 CAFILE=("/etc/pki/tls/cert.pem" "/usr/share/ssl/cert.pem")
@@ -182,3 +183,13 @@ $CAT $SRCTMP >> $SRCONF
 $RM $SRCTMP
 
 echo "Client setup finished."
+
+read -p "Start the registration now? [y/n] " -n 1 YN
+
+echo "";
+if [ "$YN" != "Y" -a "$YN" != "y" ]; then
+	exit 0;
+fi
+
+echo "$SUSEREGISTER -i -L /root/.suse_register.log"
+$SUSEREGISTER -i -L /root/.suse_register.log
