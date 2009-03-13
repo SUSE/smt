@@ -2,10 +2,14 @@
 
 CHMOD=/bin/chmod
 CHOWN=/bin/chown
+SETFACL=/usr/bin/setfacl
 ID=/usr/bin/id
+SU=/bin/su
+CAT=/bin/cat
 
 SMT_WWW_DIRS=("/var/log/smt" "/var/run/smt")
-SMT_ROOT_FILES=("/etc/zypp/credentials.d/NCCcredentials")
+SMT_ROOT_FILES=()
+NCC_CREDENTIAL="/etc/zypp/credentials.d/NCCcredentials"
 
 SMTCONF="/etc/smt.conf"
 
@@ -92,6 +96,11 @@ if [ ! -x $CHOWN ]; then
     exit 1;
 fi
 
+if [ ! -e "$NCC_CREDENTIAL" ]; then
+    echo "$NCC_CREDENTIAL does not exist. Please register the system.";
+    exit 1;
+fi
+
 INLOCAL=0
 while IFS== read -sr key val ; do 
     #echo "KEY=VAL: '$key' '$val'"
@@ -164,5 +173,57 @@ for file in ${SMT_ROOT_FILES[@]}; do
         $CHOWN $USER.root $file
     fi
 done
+
+
+if ! `$SU -c "$CAT $NCC_CREDENTIAL >/dev/null 2>&1" -m $USER`; then
+    HAVEPERM=0
+    SKIP=0
+
+    echo -n "$SETFACL -m u:$USER:r $NCC_CREDENTIAL"
+    if [ $DRYRUN -eq 1 ]; then
+        echo
+        HAVEPERM=1
+    else
+        if [ $YES -ne 1 ]; then
+            read -p " Execute? [y/n] " -n 1 YN
+            echo
+            if [ "$YN" != "Y" -a "$YN" != "y" ]; then
+                echo "Skipped."
+                SKIP=1
+            fi
+        else
+            echo
+        fi
+        if [ $SKIP -eq 0 ]; then
+            $SETFACL -m u:$USER:r $NCC_CREDENTIAL
+            if [ $? -eq 0 ]; then
+                HAVEPERM=1
+            fi
+        fi
+    fi
+
+    if [ $HAVEPERM -eq 0 ]; then
+        SKIP=0
+
+        echo -n "$CHOWN $USER.root $NCC_CREDENTIAL"
+        if [ $DRYRUN -eq 1 ]; then
+            echo
+        else
+            if [ $YES -ne 1 ]; then
+                read -p " Execute? [y/n] " -n 1 YN
+                echo
+                if [ "$YN" != "Y" -a "$YN" != "y" ]; then
+                    echo "Skipped."
+                    SKIP=1
+                fi
+            else
+                echo
+            fi
+            if [ $SKIP -eq 0 ]; then
+                $CHOWN $USER.root $NCC_CREDENTIAL
+            fi
+        fi
+    fi
+fi
 
 exit 0;

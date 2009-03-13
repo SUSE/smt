@@ -263,9 +263,10 @@ sub getLocalRegInfos
 =item getSMTGuid()
 
 Return guid of the SMT server. If it not exists
-it creates new credentials.
+die and request a registration call.
 
 =cut
+
 sub getSMTGuid
 {
     my $guid   = "";
@@ -276,84 +277,11 @@ sub getSMTGuid
     my $SECRET_FILE = "/etc/zmd/secret";
     my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
-    if(!-d "$CREDENTIAL_DIR")
+    if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
     {
-        mkdir "$CREDENTIAL_DIR" or die "Cannot create directory $CREDENTIAL_DIR: $!\n";
+        die "Credential file does not exist. You need to register the SMT server first.";
     }
-
-    #
-    # convert old deviceid/secret file into new format if the new file do not exist
-    # We do not remove deviceid/secret because zmd is available in other products
-    # and still use these files.
-    #
-    if(-e $GUID_FILE && -e $SECRET_FILE && !-e "$fullpath")
-    {
-        # found old GUID/SECRET file. Convert them into the new format
-        open(ZMD, "< $GUID_FILE") or do
-        {
-            die("Cannot open file $GUID_FILE: $!\n");
-        };
-
-        $guid = <ZMD>;
-        chomp($guid);
-        close ZMD;
-
-        open(ZMD, "< $SECRET_FILE") or do
-        {
-            die("Cannot open file $SECRET_FILE: $!\n");
-        };
-
-        $secret = <ZMD>;
-        chomp($secret);
-        close ZMD;
-
-        open(CRED, "> $fullpath") or do {
-            die("Cannot open file $fullpath for write: $!\n");
-        };
-        print CRED "username=".$guid."\n";
-        print CRED "password=".$secret."\n";
-        close CRED;
-        my $mode = 0600;
-        chmod $mode, "$fullpath";
-
-        return $guid;
-    }
-
-    #
-    # if NCCcredentials file do not exist, create it
-    #
-    if(!-e "$fullpath")
-    {
-        $guid = `/usr/bin/uuidgen 2>/dev/null`;
-        if(!defined $guid || $guid eq "")
-        {
-            die("Cannot create guid. Command '/usr/bin/uuidgen' failed.");
-        }
-        chomp $guid;
-        $guid =~ s/-//g;  # remove the -
-
-        sleep(1);
-
-        $secret = `/usr/bin/uuidgen 2>/dev/null`;
-        if(!defined $secret || $secret eq "")
-        {
-            die("Cannot create secret. Command '/usr/bin/uuidgen' failed.");
-        }
-        chomp $secret;
-        $secret =~ s/-//g;  # remove the -
-
-        open(CRED, "> $fullpath") or do {
-            die("Cannot open file $fullpath for write: $!\n");
-        };
-        print CRED "username=$guid\n";
-        print CRED "password=$secret\n";
-        close CRED;
-        my $mode = 0600;
-        chmod $mode, "$fullpath";
-
-        return $guid;
-    }
-
+    
     #
     # read credentials from NCCcredentials file
     #

@@ -1,6 +1,18 @@
+TODO (SMT11):
+=============================
 
-TODO:
-=====
+- use new installation.xml and test it according to bnc #377154
+
+- yast2-smt: check if /etc/zypp/credentials.d/NCCcredentials file
+             exists. If not, display and error message and advise 
+             the user to register the system first. 
+
+- yast2-smt: check the permissions of /etc/zypp/credentials.d/NCCcredentials
+             the user "smt" needs read access to this file.
+             Not sure if we want to do a chown smt.root ... or set
+             a ACL to allow smt to read this file.
+             Maybe first try to set a ACL, if this does not work, change the
+             owner.
 
 
 Nice-To-Have but not so important
@@ -14,14 +26,10 @@ Nice-To-Have but not so important
   Talked to security-team: This is nice to have but no requirement
   because the client are checking the repomd too.
 
-
-TODO next SP or SLE11 version
-=============================
-
 - provide --config <configfile> options for the smt commands to
   use a different configfile then /etc/smt.conf 
 
-- use new installation.xml and test it according to bnc #377154
+
 
 DONE:
 =====
