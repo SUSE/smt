@@ -7,6 +7,11 @@ TODO (SMT11):
              exists. If not, display and error message and advise 
              the user to register the system first. 
 
+             From Stano:
+             Well, it can then assume that the system is not registered, suggest 
+             registraation. But for all offline scenarios, it has to be able to 
+             create the file itself.
+
 - yast2-smt: check the permissions of /etc/zypp/credentials.d/NCCcredentials
              the user "smt" needs read access to this file.
              Not sure if we want to do a chown smt.root ... or set
