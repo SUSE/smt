@@ -281,42 +281,48 @@ sub renderReport($$)
     }
     elsif ($mode eq 'xml')
     {
-        $res .= "<section>";
-        if(defined $heading && $heading ne "")
-        {
-            $res .= "<title>$heading</title>";
-        }
-        $res .= '<table frame="all"><title>$heading</title><tgroup cols="4" align="center"><thead><row>';
+        my $writer = new XML::Writer(OUTPUT => \$res);
+
+        $writer->startTag("part", title => "$heading");
+        $writer->startTag("table");
+        my @cols = ();
         
         if(ref($data{'cols'}->[0]) ne "HASH")
         {
             foreach my $val (@{$data{'cols'}})
             {
-                $res .= "<entry>$val</entry>";
+                push @cols, "$val";
             }
         }
         else
         {
             foreach my $col (@{$data{'cols'}})
             {
-                $res .= "<entry>".$col->{name}."</entry>";
+                push @cols, $col->{name};
             }
         }
-        $res .= "</row></thead><tbody>";
 
         foreach my $row (@{$data{'vals'}})
         {
-            $res .= "<row>";
-            foreach my $value (@{$row})
+            $writer->startTag("row");
+            for(my $i = 0; $i < @cols; $i++)
             {
-                $value = '' if (! defined $value);
-                #$value =~ s/\n/<br>/g;
-                $res .= "<entry>$value</entry>";
+                my $value = '';
+                if (defined $row->[$i])
+                {
+                    $value = $row->[$i];
+                }
+                foreach my $sv (split(/\n/, $value))
+                {
+                    $writer->startTag("col", id => $cols[$i]);
+                    $writer->characters($sv);
+                    $writer->endTag("col");
+                }
             }
-            $res .= "</row>";
+            $writer->endTag("row");
         }
-        $res .= "</tbody></tgroup></table>";
-        $res .= "</section>";
+        $writer->endTag("table");
+        $writer->endTag("part");
     }
     else
     {

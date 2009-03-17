@@ -30,6 +30,7 @@ my $attach;  # attach csv report to report mail
 my $quiet;   # suppress output to STDOUT
 my $csv;     # export data as csv
 my $pdf;     # export data as pdf
+my $xml;     # export data as xml
 my $file;    # write output to file
 my $logfile;
 my $nonccsync = 0;
@@ -235,9 +236,10 @@ sub getReportRenderedAs
             }
             elsif($mode eq 'xml')
             {
-                $res .= "<screen>\n";
-                $res .= $DATA{$report}{$subrep};
-                $res .= "</screen>";
+                return '';
+                #$res .= "<screen>\n";
+                #$res .= $DATA{$report}{$subrep};
+                #$res .= "</screen>";
             }
             else
             {
@@ -310,13 +312,16 @@ sub getMergedReport($)
         if($renderMode eq 'html')
         {
             $res .= "<pre>\n";
+            $res .= $legendLocal."\n\n";
         }
         elsif($renderMode eq 'xml')
         {
-            $res .= "<screen>\n";
+            #$res .= "<screen>\n";
         }
-        
-        $res .= $legendLocal."\n\n";
+        else
+        {
+            $res .= $legendLocal."\n\n";
+        }
     }
     
     if($nccreport)
@@ -344,23 +349,31 @@ sub getMergedReport($)
         if($renderMode eq 'html')
         {
             $res .= "<pre>\n";
+            $res .= $legendNCC."\n\n";
         }
         elsif($renderMode eq 'xml')
         {
-            $res .= "<screen>\n";
+            #$res .= "<screen>\n";
         }
-        $res .= $legendNCC."\n\n";
+        else
+        {
+        }
     }
     
-    $res .= $footer."\n\n";
     if($renderMode eq 'html')
     {
+        $res .= $footer."\n\n";
         $res .= "</pre>";
     }
     elsif($renderMode eq 'xml')
     {
-        $res .= "</screen>";
+        #$res .= "</screen>";
     }
+    else
+    {
+        $res .= $footer."\n\n";
+    }
+    
     return $res;
 }
 
@@ -551,10 +564,15 @@ if (defined $file)
     {
         $csv = 1;
     }
-    # if file extension is csv we switch to csv export
+    # if file extension is csv we switch to pdf export
     if ( (defined $pdf && $pdf == 1) ||  $Eext eq '.pdf' )
     {
         $pdf = 1;
+    }
+    # if file extension is csv we switch to xml export
+    if ( (defined $xml && $xml == 1) ||  $Eext eq '.xml' )
+    {
+        $xml = 1;
     }
 
     if ($csv)
@@ -592,6 +610,16 @@ if (defined $file)
         {
             printLog($LOG, $vblevel, LOG_ERROR, "Cannot create PDF: /usr/bin/htmldoc not found.");
         }
+    }
+    elsif( $xml )
+    {
+        $fname = $Edir.$Efile.$Eext;
+        open(XML, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
+        print XML '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        print XML '<report>';
+        print XML getMergedReport('xml');
+        print XML '</report>';
+        close XML;
     }
     else
     {
