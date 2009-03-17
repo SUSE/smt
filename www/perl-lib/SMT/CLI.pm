@@ -119,6 +119,7 @@ sub escapeCSVRow($)
 #   };
 #   $mode = 'asciitable';
 #   $mode = 'csv';
+#   $mode = 'html';
 #
 sub renderReport($$)
 {
@@ -195,7 +196,7 @@ sub renderReport($$)
 
         # draw the table now, because we need to work with it
         $res = $t->draw();
-
+        
         # manually add the heading (bnc#396702)
         if (defined $heading)
         {
@@ -206,9 +207,9 @@ sub renderReport($$)
                 my $tlen = length(substr($res, 0, index($res, "\n")));
                 $hoff = int(($tlen - $hstrlen)/2);
                 if ($hoff < 0 ) { $hoff = 0 }
-
+                
                 $headingFmt = "\n " . ' ' x $hoff . $heading . "\n";
-
+                
                 $res = $headingFmt.$res;
             }
         }
@@ -241,6 +242,81 @@ sub renderReport($$)
             $res .= escapeCSVRow(\@{$valrow});
             $res .= "\n";
         }
+    }
+    elsif ($mode eq 'html')
+    {
+        if(defined $heading && $heading ne "")
+        {
+            $res .= "<h2>$heading</h2>";
+        }
+        $res .= '<table border="1"><tr>';
+        
+        if(ref($data{'cols'}->[0]) ne "HASH")
+        {
+            foreach my $val (@{$data{'cols'}})
+            {
+                $res .= "<th>$val</th>";
+            }
+        }
+        else
+        {
+            foreach my $col (@{$data{'cols'}})
+            {
+                $res .= "<th>".$col->{name}."</th>";
+            }
+        }
+        $res .= "</tr><tr>";
+
+        foreach my $row (@{$data{'vals'}})
+        {
+            foreach my $value (@{$row})
+            {
+                $value = '' if (! defined $value);
+                $value =~ s/\n/<br>/g;
+                $res .= "<td>$value</td>";
+            }
+            $res .= "</tr><tr>";
+        }
+        $res .= "</tr></table>";
+    }
+    elsif ($mode eq 'xml')
+    {
+        $res .= "<section>";
+        if(defined $heading && $heading ne "")
+        {
+            $res .= "<title>$heading</title>";
+        }
+        $res .= '<table frame="all"><title>$heading</title><tgroup cols="4" align="center"><thead><row>';
+        
+        if(ref($data{'cols'}->[0]) ne "HASH")
+        {
+            foreach my $val (@{$data{'cols'}})
+            {
+                $res .= "<entry>$val</entry>";
+            }
+        }
+        else
+        {
+            foreach my $col (@{$data{'cols'}})
+            {
+                $res .= "<entry>".$col->{name}."</entry>";
+            }
+        }
+        $res .= "</row></thead><tbody>";
+
+        foreach my $row (@{$data{'vals'}})
+        {
+            $res .= "<row>";
+            foreach my $value (@{$row})
+            {
+                $value = '' if (! defined $value);
+                #$value =~ s/\n/<br>/g;
+                $res .= "<entry>$value</entry>";
+            }
+            $res .= "</row>";
+        }
+        $res .= "</tbody></tgroup></table>";
+        $res .= "</section>";
     }
     else
     {

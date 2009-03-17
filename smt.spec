@@ -38,6 +38,7 @@ Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
 Requires:       logrotate
 Requires:       suseRegister
+Requires:       htmldoc
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt

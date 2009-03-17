@@ -10,7 +10,7 @@ use SMT::CLI;
 use SMT::Utils;
 use SMT::NCCRegTools;
 use File::Basename;
-
+use File::Temp;
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
@@ -29,6 +29,7 @@ my $mail;    # activate sending of report mail
 my $attach;  # attach csv report to report mail
 my $quiet;   # suppress output to STDOUT
 my $csv;     # export data as csv
+my $pdf;     # export data as pdf
 my $file;    # write output to file
 my $logfile;
 my $nonccsync = 0;
@@ -224,10 +225,28 @@ sub getReportRenderedAs
         if (($subrep eq 'summary' && ref($DATA{$report}{$subrep}) ne "HASH") ||
             ($subrep eq 'alerts' && ref($DATA{$report}{$subrep}) ne "HASH"))
         {
-            # do not render summaries
-            return $DATA{$report}{$subrep};
+            my $res = "";
+            
+            if($mode eq 'html')
+            {
+                $res .= "<p>\n";
+                $res .= join("<br>", split(/\n/, $DATA{$report}{$subrep}));
+                $res .= "</p>";
+            }
+            elsif($mode eq 'xml')
+            {
+                $res .= "<screen>\n";
+                $res .= $DATA{$report}{$subrep};
+                $res .= "</screen>";
+            }
+            else
+            {
+                # do not render summaries
+                $res .= $DATA{$report}{$subrep};
+            }
+            return $res;            
         }
-
+        
         # check if we need to (re)render
         if ( ! exists  $REP{$mode}{$report}{$subrep}  || 
              ! defined $REP{$mode}{$report}{$subrep}    )
@@ -263,25 +282,58 @@ sub getMergedReport($)
                    );
 
     my $res = '';
-   
+    my $txt = '';
+    
     if($localreport)
     {
-        $res .= $headings{'prodsub'}."\n";
-        $res .= sprintf '=' x length($headings{'prodsub'})."\n\n";
+        if($renderMode eq 'html')
+        {
+            $res .= "<h1>".$headings{'prodsub'}."</h1>";
+        }
+        elsif($renderMode eq 'xml')
+        {
+            $res .= "<title>".$headings{'prodsub'}."</title>";
+        }
+        else
+        {
+            $res .= $headings{'prodsub'}."\n";
+            $res .= sprintf '=' x length($headings{'prodsub'})."\n\n";
+        }
+        
         $res .= getReportRenderedAs($renderMode, 'prodsub', 'alerts')."\n";
         $res .= getReportRenderedAs($renderMode, 'prodsub', 'summary')."\n";
         $res .= getReportRenderedAs($renderMode, 'prodsub', 'active')."\n";
         $res .= getReportRenderedAs($renderMode, 'prodsub', 'soon')."\n";
         $res .= getReportRenderedAs($renderMode, 'prodsub', 'expired')."\n";
-        $res .= "\n\n"; 
+        $res .= "\n\n";
 
+        if($renderMode eq 'html')
+        {
+            $res .= "<pre>\n";
+        }
+        elsif($renderMode eq 'xml')
+        {
+            $res .= "<screen>\n";
+        }
+        
         $res .= $legendLocal."\n\n";
     }
     
     if($nccreport)
     {
-        $res .= $headings{'sub'}."\n";
-        $res .= sprintf '=' x length($headings{'sub'})."\n\n";
+        if($renderMode eq 'html')
+        {
+            $res .= "<h1>".$headings{'sub'}."</h1>";
+        }
+        elsif($renderMode eq 'xml')
+        {
+            $res .= "<title>".$headings{'sub'}."</title>";
+        }
+        else
+        {
+            $res .= $headings{'sub'}."\n";
+            $res .= sprintf '=' x length($headings{'sub'})."\n\n";
+        }
         $res .= getReportRenderedAs($renderMode, 'sub', 'alerts')."\n";
         $res .= getReportRenderedAs($renderMode, 'sub', 'summary')."\n";
         $res .= getReportRenderedAs($renderMode, 'sub', 'active')."\n";
@@ -289,11 +341,26 @@ sub getMergedReport($)
         $res .= getReportRenderedAs($renderMode, 'sub', 'expired')."\n";
         $res .= "\n\n";
 
+        if($renderMode eq 'html')
+        {
+            $res .= "<pre>\n";
+        }
+        elsif($renderMode eq 'xml')
+        {
+            $res .= "<screen>\n";
+        }
         $res .= $legendNCC."\n\n";
     }
     
     $res .= $footer."\n\n";
-
+    if($renderMode eq 'html')
+    {
+        $res .= "</pre>";
+    }
+    elsif($renderMode eq 'xml')
+    {
+        $res .= "</screen>";
+    }
     return $res;
 }
 
@@ -313,7 +380,7 @@ sub getSeparateReports($)
         $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'prodsub', 'soon');
         $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'prodsub', 'expired');
         $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'prodsub', 'summary');
-        $res{'product_subscription_alerts'}      = getReportRenderedAs($renderMode, 'prodsub', 'alerts');
+        $res{'product_subscription_alerts'}     = getReportRenderedAs($renderMode, 'prodsub', 'alerts');
     }
     
     if($nccreport)
@@ -322,7 +389,7 @@ sub getSeparateReports($)
         $res{'subscription_expiresoon'} = getReportRenderedAs($renderMode, 'sub', 'soon');
         $res{'subscription_expired'}    = getReportRenderedAs($renderMode, 'sub', 'expired');
         $res{'subscription_summary'}    = getReportRenderedAs($renderMode, 'sub', 'summary');
-        $res{'subscription_alerts'}      = getReportRenderedAs($renderMode, 'sub', 'alerts');
+        $res{'subscription_alerts'}     = getReportRenderedAs($renderMode, 'sub', 'alerts');
     }
     
     return %res;
@@ -344,6 +411,7 @@ sub getSeparateReports($)
                           'attach|a'   => \$attach,
                           'quiet|q'    => \$quiet,
                           'csv|c'      => \$csv,
+                          'pdf|p'      => \$pdf,
                           'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
                           'logfile|L=s'=> \$logfile
                          );
@@ -483,6 +551,11 @@ if (defined $file)
     {
         $csv = 1;
     }
+    # if file extension is csv we switch to csv export
+    if ( (defined $pdf && $pdf == 1) ||  $Eext eq '.pdf' )
+    {
+        $pdf = 1;
+    }
 
     if ($csv)
     {
@@ -500,9 +573,29 @@ if (defined $file)
             close REPFILE;
         }
     }
+    elsif( $pdf )
+    {
+        if( -x "/usr/bin/htmldoc" )
+        {
+            
+            $fname = $Edir.$Efile.$Eext;
+            my $html = "<html><head><title>SMT Subscription Report</title></head><body>";
+            $html .= getMergedReport('html');
+            $html .= "</body></html>";
+            my $tfh = new File::Temp(TEMPLATE => "/tmp/smt-report-XXXXXXXX", UNLINK => 1, SUFFIX => ".html");
+            my $tname = $tfh->filename();
+            print $tfh $html."\n";
+            close $tfh;
+            `/usr/bin/htmldoc --webpage --quiet --size 11x8.5in -f $fname $tname `;
+        }
+        else
+        {
+            printLog($LOG, $vblevel, LOG_ERROR, "Cannot create PDF: /usr/bin/htmldoc not found.");
+        }
+    }
     else
     {
-        $fname = $fname = $Edir.$Efile.$Eext;
+        $fname = $Edir.$Efile.$Eext;
         open(REPFILE, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
         print REPFILE getMergedReport('asciitable');
         close REPFILE;
