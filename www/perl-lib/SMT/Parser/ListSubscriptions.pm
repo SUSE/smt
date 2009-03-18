@@ -221,6 +221,10 @@ sub handle_end_tag
         {
             $self->{CURRENT}->{CONSUMED} = $self->{TMP};
         }
+        elsif(lc($element) eq "consumed-virtual")
+        {
+            $self->{CURRENT}->{CONSUMEDVIRT} = $self->{TMP};
+        }
         
         $self->{TMP} = "";
     }

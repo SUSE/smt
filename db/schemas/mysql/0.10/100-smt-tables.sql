@@ -35,6 +35,7 @@ create table Subscriptions(SUBID          CHAR(50) PRIMARY KEY,
                            PRODUCT_CLASS  VARCHAR(100),
                            NODECOUNT      integer NOT NULL,
                            CONSUMED       integer DEFAULT 0,
+                           CONSUMEDVIRT   integer DEFAULT 0,
                            INDEX idx_sub_product_class (PRODUCT_CLASS)
                           );
 

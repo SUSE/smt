@@ -843,9 +843,9 @@ sub _listsub_handler
     eval
     {
         $statement  = "INSERT INTO Subscriptions(SUBID, REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, ";
-        $statement .= "SUBDURATION, SERVERCLASS, PRODUCT_CLASS, NODECOUNT, CONSUMED)";
+        $statement .= "SUBDURATION, SERVERCLASS, PRODUCT_CLASS, NODECOUNT, CONSUMED, CONSUMEDVIRT)";
         # bind_param with SQL_INTEGER seems not to support negative integers. So we need to workaround NODECOUNT
-        $statement .= sprintf(" VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, %d, ?)", int($data->{NODECOUNT}));
+        $statement .= sprintf(" VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, %d, ?, ?)", int($data->{NODECOUNT}));
         
         my $sth = $self->{DBH}->prepare($statement);
         $sth->bind_param(1, $data->{SUBID});
@@ -877,6 +877,7 @@ sub _listsub_handler
         $sth->bind_param(10, $data->{PRODUCTCLASS});
 
         $sth->bind_param(11, int($data->{CONSUMED}), SQL_INTEGER);
+        $sth->bind_param(12, int($data->{CONSUMEDVIRT}), SQL_INTEGER);
         
         my $res = $sth->execute;
         

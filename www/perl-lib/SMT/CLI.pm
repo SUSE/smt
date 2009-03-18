@@ -1203,8 +1203,9 @@ sub productSubscriptionReport
         }
 
         $calchash->{$product_class}->{MACHINES}       = 0;
+        $calchash->{$product_class}->{MACHINESVIRT}   = 0;
         $calchash->{$product_class}->{TOTMACHINES}    = 0;
-        $calchash->{$product_class}->{VMCOUNT}        = 0;
+        $calchash->{$product_class}->{TOTMACHINESVIRT}= 0;
         $calchash->{$product_class}->{SUM_ACTIVE_SUB} = 0;
         $calchash->{$product_class}->{SUM_ESOON_SUB}  = 0;
     }
@@ -1238,7 +1239,8 @@ sub productSubscriptionReport
             #
             # this is a VM, count it
             #
-            $calchash->{$set->{PRODUCT_CLASS}}->{VMCOUNT} += 1;
+            $calchash->{$set->{PRODUCT_CLASS}}->{MACHINESVIRT} += 1;
+            $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINESVIRT} += 1;
 
             #
             # currently we do not count subscriptions for VMs
@@ -1300,6 +1302,11 @@ sub productSubscriptionReport
                    id    => "localused"
                   },
                   {
+                   name  => __("Used Locally\n(Virtual)"),
+                   align => "auto",
+                   id    => "localusedvirt"
+                  },
+                  {
                    name  => __("Subscription\nExpires"),
                    align => "auto",
                    id    => "expires"
@@ -1310,6 +1317,7 @@ sub productSubscriptionReport
     foreach my $product_class (keys %{$res})
     {
         my $assignedMachines = 0;
+        my $assignedMachinesVirt = 0;
         my $nc =  (int $res->{$product_class}->{SUM_NODECOUNT});
         
         if($res->{$product_class}->{UNLIMITED})
@@ -1334,10 +1342,20 @@ sub productSubscriptionReport
                 $calchash->{$product_class}->{MACHINES} -= $nc;                
             }
         }
-                
+        
+        # virtual machines are not really counted. If we have virtual machines
+        # for this product_class assign them all to this subscription
+
+        if( $calchash->{$product_class}->{MACHINESVIRT} > 0 )
+        {
+            $assignedMachinesVirt = $calchash->{$product_class}->{MACHINESVIRT};
+            $calchash->{$product_class}->{MACHINESVIRT} = 0;
+        }
+        
         push @AVALUES, [ $subnamesByProductClass->{$product_class},
                          $nc,
                          $assignedMachines,
+                         $assignedMachinesVirt,
                          (defined $res->{$product_class}->{MINENDDATE})?$res->{$product_class}->{MINENDDATE}:"never"
                        ];
     }
@@ -1374,6 +1392,11 @@ sub productSubscriptionReport
                    id    => "localused"
                   },
                   {
+                   name  => __("Used Locally\n(Virtual)"),
+                   align => "auto",
+                   id    => "localusedvirt"
+                  },
+                  {
                    name  => __("Subscription\nExpires"),
                    align => "auto",
                    id    => "expires"
@@ -1384,12 +1407,8 @@ sub productSubscriptionReport
     foreach my $product_class (keys %{$res})
     {
         my $assignedMachines = 0;
+        my $assignedMachinesVirt = 0;
         my $nc = (int $res->{$product_class}->{SUM_NODECOUNT});
-        
-        #if(!exists $expireSoonMachines->{$product_class} || ! defined $expireSoonMachines->{$product_class})
-        #{
-        #    $expireSoonMachines->{$product_class} = 0;
-        #}
         
         if($res->{$product_class}->{UNLIMITED})
         {
@@ -1414,14 +1433,19 @@ sub productSubscriptionReport
             }
         }
 
-        #if($assignedMachines > 0)
-        #{
-        #    $expireSoonMachines->{$product_class} += int $assignedMachines;
-        #}
-        
+        # virtual machines are not really counted. If we have virtual machines
+        # for this product_class assign them all to this subscription
+
+        if( $calchash->{$product_class}->{MACHINESVIRT} > 0 )
+        {
+            $assignedMachinesVirt = $calchash->{$product_class}->{MACHINESVIRT};
+            $calchash->{$product_class}->{MACHINESVIRT} = 0;
+        }
+
         push @SVALUES, [ $subnamesByProductClass->{$product_class},
                          $nc,
                          $assignedMachines,
+                         $assignedMachinesVirt,
                          $res->{$product_class}->{MINENDDATE}
                       ];
     }
@@ -1458,6 +1482,11 @@ sub productSubscriptionReport
                    id    => "localused"
                   },
                   {
+                   name  => __("Used Locally\n(Virtual)"),
+                   align => "auto",
+                   id    => "localusedvirt"
+                  },
+                  {
                    name  => __("Subscription\nExpires"),
                    align => "auto",
                    id    => "expires"
@@ -1468,25 +1497,18 @@ sub productSubscriptionReport
     foreach my $product_class (keys %{$res})
     {
         my $assignedMachines = int $calchash->{$product_class}->{MACHINES};
+        my $assignedMachinesVirt = int $calchash->{$product_class}->{MACHINESVIRT};
         my $nc =  (int $res->{$product_class}->{SUM_NODECOUNT});
 
-        #if(!exists $expiredMachines->{$product_class} || ! defined $expiredMachines->{$product_class})
-        #{
-        #    $expiredMachines->{$product_class} = 0;
-        #}
-        
         if($res->{$product_class}->{UNLIMITED})
         {
             $nc = "unlimited";
         }
         
-        #next if($assignedMachines == 0);
-
-        #$expiredMachines->{$product_class} += int $assignedMachines;
-        
         push @EVALUES, [ $subnamesByProductClass->{$product_class},
                          $nc,
                          $assignedMachines,
+                         $assignedMachinesVirt,
                          $res->{$product_class}->{MAXENDDATE}
                        ];
     }
@@ -1507,6 +1529,11 @@ sub productSubscriptionReport
                      name  => __("Locally Registered\nSystems"),
                      align => "auto",
                      id    => "localregsystems"
+                    },
+                    {
+                     name  => __("Locally Registered\nVirtual Systems"),
+                     align => "auto",
+                     id    => "localregsystemsvirt"
                     },
                     {
                      name  => __("Active\nPurchase Count"), 
@@ -1545,12 +1572,9 @@ sub productSubscriptionReport
             $missing = 0;
         }
         
-        #my $vmtext = (exists $calchash->{$product_class}->{VMCOUNT} &&
-        #              defined $calchash->{$product_class}->{VMCOUNT} &&
-        #              $calchash->{$product_class}->{VMCOUNT} > 0)?"  (+ ".$calchash->{$product_class}->{VMCOUNT}." VMs)":"";
-
         push @SUMVALUES, [$subnamesByProductClass->{$product_class},
                           $calchash->{$product_class}->{TOTMACHINES},
+                          $calchash->{$product_class}->{TOTMACHINESVIRT},
                           ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB},
                           ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB},
                           $missing];
@@ -1679,7 +1703,7 @@ sub subscriptionReport
         }
     }
 
-    $statement = "select PRODUCT_CLASS, SUM(CONSUMED) AS SUM_TOTALCONSUMED from Subscriptions group by PRODUCT_CLASS;";
+    $statement = "select PRODUCT_CLASS, SUM(CONSUMED) AS SUM_TOTALCONSUMED, SUM(CONSUMEDVIRT) AS SUM_TOTALCONSUMEDVIRT from Subscriptions group by PRODUCT_CLASS;";
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
@@ -1691,18 +1715,23 @@ sub subscriptionReport
         {
             $res->{$product_class}->{SUM_TOTALCONSUMED} = 0;
         }
+        if(!exists $res->{$product_class}->{SUM_TOTALCONSUMEDVIRT} || !defined $res->{$product_class}->{SUM_TOTALCONSUMEDVIRT})
+        {
+            $res->{$product_class}->{SUM_TOTALCONSUMEDVIRT} = 0;
+        }
         
-        $calchash->{$product_class}->{MACHINES}       = int $res->{$product_class}->{SUM_TOTALCONSUMED};
-        $calchash->{$product_class}->{TOTMACHINES}    = int $calchash->{$product_class}->{MACHINES};
-        $calchash->{$product_class}->{SUM_ACTIVE_SUB} = 0;
-        $calchash->{$product_class}->{SUM_ESOON_SUB}  = 0;
+        $calchash->{$product_class}->{MACHINES}        = int $res->{$product_class}->{SUM_TOTALCONSUMED};
+        $calchash->{$product_class}->{TOTMACHINES}     = int $calchash->{$product_class}->{MACHINES};
+        $calchash->{$product_class}->{TOTMACHINESVIRT} = int $res->{$product_class}->{SUM_TOTALCONSUMEDVIRT};
+        $calchash->{$product_class}->{SUM_ACTIVE_SUB}  = 0;
+        $calchash->{$product_class}->{SUM_ESOON_SUB}   = 0;
     }
 
     #
     # Active Subscriptions
     #
 
-    $statement  = "select SUBID, SUBNAME, PRODUCT_CLASS, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, PRODUCT_CLASS, REGCODE, NODECOUNT, CONSUMED, CONSUMEDVIRT, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL);";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
@@ -1750,6 +1779,11 @@ sub subscriptionReport
                    id    => "used"
                   },
                   {
+                   name  => __("Total Used\n(Virtual)"),
+                   align => "auto",
+                   id    => "usedvirt"
+                  },
+                  {
                    name  => __("Used\nLocally"),
                    align => "auto",
                    id    => "localused"
@@ -1781,11 +1815,12 @@ sub subscriptionReport
         {
             $calchash->{$product_class}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$product_class}->{SUM_ACTIVE_SUB} != -1);
         }
-                
+        
         push @AVALUES, [ $res->{$subid}->{SUBNAME},
                          $res->{$subid}->{REGCODE},
                          $nc,
                          $res->{$subid}->{CONSUMED},
+                         $res->{$subid}->{CONSUMEDVIRT},
                          (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
                          (!defined $res->{$subid}->{SUBENDDATE})?"never":$res->{$subid}->{SUBENDDATE}
                        ];
@@ -1796,7 +1831,7 @@ sub subscriptionReport
     # Expire soon
     #
 
-    $statement  = "select SUBID, SUBNAME, PRODUCT_CLASS, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, PRODUCT_CLASS, REGCODE, NODECOUNT, CONSUMED, CONSUMEDVIRT, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ? ;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
@@ -1846,6 +1881,11 @@ sub subscriptionReport
                    id    => "used"
                   },
                   {
+                   name  => __("Total Used\n(Virtual)") ,
+                   align => "auto",
+                   id    => "usedvirt"
+                  },
+                  {
                    name  => __("Used\nLocally"), 
                    align => "auto",
                    id    => "localused"
@@ -1878,6 +1918,7 @@ sub subscriptionReport
                          $res->{$subid}->{REGCODE},
                          $nc,
                          $res->{$subid}->{CONSUMED},
+                         $res->{$subid}->{CONSUMEDVIRT},
                          (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
                          $res->{$subid}->{SUBENDDATE}
                        ];
@@ -1889,7 +1930,7 @@ sub subscriptionReport
     # Expired Subscriptions
     #
 
-    $statement  = "select SUBID, SUBNAME, PRODUCT_CLASS, REGCODE, NODECOUNT, CONSUMED, SUBSTATUS, SUBENDDATE from Subscriptions ";
+    $statement  = "select SUBID, SUBNAME, PRODUCT_CLASS, REGCODE, NODECOUNT, CONSUMED, CONSUMEDVIRT, SUBSTATUS, SUBENDDATE from Subscriptions ";
     $statement .= "where (SUBSTATUS = 'EXPIRED' or (SUBENDDATE < ? and SUBENDDATE IS NOT NULL)) ;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $now, SQL_TIMESTAMP);
@@ -1937,6 +1978,11 @@ sub subscriptionReport
                    id    => "used"
                   },
                   {
+                   name  => __("Total Used\n(Virtual)") ,
+                   align => "auto",
+                   id    => "usedvirt"
+                  },
+                  {
                    name  => __("Used\nLocally"), 
                    align => "auto",
                    id    => "localused"
@@ -1959,15 +2005,11 @@ sub subscriptionReport
             $nc = "unlimited";
         }
         
-        #
-        # we do not show expired subscriptions which do not have a machine assigned
-        #next if($res->{$subid}->{CONSUMED} == 0 && 
-        #        (!exists $res->{$subid}->{ASSIGNED_MACHINES} || $res->{$subid}->{ASSIGNED_MACHINES} == 0));
-
         push @EVALUES, [ $res->{$subid}->{SUBNAME},
                          $res->{$subid}->{REGCODE},
                          $nc,
                          $res->{$subid}->{CONSUMED},
+                         $res->{$subid}->{CONSUMEDVIRT},
                          (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
                          $res->{$subid}->{SUBENDDATE}
                        ];
@@ -1990,6 +2032,11 @@ sub subscriptionReport
                      name  => __("Total Systems\nRegistered with NCC"),
                      align => "auto",
                      id    => "regsystems"
+                    },
+                    {
+                     name  => __("Total Virtual Systems\nRegistered with NCC"),
+                     align => "auto",
+                     id    => "regsystemsvirt"
                     },
                     {
                      name  => __("Active\nPurchase Count"),
@@ -2024,6 +2071,7 @@ sub subscriptionReport
         
         push @SUMVALUES, [$subnamesByProductClass->{$product_class}, 
                           $calchash->{$product_class}->{TOTMACHINES}, 
+                          $calchash->{$product_class}->{TOTMACHINESVIRT}, 
                           ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB}, 
                           ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB}, 
                           $missing];
