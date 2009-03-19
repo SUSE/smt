@@ -28,49 +28,17 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 sub init
 {
-    my $nodbh = shift  || 0;
-
     my $dbh = undef;
     my $cfg = undef;
-    my $nuri;
 
-    eval
-    {
-        $cfg = SMT::Utils::getSMTConfig();
-    };
-    if($@ || !defined $cfg)
-    {
-        die __("Cannot read the SMT configuration file: ").$@;
-    }
-
-    if(!$nodbh)
-    {
-        if ( not $dbh=SMT::Utils::db_connect($cfg) )
-        {
-            die __("ERROR: Could not connect to the database");
-        }
-    }
-
-    # TODO move the url assembling code out
-    my $NUUrl = $cfg->val("NU", "NUUrl");
-    if(!defined $NUUrl || $NUUrl eq "")
-    {
-      die __("Cannot read NU Url");
-    }
-
-    my $nuUser = $cfg->val("NU", "NUUser");
-    my $nuPass = $cfg->val("NU", "NUPass");
+    $cfg = SMT::Utils::getSMTConfig();
     
-    if(!defined $nuUser || $nuUser eq "" ||
-      !defined $nuPass || $nuPass eq "")
+    if ( not $dbh=SMT::Utils::db_connect($cfg) )
     {
-        die __("Cannot read the Mirror Credentials");
+        die __("ERROR: Could not connect to the database");
     }
-
-    $nuri = URI->new($NUUrl);
-    $nuri->userinfo("$nuUser:$nuPass");
-
-    return ($cfg, $dbh, $nuri);
+    
+    return ($cfg, $dbh);
 }
 
 
@@ -366,7 +334,7 @@ sub getCatalogs
 {
     my %options = @_;
 
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     my $sql = "select * from Catalogs";
 
     $sql = $sql . " where 1";
@@ -453,7 +421,7 @@ sub listCatalogs
 sub getProducts
 {
     my %options = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
 
     my $sql = "select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID=p.PRODUCTDATAID) AS registered_machines from Products p where 1 order by PRODUCT,VERSION,REL,ARCH";
 
@@ -533,7 +501,7 @@ sub listProducts
 
 sub getRegistrations
 {
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
 
     my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
@@ -570,7 +538,7 @@ sub listRegistrations
     
     if(exists $options{verbose} && defined $options{verbose} && $options{verbose})
     {
-        my ($cfg, $dbh, $nuri) = init();
+        my ($cfg, $dbh) = init();
 
         my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
@@ -628,7 +596,7 @@ sub setCatalogsByProduct
 {
     my %opts = @_;
     
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     my $enable = 0;
     
     #( verbose => $verbose, prodStr => $enableByProduct, enable => [1,0])
@@ -698,7 +666,7 @@ sub setCatalogsByProduct
 
 sub resetCatalogsStatus
 {
-  my ($cfg, $dbh, $nuri) = init();
+  my ($cfg, $dbh) = init();
 
   my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
   $sth->execute();
@@ -707,7 +675,7 @@ sub resetCatalogsStatus
 sub setCatalogDoMirror
 {
     my %opt = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     
     if(exists $opt{enabled} && defined $opt{enabled} )
     {
@@ -748,7 +716,7 @@ sub setCatalogDoMirror
 sub setCatalogStaging
 {
     my %opt = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     
     if(exists $opt{enabled} && defined $opt{enabled} )
     {
@@ -789,23 +757,59 @@ sub setCatalogStaging
 sub catalogDoMirrorFlag
 {
   my %options = @_;
-  my ($cfg, $dbh, $nuri) = init();
+  my ($cfg, $dbh) = init();
   return 1;
 }
 
 sub setMirrorableCatalogs
 {
     my %opt = @_;
-    my ($cfg, $dbh, $nuri) = ();
-
+    my ($cfg, $dbh) = ();
+    my $nuri = undef;
+    
     if(defined $opt{todir} && $opt{todir} ne "")
     {
-      ($cfg, $dbh, $nuri) = init(1);
+        $cfg = SMT::Utils::getSMTConfig();
+        
+        my $NUUrl = $cfg->val("NU", "NUUrl");
+        if(!defined $NUUrl || $NUUrl eq "")
+        {
+            die __("Cannot read NU Url");
+        }
+        $nuri = URI->new($NUUrl);
     }
     else
     {
-      ($cfg, $dbh, $nuri) = init();
+        ($cfg, $dbh) = init();
+        #
+        # TODO: what, if we have more then one NU server?
+        my $array = $dbh->selectall_arrayref("select distinct EXTHOST from Catalogs where CATALOGTYPE = 'nu'", {Slice =>{}});
+        if(exists $array->[0] && exists $array->[0]->{EXTHOST} && 
+           defined $array->[0]->{EXTHOST} && $array->[0]->{EXTHOST} =~ /^http/)
+        {
+            $nuri = URI->new( $array->[0]->{EXTHOST} );
+        }
+        else
+        {
+            # should not happen...
+            my $NUUrl = $cfg->val("NU", "NUUrl");
+            if(!defined $NUUrl || $NUUrl eq "")
+            {
+                die __("Cannot read NU Url");
+            }
+            $nuri = URI->new($NUUrl);
+        }
     }
+    my $nuUser = $cfg->val("NU", "NUUser");
+    my $nuPass = $cfg->val("NU", "NUPass");
+
+    if(!defined $nuUser || $nuUser eq "" ||
+      !defined $nuPass || $nuPass eq "")
+    {
+        die __("Cannot read the Mirror Credentials");
+    }
+    $nuri->userinfo("$nuUser:$nuPass");
+
 
     # create a tmpdir to store repoindex.xml
     my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
@@ -945,7 +949,7 @@ sub setMirrorableCatalogs
 sub removeCustomCatalog
 {
     my %options = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
 
     # delete existing catalogs with this id
 
@@ -960,7 +964,7 @@ sub removeCustomCatalog
 sub setupCustomCatalogs
 {
     my %options = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
 
     # delete existing catalogs with this id
     
@@ -996,7 +1000,7 @@ sub setupCustomCatalogs
 sub createDBReplacementFile
 {
     my $xmlfile = shift;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
 
     if(!defined $xmlfile || $xmlfile eq "")
     {
@@ -1038,7 +1042,7 @@ sub createDBReplacementFile
 sub hardlink
 {
     my %options = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     my $t0 = [gettimeofday] ;
 
     my $vblevel = 0;
@@ -1114,7 +1118,7 @@ sub hardlink
 sub productClassReport
 {
     my %options = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     my %conf;
     
     my $vblevel = 0;
@@ -1214,7 +1218,7 @@ sub productClassReport
 sub productSubscriptionReport
 {
     my %options = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     my %report = ();
     
     my $vblevel = 0;
@@ -1715,7 +1719,7 @@ sub productSubscriptionReport
 sub subscriptionReport
 {
     my %options = @_;
-    my ($cfg, $dbh, $nuri) = init();
+    my ($cfg, $dbh) = init();
     my %report = ();
     
     my $vblevel = 0;

@@ -231,17 +231,6 @@ else
 
 #print Data::Dumper->Dump([$dbreplacement]);
 
-
-my $NUUrl = $cfg->val("NU", "NUUrl");
-if(!defined $NUUrl || $NUUrl eq "")
-{
-    if(!SMT::Utils::unLock("smt-mirror"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-    }
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read NU Url"));
-}
-
 my $nuUser = $cfg->val("NU", "NUUser");
 my $nuPass = $cfg->val("NU", "NUPass");
 
@@ -255,9 +244,6 @@ if(!defined $nuUser || $nuUser eq "" ||
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the Mirror Credentials"));
     exit 1;
 }
-
-my $uri = URI->new($NUUrl);
-$uri->userinfo("$nuUser:$nuPass");
 
 
 my $mirrorsrc = $cfg->val("LOCAL", "MirrorSRC");
