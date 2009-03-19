@@ -72,6 +72,7 @@ create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY,
                       DOMIRROR    CHAR(1) DEFAULT 'N',
                       MIRRORABLE  CHAR(1) DEFAULT 'N',
                       SRC         CHAR(1) DEFAULT 'N',    -- N NCC    C Custom
+                      STAGING     CHAR(1) DEFAULT 'N',    -- N No  Y Yes
                       UNIQUE(NAME, TARGET)
                      );
 

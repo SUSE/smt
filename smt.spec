@@ -133,8 +133,10 @@ exit 0
 %dir %{perl_vendorlib}/SMT/Parser
 %dir /etc/smt.d
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/
-%dir /srv/www/htdocs/testing/
+%dir %attr(755, smt, www)/srv/www/htdocs/testing/
 %dir %attr(755, smt, www)/srv/www/htdocs/testing/repo/
+%dir %attr(755, smt, www)/srv/www/htdocs/full/
+%dir %attr(755, smt, www)/srv/www/htdocs/full/repo/
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/SMT/
 %dir /usr/lib/SMT/

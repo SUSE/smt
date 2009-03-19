@@ -69,6 +69,7 @@ install:
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
 	mkdir -p $(DESTDIR)/srv/www/htdocs/testing/repo
+	mkdir -p $(DESTDIR)/srv/www/htdocs/full/repo
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror

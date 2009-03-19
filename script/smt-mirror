@@ -36,6 +36,8 @@ if(!SMT::Utils::dropPrivileges())
     exit 1;
 }
 
+my $stagingDir = "full";
+
 my $debug    = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 
@@ -45,7 +47,7 @@ my $deepverify = 0;
 my $dryrun     = 0;
 
 my $dbreplfile = undef;
-my $dbreplacement = {};
+my $dbreplacement = [];
 
 my $LocalBasePath = "";
 
@@ -220,7 +222,7 @@ if(!defined $dbreplfile)
 else
 {
     # add a parser
-    $dbreplacement = {};
+    $dbreplacement = [];
     
     my $parser = SMT::Parser::RegData->new();
     $parser->parse( $dbreplfile, sub { catalog_handler($dbreplacement, @_); });
@@ -268,37 +270,43 @@ else
     $mirrorsrc = 1;
 }
 
-my $hash = {};
+my $array = [];
 
 if(!defined $dbreplfile)
 {
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $hash = $dbh->selectall_hashref( "select CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE from Catalogs where (CATALOGTYPE='zypp' or CATALOGTYPE='yum') and MIRRORABLE='Y' and DOMIRROR='Y'", "CATALOGID" );
+    $array = $dbh->selectall_arrayref( "select CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING from Catalogs where MIRRORABLE='Y' and DOMIRROR='Y' order by CATALOGTYPE, NAME",
+                                      { Slice => {} } );
 }
 else
 {
-    $hash = $dbreplacement;
+    $array = $dbreplacement;
 }
 
-foreach my $id (keys %{$hash})
+foreach my $entry (@{$array})
 {
-    next if(!exists $hash->{$id}->{CATALOGTYPE} || ! defined $hash->{$id}->{CATALOGTYPE});
+    next if(!exists $entry->{CATALOGTYPE} || ! defined $entry->{CATALOGTYPE});
 
-    if( (lc($hash->{$id}->{CATALOGTYPE}) eq "zypp" || lc($hash->{$id}->{CATALOGTYPE}) eq "yum") && 
-        $hash->{$id}->{EXTURL} ne "" && $hash->{$id}->{LOCALPATH} ne "" )
+    if( $entry->{EXTURL} ne "" && $entry->{LOCALPATH} ne "" )
     {
-        my $zuri = URI->new($hash->{$id}->{EXTURL});
+        my $zuri = URI->new($entry->{EXTURL});
         if($zuri->host eq "nu.novell.com")
         {
             $zuri->userinfo("$nuUser:$nuPass");
         }
         
-        &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $hash->{$id}->{LOCALPATH} ) );
+        my $tmpLocalBasePath = $LocalBasePath;
+        if( exists $entry->{STAGING} && defined $entry->{STAGING} && uc($entry->{STAGING}) eq "Y")
+        {
+            $tmpLocalBasePath .= "/$stagingDir";
+        }
+        &File::Path::mkpath( SMT::Utils::cleanPath( $tmpLocalBasePath, "repo", $entry->{LOCALPATH} ) );
+        
 
         my $zyppMirror = undef;
-        if( lc($hash->{$id}->{CATALOGTYPE}) eq "yum")
+        if( lc($entry->{CATALOGTYPE}) eq "yum")
         {
             $zyppMirror = SMT::Mirror::Yum->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                 mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
@@ -308,8 +316,8 @@ foreach my $id (keys %{$hash})
             $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                   mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
         }        
-        $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
-        $zyppMirror->localRepoPath( $hash->{$id}->{LOCALPATH} );
+        $zyppMirror->localBasePath( SMT::Utils::cleanPath( $tmpLocalBasePath, "repo" ) );
+        $zyppMirror->localRepoPath( $entry->{LOCALPATH} );
         
         if($clean)
         {
@@ -334,35 +342,36 @@ foreach my $id (keys %{$hash})
 #
 # Now mirror the NU catalogs
 #
-my $mirror = SMT::Mirror::NU->new(vblevel => $vblevel, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh, nohardlink => $nohardlink);
-$mirror->deepverify($deepverify);
-$mirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
-if($clean)
-{
-    $mirror->clean();
-}
-else
-{
-    if(defined $dbreplfile)
-    {
-        $mirror->dbreplacement($dbreplacement);
-    }
+# my $mirror = SMT::Mirror::NU->new(vblevel => $vblevel, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh, nohardlink => $nohardlink);
+# $mirror->deepverify($deepverify);
+# $mirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
+# if($clean)
+# {
+#     $mirror->clean();
+# }
+# else
+# {
+#     if(defined $dbreplfile)
+#     {
+#         $mirror->dbreplacement($dbreplacement);
+#     }
     
-    $mirror->uri( $uri->as_string );
-    $mirror->mirror( dryrun => $dryrun );
+#     $mirror->uri( $uri->as_string );
+#     $mirror->mirror( dryrun => $dryrun );
 
-    my $s = $mirror->statistic();
-    $download += $s->{DOWNLOAD};
-    $link     += $s->{LINK};
-    $copy     += $s->{COPY};
-    $errors   += $s->{ERROR};
-    $size     += $s->{DOWNLOAD_SIZE};
-}
+#     my $s = $mirror->statistic();
+#     $download += $s->{DOWNLOAD};
+#     $link     += $s->{LINK};
+#     $copy     += $s->{COPY};
+#     $errors   += $s->{ERROR};
+#     $size     += $s->{DOWNLOAD_SIZE};
+# }
+
 
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
 if(!defined $dbreplfile)
 {
-    $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE from Catalogs where MIRRORABLE='N' and DOMIRROR='Y'", "CATALOGID" );
+    my $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE from Catalogs where MIRRORABLE='N' and DOMIRROR='Y'", "CATALOGID" );
     
     if(keys %{$hash} > 0)
     {
@@ -454,14 +463,8 @@ sub catalog_handler
        exists $node->{MAINELEMENT} && defined $node->{MAINELEMENT} &&
        lc($node->{MAINELEMENT}) eq "catalogs")
     {
-        my $catname = $node->{NAME};
-        if(exists $node->{TARGET} && defined $node->{TARGET} && $node->{TARGET} ne "")
-        {
-            $catname .= "-".$node->{TARGET};
-        }
-        #print "Build Catalogname $catname\n";        
-        $data->{$catname} = $node;
-    }        
+        push @{$data}, $node;
+    }
 }
 
 #

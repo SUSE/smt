@@ -745,6 +745,47 @@ sub setCatalogDoMirror
     return 0;
 }
 
+sub setCatalogStaging
+{
+    my %opt = @_;
+    my ($cfg, $dbh, $nuri) = init();
+    
+    if(exists $opt{enabled} && defined $opt{enabled} )
+    {
+        my $sql = "update Catalogs";
+        $sql .= sprintf(" set Staging=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
+        
+        $sql .= " where 1";
+        
+        $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+        
+        if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
+        {
+            $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
+        }
+        
+        if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
+        {
+            $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
+        }
+        
+        if(exists $opt{id} && defined $opt{id} )
+        {
+            $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
+        }
+        
+        #print $sql . "\n";
+        my $rows = $dbh->do($sql);
+        $rows = 0 if(!defined $rows || $rows < 0);
+        return $rows;
+    }
+    else
+    {
+        die __("enabled option missing");
+    }
+    return 0;
+}
+
 sub catalogDoMirrorFlag
 {
   my %options = @_;
@@ -957,22 +998,32 @@ sub createDBReplacementFile
     my $xmlfile = shift;
     my ($cfg, $dbh, $nuri) = init();
 
-    my $dbout = $dbh->selectall_hashref("SELECT CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE from Catalogs where DOMIRROR = 'Y'", 
-                                        "CATALOGID");
+    if(!defined $xmlfile || $xmlfile eq "")
+    {
+        die "No filename given.";
+    }
+    
+    my $dbout = $dbh->selectall_arrayref("SELECT CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE, STAGING from Catalogs where DOMIRROR = 'Y' order by CATALOGTYPE, NAME", 
+                                        { Slice => {} });
 
-    my $output = new IO::File(">$xmlfile");
+    my $output = new IO::File("> $xmlfile");
+    if(!defined $output)
+    {
+        die "Cannot open file '$xmlfile':$!";
+    }
+    
     my $writer = new XML::Writer(OUTPUT => $output);
 
     $writer->xmlDecl("UTF-8");
     $writer->startTag("catalogs", xmlns => "http://www.novell.com/xml/center/regsvc-1_0");
 
-    foreach my $row (keys %{$dbout})
+    foreach my $row (@{$dbout})
     {
         $writer->startTag("row");
-        foreach my $col (keys %{$dbout->{$row}})
+        foreach my $col (keys %{$row})
         {
             $writer->startTag("col", name => $col);
-            $writer->characters($dbout->{$row}->{$col});
+            $writer->characters($row->{$col});
             $writer->endTag("col");
         }
         $writer->endTag("row");

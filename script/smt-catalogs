@@ -23,9 +23,11 @@ if(!SMT::Utils::dropPrivileges())
 }
 
 my $enable;
+my $disable;
 my $enableByProduct = "";
 my $disableByProduct = "";
-my $disable;
+my $enableStaging = 0;
+my $disableStaging = 0;
 my $mirrorable;
 my $domirror;
 my $verbose;
@@ -35,9 +37,11 @@ use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
                           'enable-mirror|e'      => \$enable,
+                          'disable-mirror|d'     => \$disable,
                           'enable-by-prod|p=s'   => \$enableByProduct,
                           'disable-by-prod=s'    => \$disableByProduct,
-                          'disable-mirror|d'     => \$disable,
+                          'enable-staging'       => \$enableStaging,
+                          'disable-staging'      => \$disableStaging,
                           'only-mirrorable|m'    => \$mirrorable,
                           'only-enabled|o'       => \$domirror,
                           'verbose|v'            => \$verbose,
@@ -49,13 +53,15 @@ if ( defined $help and ( $help == 1 ) )
 {
     print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
     print "   --enable-mirror   (-e) :     " . __("enable catalog mirorring for \$catalog\n");
+    print "   --disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
     print "   --enable-by-prod  (-p) arg : " . __("enable catalog mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
     print "   --disable-by-prod  arg :     " . __("disable catalog mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
-    print "   --disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
+    print "   --enable-staging       :     " . __("Enable staging for a catalog\n");
+    print "   --disable-staging      :     " . __("Disable staging for a catalog\n");
     print "   --only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
     print "   --only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
     print "   --verbose         (-v) :     " . __("show detailed catalog information\n");
@@ -81,6 +87,11 @@ if ( defined $disable && defined $enable )
     die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
 }
 
+if ( $disableStaging && $enableStaging )
+{
+    die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
+}
+
 my $bool;
 if ( defined $disable )
 {
@@ -90,6 +101,17 @@ if ( defined $disable )
 if ( defined $enable )
 {
     $bool = ( $enable == 1 ? 1 : 0 );
+}
+
+my $boolStaging;
+if ( defined $disableStaging )
+{
+    $boolStaging = ( $disableStaging == 1 ? 0 : 1 );
+}
+
+if ( defined $enableStaging )
+{
+    $boolStaging = ( $enableStaging == 1 ? 1 : 0 );
 }
 
 my $target = shift(@ARGV);
@@ -144,7 +166,7 @@ my $sth = $dbh->prepare($sql);
 $sth->execute();
 
 my $t = new Text::ASCIITable;
-$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"));
+$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"), __("Staging"));
 
 while ( my $v = $sth->fetchrow_hashref() )
 {
@@ -156,8 +178,9 @@ while ( my $v = $sth->fetchrow_hashref() )
     my $catType = $v->{CATALOGTYPE};
     my $catDesc = $v->{DESCRIPTION};
     my $catMA   = $v->{MIRRORABLE};
+    my $catStaging = $v->{STAGING};
     $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
-                $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")));
+                $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")), (( $catStaging eq "Y" ) ? __("Yes") : __("No")));
   
     if (defined($verbose))
     {
@@ -170,6 +193,7 @@ while ( my $v = $sth->fetchrow_hashref() )
         print "          " . $v->{EXTURL} ."\n";
         print "          " . $v->{LOCALPATH} ."\n";
         print "          CatalogID: " . $v->{CATALOGID} ."\n";
+        print "          Staging  : " . $catStaging ."\n";
         foreach my $h (@{$products})
         {
             my $product = (defined $h->{PRODUCT}?$h->{PRODUCT}:"");
@@ -184,7 +208,8 @@ while ( my $v = $sth->fetchrow_hashref() )
 
 print $t->draw() if not defined($verbose);
 
-if ( (not defined $disable) && (not defined $enable) )
+if ( ! defined $disable && ! defined $enable &&
+     ! $disableStaging && ! $enableStaging)
 {
     # not do any action, display was enough
     exit 0;
@@ -197,9 +222,18 @@ if ( $count == 0 )
 elsif ( $count == 1 )
 {
     # we are lucky, only one
-    my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
-    print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
-    exit 0;
+    if ( $disable || $enable )
+    {
+        my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
+        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
+        exit 0;
+    }
+    elsif( $disableStaging || $enableStaging)
+    {
+        my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[0]);
+        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+        exit 0;
+    }
 }
 else
 {
@@ -210,16 +244,35 @@ else
   
     if (lc($answer) eq __("a"))
     {
-        my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
-        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
-        exit 0;
+        if ( $disable || $enable )
+        {
+            my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
+            exit 0;
+        }
+        elsif( $disableStaging || $enableStaging)
+        {   
+            my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, name => $name, target => $target);
+            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+            exit 0;
+        }
     }
     elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
     {
         my $number = int($answer);
-        my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
-        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
-        exit 0;
+
+        if ( $disable || $enable )
+        {
+            my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
+            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
+            exit 0;
+        }
+        elsif( $disableStaging || $enableStaging)
+        {
+            my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[$number-1]);
+            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+            exit 0;
+        }
     }
     else
     {

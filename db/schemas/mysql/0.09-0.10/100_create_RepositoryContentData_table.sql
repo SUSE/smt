@@ -8,3 +8,4 @@ create table RepositoryContentData(localpath   VARCHAR(300) PRIMARY KEY,
 alter table Clients add COLUMN NAMESPACE   VARCHAR(300) NOT NULL DEFAULT '';
 alter table Clients add COLUMN SECRET      CHAR(50) NOT NULL DEFAULT '';
 alter table Subscriptions add COLUMN CONSUMEDVIRT integer DEFAULT 0;
+alter table Catalogs add COLUMN STAGING    CHAR(1) DEFAULT 'N';
