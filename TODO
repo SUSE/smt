@@ -19,6 +19,15 @@ TODO (SMT11):
              Maybe first try to set a ACL, if this does not work, change the
              owner.
 
+- configure the smt user via smt.conf?
+  With the possibility to disable user switching?
+
+- regserver URL in smt.conf? 
+  If not available , fallback to suseRegister.conf?
+
+- 2. e-mail address for admin mails.
+  (e.g. smt-mirror --mail)
+
 
 Nice-To-Have but not so important
 =================================
