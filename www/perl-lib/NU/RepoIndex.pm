@@ -92,6 +92,18 @@ sub handler {
     return Apache2::Const::SERVER_ERROR unless defined $username;
     my $catalogs = getCatalogsByGUID($dbh, $username);
 
+    # see if the client uses a special namespace
+    my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($guid));
+    my $namespace = $dbh->selectcol_arrayref($namespaceselect);
+    if (defined $namespace && defined ${$namespace}[0] )
+    {
+        $namespace = ${$namespace}[0];
+    }
+    else
+    {
+        $namespace = "";
+    }
+    
     eval
     {
         my $sth = $dbh->prepare("UPDATE Clients SET LASTCONTACT=? WHERE GUID=?");
@@ -123,11 +135,11 @@ sub handler {
 
         if(defined $LocalBasePath && $LocalBasePath ne "")
         {
-            if(!-e $LocalBasePath."/repo/".${$val}{'LOCALPATH'}."/repodata/repomd.xml")
+            if(!-e $LocalBasePath."/$namespace/repo/".${$val}{'LOCALPATH'}."/repodata/repomd.xml")
             {
                 # catalog does not exists on this server. Log it, that the admin has a chance 
                 # to find the error.
-                $r->log->warn("Return a catalog, which does not exists on this server (".$LocalBasePath."/repo/".${$val}{'LOCALPATH'}.")");
+                $r->log->warn("Return a catalog, which does not exists on this server (".$LocalBasePath."/$namespace/repo/".${$val}{'LOCALPATH'}.")");
                 $r->log->warn("Run smt-mirror to create this catalog.");
             }
         }

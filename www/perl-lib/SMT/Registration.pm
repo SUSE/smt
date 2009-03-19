@@ -96,7 +96,29 @@ sub register
     {
         $namespace = $hargs->{namespace};
     }    
-    
+
+    if( $namespace ne "" ) 
+    {
+        my $cfg = undef;
+        
+        eval
+        {
+            $cfg = SMT::Utils::getSMTConfig();
+        };
+        if($@ || !defined $cfg)
+        {
+            $r->log_error("Cannot read the SMT configuration file: ".$@);
+            die "SMT server is missconfigured. Please contact your administrator.";
+        }
+
+        my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
+        if(! -d  "$LocalBasePath/$namespace" )
+        {
+            $r->log_error("Invalid namespace requested: $LocalBasePath/$namespace/ does not exists.");
+            $namespace = "";
+        }        
+    }
+        
     my $data = read_post($r);
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
