@@ -440,6 +440,8 @@ Update the database with the current job informations.
 sub updateDB
 {
     my $self = shift;
+
+    return if( $self->localFileLocation() =~ /repodata/ ); # we do not store repodata into the DB
     
     eval 
     {

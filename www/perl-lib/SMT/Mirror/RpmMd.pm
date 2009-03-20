@@ -816,10 +816,11 @@ sub download_handler
         $job->checksum( $data->{CHECKSUM} );
         
         my $fullpath = "";
-
+        my $isRepodata = 0;
         if($data->{LOCATION} =~ /^repodata/)
         {
             $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), ".".$data->{LOCATION} );
+            $isRepodata = 1;
         }
         else
         {
@@ -844,7 +845,7 @@ sub download_handler
                 return;
             }
         }
-        elsif( -e "$fullpath" )
+        elsif( -e "$fullpath" && !$isRepodata )  # we do not store repodata in the database
         {
             # file exists but is not in the database. Check if it is valid.
             if( $job->verify() )
