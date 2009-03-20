@@ -216,15 +216,25 @@ sub handle_start_tag()
             $self->{CURRENTSUBPKG}->{LOCATION}   = $attrs{href};
         }
     }
-    elsif ( lc($element) eq "package" || lc($element) eq "patch" || lc($element) eq "data")
+    elsif ( lc($element) eq "package" || lc($element) eq "patch" || lc($element) eq "data" )
     {
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "newpackage" )
+    {
+        $self->{CURRENT}->{MAINELEMENT} = lc($element);
+        $self->{CURRENT}->{NAME} = $attrs{name};
+        $self->{CURRENT}->{ARCH} = $attrs{arch};
     }
     elsif ( lc($element) eq "name" )
     {
         $self->{CURRENT}->{SUBELEMENT} = lc($element);
     }
     elsif ( lc($element) eq "arch" )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( $self->{CURRENT}->{MAINELEMENT} eq "newpackage" && lc($element) eq "filename" )
     {
         $self->{CURRENT}->{SUBELEMENT} = lc($element);
     }
@@ -267,6 +277,10 @@ sub handle_char_tag
             {
                 $self->{CURRENTSUBPKG}->{CHECKSUM} .= $string;
             }
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "filename")
+        {
+            $self->{CURRENT}->{LOCATION} .= $string;
         }
     }
 }
