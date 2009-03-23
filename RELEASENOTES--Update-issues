@@ -9,4 +9,6 @@
   (do automatically via init script or postinstall?)
 * changed novell.com-smt cron script (we need a way to preserve 
   the random time start values)
+* new value "[NU] NURegUrl" in /etc/smt.conf
+  If this key is not available, fallback to /etc/suseRegister.conf
 

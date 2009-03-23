@@ -229,23 +229,7 @@ Return an array with ($NCCurl, $NUUser, $NUPassword)
 sub getLocalRegInfos
 {
     my $uri    = "";
-
-    open(FH, "< /etc/suseRegister.conf") or die sprintf(__("Cannot open /etc/suseRegister.conf: %s"), $!);
-    while(<FH>)
-    {
-        if($_ =~ /^url\s*=\s*(\S*)\s*/ && defined $1 && $1 ne "")
-        {
-            $uri = $1;
-            last;
-        }
-    }
-    close FH;
-
-    if(!defined $uri || $uri eq "")
-    {
-        die __("Cannot read URL from /etc/suseRegister.conf");
-    }
-
+    
     my $cfg = getSMTConfig;
 
     my $user   = $cfg->val('NU', 'NUUser');
@@ -257,6 +241,25 @@ sub getLocalRegInfos
         die __("Cannot read Mirror Credentials from SMT configuration file.");
     }
 
+    $uri = $cfg->val('NU', 'NURegUrl');
+    if(!defined $uri || $uri !~ /^https/)
+    {
+        open(FH, "< /etc/suseRegister.conf") or die sprintf(__("Cannot open /etc/suseRegister.conf: %s"), $!);
+        while(<FH>)
+        {
+            if($_ =~ /^url\s*=\s*(\S*)\s*/ && defined $1 && $1 ne "")
+            {
+                $uri = $1;
+                last;
+            }
+        }
+        close FH;
+        
+        if(!defined $uri || $uri eq "")
+        {
+            die __("Cannot read URL from /etc/suseRegister.conf");
+        }
+    }
     return ($uri, $user, $pass);  
 }
 

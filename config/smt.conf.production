@@ -1,5 +1,6 @@
 [NU]
 NUUrl=https://nu.novell.com/
+NURegUrl=https://secure-www.novell.com/center/regsvc/
 NUUser=
 NUPass=
 
@@ -31,6 +32,15 @@ HTTPSProxy=
 # specify username and password if your proxy requires authentication
 # in the form username:password
 ProxyUser=
+
+#
+# require authentication to access the repository?
+# Three possible authtypes can be configures here
+# 1) none   : no authentication required (default)
+# 2) lazy   : check only username and password. A valid user has access to all repositories
+# 3) strict : check also if this user has access to the repository. 
+#
+requiredAuthType=none
 
 
 [REPORT]

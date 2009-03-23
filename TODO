@@ -22,11 +22,6 @@ TODO (SMT11):
 - configure the smt user via smt.conf?
   With the possibility to disable user switching?
 
-- regserver URL in smt.conf? 
-  If not available , fallback to suseRegister.conf?
-
-- 2. e-mail address for admin mails.
-  (e.g. smt-mirror --mail)
 
 
 Nice-To-Have but not so important
@@ -47,6 +42,10 @@ Nice-To-Have but not so important
 
 DONE:
 =====
+
+
+- regserver URL in smt.conf? 
+  If not available , fallback to suseRegister.conf?
 
 - In the parser we print errors if we found invalid XML syntax but ignore them. 
   We should return errors and count them in SLE11.
@@ -73,3 +72,9 @@ DONE:
   This is more straight forward then doing everything in RpmMd.pm 
 
 
+Rejected:
+=========
+
+- 2. e-mail address for admin mails.
+  (e.g. smt-mirror --mail)
+  Reason: we use one address for all.
