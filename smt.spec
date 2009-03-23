@@ -102,6 +102,7 @@ done
 mkdir -p $RPM_BUILD_ROOT/var/run/smt
 mkdir -p $RPM_BUILD_ROOT/var/log/smt
 mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt/
+mkdir -p $RPM_BUILD_ROOT/var/lib/smt
 
 ln -s /usr/lib/SMT/bin/clientSetup4SMT.sh $RPM_BUILD_ROOT%{_docdir}/smt/clientSetup4SMT.sh
 
@@ -112,7 +113,7 @@ ln -s /usr/lib/SMT/bin/clientSetup4SMT.sh $RPM_BUILD_ROOT%{_docdir}/smt/clientSe
 
 %pre
 if ! usr/bin/getent passwd smt >/dev/null; then
-  usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d /var/lib/empty smt 2> /dev/null || :
+  usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d /var/lib/smt smt 2> /dev/null || :
 fi
 
 %preun
@@ -146,6 +147,7 @@ exit 0
 %dir %{_docdir}/smt/
 %dir %attr(755, smt, www)/var/run/smt
 %dir %attr(755, smt, www)/var/log/smt
+%dir %attr(755, smt, www)/var/lib/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf

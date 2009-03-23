@@ -842,8 +842,12 @@ sub dropPrivileges
     # test is egid is correct
     return 0 if( POSIX::getegid() != $pw->gid() );
 
-    chdir "/";
-    
+    $ENV{'HOME'} = $pw->dir();
+    if( chdir( $pw->dir() ) )
+    {
+        $ENV{'PWD'} = $pw->dir();
+    }
+        
     return 1;
 }
 

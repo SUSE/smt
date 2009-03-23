@@ -111,6 +111,16 @@ if(!SMT::Utils::openLock("smt-ncc-sync"))
 
 my $LOG = SMT::Utils::openLog($logfile);
 
+if($fromdir ne "" && $fromdir !~ /^\//)
+{
+    $fromdir = SMT::Utils::cleanPath($ENV{'PWD'}, $fromdir);
+}
+
+if($todir ne "" && $todir !~ /^\//)
+{
+    $todir = SMT::Utils::cleanPath($ENV{'PWD'}, $todir);
+}
+
 if($fromdir ne "" && ! -d $fromdir)
 {
 	SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Directory '%s' does not exist."), $fromdir));
@@ -128,6 +138,15 @@ if($todir ne "" && ! -d $todir)
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
         exit 1;
     }
+}
+
+if($fromdir ne "")
+{
+    printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Read from directory: %s"), $fromdir));
+}
+if($todir ne "")
+{
+    printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Write to directory: %s"), $todir));
 }
 
 eval
