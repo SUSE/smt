@@ -93,7 +93,7 @@ sub handler {
     my $catalogs = getCatalogsByGUID($dbh, $username);
 
     # see if the client uses a special namespace
-    my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($guid));
+    my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($username));
     my $namespace = $dbh->selectcol_arrayref($namespaceselect);
     if (defined $namespace && defined ${$namespace}[0] )
     {
