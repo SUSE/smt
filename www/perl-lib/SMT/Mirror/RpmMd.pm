@@ -100,9 +100,10 @@ sub new
     $self->{LOCALREPOPATH}   = undef;
 
 
-    $self->{JOBS}   = {};
+    $self->{JOBS}         = {};
+    $self->{REPODATAJOBS} = {};
     $self->{VERIFYJOBS}   = {};
-    $self->{CLEANLIST} = {};
+    $self->{CLEANLIST}    = {};
 
     $self->{STATISTIC}->{DOWNLOAD} = 0;
     $self->{STATISTIC}->{LINK} = 0;
@@ -571,6 +572,18 @@ sub mirror()
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/.repodata"));
                 $self->{STATISTIC}->{ERROR} += 1;
             }
+            else
+            {
+                # Now store the repodata jobs into the database. We know, that they are now at the 
+                # correct/final place
+                foreach my $key (keys %{$self->{REPODATAJOBS}})
+                {
+                    my $rjob = $self->{REPODATAJOBS}->{$key};
+                    # change .repodata => repodata
+                    $rjob->localFileLocation( $rjob->remoteFileLocation() );
+                    $rjob->updateDB();
+                }
+            }
         }
     }
     
@@ -815,21 +828,9 @@ sub download_handler
         $job->localFileLocation( $data->{LOCATION} );
         $job->checksum( $data->{CHECKSUM} );
         
-        my $fullpath = "";
-        my $isRepodata = 0;
-        if($data->{LOCATION} =~ /^repodata/)
-        {
-            $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), ".".$data->{LOCATION} );
-            $isRepodata = 1;
-        }
-        else
-        {
-            $fullpath = $job->fullLocalPath();
-        }
-        
-        if( exists $self->{EXISTS}->{$fullpath} && 
-            $self->{EXISTS}->{$fullpath}->{checksum} eq $data->{CHECKSUM} && 
-            -e "$fullpath" )
+        if( exists $self->{EXISTS}->{$job->fullLocalPath()} && 
+            $self->{EXISTS}->{$job->fullLocalPath()}->{checksum} eq $data->{CHECKSUM} && 
+            -e $job->fullLocalPath() )
         {
             # file exists and is up-to-date. 
             # with deepverify call a verify 
@@ -845,7 +846,7 @@ sub download_handler
                 return;
             }
         }
-        elsif( -e "$fullpath" && !$isRepodata )  # we do not store repodata in the database
+        elsif( -e $job->fullLocalPath() )
         {
             # file exists but is not in the database. Check if it is valid.
             if( $job->verify() )
@@ -884,6 +885,7 @@ sub download_handler
                 $mres = $job->mirror();
             }
             $self->job2statistic($job);
+            $self->{REPODATAJOBS}->{$data->{LOCATION}} = $job;
         }
         else
         {

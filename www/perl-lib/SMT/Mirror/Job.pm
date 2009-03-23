@@ -441,7 +441,7 @@ sub updateDB
 {
     my $self = shift;
 
-    return if( $self->localFileLocation() =~ /repodata/ ); # we do not store repodata into the DB
+    return if( $self->localFileLocation() ne $self->remoteFileLocation() ); # we do not store .repodata/ into the DB
     
     eval 
     {
