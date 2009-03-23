@@ -87,7 +87,8 @@ sub mirror()
     
     my $mres = $job->mirror();
     $self->job2statistic($job);
-    if( $mres == 2 )
+    if( $mres == 2 && $self->statistic()->{DOWNLOAD} == 0 && 
+        $self->statistic()->{LINK} == 0 && $self->statistic()->{COPY} == 0 )
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
