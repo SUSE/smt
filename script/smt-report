@@ -241,6 +241,12 @@ sub getReportRenderedAs
                 #$res .= $DATA{$report}{$subrep};
                 #$res .= "</screen>";
             }
+            elsif($mode eq 'docbook')
+            {
+                $res .= '<screen>';
+                $res .= $DATA{$report}{$subrep};
+                $res .= '</screen>';
+            }
             else
             {
                 # do not render summaries
@@ -292,7 +298,7 @@ sub getMergedReport($)
         {
             $res .= "<h1>".$headings{'prodsub'}."</h1>";
         }
-        elsif($renderMode eq 'xml')
+        elsif($renderMode eq 'xml' || $renderMode eq 'docbook')
         {
             $res .= "<title>".$headings{'prodsub'}."</title>";
         }
@@ -318,6 +324,13 @@ sub getMergedReport($)
         {
             #$res .= "<screen>\n";
         }
+        elsif($renderMode eq 'docbook')
+        {
+            $res .= "<section><title>Footer</title>";
+            $res .= "<screen>";
+            $res .= $legendLocal."\n\n";
+            #$res .= "</para></section>";
+        }
         else
         {
             $res .= $legendLocal."\n\n";
@@ -330,7 +343,7 @@ sub getMergedReport($)
         {
             $res .= "<h1>".$headings{'sub'}."</h1>";
         }
-        elsif($renderMode eq 'xml')
+        elsif($renderMode eq 'xml' || $renderMode eq 'docbook')
         {
             $res .= "<title>".$headings{'sub'}."</title>";
         }
@@ -355,8 +368,16 @@ sub getMergedReport($)
         {
             #$res .= "<screen>\n";
         }
+        elsif($renderMode eq 'docbook')
+        {
+            $res .= "<section><title>Footer</title>";
+            $res .= "<screen>";
+            $res .= $legendNCC."\n\n";
+            #$res .= "</para></section>";
+        }
         else
         {
+            $res .= $legendNCC."\n\n";
         }
     }
     
@@ -368,6 +389,11 @@ sub getMergedReport($)
     elsif($renderMode eq 'xml')
     {
         #$res .= "</screen>";
+    }
+    elsif($renderMode eq 'docbook')
+    {
+        $res .= $footer."\n\n";
+        $res .= "</screen></section>";
     }
     else
     {
@@ -604,10 +630,28 @@ if (defined $file)
             my $tname = $tfh->filename();
             print $tfh $html."\n";
             close $tfh;
-            `/usr/bin/htmldoc --webpage --quiet --size 11x8.5in -f $fname $tname `;
+            my @cmdArgs = ("--webpage", "--quiet", "--size", "11x8.5in", "-f", "$fname", "$tname");
+            open(OUT, "-|", '/usr/bin/htmldoc', @cmdArgs) or die "Cannot create PDF: $!";
+            close OUT;
         }
         else
         {
+#             my $docbook = '<?xml version="1.0" encoding="ISO-8859-1"?>
+#               <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+#               "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd"
+#               [
+#               <!ENTITY version "0.01">
+#               <!ENTITY dx "DocBook-XML">
+#               ]>
+# <article>
+#   <section>';
+#             $docbook .= getMergedReport('docbook');
+#             $docbook .= '</section></article>';
+#             my $tfh = new File::Temp(TEMPLATE => "/tmp/smt-report-XXXXXXXX", UNLINK => 0, SUFFIX => ".db");
+#             my $tname = $tfh->filename();
+#             print $tfh $docbook."\n";
+#             close $tfh;
+#             printLog($LOG, $vblevel, LOG_ERROR, "Created : $tname");
             printLog($LOG, $vblevel, LOG_ERROR, "Cannot create PDF: /usr/bin/htmldoc not found.");
         }
     }

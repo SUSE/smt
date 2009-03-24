@@ -318,6 +318,74 @@ sub renderReport($$)
         $writer->endTag("table");
         $writer->endTag("part");
     }
+    elsif ($mode eq 'docbook')
+    {
+        my $writer = new XML::Writer(OUTPUT => \$res);
+        
+        $writer->startTag("section");
+        $writer->startTag("title");
+        $writer->characters($heading);
+        $writer->endTag("title");
+        $writer->startTag("table", frame => "all");
+        $writer->startTag("title");
+        $writer->characters($heading);
+        $writer->endTag("title");
+        my @cols = ();
+        
+        if(ref($data{'cols'}->[0]) ne "HASH")
+        {
+            foreach my $val (@{$data{'cols'}})
+            {
+                my $name = $val;
+                $name =~ s/\n/ /g;
+                push @cols, "$name";
+            }
+        }
+        else
+        {
+            foreach my $col (@{$data{'cols'}})
+            {
+                my $name = "";
+                $name = $col->{name};
+                $name =~ s/\n/ /g;
+                push @cols, $name;
+            }
+        }
+        $writer->startTag("tgroup", cols => ($#cols+1), align => "center");
+        $writer->startTag("thead");
+        $writer->startTag("row");
+        foreach my $entry (@cols)
+        {
+            $writer->startTag("entry");
+            $writer->characters($entry);
+            $writer->endTag("entry");
+        }
+        $writer->endTag("row");
+        $writer->endTag("thead");
+        $writer->startTag("tbody");
+        
+        foreach my $row (@{$data{'vals'}})
+        {
+            $writer->startTag("row");
+            for(my $i = 0; $i < @cols; $i++)
+            {
+                my $value = '';
+                if (defined $row->[$i])
+                {
+                    $value = $row->[$i];
+                }
+                
+                $writer->startTag("entry");
+                $writer->characters($value);
+                $writer->endTag("entry");
+            }
+            $writer->endTag("row");
+        }
+        $writer->endTag("tbody");
+        $writer->endTag("tgroup");
+        $writer->endTag("table");
+        $writer->endTag("section");
+    }
     else
     {
         $res = '';
