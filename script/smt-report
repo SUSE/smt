@@ -39,6 +39,12 @@ my $nonccsync = 0;
 my $localreport = 0;
 my $nccreport   = 0;
 
+my $currenttime = time();
+my $dailycheck = 0;
+my $haveAlerts = 0;
+my $timestampfile = $ENV{HOME}."/.lastsendreport";
+my $lastreport = 0;
+my $sendReport = 0;
 
 use Getopt::Long;
 
@@ -452,7 +458,8 @@ sub getSeparateReports($)
                           'csv|c'      => \$csv,
                           'pdf|p'      => \$pdf,
                           'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
-                          'logfile|L=s'=> \$logfile
+                          'logfile|L=s'=> \$logfile,
+                          'dailycheck' => \$dailycheck
                          );
 
 if ( defined $help && ( $help == 1 ) )
@@ -544,11 +551,46 @@ SMT ID:       $smtguid
 if($localreport)
 {
     $DATA {'prodsub'} = SMT::CLI::productSubscriptionReport(log => $LOG, vblevel => $vblevel);
+    if( $DATA{'prodsub'}{'alerts'} ne "" )
+    {
+        $haveAlerts = 1;
+    }
 }
 
 if( $nccreport )
 {
     $DATA {'sub'}     = SMT::CLI::subscriptionReport(log => $LOG, vblevel => $vblevel);
+    if( $DATA{'sub'}{'alerts'} ne "" )
+    {
+        $haveAlerts = 1;
+    }
+}
+
+if( defined $mail && $mail && $dailycheck )
+{
+    if(-e $timestampfile)
+    {
+        open(TIME, "< $timestampfile") and do
+        {
+            $lastreport = <TIME>;
+            chomp($lastreport);
+            $lastreport = int $lastreport;
+            close TIME;
+        };
+    }
+    
+    if( $haveAlerts && ($currenttime > ($lastreport + (47 * 60 * 60))) )
+    {
+        $sendReport = 1;
+    }
+    if( (localtime($currenttime))[6] == 0 )
+    {
+        # do not send reports on sunday
+        # this can wait until monday
+        $sendReport = 0;
+    }
+    
+    exit 0 if(!$sendReport);
 }
 
 
@@ -713,6 +755,12 @@ if (defined $mail  &&  $mail == 1)
     my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
     my $subject = "SMT Report $datestring";
     SMT::Utils::sendMailToAdmins($subject, $MailBody, \%ATTACH);
+
+    open(TIME, "> $timestampfile") and do
+    {
+        print TIME $currenttime;
+        close TIME;
+    };
 }
 
 exit 0;
