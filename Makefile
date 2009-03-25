@@ -67,7 +67,8 @@ install:
 	mkdir -p $(DESTDIR)/etc/init.d
 	mkdir -p $(DESTDIR)/etc/smt.d/
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
-	mkdir -p $(DESTDIR)/srv/www/htdocs/repo
+	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/tools
+	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/keys
 	mkdir -p $(DESTDIR)/srv/www/htdocs/testing/repo
 	mkdir -p $(DESTDIR)/srv/www/htdocs/full/repo
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
@@ -112,7 +113,8 @@ install:
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/repo2db.pl $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/changeSMTUserPermissions.sh $(DESTDIR)/usr/lib/SMT/bin/
-	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/srv/www/htdocs/repo/tools/
+	install -m 644 www/repo/res-signingkeys.key $(DESTDIR)/srv/www/htdocs/repo/keys/
 	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/
 	install -m 644 cron/smt-cron.conf $(DESTDIR)/etc/smt.d/
 	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
@@ -152,7 +154,7 @@ dist: clean
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/jobtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/rpmmdtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/regdatatest
-	@mkdir -p $(NAME)-$(VERSION)/www/
+	@mkdir -p $(NAME)-$(VERSION)/www
 	@mkdir -p $(NAME)-$(VERSION)/logrotate
 
 	@cp apache2/*.pl $(NAME)-$(VERSION)/apache2/

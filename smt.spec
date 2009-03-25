@@ -104,7 +104,7 @@ mkdir -p $RPM_BUILD_ROOT/var/log/smt
 mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt/
 mkdir -p $RPM_BUILD_ROOT/var/lib/smt
 
-ln -s /usr/lib/SMT/bin/clientSetup4SMT.sh $RPM_BUILD_ROOT%{_docdir}/smt/clientSetup4SMT.sh
+ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh $RPM_BUILD_ROOT%{_docdir}/smt/clientSetup4SMT.sh
 
 # ---------------------------------------------------------------------------
 
@@ -134,6 +134,8 @@ exit 0
 %dir %{perl_vendorlib}/SMT/Parser
 %dir /etc/smt.d
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/
+%dir %attr(755, smt, www)/srv/www/htdocs/repo/tools
+%dir %attr(755, smt, www)/srv/www/htdocs/repo/keys
 %dir %attr(755, smt, www)/srv/www/htdocs/testing/
 %dir %attr(755, smt, www)/srv/www/htdocs/testing/repo/
 %dir %attr(755, smt, www)/srv/www/htdocs/full/
@@ -165,6 +167,8 @@ exit 0
 /usr/sbin/smt
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
+/srv/www/htdocs/repo/tools/*
+/srv/www/htdocs/repo/keys/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %doc %{_docdir}/smt/*

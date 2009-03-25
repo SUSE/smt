@@ -1,7 +1,6 @@
 #! /bin/sh
 
 WGET=/usr/bin/wget
-CURL=/usr/bin/curl
 OPENSSL=/usr/bin/openssl
 CREHASH=/usr/bin/c_rehash
 ZMDINIT=/etc/init.d/novell-zmd
@@ -12,7 +11,7 @@ CHMOD=/bin/chmod
 GREP=/usr/bin/grep
 RM=/bin/rm
 SUSEREGISTER=/usr/bin/suse_register
-
+GPG=/usr/bin/gpg
 SSLDIR=/etc/ssl/certs/
 CAFILE=("/etc/pki/tls/cert.pem" "/usr/share/ssl/cert.pem")
 ZMDSSLDIR=/etc/zmd/trusted-certs/
@@ -117,6 +116,17 @@ if [ ! -x $CHMOD ]; then
 	exit 1;
 fi
 
+if [ ! -x $SUSEREGISTER ]; then
+    echo "suse_register command not found. Abort."
+    exit 1
+fi
+
+if [ ! -x $GPG ]; then
+    echo "gpg command not found. Abort."
+    exit 1
+fi
+
+
 TEMPFILE=`mktemp /tmp/smt.crt.XXXXXX`
 
 if [ -x $WGET ]; then
@@ -125,14 +135,8 @@ if [ -x $WGET ]; then
 		echo "Download failed. Abort.";
 		exit 1;
 	fi
-elif [ -x $CURL ]; then
-	$CURL  -s -S --insecure --output $TEMPFILE $CERTURL 
-        if [ $? -ne 0 ]; then
-                echo "Download failed. Abort.";
-                exit 1;
-        fi
 else
-	echo "Binary to download the certificate not found. Please install curl or wget. Abort."
+	echo "Binary to download the certificate not found. Please install wget. Abort."
 	exit 1;
 fi
 
@@ -146,6 +150,7 @@ if [ "$YN" != "Y" -a "$YN" != "y" ]; then
 	exit 1;
 fi
 
+ISRES=0
 
 if [ -d $SSLDIR ]; then
     $CP $TEMPFILE $SSLDIR/registration-server.pem
@@ -160,6 +165,7 @@ else
     for f in "${CAFILE[@]}"; do
         if [ -e $f ]; then
             $CAT $TEMPFILE >> $f;
+            ISRES=1
             break;
         fi
     done
@@ -181,6 +187,49 @@ $CP $SRCONF ${SRCONF}-`date '+%F'`
 echo "url=$REGURL" > $SRCONF
 $CAT $SRCTMP >> $SRCONF
 $RM $SRCTMP
+
+#
+# check for keys on the smt server to import
+#
+TMPDIR=`mktemp -d /tmp/smtsetup-XXXXXXXX`;
+
+KEYSURL=`echo "$REGURL" | awk -F/ '{print "https://" $3 "/repo/keys/"}'`
+
+if [ -z $TMPDIR ]; then
+    echo "Cannot create tmpdir. Abort."
+    exit 1
+fi
+
+$WGET --quiet --mirror --no-parent --no-host-directories --directory-prefix $TMPDIR --cut-dirs 2 $KEYSURL 
+
+for key in `ls $TMPDIR/*.key 2>/dev/null`; do
+
+    if [ -z $key ]; then
+        continue
+    fi
+
+    if [ "$key" == "$TMPDIR/res-signingkeys.key" -a $ISRES -eq 0 ]; then
+        # this is no RES system, so we do not need this key
+        continue
+    fi
+
+    mkdir $TMPDIR/.gnupg
+
+    $GPG --no-default-keyring --quiet --no-greeting --no-permission-warning --homedir  $TMPDIR/.gnupg --import $key
+
+    $GPG --no-default-keyring --no-greeting --no-permission-warning --homedir $TMPDIR/.gnupg --list-public-keys --with-fingerprint
+
+    read -p "Trust and import this key? [y/n] " -n 1 YN
+    echo "";
+    rm -rf $TMPDIR/.gnupg/
+    if [ "$YN" != "Y" -a "$YN" != "y" ]; then
+        continue ;
+    fi
+   
+    rpm --import $key
+done
+
+rm -rf $TMPDIR/
 
 echo "Client setup finished."
 
