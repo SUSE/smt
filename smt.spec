@@ -67,6 +67,15 @@ Authors:
         jdsn@suse.de
         locilka@suse.cz
 
+%package -n res-signingkeys
+License:        GPL v2 or later
+Summary:        Signing Key for RES
+Group:          Productivity/Networking/Web/Proxy
+
+%description -n res-signingkeys
+This package contain the signing key for RES.
+
+
 %prep
 %setup -n %{name}-%{version}
 cp -p %{S:1} .
@@ -168,10 +177,16 @@ exit 0
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
 /srv/www/htdocs/repo/tools/*
-/srv/www/htdocs/repo/keys/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %doc %{_docdir}/smt/*
+
+
+%files -n res-signingkeys
+%defattr(-,root,root)
+%dir %attr(755, smt, www)/srv/www/htdocs/repo/keys
+/srv/www/htdocs/repo/keys/res-signingkeys.key
+
 
 %changelog
 * Thu Dec 04 2008 - mc@suse.de
