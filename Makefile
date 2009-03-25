@@ -111,7 +111,7 @@ install:
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
-	install -m 755 script/repo2db.pl $(DESTDIR)/usr/lib/SMT/bin/
+#	install -m 755 script/repo2db.pl $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/changeSMTUserPermissions.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/srv/www/htdocs/repo/tools/
 	install -m 644 www/repo/res-signingkeys.key $(DESTDIR)/srv/www/htdocs/repo/keys/
