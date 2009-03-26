@@ -71,6 +71,8 @@ sub new
     $self->{LOG}    = 0;
     $self->{VBLEVEL}   = 0;
     $self->{ERRORS}   = 0;
+
+    $self->{PATCHES} = {};
     
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
@@ -111,6 +113,11 @@ sub specialmdlocation
     return $self->{LOCATIONHACK};
 }
 
+sub patches
+{
+    my $self = shift;
+    return $self->{PATCHES};
+}
 
 # parses a xml resource
 sub parse()
@@ -203,6 +210,11 @@ sub handle_start_tag()
         $self->{CURRENT}->{CHECKSUM} = undef;
         $self->{CURRENT}->{LOCATION} = undef;
         $self->{CURRENT}->{PKGFILES} = [];
+        $self->{CURRENT}->{PATCHID} = "";
+        $self->{CURRENT}->{PATCHVER} = "";
+        $self->{CURRENT}->{PATCHTYPE} = "";
+        $self->{CURRENT}->{PATCHTITLE} = "";
+        $self->{CURRENT}->{PATCHDESCR} = "";
     }
     
     if ( lc($element) eq "location" )
@@ -219,6 +231,12 @@ sub handle_start_tag()
     elsif ( lc($element) eq "package" || lc($element) eq "patch" || lc($element) eq "data" )
     {
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "update" )
+    {
+        $self->{CURRENT}->{MAINELEMENT} = lc($element);
+        $self->{CURRENT}->{PATCHTYPE} = $attrs{type};
+        $self->{CURRENT}->{PATCHVER} = $attrs{version};
     }
     elsif ( lc($element) eq "newpackage" )
     {
@@ -249,6 +267,37 @@ sub handle_start_tag()
     {
         $self->{CURRENTSUBPKG}->{CHECKSUM} = "";
         $self->{CURRENTSUBPKG}->{LOCATION} = "";
+    }
+    elsif ( lc($element) eq "category" )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "id" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "title" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "description" && ($self->{CURRENT}->{MAINELEMENT} eq "update" || $self->{CURRENT}->{MAINELEMENT} eq "patch") )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "yum:name" && $self->{CURRENT}->{MAINELEMENT} eq "patch" )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "yum:version" && $self->{CURRENT}->{MAINELEMENT} eq "patch" )
+    {
+        $self->{CURRENT}->{PATCHVER} = $attrs{ver};
+    }
+    elsif ( lc($element) eq "summary" && $self->{CURRENT}->{MAINELEMENT} eq "patch" )
+    {
+        if( $attrs{lang} eq "en" )
+        {
+            $self->{CURRENT}->{SUBELEMENT} = lc($element);
+        }
     }
 }
 
@@ -282,6 +331,30 @@ sub handle_char_tag
         {
             $self->{CURRENT}->{LOCATION} .= $string;
         }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "category")
+        {
+            $self->{CURRENT}->{PATCHTYPE} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "id")
+        {
+            $self->{CURRENT}->{PATCHID} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "title")
+        {
+            $self->{CURRENT}->{PATCHTITLE} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "summary")
+        {
+            $self->{CURRENT}->{PATCHTITLE} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "description")
+        {
+            $self->{CURRENT}->{PATCHDESCR} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq "yum:name")
+        {
+            $self->{CURRENT}->{PATCHID} .= $string;
+        }
     }
 }
 
@@ -302,6 +375,21 @@ sub handle_end_tag()
         # first call the callback
         $self->{HANDLER}->($self->{CURRENT});
         
+        if( $self->{CURRENT}->{PATCHID} ne "" && $self->{CURRENT}->{PATCHTYPE} ne "" &&
+            $self->{CURRENT}->{PATCHVER} ne "")
+        {
+            my $str = $self->{CURRENT}->{PATCHID}."-".$self->{CURRENT}->{PATCHVER};
+            $self->{PATCHES}->{$str}->{type} = $self->{CURRENT}->{PATCHTYPE};
+            $self->{PATCHES}->{$str}->{title} = $self->{CURRENT}->{PATCHTITLE};
+            $self->{PATCHES}->{$str}->{description} = $self->{CURRENT}->{PATCHDESCR};
+
+            $self->{CURRENT}->{PATCHID}   = "";
+            $self->{CURRENT}->{PATCHVER}  = "";
+            $self->{CURRENT}->{PATCHTYPE} = "";
+            $self->{CURRENT}->{PATCHTITLE} = "";
+            $self->{CURRENT}->{PATCHDESCR} = "";
+        }
+
         # second check location if we have other metadata files
         
         if(exists $self->{CURRENT}->{LOCATION} && defined $self->{CURRENT}->{LOCATION} &&

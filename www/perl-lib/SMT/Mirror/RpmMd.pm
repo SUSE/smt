@@ -111,7 +111,11 @@ sub new
     $self->{STATISTIC}->{UPTODATE} = 0;
     $self->{STATISTIC}->{ERROR}    = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-
+    $self->{STATISTIC}->{NEWSECPATCHES} = 0;
+    $self->{STATISTIC}->{NEWRECPATCHES} = 0;
+    $self->{STATISTIC}->{NEWSECTITLES} = [];
+    $self->{STATISTIC}->{NEWRECTITLES} = [];
+    
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
     $self->{DEEPVERIFY}   = 0;
@@ -263,6 +267,22 @@ Number of errors.
 
 Size of files downloaded (in bytes)
 
+=item NEWSECPATCHES
+
+Number of new security updates
+
+=item NEWRECPATCHES
+
+Number of new recommended updates
+
+=item NEWSECTITLES
+
+Array reference with the titles of the new security updates
+
+=item NEWRECTITLES
+
+Array reference with the titles of the new recommended updates
+
 =back
 
 =cut
@@ -350,7 +370,11 @@ sub mirror()
     $self->{STATISTIC}->{LINK}          = 0;
     $self->{STATISTIC}->{COPY}          = 0;
     $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-    
+    $self->{STATISTIC}->{NEWSECPATCHES} = 0;
+    $self->{STATISTIC}->{NEWRECPATCHES} = 0;
+    $self->{STATISTIC}->{NEWSECTITLES} = [];
+    $self->{STATISTIC}->{NEWRECTITLES} = [];
+
     my $dest = $self->fullLocalRepoPath();
    
     if ( ! -d $dest )
@@ -405,7 +429,11 @@ sub mirror()
         $self->{STATISTIC}->{LINK}     = 0;
         $self->{STATISTIC}->{COPY}     = 0;
         $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-        
+        $self->{STATISTIC}->{NEWSECPATCHES} = 0;
+        $self->{STATISTIC}->{NEWRECPATCHES} = 0;
+        $self->{STATISTIC}->{NEWSECTITLES} = [];
+        $self->{STATISTIC}->{NEWRECTITLES} = [];
+
         if ( ! $dryrun )
         {
             # reset deepverify. It was done so we do not need it during mirror again.
@@ -546,8 +574,43 @@ sub mirror()
         my $mres = $self->{JOBS}->{$r}->mirror();
         $self->job2statistic($self->{JOBS}->{$r});
     }
+
+    #
+    # calculate the new available patches
+    #
+    my $newpatches = $parser->patches();
     
+    my $parsorig = SMT::Parser::RpmMd->new(log => $self->{LOG});
+    $parsorig->resource($self->fullLocalRepoPath());
+    $parsorig->parse("repodata/repomd.xml", sub { return; } );
+    my $oldpatches = $parsorig->patches();
+    my $pid;
+    
+    foreach $pid (keys %{$oldpatches})
+    {
+        if( exists $newpatches->{$pid} )
+        {
+            delete $newpatches->{$pid};
+        }        
+    }
+    
+    foreach $pid (keys %{$newpatches})
+    {
+        if($newpatches->{$pid}->{type} eq "security")
+        {
+            $self->{STATISTIC}->{NEWSECPATCHES} += 1;
+            push @{$self->{STATISTIC}->{NEWSECTITLES}}, $newpatches->{$pid}->{title};
+        }
+        elsif($newpatches->{$pid}->{type} eq "recommended")
+        {
+            $self->{STATISTIC}->{NEWRECPATCHES} += 1;
+            push @{$self->{STATISTIC}->{NEWRECTITLES}}, $newpatches->{$pid}->{title};
+        }
+    }
+    
+    #
     # if no error happens copy .repodata to repodata
+    #
     if(!$dryrun && $self->{STATISTIC}->{ERROR} == 0 && -d $job->fullLocalRepoPath()."/.repodata")
     {
         if( -d $job->fullLocalRepoPath()."/.old.repodata")
@@ -586,7 +649,7 @@ sub mirror()
             }
         }
     }
-    
+   
     if( $dryrun )
     {
         rmtree( $metatempdir, 0, 0 );
@@ -599,7 +662,7 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
-                                               $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
+                                                                    $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total linked files          : %s"), $self->{STATISTIC}->{LINK})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total copied files          : %s"), $self->{STATISTIC}->{COPY})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE})) if(!$isYum);
@@ -607,8 +670,20 @@ sub mirror()
     
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR})) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
 
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> New security updates        : %s"), $self->{STATISTIC}->{NEWSECPATCHES})) if(!$isYum);
+    foreach my $title (@{$self->{STATISTIC}->{NEWSECTITLES}})
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("   * %s"), $title )) if(!$isYum);
+    }
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> New recommended updates     : %s"), $self->{STATISTIC}->{NEWRECPATCHES})) if(!$isYum);
+    foreach my $title (@{$self->{STATISTIC}->{NEWRECTITLES}})
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("   * %s"), $title )) if(!$isYum);
+    }
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
+    
     return $self->{STATISTIC}->{ERROR};
 }
 

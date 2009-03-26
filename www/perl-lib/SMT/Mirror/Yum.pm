@@ -161,6 +161,11 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
     }
     
+    #
+    # I think YUM repositories do not have patches
+    #
+    #printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> New Security Updates        : %s"), $self->{STATISTIC}->{NEWSECPATCHES}));
+    #printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> New Recommended Updates     : %s"), $self->{STATISTIC}->{NEWRECPATCHES}));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);

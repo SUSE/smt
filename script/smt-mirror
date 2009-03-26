@@ -61,6 +61,8 @@ my $link = 0;
 my $copy = 0;
 my $errors = 0;
 my $size = 0;
+my $secpatches = 0;
+my $recpatches = 0;
 
 my $nohardlink = 0;
 
@@ -316,11 +318,13 @@ foreach my $entry (@{$array})
             $zyppMirror->mirror( dryrun => $dryrun );
 
             my $s = $zyppMirror->statistic();
-            $download += $s->{DOWNLOAD};
-            $link     += $s->{LINK};
-            $copy     += $s->{COPY};
-            $errors   += $s->{ERROR};
-            $size     += $s->{DOWNLOAD_SIZE};
+            $download   += $s->{DOWNLOAD};
+            $link       += $s->{LINK};
+            $copy       += $s->{COPY};
+            $errors     += $s->{ERROR};
+            $size       += $s->{DOWNLOAD_SIZE};
+            $secpatches += $s->{NEWSECPATCHES};
+            $recpatches += $s->{NEWRECPATCHES};
         }
     }
 }
@@ -391,6 +395,8 @@ if(!$clean && !$hardlink)
     push @summary, sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size));
     push @summary, sprintf(__("Total linked files        : %s"), $link);
     push @summary, sprintf(__("Total copied files        : %s"), $copy);
+    push @summary, sprintf(__("New security updates      : %s"), $secpatches);
+    push @summary, sprintf(__("New recommended updates   : %s"), $recpatches);
     push @summary, sprintf(__("Errors:                   : %d"), $errors);
     push @summary, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime)));
     
