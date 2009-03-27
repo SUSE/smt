@@ -228,9 +228,11 @@ eval
     
     if ($todir ne "")
     {
-        SMT::CLI::setMirrorableCatalogs(todir => $todir);
+        SMT::CLI::setMirrorableCatalogs(todir   => $todir,
+                                        log     => $LOG,
+                                        vblevel => $vblevel);
+
         # if todir parameter is set, we can stop here. Everything is done.
-        
         if (!SMT::Utils::unLock("smt-ncc-sync"))
         {
             SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
