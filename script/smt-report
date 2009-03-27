@@ -265,7 +265,7 @@ sub getReportRenderedAs
         if ( ! exists  $REP{$mode}{$report}{$subrep}  || 
              ! defined $REP{$mode}{$report}{$subrep}    )
         {
-            $REP{$mode}{$report}{$subrep} = SMT::CLI::renderReport($DATA{$report}{$subrep}, $mode);
+            $REP{$mode}{$report}{$subrep} = SMT::CLI::renderReport($DATA{$report}{$subrep}, $mode, $subrep);
         }
         return $REP{$mode}{$report}{$subrep};
     }
@@ -274,7 +274,7 @@ sub getReportRenderedAs
         if ( ! exists  $REP{$mode}{$report}  || 
              ! defined $REP{$mode}{$report}    )
         {
-            $REP{$mode}{$report} = SMT::CLI::renderReport($DATA{$report}, $mode);
+            $REP{$mode}{$report} = SMT::CLI::renderReport($DATA{$report}, $mode, $subrep);
         }
         return $REP{$mode}{$report};
     }
@@ -291,34 +291,39 @@ sub getMergedReport($)
     my $renderMode = shift;
     if (! defined $renderMode) { return ''; }
     my %headings = (
-                    'sub'     =>  __("Subscription Report based on NCC registrations"),
-                    'prodsub' =>  __("Subscription Report based on a local calculation")
+                    'nccreport'   =>  __("Subscription Report based on NCC registrations"),
+                    'localreport' =>  __("Subscription Report based on a local calculation")
                    );
 
     my $res = '';
     my $txt = '';
-    
+    my $date = SMT::Utils::getDBTimestamp();
+
     if($localreport)
     {
         if($renderMode eq 'html')
         {
-            $res .= "<h1>".$headings{'prodsub'}."</h1>";
+            $res .= "<h1>".$headings{'localreport'}."</h1>";
         }
-        elsif($renderMode eq 'xml' || $renderMode eq 'docbook')
+        elsif($renderMode eq 'docbook')
         {
-            $res .= "<title>".$headings{'prodsub'}."</title>";
+            $res .= "<title>".$headings{'localreport'}."</title>";
+        }
+        elsif($renderMode eq 'xml')
+        {
+            $res .= '<report title="'.$headings{'localreport'}.'" id="localreport" date="'.$date.'">';
         }
         else
         {
-            $res .= $headings{'prodsub'}."\n";
-            $res .= sprintf '=' x length($headings{'prodsub'})."\n\n";
+            $res .= $headings{'localreport'}."\n";
+            $res .= sprintf '=' x length($headings{'localreport'})."\n\n";
         }
         
-        $res .= getReportRenderedAs($renderMode, 'prodsub', 'alerts')."\n";
-        $res .= getReportRenderedAs($renderMode, 'prodsub', 'summary')."\n";
-        $res .= getReportRenderedAs($renderMode, 'prodsub', 'active')."\n";
-        $res .= getReportRenderedAs($renderMode, 'prodsub', 'soon')."\n";
-        $res .= getReportRenderedAs($renderMode, 'prodsub', 'expired')."\n";
+        $res .= getReportRenderedAs($renderMode, 'localreport', 'alerts')."\n";
+        $res .= getReportRenderedAs($renderMode, 'localreport', 'summary')."\n";
+        $res .= getReportRenderedAs($renderMode, 'localreport', 'active')."\n";
+        $res .= getReportRenderedAs($renderMode, 'localreport', 'soon')."\n";
+        $res .= getReportRenderedAs($renderMode, 'localreport', 'expired')."\n";
         $res .= "\n\n";
 
         if($renderMode eq 'html')
@@ -347,22 +352,26 @@ sub getMergedReport($)
     {
         if($renderMode eq 'html')
         {
-            $res .= "<h1>".$headings{'sub'}."</h1>";
+            $res .= "<h1>".$headings{'nccreport'}."</h1>";
         }
-        elsif($renderMode eq 'xml' || $renderMode eq 'docbook')
+        elsif($renderMode eq 'docbook')
         {
-            $res .= "<title>".$headings{'sub'}."</title>";
+            $res .= "<title>".$headings{'nccreport'}."</title>";
+        }
+        elsif($renderMode eq 'xml')
+        {
+            $res .= '<report title="'.$headings{'nccreport'}.'" id="nccreport" date="'.$date.'">';
         }
         else
         {
-            $res .= $headings{'sub'}."\n";
-            $res .= sprintf '=' x length($headings{'sub'})."\n\n";
+            $res .= $headings{'nccreport'}."\n";
+            $res .= sprintf '=' x length($headings{'nccreport'})."\n\n";
         }
-        $res .= getReportRenderedAs($renderMode, 'sub', 'alerts')."\n";
-        $res .= getReportRenderedAs($renderMode, 'sub', 'summary')."\n";
-        $res .= getReportRenderedAs($renderMode, 'sub', 'active')."\n";
-        $res .= getReportRenderedAs($renderMode, 'sub', 'soon')."\n";
-        $res .= getReportRenderedAs($renderMode, 'sub', 'expired')."\n";
+        $res .= getReportRenderedAs($renderMode, 'nccreport', 'alerts')."\n";
+        $res .= getReportRenderedAs($renderMode, 'nccreport', 'summary')."\n";
+        $res .= getReportRenderedAs($renderMode, 'nccreport', 'active')."\n";
+        $res .= getReportRenderedAs($renderMode, 'nccreport', 'soon')."\n";
+        $res .= getReportRenderedAs($renderMode, 'nccreport', 'expired')."\n";
         $res .= "\n\n";
 
         if($renderMode eq 'html')
@@ -421,20 +430,20 @@ sub getSeparateReports($)
 
     if($localreport)
     {
-        $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'prodsub', 'active');
-        $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'prodsub', 'soon');
-        $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'prodsub', 'expired');
-        $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'prodsub', 'summary');
-        $res{'product_subscription_alerts'}     = getReportRenderedAs($renderMode, 'prodsub', 'alerts');
+        $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'localreport', 'active');
+        $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'localreport', 'soon');
+        $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'localreport', 'expired');
+        $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'localreport', 'summary');
+        $res{'product_subscription_alerts'}     = getReportRenderedAs($renderMode, 'localreport', 'alerts');
     }
     
     if($nccreport)
     {
-        $res{'subscription_active'}     = getReportRenderedAs($renderMode, 'sub', 'active');
-        $res{'subscription_expiresoon'} = getReportRenderedAs($renderMode, 'sub', 'soon');
-        $res{'subscription_expired'}    = getReportRenderedAs($renderMode, 'sub', 'expired');
-        $res{'subscription_summary'}    = getReportRenderedAs($renderMode, 'sub', 'summary');
-        $res{'subscription_alerts'}     = getReportRenderedAs($renderMode, 'sub', 'alerts');
+        $res{'subscription_active'}     = getReportRenderedAs($renderMode, 'nccreport', 'active');
+        $res{'subscription_expiresoon'} = getReportRenderedAs($renderMode, 'nccreport', 'soon');
+        $res{'subscription_expired'}    = getReportRenderedAs($renderMode, 'nccreport', 'expired');
+        $res{'subscription_summary'}    = getReportRenderedAs($renderMode, 'nccreport', 'summary');
+        $res{'subscription_alerts'}     = getReportRenderedAs($renderMode, 'nccreport', 'alerts');
     }
     
     return %res;
@@ -457,6 +466,7 @@ sub getSeparateReports($)
                           'quiet|q'    => \$quiet,
                           'csv|c'      => \$csv,
                           'pdf|p'      => \$pdf,
+                          'xml|x'      => \$xml,
                           'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
                           'logfile|L=s'=> \$logfile,
                           'dailycheck' => \$dailycheck
@@ -550,8 +560,8 @@ SMT ID:       $smtguid
 
 if($localreport)
 {
-    $DATA {'prodsub'} = SMT::CLI::productSubscriptionReport(log => $LOG, vblevel => $vblevel);
-    if( $DATA{'prodsub'}{'alerts'} ne "" )
+    $DATA {'localreport'} = SMT::CLI::productSubscriptionReport(log => $LOG, vblevel => $vblevel);
+    if( $DATA{'localreport'}{'alerts'} ne "" )
     {
         $haveAlerts = 1;
     }
@@ -559,8 +569,8 @@ if($localreport)
 
 if( $nccreport )
 {
-    $DATA {'sub'}     = SMT::CLI::subscriptionReport(log => $LOG, vblevel => $vblevel);
-    if( $DATA{'sub'}{'alerts'} ne "" )
+    $DATA {'nccreport'}     = SMT::CLI::subscriptionReport(log => $LOG, vblevel => $vblevel);
+    if( $DATA{'nccreport'}{'alerts'} ne "" )
     {
         $haveAlerts = 1;
     }
@@ -663,6 +673,7 @@ if (defined $file)
     {
         if( -x "/usr/bin/htmldoc" )
         {
+            if ($Eext eq '') { $Eext = '.pdf'; }
             
             $fname = $Edir.$Efile.$Eext;
             my $html = "<html><head><title>SMT Subscription Report</title></head><body>";
@@ -678,6 +689,7 @@ if (defined $file)
         }
         else
         {
+#             if ($Eext eq '') { $Eext = '.db'; }
 #             my $docbook = '<?xml version="1.0" encoding="ISO-8859-1"?>
 #               <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 #               "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd"
@@ -699,16 +711,17 @@ if (defined $file)
     }
     elsif( $xml )
     {
+        if ($Eext eq '') { $Eext = '.xml'; }
         $fname = $Edir.$Efile.$Eext;
         open(XML, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
         print XML '<?xml version="1.0" encoding="UTF-8"?>'."\n";
-        print XML '<report>';
         print XML getMergedReport('xml');
         print XML '</report>';
         close XML;
     }
     else
     {
+        if ($Eext eq '') { $Eext = '.txt'; }
         $fname = $Edir.$Efile.$Eext;
         open(REPFILE, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
         print REPFILE getMergedReport('asciitable');
@@ -834,6 +847,15 @@ B<Note:> If the file name contains I<.csv> as extension the report format will b
 Export the report data in csv format to multiple files. Only to be used with B<--file> (see B<--file> section).
 The first line of each csv file consists of the column names, data starts on line two.
 
+=item --pdf|-p
+
+Export the report data in PDF format. Only to be used with B<--file> (see B<--file> section).
+
+=item --xml|-x
+
+Export the report data in XML format. Only to be used with B<--file> (see B<--file> section).
+See also B<XML FORMAT DESCRIPTION>.
+
 =item --mail|-m
 
 Activate mailing of the report. The report will be mailed rendered as table to the address(es) defined via the SMT YaST module.
@@ -842,6 +864,134 @@ The recipient list and optional mail relay settings can be setup in the I<REPORT
 =item --attach|-a
 
 Reports rendered in csv format will be attached to the mailing. The files that would be created using B<--file ./ --csv> will be attached to the mail. Only to be used with B<--mail>.
+
+=back
+
+=head2 XML FORMAT DESCRIPTION
+
+=over
+
+The root element is I<report>. In I<report> there are I<table> elements. A summary, active subscriptions, subscriptions which expire soon and expired subscriptions.
+Inside of the I<table> we have I<row> elements, which contain I<col> elements.
+
+The I<report> element has three attributes:
+
+=over 8
+
+=item B<id>
+
+id can have the value I<nccreport> or I<localreport> describing which kind of report was generated.
+
+=item B<date>
+
+The date and time when this report was created.
+
+=item B<title>
+
+A title for this report.
+
+=back
+
+The I<table> element has three attributes:
+
+=over 8
+
+=item B<id>
+
+id can has the value I<summary> for the Summary table, I<active> for the table containing the active subscriptions,
+I<soon> for the table containing subscription which expires within the next 30 days and I<expired> for the table
+containing the already expired subscriptions.
+
+=item B<date>
+
+The date and time when this table was created.
+
+=item B<title>
+
+A title for this table.
+
+=back
+
+The I<row> element has no attributes.
+
+The I<col> element has the attribute I<id>. The id describe the content of this column. 
+The following ids are available in the summary table:
+
+=over 8
+
+=item B<subtype>
+
+The name of the subscription. 
+
+=item B<regsystems>
+
+Number of registered systems. (Only in nccreport)
+
+=item B<regsystemsvirt>
+
+Number of registered virtual systems.  (Only in nccreport)
+
+=item B<localregsystems>
+
+Number of registered systems at this SMT server.  (Only in localreport)
+
+=item B<localregsystemsvirt>
+
+Number of registered virtual systems at this SMT server.  (Only in localreport)
+
+=item B<active>
+
+Number of active subscriptions. (value B<-1> means "unlimited")
+
+=item B<expiresoon>
+
+Number of subscriptions which expires within the next 30 days. (value B<-1> means "unlimited")
+
+=item B<overlimit>
+
+If this number is greater then 0, more systems then subscriptions are registered.
+
+=back
+
+The following ids are available in the other tables:
+
+=over 8
+
+=item B<sub>
+
+The name of the subscription. 
+
+=item B<regcode>
+
+The registration code of this subscription.
+
+=item B<number>
+
+The number of how many systems are allowed to use this subscription. The value B<-1> means "unlimited".
+
+=item B<used>
+
+The number of how many systems using this subscription. (means number of registrations using the regcode of this subscription.)
+Virtual systems are not counted here. (Only in nccreport)
+
+=item B<usedvirt>
+
+The number of how many virtual systems using this subscription. (Only in nccreport)
+
+=item B<localused>
+
+The number of how many systems using this subscription and are registered using this SMT server.
+Virtual systems are not counted here.
+
+=item B<localusedvirt>
+
+The number of how many virtual systems using this subscription and are registered using this SMT server.
+
+=item B<expires>
+
+The date when this subscription expired. If this element is empty, this subscription expires never.
+
+=back
 
 =back
 

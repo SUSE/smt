@@ -89,10 +89,11 @@ sub escapeCSVRow($)
 #   $mode = 'csv';
 #   $mode = 'html';
 #
-sub renderReport($$)
+sub renderReport($$$)
 {
-    my $d    = shift; 
-    my $mode = shift;
+    my $d     = shift; 
+    my $mode  = shift;
+    my $repid = shift;
     my $res = '';
     my $headingFmt = '';
 
@@ -251,9 +252,14 @@ sub renderReport($$)
     {
         my $writer = new XML::Writer(OUTPUT => \$res);
         my $haveID = 0;
+        my %tattr = (title => "$heading", id => "$repid");
         
-        $writer->startTag("part", name => "$heading");
-        $writer->startTag("table");
+        if($heading =~ /\((.+)\)/ && defined $1 && $1 ne "")
+        {
+            $tattr{date} = $1;
+        }
+        
+        $writer->startTag("table", %tattr);
         my @cols = ();
         
         if(ref($data{'cols'}->[0]) ne "HASH")
@@ -307,16 +313,22 @@ sub renderReport($$)
                     {
                         $attr{name} = $cols[$i];
                     }
-                    
-                    $writer->startTag("col", %attr);
-                    $writer->characters($sv);
-                    $writer->endTag("col");
+                    if($sv eq "never")
+                    {
+                        $writer->emptyTag("col", %attr);
+                    }
+                    else
+                    {
+                        $writer->startTag("col", %attr);
+                        $sv = -1 if($sv eq "unlimited");
+                        $writer->characters($sv);
+                        $writer->endTag("col");
+                    }
                 }
             }
             $writer->endTag("row");
         }
         $writer->endTag("table");
-        $writer->endTag("part");
     }
     elsif ($mode eq 'docbook')
     {
@@ -482,7 +494,7 @@ sub getCatalogs
 #
 sub listCatalogs
 {
-    print renderReport(getCatalogs(@_), 'asciitable');
+    print renderReport(getCatalogs(@_), 'asciitable', '');
 }
 
 
@@ -563,7 +575,7 @@ sub getProducts
 #
 sub listProducts
 {
-    print renderReport(getProducts(@_), 'asciitable');
+    print renderReport(getProducts(@_), 'asciitable', '');
 }
 
 
@@ -655,7 +667,7 @@ sub listRegistrations
     }
     else
     {
-        print renderReport(getRegistrations(), 'asciitable');
+        print renderReport(getRegistrations(), 'asciitable', '');
     }
 }
 
