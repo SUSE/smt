@@ -1875,8 +1875,19 @@ sub subscriptionReport
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
-    $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
-    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
+    #
+    # old
+    #
+    #$statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    #$statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
+    #$statement .= "(s.SUBENDDATE > ? or s.SUBENDDATE IS NULL) group by SUBID order by SUBENDDATE";
+    #$sth = $dbh->prepare($statement);
+    #$sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    #$sth->execute;
+    #my $assigned = $sth->fetchall_hashref("SUBID");
+
+    $statement  = "select s.SUBID, COUNT(cs.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, MachineData m ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = m.GUID and m.KEYNAME= 'host' and m.VALUE = '' and s.SUBSTATUS = 'ACTIVE' and ";
     $statement .= "(s.SUBENDDATE > ? or s.SUBENDDATE IS NULL) group by SUBID order by SUBENDDATE";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
@@ -1890,6 +1901,24 @@ sub subscriptionReport
         if(exists $res->{$subid})
         {
             $res->{$subid}->{ASSIGNED_MACHINES} = $assigned->{$subid}->{MACHINES};
+        }
+    }
+
+    $statement  = "select s.SUBID, COUNT(cs.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, MachineData m ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = m.GUID and m.KEYNAME= 'host' and m.VALUE != '' and s.SUBSTATUS = 'ACTIVE' and ";
+    $statement .= "(s.SUBENDDATE > ? or s.SUBENDDATE IS NULL) group by SUBID order by SUBENDDATE";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->execute;
+    my $assignedVirt = $sth->fetchall_hashref("SUBID");
+
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
+
+    foreach my $subid (keys %{$assignedVirt})
+    {
+        if(exists $res->{$subid})
+        {
+            $res->{$subid}->{ASSIGNED_VIRT_MACHINES} = $assignedVirt->{$subid}->{MACHINES};
         }
     }
 
@@ -1922,6 +1951,11 @@ sub subscriptionReport
                    name  => __("Used\nLocally"),
                    align => "auto",
                    id    => "localused"
+                  },
+                  {
+                   name  => __("Used Locally\n(Virtual)"),
+                   align => "auto",
+                   id    => "localusedvirt"
                   },
                   {
                    name  => __("Subscription\nExpires"),
@@ -1957,6 +1991,7 @@ sub subscriptionReport
                          $res->{$subid}->{CONSUMED},
                          $res->{$subid}->{CONSUMEDVIRT},
                          (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
+                         (exists $res->{$subid}->{ASSIGNED_VIRT_MACHINES})?$res->{$subid}->{ASSIGNED_VIRT_MACHINES}:0,
                          (!defined $res->{$subid}->{SUBENDDATE})?"never":$res->{$subid}->{SUBENDDATE}
                        ];
     }
@@ -1976,8 +2011,20 @@ sub subscriptionReport
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
-    $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
-    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
+    #
+    # old
+    #
+    #$statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    #$statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and s.SUBSTATUS = 'ACTIVE' and ";
+    #$statement .= "s.SUBENDDATE <= ? and s.SUBENDDATE > ? group by SUBID order by SUBENDDATE";
+    #$sth = $dbh->prepare($statement);
+    #$sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    #$sth->bind_param(2, $now, SQL_TIMESTAMP);
+    #$sth->execute;
+    #$assigned = $sth->fetchall_hashref("SUBID");
+
+    $statement  = "select s.SUBID, COUNT(cs.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, MachineData m ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = m.GUID  and m.KEYNAME= 'host' and m.VALUE = '' and s.SUBSTATUS = 'ACTIVE' and ";
     $statement .= "s.SUBENDDATE <= ? and s.SUBENDDATE > ? group by SUBID order by SUBENDDATE";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
@@ -1992,6 +2039,25 @@ sub subscriptionReport
         if(exists $res->{$subid})
         {
             $res->{$subid}->{ASSIGNED_MACHINES} = $assigned->{$subid}->{MACHINES};
+        }
+    }
+
+    $statement  = "select s.SUBID, COUNT(cs.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, MachineData m ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = m.GUID  and m.KEYNAME= 'host' and m.VALUE != '' and s.SUBSTATUS = 'ACTIVE' and ";
+    $statement .= "s.SUBENDDATE <= ? and s.SUBENDDATE > ? group by SUBID order by SUBENDDATE";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->bind_param(2, $now, SQL_TIMESTAMP);
+    $sth->execute;
+    $assignedVirt = $sth->fetchall_hashref("SUBID");
+
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
+
+    foreach my $subid (keys %{$assignedVirt})
+    {
+        if(exists $res->{$subid})
+        {
+            $res->{$subid}->{ASSIGNED_VIRT_MACHINES} = $assignedVirt->{$subid}->{MACHINES};
         }
     }
 
@@ -2026,6 +2092,11 @@ sub subscriptionReport
                    id    => "localused"
                   },
                   {
+                   name  => __("Used Locally\n(Virtual)"),
+                   align => "auto",
+                   id    => "localusedvirt"
+                  },
+                  {
                    name  => __("Subscription\nExpires"),
                    align => "auto",
                    id    => "expires"
@@ -2055,6 +2126,7 @@ sub subscriptionReport
                          $res->{$subid}->{CONSUMED},
                          $res->{$subid}->{CONSUMEDVIRT},
                          (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
+                         (exists $res->{$subid}->{ASSIGNED_VIRT_MACHINES})?$res->{$subid}->{ASSIGNED_VIRT_MACHINES}:0,
                          $res->{$subid}->{SUBENDDATE}
                        ];
 
@@ -2074,8 +2146,19 @@ sub subscriptionReport
     
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
     
-    $statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
-    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and (s.SUBSTATUS = 'EXPIRED' or ";
+    #
+    # old
+    #
+    #$statement  = "select s.SUBID, COUNT(c.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, Clients c ";
+    #$statement .= "where s.SUBID = cs.SUBID and cs.GUID = c.GUID and (s.SUBSTATUS = 'EXPIRED' or ";
+    #$statement .= "(s.SUBENDDATE < ? and s.SUBENDDATE IS NOT NULL)) group by SUBID order by SUBENDDATE";
+    #$sth = $dbh->prepare($statement);
+    #$sth->bind_param(1, $now, SQL_TIMESTAMP);
+    #$sth->execute;
+    #$assigned = $sth->fetchall_hashref("SUBID");
+
+    $statement  = "select s.SUBID, COUNT(cs.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, MachineData m ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = m.GUID and m.KEYNAME= 'host' and m.VALUE = '' and (s.SUBSTATUS = 'EXPIRED' or ";
     $statement .= "(s.SUBENDDATE < ? and s.SUBENDDATE IS NOT NULL)) group by SUBID order by SUBENDDATE";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $now, SQL_TIMESTAMP);
@@ -2089,6 +2172,24 @@ sub subscriptionReport
         if(exists $res->{$subid})
         {
             $res->{$subid}->{ASSIGNED_MACHINES} = $assigned->{$subid}->{MACHINES};
+        }
+    }
+
+    $statement  = "select s.SUBID, COUNT(cs.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, MachineData m ";
+    $statement .= "where s.SUBID = cs.SUBID and cs.GUID = m.GUID and m.KEYNAME= 'host' and m.VALUE != '' and (s.SUBSTATUS = 'EXPIRED' or ";
+    $statement .= "(s.SUBENDDATE < ? and s.SUBENDDATE IS NOT NULL)) group by SUBID order by SUBENDDATE";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $now, SQL_TIMESTAMP);
+    $sth->execute;
+    $assignedVirt = $sth->fetchall_hashref("SUBID");
+    
+    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
+    
+    foreach my $subid (keys %{$assignedVirt})
+    {
+        if(exists $res->{$subid})
+        {
+            $res->{$subid}->{ASSIGNED_VIRT_MACHINES} = $assignedVirt->{$subid}->{MACHINES};
         }
     }
 
@@ -2123,6 +2224,11 @@ sub subscriptionReport
                    id    => "localused"
                   },
                   {
+                   name  => __("Used Locally\n(Virtual)"),
+                   align => "auto",
+                   id    => "localusedvirt"
+                  },
+                  {
                    name  => __("Subscription\nExpires"),
                    align => "auto",
                    id    => "expires"
@@ -2146,6 +2252,7 @@ sub subscriptionReport
                          $res->{$subid}->{CONSUMED},
                          $res->{$subid}->{CONSUMEDVIRT},
                          (exists $res->{$subid}->{ASSIGNED_MACHINES})?$res->{$subid}->{ASSIGNED_MACHINES}:0,
+                         (exists $res->{$subid}->{ASSIGNED_VIRT_MACHINES})?$res->{$subid}->{ASSIGNED_VIRT_MACHINES}:0,
                          $res->{$subid}->{SUBENDDATE}
                        ];
     }
