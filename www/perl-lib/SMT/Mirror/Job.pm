@@ -514,6 +514,7 @@ sub mirror
         # LWP::UserAgent modify the file, but we need to replace it
         # so we better remove it, if it exists
         unlink $self->fullLocalPath();
+        #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "UNLINK: ".$self->fullLocalPath());
     }
 
     if( $self->copyFromLocalIfAvailable() )

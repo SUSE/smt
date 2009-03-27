@@ -481,6 +481,7 @@ sub mirror()
                 if(!$self->{NOHARDLINK})
                 {
                     $success = link( $fullpath, $metatempdir."/$entry" );
+                    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "LINK: $fullpath, $metatempdir/$entry");
                 }
                 if(!$success)
                 {
@@ -488,8 +489,10 @@ sub mirror()
                     {
                         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "copy metadata failed: $!");
                         $self->{STATISTIC}->{ERROR} += 1;
+                        closedir(DIR);
                         return $self->{STATISTIC}->{ERROR};
                     };
+                    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "COPY: $fullpath, $metatempdir/$entry");
                 }
             }
         }
@@ -921,7 +924,7 @@ sub download_handler
                 return;
             }
         }
-        elsif( -e $job->fullLocalPath() )
+        elsif( ! exists $self->{EXISTS}->{$job->fullLocalPath()} && -e $job->fullLocalPath() )
         {
             # file exists but is not in the database. Check if it is valid.
             if( $job->verify() )
@@ -934,10 +937,12 @@ sub download_handler
             }
             else
             {
-                # hmmm, invalid. Remove it if we are not in dryrun mode
-                unlink ( $job->fullLocalPath() ) if( !$dryrun );
+                # hmmm, invalid. Remove it if we are not in dryrun mode or the file is metadata
+                unlink ( $job->fullLocalPath() ) if( !($dryrun || $job->localFileLocation() =~ /repodata/) );
             }
         }
+        # else mean wrong checksum. Can happen in the repodata case. Same filename with new checksum.
+        #      This will be detected and fixed later 
         
         # if it is an xml file we have to download it now and
         # process it
