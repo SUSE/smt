@@ -7,7 +7,7 @@ ID=/usr/bin/id
 SU=/bin/su
 CAT=/bin/cat
 
-SMT_WWW_DIRS=("/var/log/smt" "/var/run/smt")
+SMT_DIRS=("/var/log/smt" "/var/run/smt")
 SMT_ROOT_FILES=()
 NCC_CREDENTIAL="/etc/zypp/credentials.d/NCCcredentials"
 
@@ -86,6 +86,18 @@ if [ -z "$GROUP" ]; then
     exit 1
 fi
 
+INWWW=0
+for g in `$ID -Gn $USER`; do
+    if [ "$g" == "www" ]; then
+        INWWW=1
+    fi
+done
+
+if [ $INWWW -ne 1 ]; then
+    echo "$USER not in group www. Abort"
+    exit 1
+fi
+
 if [ ! -x $CHMOD ]; then
     echo "chmod command not found. Abort.";
     exit 1;
@@ -119,13 +131,13 @@ while IFS== read -sr key val ; do
             if [ $INLOCAL -eq 1 -a -n "$val" ]; then
                 val=`echo -n $val`;
                 if [ -d "$val/repo" ]; then
-                    SMT_WWW_DIRS=(${SMT_WWW_DIRS[@]} "$val/repo")
+                    SMT_DIRS=(${SMT_DIRS[@]} "$val/repo")
                 fi
                 if [ -d "$val/testing/repo" ]; then
-                    SMT_WWW_DIRS=(${SMT_WWW_DIRS[@]} "$val/testing/repo")
+                    SMT_DIRS=(${SMT_DIRS[@]} "$val/testing/repo")
                 fi
                 if [ -d "$val/full/repo" ]; then
-                    SMT_WWW_DIRS=(${SMT_WWW_DIRS[@]} "$val/full/repo")
+                    SMT_DIRS=(${SMT_DIRS[@]} "$val/full/repo")
                 fi
             fi
             ;;
@@ -134,7 +146,7 @@ while IFS== read -sr key val ; do
     
 done < $SMTCONF
 
-for dir in ${SMT_WWW_DIRS[@]}; do
+for dir in ${SMT_DIRS[@]}; do
     echo -n "$CHOWN -R $USER.$GROUP $dir"
     if [ $DRYRUN -eq 1 ]; then
         echo

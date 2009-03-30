@@ -4,6 +4,6 @@
 #     run smt-daily once a night at 01:00 +
 #     run smt-gen-report once a week Monday at 05:00
 
-*/15  *  *  *  *    smt    /usr/lib/SMT/bin/smt-repeated-register
-0     1  *  *  *    smt    /usr/lib/SMT/bin/smt-daily
-0     5  *  *  1    smt    /usr/lib/SMT/bin/smt-gen-report
+*/15  *  *  *  *    root    /usr/lib/SMT/bin/smt-repeated-register
+0     1  *  *  *    root    /usr/lib/SMT/bin/smt-daily
+0     5  *  *  1    root    /usr/lib/SMT/bin/smt-gen-report

@@ -832,22 +832,57 @@ sub dropPrivileges
     # if we do not run as root, we do not need to drop privileges
     return 1 if( $euid != 0 );
     
-    my $pw = getpwnam("smt") || return 0;
+    my $user = 'smt';
+    eval
+    {
+        my $cfg = getSMTConfig();
+        $user = $cfg->val('LOCAL', 'smtUser');
+    };
+    if(!defined $user || $user eq "")
+    {
+        $user = 'smt';
+    }
 
-    POSIX::setgid( $pw->gid() ) || return 0;
-    POSIX::setuid( $pw->uid() ) || return 0;
+    # if the customer want to run smt commands under root permissions
+    # we let him do this
+    return 1 if("$user" eq "root");
     
+    my $pw = getpwnam($user) || return 0;
+
+    # Find all the groups the user is a member of
+    my @groups;
+    while (my ($name, $comment, $ggid, $mstr) = getgrent()) 
+    {
+        my %membership = map { $_ => 1 } split(/\s/, $mstr);
+        if(exists $membership{$user}) {
+            push(@groups, $ggid) if $ggid ne 0;
+        }
+    }
+    my %groups = map { $_ => 1 } grep { $_ ne $pw->gid() } (@groups);
+    my $newgid =$pw->gid()." ".join(" ", sort { $a <=> $b} keys %groups);
+
+    $GID = $EGID = $newgid;
+    POSIX::setuid( $pw->uid() ) || return 0;
+
     # test is euid is correct
     return 0 if( POSIX::geteuid() != $pw->uid() );
-    # test is egid is correct
-    return 0 if( POSIX::getegid() != $pw->gid() );
 
+    # Perl adds $gid two time to the list so it also gets set in posix groups
+    $newgid =$pw->gid()." ".join(" ", sort { $a <=> $b} keys %groups, $pw->gid());
+
+    # Sort the output so we can compare it
+    my $cgid = int($GID)." ".join(" ", sort { $a <=> $b } split(/\s/, $GID));
+    my $cegid = int($EGID)." ".join(" ", sort { $a <=> $b } split(/\s/, $EGID));
+
+    # Check that we did actually drop the privileges
+    return 0 if($cgid ne $newgid or $cgid ne $newgid);
+    
     $ENV{'HOME'} = $pw->dir();
     if( chdir( $pw->dir() ) )
     {
         $ENV{'PWD'} = $pw->dir();
     }
-        
+    
     return 1;
 }
 
