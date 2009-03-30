@@ -403,7 +403,7 @@ sub mirror()
 
     # get the repository index
     my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
-                                    dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+                                    dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
@@ -507,13 +507,8 @@ sub mirror()
     my $result = $job->mirror();
     $self->job2statistic($job);
     
-    if( $result == 0 && $dryrun )
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("N %s", $job->fillLocalFile()) );
-    }
-
     $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
-                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
@@ -529,7 +524,7 @@ sub mirror()
     }
 
     $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
-                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+                                 dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
@@ -898,8 +893,8 @@ sub download_handler
         }
 
         # get the repository index
-        my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, 
-                                        log => $self->{LOG}, dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+        my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+                                        dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
         $job->uri( $self->{URI} );
         $job->localBasePath( $self->localBasePath() );
         $job->localRepoPath( $self->localRepoPath() );
@@ -991,7 +986,7 @@ sub download_handler
                $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
             {
                 my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
-                                                dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+                                                dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
                 $job->uri( $self->{URI} );
                 $job->localBasePath( $self->localBasePath() );
                 $job->localRepoPath( $self->localRepoPath() );
@@ -1045,7 +1040,7 @@ sub verify_handler
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
             my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
-                                            dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK});
+                                            dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
             $job->localBasePath( $self->localBasePath() );
             $job->localRepoPath( $self->localRepoPath() );
             $job->localFileLocation( $data->{LOCATION} );

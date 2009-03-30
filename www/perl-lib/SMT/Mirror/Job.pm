@@ -123,6 +123,8 @@ sub new
     
     $self->{NOHARDLINK} = 0;
 
+    $self->{DRYRUN} = 0;
+
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -145,6 +147,11 @@ sub new
     if(exists $opt{nohardlink} && defined $opt{nohardlink} && $opt{nohardlink})
     {
         $self->{NOHARDLINK} = 1;
+    }
+
+    if(exists $opt{dryrun} && defined $opt{dryrun})
+    {
+        $self->{DRYRUN} = $opt{dryrun};
     }
 
     bless($self);
@@ -573,7 +580,15 @@ sub mirror
                     utime $lm, $lm, $self->fullLocalPath();
                 }
                 
-                printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("D %s", $self->fullLocalPath()));
+                if( !$self->{DRYRUN} )
+                {
+                    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("D %s", $self->fullLocalPath()));
+                }
+                else
+                {
+                    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("N %s", $self->fullLocalPath()));
+                }
+                
                 $self->updateDB();
                 
                 $errorcode = 0;

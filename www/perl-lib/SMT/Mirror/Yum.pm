@@ -73,7 +73,7 @@ sub mirror()
     
     # find out if we have old style yum repo with headers directoy
 
-    my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+    my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
@@ -114,7 +114,7 @@ sub mirror()
                         
                         my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
                         
-                        my $hjob = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH} );
+                        my $hjob = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH}, dryrun => $dryrun );
                         $hjob->uri( $self->uri() );
                         $hjob->localBasePath( $self->localBasePath() );
                         $hjob->localRepoPath( $self->localRepoPath() );
