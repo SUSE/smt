@@ -855,27 +855,27 @@ sub dropPrivileges
     {
         my %membership = map { $_ => 1 } split(/\s/, $mstr);
         if(exists $membership{$user}) {
-            push(@groups, $ggid) if $ggid ne 0;
+            push(@groups, $ggid) if $ggid ne 0 and $ggid ne $pw->gid();
         }
     }
-    my %groups = map { $_ => 1 } grep { $_ ne $pw->gid() } (@groups);
-    my $newgid =$pw->gid()." ".join(" ", sort { $a <=> $b} keys %groups);
+    my $newgid = $pw->gid()." ".join(" ", sort { $a <=> $b} @groups);
 
-    $GID = $EGID = $newgid;
+    $GID = $pw->gid(); # $GID only accepts a single number according to perlvar
+    $EGID = $pw->gid()." $newgid";
     POSIX::setuid( $pw->uid() ) || return 0;
 
     # test is euid is correct
     return 0 if( POSIX::geteuid() != $pw->uid() );
 
-    # Perl adds $gid two time to the list so it also gets set in posix groups
-    $newgid =$pw->gid()." ".join(" ", sort { $a <=> $b} keys %groups, $pw->gid());
+    # Perl adds $gid two times to the list so it also gets set in posix groups
+    $newgid = join(" ", sort { $a <=> $b} @groups, $pw->gid(), $pw->gid());
 
     # Sort the output so we can compare it
-    my $cgid = int($GID)." ".join(" ", sort { $a <=> $b } split(/\s/, $GID));
-    my $cegid = int($EGID)." ".join(" ", sort { $a <=> $b } split(/\s/, $EGID));
+    my $cgid = join(" ", sort { $a <=> $b } split(/\s/, $GID));
+    my $cegid = join(" ", sort { $a <=> $b } split(/\s/, $EGID));
 
     # Check that we did actually drop the privileges
-    return 0 if($cgid ne $newgid or $cgid ne $newgid);
+    return 0 if($cgid ne $newgid or $cegid ne $newgid);
     
     $ENV{'HOME'} = $pw->dir();
     if( chdir( $pw->dir() ) )
