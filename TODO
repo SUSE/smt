@@ -19,7 +19,16 @@ TODO (SMT11):
              Maybe first try to set a ACL, if this does not work, change the
              owner.
 
+- STAGING:
+  If staging is enabled for a catalogs, find out all products for which this 
+  catalog is used. Find all catalogs for these products and create symlinks 
+  in full/ and testing/ for all catalogs where staging is not enabled.
+  This is required to successfully register clients against the testing 
+  or full namespace if only one of X catalogs are enabled for staging.
 
+  If staging is enabled for an already existing (mirrored) catalog, 
+  hardlink or copy the current content to full and testing.
+  
 
 Nice-To-Have but not so important
 =================================
