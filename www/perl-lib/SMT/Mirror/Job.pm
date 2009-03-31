@@ -450,6 +450,8 @@ sub updateDB
 
     return if( $self->localFileLocation() ne $self->remoteFileLocation() ); # we do not store .repodata/ into the DB
     
+    return if( ! defined $self->{DBH} ); # don't try to update when running without a DB connection (e.g. --dbreplfile)
+
     eval 
     {
         if( defined $self->checksum() && $self->checksum() ne "")
@@ -536,6 +538,7 @@ sub mirror
     my $errormsg  = "";
     do
     {
+        my $saveuri = SMT::Utils::getSaveUri($remote);
         eval
         {
             $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->fullLocalPath() );
@@ -543,10 +546,7 @@ sub mirror
         };
         if($@)
         {
-            my $saveuri = URI->new($remote);
-            $saveuri->userinfo(undef);
-            
-            $errormsg = sprintf(__("E '%s'"), $saveuri->as_string());
+            $errormsg = sprintf(__("E '%s'"), $saveuri);
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)", 0, 1);
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@, 0, 1);
             $tries++;
@@ -556,11 +556,8 @@ sub mirror
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                my $saveuri = URI->new($remote);
-                $saveuri->userinfo(undef);
-
                 $tries = 4;
-                $errormsg = sprintf(__("E '%s': Too many redirects"), $saveuri->as_string());
+                $errormsg = sprintf(__("E '%s': Too many redirects"), $saveuri);
             }
             else
             {
@@ -610,10 +607,7 @@ sub mirror
         }
         else
         {
-            my $saveuri = URI->new($remote);
-            $saveuri->userinfo(undef);
-            
-            $errormsg = sprintf(__("E '%s': %s"), $saveuri->as_string(), $response->status_line);
+            $errormsg = sprintf(__("E '%s': %s"), $saveuri, $response->status_line);
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)" , 0, 1);
             $tries++;
         }
@@ -649,6 +643,7 @@ sub modified
     my $remote = $self->fullRemoteURI();
     do
     {
+        my $saveuri = SMT::Utils::getSaveUri($self->fullRemoteURI());
         eval
         {
             $response = $self->{USERAGENT}->head( $remote );
@@ -664,9 +659,7 @@ sub modified
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                my $saveuri = URI->new($self->fullRemoteURI());
-                $saveuri->userinfo(undef);
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("E '%s': Too many redirects", $saveuri->as_string()) ));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("E '%s': Too many redirects", $saveuri) ));
                 return undef;
             }
             
@@ -681,10 +674,8 @@ sub modified
         }
         else 
         {
-            my $saveuri = URI->new($self->fullRemoteURI());
-            $saveuri->userinfo(undef);
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("E '%s': %s"), 
-                                                    $saveuri->as_string() , $response->status_line))  if(!$doNotLog);
+                                                    $saveuri, $response->status_line))  if(!$doNotLog);
             return undef;
         }
         

@@ -61,10 +61,9 @@ sub mirror()
     # the destination directory
     # so we save the repo to:
     # $destdir/hostname.com/path
-    my $saveuri = URI->new($self->{URI});
-    $saveuri->userinfo(undef);
+    my $saveuri = SMT::Utils::getSaveUri($self->{URI});
 
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string ));
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri ));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Target:    %s"), $self->fullLocalRepoPath() ));
 
     my $errors = $self->SUPER::mirror(%options);
@@ -90,7 +89,7 @@ sub mirror()
     if( $mres == 2 && $self->statistic()->{DOWNLOAD} == 0 && 
         $self->statistic()->{LINK} == 0 && $self->statistic()->{COPY} == 0 )
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
         return 0;
     }

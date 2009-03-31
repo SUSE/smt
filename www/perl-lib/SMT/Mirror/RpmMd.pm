@@ -383,7 +383,7 @@ sub mirror()
         $self->{STATISTIC}->{ERROR} += 1;
         return $self->{STATISTIC}->{ERROR};
     }
-    if ( !defined $self->uri() || $self->uri() !~ /^http/ )
+    if ( !defined $self->uri() || $self->uri() !~ /^http/ && $self->uri() !~ /^file/ )
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid URL: ".((defined $self->uri())?$self->uri():"") );
         $self->{STATISTIC}->{ERROR} += 1;
@@ -395,10 +395,9 @@ sub mirror()
     # the destination directory
     # so we save the repo to:
     # $destdir/hostname.com/path
-    my $saveuri = URI->new($self->{URI});
-    $saveuri->userinfo(undef);
+    my $saveuri = SMT::Utils::getSaveUri($self->{URI});
     
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string )) if(!$isYum);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri )) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Target:    %s"), $self->fullLocalRepoPath() )) if(!$isYum);
 
     # get the repository index
@@ -443,7 +442,7 @@ sub mirror()
 
     if ( !$job->outdated() && $verifySuccess )
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
         return 0;
     }
@@ -542,10 +541,13 @@ sub mirror()
     
     # we ignore errors. The code work also without this variable set
     # create a hash with filename => checksum
-    my $statement = sprintf("SELECT localpath, checksum from RepositoryContentData where localpath like %s",
-                            $self->{DBH}->quote($self->fullLocalRepoPath()."%"));
-    $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
+    if ( defined $self->{DBH} )
+    {
+        my $statement = sprintf("SELECT localpath, checksum from RepositoryContentData where localpath like %s",
+                                $self->{DBH}->quote($self->fullLocalRepoPath()."%"));
+        $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
+        #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
+    }
     
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
@@ -652,12 +654,12 @@ sub mirror()
     {
         rmtree( $metatempdir, 0, 0 );
         
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished dryrun '%s'"), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished dryrun '%s'"), $saveuri)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
     }
     else
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
                                                                     $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
