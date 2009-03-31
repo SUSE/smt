@@ -1052,9 +1052,15 @@ sub setupCustomCatalogs
     
     # now insert it again.
     my $exthost = $options{exturl};
-    $exthost =~ /^(https?:\/\/[^\/]+\/)/;
-    $exthost = $1;
-
+    if($exthost =~ /^(https?:\/\/[^\/]+\/)/)
+    {
+        $exthost = $1;
+    }
+    elsif($exthost =~ /^file:/)
+    {
+        $exthost = "file://localhost";
+    }
+    
     my $affected = $dbh->do(sprintf("INSERT INTO Catalogs (CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR,MIRRORABLE,SRC ) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'C')",
                                     $dbh->quote($options{catalogid}),
                                     $dbh->quote($options{name}),

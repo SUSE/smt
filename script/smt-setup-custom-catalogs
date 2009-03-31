@@ -118,9 +118,9 @@ while($name !~ /^[a-zA-Z\d_-]+$/)
 }
 chomp($name);
 
-while($exturl !~ /^https?:\/\//)
+while($exturl !~ /^(https?|file):\/\//)
 {
-    print __("Invalid URL. A http or https url is required.\n");
+    print __("Invalid URL. A http, https or file url is required.\n");
     
     print __("URL:");
     
