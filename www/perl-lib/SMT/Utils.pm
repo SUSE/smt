@@ -870,12 +870,29 @@ sub dropPrivileges
     return 1;
 }
 
+=item getSaveUri($uriString)
+
+Create a URI string save for logging or printing (by removin username and password)
+from the URI. Returns the stripped down URI
+
+=cut
+sub getSaveUri
+{
+    my $uri = shift;
+    my $saveuri = URI->new($uri);
+    if ( $saveuri->scheme ne "file" ) 
+    {
+        $saveuri->userinfo(undef);
+    }
+    return $saveuri->as_string();
+}
+
 
 =back
 
 =head1 AUTHOR
 
-mc@suse.de, jdsn@suse.de
+mc@suse.de, jdsn@suse.de, rhafer@suse.de
 
 =head1 COPYRIGHT
 
