@@ -19,7 +19,7 @@
 
 
 Name:           smt
-BuildRequires:  apache2 apache2-mod_perl
+BuildRequires:  apache2 apache2-mod_perl swig
 Version:        1.1.3
 Release:        0.2
 Requires:       perl = %{perl_version}
@@ -82,6 +82,7 @@ cp -p %{S:1} .
 # ---------------------------------------------------------------------------
 
 %build
+make
 mkdir man
 cd script
 for prog in smt*; do
@@ -141,6 +142,9 @@ exit 0
 %dir %{perl_vendorlib}/SMT/
 %dir %{perl_vendorlib}/SMT/Mirror
 %dir %{perl_vendorlib}/SMT/Parser
+%dir %{perl_vendorarch}/Sys
+%dir %{perl_vendorarch}/auto/Sys/
+%dir %{perl_vendorarch}/auto/Sys/GRP
 %dir /etc/smt.d
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/tools
@@ -170,6 +174,8 @@ exit 0
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm
 %{perl_vendorlib}/SMT/Parser/*.pm
+%{perl_vendorarch}/Sys/*.pm
+%{perl_vendorarch}/auto/Sys/GRP/*.so
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/SMT/*.pm
 /usr/sbin/smt-*

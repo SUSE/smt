@@ -7,6 +7,9 @@ SMT_SQLITE_DB = $(DESTDIR)/var/lib/SMT/db/smt.db
 TEMPF         = $(shell mktemp)
 DOCDIR        = /usr/share/doc/packages
 
+all:
+	make -C swig
+
 install_all: install install_conf install_db
 	@echo "==========================================================="
 	@echo "Append 'perl' to APACHE_MODULES an 'SSL' to APACHE_SERVER_FLAGS"
@@ -130,6 +133,7 @@ install:
 	install -m 644 doc/NCC-Client-Registration-via-YEP.odt $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 doc/Server-Tuning.txt $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 doc/SMT-Database-Schema.txt $(DESTDIR)$(DOCDIR)/smt/
+	make -C swig $@
 
 test: clean
 	cd tests; perl tests.pl && cd -
@@ -139,7 +143,7 @@ clean:
 	rm -rf tests/testdata/rpmmdtest/*
 	rm -rf $(NAME)-$(VERSION)/
 	rm -rf $(NAME)-$(VERSION).tar.bz2
-
+	make -C swig $@
 
 dist: clean
 	rm -rf $(NAME)-$(VERSION)/
@@ -188,6 +192,7 @@ dist: clean
                   -o \
                   \( -type f -exec install -m644 \{\} $(NAME)-$(VERSION)/\{\} \; \) \
                 \)
+	make -C swig NAME=$(NAME) VERSION=$(VERSION) $@
 	@cp Makefile README COPYING $(NAME)-$(VERSION)/
 	@rm $(NAME)-$(VERSION)/www/README
 

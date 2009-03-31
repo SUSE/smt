@@ -14,6 +14,7 @@ use Net::SMTP;   # sending eMails via smtp relay
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 use User::pwent;
+use Sys::GRP;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -849,34 +850,17 @@ sub dropPrivileges
     
     my $pw = getpwnam($user) || return 0;
 
-    # Find all the groups the user is a member of
-    my @groups;
-    while (my ($name, $comment, $ggid, $mstr) = getgrent()) 
+    $GID  = $pw->gid(); # $GID only accepts a single number according to perlvar
+    $EGID = $pw->gid();
+    if( Sys::GRP::initgroups($user, $pw->gid()) != 0 )
     {
-        my %membership = map { $_ => 1 } split(/\s/, $mstr);
-        if(exists $membership{$user}) {
-            push(@groups, $ggid) if $ggid ne 0 and $ggid ne $pw->gid();
-        }
+        return 0;
     }
-    my $newgid = $pw->gid()." ".join(" ", sort { $a <=> $b} @groups);
-
-    $GID = $pw->gid(); # $GID only accepts a single number according to perlvar
-    $EGID = $pw->gid()." $newgid";
     POSIX::setuid( $pw->uid() ) || return 0;
 
     # test is euid is correct
     return 0 if( POSIX::geteuid() != $pw->uid() );
 
-    # Perl adds $gid two times to the list so it also gets set in posix groups
-    $newgid = join(" ", sort { $a <=> $b} @groups, $pw->gid(), $pw->gid());
-
-    # Sort the output so we can compare it
-    my $cgid = join(" ", sort { $a <=> $b } split(/\s/, $GID));
-    my $cegid = join(" ", sort { $a <=> $b } split(/\s/, $EGID));
-
-    # Check that we did actually drop the privileges
-    return 0 if($cgid ne $newgid or $cegid ne $newgid);
-    
     $ENV{'HOME'} = $pw->dir();
     if( chdir( $pw->dir() ) )
     {
