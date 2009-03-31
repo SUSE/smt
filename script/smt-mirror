@@ -15,6 +15,7 @@ use SMT::Parser::RegData;
 use Config::IniFiles;
 use File::Path;
 use URI;
+use URI::file;
 use Getopt::Long;
 use File::Basename;
 use File::Temp;
@@ -50,6 +51,7 @@ my $dbreplfile = undef;
 my $dbreplacement = [];
 
 my $LocalBasePath = "";
+my $FromLocalBasePath = "";
 
 my $help     = 0;
 my $logfile = "/dev/null";
@@ -71,6 +73,7 @@ my $result = GetOptions ("debug|d"      => \$debug,
                          "cleanup|c"    => \$clean,
                          "hardlink=i"   => \$hardlink,
                          "directory=s"  => \$LocalBasePath,
+                         "fromdir=s"    => \$FromLocalBasePath,
                          "deepverify"   => \$deepverify,
                          "dryrun|n"     => \$dryrun,
                          "nohardlink"   => \$nohardlink,
@@ -97,6 +100,8 @@ if($help)
     print "                        " . __("for them\n");
     print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
     print "                        " . __("default value in smt.conf\n");
+    print "--fromdir arg           " . __("Mirror from the directory give here, instead of mirroring from the remote sources.\n");
+    print "                        " . __("The directory can e.g. be created by calling smt-mirror --directory\n");
     print "--deepverify            " . __("Verify all checksums \n");
     print "--dryrun -n             " . __("Run mirror algorithm without downloading the rpms \n");
     print "                        " . __("(but it needs to download the metadata into a temporary directory).\n");
@@ -192,6 +197,25 @@ else
     }
 }
 
+if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
+{
+    if ( -d $FromLocalBasePath."/repo" )
+    {
+        $FromLocalBasePath =  $FromLocalBasePath."/repo/";
+    }
+    else
+    {
+        if (! -d $FromLocalBasePath )
+        {
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("The directory %s does not exist"), $FromLocalBasePath));
+            if(!SMT::Utils::unLock("smt-mirror"))
+            {
+                SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+            }
+            exit 1;
+        }
+    }
+}
 
 if($hardlink > 0)
 {
@@ -279,12 +303,19 @@ foreach my $entry (@{$array})
 
     if( $entry->{EXTURL} ne "" && $entry->{LOCALPATH} ne "" )
     {
-        my $zuri = URI->new($entry->{EXTURL});
-        if($zuri->host eq "nu.novell.com")
+        my $zuri;
+        if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
         {
-            $zuri->userinfo("$nuUser:$nuPass");
+            $zuri = URI::file->new($FromLocalBasePath.$entry->{LOCALPATH});
         }
-        
+        else
+        {
+            $zuri = URI->new($entry->{EXTURL});
+            if($zuri->host eq "nu.novell.com")
+            {
+                $zuri->userinfo("$nuUser:$nuPass");
+            }
+        }
         my $tmpLocalBasePath = $LocalBasePath;
         if( exists $entry->{STAGING} && defined $entry->{STAGING} && uc($entry->{STAGING}) eq "Y")
         {
@@ -516,6 +547,13 @@ be created with the sync-ncc command. This option is only
 useful if the smt database does not exist on the host from 
 which the smt-mirror script is being executed.
 
+=item --fromdir <path>
+
+Use the directory (B<path>) as the source for mirroring instead of contacting the
+remote mirrors. It expects a directory structure created by:
+
+smt-mirror --directory <path>
+
 =item --logfile -L <file>
 
 Write log messages to B<file>.
@@ -658,7 +696,8 @@ create hardlinks for all duplicate files greater then 20000 kb
 
 =head1 AUTHORS and CONTRIBUTORS
 
-Duncan Mac-Vicar Prett, Lukas Ocilka, Jens Daniel Schmidt, Michael Calmer
+Duncan Mac-Vicar Prett, Lukas Ocilka, Jens Daniel Schmidt, Michael Calmer,
+Ralf Haferkamp
 
 =head1 LICENSE
 
