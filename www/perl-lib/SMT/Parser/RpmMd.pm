@@ -263,7 +263,7 @@ sub handle_start_tag()
             $self->{CURRENT}->{SUBELEMENT} = lc($element);
         }
     }
-    elsif ( lc($element) eq "patchrpm" || lc($element) eq "deltarpm" )
+    elsif ( lc($element) eq "patchrpm" || lc($element) eq "deltarpm" || lc($element) eq "delta" )
     {
         $self->{CURRENTSUBPKG}->{CHECKSUM} = "";
         $self->{CURRENTSUBPKG}->{LOCATION} = "";
@@ -329,7 +329,10 @@ sub handle_char_tag
         }
         elsif ($self->{CURRENT}->{SUBELEMENT} eq "filename")
         {
-            $self->{CURRENT}->{LOCATION} .= $string;
+            if(defined $self->{CURRENTSUBPKG})
+            {
+                $self->{CURRENTSUBPKG}->{LOCATION} .= $string;
+            }
         }
         elsif ($self->{CURRENT}->{SUBELEMENT} eq "category")
         {
@@ -364,7 +367,7 @@ sub handle_end_tag()
     my $self = shift;
     my( $expat, $element ) = @_;
 
-    if ( lc($element) eq "patchrpm" || lc($element) eq "deltarpm" )
+    if ( lc($element) eq "patchrpm" || lc($element) eq "deltarpm" || lc($element) eq "delta" )
     {
         push @{$self->{CURRENT}->{PKGFILES}}, $self->{CURRENTSUBPKG};
         $self->{CURRENTSUBPKG} = undef;
