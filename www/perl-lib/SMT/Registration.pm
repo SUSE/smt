@@ -112,11 +112,11 @@ sub register
         }
 
         my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
-        if(! -d  "$LocalBasePath/$namespace" )
+        if(! -d  "$LocalBasePath/repo/$namespace" )
         {
-            $r->log_error("Invalid namespace requested: $LocalBasePath/$namespace/ does not exists.");
+            $r->log_error("Invalid namespace requested: $LocalBasePath/repo/$namespace/ does not exists.");
             $namespace = "";
-        }        
+        }
     }
         
     my $data = read_post($r);
@@ -761,7 +761,7 @@ sub findCatalogs
 
     # get catalog values (only for the once we DOMIRROR)
 
-    $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc WHERE ";
+    $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc WHERE ";
 
     $statement .= "pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID ";
     $statement .= "AND (c.TARGET IS NULL ";
@@ -815,6 +815,16 @@ sub buildZmdConfig
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
+    my $aliasChange = $cfg->val('NU', 'changeAlias');
+    if(defined $aliasChange && $aliasChange eq "true")
+    {
+        $aliasChange = 1;
+    }
+    else
+    {
+        $aliasChange = 0;
+    }
+    
     $LocalNUUrl =~ s/\s*$//;
     if(!defined $LocalNUUrl || $LocalNUUrl !~ /^http/)
     {
@@ -822,11 +832,6 @@ sub buildZmdConfig
         die "SMT server is missconfigured. Please contact your administrator.";
     }
     
-    if($namespace ne "")
-    {
-        $LocalNUUrl    .= "/$namespace/";
-    }
-
     my $nuCatCount = 0;
     foreach my $cat (keys %{$catalogs})
     {
@@ -865,22 +870,34 @@ sub buildZmdConfig
                 $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
                 next;
             }
+
+            my $catalogURL = "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH};
+            my $catalogName = $catalogs->{$cat}->{NAME};
+            if($namespace ne "" && uc($catalogs->{$cat}->{STAGING}) eq "Y")
+            {
+                $catalogURL = "$LocalNUUrl/repo/$namespace/".$catalogs->{$cat}->{LOCALPATH};
+                $catalogName = $catalogs->{$cat}->{NAME};
+                if($aliasChange)
+                {
+                    $catalogName .= ":$namespace";
+                }
+            }
             
             $writer->startTag("param", 
                               "name" => "catalog",
-                              "url"  => "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH}
+                              "url"  => $catalogURL
                              );
-            $writer->characters($catalogs->{$cat}->{NAME});
+            $writer->characters($catalogName);
             $writer->endTag("param");
         }
         $writer->endTag("service");
     }
     
-    # and now the zypp Repositories
+    # and now the zypp and yum Repositories
 
     foreach my $cat (keys %{$catalogs})
     {
-        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "zypp");
+        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "zypp" && lc($catalogs->{$cat}->{CATALOGTYPE}) ne "yum");
         if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
            $catalogs->{$cat}->{LOCALPATH} eq "")
         {
@@ -888,50 +905,30 @@ sub buildZmdConfig
             next;
         }
 
-        $writer->startTag("service", 
-                          "id"          => $catalogs->{$cat}->{NAME},
-                          "description" => $catalogs->{$cat}->{DESCRIPTION},
-                          "type"        => "zypp");
-        $writer->startTag("param", "id" => "url");
-        $writer->characters("$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH});
-        $writer->endTag("param");
-        
-
-        $writer->startTag("param", "name" => "catalog");
-        $writer->characters($catalogs->{$cat}->{NAME});
-        $writer->endTag("param");
-
-        $writer->endTag("service");
-    }
-
-    # and now the yum Repositories
-
-    foreach my $cat (keys %{$catalogs})
-    {
-        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "yum");
-        if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
-           $catalogs->{$cat}->{LOCALPATH} eq "")
+        my $catalogURL = "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH};
+        my $catalogName = $catalogs->{$cat}->{NAME};
+        if($namespace ne "" && uc($catalogs->{$cat}->{STAGING}) eq "Y")
         {
-            $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
-            next;
+            $catalogURL = "$LocalNUUrl/repo/$namespace/".$catalogs->{$cat}->{LOCALPATH};
+            $catalogName = $catalogs->{$cat}->{NAME}.":$namespace";
         }
-
+        $catalogURL .= "?credentials=NCCcredentials";
+        
         $writer->startTag("service", 
-                          "id"          => $catalogs->{$cat}->{NAME},
+                          "id"          => $catalogName,
                           "description" => $catalogs->{$cat}->{DESCRIPTION},
-                          "type"        => "yum");
+                          "type"        => $catalogs->{$cat}->{CATALOGTYPE});
         $writer->startTag("param", "id" => "url");
-        $writer->characters("$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH});
+        $writer->characters($catalogURL);
         $writer->endTag("param");
         
 
         $writer->startTag("param", "name" => "catalog");
-        $writer->characters($catalogs->{$cat}->{NAME});
+        $writer->characters($catalogName);
         $writer->endTag("param");
 
         $writer->endTag("service");
     }
-
 
     $writer->endTag("zmdconfig");
 

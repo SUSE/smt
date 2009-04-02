@@ -102,16 +102,17 @@ sub handler {
     $statement = sprintf("select GUID, TARGET, NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($r->user()) );
     my $cdata = $dbh->selectall_hashref($statement, "GUID");
 
-    $statement  = " select c.LOCALPATH from Catalogs c, ProductCatalogs pc, Registration r ";
+    $statement  = " select c.LOCALPATH, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
     $statement .= sprintf(" where r.GUID=%s ", $dbh->quote($r->user()) );
     $statement .= " and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y' ";
     # add a filter by target architecture if it is defined
     if (exists $cdata->{$r->user()}->{TARGET} && defined $cdata->{$r->user()}->{TARGET} &&
         $cdata->{$r->user()}->{TARGET} ne "" )
     {
-        $statement .= sprintf(" and c.TARGET=%s", $dbh->quote( $cdata->{$r->user()}->{TARGET} ));
+        $statement .= sprintf(" and (c.TARGET=%s or c.TARGET IS NULL)", $dbh->quote( $cdata->{$r->user()}->{TARGET} ));
     }
-
+    $r->log->info("STATEMENT: $statement");
+    
     # evil things like "dir/../../otherdir" are solved by apache.
     # we get here the resulting path
     # we only need to strip out "somedir////nextdir"
@@ -119,19 +120,24 @@ sub handler {
 
     $r->log->info($r->user()." requests path '$requestedPath'");
 
+    my $namespace = "";
+    
+    if(exists $cdata->{$r->user()}->{NAMESPACE} && defined $cdata->{$r->user()}->{NAMESPACE})
+    {
+        $namespace = $cdata->{$r->user()}->{NAMESPACE};
+    }
+    
     my $localRepoPath = $dbh->selectall_hashref($statement, 'LOCALPATH');
     foreach my $path ( keys %{$localRepoPath} )
     {
-        if (exists $cdata->{$r->user()}->{NAMESPACE} && defined $cdata->{$r->user()}->{NAMESPACE} &&
-            $cdata->{$r->user()}->{NAMESPACE} ne "" )
+        if($namespace ne "" && uc($localRepoPath->{$path}->{STAGING}) eq "Y")
         {
-            $path = SMT::Utils::cleanPath("/", $cdata->{$r->user()}->{NAMESPACE}, "repo", $path);
+            $path = SMT::Utils::cleanPath("/repo", $namespace, $path);
         }
         else
         {
             $path = SMT::Utils::cleanPath("/repo", $path);
         }
-        
         
         $r->log->info($r->user()." has access to '$path'");
         

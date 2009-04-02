@@ -133,13 +133,7 @@ while IFS== read -sr key val ; do
                 if [ -d "$val/repo" ]; then
                     SMT_DIRS=(${SMT_DIRS[@]} "$val/repo")
                 fi
-                if [ -d "$val/testing/repo" ]; then
-                    SMT_DIRS=(${SMT_DIRS[@]} "$val/testing/repo")
-                fi
-                if [ -d "$val/full/repo" ]; then
-                    SMT_DIRS=(${SMT_DIRS[@]} "$val/full/repo")
-                fi
-            fi
+             fi
             ;;
         *) ;;
     esac

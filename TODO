@@ -28,10 +28,18 @@ TODO (SMT11):
 
   If staging is enabled for an already existing (mirrored) catalog, 
   hardlink or copy the current content to full and testing.
-  
+
+
+- enhance setup-custom-catalogs to allow configuration of repositories
+  of type NU .
+
+
+ 
 
 Nice-To-Have but not so important
 =================================
+
+- flagCatalogs should show new and removed mirrorable catatalogs.
 
 - verify checksum of /repodata/repomd.xml
 

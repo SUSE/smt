@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.1.3)
+# spec file for package smt (Version 1.1.4)
 #
 # Copyright (c) 2008,2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -20,7 +20,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.1.3
+Version:        1.1.4
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       perl-DBI
@@ -33,6 +33,7 @@ Requires:       perl-URI
 Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
 Requires:       perl-MIME-Lite
+Requires:       perl-Digest-SHA1
 Requires:       limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
@@ -149,10 +150,8 @@ exit 0
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/tools
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/keys
-%dir %attr(755, smt, www)/srv/www/htdocs/testing/
-%dir %attr(755, smt, www)/srv/www/htdocs/testing/repo/
-%dir %attr(755, smt, www)/srv/www/htdocs/full/
-%dir %attr(755, smt, www)/srv/www/htdocs/full/repo/
+%dir %attr(755, smt, www)/srv/www/htdocs/repo/testing
+%dir %attr(755, smt, www)/srv/www/htdocs/repo/full
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/SMT/
 %dir /usr/lib/SMT/

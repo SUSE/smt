@@ -1,5 +1,5 @@
 NAME          = smt
-VERSION       = 1.1.3
+VERSION       = 1.1.4
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -72,8 +72,8 @@ install:
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/tools
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/keys
-	mkdir -p $(DESTDIR)/srv/www/htdocs/testing/repo
-	mkdir -p $(DESTDIR)/srv/www/htdocs/full/repo
+	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/testing
+	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/full
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror

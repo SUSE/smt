@@ -26,7 +26,7 @@ sub getCatalogsByGUID($$)
     my $targetselect = sprintf("select TARGET from Clients c where c.GUID=%s", $dbh->quote($guid));
     my $target = $dbh->selectcol_arrayref($targetselect);
 
-    my $catalogselect = " select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc, Registration r ";
+    my $catalogselect = " select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
     $catalogselect   .= sprintf(" where r.GUID=%s ", $dbh->quote($guid));
     $catalogselect   .= " and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.CATALOGTYPE='nu' and c.DOMIRROR like 'Y' ";
     # add a filter by target architecture if it is defined
@@ -63,9 +63,12 @@ sub handler {
     $r->log->info("repoindex.xml requested");
 
     # try to connect to the database - else report server error
-    if ( not $dbh=SMT::Utils::db_connect() ) 
-    {  return Apache2::Const::SERVER_ERROR; }
+    if ( ! ($dbh=SMT::Utils::db_connect()) ) 
+    {  
+        return Apache2::Const::SERVER_ERROR; 
+    }
 
+    my $aliasChange = 0;
     eval
     {
         my $cfg = SMT::Utils::getSMTConfig();
@@ -73,6 +76,16 @@ sub handler {
         if(!defined $LocalBasePath || $LocalBasePath eq "")
         {
             $LocalBasePath = "";
+        }
+        
+        $aliasChange = $cfg->val('NU', 'changeAlias');
+        if(defined $aliasChange && $aliasChange eq "true")
+        {
+            $aliasChange = 1;
+        }
+        else
+        {
+            $aliasChange = 0;
         }
     };
     if($@)
@@ -131,25 +144,33 @@ sub handler {
     # create repos
     foreach my $val (values %{$catalogs})
     {
+        my $LocalRepoPath = ${$val}{'LOCALPATH'};
+        my $catalogName = ${$val}{'NAME'};
+        if($namespace ne "" && uc(${$val}{'STAGING'}) eq "Y")
+        {
+            $LocalRepoPath = "$namespace/$LocalRepoPath";
+            $catalogName = "$catalogName:$namespace" if($aliasChange);
+        }
+        
         $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
         if(defined $LocalBasePath && $LocalBasePath ne "")
         {
-            if(!-e $LocalBasePath."/$namespace/repo/".${$val}{'LOCALPATH'}."/repodata/repomd.xml")
+            if(!-e "$LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml")
             {
                 # catalog does not exists on this server. Log it, that the admin has a chance 
                 # to find the error.
-                $r->log->warn("Return a catalog, which does not exists on this server (".$LocalBasePath."/$namespace/repo/".${$val}{'LOCALPATH'}.")");
+                $r->log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
                 $r->log->warn("Run smt-mirror to create this catalog.");
             }
         }
         
         $writer->emptyTag('repo',
-                          'name' => ${$val}{'NAME'},
-                          'alias' => ${$val}{'NAME'},                 # Alias == Name
+                          'name' => $catalogName,
+                          'alias' => $catalogName,                 # Alias == Name
                           'description' => ${$val}{'DESCRIPTION'},
                           'distro_target' => ${$val}{'TARGET'},
-                          'path' => ${$val}{'LOCALPATH'},
+                          'path' => $LocalRepoPath,
                           'priority' => 0,
                           'pub' => 0
                          );

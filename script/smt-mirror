@@ -316,13 +316,14 @@ foreach my $entry (@{$array})
                 $zuri->userinfo("$nuUser:$nuPass");
             }
         }
-        my $tmpLocalBasePath = $LocalBasePath;
+
+        # is STAGING is Y, put full/ infront of LOCALPATH
         if( exists $entry->{STAGING} && defined $entry->{STAGING} && uc($entry->{STAGING}) eq "Y")
         {
-            $tmpLocalBasePath .= "/$stagingDir";
+            $entry->{LOCALPATH} = "$stagingDir/".$entry->{LOCALPATH};
         }
-        &File::Path::mkpath( SMT::Utils::cleanPath( $tmpLocalBasePath, "repo", $entry->{LOCALPATH} ) );
-        
+
+        &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $entry->{LOCALPATH} ) );
 
         my $zyppMirror = undef;
         if( lc($entry->{CATALOGTYPE}) eq "yum")
@@ -335,7 +336,7 @@ foreach my $entry (@{$array})
             $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                   mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
         }        
-        $zyppMirror->localBasePath( SMT::Utils::cleanPath( $tmpLocalBasePath, "repo" ) );
+        $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $entry->{LOCALPATH} );
         
         if($clean)
@@ -359,35 +360,6 @@ foreach my $entry (@{$array})
         }
     }
 }
-
-#
-# Now mirror the NU catalogs
-#
-# my $mirror = SMT::Mirror::NU->new(vblevel => $vblevel, log => $LOG, mirrorsrc => $mirrorsrc, dbh => $dbh, nohardlink => $nohardlink);
-# $mirror->deepverify($deepverify);
-# $mirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
-# if($clean)
-# {
-#     $mirror->clean();
-# }
-# else
-# {
-#     if(defined $dbreplfile)
-#     {
-#         $mirror->dbreplacement($dbreplacement);
-#     }
-    
-#     $mirror->uri( $uri->as_string );
-#     $mirror->mirror( dryrun => $dryrun );
-
-#     my $s = $mirror->statistic();
-#     $download += $s->{DOWNLOAD};
-#     $link     += $s->{LINK};
-#     $copy     += $s->{COPY};
-#     $errors   += $s->{ERROR};
-#     $size     += $s->{DOWNLOAD_SIZE};
-# }
-
 
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
 if(!defined $dbreplfile)
