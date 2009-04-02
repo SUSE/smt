@@ -583,9 +583,9 @@ sub getRegistrations
 {
     my ($cfg, $dbh) = init();
 
-    my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
+    my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
-    my @HEAD = ( __('Unique ID'), __('Hostname'), __('Last Contact'), __('Product') );
+    my @HEAD = ( __('Unique ID'), __('Hostname'), __('Last Contact'), __('Namespace'), __('Product') );
     my @VALUES = ();
     my %OPTIONS = ('drawRowLine' => 1 );
 
@@ -603,7 +603,7 @@ sub getRegistrations
             $prdstr .= " ".$product->{ARCH} if(defined $product->{ARCH});
             $prdstr .= "\n";
         }
-        push @VALUES, [ $clnt->{GUID}, $clnt->{HOSTNAME}, $clnt->{LASTCONTACT}, $prdstr ];
+        push @VALUES, [ $clnt->{GUID}, $clnt->{HOSTNAME}, $clnt->{LASTCONTACT}, $clnt->{NAMESPACE}, $prdstr ];
     }
     return {'cols' => \@HEAD, 'vals' => \@VALUES, 'opts' => \%OPTIONS };
 }
@@ -620,7 +620,7 @@ sub listRegistrations
     {
         my ($cfg, $dbh) = init();
 
-        my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT from Clients ORDER BY LASTCONTACT", {Slice => {}});
+        my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", {Slice => {}});
 
         foreach my $clnt (@{$clients})
         {
@@ -630,6 +630,7 @@ sub listRegistrations
             print __('Unique ID')." : $clnt->{GUID}\n";
             print __('Hostname')." : $clnt->{HOSTNAME}\n";
             print __('Last Contact')." : $clnt->{LASTCONTACT}\n";
+            print __('Namespace')." : $clnt->{NAMESPACE}\n";
 
             my $prdstr = "";
             foreach my $product (@{$products})
@@ -922,16 +923,41 @@ sub setMirrorableCatalogs
         return;
     }
 
+    my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs where CATALOGTYPE = 'nu'", ['Name', 'Target']);
+    
     my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
     $parser->parse($indexfile, 
                    sub {
                        my $repodata = shift;
-                       printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, 
-                                sprintf(__("* set [%s %s] as mirrorable."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
-                       my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
-                                                   $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
+                       
+                       if(exists $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable} )
+                       {
+                           if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
+                           {
+                               printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
+                                        sprintf(__("* New mirrorable catalog '%s %s' ."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                               my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
+                                                           $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
+                           }
+                           delete $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}};
+                       }
                    }
     );
+
+    foreach my $cname ( keys %{$sqlres})
+    {
+        foreach my $target ( keys %{$sqlres->{$cname}})
+        {
+            if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
+            {
+                printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
+                         sprintf(__("* catalog not longer mirrorable '%s %s' ."), $cname, $target ));
+                my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s", 
+                                            $dbh->quote($cname), $dbh->quote($target) ));
+            }
+        }
+    }
+    
 
     my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
     my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
