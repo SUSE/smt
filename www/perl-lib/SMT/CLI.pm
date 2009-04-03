@@ -923,7 +923,7 @@ sub setMirrorableCatalogs
         return;
     }
 
-    my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs where CATALOGTYPE = 'nu'", ['Name', 'Target']);
+    my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'", ['Name', 'Target']);
     
     my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
     $parser->parse($indexfile, 
