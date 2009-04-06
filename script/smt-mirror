@@ -6,7 +6,6 @@
 
 use strict;
 use warnings;
-use SMT::Mirror::NU;
 use SMT::Mirror::RpmMd;
 use SMT::Mirror::Yum;
 use SMT::Utils;

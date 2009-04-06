@@ -11,7 +11,8 @@ use Time::HiRes qw(gettimeofday tv_interval);
 use Digest::SHA1  qw(sha1 sha1_hex);
 
 use SMT::Mirror::Job;
-use SMT::Parser::RpmMd;
+use SMT::Parser::RpmMdLocation;
+use SMT::Parser::RpmMdPatches;
 use SMT::Utils;
 
 =head1 NAME
@@ -550,7 +551,7 @@ sub mirror()
     }
     
     # parse it and find more resources
-    my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
+    my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
     $parser->resource($self->fullLocalRepoPath());
     $parser->specialmdlocation(1);
     my $err = $parser->parse(".repodata/repomd.xml", sub { download_handler($self, $dryrun, @_)});
@@ -578,12 +579,14 @@ sub mirror()
     #
     # calculate the new available patches
     #
-    my $newpatches = $parser->patches();
+    my $parsenew = SMT::Parser::RpmMdPatches->new(log => $self->{LOG}, vblevel => $self->vblevel());
+    $parsenew->resource($self->fullLocalRepoPath());
+    $parsenew->specialmdlocation(1);
+    my $newpatches = $parsenew->parse( ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
     
-    my $parsorig = SMT::Parser::RpmMd->new(log => $self->{LOG});
-    $parsorig->resource($self->fullLocalRepoPath());
-    $parsorig->parse("repodata/repomd.xml", sub { return; } );
-    my $oldpatches = $parsorig->patches();
+    my $parseorig = SMT::Parser::RpmMdPatches->new(log => $self->{LOG}, vblevel => $self->vblevel());
+    $parseorig->resource($self->fullLocalRepoPath());
+    my $oldpatches = $parseorig->parse( "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
     my $pid;
     
     foreach $pid (keys %{$oldpatches})
@@ -721,7 +724,7 @@ sub clean()
              }
              , no_chdir => 1 }, $self->fullLocalRepoPath() );
 
-    my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
+    my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
     $parser->resource($self->fullLocalRepoPath());
     $parser->parse("/repodata/repomd.xml", sub { clean_handler($self, @_)});
     
@@ -794,7 +797,7 @@ sub verify()
     $self->{STATISTIC}->{ERROR} = 0;
     
     # parse it and find more resources
-    my $parser = SMT::Parser::RpmMd->new(log => $self->{LOG});
+    my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
     $parser->resource( $self->fullLocalRepoPath() );
     $parser->parse("repodata/repomd.xml", sub { verify_handler($self, @_)});
 
@@ -858,21 +861,6 @@ sub clean_handler
         # if this path is in the CLEANLIST, delete it
         delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
     }
-    if(exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
-    {
-        foreach my $file (@{$data->{PKGFILES}})
-        {
-            if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
-               $file->{LOCATION} ne "" )
-            {
-                # get the repository index
-                my $resource = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), $file->{LOCATION} );
-                
-                # if this path is in the CLEANLIST, delete it
-                delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
-            }
-        }
-    }
 }
 
 
@@ -882,6 +870,7 @@ sub download_handler
     my $dryrun = shift;
     my $data   = shift;
 
+    my $invalidFile = 0;
     
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "" && !exists $self->{JOBS}->{$data->{LOCATION}})
@@ -935,7 +924,7 @@ sub download_handler
             else
             {
                 # hmmm, invalid. Remove it if we are not in dryrun mode or the file is metadata
-                unlink ( $job->fullLocalPath() ) if( !($dryrun || $job->localFileLocation() =~ /repodata/) );
+		$invalidFile = 1 if( !$dryrun );
             }
         }
         # else mean wrong checksum. Can happen in the repodata case. Same filename with new checksum.
@@ -953,6 +942,11 @@ sub download_handler
             $job->remoteFileLocation( $data->{LOCATION} );
             $job->localFileLocation( $localres );
 
+	    if( $invalidFile )
+	    {
+		    unlink ( $job->fullLocalPath() );
+	    }
+
             # mirror it first, so we can parse it
             my $mres = $job->mirror();
             if( $mres == 2 && $self->deepverify() && !$job->verify() ) # up-to-date
@@ -969,6 +963,10 @@ sub download_handler
             # download it later
             if ( $job->localFileLocation() )
             {
+                if( $invalidFile )
+                {
+                    unlink ( $job->fullLocalPath() );
+                }
                 if(!exists $self->{JOBS}->{$data->{LOCATION}})
                 {
                     $self->{JOBS}->{$data->{LOCATION}} = $job;
@@ -977,44 +975,6 @@ sub download_handler
             else
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "no file location set on ".$job->fullLocalPath());
-            }
-        }
-    }
-    if(exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
-    {
-        foreach my $file (@{$data->{PKGFILES}})
-        {
-            if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
-               $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
-            {
-                my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
-                                                dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
-                $job->uri( $self->{URI} );
-                $job->localBasePath( $self->localBasePath() );
-                $job->localRepoPath( $self->localRepoPath() );
-                $job->localFileLocation( $file->{LOCATION} );
-                $job->checksum( $file->{CHECKSUM} );
-                
-                #my $fullpath = SMT::Utils::cleanPath( $self->fullLocalRepoPath(), $file->{LOCATION} );
-        
-                if( exists $self->{EXISTS}->{$job->fullLocalPath()} && 
-                    $self->{EXISTS}->{$job->fullLocalPath()}->{checksum} eq $file->{CHECKSUM} && 
-                    -e $job->fullLocalPath() )
-                {
-                    # file exists and is up-to-date. 
-                    # with deepverify call a verify 
-                    if( $self->deepverify() && $job->verify() )
-                    {
-                        $self->{STATISTIC}->{UPTODATE} += 1;
-                        next;
-                    }
-                    else
-                    {
-                        unlink ( $job->fullLocalPath() ) if( !$dryrun );
-                    }
-                }
-                
-                $self->{JOBS}->{$file->{LOCATION}} = $job;
             }
         }
     }
@@ -1051,27 +1011,6 @@ sub verify_handler
             if(!exists $self->{VERIFYJOBS}->{$job->fullLocalPath()})
             {
                 $self->{VERIFYJOBS}->{$job->fullLocalPath()} = $job;
-            }
-        }
-    }
-    if($self->deepverify() && exists $data->{PKGFILES} && ref($data->{PKGFILES}) eq "ARRAY")
-    {
-        foreach my $file (@{$data->{PKGFILES}})
-        {
-            if(exists $file->{LOCATION} && defined $file->{LOCATION} &&
-               $file->{LOCATION} ne "" && !exists $self->{JOBS}->{$file->{LOCATION}})
-            {
-                my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
-                                                dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
-                $job->localBasePath( $self->localBasePath() );
-                $job->localRepoPath( $self->localRepoPath() );
-                $job->localFileLocation( $file->{LOCATION} );
-                $job->checksum( $file->{CHECKSUM} );
-                
-                if(!exists $self->{VERIFYJOBS}->{$job->fullLocalPath()})
-                {
-                    $self->{VERIFYJOBS}->{$job->fullLocalPath()} = $job;
-                }
             }
         }
     }
