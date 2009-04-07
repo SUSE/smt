@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Apr  7 16:59:59 CET 2009 - locilka@suse.cz
+
+- Checking whether NCCcredentials file exists and offering to call
+  registration or enter the credentials manually (FATE #305540).
+
+-------------------------------------------------------------------
 Mon Feb  9 12:17:11 CET 2009 - locilka@suse.cz
 
 - Dropping YaST SMT icons as they are already in the default YaST

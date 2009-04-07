@@ -20,7 +20,6 @@
     import "Confirm";
     import "Progress";
     import "Message";
-    import "Confirm";
     import "PackageSystem";
     import "Label";
     import "RunlevelEd";
@@ -233,6 +232,174 @@
 	Progress::Finish();
 
 	return `next;
+    }
+
+    void EnableManuallyEnteredCredentials (boolean new_state) {
+	foreach (string ID, ["username", "password1", "password2"], {
+	    UI::ChangeWidget (`id (ID), `Enabled, new_state);
+	});
+    }
+
+    void AdjustRegisterOrFillUpCredentialsWidget (string selected) {
+	if (selected == "skip") {
+	    EnableManuallyEnteredCredentials (false);
+	} else if (selected == "registration") {
+	    EnableManuallyEnteredCredentials (false);
+	} else if (selected == "manually") {
+	    EnableManuallyEnteredCredentials (true);
+	} else {
+	    y2error ("Unknown 'selected' option: %1", selected);
+	}
+    }
+
+    symbol RegisterOrFillUpCredentials () {
+	Wizard::SetContents (
+	    _("NCC Credentials"),
+	    `HSquash (`VBox (
+		`Label (_("System does not appear to be registered in NCC.
+Choose one of the options below.")),
+		`RadioButtonGroup (
+		    `id ("NCCCredentialsRBB"),
+		    `opt (`notify),
+		    `HBox (
+			`HSpacing (2),
+			`VBox (
+			    `Left (`RadioButton (`id ("skip"),		`opt (`notify), _("&Skip Registration"))),
+			    `VSpacing (1),
+			    `Left (`RadioButton (`id ("registration"),	`opt (`notify), _("Register in &Novell Customer Center"))),
+			    `VSpacing (1),
+			    `Left (`RadioButton (`id ("manually"),	`opt (`notify), _("Enter NCC Cretentials &Manually"))),
+			    `HBox (
+				`HSpacing (3),
+				`VBox (
+				    `MinWidth (32, `InputField (`id ("username"),	_("&Username"))),
+				    `MinWidth (32,`Password (`id ("password1"),		_("&Password"))),
+				    `MinWidth (32,`Password (`id ("password2"),		_("&Once Again")))
+				)
+			    )
+			)
+		    )
+		)
+	    )),
+	    _("<p></p>"),
+	    true,
+	    true
+	);
+	Wizard::SetTitleIcon ("registration");
+
+	any dialog_ret = nil;
+	symbol ret = `next;
+
+	// Initial dialog settings
+	string decision = "registration";
+	UI::ChangeWidget (`id ("NCCCredentialsRBB"), `CurrentButton, decision);
+
+	while (true) {
+	    decision = (string) UI::QueryWidget (`id ("NCCCredentialsRBB"), `CurrentButton);
+	    AdjustRegisterOrFillUpCredentialsWidget (decision);
+
+	    dialog_ret = UI::UserInput();
+
+	    if (dialog_ret == `next) {
+		decision = (string) UI::QueryWidget (`id ("NCCCredentialsRBB"), `CurrentButton);
+		y2milestone ("User decision: %1", decision);
+		if (decision == "skip") {
+		    if (Popup::AnyQuestion (
+			_("Warning"),
+			_("Leaving the NCC credentials empty might cause SMT not to work properly.
+Are you sure you want to really skip it?"),
+			_("Yes, Skip It"),
+			_("Cancel"),
+			`focus_no
+		    )) {
+			y2warning ("User decided to skip registration or entering NCC credentials");
+			ret = `next;
+		    } else {
+			continue;
+		    }
+		} else if (decision == "registration") {
+		    any wfmret = WFM::CallFunction ("inst_suse_register");
+		    y2milestone ("inst_suse_register returned: %1", wfmret);
+		    ret = `again;
+		} else if (decision == "manually") {
+		    string username	= (string) UI::QueryWidget (`id ("username"), `Value);
+		    string password1	= (string) UI::QueryWidget (`id ("password1"), `Value);
+		    string password2	= (string) UI::QueryWidget (`id ("password2"), `Value);
+
+		    if (username == "") {
+			UI::SetFocus (`id ("username"));
+			Report::Error (_("Username has to be entered."));
+			continue;
+		    }
+		    if (password1 == "") {
+			UI::SetFocus (`id ("password1"));
+			Report::Error (_("Password has to be entered twice."));
+			continue;
+		    }
+		    if (password2 == "") {
+			UI::SetFocus (`id ("password2"));
+			Report::Error (_("Password has to be entered twice."));
+			continue;
+		    }
+		    if (password1 != password2) {
+			UI::SetFocus (`id ("password1"));
+			Report::Error (_("Entered passwords do not match."));
+			continue;
+		    }
+
+		    if (SMTData::WriteNCCCredentialsManually (username, password1) != true) {
+			Report::Error ("Cannot write NCC credentials to the system.");
+			UI::ChangeWidget (`id ("NCCCredentialsRBB"), `CurrentButton, "skip");
+			continue;
+		    }
+		}
+		break;
+	    } else if (dialog_ret == `back) {
+		ret = `back;
+		break;
+	    } else if (dialog_ret == "skip" || dialog_ret == "registration" || dialog_ret == "manually") {
+		decision = (string) UI::QueryWidget (`id ("NCCCredentialsRBB"), `CurrentButton);
+		AdjustRegisterOrFillUpCredentialsWidget (decision);
+	    } else if (dialog_ret == `abort || dialog_ret == `cancel) {
+		if (Popup::ReallyAbort (true)) {
+		    ret = `abort;
+		    break;
+		}
+	    } else {
+		y2error ("Unknown user input: %1", dialog_ret);
+	    }
+	}
+
+	return ret;
+    }
+
+    // FATE #305541, Check if NCCcredentials file exists and offer registration
+    // or creating the file if it doesn't
+    symbol CheckConfigDialog () {
+	// defualt dialog return
+	symbol dialog_ret = `next;
+
+	if (SMTData::GetSMTServiceStatus () != true) {
+	    y2milestone ("SMT Service is not enabled, not checking the config");
+	    return dialog_ret;
+	}
+
+	while (SMTData::SystemIsRegistered() != true) {
+	    y2warning ("No NCCcredentials present, offering registration, etc.");
+	    dialog_ret = RegisterOrFillUpCredentials();
+	    y2milestone ("Dialog ret: %1", dialog_ret);
+
+	    if (dialog_ret == `abort || dialog_ret == `back || dialog_ret == `next) {
+		break;
+	    }
+	}
+
+	// Check succeeded after some iterations...
+	if (dialog_ret == `again) {
+	    dialog_ret = `next;
+	}
+
+	return dialog_ret;
     }
 
     symbol WriteDialog() {

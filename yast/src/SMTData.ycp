@@ -54,6 +54,30 @@
 
     string smt_database = "mysql";
 
+    string NCCcredentials_file = "/etc/zypp/credentials.d/NCCcredentials";
+
+    global boolean SystemIsRegistered () {
+	return (FileUtils::Exists (NCCcredentials_file) == true);
+    }
+
+    global boolean WriteNCCCredentialsManually (string username, string password) {
+	if (username == nil || username == "") {
+	    y2error ("Wrong NCC username: %1", username);
+	    return false;
+	}
+
+	if (username == nil || username == "") {
+	    y2error ("Wrong NCC password: %1", password);
+	    return false;
+	}
+
+	string userpassstring = sformat ("username=%1\npassword=%2\n", username, password);
+	boolean write = (boolean) SCR::Write (.target.string, NCCcredentials_file, userpassstring);
+	y2milestone ("Writing user=...,password=... to %1 returned %2", NCCcredentials_file, write);
+
+	return write;
+    }
+
     /**
      * Returns list of scheduled NU mirrorings.
      *
@@ -401,9 +425,9 @@ Please, check your SMT installation."), path_to_sync_script));
 			`Left (`Label (_("Running the synchronization script failed."))),
 			`RichText (
 			    `opt (`hstretch, `vstretch),
-			    sformat (_("<p><b>Details:</b></p>
-<p><b>stdout:</b> %1</p>
-<p><b>stderr:</b> %2</p>"), cmd_out["stdout"]:"", cmd_out["stderr"]:"")
+			    sformat (_("<p><b><big>Details:</big></b></p>
+<p><b>stdout:</b><br><pre>%1</pre></p>
+<p><b>stderr:</b><br><pre>%2</pre></p>"), cmd_out["stdout"]:"", cmd_out["stderr"]:"")
 			),
 			`PushButton (`id (`ok), `opt (`default, `key_F10), Label::OKButton())
 		    )

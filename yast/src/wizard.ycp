@@ -170,18 +170,23 @@
 	map aliases = $[
 	    "read"  : [ ``( ReadDialog() ), true ],
 	    "main"  :   ``( MainSequence() ),
+	    "check" : [ ``( CheckConfigDialog() ), true ],
 	    "write" : [ ``( WriteDialog() ), true ]
 	];
 
 	map sequence = $[
 	    "ws_start" : "read",
 	    "read" : $[
-		`abort      : `abort,
-		`next       : "main"
+		`abort	: `abort,
+		`next	: "main"
 	    ],
 	    "main" : $[
-		`abort      : `abort,
-		`next       : "write"
+		`abort	: `abort,
+		`next	: "check"
+	    ],
+	    "check" : $[
+		`abort	: `abort,
+		`next	: "write",
 	    ],
 	    "write" : $[
 		`abort      : `abort,
@@ -202,6 +207,7 @@
 	map aliases = $[
 	    "read"  : [ ``( ReadDialog() ), true ],
 	    "main"  :   ``( MainInstallSequence() ),
+	    "check" : [ ``( CheckConfigDialog() ), true ],
 	    "write" : [ ``( WriteDialog() ), true ]
 	];
 
@@ -214,6 +220,10 @@
 	    "main" : $[
 		`abort      : `abort,
 		`next       : "write"
+	    ],
+	    "check" : $[
+		`abort	: `abort,
+		`next	: "write",
 	    ],
 	    "write" : $[
 		`abort      : `abort,
