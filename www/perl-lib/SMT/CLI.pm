@@ -958,12 +958,30 @@ sub setMirrorableCatalogs
         }
     }
     
+    my $mirrorable_idx = undef;
+    if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
+    {
+        my $mirrorablefile = $opt{fromdir}."/mirrorable.xml";
+        if ( -f $mirrorablefile && (stat($indexfile))[9] <= (stat($mirrorablefile))[9] )
+        {
+            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Parsing $mirrorablefile" );
+            $mirrorable_idx = {};
+            my $mirrorable_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
+            $mirrorable_parser->parse($mirrorablefile, 
+                sub {
+                    my $data = shift;
+                    $mirrorable_idx->{$data->{CATALOGID}} = 1;
+                }
+            );
+        }
+    }
 
     my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
     my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
     my $values = $dbh->selectall_arrayref($sql);
     foreach my $v (@{$values})
     { 
+        my $catId = $v->[0];
         my $catName = $v->[1];
         my $catLocal = $v->[2];
         my $catUrl = $v->[3];
@@ -974,8 +992,23 @@ sub setMirrorableCatalogs
             if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
             {
                 # fromdir is used on a server without internet connection
-                # we define that the catalogs are mirrorable
-                $ret = 1;
+                # use the info from "mirrorable.xml" if it exists
+                # if not, define that the catalogs are mirrorable
+                if ( defined $mirrorable_idx )
+                {
+                    if ( defined $mirrorable_idx->{$catId} && $mirrorable_idx->{$catId} == 1 )
+                    {
+                        $ret = 1;
+                    }
+                    else
+                    {
+                        $ret = 0;
+                    }
+                }
+                else 
+                {
+                    $ret = 1;
+                }
             }
             else
             {
