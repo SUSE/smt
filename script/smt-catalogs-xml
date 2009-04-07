@@ -196,7 +196,7 @@ if ( ! -f "$xmldir/mirrorable.xml" || (stat($catalogsfile))[9] > (stat($xmldir."
                                {
                                    SMT::Utils::printLog( $LOG, $vblevel, LOG_DEBUG, 
                                         sprintf( "Mirrorable Catalog '%s %s'", $catalogdata->{NAME},$catalogdata->{TARGET}) );
-                                   $mirrorable_idx->{$catalogdata->{NAME}}->{$catalogdata->{TARGET}} = 1;
+                                   $mirrorable_idx->{$catalogdata->{CATALOGID}} = 1;
                                }
                            }
                            if ( $catalogdata->{CATALOGTYPE} eq "zypp" )
@@ -282,7 +282,7 @@ foreach my $v (@mirrorable_test)
         } while($response->is_redirect);
         if ( $ret == 0 )
         {
-            $mirrorable_idx->{$catName}->{$catTarget} = 1;
+            $mirrorable_idx->{$v->{CATALOGID}} = 1;
         }
     }
 }
@@ -345,7 +345,7 @@ foreach my $v ( @mirrorable )
     my $catTarget = (defined $v->{TARGET}) ?  $v->{TARGET} : "--";
     my $catType = $v->{CATALOGTYPE};
     my $catDesc = $v->{DESCRIPTION};
-    my $catMA   = ( defined $mirrorable_idx->{$catName}->{$catTarget} && $mirrorable_idx->{$catName}->{$catTarget} ==1 ) ?
+    my $catMA   = ( defined $mirrorable_idx->{$catId} && $mirrorable_idx->{$catId} == 1 ) ?
                   __("Yes") : __("No") ;
     my $mirrorEnabled = ( defined $mirror_hash->{$catId} && $mirror_hash->{$catId} == 1 ) ? __("Yes") : __("No");
     my $catStaging = $v->{STAGING} || 'N';
