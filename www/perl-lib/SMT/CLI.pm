@@ -970,70 +970,24 @@ sub setMirrorableCatalogs
         my $catTarget = $v->[4];
         if( $catUrl ne "" && $catLocal ne "" )
         {
-            my $ret = 1;
+            my $ret = 0;
             if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
             {
                 # fromdir is used on a server without internet connection
                 # we define that the catalogs are mirrorable
-                $ret = 0;
+                $ret = 1;
             }
             else
             {
-                # on nu.novell.com we need to authenticate, so put the
-                # userinfo into this url
-                my $url = URI->new($catUrl);
-                if($url->host eq "nu.novell.com")
-                {
-                    my $uuri = URL->new($nuri);
-                    my $userinfo = $uuri->userinfo;
-                    $url->userinfo($userinfo);
-                }
-
-    	        my $tempdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-                my $remote = $url->as_string()."/repodata/repomd.xml";
-                my $local = $tempdir."/repodata/repomd.xml";
-                # make sure the container destination exists
-                &File::Path::mkpath( dirname($local) );
-                
-                my $redirects = 0;
-                my $response;
-                
-                do
-                {
-                    eval
-                    {
-                        $response = $useragent->get( $remote, ':content_file' => $local );
-                    };
-                    if($@)
-                    {
-                        printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $@);
-                        $ret = 1;
-                        last;
-                    }
-                    
-                    if ( $response->is_redirect )
-                    {
-                        $redirects++;
-                        if($redirects > 2)
-                        {
-                            $ret = 1;
-                            last
-                        }
-                        
-                        my $newuri = $response->header("location");
-                        
-                        #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
-                        $remote = URI->new($newuri);
-                    }
-                    elsif($response->is_success)
-                    {
-                        $ret = 0;
-                    }
-                } while($response->is_redirect);
+                $ret = isZyppMirrorable( log        => $opt{log},
+                                         vblevel    => $opt{vblevel},
+                                         NUUri      => $nuri,
+                                         catalogurl => $catUrl,
+                                         useragent  => $useragent );
             }
-            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' )));
+            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 1) ? '' : ' not' )));
             my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
-                                    ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), 
+                                    ( ($ret == 1) ? $dbh->quote('Y') : $dbh->quote('N') ), 
                                     $dbh->quote($catName)); 
             if(defined $catTarget && $catTarget ne "")
             {
@@ -1050,6 +1004,67 @@ sub setMirrorableCatalogs
         # set DOMIRROR to Y where MIRRORABLE = Y
         $dbh->do("UPDATE Catalogs SET DOMIRROR='Y' WHERE MIRRORABLE='Y'");
     }
+}
+
+sub isZyppMirrorable
+{
+    my %opt = @_;
+
+    # on nu.novell.com we need to authenticate, so put the
+    # userinfo into this url
+    my $url = URI->new( $opt{catalogurl} );
+    if($url->host eq "nu.novell.com")
+    {
+        my $uuri = URL->new($opt{NUUri});
+        my $userinfo = $uuri->userinfo;
+        $url->userinfo($userinfo);
+    }
+
+    my $useragent = $opt{useragent};
+
+    my $tempdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+    my $remote = $url->as_string()."/repodata/repomd.xml";
+    my $local = $tempdir."/repodata/repomd.xml";
+    # make sure the container destination exists
+    &File::Path::mkpath( dirname($local) );
+
+    my $redirects = 0;
+    my $ret = 0;
+    my $response;
+
+    do
+    {
+        eval
+        {
+            $response = $useragent->get( $remote, ':content_file' => $local );
+        };
+        if($@)
+        {
+            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $@);
+            $ret = 0;
+            last;
+        }
+        
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > 2)
+            {
+                $ret = 0;
+                last
+            }
+            
+            my $newuri = $response->header("location");
+            
+            #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
+            $remote = URI->new($newuri);
+        }
+        elsif($response->is_success)
+        {
+            $ret = 1;
+        }
+    } while($response->is_redirect);
+    return $ret;
 }
 
 sub removeCustomCatalog
