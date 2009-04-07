@@ -268,7 +268,7 @@ Choose one of the options below.")),
 			    `VSpacing (1),
 			    `Left (`RadioButton (`id ("registration"),	`opt (`notify), _("Register in &Novell Customer Center"))),
 			    `VSpacing (1),
-			    `Left (`RadioButton (`id ("manually"),	`opt (`notify), _("Enter NCC Cretentials &Manually"))),
+			    `Left (`RadioButton (`id ("manually"),	`opt (`notify), _("Enter NCC Credentials &Manually"))),
 			    `HBox (
 				`HSpacing (3),
 				`VBox (
