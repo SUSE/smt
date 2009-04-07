@@ -6,6 +6,9 @@ Requires:	yast2-runlevel
 Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
 Requires:	/bin/hostname
+Requires:	/usr/bin/setfacl
+Requires:	/bin/chown
+Requires:	/bin/chmod
 Requires:	smt
 
 # This YaST tool configures SMT (cron, apache2)
