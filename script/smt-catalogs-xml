@@ -246,59 +246,12 @@ if ( $mirrorable_update_needed == 1 )
         my $catTarget = (defined $v->{TARGET}) ?  $v->{TARGET} : "--";
         if( $catUrl ne "" )
         {
-            my $ret = 1;
-            # on nu.novell.com we need to authenticate, so put the
-            # userinfo into this url
-            my $url = URI->new($catUrl);
-            if($url->host eq "nu.novell.com")
-            {
-                my $uuri = URL->new($nuri);
-                my $userinfo = $uuri->userinfo;
-                $url->userinfo($userinfo);
-            }
-
-            my $tempdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-            my $remote = $url->as_string()."/repodata/repomd.xml";
-            my $local = $tempdir."/repodata/repomd.xml";
-            # make sure the container destination exists
-            &File::Path::mkpath( dirname($local) );
-            
-            my $redirects = 0;
-            my $response;
-            
-            do
-            {
-                eval
-                {
-                    $response = $useragent->get( $remote, ':content_file' => $local );
-                };
-                if($@)
-                {
-                    SMT::Utils::printLog( $LOG, $vblevel, LOG_DEBUG, $@ );
-                    $ret = 1;
-                    last;
-                }
-                
-                if ( $response->is_redirect )
-                {
-                    $redirects++;
-                    if($redirects > 2)
-                    {
-                        $ret = 1;
-                        last
-                    }
-                    
-                    my $newuri = $response->header("location");
-                    
-                    SMT::Utils::printLog( $LOG, $vblevel, LOG_DEBUG, "Redirected to $newuri" );
-                    $remote = URI->new($newuri);
-                }
-                elsif($response->is_success)
-                {
-                    $ret = 0;
-                }
-            } while($response->is_redirect);
-            if ( $ret == 0 )
+            my $ret = SMT::CLI::isZyppMirrorable( log        => $LOG,
+                                                  vblevel    => $vblevel,
+                                                  NUUri      => $nuri,
+                                                  catalogurl => $catUrl,
+                                                  useragent  => $useragent );
+            if ( $ret == 1 )
             {
                 $mirrorable_idx->{$v->{CATALOGID}} = 1;
             }
