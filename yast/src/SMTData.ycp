@@ -81,7 +81,7 @@
 
 	_smt_user_loaded = true;
 
-	string _smt_user = SMTData::GetCredentials ("DB", "user");
+	_smt_user = SMTData::GetCredentials ("DB", "user");
 
 	if (_smt_user == nil || _smt_user == "") {
 	    y2error ("DB->user: %1", _smt_user);
