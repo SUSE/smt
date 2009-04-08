@@ -8,9 +8,12 @@ Requires:	yast2-registration
 Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
 Requires:	/bin/hostname
+# For adjusting the NCCcredentials file permissions
 Requires:	/usr/bin/setfacl
 Requires:	/bin/chown
 Requires:	/bin/chmod
+# For checking whether the DB->user is available on the system
+Requires:	/usr/bin/getent
 Requires:	smt
 
 # This YaST tool configures SMT (cron, apache2)

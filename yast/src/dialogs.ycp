@@ -236,8 +236,10 @@
 
     symbol RegisterOrFillUpCredentials () {
 	Wizard::SetContents (
+	    // Dialog caption
 	    _("NCC Credentials"),
 	    `HSquash (`VBox (
+		// Informative text
 		`Label (_("System does not appear to be registered in NCC.
 Choose one of the options below.")),
 		`VSpacing (1),
@@ -247,17 +249,28 @@ Choose one of the options below.")),
 		    `HBox (
 			`HSpacing (2),
 			`VBox (
+			    // Radio button
 			    `Left (`RadioButton (`id ("skip"),		`opt (`notify), _("&Skip Registration"))),
 			    `VSpacing (1),
+			    // Radio button
 			    `Left (`RadioButton (`id ("registration"),	`opt (`notify), _("Register in &Novell Customer Center"))),
 			    `VSpacing (1),
+			    // Radio button
 			    `Left (`RadioButton (`id ("generate"),	`opt (`notify), _("&Generate New NCC Credentials"))),
 			    `VSpacing (1)
 			)
 		    )
 		)
 	    )),
-	    _("<p></p>"),
+	    // Help "NCC Credentials", #1
+	    _("<p><b><big>NCC Credentials</big></b><br>
+You need to register your SMT in Novell Customer Center to get it working
+properly. Choose one of the listed options.</p>") +
+	    // Help "NCC Credentials", #2
+	    _("<p>Choosing <b>Register in Novell Customer Center</b> would
+call regular Novell Customer Center Configuration module,
+<b>Generate New NCC Credentials</b> just creates new NCC Credentials
+file without calling Novell Customer Center Configuration module.</p>"),
 	    true,
 	    true
 	);
@@ -278,11 +291,15 @@ Choose one of the options below.")),
 		y2milestone ("User decision: %1", decision);
 		if (decision == "skip") {
 		    if (Popup::AnyQuestion (
+			// Pop-up dialog caption
 			_("Warning"),
+			// Pop-up question
 			_("Leaving the NCC credentials empty might cause SMT not to work properly.
 Are you sure you want to really skip it?"),
-			_("Yes, Skip It"),
-			_("Cancel"),
+			// Button label
+			_("&Yes, Skip It"),
+			// Button label
+			_("&Cancel"),
 			`focus_no
 		    )) {
 			y2warning ("User decided to skip registration or entering NCC credentials");
@@ -295,10 +312,12 @@ Are you sure you want to really skip it?"),
 		    y2milestone ("inst_suse_register returned: %1", wfmret);
 		    ret = `again;
 		} else if (decision == "generate") {
+		    // Busy message
 		    boolean dopen = (boolean) UI::OpenDialog (`Label (_("Generating NCCcredentials...")));
 		    any check_ret = WFM::CallFunction ("smt_generate_new_credentials");
 		    if (dopen == true) UI::CloseDialog();
 		    if (check_ret == nil) {
+			// Error pop-up, %1 is replaced with a script name
 			Report::Error (sformat(_("Unable to generate new NCCcredentials,
 An error occured while calling %1"), "smt_generate_new_credentials"));
 			continue;
@@ -354,7 +373,8 @@ An error occured while calling %1"), "smt_generate_new_credentials"));
 
 	if (SMTData::CheckAndAdjustCredentialsFileAccess() != true) {
 	    Report::Error (sformat (
-		_("SMT is unable to make %1 file
+		// Pop-up error message, %1 is replaced with file name, %2 with username
+		_("SMT is unable to set %1 file permissions
 to be readable by %2 user."),
 		SMTData::GetNCCcredentialsFile(),
 		SMTData::GetCredentials ("DB", "user")
@@ -561,6 +581,7 @@ Would you like to continue nevertheless?")))
 	string url = (string) UI::QueryWidget (`id ("url"), `Value);
 	if (url == nil || url == "") {
 	    UI::SetFocus (`id ("url"));
+	    // Pop-up error message
 	    Report::Error (_("The SMT URL must not be empty.
 
 Enter your SMT server URL in the following format: http:://server.name/
@@ -571,6 +592,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	string nuuser = (string) UI::QueryWidget (`id ("NUUser"), `Value);
 	if (nuuser == nil || nuuser == "") {
 	    UI::SetFocus (`id ("NUUser"));
+	    // Pop-up error message
 	    Report::Error (_("NU User must not be empty."));
 	    return false;
 	}
@@ -578,6 +600,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	string nupass = (string) UI::QueryWidget (`id ("NUPass"), `Value);
 	if (nupass == nil || nupass == "") {
 	    UI::SetFocus (`id ("NUPass"));
+	    // Pop-up error message
 	    Report::Error (_("NU Password must not be empty."));
 	    return false;
 	}
@@ -821,23 +844,28 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    // covers */15 - every 15 minutes/hours
 	    boolean periodically = false;
 
-	    // Monthly
+	    // More often than 'daily'
 	    if (regexpmatch (one_entry["hour"]:"", "\\*/") || regexpmatch (one_entry["minute"]:"", "\\*/")) {
 		periodically = true;
+		// Script-call period, used as a table item
 		item = add (item, _("Periodically"));
 		item = add (item, "--");
 		item = add (item, "--");
+	    // Monthly
 	    } else if (one_entry["day_of_month"]:"*" != "*") {
+		// Script-call period, used as a table item
 		item = add (item, _("Monthly"));
 		item = add (item, "--");
 		item = add (item, one_entry["day_of_month"]:_("Undefined"));
 	    // Weekly
 	    } else if (one_entry["day_of_week"]:"*" != "*") {
+	    // Script-call period, used as a table item
 		item = add (item, _("Weekly"));
 		item = add (item, nrdays_to_names[one_entry["day_of_week"]:""]:_("Undefined"));
 		item = add (item, "--");
 	    // Daily
 	    } else {
+		// Script-call period, used as a table item
 		item = add (item, _("Daily"));
 		item = add (item, "--");
 		item = add (item, "--");

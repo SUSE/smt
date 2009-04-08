@@ -68,6 +68,44 @@
 
     global string GetCredentials (string location, string entry_name);
 
+    string _smt_user = nil;
+    boolean _smt_user_loaded = false;
+
+    /**
+     * Returns SMT user (DB->user) or nil if not set or erroneous
+     */
+    string GetSMTUser () {
+	if (_smt_user_loaded == true) {
+	    return _smt_user;
+	}
+
+	_smt_user_loaded = true;
+
+	string _smt_user = SMTData::GetCredentials ("DB", "user");
+
+	if (_smt_user == nil || _smt_user == "") {
+	    y2error ("DB->user: %1", _smt_user);
+	    Report::Error (sformat(_("SMT configuration is broken, no DB->user has been set
+in %1."), smt_conf));
+	    _smt_user = "";
+	} else {
+	    integer user_exists = (integer) SCR::Execute (.target.bash,
+		sformat ("/usr/bin/getent passwd '%1'", String::Quote (_smt_user))
+	    );
+	    if (user_exists == 0) {
+		y2milestone ("User %1 exists", _smt_user);
+	    } else {
+		y2error ("User %1 doesn't exist!", _smt_user);
+		// Pop-up error message, %1 is replaced with the DB user name,
+		// %2 with the SMT config file
+		Report::Error (sformat (_("SMT configuration is broken.
+DB->user %1 defined in %2 does not exist on the system."), _smt_user, smt_conf));
+	    }
+	}
+
+	return _smt_user;
+    }
+
     /**
      * Returns whether a NCCcredentials file is accessible by SMT user
      * defined in DB->user. Returns nil if the file does not exist.
@@ -75,14 +113,8 @@
      * @return boolean whether accessible
      */
     boolean CredentialsFileAccessible () {
-	string smt_user = SMTData::GetCredentials ("DB", "user");
-
-	if (smt_user == nil || smt_user == "") {
-	    y2error ("DB->user: %1", smt_user);
-	    Report::Error (sformat(_("SMT configuration is broken, no DB->user has been set
-in %1."), smt_conf));
-	    return nil;
-	}
+	string smt_user = GetSMTUser();
+	if (smt_user == nil || smt_user == "") return nil;
 
 	return ((integer) SCR::Execute (.target.bash, sformat (
 	    "echo '' | /usr/bin/sudo -S -u '%1' /bin/cat '%2'",
@@ -98,7 +130,7 @@ in %1."), smt_conf));
      * file owner and permissions to smt:root.
      */
     void AdjustNCCCredentialsFileAccess () {
-	string smt_user = SMTData::GetCredentials ("DB", "user");
+	string smt_user = GetSMTUser();
 
 	if (smt_user == nil || smt_user == "") {
 	    y2error ("DB->user: %1", smt_user);
@@ -957,7 +989,7 @@ For security reasons, please, set a new one.")),
 	// ask user to set a new one
 	if (root_password_empty) {
 	    // exception: SMT user is root
-	    if (GetCredentials ("DB","user") == "root") {
+	    if (GetSMTUser() == "root") {
 		y2warning ("SMT user is root, using root's new password");
 		mysql_root_password = GetCredentials ("DB","pass");
 	    } else {
@@ -979,7 +1011,7 @@ For security reasons, please, set a new one.")),
 	    y2milestone ("mysql root password is not empty, asking for it...");
 	    mysql_root_password = AskForRootPassword (_("SMT needs to set up the database."));
 	    if (mysql_root_password == nil) {
-		y2error ("Root password not provided");
+		y2error ("Mysql-root password not provided");
 		return false;
 	    }
 	}
