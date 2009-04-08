@@ -68,6 +68,12 @@
 
     global string GetCredentials (string location, string entry_name);
 
+    /**
+     * Returns whether a NCCcredentials file is accessible by SMT user
+     * defined in DB->user. Returns nil if the file does not exist.
+     *
+     * @return boolean whether accessible
+     */
     boolean CredentialsFileAccessible () {
 	string smt_user = SMTData::GetCredentials ("DB", "user");
 
@@ -85,6 +91,12 @@ in %1."), smt_conf));
 	)) == 0);
     }
 
+    /**
+     * Adjusts NCCcredentials file permissions to be accessible
+     * by SMT user defined in DB->user.
+     * By default it adjusts file ACL to "read", or it changes the
+     * file owner and permissions to smt:root.
+     */
     void AdjustNCCCredentialsFileAccess () {
 	string smt_user = SMTData::GetCredentials ("DB", "user");
 
@@ -113,6 +125,13 @@ in %1."), smt_conf));
 	y2milestone ("Adjusting file access (%1) returned %2", cmd, chownchmod);
     }
 
+    /**
+     * Checks (and adjusts) the NCCcredentials file permissions the be readable
+     * by SMT user defined in DB->user. Returns if accessible and/or permissions
+     * successfuly set. If the file does not exist, nil is returned.
+     *
+     * @return boolean if succesful (file exists and is accessible)
+     */
     global boolean CheckAndAdjustCredentialsFileAccess () {
 	if (SystemIsRegistered() != true) {
 	    y2warning ("Credentials file does not exist");
@@ -498,6 +517,9 @@ Please, check your SMT installation."), path_to_sync_script));
 	return true;
     }
 
+    /**
+     * Reads SMT cron settings and fills up internal data variables.
+     */
     global void ReadCronSettings () {
 	if (! FileUtils::Exists (path_to_cron)) {
 	    y2milestone ("Creating file %1", path_to_cron);
@@ -571,7 +593,6 @@ Please, check your SMT installation."), path_to_sync_script));
 		return true;
 	    }
 	}
-
 
 	if (! (boolean) SCR::Write (.smt_cron, smt_cron_settings)) {
 	    y2error ("Writing cron failed");
