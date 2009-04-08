@@ -5,6 +5,7 @@ Tue Apr  7 16:59:59 CET 2009 - locilka@suse.cz
   registration or generate new credentials (FATE #305540).
 - Adjusting NCCcredentials file ACL for the SMT user, changing
   owner and file access as a fallback (FATE #305540).
+- 2.17.3
 
 -------------------------------------------------------------------
 Mon Feb  9 12:17:11 CET 2009 - locilka@suse.cz
