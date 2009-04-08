@@ -66,24 +66,6 @@
 	return (FileUtils::Exists (NCCcredentials_file) == true);
     }
 
-    global boolean WriteNCCCredentialsManually (string username, string password) {
-	if (username == nil || username == "") {
-	    y2error ("Wrong NCC username: %1", username);
-	    return false;
-	}
-
-	if (username == nil || username == "") {
-	    y2error ("Wrong NCC password: %1", password);
-	    return false;
-	}
-
-	string userpassstring = sformat ("username=%1\npassword=%2\n", username, password);
-	boolean write = (boolean) SCR::Write (.target.string, NCCcredentials_file, userpassstring);
-	y2milestone ("Writing user=...,password=... to %1 returned %2", NCCcredentials_file, write);
-
-	return write;
-    }
-
     global string GetCredentials (string location, string entry_name);
 
     boolean CredentialsFileAccessible () {

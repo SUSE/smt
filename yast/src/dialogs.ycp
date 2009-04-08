@@ -234,30 +234,13 @@
 	return `next;
     }
 
-    void EnableManuallyEnteredCredentials (boolean new_state) {
-	foreach (string ID, ["username", "password1", "password2"], {
-	    UI::ChangeWidget (`id (ID), `Enabled, new_state);
-	});
-    }
-
-    void AdjustRegisterOrFillUpCredentialsWidget (string selected) {
-	if (selected == "skip") {
-	    EnableManuallyEnteredCredentials (false);
-	} else if (selected == "registration") {
-	    EnableManuallyEnteredCredentials (false);
-	} else if (selected == "manually") {
-	    EnableManuallyEnteredCredentials (true);
-	} else {
-	    y2error ("Unknown 'selected' option: %1", selected);
-	}
-    }
-
     symbol RegisterOrFillUpCredentials () {
 	Wizard::SetContents (
 	    _("NCC Credentials"),
 	    `HSquash (`VBox (
 		`Label (_("System does not appear to be registered in NCC.
 Choose one of the options below.")),
+		`VSpacing (1),
 		`RadioButtonGroup (
 		    `id ("NCCCredentialsRBB"),
 		    `opt (`notify),
@@ -268,15 +251,8 @@ Choose one of the options below.")),
 			    `VSpacing (1),
 			    `Left (`RadioButton (`id ("registration"),	`opt (`notify), _("Register in &Novell Customer Center"))),
 			    `VSpacing (1),
-			    `Left (`RadioButton (`id ("manually"),	`opt (`notify), _("Enter NCC Credentials &Manually"))),
-			    `HBox (
-				`HSpacing (3),
-				`VBox (
-				    `MinWidth (32, `InputField (`id ("username"),	_("&Username"))),
-				    `MinWidth (32,`Password (`id ("password1"),		_("&Password"))),
-				    `MinWidth (32,`Password (`id ("password2"),		_("&Once Again")))
-				)
-			    )
+			    `Left (`RadioButton (`id ("generate"),	`opt (`notify), _("&Generate New NCC Credentials"))),
+			    `VSpacing (1)
 			)
 		    )
 		)
@@ -295,9 +271,6 @@ Choose one of the options below.")),
 	UI::ChangeWidget (`id ("NCCCredentialsRBB"), `CurrentButton, decision);
 
 	while (true) {
-	    decision = (string) UI::QueryWidget (`id ("NCCCredentialsRBB"), `CurrentButton);
-	    AdjustRegisterOrFillUpCredentialsWidget (decision);
-
 	    dialog_ret = UI::UserInput();
 
 	    if (dialog_ret == `next) {
@@ -321,35 +294,13 @@ Are you sure you want to really skip it?"),
 		    any wfmret = WFM::CallFunction ("inst_suse_register");
 		    y2milestone ("inst_suse_register returned: %1", wfmret);
 		    ret = `again;
-		} else if (decision == "manually") {
-		    string username	= (string) UI::QueryWidget (`id ("username"), `Value);
-		    string password1	= (string) UI::QueryWidget (`id ("password1"), `Value);
-		    string password2	= (string) UI::QueryWidget (`id ("password2"), `Value);
-
-		    if (username == "") {
-			UI::SetFocus (`id ("username"));
-			Report::Error (_("Username has to be entered."));
-			continue;
-		    }
-		    if (password1 == "") {
-			UI::SetFocus (`id ("password1"));
-			Report::Error (_("Password has to be entered twice."));
-			continue;
-		    }
-		    if (password2 == "") {
-			UI::SetFocus (`id ("password2"));
-			Report::Error (_("Password has to be entered twice."));
-			continue;
-		    }
-		    if (password1 != password2) {
-			UI::SetFocus (`id ("password1"));
-			Report::Error (_("Entered passwords do not match."));
-			continue;
-		    }
-
-		    if (SMTData::WriteNCCCredentialsManually (username, password1) != true) {
-			Report::Error ("Cannot write NCC credentials to the system.");
-			UI::ChangeWidget (`id ("NCCCredentialsRBB"), `CurrentButton, "skip");
+		} else if (decision == "generate") {
+		    boolean dopen = (boolean) UI::OpenDialog (`Label (_("Generating NCCcredentials...")));
+		    any check_ret = WFM::CallFunction ("smt_generate_new_credentials");
+		    if (dopen == true) UI::CloseDialog();
+		    if (check_ret == nil) {
+			Report::Error (sformat(_("Unable to generate new NCCcredentials,
+An error occured while calling %1"), "smt_generate_new_credentials"));
 			continue;
 		    }
 		}
@@ -357,9 +308,8 @@ Are you sure you want to really skip it?"),
 	    } else if (dialog_ret == `back) {
 		ret = `back;
 		break;
-	    } else if (dialog_ret == "skip" || dialog_ret == "registration" || dialog_ret == "manually") {
+	    } else if (dialog_ret == "skip" || dialog_ret == "registration" || dialog_ret == "generate") {
 		decision = (string) UI::QueryWidget (`id ("NCCCredentialsRBB"), `CurrentButton);
-		AdjustRegisterOrFillUpCredentialsWidget (decision);
 	    } else if (dialog_ret == `abort || dialog_ret == `cancel) {
 		if (Popup::ReallyAbort (true)) {
 		    ret = `abort;
@@ -397,6 +347,9 @@ Are you sure you want to really skip it?"),
 	// Check succeeded after some iterations...
 	if (dialog_ret == `again) {
 	    dialog_ret = `next;
+	// Aborted? Skip the other tests
+	} else if (dialog_ret == `abort) {
+	    return dialog_ret;
 	}
 
 	if (SMTData::CheckAndAdjustCredentialsFileAccess() != true) {

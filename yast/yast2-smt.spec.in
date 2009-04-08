@@ -3,6 +3,8 @@
 @HEADER@
 Requires:	yast2
 Requires:	yast2-runlevel
+# FATE 305541: Creating NCCcredentials file using yast2-registration
+Requires:	yast2-registration
 Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
 Requires:	/bin/hostname
