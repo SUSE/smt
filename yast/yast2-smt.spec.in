@@ -45,8 +45,7 @@ Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 %defattr(-,root,root)
 %dir @yncludedir@/smt
 @yncludedir@/smt/*
-@clientdir@/smt.ycp
-@clientdir@/inst_smt.ycp
+@clientdir@/*.ycp
 @moduledir@/SMT*.*
 @desktopdir@/smt.desktop
 @scrconfdir@/smt*.scr
