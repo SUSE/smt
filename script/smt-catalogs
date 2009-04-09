@@ -32,6 +32,7 @@ my $mirrorable;
 my $domirror;
 my $verbose;
 my $help;
+my $batchMode;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
@@ -45,6 +46,7 @@ use Getopt::Long;
                           'only-mirrorable|m'    => \$mirrorable,
                           'only-enabled|o'       => \$domirror,
                           'verbose|v'            => \$verbose,
+                          'batch-mode|b'         => \$batchMode,
                           'help|h'               => \$help
                          );
 
@@ -206,7 +208,24 @@ while ( my $v = $sth->fetchrow_hashref() )
     }
 }
 
-print $t->draw() if not defined($verbose);
+
+if (not defined $verbose) {
+    # easy-to-parse output
+    if (defined $batchMode && $batchMode == 1) {
+	$t->setOptions('hide_HeadLine', 1);
+	$t->setOptions('hide_HeadRow', 1);
+	print $t->draw(
+	    ['', '', '', ''],
+	    ['|', '|', '|'],
+	    ['', '', '', ''],
+	    ['|', '|', '|'],
+	    ['', '', '', '']
+	);
+    # common human-readable output
+    } else {
+	print $t->draw();
+    }
+}
 
 if ( ! defined $disable && ! defined $enable &&
      ! $disableStaging && ! $enableStaging)
