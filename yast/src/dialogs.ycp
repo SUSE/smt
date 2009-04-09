@@ -161,6 +161,29 @@
 	);
     }
 
+    term CatalogsTableContent () {
+	return `VBox (
+	    `Table (
+		`id (`catalogs_table),
+		`opt (`hstretch, `vstretch),
+		`header (
+		    _("Name"),
+		    _("Target"),
+		    _("Mirroring"),
+		    _("Staging"),
+		    _("Description")
+		),
+		[]
+	    ),
+	    `Left (
+		`HBox (
+		    `PushButton (`id (`toggle_mirroring), _("Toggle &Mirroring")),
+		    `PushButton (`id (`toggle_staging), _("Toggle &Staging"))
+		)
+	    )
+	);
+    }
+
     symbol ReadDialog() {
 	// Checking for root's permissions
 	if (!Confirm::MustBeRoot())
@@ -685,6 +708,64 @@ Enter your SMT server URL in the following format: http:://server.name/
 	StoreReportEmails();
     }
 
+    string yes = UI::Glyph (`CheckMark);
+    // opposite to check-mark used in UI, usually not translated
+    string no	= _("-");
+
+    map <string, map <string, any> > catalogs_info = $[];
+
+    void RedrawCatalogsTable () {
+	catalogs_info = $[];
+
+	// busy message
+	boolean uio = (boolean) UI::OpenDialog (`Label (_("Getting list of the currently available catalogs...")));
+
+	list <map <string, string> > catalogs_states = (list <map <string, string> >) SCR::Read (.smt.catalogs);
+	if (catalogs_states == nil) {
+	    y2error ("Error getting available catalogs");
+	    catalogs_states = [];
+	}
+
+	boolean mirroring = nil;
+	boolean staging = nil;
+
+	list <term> items = maplist (map <string, string> one_catalog, catalogs_states, {
+	    mirroring	= (one_catalog["mirroring"]:"" == "Yes");
+	    staging	= (one_catalog["staging"]:"" == "Yes");
+
+	    // used later in Handle* function
+	    catalogs_info[one_catalog["id"]:""] = $[
+		"mirroring"	: mirroring,
+		"staging"	: staging,
+		"name"		: one_catalog["name"]:"",
+		// empty /--/ == no specific target
+		"target"	: (regexpmatch (one_catalog["target"]:"", "^-+$") ? "" : one_catalog["target"]:""),
+	    ];
+
+	    return `item (
+		`id (one_catalog["id"]:""),
+		one_catalog["name"]:_("Unknown"),
+		one_catalog["target"]:_("Unknown"),
+		(mirroring ? yes : no),
+		(staging ? yes : no),
+		one_catalog["description"]:""
+	    );
+	});
+
+	if (items == nil) items = [];
+
+	if (uio == true) UI::CloseDialog();
+
+	UI::ChangeWidget (`id (`catalogs_table), `Items, items);
+    }
+
+    void InitCatalogsTableDialog (string id) {
+	RedrawCatalogsTable();
+    }
+
+//    void StoreCatalogsTableDialog (string id, map event) {
+//    }
+
     boolean EmailValid (string e_mail) {
 	// very simple e-mail validator
 	return (regexpmatch (e_mail, ".+@.+\\..+"));
@@ -757,6 +838,88 @@ Enter your SMT server URL in the following format: http:://server.name/
 	}
 
 	return nil;
+    }
+
+    boolean ToggleCatalog (string current_id, string entry) {
+	if (current_id == nil) {
+	    y2error ("Erroneous ID: %1", current_id);
+	    // pop-up error message
+	    Report::Error (_("Internal Error: Cannot toggle the current state."));
+	    return nil;
+	}
+
+	boolean current_state = (boolean) catalogs_info[current_id, entry]:nil;
+
+	if (current_state == nil) {
+	    y2error ("Erroneous entry: %1 (%2)", catalogs_info[current_id]:$[], entry);
+	    // pop-up error message
+	    Report::Error (_("Internal Error: Cannot toggle the current state."));
+	    return nil;
+	}
+
+	string selected_change = nil;
+	integer col_to_change = 0;
+
+	if (entry == "mirroring") {
+	    selected_change = (current_state == true ? "--disable-mirror":"--enable-mirror");
+	    col_to_change = 2;
+	} else if (entry == "staging") {
+	    selected_change = (current_state == true ? "--disable-staging":"--enable-staging");
+	    col_to_change = 3;
+	} else {
+	    y2error ("Unknown entry to change: %1", entry);
+	    // pop-up error message
+	    Report::Error (_("Internal Error: Cannot toggle the current state."));
+	    return nil;
+	}
+
+	string catalog_ident = nil;
+
+	if (catalogs_info[current_id, "name"]:"" == nil) {
+	    y2error ("Erroneous entry: %1 (no name)", catalogs_info[current_id]:$[]);
+	    // pop-up error message
+	    Report::Error (_("Internal Error: Cannot toggle the current state."));
+	} else {
+	    catalog_ident = sformat ("'%1'", String::Quote (catalogs_info[current_id, "name"]:""));
+	}
+
+	if (catalogs_info[current_id, "target"]:"" != "") {
+	    catalog_ident = sformat ("%1 '%2'", catalog_ident, String::Quote (catalogs_info[current_id, "target"]:""));
+	}
+
+	string cmd = sformat ("LC_ALL=C /usr/sbin/smt-catalogs --batch-mode %1 %2",
+	    selected_change,
+	    catalog_ident
+	);
+
+	// bussy message
+	boolean uio = UI::OpenDialog (`Label ("Toggling catalog state..."));
+
+	boolean success = ((integer) SCR::Execute (.target.bash, cmd) == 0);
+	y2milestone ("Running >%1< returned: %2", cmd, success);
+
+	if (uio == true) UI::CloseDialog();
+
+	if (success != true) {
+	    Report::Error (_("Internal Error: Cannot toggle the current state."));
+	} else {
+	    UI::ChangeWidget (`id(`catalogs_table), `Item (current_id, col_to_change), (current_state == true ? no:yes));
+	}
+    }
+
+    symbol HandleCatalogsTableDialog (string id, map event) {
+	if (id != "catalogs")
+	    return nil;
+
+	any event_id = event["ID"]:nil;
+
+	string current_id = (string) UI::QueryWidget (`id (`catalogs_table), `CurrentItem);
+
+	if (event_id == `toggle_mirroring) {
+	    ToggleCatalog (current_id, "mirroring");
+	} else if (event_id == `toggle_staging) {
+	    ToggleCatalog (current_id, "staging");
+	}
     }
 
     map <string, string> nrdays_to_names = $[

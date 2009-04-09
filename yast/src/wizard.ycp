@@ -62,6 +62,14 @@
 		"services" : [ "service:apache2", "service:apache2-ssl" ],
 		"display_details" : false,
 	    ]),
+	    "catalogs" : $[
+		"widget"	: `custom,
+		"help"		: HELPS["catalogs"]:"",
+		"custom_widget"	: `Empty(),
+		"handle"	: HandleCatalogsTableDialog,
+		"init"		: InitCatalogsTableDialog,
+		// "store"		: StoreCatalogsTableDialog,
+	    ],
     ];
 
     map <string, any> tabs = $[
@@ -81,6 +89,12 @@
 					ReportEmailTableContent(),
 					`VStretch()
 				    ),
+	    ],
+	    "catalogs" : $[
+		// TRANSLATORS: tab-header
+		"header"	: _("Catalogs"),
+		"widget_names"	: ["catalogs"],
+		"contents"	: CatalogsTableContent(),
 	    ],
 	    "scheduled_downloads" : $[
 		// TRANSLATORS: tab-header
@@ -115,7 +129,7 @@
     any MainSequence() {
 	map <string, any> wd = $[
 	    "tab" : CWMTab::CreateWidget ($[
-		"tab_order"	: ["credentials", "database", "scheduled_downloads"],
+		"tab_order"	: ["credentials", "database", "catalogs", "scheduled_downloads"],
 		"tabs"		: tabs,
 		"widget_descr"	: widgets,
 		"initial_tab"	: "credentials",
