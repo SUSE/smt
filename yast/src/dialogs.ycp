@@ -217,7 +217,7 @@
 	    ],
 	    ""
 	);
-	Wizard::SetTitleIcon("yast-SMT");
+	Wizard::SetTitleIcon("yast-smt");
 	Wizard::RestoreHelp(HELPS["read"]:"");
 
 	Progress::NextStage();
@@ -452,7 +452,7 @@ to be readable by %2 user."),
 	    ],
 	    ""
 	);
-	Wizard::SetTitleIcon("yast-SMT");
+	Wizard::SetTitleIcon("yast-smt");
 	Wizard::RestoreHelp(HELPS["write"]:"");
 
 	SMTData::WriteCredentials();

@@ -150,7 +150,7 @@
 	    Label::FinishButton()
 	);
 
-	Wizard::SetTitleIcon("yast-SMT");
+	Wizard::SetTitleIcon("yast-smt");
 
 	return CWM::Run (w, $[`abort : ReallyExit]);
     }
@@ -173,7 +173,7 @@
 	    ],
 	];
 
-	Wizard::SetTitleIcon ("yast-SMT");
+	Wizard::SetTitleIcon ("yast-smt");
 
 	any ret = Sequencer::Run(aliases, sequence);
 
@@ -209,7 +209,7 @@
 	];
 
 	Wizard::CreateDialog();
-	Wizard::SetTitleIcon ("yast-SMT");
+	Wizard::SetTitleIcon ("yast-smt");
 
 	any ret = Sequencer::Run(aliases, sequence);
 	Wizard::CloseDialog();
@@ -245,7 +245,7 @@
 	    ],
 	];
 
-	Wizard::SetTitleIcon ("yast-SMT");
+	Wizard::SetTitleIcon ("yast-smt");
 
 	any ret = Sequencer::Run (aliases, sequence);
 

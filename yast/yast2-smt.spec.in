@@ -53,3 +53,20 @@ Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 %doc @docdir@
 %dir /usr/share/YaST2/control
 /usr/share/YaST2/control/smt_control.xml
+
+# ... and icons (again)
+%dir @themedir@
+%dir @themedir@/current
+%dir @themedir@/current/icons
+%dir @themedir@/current/icons/16x16/
+%dir @themedir@/current/icons/16x16/apps/
+%dir @themedir@/current/icons/22x22/
+%dir @themedir@/current/icons/22x22/apps/
+%dir @themedir@/current/icons/32x32/
+%dir @themedir@/current/icons/32x32/apps/
+%dir @themedir@/current/icons/48x48/
+%dir @themedir@/current/icons/48x48/apps/
+@themedir@/current/icons/16x16/apps/yast-smt.png
+@themedir@/current/icons/22x22/apps/yast-smt.png
+@themedir@/current/icons/32x32/apps/yast-smt.png
+@themedir@/current/icons/48x48/apps/yast-smt.png
