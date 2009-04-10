@@ -903,7 +903,10 @@ Enter your SMT server URL in the following format: http:://server.name/
 	if (success != true) {
 	    Report::Error (_("Internal Error: Cannot toggle the current state."));
 	} else {
-	    UI::ChangeWidget (`id(`catalogs_table), `Item (current_id, col_to_change), (current_state == true ? no:yes));
+	    // Switch the current state
+	    current_state = ! current_state;
+	    catalogs_info[current_id, entry] = current_state;
+	    UI::ChangeWidget (`id(`catalogs_table), `Item (current_id, col_to_change), (current_state == true ? yes:no));
 	}
     }
 
@@ -920,6 +923,9 @@ Enter your SMT server URL in the following format: http:://server.name/
 	} else if (event_id == `toggle_staging) {
 	    ToggleCatalog (current_id, "staging");
 	}
+
+	// Catalog have been toggled, re-focus the table again
+	UI::SetFocus (`id (`catalogs_table));
     }
 
     map <string, string> nrdays_to_names = $[

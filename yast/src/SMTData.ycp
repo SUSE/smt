@@ -524,6 +524,8 @@ Please, check your SMT installation."), path_to_sync_script));
 	    return false;
 	}
 
+	y2milestone ("Running sync: %1", path_to_sync_script);
+
 	map cmd_out = (map) SCR::Execute (.target.bash_output, path_to_sync_script);
 	if (cmd_out["exit"]:-1 != 0) {
 	    UI::OpenDialog (
