@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Apr 10 14:52:03 CEST 2009 - locilka@suse.cz
+
+- New "Plugged world" icon (FATE #306264).
+- 2.17.5
+
+-------------------------------------------------------------------
 Thu Apr  9 18:31:31 CET 2009 - locilka@suse.cz
 
 - Added UI interface to handle catalogs states (mirroring, staging)
