@@ -3,6 +3,7 @@ Thu Apr  9 18:31:31 CET 2009 - locilka@suse.cz
 
 - Added UI interface to handle catalogs states (mirroring, staging)
   (FATE #304491).
+- 2.17.4
 
 -------------------------------------------------------------------
 Tue Apr  7 16:59:59 CET 2009 - locilka@suse.cz
