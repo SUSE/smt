@@ -5,6 +5,7 @@ Tue Apr 14 11:06:44 CEST 2009 - locilka@suse.cz
   to switch to (FATE #305540).
 - Using generic access to read all values from smt.conf.
 - Linking SMT icons from /usr/share/icons/hicolor/.
+- 2.17.6
 
 -------------------------------------------------------------------
 Fri Apr 10 14:52:03 CEST 2009 - locilka@suse.cz
