@@ -50,7 +50,7 @@ use Getopt::Long;
                           'disable-by-prod=s'    => \$disableByProduct,
                           'enable-staging'       => \$enableStaging,
                           'disable-staging'      => \$disableStaging,
-                          'debug|d'              => \$debug,
+                          'debug'              => \$debug,
                           "logfile|L=s"          => \$logfile,
                           'only-mirrorable|m'    => \$mirrorable,
                           'only-enabled|o'       => \$domirror,
@@ -283,47 +283,6 @@ if ( $mirrorable_update_needed == 1 )
     $output->close();
 }
 
-
-#my $sql = "select * from Catalogs";
-#
-#$sql = $sql . " where 1";
-#
-#if ( defined($mirrorable) )
-#{
-#    if (  $mirrorable == 1 )
-#    {
-#        $sql = $sql . " and MIRRORABLE='Y'";
-#    }
-#    else
-#    {
-#        $sql = $sql . " and MIRRORABLE='N'";
-#    }
-#}
-#
-#if ( defined($domirror) )
-#{
-#    if (  $domirror == 1 )
-#    {
-#        $sql = $sql . " and DOMIRROR='Y'";
-#    }
-#    else
-#    {
-#        $sql = $sql . " and DOMIRROR='N'";
-#    }
-#}
-#
-#if (defined $name && $name ne "")
-#{
-#    $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($name) );
-#}
-## if target was given, limit the search even more
-#if (defined $target && $target ne "")
-#{
-#    $sql = $sql . sprintf(" and TARGET=%s", $dbh->quote($target) );
-#}
-#
-#$sql = $sql . " order by NAME, TARGET";
-
 # hash to associate order with id.
 my @idnumbers;
 my $arrayIdx=0;
@@ -400,7 +359,23 @@ elsif ( $count == 1 )
         $arrayIdx = $idnumbers[0];
         my $selcat = $cataloginfo_int[$arrayIdx];
         print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
-        push @tomirror, $selcat;
+        if ( $bool )
+        {
+            push @tomirror, $selcat;
+        }
+        else
+        {
+            my $i = 0;
+            for my $element (@tomirror)
+            {
+                if ( $selcat->{CATALOGID} eq $element->{CATALOGID} )
+                {
+                    splice @tomirror, $i, 1;
+                    last;
+                }
+                $i++
+            }
+        }
     }
     elsif( $disableStaging || $enableStaging)
     {
@@ -424,7 +399,23 @@ else
             {
                 my $selcat = $cataloginfo_int[$idx];
                 print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
-                push @tomirror, $selcat;
+                if ( $bool )
+                {
+                    push @tomirror, $selcat;
+                }
+                else
+                {
+                    my $i = 0;
+                    for my $element (@tomirror)
+                    {
+                        if ( $selcat->{CATALOGID} eq $element->{CATALOGID} )
+                        {
+                            splice @tomirror, $i, 1;
+                            last;
+                        }
+                        $i++
+                    }
+                }
             }
         }
         elsif( $disableStaging || $enableStaging)
@@ -443,7 +434,23 @@ else
             $arrayIdx = $idnumbers[$number-1];
             my $selcat = $cataloginfo_int[$arrayIdx];
             print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
-            push @tomirror, $selcat;
+            if ( $bool )
+            {
+                push @tomirror, $selcat;
+            }
+            else
+            {
+                my $i = 0;
+                for my $element (@tomirror)
+                {
+                    if ( $selcat->{CATALOGID} eq $element->{CATALOGID} )
+                    {
+                        splice @tomirror, $i, 1;
+                        last;
+                    }
+                    $i++
+                }
+            }
         }
         elsif( $disableStaging || $enableStaging)
         {
