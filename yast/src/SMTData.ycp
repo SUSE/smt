@@ -72,7 +72,7 @@
     boolean _smt_user_loaded = false;
 
     /**
-     * Returns SMT user (DB->user) or nil if not set or erroneous
+     * Returns SMT user (LOCAL->smtUser) or nil if not set or erroneous
      */
     string GetSMTUser () {
 	if (_smt_user_loaded == true) {
@@ -81,26 +81,25 @@
 
 	_smt_user_loaded = true;
 
-	_smt_user = SMTData::GetCredentials ("DB", "user");
-
+	_smt_user = SMTData::GetCredentials ("LOCAL", "smtUser");
 	if (_smt_user == nil || _smt_user == "") {
-	    y2error ("DB->user: %1", _smt_user);
-	    Report::Error (sformat(_("SMT configuration is broken, no DB->user has been set
-in %1."), smt_conf));
-	    _smt_user = "";
+	    // The default user
+	    _smt_user = "smt";
+	}
+
+
+	integer user_exists = (integer) SCR::Execute (.target.bash,
+	    sformat ("/usr/bin/getent passwd '%1'", String::Quote (_smt_user))
+	);
+
+	if (user_exists == 0) {
+	    y2milestone ("User %1 exists", _smt_user);
 	} else {
-	    integer user_exists = (integer) SCR::Execute (.target.bash,
-		sformat ("/usr/bin/getent passwd '%1'", String::Quote (_smt_user))
-	    );
-	    if (user_exists == 0) {
-		y2milestone ("User %1 exists", _smt_user);
-	    } else {
-		y2error ("User %1 doesn't exist!", _smt_user);
-		// Pop-up error message, %1 is replaced with the DB user name,
-		// %2 with the SMT config file
-		Report::Error (sformat (_("SMT configuration is broken.
-DB->user %1 defined in %2 does not exist on the system."), _smt_user, smt_conf));
-	    }
+	    y2error ("User %1 doesn't exist!", _smt_user);
+	    // Pop-up error message, %1 is replaced with the SMT user name,
+	    // %2 with the SMT config file
+	    Report::Error (sformat (_("SMT configuration is broken.
+LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_conf));
 	}
 
 	return _smt_user;
@@ -108,7 +107,7 @@ DB->user %1 defined in %2 does not exist on the system."), _smt_user, smt_conf))
 
     /**
      * Returns whether a NCCcredentials file is accessible by SMT user
-     * defined in DB->user. Returns nil if the file does not exist.
+     * defined in LOCAL->smtUser. Returns nil if the file does not exist.
      *
      * @return boolean whether accessible
      */
@@ -125,7 +124,7 @@ DB->user %1 defined in %2 does not exist on the system."), _smt_user, smt_conf))
 
     /**
      * Adjusts NCCcredentials file permissions to be accessible
-     * by SMT user defined in DB->user.
+     * by SMT user defined in LOCAL->smtUser.
      * By default it adjusts file ACL to "read", or it changes the
      * file owner and permissions to smt:root.
      */
@@ -133,7 +132,7 @@ DB->user %1 defined in %2 does not exist on the system."), _smt_user, smt_conf))
 	string smt_user = GetSMTUser();
 
 	if (smt_user == nil || smt_user == "") {
-	    y2error ("DB->user: %1", smt_user);
+	    y2error ("LOCAL->smtUser: %1", smt_user);
 	    return;
 	}
 
@@ -159,7 +158,7 @@ DB->user %1 defined in %2 does not exist on the system."), _smt_user, smt_conf))
 
     /**
      * Checks (and adjusts) the NCCcredentials file permissions the be readable
-     * by SMT user defined in DB->user. Returns if accessible and/or permissions
+     * by SMT user defined in LOCAL->smtUser. Returns if accessible and/or permissions
      * successfuly set. If the file does not exist, nil is returned.
      *
      * @return boolean if succesful (file exists and is accessible)

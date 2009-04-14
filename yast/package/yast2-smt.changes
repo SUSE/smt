@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Apr 14 11:06:44 CEST 2009 - locilka@suse.cz
+
+- Using LOCAL->smtUser instead of DB->user user in SMT commands
+  to switch to (FATE #305540).
+
+-------------------------------------------------------------------
 Fri Apr 10 14:52:03 CEST 2009 - locilka@suse.cz
 
 - New "Plugged world" icon (FATE #306264).
