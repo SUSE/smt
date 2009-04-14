@@ -16,6 +16,10 @@ Requires:	/bin/chmod
 Requires:	/usr/bin/getent
 # Modified smt-catalogs (added --batch-mode)
 Requires:	smt >= 1.1.5
+# Icons
+Requires:	hicolor-icon-theme
+# any YaST theme
+Requires:	yast2_theme
 
 # This YaST tool configures SMT (cron, apache2)
 Recommends:	mysql
@@ -26,6 +30,9 @@ Recommends:	apache2
 Recommends:	yast2-ca-management
 
 BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite yast2-runlevel
+BuildRequires:	hicolor-icon-theme
+# any YaST theme
+BuildRequires:	yast2_theme
 
 BuildArchitectures:	noarch
 
@@ -39,6 +46,15 @@ Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 @BUILD@
 
 @INSTALL@
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/16x16/apps
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/22x22/apps
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/32x32/apps
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/48x48/apps
+cd $RPM_BUILD_ROOT/@themedir@/current/icons
+for dir in 16x16 22x22 32x32 48x48; do
+    cd $RPM_BUILD_ROOT/usr/share/icons/hicolor/$dir/apps
+    ln -s @themedir@/current/icons/$dir/apps/yast-smt.png .
+done
 
 @CLEAN@
 
@@ -70,3 +86,12 @@ Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 @themedir@/current/icons/22x22/apps/yast-smt.png
 @themedir@/current/icons/32x32/apps/yast-smt.png
 @themedir@/current/icons/48x48/apps/yast-smt.png
+
+%dir /usr/share/icons/hicolor/16x16/apps/
+%dir /usr/share/icons/hicolor/22x22/apps/
+%dir /usr/share/icons/hicolor/32x32/apps/
+%dir /usr/share/icons/hicolor/48x48/apps/
+/usr/share/icons/hicolor/16x16/apps/yast-smt.png
+/usr/share/icons/hicolor/22x22/apps/yast-smt.png
+/usr/share/icons/hicolor/32x32/apps/yast-smt.png
+/usr/share/icons/hicolor/48x48/apps/yast-smt.png
