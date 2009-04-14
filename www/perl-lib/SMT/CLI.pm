@@ -842,6 +842,51 @@ sub catalogDoMirrorFlag
   return 1;
 }
 
+sub setDoMirrorFromXml
+{
+    my %opt = @_;
+    my ($cfg, $dbh) = init();
+    if(exists $opt{xml} && defined $opt{xml} )
+    {
+        my $enabledCatalogIds = {};
+        my $enabledCatalogs_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
+        $enabledCatalogs_parser->parse($opt{xml}, 
+            sub {
+                my $data = shift;
+                $enabledCatalogIds->{$data->{CATALOGID}} = 1;
+            }
+        );
+
+        # Delete mirror flag from catalogs that are not present in the mirrorinfo file
+        my $sql = "select CATALOGID from Catalogs where DOMIRROR = 'Y'"; 
+        my $sth = $dbh->prepare($sql);
+        $sth->execute();
+        while (my $values = $sth->fetchrow_hashref())  
+        {
+            my $catalogid = $values->{CATALOGID};
+            if ( exists $enabledCatalogIds->{$catalogid} && $enabledCatalogIds->{$catalogid} == 1 )
+            {
+                # Mirror Flag already set remove from hash
+                delete  $enabledCatalogIds->{$catalogid};
+            }
+            else
+            {
+                # Catalog no longer mirrorred remove from db
+                my $sth = $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='N' WHERE CATALOGID=%s", $dbh->quote($catalogid)));
+            }
+        }
+        # Enable the remaining catalogids for mirroring
+        foreach my $id ( keys (%{$enabledCatalogIds}) )
+        {
+            my $sth = $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='Y' WHERE CATALOGID=%s", $dbh->quote($id)));
+        }
+    }
+    else
+    {
+        die __("xml option missing");
+    }
+}
+
 sub setMirrorableCatalogs
 {
     my %opt = @_;
