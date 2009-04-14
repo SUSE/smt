@@ -398,20 +398,12 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
 
 	all_credentials["NU"] = $[];
 
-	foreach (string one_entry, ["NUUser", "NUPass", "NUUrl"], {
-	    SetCredentials ("NU", one_entry, (string) SCR::Read (add (.smt_conf.value.NU, one_entry)));
-	});
+	foreach (string section, (list <string>) SCR::Dir (.smt_conf.section), {
+	    path section_path = add (.smt_conf.value, section);
 
-	foreach (string one_entry, ["nccEmail", "url", "rndRegister"], {
-	    SetCredentials ("LOCAL", one_entry, (string) SCR::Read (add (.smt_conf.value.LOCAL, one_entry)));
-	});
-
-	foreach (string one_entry, ["reportEmail"], {
-	    SetCredentials ("REPORT", one_entry, (string) SCR::Read (add (.smt_conf.value.REPORT, one_entry)));
-	});
-
-	foreach (string one_entry, ["user", "pass", "config"], {
-	    SetCredentials ("DB", one_entry, (string) SCR::Read (add (.smt_conf.value.DB, one_entry)));
+	    foreach (string one_entry, (list <string>) SCR::Dir (section_path), {
+		SetCredentials (section, one_entry, (string) SCR::Read (add (section_path, one_entry)));
+	    });
 	});
 
 	return true;
