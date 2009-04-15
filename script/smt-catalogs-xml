@@ -85,17 +85,6 @@ if ( defined $help and ( $help == 1 ) )
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
-if ( $enableByProduct ne "" )
-{
-    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $enableByProduct, enable => 1);
-    exit $ret;
-}
-elsif ( $disableByProduct ne "" )
-{
-    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $disableByProduct, enable => 0);
-    exit $ret;
-}
-
 my $name = shift(@ARGV);
 
 if ( defined $disable && defined $enable )
@@ -283,185 +272,167 @@ if ( $mirrorable_update_needed == 1 )
     $output->close();
 }
 
-# hash to associate order with id.
-my @idnumbers;
-my $arrayIdx=0;
-#my $sth = $dbh->prepare($sql);
-#$sth->execute();
-
-my $t = new Text::ASCIITable;
-$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"), __("Staging"));
-
-@cataloginfo_int = sort { lc($a->{NAME}) cmp lc($b->{NAME}) || lc($a->{TARGET}) cmp lc($b->{TARGET})} @cataloginfo_int;
-foreach my $v ( @cataloginfo_int )
+if ($enableByProduct ne "" || $disableByProduct ne "")
 {
-    my $catId = $v->{CATALOGID};
-    my $catName = $v->{NAME};
-    my $catTarget = (defined $v->{TARGET}) ?  $v->{TARGET} : "--";
-    my $catType = $v->{CATALOGTYPE};
-    my $catDesc = $v->{DESCRIPTION};
-    my $catMA   = ( defined $mirrorable_idx->{$catId} && $mirrorable_idx->{$catId} == 1 ) ?
-                  __("Yes") : __("No") ;
-    my $mirrorEnabled = ( defined $mirror_hash->{$catId} && $mirror_hash->{$catId} == 1 ) ? __("Yes") : __("No");
-    my $catStaging = $v->{STAGING} || 'N';
-    if ( (! defined $name || $name eq $catName ) &&
-         (! defined $target || $target eq $catTarget ) )
-    {
-        $count++;
-        push(@idnumbers, $arrayIdx );
-        $t->addRow(  $mirrorEnabled, $count, $catType, $catName, $catTarget, 
-                    $catDesc,  $catMA, (( $catStaging eq "Y" ) ? __("Yes") : __("No")));
-    }
-    $arrayIdx++;
-  
-    if (defined($verbose))
-    {
-#        my $st = sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.ARCH, p.REL, pc.OPTIONAL from Products p, ProductCatalogs pc where pc.CATALOGID=%s and p.PRODUCTDATAID = pc.PRODUCTDATAID order by p.PRODUCT, p.VERSION, p.ARCH, p.REL",
-#                         $dbh->quote($catId));
-#        my $products = $dbh->selectall_arrayref($st,{Slice=>{}} );
-#      
-#        print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . $catTarget ."\n";
-#        print "          (" . $v->{DESCRIPTION} .")\n";
-#        print "          " . $v->{EXTURL} ."\n";
-#        print "          " . $v->{LOCALPATH} ."\n";
-#        print "          CatalogID: " . $v->{CATALOGID} ."\n";
-#        print "          Staging  : " . $catStaging ."\n";
-#        foreach my $h (@{$products})
-#        {
-#            my $product = (defined $h->{PRODUCT}?$h->{PRODUCT}:"");
-#            my $version = (defined $h->{VERSION}?$h->{VERSION}:"");
-#            my $arch    = (defined $h->{ARCH}?$h->{ARCH}:"");
-#            my $rel     = (defined $h->{REL}?$h->{REL}:"");
-#                           
-#            print "          Assigned to product: $product $version $arch $rel\n";
-#        }
-    }
-}
-
-print $t->draw() if not defined($verbose);
-
-if ( ! defined $disable && ! defined $enable &&
-     ! $disableStaging && ! $enableStaging)
-{
-    # not do any action, display was enough
-    exit 0;
-}
-
-if ( $count == 0 )
-{
-    die __(sprintf("no catalog named %s\n", $name));
-}
-elsif ( $count == 1 )
-{
-    # we are lucky, only one
-    if ( $disable || $enable )
-    {
-        $arrayIdx = $idnumbers[0];
-        my $selcat = $cataloginfo_int[$arrayIdx];
-        print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
-        if ( $bool )
-        {
-            push @tomirror, $selcat;
-        }
-        else
-        {
-            my $i = 0;
-            for my $element (@tomirror)
+    my $product = ($enableByProduct ne "") ? $enableByProduct : $disableByProduct;
+    my $switch = ($enableByProduct ne "") ? 1 : 0;
+    my $dataIds = {};
+    my $catalogs = {};
+    my $productdatafile = $xmldir."/productdata.xml";
+    my $productcatfile = $xmldir."/productcatalogs.xml";
+    my $pdata_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
+    $pdata_parser->parse($productdatafile, 
+        sub {
+            my $pdata = shift;
+            if ( $pdata->{PRODUCT} eq $product )
             {
-                if ( $selcat->{CATALOGID} eq $element->{CATALOGID} )
+                $dataIds->{$pdata->{PRODUCTDATAID}} = 1;
+            }
+        }
+    );
+
+    if ( keys %{$dataIds} > 0 )
+    {
+        my $pcat_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
+        $pcat_parser->parse($productcatfile, 
+            sub {
+                my $pcat = shift;
+                if ( exists $dataIds->{$pcat->{PRODUCTDATAID}} && $dataIds->{$pcat->{PRODUCTDATAID}} == 1 )
                 {
-                    splice @tomirror, $i, 1;
-                    last;
+                    $catalogs->{$pcat->{CATALOGID}} = 1;
                 }
-                $i++
+            }
+        );
+    }
+    @cataloginfo_int = sort { lc($a->{NAME}) cmp lc($b->{NAME}) || lc($a->{TARGET}) cmp lc($b->{TARGET})} @cataloginfo_int;
+    foreach my $v ( @cataloginfo_int )
+    {
+        if ( exists $catalogs->{$v->{CATALOGID}} && $catalogs->{$v->{CATALOGID}} == 1 )
+        {
+            if ( switchMirrorFlags ( \@tomirror, $v, $switch ) )
+            {
+                printf(__("Catalog [%s %s] %s.\n"), 
+                        $v->{NAME}, $v->{TARGET} ? $v->{TARGET}:"" ,
+                        $switch ? "enabled":"disabled");
             }
         }
     }
-    elsif( $disableStaging || $enableStaging)
+}
+else 
+{
+
+    # hash to associate order with id.
+    my @idnumbers;
+    my $arrayIdx=0;
+    #my $sth = $dbh->prepare($sql);
+    #$sth->execute();
+
+    my $t = new Text::ASCIITable;
+    $t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"), __("Staging"));
+
+    @cataloginfo_int = sort { lc($a->{NAME}) cmp lc($b->{NAME}) || lc($a->{TARGET}) cmp lc($b->{TARGET})} @cataloginfo_int;
+    foreach my $v ( @cataloginfo_int )
     {
-        my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[0]);
-        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+        my $catId = $v->{CATALOGID};
+        my $catName = $v->{NAME};
+        my $catTarget = (defined $v->{TARGET}) ?  $v->{TARGET} : "--";
+        my $catType = $v->{CATALOGTYPE};
+        my $catDesc = $v->{DESCRIPTION};
+        my $catMA   = ( defined $mirrorable_idx->{$catId} && $mirrorable_idx->{$catId} == 1 ) ?
+                      __("Yes") : __("No") ;
+        my $mirrorEnabled = ( defined $mirror_hash->{$catId} && $mirror_hash->{$catId} == 1 ) ? __("Yes") : __("No");
+        my $catStaging = $v->{STAGING} || 'N';
+        if ( (! defined $name || $name eq $catName ) &&
+             (! defined $target || $target eq $catTarget ) &&
+             (! $mirrorable || $catMA eq "Yes" ) &&
+             (! $domirror   || $mirrorEnabled eq "Yes" ) )
+        {
+            $count++;
+            push(@idnumbers, $arrayIdx );
+            $t->addRow(  $mirrorEnabled, $count, $catType, $catName, $catTarget, 
+                        $catDesc,  $catMA, (( $catStaging eq "Y" ) ? __("Yes") : __("No")));
+        }
+        $arrayIdx++;
+      
+    }
+
+    print $t->draw() if not defined($verbose);
+
+    if ( ! defined $disable && ! defined $enable &&
+         ! $disableStaging && ! $enableStaging)
+    {
+        # not do any action, display was enough
         exit 0;
     }
-}
-else
-{
-    print __(sprintf("Select catalog number (or all) to change,  (1-". $count.",a) :") );
 
-    my $answer = <STDIN>;
-    chomp($answer);
-  
-    if (lc($answer) eq __("a"))
+    if ( $count == 0 )
     {
-        if ( $disable || $enable )
-        {
-            foreach my $idx (@idnumbers)
-            {
-                my $selcat = $cataloginfo_int[$idx];
-                print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
-                if ( $bool )
-                {
-                    push @tomirror, $selcat;
-                }
-                else
-                {
-                    my $i = 0;
-                    for my $element (@tomirror)
-                    {
-                        if ( $selcat->{CATALOGID} eq $element->{CATALOGID} )
-                        {
-                            splice @tomirror, $i, 1;
-                            last;
-                        }
-                        $i++
-                    }
-                }
-            }
-        }
-        elsif( $disableStaging || $enableStaging)
-        {   
-            my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, name => $name, target => $target);
-            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
-            exit 0;
-        }
+        die __(sprintf("no catalog named %s\n", $name));
     }
-    elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
+    elsif ( $count == 1 )
     {
-        my $number = int($answer);
-
+        # we are lucky, only one
         if ( $disable || $enable )
         {
-            $arrayIdx = $idnumbers[$number-1];
+            $arrayIdx = $idnumbers[0];
             my $selcat = $cataloginfo_int[$arrayIdx];
             print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
-            if ( $bool )
-            {
-                push @tomirror, $selcat;
-            }
-            else
-            {
-                my $i = 0;
-                for my $element (@tomirror)
-                {
-                    if ( $selcat->{CATALOGID} eq $element->{CATALOGID} )
-                    {
-                        splice @tomirror, $i, 1;
-                        last;
-                    }
-                    $i++
-                }
-            }
+            switchMirrorFlags( \@tomirror, $selcat, $bool );
         }
         elsif( $disableStaging || $enableStaging)
         {
-            my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[$number-1]);
+            my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[0]);
             print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
             exit 0;
         }
     }
     else
     {
-        print __("canceled.\n");
+        print __(sprintf("Select catalog number (or all) to change,  (1-". $count.",a) :") );
+
+        my $answer = <STDIN>;
+        chomp($answer);
+      
+        if (lc($answer) eq __("a"))
+        {
+            if ( $disable || $enable )
+            {
+                foreach my $idx (@idnumbers)
+                {
+                    my $selcat = $cataloginfo_int[$idx];
+                    print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
+                    switchMirrorFlags( \@tomirror, $selcat, $bool );
+                }
+            }
+            elsif( $disableStaging || $enableStaging)
+            {   
+                my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, name => $name, target => $target);
+                print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+                exit 0;
+            }
+        }
+        elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
+        {
+            my $number = int($answer);
+
+            if ( $disable || $enable )
+            {
+                $arrayIdx = $idnumbers[$number-1];
+                my $selcat = $cataloginfo_int[$arrayIdx];
+                print sprintf(__("%s %s Catalog(s) %s.\n"), $selcat->{NAME}, $selcat->{TARGET}, ($bool?__("enabled"):__("disabled")) );
+                switchMirrorFlags( \@tomirror, $selcat, $bool );
+            }
+            elsif( $disableStaging || $enableStaging)
+            {
+                my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[$number-1]);
+                print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+                exit 0;
+            }
+        }
+        else
+        {
+            print __("canceled.\n");
+        }
     }
 }
 
@@ -497,6 +468,35 @@ $writer->end();
 $output->close();
 
 exit 0;
+
+sub switchMirrorFlags
+{
+    my ( $tomirror, $cataloginfo, $switch ) = @_;
+    my $i = 0;
+    for my $element (@tomirror)
+    {
+        if ( $cataloginfo->{CATALOGID} eq $element->{CATALOGID} )
+        {
+            if ( $switch )
+            {
+                # already present nothing to do here
+                return 0;
+            }
+            else
+            {
+                splice @{$tomirror}, $i, 1;
+                return 1;
+            }
+        }
+        $i++
+    }
+    if ( $switch )
+    {
+        push @{$tomirror}, $cataloginfo;
+        return 1;
+    }
+    return 0;
+}
 
 #
 # Manpage
