@@ -33,7 +33,8 @@ TODO (SMT11):
 - enhance setup-custom-catalogs to allow configuration of repositories
   of type NU .
 
-
+- fix smt-db: add "cpw" to help() and check chown of smt.conf (may make trouble with
+              smt user). 
  
 
 Nice-To-Have but not so important
