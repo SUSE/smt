@@ -3,22 +3,6 @@ TODO (SMT11):
 
 - use new installation.xml and test it according to bnc #377154
 
-- yast2-smt: check if /etc/zypp/credentials.d/NCCcredentials file
-             exists. If not, display and error message and advise 
-             the user to register the system first. 
-
-             From Stano:
-             Well, it can then assume that the system is not registered, suggest 
-             registraation. But for all offline scenarios, it has to be able to 
-             create the file itself.
-
-- yast2-smt: check the permissions of /etc/zypp/credentials.d/NCCcredentials
-             the user "smt" needs read access to this file.
-             Not sure if we want to do a chown smt.root ... or set
-             a ACL to allow smt to read this file.
-             Maybe first try to set a ACL, if this does not work, change the
-             owner.
-
 - STAGING:
   If staging is enabled for a catalogs, find out all products for which this 
   catalog is used. Find all catalogs for these products and create symlinks 
@@ -88,6 +72,20 @@ DONE:
 - Add Yum.pm, which mirror the headers/ dir and then call RpmMd.pm
   This is more straight forward then doing everything in RpmMd.pm 
 
+- yast2-smt: Checking if /etc/zypp/credentials.d/NCCcredentials file
+             exists. If it doesn't user is offered to run registration,
+             create the file off-line (using registration API) or
+             skip it (FATE #305540).
+
+- yast2-smt: Checking the permissions of /etc/zypp/credentials.d/NCCcredentials
+             the user defined in LOCAL->smtUser needs read access to this file.
+             At first trying to use ACL, then chown + chmod if it fails
+             (FATE #305540).
+
+- yast2-smt: New "Plugged world" icon (FATE #306264).
+
+- yast2-smt: Added UI interface to handle catalogs states (mirroring, staging)
+             (FATE #304491).
 
 Rejected:
 =========
