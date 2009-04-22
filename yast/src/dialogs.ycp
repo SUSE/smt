@@ -163,6 +163,7 @@
 
     term CatalogsTableContent () {
 	return `VBox (
+	    `Left (`ReplacePoint (`id (`catalogs_filter), `Empty())),
 	    `Table (
 		`id (`catalogs_table),
 		`opt (`hstretch, `vstretch),
@@ -714,7 +715,17 @@ Enter your SMT server URL in the following format: http:://server.name/
 
     map <string, map <string, any> > catalogs_info = $[];
 
-    void RedrawCatalogsTable () {
+    integer current_filter_level = -1;
+
+    void RedrawCatalogsTable (list <string> catalogs_filters) {
+	y2milestone ("Filter used: %1", catalogs_filters);
+
+	string catalog_filter = nil;
+	if (size (catalogs_filters) > 0 && catalogs_filters[size(catalogs_filters)-1]:"" == "")
+	    catalogs_filters = remove (catalogs_filters, size(catalogs_filters)-1);
+	if (size (catalogs_filters) > 0)
+	    catalog_filter = mergestring (catalogs_filters, "-");
+
 	catalogs_info = $[];
 
 	// busy message
@@ -729,9 +740,38 @@ Enter your SMT server URL in the following format: http:://server.name/
 	boolean mirroring = nil;
 	boolean staging = nil;
 
+	// Constructing the Filter UI
+	// $[0:["openSUSE", "SLE", ...], 1:["11.1", "SDK", ...], ...]
+	map <integer, list <string> > filter_items = $[];
+	integer max_filter_item = -1;
+
 	list <term> items = maplist (map <string, string> one_catalog, catalogs_states, {
+	    if (catalog_filter != nil) {
+		if (regexpmatch (one_catalog["name"]:"", "^" + catalog_filter + "-")) {
+		    // ...
+		} else if (one_catalog["name"]:"" == catalog_filter) {
+		    // ...
+		} else {
+		    return nil;
+		}
+	    }
+
 	    mirroring	= (one_catalog["mirroring"]:"" == "Yes");
 	    staging	= (one_catalog["staging"]:"" == "Yes");
+
+	    integer splititem_nr = -1;
+	    // "SLE10-SDK-Updates" -> ["SLE10", "SDK", "Updates"]
+	    foreach (string one_item, splitstring (one_catalog["name"]:"", "-"), {
+		splititem_nr = splititem_nr + 1;
+
+		if (! haskey (filter_items, splititem_nr))
+		    filter_items[splititem_nr] = [];
+		if (! contains (filter_items[splititem_nr]:[], one_item))
+		    filter_items[splititem_nr] = add (filter_items[splititem_nr]:[], one_item);
+	    });
+
+	    if (splititem_nr > max_filter_item)
+		max_filter_item = splititem_nr;
 
 	    // used later in Handle* function
 	    catalogs_info[one_catalog["id"]:""] = $[
@@ -752,15 +792,59 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    );
 	});
 
+	items = filter (term item, items, {
+	    return item != nil;
+	});
+
+	integer current_item_nr = -1;
+	term filter_UI_items = `HBox();
+	boolean more_items_lasttime = false;
+
+	while (current_item_nr <= max_filter_item) {
+	    current_item_nr = current_item_nr + 1;
+	    integer nrofitems = size (filter_items[current_item_nr]:[]);
+	    list <term> fitems = maplist (string one_fitem, filter_items[current_item_nr]:[], {
+		return `item (`id (one_fitem), one_fitem, (nrofitems == 1));
+	    });
+
+	    // internal error
+	    if (size (fitems) < 1) break;
+
+	    // Add another filter level UI
+	    filter_UI_items = add (filter_UI_items,
+		`ComboBox (`id (sformat ("catalogs_filter_%1", current_item_nr)), `opt (`notify),
+		    // Part of a complex catalogs filter, ComboBox label
+		    // %1 is replaced with a filter level number (1 ... n)
+		    sformat (_("Filter &%1"), current_item_nr + 1),
+		    prepend (
+			fitems,
+			// Part of a complex catalogs filter, Item: (List) All (Catalogs)
+			`item (`id (""), _("All"))
+		    )
+		)
+	    );
+
+	    // More items to choose from, finish
+	    if (size (fitems) > 1) break;
+	}
+
 	if (items == nil) items = [];
 
 	if (uio == true) UI::CloseDialog();
+
+	if (filter_UI_items == nil || size (filter_UI_items) == 0) {
+	    UI::ReplaceWidget (`id (`catalogs_filter),
+		`ComboBox (`id (`empty_filter), _("F&ilter"), []));
+	    UI::ChangeWidget (`id (`empty_filter), `Enabled, false);
+	} else {
+	    UI::ReplaceWidget (`id (`catalogs_filter), filter_UI_items);
+	}
 
 	UI::ChangeWidget (`id (`catalogs_table), `Items, items);
     }
 
     void InitCatalogsTableDialog (string id) {
-	RedrawCatalogsTable();
+	RedrawCatalogsTable ([]);
     }
 
 //    void StoreCatalogsTableDialog (string id, map event) {
@@ -893,7 +977,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	);
 
 	// bussy message
-	boolean uio = UI::OpenDialog (`Label ("Toggling catalog state..."));
+	boolean uio = (boolean) UI::OpenDialog (`Label ("Toggling catalog state..."));
 
 	boolean success = ((integer) SCR::Execute (.target.bash, cmd) == 0);
 	y2milestone ("Running >%1< returned: %2", cmd, success);
@@ -922,10 +1006,33 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    ToggleCatalog (current_id, "mirroring");
 	} else if (event_id == `toggle_staging) {
 	    ToggleCatalog (current_id, "staging");
+	} else if (is (event_id, string) && regexpmatch (tostring (event_id), "^catalogs_filter_")) {
+	    integer filter_id = tointeger (regexpsub (tostring (event_id), "^catalogs_filter_(.*)", "\\1"));
+
+	    if (filter_id == nil) {
+		y2error ("Unable to get filter ID from %1", filter_id);
+		return nil;
+	    }
+
+	    list <string> filters = [];
+	    integer current_fid = -1;
+	    string filter_item = nil;
+
+	    while (current_fid < filter_id) {
+		current_fid = current_fid + 1;
+		filter_item = (string) UI::QueryWidget (`id (sformat ("catalogs_filter_%1", current_fid)), `Value);
+		if (filter_item == nil)
+		    break;
+		filters = add (filters, filter_item);
+	    }
+
+	    if (filters == nil) filters = [];
+	    RedrawCatalogsTable (filters);
 	}
 
 	// Catalog have been toggled, re-focus the table again
 	UI::SetFocus (`id (`catalogs_table));
+	return nil;
     }
 
     map <string, string> nrdays_to_names = $[

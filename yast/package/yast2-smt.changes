@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Apr 22 16:16:16 CEST 2009 - locilka@suse.cz
+
+- Added possibility to filter catalogs listed for changing their
+  statuses (mirroring, staging).
+
+-------------------------------------------------------------------
 Tue Apr 14 11:06:44 CEST 2009 - locilka@suse.cz
 
 - Using LOCAL->smtUser instead of DB->user user in SMT commands
