@@ -4,6 +4,8 @@ Fri Apr 24 12:12:12 CEST 2009 - locilka@suse.cz
 - Some tabs are available after the first YaST SMT run only. SMT
   has to be configured, configuration written and SMT synced
   (BNC #496886).
+- Added new SCR Agent to handle .smt.staging (FATE #306251).
+- Added new Patches tab (FATE #306251).
 
 -------------------------------------------------------------------
 Wed Apr 22 16:16:16 CEST 2009 - locilka@suse.cz

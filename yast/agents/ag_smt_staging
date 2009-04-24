@@ -1,0 +1,103 @@
+#!/usr/bin/perl -w
+
+#
+# File:
+#   ag_smt_staging
+#
+# Authors:
+#   Lukas Ocilka <locilka@suse.cz>
+#
+# Description:
+#   SCR agent for catalogs staging management
+#
+# $Id$
+#
+
+
+use lib "/usr/lib/YaST2/agents_non_y2";
+use ycp;
+use strict;
+
+use SMT::Utils;
+use SMT::CLI;
+# FIXME? Is is needed? For debugging?
+use Data::Dumper;
+
+if(! SMT::Utils::dropPrivileges()) {
+    y2error ('Unable to drop privileges. Aborting...');
+    ycp::Return (undef);
+    exit 1;
+}
+
+# Initialize SMT
+my ($cfg, $dbh, $nuri) = SMT::CLI::init();
+
+sub UnsupportedPath ($$) {
+    my ($command_ref, $path_ref) = (shift, shift);
+
+    y2error ('Unsupported path: '.$$path_ref.' for command '.$$command_ref);
+    ycp::Return (undef);
+}
+
+# FIXME: move to a module, share ...
+sub GetAllCatalogs ($) {
+    my $dbh = shift;
+
+    my $sth = $dbh->prepare("SELECT * FROM Catalogs where DOMIRROR='Y' and STAGING='Y'");
+    $sth->execute();
+    my @ret;
+    while (my $row = $sth->fetchrow_hashref()) {
+	$row->{TARGET} = "" if (not defined $row->{TARGET});
+	push @ret, $row;
+    }
+    return \@ret;
+}
+
+# the main() loop
+while (<STDIN>) {
+    my ($command, $path, $arg) = ycp::ParseCommand ($_);
+    # FIXME: remove this line
+    y2milestone ('Command:'.Dumper($command).' Path:'.Dumper($path).' Arg:'.Dumper($arg));
+
+    # For Perl-only testing
+    if ($path =~ /^\.smt\.staging/) {
+	$path =~ s/^\.smt\.staging//;
+    }
+
+    if ($command eq 'Read') {
+	if ($path eq '.catalogs') {
+	    ycp::Return (GetAllCatalogs ($dbh));
+	} elsif ($path eq '.patches') {
+	    # FIXME
+	    ycp::Return ([]);
+	} else {
+	    UnsupportedPath (\$command, \$path);
+	}
+    } elsif ($command eq 'Write') {
+	if ($path eq '.patch.testing') {
+	    # FIXME
+	    return ycp::Return (1);
+	} elsif ($path eq '.patches') {
+	    # FIXME
+	    return ycp::Return (1);
+	} else {
+	    UnsupportedPath (\$command, \$path);
+	}
+    } elsif ($command eq 'Execute') {
+	if ($path eq '.production') {
+	    # FIXME
+	    return ycp::Return (1);
+	} else {
+	    UnsupportedPath (\$command, \$path);
+	}
+    # destructor
+    } elsif ($command eq 'result') {
+	y2milestone ('Bye bye...');
+    } else {
+	y2error ('Unknown SCR command: '.$command);
+	ycp::Return (undef);
+    }
+}
+# the main() loop
+
+exit 0;

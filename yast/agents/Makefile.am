@@ -1,6 +1,6 @@
 # Makefile.am for smt/agents
 
-agent_SCRIPTS =
+agent_SCRIPTS = ag_smt_staging
 
 scrconf_DATA = $(wildcard *.scr)
 

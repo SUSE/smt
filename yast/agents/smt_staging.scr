@@ -1,0 +1,15 @@
+/**
+ * File:	smt_staging.scr
+ *
+ * Summary:	Agent for managing/filtering patches in mirrored catalogs.
+ *
+ * Authors:	Lukas Ocilka <locilka@suse.cz>
+ *
+ * Example:
+ *   Read (.smt.staging.catalogs)
+ *   Read (.smt.staging.patches)
+ */
+
+.smt.staging
+
+`ag_smt_staging ()

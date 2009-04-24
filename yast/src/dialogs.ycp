@@ -161,6 +161,28 @@
 	);
     }
 
+    term PatchesTableContent () {
+	return `VBox (
+	    `Left (`ReplacePoint (`id (`catalogs_rp), `ComboBox (`id (`catalogs), _("&Catalog Name"), []))),
+	    `Table (
+		`id (`patches_table),
+		`opt (`hstretch, `vstretch),
+		`header (
+		    _("Name"),
+		    _("Testing")
+		),
+		[]
+	    ),
+	    `Left (`Label (_("Patch Details"))),
+	    `VSquash (`MinHeight (3, `RichText (`id (`patch_details), ""))),
+	    `Left (
+		`HBox (
+		    `PushButton (`id (`toggle_testing), _("&Enable for Testing"))
+		)
+	    )
+	);
+    }
+
     term CatalogsTableContent () {
 	return `VBox (
 	    `Left (`ReplacePoint (`id (`catalogs_filter), `Empty())),
@@ -845,6 +867,32 @@ Enter your SMT server URL in the following format: http:://server.name/
 
     void InitCatalogsTableDialog (string id) {
 	RedrawCatalogsTable ([]);
+    }
+
+    void InitPatchesTableDialog (string id) {
+	list <map> catalogs = (list <map>) SCR::Read (.smt.staging.catalogs);
+
+	list <term> items = maplist (map one_catalog, catalogs, {
+	    return `item (`id (one_catalog["CATALOGID"]:""),
+		(one_catalog["TARGET"]:"" != "" ?
+		    // Catalog Name (Target)
+		    sformat (_("%1 (%2)"), one_catalog["NAME"]:"", one_catalog["TARGET"]:"")
+		    :
+		    one_catalog["NAME"]:""
+		)
+	    );
+	});
+
+	items = sort (term x, term y, items, {
+	    return toupper(x[1]:"") < toupper (y[1]:"");
+	});
+
+	if (items == nil) items = [];
+
+	UI::ReplaceWidget (
+	    `id (`catalogs_rp),
+	    `Left (`ComboBox (`id (`catalogs), `opt(`notify), _("&Catalog Name"), items))
+	);
     }
 
 //    void StoreCatalogsTableDialog (string id, map event) {

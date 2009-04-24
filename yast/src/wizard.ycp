@@ -68,7 +68,15 @@
 		"custom_widget"	: `Empty(),
 		"handle"	: HandleCatalogsTableDialog,
 		"init"		: InitCatalogsTableDialog,
-		// "store"		: StoreCatalogsTableDialog,
+		// "store"	: StoreCatalogsTableDialog,
+	    ],
+	    "patches" : $[
+		"widget"	: `custom,
+		"help"		: HELPS["patches"]:"",
+		"custom_widget"	: `Empty(),
+		//"handle"	: HandlePatchesTableDialog,
+		"init"		: InitPatchesTableDialog,
+		// "store"	: StorePatchesTableDialog,
 	    ],
     ];
 
@@ -95,6 +103,12 @@
 		"header"	: _("Catalogs"),
 		"widget_names"	: ["catalogs"],
 		"contents"	: CatalogsTableContent(),
+	    ],
+	    "patches" : $[
+		// TRANSLATORS: tab-header
+		"header"	: _("Patches"),
+		"widget_names"	: ["patches"],
+		"contents"	: PatchesTableContent(),
 	    ],
 	    "scheduled_downloads" : $[
 		// TRANSLATORS: tab-header
@@ -136,7 +150,7 @@
 		    ["credentials", "database", "scheduled_downloads"]
 		    :
 		    // Not a first run, all tabs are available
-		    ["credentials", "database", "catalogs", "scheduled_downloads"]
+		    ["credentials", "database", "catalogs", "patches", "scheduled_downloads"]
 		),
 		"tabs"		: tabs,
 		"widget_descr"	: widgets,
