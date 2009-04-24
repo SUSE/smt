@@ -129,7 +129,15 @@
     any MainSequence() {
 	map <string, any> wd = $[
 	    "tab" : CWMTab::CreateWidget ($[
-		"tab_order"	: ["credentials", "database", "catalogs", "scheduled_downloads"],
+		// This is the first YaST SMT run
+		"tab_order"	: (SMTData::IsFirstRun() ?
+		    // BNC #496886: SMT has to be configured before any
+		    // catalogs/repositories or patches or ... can be configured
+		    ["credentials", "database", "scheduled_downloads"]
+		    :
+		    // Not a first run, all tabs are available
+		    ["credentials", "database", "catalogs", "scheduled_downloads"]
+		),
 		"tabs"		: tabs,
 		"widget_descr"	: widgets,
 		"initial_tab"	: "credentials",
