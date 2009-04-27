@@ -169,7 +169,10 @@
 		`opt (`hstretch, `vstretch),
 		`header (
 		    _("Name"),
-		    _("Testing")
+		    _("Version"),
+		    _("Type"),
+		    _("Testing"),
+		    _("Summary")
 		),
 		[]
 	    ),
@@ -177,7 +180,9 @@
 	    `VSquash (`MinHeight (3, `RichText (`id (`patch_details), ""))),
 	    `Left (
 		`HBox (
-		    `PushButton (`id (`toggle_testing), _("&Enable for Testing"))
+		    `PushButton (`id (`toggle_testing), _("&Enable Patch for Testing")),
+		    `HStretch(),
+		    `PushButton (`id (`production_snapshot), _("&Create Production Snapshot"))
 		)
 	    )
 	);
@@ -869,6 +874,40 @@ Enter your SMT server URL in the following format: http:://server.name/
 	RedrawCatalogsTable ([]);
     }
 
+    void RedrawPatchesTable () {
+	// The currently selected catalog
+	string selected_catalog = (string) UI::QueryWidget (`id (`catalogs), `Value);
+
+	list <term> items = [];
+
+	if (selected_catalog == nil || selected_catalog == "") {
+	    y2warning ("No catalog selected");
+	} else {
+	    list <map> patches = (list <map>) SCR::Read (.smt.staging.patches, selected_catalog);
+	    if (patches == nil) {
+		y2error ("Cannot get patches for catalog: %1", selected_catalog);
+	    } else {
+		items = maplist (map one_patch, patches, {
+		    return `item (
+			`id (one_patch["name"]:""),
+			one_patch["name"]:"",
+			tostring (one_patch["version"]:0),
+			one_patch["type"]:"",
+			// FIXME: ... yes/no according to filters
+			yes,
+			one_patch["title"]:""
+		    );
+		});
+	    }
+	}
+
+	boolean enable_buttons = (size (items) > 0);
+
+	UI::ChangeWidget (`id (`patches_table), `Items, items);
+	UI::ChangeWidget (`id (`toggle_testing), `Enabled, enable_buttons);
+	UI::ChangeWidget (`id (`production_snapshot), `Enabled, enable_buttons);
+    }
+
     void InitPatchesTableDialog (string id) {
 	list <map> catalogs = (list <map>) SCR::Read (.smt.staging.catalogs);
 
@@ -893,6 +932,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    `id (`catalogs_rp),
 	    `Left (`ComboBox (`id (`catalogs), `opt(`notify), _("&Catalog Name"), items))
 	);
+
+	RedrawPatchesTable();
     }
 
 //    void StoreCatalogsTableDialog (string id, map event) {

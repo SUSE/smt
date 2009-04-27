@@ -20,6 +20,9 @@ use strict;
 
 use SMT::Utils;
 use SMT::CLI;
+use SMT::Filter;
+use SMT::Parser::RpmMdPatches;
+
 # FIXME? Is is needed? For debugging?
 use Data::Dumper;
 
@@ -53,6 +56,52 @@ sub GetAllCatalogs ($) {
     return \@ret;
 }
 
+# Filters and Patches Handles
+my $fph = {};
+
+# Returns patches with their status
+sub GetAllPatches ($$) {
+    my $dbh = shift;
+    my $catalogid = shift || "";
+
+    if ($catalogid eq "") {
+	y2error ("Catalog ID must be defined");
+	return undef;
+    }
+
+    y2milestone ("Handling CatalogID: ".$catalogid);
+
+    my @ret;
+    if (not defined $fph->{$catalogid}) {
+	# New empty Handler
+	$fph->{$catalogid} = {};
+
+	# New Filter handler
+	$fph->{$catalogid}->{'fh'} = SMT::Filter->new();
+	$fph->{$catalogid}->{'fh'}->load($dbh, $catalogid);
+
+	# FIXME: !!! Hardcoded path !!!
+	my $repo_path = '/srv/www/htdocs/repo/$RCE/SLE11-SDK-Updates/sle-11-i586';
+
+	# The following lines should go to a module in SMT package
+	# New Patches-Parser handler
+	$fph->{$catalogid}->{'ph'} = SMT::Parser::RpmMdPatches->new();
+	$fph->{$catalogid}->{'ph'}->resource($repo_path);
+	$fph->{$catalogid}->{'ph'}->parse("repodata/updateinfo.xml.gz", "repodata/patches.xml");
+
+	my $patchname = "";
+	my $tmppatch = {};
+
+	foreach my $patchname (keys %{$fph->{$catalogid}->{'ph'}->{'PATCHES'}}) {
+	    $tmppatch = $fph->{$catalogid}->{'ph'}->{'PATCHES'}->{$patchname};
+	    $tmppatch->{'name'} = $patchname;
+	    push @ret, $tmppatch;
+	}
+    }
+
+    return \@ret;
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -69,7 +118,7 @@ while (<STDIN>) {
 	    ycp::Return (GetAllCatalogs ($dbh));
 	} elsif ($path eq '.patches') {
 	    # FIXME
-	    ycp::Return ([]);
+	    ycp::Return (GetAllPatches ($dbh, $arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}

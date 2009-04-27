@@ -2,6 +2,9 @@
 Mon Apr 27 10:03:29 CEST 2009 - locilka@suse.cz
 
 - New YaST SMT icons (polished FATE #306264).
+- Added .smt.staging.patches path handler, some pieces are still
+  hard-coded.
+- Adapted UI to the current .smt.staging.patches SCR output.
 
 -------------------------------------------------------------------
 Fri Apr 24 12:12:12 CEST 2009 - locilka@suse.cz
