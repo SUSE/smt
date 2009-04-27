@@ -88,15 +88,16 @@ sub GetAllPatches ($$) {
 	$fph->{$catalogid}->{'ph'} = SMT::Parser::RpmMdPatches->new();
 	$fph->{$catalogid}->{'ph'}->resource($repo_path);
 	$fph->{$catalogid}->{'ph'}->parse("repodata/updateinfo.xml.gz", "repodata/patches.xml");
+    }
 
-	my $patchname = "";
-	my $tmppatch = {};
+    my $patchname = "";
+    my $tmppatch = {};
 
-	foreach my $patchname (keys %{$fph->{$catalogid}->{'ph'}->{'PATCHES'}}) {
-	    $tmppatch = $fph->{$catalogid}->{'ph'}->{'PATCHES'}->{$patchname};
-	    $tmppatch->{'name'} = $patchname;
-	    push @ret, $tmppatch;
-	}
+    foreach my $patchid (keys %{$fph->{$catalogid}->{'ph'}->{'PATCHES'}}) {
+	$tmppatch = $fph->{$catalogid}->{'ph'}->{'PATCHES'}->{$patchid};
+	$tmppatch->{'patchid'} = $patchid;
+	$tmppatch->{'filtered'} = ($fph->{$catalogid}->{'fh'}->matches($tmppatch) ? 'true':'false');
+	push @ret, $tmppatch;
     }
 
     return \@ret;

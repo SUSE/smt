@@ -889,12 +889,12 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    } else {
 		items = maplist (map one_patch, patches, {
 		    return `item (
-			`id (one_patch["name"]:""),
+			`id (one_patch["patchid"]:""),
 			one_patch["name"]:"",
 			tostring (one_patch["version"]:0),
 			one_patch["type"]:"",
-			// FIXME: ... yes/no according to filters
-			yes,
+			// Filtered -> Testing==no
+			(one_patch["filtered"]:false ? no:yes),
 			one_patch["title"]:""
 		    );
 		});
