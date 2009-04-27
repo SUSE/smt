@@ -285,6 +285,8 @@ sub handle_end_tag
             $self->{CURRENT}->{PATCHVER} ne "")
         {
             my $str = $self->{CURRENT}->{PATCHID}."-".$self->{CURRENT}->{PATCHVER};
+            $self->{PATCHES}->{$str}->{name} = $self->{CURRENT}->{PATCHID};
+            $self->{PATCHES}->{$str}->{version} = $self->{CURRENT}->{PATCHVER};
             $self->{PATCHES}->{$str}->{type} = $self->{CURRENT}->{PATCHTYPE};
             $self->{PATCHES}->{$str}->{title} = $self->{CURRENT}->{PATCHTITLE};
             $self->{PATCHES}->{$str}->{description} = $self->{CURRENT}->{PATCHDESCR};
