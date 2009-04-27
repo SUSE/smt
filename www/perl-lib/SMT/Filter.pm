@@ -57,6 +57,7 @@ use constant {
 
 sub is_whole_number { $_[0] =~ /^\d+$/ }
 
+=back
 
 =head1 METHODS
 
@@ -291,6 +292,7 @@ sub matches
 }
 
 =back
+
 =head1 NOTES
 
 This module is intended for filtering of patches. Can be extended to work also
