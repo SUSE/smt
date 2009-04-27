@@ -1,0 +1,1 @@
+alter table Clients add COLUMN ID INT AUTO_INCREMENT UNIQUE KEY FIRST;

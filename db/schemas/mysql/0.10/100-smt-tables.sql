@@ -13,7 +13,8 @@ drop table if exists ClientSubscriptions;
 drop table if exists RepositoryContentData;
 
 
-create table Clients(GUID        CHAR(50) PRIMARY KEY,
+create table Clients(ID          INT AUTO_INCREMENT UNIQUE KEY,
+                     GUID        CHAR(50) PRIMARY KEY,
                      HOSTNAME    VARCHAR(100) DEFAULT '',
                      TARGET      VARCHAR(100),
                      DESCRIPTION VARCHAR(500) DEFAULT '',
