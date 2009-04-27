@@ -6,7 +6,17 @@
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
  * Example:
- *   Read (.smt.staging.catalogs)
+ *   // Returns list of catalog maps, one map for each catalog
+ *   Read (.smt.staging.catalogs) -> (list <map>) [
+ *     $["CATALOGID":"6df36d5532f9a85b362a93a55f8452c6adb72165",
+ *       "CATALOGTYPE":"zypp", "DESCRIPTION":"openSUSE-11.0-Updates",
+ *       "DOMIRROR":"Y", "EXTHOST":"http://download.opensuse.org",
+ *       "EXTURL":"http://download.opensuse.org/update/11.0",
+ *       "LOCALPATH":"RPMMD/openSUSE-11.0-Updates", "MIRRORABLE":"Y",
+ *       "NAME":"openSUSE-11.0-Updates", "SRC":"N", "STAGING":"Y", "TARGET":"
+ *     ],
+ *     ...
+ *   ]
  *   Read (.smt.staging.patches)
  */
 
