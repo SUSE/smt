@@ -61,7 +61,8 @@ create table MachineData(GUID          CHAR(50) NOT NULL,
                         );
 
 -- used for NU catalogs and single RPMMD sources
-create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY, 
+create table Catalogs(ID          INT AUTO_INCREMENT UNIQUE KEY,
+                      CATALOGID   CHAR(50) PRIMARY KEY,
                       NAME        VARCHAR(200) NOT NULL, 
                       DESCRIPTION VARCHAR(500), 
                       TARGET      VARCHAR(100),           -- null in case of single RPMMD source
@@ -75,6 +76,25 @@ create table Catalogs(CATALOGID   CHAR(50) PRIMARY KEY,
                       STAGING     CHAR(1) DEFAULT 'N',    -- N No  Y Yes
                       UNIQUE(NAME, TARGET)
                      );
+
+-- Package filters
+--
+-- One record represents a filter element. Filter elements referencing the same
+-- CATALOG_ID make up the whole filter.
+--
+-- TYPE is one of
+--   1 name exact
+--   2 name regex
+--   3 name-version exact (covers also patch ID)
+--   4 patch security level (patch only)
+--
+create table Filters(ID            INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                     CATALOG_ID    INT NOT NULL,
+                     TYPE          INT NOT NULL DEFAULT 1,
+                     VALUE         VARCHAR(255)
+                     -- FOREIGN KEY (CATALOG_ID) REFERENCES Catalogs(ID) ON DELETE CASCADE
+                     -- FOREIGN KEY (SUBCATALOG_ID) REFERENCES Subcatalogs(ID) ON DELETE CASCADE
+                    );
 
 
 -- copy of NNW_PRODUCT_DATA
