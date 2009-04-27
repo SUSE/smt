@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Apr 27 10:03:29 CEST 2009 - locilka@suse.cz
+
+- New YaST SMT icons (polished FATE #306264).
+
+-------------------------------------------------------------------
 Fri Apr 24 12:12:12 CEST 2009 - locilka@suse.cz
 
 - Some tabs are available after the first YaST SMT run only. SMT
