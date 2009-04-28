@@ -77,7 +77,7 @@ sub new
     $self->{FILTERS} = {};
     # whether there are any changes to save
     # default: true, since calling save() after constructing an empty Filter
-    # should result in cleaning up the filters for given repo
+    # should result in cleaning up the filters for give repo
     $self->{DIRTY} = 1;
 
     # set up logger
