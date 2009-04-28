@@ -25,8 +25,8 @@ SMT::Mirror::RpmMd - mirroring of a rpm metadata repository
 
   $mirror = SMT::Mirror::RpmMd->new();
   $mirror->uri( "http://repo.com/10.3" );
-  $mirror->localBaseDir("/srv/www/htdocs/repo/");
-  $mirror->localRepoDir("RPMMD/10.3/");
+  $mirror->localBasePath("/srv/www/htdocs/repo/");
+  $mirror->localRepoPath("RPMMD/10.3/");
 
   $mirror->mirror();
 

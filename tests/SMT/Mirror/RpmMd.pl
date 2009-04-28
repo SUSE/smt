@@ -15,6 +15,7 @@ print STDERR "Saving $url to $tempdir\n";
 
 $mirror = SMT::Mirror::RpmMd->new();
 $mirror->uri( $url );
+# FIXME mirrorTo does not exist
 ok($mirror->mirrorTo( $tempdir ) == 0, "should mirror ok");
 
 # last should have been a full mirror
