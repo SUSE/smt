@@ -71,11 +71,30 @@ Constructor.
 sub new
 {
     my $class = shift;
-    #my %opt   = @_;
+    my %opt   = @_;
     my $self  = {};
 
     $self->{FILTERS} = [];
     $self->{DIRTY} = 0;
+
+    # set up logger
+
+    $self->{VBLEVEL} = 0;
+    $self->{LOG} = undef;
+
+    if(exists $opt{vblevel} && defined $opt{vblevel})
+    {
+        $self->{VBLEVEL} = $opt{vblevel};
+    }
+
+    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    {
+        $self->{LOG} = $opt{log};
+    }
+    else
+    {
+        $self->{LOG} = SMT::Utils::openLog();
+    }
 
     bless($self, $class);
     return $self;
@@ -93,12 +112,20 @@ sub load
     my ($self, $dbh, $catalog) = @_;
 
     if (@{$self->{FILTERS}}) { $self->{FILTERS} = []; }
-    
-    my $query = "select Filters.type, Filters.value from Filters, Catalogs where Filters.CATALOG_ID = Catalogs.ID and Catalogs.CATALOGID = '$catalog'";
-    my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
-    foreach my $f (@{$array})
+
+    eval
+    {    
+        my $query = "select Filters.type, Filters.value from Filters, Catalogs where Filters.CATALOG_ID = Catalogs.ID and Catalogs.CATALOGID = '$catalog'";
+        my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
+        foreach my $f (@{$array})
+        {
+            push @{$self->{FILTERS}}, [$f->{type}, $f->{value}];
+        }
+    };
+
+    if ($@)
     {
-        push @{$self->{FILTERS}}, [$f->{type}, $f->{value}];
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$dbh->errstr, 0);
     }
 
     $self->{DIRTY} = 0;
@@ -128,23 +155,22 @@ sub save
             my $st = $dbh->prepare("delete from Filters where CATALOG_ID = ?");
             $st->bind_param(1, $cid, SQL_INTEGER);
             my $cnt = $st->execute;
-            
+
             print $st->{Statement}."\n";
             print "deleted $cnt rows\n";
-    
+
             $self->{DIRTY} = 0;
         };
-            
+
         if($@)
         {
-            print "dberr: ".$dbh->errstr;
-            #$r->log_error("DBERROR: ".$dbh->errstr);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$dbh->errstr, 0);
         }
 
         return;
     }
 
-    # TODO delte first and then add all the filters unconditionally, all in one transaction
+    # TODO delete first and then add all the filters unconditionally, all in one transaction
 
     # insert the filters one by one
     foreach my $f (@{$self->{FILTERS}})
@@ -169,17 +195,41 @@ sub save
                 $st->bind_param(3, $f->[1]); # value
                 my $cnt = $st->execute;
             }
-
-            #$r->log->info("STATEMENT: ".$st->{Statement}." Affected rows: $cnt");
         };
 
         if($@)
         {
-            print "dberr: ".$dbh->errstr;
-            #$r->log_error("DBERROR: ".$dbh->errstr);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$dbh->errstr, 0);
         }
     }
     $self->{DIRTY} = 0;
+}
+
+=item add()
+
+Whether a filter element of given $type and $value already exists in this filter
+object.
+
+Example:
+$found = $filter->contains(TYPE_NAME_EXACT, 'kernel'); 
+
+=cut
+sub contains
+{
+    my ($self, $type, $value) = @_;
+
+    # check for duplicate
+    foreach my $f (@{$self->{FILTERS}})
+    {
+        # is there a way to compare two arrays more ellegantly?
+        if ($f->[0] == $type &&
+            $f->[1] eq $value)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 =item add()
@@ -193,34 +243,17 @@ sub add
     my $type = shift;
     my $value = shift;
 
-# todo validate args
-
     if (defined $type && is_whole_number($type))
     {
-        my @newfilter = ($type, $value);
-        my $dupe = 0;
-
-        # check for duplicate
-        foreach my $f (@{$self->{FILTERS}})
+        if (!$self->contains($type, $value))
         {
-            # is there a way to compare two array more ellegantly?
-            if ($f->[0] == $newfilter[0] &&
-                $f->[1] eq $newfilter[1])
-            {
-                $dupe = 1;
-                last;
-            }
-        }
-
-        if (!$dupe)
-        {
-            push @{$self->{FILTERS}}, \@newfilter;
+            push @{$self->{FILTERS}}, [$type, $value];
             $self->{DIRTY} = 1;
         }
     }
     else
     {
-#        die 'invalid arguments'; or log
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid arguments. Expecting a (number, string), got ($type, $value).");
     }
 }
 
@@ -289,6 +322,17 @@ sub matches
     }
 
     return 0;
+}
+
+=item vblevel()
+Get or set log verbosity level.
+=cut
+sub vblevel
+{
+    my $self = shift;
+    if (@_) { $self->{VBLEVEL} = shift }
+
+    return $self->{VBLEVEL};
 }
 
 =back
