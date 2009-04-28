@@ -87,6 +87,10 @@ DONE:
 - yast2-smt: Added UI interface to handle catalogs states (mirroring, staging)
              (FATE #304491).
 
+- yast2-smt: Added UI to handle patches 'testing/ignored' states
+
+- yast2-smt: Added SCR agent to handle staging
+
 Rejected:
 =========
 
