@@ -74,7 +74,7 @@
 		"widget"	: `custom,
 		"help"		: HELPS["patches"]:"",
 		"custom_widget"	: `Empty(),
-		//"handle"	: HandlePatchesTableDialog,
+		"handle"	: HandlePatchesTableDialog,
 		"init"		: InitPatchesTableDialog,
 		// "store"	: StorePatchesTableDialog,
 	    ],
