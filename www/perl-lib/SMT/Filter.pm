@@ -74,8 +74,11 @@ sub new
     my %opt   = @_;
     my $self  = {};
 
-    $self->{FILTERS} = [];
-    $self->{DIRTY} = 0;
+    $self->{FILTERS} = {};
+    # whether there are any changes to save
+    # default: true, since calling save() after constructing an empty Filter
+    # should result in cleaning up the filters for given repo
+    $self->{DIRTY} = 1;
 
     # set up logger
 
@@ -106,12 +109,14 @@ Loads filters for give $catalogid from database.
 
 Discards any existing filters before loading.
 
+Returns false in case of error, true otherwise.
+
 =cut
 sub load
 {
     my ($self, $dbh, $catalog) = @_;
 
-    if (@{$self->{FILTERS}}) { $self->{FILTERS} = []; }
+    if (%{$self->{FILTERS}}) { $self->{FILTERS} = {}; }
 
     eval
     {
@@ -119,21 +124,25 @@ sub load
         my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
         foreach my $f (@{$array})
         {
-            push @{$self->{FILTERS}}, [$f->{type}, $f->{value}];
+            $self->{FILTERS}->{"$f->{type}$f->{value}"} = [$f->{type}, $f->{value}];
         }
     };
 
     if ($@)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$dbh->errstr, 0);
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$@, 0);
+        return 0;
     }
 
     $self->{DIRTY} = 0;
+    return 1;
 }
 
 =item save()
 
 Saves current filter set to database.
+
+Returns false in case of error, true otherwise.
 
 =cut
 sub save
@@ -145,10 +154,27 @@ sub save
     my $query = "select ID from Catalogs where CATALOGID = '$catalog'";
     my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
     my $cid = $array->[0]->{ID};
-    print "got catalog id '$cid'\n";
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "got catalog id '$cid'", 0);
+
+    my $dbfilters = {};
+    eval
+    {
+        my $query = "select ID, TYPE, VALUE from Filters where CATALOG_ID = '$cid'";
+        my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
+        foreach my $f (@{$array})
+        {
+            $dbfilters->{"$f->{TYPE}$f->{VALUE}"} = [$f->{TYPE}, $f->{VALUE}, $f->{ID}];
+        }
+    };
+    if ($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$@, 0);
+        return 0;
+    }
 
     # no filters - remove all records for this catalog
-    if (@{$self->{FILTERS}} == 0)
+    if (!%{$self->{FILTERS}})
     {
         eval
         {
@@ -156,53 +182,67 @@ sub save
             $st->bind_param(1, $cid, SQL_INTEGER);
             my $cnt = $st->execute;
 
-            print $st->{Statement}."\n";
-            print "deleted $cnt rows\n";
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$st->{Statement}\nRemoved all ($cnt) filters.", 0);
 
             $self->{DIRTY} = 0;
         };
 
         if($@)
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$dbh->errstr, 0);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$@, 0);
+            return 0;
         }
 
-        return;
+        return 1;
     }
 
-    # TODO delete first and then add all the filters unconditionally, all in one transaction
-
     # insert the filters one by one
-    foreach my $f (@{$self->{FILTERS}})
+    foreach my $f (values %{$self->{FILTERS}})
     {
-        eval
+        # if the filter is not already in the DB
+        if (!(%$dbfilters && defined $dbfilters->{"$f->[0]$f->[1]"}))
         {
-            # check for duplicate record
-            my $st = $dbh->prepare("select ID from Filters where CATALOG_ID = ? and TYPE = ? and VALUE = ?");
-            $st->bind_param(1, $cid, SQL_INTEGER);
-            $st->bind_param(2, $f->[0], SQL_INTEGER);
-            $st->bind_param(3, $f->[1]); # value
-            $st->execute(); 
-            my $row = $st->fetchrow_arrayref();
-
-            if (!defined $row)
+            eval
             {
                 # insert new subfilter
-                $st = $dbh->prepare(
+                my $st = $dbh->prepare(
                     "insert into Filters (CATALOG_ID, TYPE, VALUE) values(?,?,?)");
                 $st->bind_param(1, $cid, SQL_INTEGER);
                 $st->bind_param(2, $f->[0], SQL_INTEGER);
                 $st->bind_param(3, $f->[1]); # value
                 my $cnt = $st->execute;
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$@, 0);
+                return 0;
             }
-        };
-
-        if($@)
-        {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$dbh->errstr, 0);
         }
     }
+
+    # delete those which are not here anymore
+    foreach my $f (values %$dbfilters)
+    {
+        # if the filter is not in our list 
+        if (!$self->contains($f->[0], $f->[1]))
+        {
+            eval
+            {
+                # delete it from DB
+                my $st = $dbh->prepare("delete from Filters where ID = ?");
+                $st->bind_param(1, $f->[2], SQL_INTEGER);
+                my $cnt = $st->execute;
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "DBERROR: ".$@, 0);
+                return 0;
+            }
+        }
+    }
+
     $self->{DIRTY} = 0;
+    return 1;
 }
 
 =item add()
@@ -217,44 +257,60 @@ $found = $filter->contains(TYPE_NAME_EXACT, 'kernel');
 sub contains
 {
     my ($self, $type, $value) = @_;
-
-    # check for duplicate
-    foreach my $f (@{$self->{FILTERS}})
-    {
-        # is there a way to compare two arrays more ellegantly?
-        if ($f->[0] == $type &&
-            $f->[1] eq $value)
-        {
-            return 1;
-        }
-    }
-
-    return 0;
+    return defined $self->{FILTERS}->{"$type$value"};
 }
 
 =item add()
 
 Adds a filter element (subfilter) to current filter. Does not affect database.
 
+Returns true if the subfilter already existed or was successfully added, false otherwise.
 =cut
 sub add
 {
-    my $self = shift;
-    my $type = shift;
-    my $value = shift;
+    my ($self, $type, $value) = @_;
 
     if (defined $type && is_whole_number($type))
     {
         if (!$self->contains($type, $value))
         {
-            push @{$self->{FILTERS}}, [$type, $value];
+            $self->{FILTERS}->{"$type$value"} = [$type, $value];
             $self->{DIRTY} = 1;
         }
+        return 1;
     }
     else
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid arguments. Expecting a (number, string), got ($type, $value).");
     }
+}
+
+=item remove()
+
+Removes a filter element (subfilter) from current filter. Does not affect database.
+
+Returns true if the subfilter existed and was successfully removed, false otherwise.
+
+=cut
+sub remove
+{
+    my ($self, $type, $value) = @_;
+
+    if (defined $type && is_whole_number($type))
+    {
+        if (defined delete($self->{FILTERS}->{"$type$value"}))
+        {
+          $self->{DIRTY} = 1;
+          return 1;
+        }
+    }
+    else
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+            "Invalid arguments. Expecting a (number, string), got ($type, $value).");
+    }
+    
+    return 0;
 }
 
 =item clean()
@@ -265,10 +321,10 @@ Removes all filters. Does not affect database.
 sub clean
 {
     my $self = shift;
-    if ($self->{FILTERS})
+    if (%{$self->{FILTERS}})
     {
         $self->{DIRTY} = 1;
-        $self->{FILTERS} = [];
+        $self->{FILTERS} = {};
     }
 }
 
@@ -297,7 +353,7 @@ sub matches
 {
     my ($self, $patch) = @_;
 
-    foreach my $f (@{$self->{FILTERS}})
+    foreach my $f (values %{$self->{FILTERS}})
     {
         if ($f->[0] == TYPE_NAME_VERSION
             && $f->[1] eq "$patch->{name}-$patch->{version}")
