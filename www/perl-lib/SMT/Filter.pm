@@ -79,7 +79,7 @@ sub new
 
     # set up logger
 
-    $self->{VBLEVEL} = 0;
+    $self->{VBLEVEL} = LOG_ERROR;
     $self->{LOG} = undef;
 
     if(exists $opt{vblevel} && defined $opt{vblevel})
@@ -114,7 +114,7 @@ sub load
     if (@{$self->{FILTERS}}) { $self->{FILTERS} = []; }
 
     eval
-    {    
+    {
         my $query = "select Filters.type, Filters.value from Filters, Catalogs where Filters.CATALOG_ID = Catalogs.ID and Catalogs.CATALOGID = '$catalog'";
         my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
         foreach my $f (@{$array})
