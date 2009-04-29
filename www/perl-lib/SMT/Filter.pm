@@ -149,7 +149,7 @@ sub save
 {
     my ($self, $dbh, $catalog) = @_;
 
-    if (!$self->{DIRTY}) { return }
+    if (!$self->{DIRTY}) { return 1; }
     
     my $query = "select ID from Catalogs where CATALOGID = '$catalog'";
     my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
