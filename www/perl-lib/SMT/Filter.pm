@@ -16,18 +16,21 @@ SMT::Filter - reads/stores patch filters for catalogs and tells whether
 
   # to get a filter object
   my $filter = SMT::Filter->new();
-  my $filter = SMT::Filte->load($dbh, $catalogid);
+  my $success = SMT::Filte->load($dbh, $catalogid);
 
   # to store into db
-  $filter->save($dbh, $catalogid);
+  my $success = $filter->save($dbh, $catalogid);
 
   # to edit existing filter
   $filter->add($filtertype, $value);
   $filter->remove($filtertype, $value);
-  $filter->removeall();
+  $filter->clean();
 
   # the core subroutine :O)
-  $filter->matches($patchdata);
+  $bool = $filter->matches($patchdata);
+  
+  # check if the filter element is already there
+  $bool = $filter->contains($filtertype, $value);
 
 =head1 DESCRIPTION
 
@@ -47,7 +50,9 @@ TYPE_NAME_VERSION
     matches if the patch ID ("$name-$version") is the same as the filter value 
 TYPE_SECURITY_LEVEL 
     matches if the patch category string is the same as the filter value
+=back
 =cut
+
 use constant {
     TYPE_NAME_EXACT     => 1,
     TYPE_NAME_REGEX     => 2,
@@ -57,16 +62,27 @@ use constant {
 
 sub is_whole_number { $_[0] =~ /^\d+$/ }
 
-=back
-
 =head1 METHODS
 
 =over 4
 
-=item new()
+=item new([%params])
 
 Constructor.
 
+Arguments are an anonymous hash array of parameters:
+
+=over 4
+
+=item vblevel <level>
+
+Set the verbose level. 
+
+=item log
+
+Logfile handle
+
+=back
 =cut
 sub new
 {
@@ -103,9 +119,10 @@ sub new
     return $self;
 }
 
-=item load()
+=item load($dbh, $repoid)
 
-Loads filters for give $catalogid from database.
+Loads filters for given $repoid from database using the $dbh DB connection
+handle.
 
 Discards any existing filters before loading.
 
@@ -138,9 +155,10 @@ sub load
     return 1;
 }
 
-=item save()
+=item save($dbh, $repoid)
 
-Saves current filter set to database.
+Saves current filter set to database and associates them to given $repoid.
+The $dbh argument is the DB connection handle.
 
 Returns false in case of error, true otherwise.
 
@@ -328,7 +346,7 @@ sub clean
     }
 }
 
-=item match()
+=item matches()
 
 Whether given patch matches this filter.
 
@@ -338,12 +356,12 @@ $patch =
 {
     name => 'dbus-1',
     version => '99',
-    category => 'security',
+    type => 'security',          # patch category (aka patch level)
     title => 'patch for dbus',   # not used in match() so far
     description => 'loong one'   # not used in match() so far
 };
 
-$filter->match($patch);
+$filter->matches($patch);
 
 Returns 0 if no subfilter matches the patch data, 1 if any
 subfilter matches.
@@ -361,7 +379,7 @@ sub matches
             return 1;
         }
         elsif ($f->[0] == TYPE_SECURITY_LEVEL
-            && $f->[1] eq "$patch->{category}")
+            && $f->[1] eq "$patch->{type}")
         {
             return 1;
         }
