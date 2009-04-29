@@ -4,6 +4,7 @@ Wed Apr 29 14:14:14 CEST 2009 - locilka@suse.cz
 - Extended staging SCR agent to check filters by category.
 - Extended UI to inform user about category filter used and thus
   being unable to change the patch status.
+- Added support for adjusting additional category-based filters.
 
 -------------------------------------------------------------------
 Tue Apr 28 15:15:15 CEST 2009 - locilka@suse.cz

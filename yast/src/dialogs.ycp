@@ -192,6 +192,7 @@
 		`HBox (
 		    `PushButton (`id (`toggle_testing), _("&Toggle Patch Testing")),
 		    `HStretch(),
+		    `PushButton (`id (`additional_filters), _("&Additional Filters...")),
 		    `PushButton (`id (`production_snapshot), _("&Create Production Snapshot"))
 		)
 	    )
@@ -953,6 +954,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 
 	// No patch listed, no patch selected
 	if (sel_patchid == nil || sel_patchid == "") {
+	    // informative message
+	    UI::ChangeWidget (`id (`patch_details), `Value, _("There are no patches available in this repository."));
 	    return;
 	}
 
@@ -987,6 +990,10 @@ Enter your SMT server URL in the following format: http:://server.name/
 	// The currently selected catalog
 	selected_catalog = (string) UI::QueryWidget (`id (`catalogs), `Value);
 
+	// The same current item should be selected after redrawing
+	string current_item = (string) UI::QueryWidget (`id (`patches_table), `CurrentItem);
+	boolean ci_is_listed = false;
+
 	list <term> items = [];
 
 	if (selected_catalog == nil || selected_catalog == "") {
@@ -1000,6 +1007,10 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    } else {
 		items = maplist (map one_patch, patches, {
 		    current_patches[one_patch["patchid"]:""] = one_patch;
+
+		    // To select the same current_item again
+		    if (! ci_is_listed && one_patch["patchid"]:"" == current_item)
+			ci_is_listed = true;
 
 		    return `item (
 			`id (one_patch["patchid"]:""),
@@ -1019,6 +1030,9 @@ Enter your SMT server URL in the following format: http:://server.name/
 	UI::ChangeWidget (`id (`patches_table), `Items, items);
 	UI::ChangeWidget (`id (`toggle_testing), `Enabled, enable_buttons);
 	UI::ChangeWidget (`id (`production_snapshot), `Enabled, enable_buttons);
+
+	if (ci_is_listed)
+	    UI::ChangeWidget (`id (`patches_table), `CurrentItem, current_item);
 
 	RedrawPatchesDetails();
     }
@@ -1049,6 +1063,60 @@ Enter your SMT server URL in the following format: http:://server.name/
 	);
 
 	RedrawPatchesTable();
+    }
+
+    void AdjustAdditionalFilters () {
+	// a mlti-selection-box label
+	string msb_label = _("Filter-Out All Patches of a Given Category");
+
+	UI::OpenDialog (`VBox (
+	    `MinWidth (size (msb_label), `MarginBox (
+		1,1, `VBox (
+		    `MultiSelectionBox (
+			`id (`category_filters),
+			msb_label,
+			[]
+		    )
+		)
+	    )),
+	    `ButtonBox (
+		`PushButton (`id (`ok), `opt (`okButton), Label::OKButton()),
+		`PushButton (`id (`cancel), `opt (`cancelButton), Label::CancelButton())
+	    )
+	));
+
+	list <term> items = maplist (string patch_type, string type_translated, patch_categories, {
+	    map query = $[
+		"type" : patch_type,
+		"catalogid" : selected_catalog,
+	    ];
+	    return `item (
+		`id (patch_type), type_translated,
+		(SCR::Read (.smt.staging.category_filter, query) == true)
+	    );
+	});
+
+	if (items != nil) {
+	    UI::ChangeWidget (`id (`category_filters), `Items, items);
+	}
+
+	any ret = UI::UserInput();
+	if (ret == `ok) {
+	    list <string> newly_active_filters =
+		(list <string>) UI::QueryWidget (`id (`category_filters), `SelectedItems);
+
+	    foreach (string patch_type, string type_translated, patch_categories, {
+		map command = $[
+		    "type" : patch_type,
+		    "catalogid" : selected_catalog,
+		    "status" : contains (newly_active_filters, patch_type),
+		];
+
+		SCR::Write (.smt.staging.category_filter, command);
+	    });
+	}
+
+	UI::CloseDialog();
     }
 
     void TogglePatchTesting () {
@@ -1102,6 +1170,9 @@ and thus its status cannot be changed in this dialog."));
 	    TogglePatchTesting();
 	// Selected another catalog
 	} else if (action == `catalogs) {
+	    RedrawPatchesTable();
+	} else if (action == `additional_filters) {
+	    AdjustAdditionalFilters();
 	    RedrawPatchesTable();
 	// Initializing CWM
 	} else if (action == "_cwm_tab_wakeup" || action == `abort || action == `next || action == `back) {

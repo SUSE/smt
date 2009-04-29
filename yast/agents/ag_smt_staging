@@ -207,6 +207,33 @@ sub ChangePatchStatus ($) {
     return YCP_TRUE;
 }
 
+sub ChangeCategoryFilterStatus ($) {
+    my $params = shift;
+
+    my $catalogid	= $params->{'catalogid'}	|| '';
+    my $type		= $params->{'type'}		|| '';
+    my $new_status	= $params->{'status'}		|| '';
+
+    if ($catalogid eq '') {
+	y2error ("Parameter 'catalogid' not defined");
+	return YCP_FALSE;
+    }
+    if ($type eq '') {
+	y2error ("Parameter 'type' not defined");
+	return YCP_FALSE;
+    }
+
+    LoadCatalogData($catalogid);
+
+    # true -> filter is required
+    if ($new_status) {
+	$fph->{$catalogid}->{'fh'}->add(SMT::Filter::TYPE_SECURITY_LEVEL, $type);
+    # false -> remove filter
+    } else {
+	$fph->{$catalogid}->{'fh'}->remove(SMT::Filter::TYPE_SECURITY_LEVEL, $type);
+    }
+}
+
 sub GetPatchStatus ($) {
     my $params = shift;
 
@@ -299,6 +326,8 @@ while (<STDIN>) {
 	    ycp::Return (ChangePatchStatus ($arg));
 	} elsif ($path eq '.patches') {
 	    ycp::Return (WritePatchFilters());
+	} elsif ($path eq '.category_filter') {
+	    ycp::Return (ChangeCategoryFilterStatus ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}
