@@ -5,6 +5,7 @@ Wed Apr 29 14:14:14 CEST 2009 - locilka@suse.cz
 - Extended UI to inform user about category filter used and thus
   being unable to change the patch status.
 - Added support for adjusting additional category-based filters.
+- Using [Cancel]/[OK] instead of [Abort]/[Finish].
 
 -------------------------------------------------------------------
 Tue Apr 28 15:15:15 CEST 2009 - locilka@suse.cz

@@ -169,8 +169,10 @@
 	    contents,
 	    "",
 	    Label::BackButton (),
-	    Label::FinishButton()
+	    Label::OKButton()
 	);
+	Wizard::DisableBackButton();
+	Wizard::SetAbortButton(`abort, Label::CancelButton());
 
 	Wizard::SetTitleIcon("yast-smt");
 
@@ -231,6 +233,9 @@
 	];
 
 	Wizard::CreateDialog();
+	Wizard::DisableBackButton();
+	Wizard::SetAbortButton(`abort, Label::CancelButton());
+	Wizard::SetNextButton(`next, Label::OKButton());
 	Wizard::SetTitleIcon ("yast-smt");
 
 	any ret = Sequencer::Run(aliases, sequence);
@@ -268,8 +273,15 @@
 	];
 
 	Wizard::SetTitleIcon ("yast-smt");
+	Wizard::DisableBackButton();
+	Wizard::SetAbortButton(`abort, Label::CancelButton());
+	Wizard::SetNextButton(`next, Label::OKButton());
 
 	any ret = Sequencer::Run (aliases, sequence);
+
+	Wizard::RestoreNextButton();
+	Wizard::RestoreAbortButton();
+	Wizard::RestoreBackButton();
 
 	return ret;
     }

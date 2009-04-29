@@ -192,7 +192,7 @@
 		`HBox (
 		    `PushButton (`id (`toggle_testing), _("&Toggle Patch Testing")),
 		    `HStretch(),
-		    `PushButton (`id (`additional_filters), _("&Additional Filters...")),
+		    `PushButton (`id (`additional_filters), _("&Exclude from Testing...")),
 		    `PushButton (`id (`production_snapshot), _("&Create Production Snapshot"))
 		)
 	    )
@@ -1067,7 +1067,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 
     void AdjustAdditionalFilters () {
 	// a mlti-selection-box label
-	string msb_label = _("Filter-Out All Patches of a Given Category");
+	string msb_label = _("Exclude All Patches of Selected Categories");
 
 	UI::OpenDialog (`VBox (
 	    `MinWidth (size (msb_label), `MarginBox (

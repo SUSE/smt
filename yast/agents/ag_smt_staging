@@ -23,7 +23,7 @@ use SMT::CLI;
 use SMT::Filter;
 use SMT::Parser::RpmMdPatches;
 
-# FIXME? Is is needed? For debugging?
+# FIXME: for debugging only
 use Data::Dumper;
 
 if(! SMT::Utils::dropPrivileges()) {
@@ -207,6 +207,7 @@ sub ChangePatchStatus ($) {
     return YCP_TRUE;
 }
 
+# Changes status of a filter by category
 sub ChangeCategoryFilterStatus ($) {
     my $params = shift;
 
@@ -232,8 +233,11 @@ sub ChangeCategoryFilterStatus ($) {
     } else {
 	$fph->{$catalogid}->{'fh'}->remove(SMT::Filter::TYPE_SECURITY_LEVEL, $type);
     }
+
+    return YCP_TRUE;
 }
 
+# Returns whether patch is enabled in testing repository
 sub GetPatchStatus ($) {
     my $params = shift;
 
@@ -285,6 +289,7 @@ sub FilterExists ($) {
     return $fph->{$catalogid}->{'fh'}->contains($type, $filter);
 }
 
+# Returns whether filter by patch type exists (is active)
 sub SecurityLevelFilterExists ($) {
     my $arg = shift;
 
