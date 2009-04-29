@@ -33,6 +33,16 @@
 	"/usr/lib/SMT/bin/smt-gen-report"		: _("Generation of Reports"),
     ];
 
+    // patch categories translation map
+    map <string, string> patch_categories = $[
+	// Patch category
+	"recommended"	: _("Recommended"),
+	// Patch category
+	"optional"	: _("Optional"),
+	// Patch category
+	"security"	: _("Security"),
+    ];
+
     term CredentialsDialogContent () {
 	return `HBox (
 		`HStretch(),
@@ -909,20 +919,73 @@ Enter your SMT server URL in the following format: http:://server.name/
     map <string, map> current_patches = $[];
 
     /**
+     * Currently selected catalog.
+     * Variable is filled up when redrawing a table.
+     */
+    string selected_catalog = "";
+
+    /**
+     * Returns whether a patch is filtered by any current 'category' filter.
+     *
+     * @param string patch ID
+     * @return boolean whether filtered
+     */
+    boolean IsPatchFilteredByType (string patchid) {
+	map this_patch = $[
+	    "type" : current_patches[patchid, "type"]:"",
+	    "catalogid" : selected_catalog,
+	];
+
+	return ((boolean) SCR::Read (.smt.staging.category_filter, this_patch) == true);
+    }
+
+    string GetTranslatedPatchCategory (string patch_category) {
+	// Used as a fallback
+	// %1 is replaced with a patch category
+	return patch_categories[patch_category]:sformat(_("Patch category '%1'"), patch_category);
+    }
+
+    /**
      * Fills up details widget with the current patch description
      */
     void RedrawPatchesDetails () {
 	string sel_patchid = (string) UI::QueryWidget (`id (`patches_table), `CurrentItem);
 
+	// No patch listed, no patch selected
+	if (sel_patchid == nil || sel_patchid == "") {
+	    return;
+	}
+
+	// If a patch is filtered by the 'patch type' filter, we don't offer
+	// to change it...
+	boolean filtered_by_type = IsPatchFilteredByType (sel_patchid);
+	UI::ChangeWidget (`id (`toggle_testing), `Enabled, (filtered_by_type == false));
+
+	string patch_description = current_patches[sel_patchid,"description"]:"";
+
+	if (filtered_by_type)
+	    patch_description = sformat (
+		// %1 is replaced with a warning that patch is filtered-out by a category filter
+		// %2 is replaced with patch description
+		_("%1\n\n%2"),
+		sformat (
+		    // Connected with the text above, informs user about the current patch state
+		    // %1 is replaced with a translated patch type
+		    _("<b>Patch is filtered-out by patch-category filter (%1) and thus cannot be enabled in this dialog.</b>"),
+		    GetTranslatedPatchCategory (current_patches[sel_patchid, "type"]:"")
+		),
+		patch_description
+	);
+
 	UI::ChangeWidget (
 	    `id (`patch_details), `Value,
-	    FormatHTMLPatchDescription (current_patches[sel_patchid,"description"]:"")
+	    FormatHTMLPatchDescription (patch_description)
 	);
     }
 
     void RedrawPatchesTable () {
 	// The currently selected catalog
-	string selected_catalog = (string) UI::QueryWidget (`id (`catalogs), `Value);
+	selected_catalog = (string) UI::QueryWidget (`id (`catalogs), `Value);
 
 	list <term> items = [];
 
@@ -942,7 +1005,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 			`id (one_patch["patchid"]:""),
 			one_patch["name"]:"",
 			tostring (one_patch["version"]:0),
-			one_patch["type"]:"",
+			GetTranslatedPatchCategory (one_patch["type"]:""),
 			// Filtered -> Testing==no
 			(one_patch["filtered"]:false ? no:yes),
 			one_patch["title"]:""
@@ -990,7 +1053,14 @@ Enter your SMT server URL in the following format: http:://server.name/
 
     void TogglePatchTesting () {
 	string sel_patchid = (string) UI::QueryWidget (`id (`patches_table), `CurrentItem);
-	string current_catalog = (string) UI::QueryWidget (`id (`catalogs), `Value);
+
+	if (IsPatchFilteredByType (sel_patchid)) {
+	    // a pop-up message
+	    Report::Message (_("This patch is filtered-out by a category-based filter
+and thus its status cannot be changed in this dialog."));
+	    return;
+	}
+
 	boolean status = current_patches[sel_patchid,"filtered"]:false;
 
 	// Fallback
@@ -999,7 +1069,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	boolean success = (boolean) SCR::Write (
 	    .smt.staging.patch.testing,
 	    // Inverting the status: "filtered" used as new "status"
-	    $["catalogid" : current_catalog, "patchid" : sel_patchid, "status" : status]
+	    $["catalogid" : selected_catalog, "patchid" : sel_patchid, "status" : status]
 	);
 	if (success != true) {
 	    Report::Error (_("Unable to change the current patch status."));
@@ -1007,9 +1077,11 @@ Enter your SMT server URL in the following format: http:://server.name/
 
 	boolean current_status = (boolean) SCR::Read (
 	    .smt.staging.patch.testing,
-	    $["catalogid" : current_catalog, "patchid" : sel_patchid]
+	    $["catalogid" : selected_catalog, "patchid" : sel_patchid]
 	);
 
+	// update the cache
+	current_patches[sel_patchid,"filtered"] = (current_status == false);
 	UI::ChangeWidget (`id(`patches_table), `Item (sel_patchid, 3), (current_status == true ? yes:no));
     }
 
@@ -1032,7 +1104,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	} else if (action == `catalogs) {
 	    RedrawPatchesTable();
 	// Initializing CWM
-	} else if (action == "_cwm_tab_wakeup" || action == `abort) {
+	} else if (action == "_cwm_tab_wakeup" || action == `abort || action == `next || action == `back) {
 	    // nop
 	} else {
 	    y2error ("Unknown action: %1", action);

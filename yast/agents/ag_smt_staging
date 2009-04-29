@@ -107,12 +107,17 @@ sub LoadCatalogData ($) {
 	return 1;
     }
 
+    my $ret = 1;
+
     # New empty Handler
     $fph->{$catalogid} = {};
 
     # New Filter handler
     $fph->{$catalogid}->{'fh'} = SMT::Filter->new();
-    $fph->{$catalogid}->{'fh'}->load($dbh, $catalogid);
+    if (! $fph->{$catalogid}->{'fh'}->load($dbh, $catalogid)) {
+	y2error ("Cannot load filters for catalog: ".$catalogid);
+	$ret = 0;
+    }
 
     my $repo_path = $base_path.'/repo/'.GetCatalogPath($catalogid);
     y2internal ("Using local path: ".$repo_path);
@@ -123,7 +128,7 @@ sub LoadCatalogData ($) {
     $fph->{$catalogid}->{'ph'}->resource($repo_path);
     $fph->{$catalogid}->{'ph'}->parse("repodata/updateinfo.xml.gz", "repodata/patches.xml");
 
-    return 1;
+    return $ret;
 }
 
 # Goes through all the SMT::Filter handles and saves the data
@@ -131,12 +136,17 @@ sub LoadCatalogData ($) {
 sub WritePatchFilters () {
     my $catalogid = '';
 
+    my $ret = 1;
+
     foreach $catalogid (keys %{$fph}) {
 	y2milestone ("Calling save() on Catalog:".$catalogid);
-	$fph->{$catalogid}->{'fh'}->save($dbh, $catalogid);
+	if (! $fph->{$catalogid}->{'fh'}->save($dbh, $catalogid)) {
+	    y2error ("Error saving catalog ".$catalogid);
+	    $ret = 0;
+	}
     }
 
-    return YCP_TRUE;
+    return ($ret ? YCP_TRUE:YCP_FALSE);
 }
 
 # Returns patches with their status
@@ -219,6 +229,48 @@ sub GetPatchStatus ($) {
     return ($fph->{$catalogid}->{'fh'}->matches($this_patch) ? YCP_FALSE:YCP_TRUE);
 }
 
+# Returns whether a given filter exists
+#
+# $param->{'catalogid'} - hash to identyfy a catalog
+# $param->{'type'} - one of the well known types
+# $param->{'filter'} - filter string
+sub FilterExists ($) {
+    my $params = shift;
+
+    my $catalogid	= $params->{'catalogid'}	|| '';
+    my $type		= $params->{'type'}		|| '';
+    my $filter		= $params->{'filter'}		|| '';
+
+    if ($catalogid eq '') {
+	y2error ("Parameter 'catalogid' not defined");
+	return undef;
+    }
+    if ($type eq '') {
+	y2error ("Parameter 'type' not defined");
+	return undef;
+    }
+    if ($filter eq '') {
+	y2error ("Parameter 'filter' not defined");
+	return undef;
+    }
+
+    LoadCatalogData($catalogid);
+    return $fph->{$catalogid}->{'fh'}->contains($type, $filter);
+}
+
+sub SecurityLevelFilterExists ($) {
+    my $arg = shift;
+
+    my $func_args = {
+	'type' => SMT::Filter::TYPE_SECURITY_LEVEL,
+	# filter string is the security level of a patch
+	'filter' => (defined $arg->{'type'} ? $arg->{'type'}:''),
+	'catalogid' => (defined $arg->{'catalogid'} ? $arg->{'catalogid'}:''),
+    };
+
+    return (FilterExists ($func_args) ? YCP_TRUE:YCP_FALSE);
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -237,6 +289,8 @@ while (<STDIN>) {
 	    ycp::Return (GetAllPatches ($arg));
 	} elsif ($path eq '.patch.testing') {
 	    ycp::Return (GetPatchStatus ($arg));
+	} elsif ($path eq '.category_filter') {
+	    ycp::Return (SecurityLevelFilterExists ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}
