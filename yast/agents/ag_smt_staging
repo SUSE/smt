@@ -34,6 +34,7 @@ if(! SMT::Utils::dropPrivileges()) {
 
 # Initialize SMT
 my ($cfg, $dbh, $nuri) = SMT::CLI::init();
+my $base_path = $cfg->val("LOCAL", "MirrorTo") || '/srv/www/htdocs';
 
 use constant {
     YCP_TRUE	=> 'true',
@@ -58,6 +59,33 @@ sub GetAllCatalogs () {
 	push @ret, $row;
     }
     return \@ret;
+}
+
+# FIXME: move to a module, share ...
+sub GetCatalogPath ($) {
+    my $catalogid = shift || '';
+
+    if ($catalogid eq '') {
+	y2error ("CatalogID must be defined");
+	return undef;
+    }
+
+    my $catalogs = GetAllCatalogs();
+    my $catalog_local_path = '';
+
+    foreach my $catalog (@{$catalogs}) {
+	# Required catalog matches the current one
+	if (defined $catalog->{'CATALOGID'} && $catalog->{'CATALOGID'} eq $catalogid) {
+	    if (defined $catalog->{'LOCALPATH'}) {
+		$catalog_local_path = $catalog->{'LOCALPATH'};
+		last;
+	    } else {
+		y2error ("Catalog ".$catalogid." matches but no 'LOCALPATH' is defined");
+	    }
+	}
+    }
+
+    return $catalog_local_path;
 }
 
 # Filters and Patches Handles
@@ -86,8 +114,8 @@ sub LoadCatalogData ($) {
     $fph->{$catalogid}->{'fh'} = SMT::Filter->new();
     $fph->{$catalogid}->{'fh'}->load($dbh, $catalogid);
 
-    # FIXME: !!! Hardcoded path !!!
-    my $repo_path = '/srv/www/htdocs/repo/$RCE/SLE11-SDK-Updates/sle-11-i586';
+    my $repo_path = $base_path.'/repo/'.GetCatalogPath($catalogid);
+    y2internal ("Using local path: ".$repo_path);
 
     # The following lines should go to a module in SMT package
     # New Patches-Parser handler
@@ -104,7 +132,7 @@ sub WritePatchFilters () {
     my $catalogid = '';
 
     foreach $catalogid (keys %{$fph}) {
-	y2internal ("Calling save() on Catalog:".$catalogid);
+	y2milestone ("Calling save() on Catalog:".$catalogid);
 	$fph->{$catalogid}->{'fh'}->save($dbh, $catalogid);
     }
 
@@ -194,8 +222,8 @@ sub GetPatchStatus ($) {
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
-    # FIXME: remove this line
-    y2milestone ('Command:'.Dumper($command).' Path:'.Dumper($path).' Arg:'.Dumper($arg));
+    # FIXME: remove this line (just for debugging)
+    y2internal ('Command:'.Dumper($command).' Path:'.Dumper($path).' Arg:'.Dumper($arg));
 
     # For Perl-only testing, otherwise already removed
     if ($path =~ /^\.smt\.staging/) {

@@ -3,6 +3,8 @@ Tue Apr 28 15:15:15 CEST 2009 - locilka@suse.cz
 
 - Added displaying details for selected patch.
 - Added handling for enabling/disabling patches in testing repo.
+- Modified staging SCR agent to read repository local path from
+  configuration and database.
 
 -------------------------------------------------------------------
 Mon Apr 27 10:03:29 CEST 2009 - locilka@suse.cz
