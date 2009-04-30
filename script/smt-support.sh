@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SVER=0.0.5
-SDATE="2009 04 24"
+SVER=0.0.10
+SDATE="2009 04 29"
 
 ##############################################################################
 #  smt-support - Maintains supportconfig archives uploaded to the SMT server.
@@ -30,11 +30,15 @@ SDATE="2009 04 24"
 ##############################################################################
 
 CURRENT_SCRIPT=$(basename $0)
-INCOMING=/home/jrecord/smt-support/incoming
-UPLOAD_TARGET='https://secure-www.novell.com/upload?appname=supportconfig&file={tarball}'
-LOG=/home/jrecord/smt-support/${CURRENT_SCRIPT}.log
+SMT_UPLOAD_TARGET='https://secure-www.novell.com/upload?appname=supportconfig&file={tarball}'
+SMT_LOG=/var/log/smt/${CURRENT_SCRIPT}.log
+SMT_CONTACT_FILE=contact-smt-support.txt
+echo ${SMT_INCOMING:=/home/jrecord/smt-support/incoming} &> /dev/null
+UPLOAD_FILEPATH=""
 ACTION=0
+REPACKAGE=0
 RCODE=0
+unset SRNUM
 
 ##############################################################################
 # Local Functions
@@ -42,7 +46,7 @@ RCODE=0
 
 title() {
 	echo "============================================================================="
-	echo "                          SMT Utilities - Support"
+	echo "                      SMT Utilities - Archive Support"
 	echo "                           Script Version: $SVER"
 	echo "                          Script Date: $SDATE"
 	echo "============================================================================="
@@ -50,63 +54,166 @@ title() {
 }
 
 checkIncoming() {
-	echo "Directory: $INCOMING" | tee -a $LOG
-	if [ ! -d $INCOMING ]; then
+	logEntry Directory $SMT_INCOMING
+	if [ ! -d $SMT_INCOMING ]; then
 		showStatus "ERROR: Invalid or missing directory"
 		echo
 		exit 1;
 	fi
 }
 
-startLogEntry() {
-	echo "--------------------------" >> $LOG
-	echo "Date:      $(date)" | tee -a $LOG
+logEntry() {
+	printf "%-12s %s\n" "$1" "$2" | tee -a $SMT_LOG
 }
 
+logFileEntry() {
+	printf "%-12s %s\n" "$1" "$2" >> $SMT_LOG
+}
+
+startLogEntry() {
+	echo "--------------------------" >> $SMT_LOG
+	logEntry Date "$(date)"
+}
+
+
 showArchive() {
-	echo "Archive:   $ARCH_FILE" | tee -a $LOG
+	logEntry Archive $ARCH_FILE
 }
 
 # Requires checkIncoming
 countArchives() {
-	#ARCHS=$(\ls -l ${INCOMING}/*{t?z,gpg} 2>/dev/null | wc -l)
-	ARCHS=$(\ls -l ${INCOMING}/*t[b,g]z 2>/dev/null | wc -l)
-	echo "Archives:  $ARCHS" | tee -a $LOG
+	ARCHS=$(\ls -l ${SMT_INCOMING}/*t[b,g]z 2>/dev/null | wc -l)
+	logEntry Archives $ARCHS
 	return $ARCHS
 }
 
 showStatus() {
-	SVALUE=$1
-	echo "Status:    $1" | tee -a $LOG
+	logEntry Status "$1"
 }
 
 setAction() {
-	SACTION=$1
-	echo "Action:    $1" | tee -a $LOG
+	logEntry Action "$1"
 }
 
 listIncoming() {
+	echo
+	cd $SMT_INCOMING
+	\ls -1 *t[b,g]z 2>> $SMT_LOG | tee -a $SMT_LOG
+}
+
+validateSR() {
+	if [ $SRNUM ]; then
+		startLogEntry
+		INVALID=0
+		if [ ${#SRNUM} -eq 11 ]; then
+			if echo $SRNUM | grep '[[:alpha:]]' &> /dev/null; then
+				((INVALID++))
+			fi
+		else
+			((INVALID++))
+		fi
+		if [ $INVALID -gt 0 ]; then
+			showStatus "ERROR, Invalid SR number ($SRNUM); Must be 11 digits"
+			echo
+			exit 5
+		fi
+	fi
+}
+
+secureUpload() {
+	FILE=$1
+	UPLOAD_ARCHIVE=$(basename ${FILE})
+	unset UPLOAD_URL
+	UPLOAD_URL=$(echo $SMT_UPLOAD_TARGET | sed -e "s/{[Tt][Aa][Rr][Bb][Aa][Ll][Ll]}/${UPLOAD_ARCHIVE}/g")
+	logFileEntry ' [Command]' "curl -v -s -L -A SupportConfig -T \"${FILE}\" \"${UPLOAD_URL}\""
+	logFileEntry ' [Output]'
+#	curl -v -s -L -A SupportConfig -T "${FILE}" "${UPLOAD_URL}" >> $SMT_LOG 2>&1
+	RC=$?
+	echo >> $SMT_LOG
+	return $RC
+}
+
+# Requires checkIncoming
+# Sets ARCH_FILE
+repackageArchive() {
+	if [ $SRNUM ]; then
+		if echo $ARCH_FILE | grep 'nts_SR[[:digit:]]' &> /dev/null; then
+			NEW_ARCH_FILE=$(echo $ARCH_FILE | sed -e "s/_SR[[:digit:]]*_/_SR${SRNUM}_/")
+		else
+			NEW_ARCH_FILE=$(echo $ARCH_FILE | sed -e "s/nts_/nts_SR${SRNUM}_/")
+		fi
+	fi
+	logEntry Repackaging "${NEW_ARCH_FILE}"
+	cd $SMT_INCOMING
+	if echo $ARCH_FILE | grep 'tgz$' &> /dev/null; then
+		TARCMP='z'
+	else
+		TARCMP='j'
+	fi
+	logEntry ' Extracting' 'In Progress'
+	ARCH_DIR=$(echo $ARCH_FILE | sed -e 's/\.t[b,g]z$//')
+	NEW_ARCH_DIR=$(echo $NEW_ARCH_FILE | sed -e 's/\.t[b,g]z$//')
+#echo "ARCH_DIR = $ARCH_DIR"
+#echo "NEW_ARCH_DIR = $NEW_ARCH_DIR"
+	tar ${TARCMP}xf $ARCH_FILE &> /dev/null
+	if [ $? -gt 0 ]; then
+		showStatus "FAILED: ${INCOMING}/${ARCH_FILE}"
+		rm	-rf $ARCH_DIR
+	else
+		mv $ARCH_DIR $NEW_ARCH_DIR
+		if [ ! -d $NEW_ARCH_DIR ]; then
+			echo "No $NEW_ARCH_DIR"
+			exit 6
+		fi
+		LOGCONTACT="${NEW_ARCH_DIR}/${SMT_CONTACT_FILE}"
+		echo "Information Added by SMT Server" >> $LOGCONTACT
+		echo "Date:                 $(date)" >> $LOGCONTACT
+		echo "-------------------------------------------------------" >> $LOGCONTACT
+		test -n "$SRNUM"           && echo "Service Request:      $SRNUM" >> $LOGCONTACT
+		test -n "$CONTACT_NAME"    && echo "Contact Name:         $CONTACT_NAME" >> $LOGCONTACT
+		test -n "$CONTACT_COMPANY" && echo "Company Name:         $CONTACT_COMPANY" >> $LOGCONTACT
+		test -n "$CONTACT_STOREID" && echo "Store ID:             $CONTACT_STOREID" >> $LOGCONTACT
+		test -n "$CONTACT_TERMID"  && echo "Terminal ID:          $CONTACT_TERMID" >> $LOGCONTACT
+		test -n "$CONTACT_PHONE"   && echo "Contact Phone:        $CONTACT_PHONE" >> $LOGCONTACT
+		test -n "$CONTACT_EMAIL"   && echo "Contact EMail:        $CONTACT_EMAIL" >> $LOGCONTACT
+		printf "\n\n" >> $LOGCONTACT
+		logEntry ' Details' Added
+
+		logEntry ' Archiving' 'In Progress'
+		echo "tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_FILE}/*"
+		tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_DIR}/*
+		if [ $? -gt 0 ]; then
+			showStatus "FAILED: ${INCOMING}/${NEW_ARCH_DIR}"
+			ARCH_FILE="Failed"
+		else
+			rm -f ${ARCH_FILE}
+			test -f ${ARCH_FILE}.md5 && rm -f ${ARCH_FILE}.md5
+			rm -rf ${NEW_ARCH_DIR}
+			ARCH_FILE=$NEW_ARCH_FILE
+		fi
+	fi
+}
+
+showIncoming() {
 	startLogEntry
 	checkIncoming
 	setAction "List"
 	countArchives
-	echo
-	cd $INCOMING
-	#\ls -1 *{t?z,gpg} 2>> $LOG | tee -a $LOG
-	\ls -1 *t[b,g]z 2>> $LOG | tee -a $LOG
+	listIncoming
 }
 
 removeArchive() {
 	startLogEntry
 	checkIncoming
-	setAction "Remove"
+	setAction "Remove One"
 	showArchive
-	FILEPATH=${INCOMING}/${ARCH_FILE}
+	FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
 	if [ -e $FILEPATH ]; then
 		rm -f ${FILEPATH}*
 		showStatus Removed
 	else
 		showStatus "ERROR, File not found"
+		RCODE=2
 	fi
 }
 
@@ -115,43 +222,31 @@ emptyIncoming() {
 	checkIncoming
 	setAction "Remove All"
 	countArchives
-	if [ $? -gt 0 ]; then
-		rm -f $INCOMING/*
+	RC=$?
+	listIncoming
+	if [ $RC -gt 0 ]; then
+		rm -f ${SMT_INCOMING}/*
 		showStatus Removed
 	else
 		showStatus Empty
+		RCODE=1
 	fi
-}
-
-secureUpload() {
-	FILE=$1
-	BASEFILE=$(basename ${FILE})
-	unset UPLOAD_URL
-	UPLOAD_URL=$(echo $UPLOAD_TARGET | sed -e "s/{[Tt][Aa][Rr][Bb][Aa][Ll][Ll]}/${BASEFILE}/g")
-	echo "Command: curl -v -s -L -A SupportConfig -T \"${FILE}\" \"${UPLOAD_URL}\"" >> $LOG
-	echo "Output:" >> $LOG
-	curl -v -s -L -A SupportConfig -T "${FILE}" "${UPLOAD_URL}" >> $LOG 2>&1
-	RC=$?
-	echo >> $LOG
-	return $RC
 }
 
 uploadArchive() {
 	startLogEntry
 	checkIncoming
-	setAction "Upload"
+	setAction "Upload One"
 	showArchive
 	COMPLETED=0
-	FILEPATH=${INCOMING}/${ARCH_FILE}
-	if [ -e ${FILEPATH} ]; then
-		echo "Uploading: $FILEPATH" | tee -a $LOG
-		if [ -f ${FILEPATH}.md5 ]; then
-			secureUpload ${FILEPATH}.md5
-			if [ $? -eq 0 ]; then
-				((COMPLETED++))
-			fi
-		fi
-		secureUpload ${FILEPATH}
+	if (( REPACKAGE )); then
+		repackageArchive
+	fi
+	UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
+	if [ -e ${UPLOAD_FILEPATH} ]; then
+		logEntry Uploading $UPLOAD_FILEPATH
+		test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5
+		secureUpload ${UPLOAD_FILEPATH}
 		if [ $? -eq 0 ]; then
 			((COMPLETED++))
 		fi
@@ -161,7 +256,8 @@ uploadArchive() {
 			showStatus "Upload Incomplete"
 		fi
 	else
-		showStatus "ERROR, File not found"
+		showStatus "ERROR, File not found: $UPLOAD_FILEPATH"
+		RCODE=2
 	fi
 }
 
@@ -171,14 +267,14 @@ uploadIncoming() {
 	setAction "Upload All"
 	countArchives
 	if [ $? -gt 0 ]; then
-		cd $INCOMING
+		cd $SMT_INCOMING
 		COMPLETED=0
 		for ARCH_FILE in *t[b,g]z
 		do
-			FILEPATH=${INCOMING}/${ARCH_FILE}
-			echo "Uploading: $FILEPATH" | tee -a $LOG
-			test -f ${FILEPATH}.md5 && secureUpload ${FILEPATH}.md5
-			secureUpload ${FILEPATH}
+			UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
+			logEntry Uploading $UPLOAD_FILEPATH
+			test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5
+			secureUpload ${UPLOAD_FILEPATH}
 			if [ $? -eq 0 ]; then
 				((COMPLETED++))
 			fi
@@ -186,6 +282,7 @@ uploadIncoming() {
 		showStatus "Uploaded: $COMPLETED"
 	else
 		showStatus Empty
+		RCODE=1
 	fi
 }
 
@@ -195,13 +292,17 @@ show_help() {
 	echo "  -h This screen"
 	echo "  -i <directory>"
 	echo "     Sets the incoming directory where supportconfig archives are"
-	echo "     uploaded."
+	echo "     uploaded. Also set with SMT_INCOMING environment variable."
 	echo "  -s <SR number>"
 	echo "     The Novell Service Request 11 digit number"
 	echo "  -n <Name>"
-	echo "     Contact's first and last name"
+	echo "     Contact's first and last name in quotes"
 	echo "  -c <Company>"
 	echo "     Company name"
+	echo "  -d <id>"
+	echo "     Enter the store ID if applicable"
+	echo "  -t <id>"
+	echo "     Enter the Terminal ID if applicable"
 	echo "  -p <Phone>"
 	echo "     The contact phone number"
 	echo "  -e <Email>"
@@ -211,7 +312,8 @@ show_help() {
 	echo "     Deletes the specified archive"
 	echo "  -R Deletes all archives in the incoming directory"
 	echo "  -u <archive>"
-	echo "     Uploads the specified archive to Novell"
+	echo "     Uploads the specified archive to Novell, and repackages archive with"
+	echo "     contact information if options -sncpe are given"
 	echo "  -U Uploads all archives in the incoming directory to Novell"
 }
 
@@ -219,7 +321,7 @@ show_help() {
 # Main
 ##############################################################################
 
-while getopts :hlr:Ru:Ui:s:n:c:p:e: TMPOPT
+while getopts :hlr:Ru:Ui:s:n:c:p:e:d:t: TMPOPT
 do
 	case $TMPOPT in
 	\:)	clear; title
@@ -234,12 +336,14 @@ do
 				;;
 			esac
 			echo; show_help; echo; exit 0 ;;
-	i) INCOMING="$OPTARG" ;;
-	s) SRNUM="$OPTARG" ;;
-	n) CONTACT_NAME="$OPTARG" ;;
-	c) CONTACT_COMPANY="$OPTARG" ;;
-	p) CONTACT_PHONE="$OPTARG" ;;
-	e) CONTACT_EMAIL="$OPTARG" ;;
+	i) SMT_INCOMING="$OPTARG" ;;
+	s) REPACKAGE=1; SRNUM="$OPTARG" ;;
+	n) REPACKAGE=1; CONTACT_NAME="$OPTARG" ;;
+	c) REPACKAGE=1; CONTACT_COMPANY="$OPTARG" ;;
+	d) REPACKAGE=1; CONTACT_STOREID="$OPTARG" ;;
+	t) REPACKAGE=1; CONTACT_TERMID="$OPTARG" ;;
+	p) REPACKAGE=1; CONTACT_PHONE="$OPTARG" ;;
+	e) REPACKAGE=1; CONTACT_EMAIL="$OPTARG" ;;
 
 	h) ACTION=0 ;;
 	l) ACTION=1 ;;
@@ -252,9 +356,10 @@ done
 
 clear
 title
+validateSR
 case $ACTION in
 	0) show_help ;;
-	1) listIncoming ;;
+	1) showIncoming ;;
 	2) removeArchive ;;
 	3) emptyIncoming ;;
 	4) uploadArchive ;;
