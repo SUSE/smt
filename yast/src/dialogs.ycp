@@ -1211,6 +1211,8 @@ and thus its status cannot be changed in this dialog."));
 	// update the cache
 	current_patches[sel_patchid,"filtered"] = (current_status == false);
 	UI::ChangeWidget (`id(`patches_table), `Item (sel_patchid, 3), (current_status == true ? yes:no));
+	// focus the table again
+	UI::SetFocus (`id (`patches_table));
     }
 
     symbol HandleStagingTableDialog (string id, map event) {
