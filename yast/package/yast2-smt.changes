@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Apr 30 17:17:17 CEST 2009 - locilka@suse.cz
+
+- Using 'repository' instead of 'catalog'.
+- Added possibility to filter by patch category.
+- Using MenuButtons for Staging tab (Filters and Snapshots).
+
+-------------------------------------------------------------------
 Wed Apr 29 14:14:14 CEST 2009 - locilka@suse.cz
 
 - Extended staging SCR agent to check filters by category.

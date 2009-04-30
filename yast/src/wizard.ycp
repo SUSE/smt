@@ -64,19 +64,21 @@
 	    ]),
 	    "catalogs" : $[
 		"widget"	: `custom,
+		// FIXME: no help defined
 		"help"		: HELPS["catalogs"]:"",
 		"custom_widget"	: `Empty(),
 		"handle"	: HandleCatalogsTableDialog,
 		"init"		: InitCatalogsTableDialog,
 		// "store"	: StoreCatalogsTableDialog,
 	    ],
-	    "patches" : $[
+	    "staging" : $[
 		"widget"	: `custom,
-		"help"		: HELPS["patches"]:"",
+		// FIXME: no help defined
+		"help"		: HELPS["staging"]:"",
 		"custom_widget"	: `Empty(),
-		"handle"	: HandlePatchesTableDialog,
-		"init"		: InitPatchesTableDialog,
-		// "store"	: StorePatchesTableDialog,
+		"handle"	: HandleStagingTableDialog,
+		"init"		: InitStagingTableDialog,
+		// "store"	: StoreStagingTableDialog,
 	    ],
     ];
 
@@ -100,15 +102,15 @@
 	    ],
 	    "catalogs" : $[
 		// TRANSLATORS: tab-header
-		"header"	: _("Catalogs"),
+		"header"	: _("Repositories"),
 		"widget_names"	: ["catalogs"],
 		"contents"	: CatalogsTableContent(),
 	    ],
-	    "patches" : $[
+	    "staging" : $[
 		// TRANSLATORS: tab-header
-		"header"	: _("Patches"),
-		"widget_names"	: ["patches"],
-		"contents"	: PatchesTableContent(),
+		"header"	: _("Staging"),
+		"widget_names"	: ["staging"],
+		"contents"	: StagingTableContent(),
 	    ],
 	    "scheduled_downloads" : $[
 		// TRANSLATORS: tab-header
@@ -150,7 +152,7 @@
 		    ["credentials", "database", "scheduled_downloads"]
 		    :
 		    // Not a first run, all tabs are available
-		    ["credentials", "database", "catalogs", "patches", "scheduled_downloads"]
+		    ["credentials", "database", "catalogs", "staging", "scheduled_downloads"]
 		),
 		"tabs"		: tabs,
 		"widget_descr"	: widgets,
