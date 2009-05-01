@@ -1,30 +1,11 @@
 #!/bin/bash
 
-SVER=0.0.10
+SVER=0.0.11
 SDATE="2009 04 29"
 
 ##############################################################################
-#  smt-support - Maintains supportconfig archives uploaded to the SMT server.
-#  Copyright (C) 2009 Novell, Inc.
-#
-##############################################################################
-#
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; version 2 of the License.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#
-#  Authors/Contributors:
-#     Jason Record (jrecord@novell.com)
-#
+#  smt-support - Maintains incoming SMT server archives to be uploaded
+#                to Novell.
 ##############################################################################
 # Global Variables
 ##############################################################################
@@ -153,16 +134,14 @@ repackageArchive() {
 	logEntry ' Extracting' 'In Progress'
 	ARCH_DIR=$(echo $ARCH_FILE | sed -e 's/\.t[b,g]z$//')
 	NEW_ARCH_DIR=$(echo $NEW_ARCH_FILE | sed -e 's/\.t[b,g]z$//')
-#echo "ARCH_DIR = $ARCH_DIR"
-#echo "NEW_ARCH_DIR = $NEW_ARCH_DIR"
-	tar ${TARCMP}xf $ARCH_FILE &> /dev/null
+	tar ${TARCMP}xf $ARCH_FILE >> $SMT_LOG 2>&1
 	if [ $? -gt 0 ]; then
 		showStatus "FAILED: ${INCOMING}/${ARCH_FILE}"
 		rm	-rf $ARCH_DIR
 	else
-		mv $ARCH_DIR $NEW_ARCH_DIR
+		mv $ARCH_DIR $NEW_ARCH_DIR >> $SMT_LOG 2>&1
 		if [ ! -d $NEW_ARCH_DIR ]; then
-			echo "No $NEW_ARCH_DIR"
+			showStatus "ERROR, Directory conversion failed"
 			exit 6
 		fi
 		LOGCONTACT="${NEW_ARCH_DIR}/${SMT_CONTACT_FILE}"
@@ -180,12 +159,12 @@ repackageArchive() {
 		logEntry ' Details' Added
 
 		logEntry ' Archiving' 'In Progress'
-		echo "tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_FILE}/*"
-		tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_DIR}/*
+		tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_DIR}/* >> $SMT_LOG 2>&1
 		if [ $? -gt 0 ]; then
 			showStatus "FAILED: ${INCOMING}/${NEW_ARCH_DIR}"
 			ARCH_FILE="Failed"
 		else
+			md5sum ${NEW_ARCH_FILE} | cut -d' ' -f1 > ${NEW_ARCH_FILE}.md5
 			rm -f ${ARCH_FILE}
 			test -f ${ARCH_FILE}.md5 && rm -f ${ARCH_FILE}.md5
 			rm -rf ${NEW_ARCH_DIR}
