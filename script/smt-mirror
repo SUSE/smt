@@ -489,6 +489,20 @@ obsolete files and remove them.
 The B<--hardlink> paramter cause C<smt mirror> to search for files greater then I<size>. If it finds 
 duplicate files it creates hardlinks instead of holding two copies of the same file.
 
+Depending on the verbose level you will see the files which are checked in the output.
+Such a line starts with a flag to show the status of this file. 
+
+=item D download
+
+=item L hardlink
+
+=item C copy
+
+=item E error
+
+=item N new file
+
+=item U up-to-date
 
 =head1 OPTIONS
 
