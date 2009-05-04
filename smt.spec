@@ -76,6 +76,14 @@ Group:          Productivity/Networking/Web/Proxy
 %description -n res-signingkeys
 This package contain the signing key for RES.
 
+%package support
+License:        GPL v2 or later
+Summary:        SMT support proxy
+Group:          Productivity/Networking/Web/Proxy
+
+%description support
+This package contain proxy for support data
+
 
 %prep
 %setup -n %{name}-%{version}
@@ -178,12 +186,14 @@ exit 0
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/SMT/*.pm
 /usr/sbin/smt-*
+%exclude /usr/sbin/smt-support
 /usr/sbin/smt
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
+%exclude %{_mandir}/man1/smt-support.1.gz
 %doc %{_docdir}/smt/*
 
 
@@ -191,6 +201,11 @@ exit 0
 %defattr(-,root,root)
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/keys
 /srv/www/htdocs/repo/keys/res-signingkeys.key
+
+%files support
+%defattr(-,root,root)
+/usr/sbin/smt-support
+%doc %attr(644, root, root) %{_mandir}/man1/smt-support.1.gz
 
 
 %changelog
