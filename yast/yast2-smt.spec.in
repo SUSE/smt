@@ -66,6 +66,7 @@ done
 @moduledir@/SMT*.*
 @desktopdir@/smt.desktop
 @scrconfdir@/smt*.scr
+@execcompdir@/servers_non_y2/ag_*
 %doc @docdir@
 %dir /usr/share/YaST2/control
 /usr/share/YaST2/control/smt_control.xml
