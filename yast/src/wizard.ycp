@@ -64,7 +64,6 @@
 	    ]),
 	    "catalogs" : $[
 		"widget"	: `custom,
-		// FIXME: no help defined
 		"help"		: HELPS["catalogs"]:"",
 		"custom_widget"	: `Empty(),
 		"handle"	: HandleCatalogsTableDialog,
@@ -73,7 +72,6 @@
 	    ],
 	    "staging" : $[
 		"widget"	: `custom,
-		// FIXME: no help defined
 		"help"		: HELPS["staging"]:"",
 		"custom_widget"	: `Empty(),
 		"handle"	: HandleStagingTableDialog,

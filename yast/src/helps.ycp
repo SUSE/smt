@@ -51,5 +51,15 @@ switches dialog mode according to the currently selected value.
 Some fields are enabled or disabled accordingly, e.g., <b>Day of the Week</b>
 is disabled for <tt>Daily</tt> job frequency.</p>
 "),
+
+	"catalogs" :
+	    _("<p><big><b>Repositories</b></big><br>
+...</p>
+"),
+
+	"staging" :
+	    _("<p><big><b>Staging</b></big><br>
+...</p>
+"),
     ];
 }

@@ -119,7 +119,7 @@ sub LoadCatalogData ($) {
 	$ret = 0;
     }
 
-    my $repo_path = $base_path.'/repo/'.GetCatalogPath($catalogid);
+    my $repo_path = $base_path.'/repo/full/'.GetCatalogPath($catalogid);
     y2internal ("Using local path: ".$repo_path);
 
     # The following lines should go to a module in SMT package

@@ -223,16 +223,12 @@
 		    `MenuButton (`id (`change_status), _("Change &Status"), [
 			`item (`id (`additional_filters),	_("&Exclude from Testing...")),
 			`menu (`id (`all_listed), _("&All listed..."), [
-			    // FIXME: not handled
 			    `item (`id (`all_listed_enable),	_("&Enable")),
-			    // FIXME: not handled
 			    `item (`id (`all_listed_disable),	_("&Disable")),
 			]),
 		    ]),
 		    `MenuButton (`id (`create_snapshot), _("Create Snapshot..."), [
-			// FIXME: not handled
 			`item (`id (`create_snapshot_testing),		_("&Testing Snapshot")),
-			// FIXME: not handled
 			`item (`id (`create_snapshot_production),	_("&Production Snapshot")),
 		    ])
 		)
@@ -1263,11 +1259,10 @@ and thus its status cannot be changed in this dialog."));
 	} else if (action == `all_listed_disable) {
 	    ChangeAllListedPatches (false);
 	    RedrawPatchesTable (GetSelectedPatchFilter());
-	// Initializing CWM
-	} else if (action == "_cwm_tab_wakeup" || action == `abort || action == `next || action == `back) {
-	    // nop
-	} else {
-	    y2error ("Unknown action: %1", action);
+	} else if (action == `create_snapshot_testing) {
+	    // FIXME: there's no such functionality yet
+	} else if (action == `create_snapshot_production) {
+	    // FIXME: there's no such functionality yet
 	}
 
 	return nil;
