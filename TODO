@@ -91,6 +91,9 @@ DONE:
 
 - yast2-smt: Added SCR agent to handle staging
 
+- New SMT::Support Perl module to handle uploading the supportconfig
+  profiles for NTS.
+
 Rejected:
 =========
 
