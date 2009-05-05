@@ -195,7 +195,7 @@ exit 0
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
 %doc %{_docdir}/smt/*
-
+%dir %attr(775, smt, www)/srv/ftp/incoming/
 
 %files -n res-signingkeys
 %defattr(-,root,root)

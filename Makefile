@@ -90,6 +90,7 @@ install:
 	install -m 755 script/smt-* $(DESTDIR)/usr/sbin/
 	install -m 644 www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	install -m 644 www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	install -m 644 www/perl-lib/SMT/Support.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Utils.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
@@ -134,6 +135,10 @@ install:
 	install -m 644 doc/Server-Tuning.txt $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 doc/SMT-Database-Schema.txt $(DESTDIR)$(DOCDIR)/smt/
 	make -C swig $@
+
+	mkdir -p $(DESTDIR)/srv/ftp/incoming/
+	chown smt:www $(DESTDIR)/srv/ftp/incoming/
+	chmod 775 $(DESTDIR)/srv/ftp/incoming/
 
 test: clean
 	cd tests; perl tests.pl && cd -

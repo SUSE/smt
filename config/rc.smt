@@ -46,7 +46,7 @@ fi
 # mysql		- database
 # cron		- NCC scripts
 services="apache2 mysql cron"
-apache_plugins="nu_server.conf smt_mod_perl.conf"
+apache_plugins="nu_server.conf smt_mod_perl.conf smt_support.conf"
 apache_vhosts="vhost-ssl.conf"
 smt_cronfiles="novell.com-smt"
 
