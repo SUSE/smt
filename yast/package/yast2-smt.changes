@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue May  5 11:11:11 CEST 2009 - locilka@suse.cz
+
+- Added possiblity to change Testing status of all listed patches
+  at once.
+
+-------------------------------------------------------------------
 Thu Apr 30 17:17:17 CEST 2009 - locilka@suse.cz
 
 - Using 'repository' instead of 'catalog'.

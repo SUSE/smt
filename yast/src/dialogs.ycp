@@ -1179,6 +1179,13 @@ Enter your SMT server URL in the following format: http:://server.name/
 	UI::CloseDialog();
     }
 
+    boolean SetPatchStatus (string patchid, boolean new_status) {
+	return SCR::Write (
+	    .smt.staging.patch.testing,
+	    $["catalogid" : selected_catalog, "patchid" : patchid, "status" : new_status]
+	);
+    }
+
     void TogglePatchTesting () {
 	string sel_patchid = (string) UI::QueryWidget (`id (`patches_table), `CurrentItem);
 
@@ -1194,12 +1201,8 @@ and thus its status cannot be changed in this dialog."));
 	// Fallback
 	if (status == nil) status = false;
 
-	boolean success = (boolean) SCR::Write (
-	    .smt.staging.patch.testing,
-	    // Inverting the status: "filtered" used as new "status"
-	    $["catalogid" : selected_catalog, "patchid" : sel_patchid, "status" : status]
-	);
-	if (success != true) {
+	// Inverting the status: "filtered" used as new "status"
+	if (SetPatchStatus (sel_patchid, status) != true) {
 	    Report::Error (_("Unable to change the current patch status."));
 	}
 
@@ -1213,6 +1216,24 @@ and thus its status cannot be changed in this dialog."));
 	UI::ChangeWidget (`id(`patches_table), `Item (sel_patchid, 3), (current_status == true ? yes:no));
 	// focus the table again
 	UI::SetFocus (`id (`patches_table));
+    }
+
+    void ChangeAllListedPatches (boolean new_state) {
+	foreach (string patchid, map patchdetails, current_patches, {
+	    // Patch cannot be changed
+	    if (IsPatchFilteredByType (patchid)) {
+		y2warning ("Patch %1 filtered by category", patchdetails);
+		return;
+	    }
+
+	    // Patch has already the requierd status
+	    if (current_patches[patchid,"filtered"]:false != new_state) {
+		y2warning ("Patch %1 already filtered", patchdetails);
+		return;
+	    }
+
+	    SetPatchStatus (patchid, new_state);
+	});
     }
 
     symbol HandleStagingTableDialog (string id, map event) {
@@ -1239,6 +1260,12 @@ and thus its status cannot be changed in this dialog."));
 	    AdjustAdditionalFilters();
 	    RedrawPatchesTable (GetSelectedPatchFilter());
 	} else if (action == `category_filter) {
+	    RedrawPatchesTable (GetSelectedPatchFilter());
+	} else if (action == `all_listed_enable) {
+	    ChangeAllListedPatches (true);
+	    RedrawPatchesTable (GetSelectedPatchFilter());
+	} else if (action == `all_listed_disable) {
+	    ChangeAllListedPatches (false);
 	    RedrawPatchesTable (GetSelectedPatchFilter());
 	// Initializing CWM
 	} else if (action == "_cwm_tab_wakeup" || action == `abort || action == `next || action == `back) {
