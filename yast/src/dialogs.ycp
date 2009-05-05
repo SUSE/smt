@@ -1221,16 +1221,12 @@ and thus its status cannot be changed in this dialog."));
     void ChangeAllListedPatches (boolean new_state) {
 	foreach (string patchid, map patchdetails, current_patches, {
 	    // Patch cannot be changed
-	    if (IsPatchFilteredByType (patchid)) {
-		y2warning ("Patch %1 filtered by category", patchdetails);
+	    if (IsPatchFilteredByType (patchid))
 		return;
-	    }
 
 	    // Patch has already the requierd status
-	    if (current_patches[patchid,"filtered"]:false != new_state) {
-		y2warning ("Patch %1 already filtered", patchdetails);
+	    if (current_patches[patchid,"filtered"]:false != new_state)
 		return;
-	    }
 
 	    SetPatchStatus (patchid, new_state);
 	});
