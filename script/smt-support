@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SVER=0.82.2
+SVER=0.90.1
 SDATE="2009 05 06"
 
 ##############################################################################
@@ -14,7 +14,7 @@ CURRENT_SCRIPT=$(basename $0)
 SMT_UPLOAD_TARGET='https://secure-www.novell.com/upload?appname=supportconfig&file={tarball}'
 SMT_LOG=/var/log/smt/${CURRENT_SCRIPT}.log
 SMT_CONTACT_FILE=contact-smt-support.txt
-echo ${SMT_INCOMING:=/home/jrecord/smt-support/incoming} &> /dev/null
+echo ${SMT_INCOMING:=/var/spool/smt} &> /dev/null
 UPLOAD_FILEPATH=""
 ARCH_FILE=""
 NEW_ARCH_FILE=""
@@ -117,9 +117,7 @@ secureUpload() {
 	UPLOAD_ARCHIVE=$(basename ${FILE})
 	unset UPLOAD_URL
 	UPLOAD_URL=$(echo $SMT_UPLOAD_TARGET | sed -e "s/{[Tt][Aa][Rr][Bb][Aa][Ll][Ll]}/${UPLOAD_ARCHIVE}/g")
-	logFileEntry ' -[Command]' "curl -v -s -L -A SupportConfig -T \"${FILE}\" \"${UPLOAD_URL}\""
-	logFileEntry '  -[Output]'
-#	curl -v -s -L -A SupportConfig -T "${FILE}" "${UPLOAD_URL}" >> $SMT_LOG 2>&1
+	logFileCmd "curl -v -s -L -A SupportConfig -T \"${FILE}\" \"${UPLOAD_URL}\""
 	RC=$?
 	echo >> $SMT_LOG
 	return $RC
