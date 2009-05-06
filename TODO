@@ -98,6 +98,9 @@ DONE:
 
 - yast2-smt: Using Repositories.pm from SCR agent
 
+- Extended smt-mirror script to select just one --repository to mirror.
+  Needed for YaST. Currently working with unique repository ID.
+
 Rejected:
 =========
 

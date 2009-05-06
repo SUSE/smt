@@ -11,6 +11,7 @@ use SMT::Mirror::Yum;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Parser::RegData;
+use SMT::Repositories;
 use Config::IniFiles;
 use File::Path;
 use URI;
@@ -67,6 +68,8 @@ my $recpatches = 0;
 
 my $nohardlink = 0;
 
+my $repository;
+
 my $result = GetOptions ("debug|d"      => \$debug,
                          "verboselevel|v=i" => \$vblevel,
                          "cleanup|c"    => \$clean,
@@ -79,13 +82,14 @@ my $result = GetOptions ("debug|d"      => \$debug,
                          "dbreplfile=s" => \$dbreplfile,
                          "logfile|L=s"  => \$logfile,
                          "mail|m"       => \$mail,
-                         "help|h"       => \$help
+                         "help|h"       => \$help,
+                         "repository|r=s" => \$repository
                         );
 
 
 if($help)
 {
-    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail]\n";
+    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]\n";
     print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
     print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
@@ -114,6 +118,7 @@ if($help)
     print "--mail -m               " . __("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
     print "                        " . __("The output on stdout and stderr will be suppressed.\n");
     print "--logfile -L file       " . __("Path to logfile\n");
+    print "--repository ID         " . __("Repository ID to mirror. By default, all repositories are selected.\n");
     exit 0;
 }
 
@@ -281,6 +286,12 @@ else
     $mirrorsrc = 1;
 }
 
+# Filter used to mirror just a given repository
+my $additional_filters = '';
+if (defined $repository) {
+    $additional_filters .= ' AND '.SMT::Repositories::REPOSITORYID.'='.$dbh->quote($repository).' ';
+}
+
 my $array = [];
 
 if(!defined $dbreplfile)
@@ -288,8 +299,11 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $array = $dbh->selectall_arrayref( "select CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING from Catalogs where MIRRORABLE='Y' and DOMIRROR='Y' order by CATALOGTYPE, NAME",
-                                      { Slice => {} } );
+    $array = $dbh->selectall_arrayref( "select CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
+	"from Catalogs ".
+	"where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
+	"order by CATALOGTYPE, NAME",
+	{ Slice => {} } );
 }
 else
 {
@@ -363,7 +377,10 @@ foreach my $entry (@{$array})
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
 if(!defined $dbreplfile)
 {
-    my $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE from Catalogs where MIRRORABLE='N' and DOMIRROR='Y'", "CATALOGID" );
+    my $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE ".
+	"from Catalogs ".
+	"where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
+	"CATALOGID" );
     
     if(keys %{$hash} > 0)
     {
@@ -473,7 +490,7 @@ smt mirror
 
 smt [help|--help|-h] mirror
 
-smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail]
+smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]
 
 smt mirror --clean [--directory path] [--dbreplfile file] [-L file] [--debug] [--verboselevel level]
 
@@ -492,6 +509,8 @@ duplicate files it creates hardlinks instead of holding two copies of the same f
 Depending on the verbose level you will see the files which are checked in the output.
 Such a line starts with a flag to show the status of this file. 
 
+=over
+
 =item D download
 
 =item L hardlink
@@ -503,6 +522,8 @@ Such a line starts with a flag to show the status of this file.
 =item N new file
 
 =item U up-to-date
+
+=back
 
 =head1 OPTIONS
 
@@ -582,6 +603,10 @@ Value: 0x0020 == 32
 
 The default verbose level is 15 (error, warning and all info messages).
 B<--debug> set the verbose level to 63.
+
+=item --repository -r <repository ID>
+
+Mirrors only a repository of a given ID.
 
 =item --nohardlink
 
