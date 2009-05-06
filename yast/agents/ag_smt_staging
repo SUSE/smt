@@ -21,6 +21,7 @@ use strict;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Filter;
+use SMT::Repositories;
 use SMT::Parser::RpmMdPatches;
 
 # FIXME: for debugging only
@@ -35,10 +36,17 @@ if(! SMT::Utils::dropPrivileges()) {
 # Initialize SMT
 my ($cfg, $dbh, $nuri) = SMT::CLI::init();
 my $base_path = $cfg->val("LOCAL", "MirrorTo") || '/srv/www/htdocs';
+my $repositories = SMT::Repositories::new($dbh);
 
 use constant {
     YCP_TRUE	=> 'true',
     YCP_FALSE	=> 'false',
+
+    # All Mirrored repositories with Staging feature enabled
+    ALL_REPO_FILTER => {
+	SMT::Repositories::MIRRORING	=> SMT::Repositories::MIRRORING_TRUE,
+	SMT::Repositories::STAGING	=> SMT::Repositories::STAGING_TRUE,
+    },
 };
 
 # Reports that the agent has been called using an unsupported path
@@ -47,45 +55,6 @@ sub UnsupportedPath ($$) {
 
     y2error ('Unsupported path: '.$$path_ref.' for command '.$$command_ref);
     ycp::Return (undef);
-}
-
-# FIXME: move to a module, share ...
-sub GetAllCatalogs () {
-    my $sth = $dbh->prepare("SELECT * FROM Catalogs where DOMIRROR='Y' and STAGING='Y'");
-    $sth->execute();
-    my @ret;
-    while (my $row = $sth->fetchrow_hashref()) {
-	$row->{TARGET} = "" if (not defined $row->{TARGET});
-	push @ret, $row;
-    }
-    return \@ret;
-}
-
-# FIXME: move to a module, share ...
-sub GetCatalogPath ($) {
-    my $catalogid = shift || '';
-
-    if ($catalogid eq '') {
-	y2error ("CatalogID must be defined");
-	return undef;
-    }
-
-    my $catalogs = GetAllCatalogs();
-    my $catalog_local_path = '';
-
-    foreach my $catalog (@{$catalogs}) {
-	# Required catalog matches the current one
-	if (defined $catalog->{'CATALOGID'} && $catalog->{'CATALOGID'} eq $catalogid) {
-	    if (defined $catalog->{'LOCALPATH'}) {
-		$catalog_local_path = $catalog->{'LOCALPATH'};
-		last;
-	    } else {
-		y2error ("Catalog ".$catalogid." matches but no 'LOCALPATH' is defined");
-	    }
-	}
-    }
-
-    return $catalog_local_path;
 }
 
 # Filters and Patches Handles
@@ -119,7 +88,7 @@ sub LoadCatalogData ($) {
 	$ret = 0;
     }
 
-    my $repo_path = $base_path.'/repo/full/'.GetCatalogPath($catalogid);
+    my $repo_path = $base_path.'/repo/full/'.$repositories->GetCatalogPath($catalogid);
     y2internal ("Using local path: ".$repo_path);
 
     # The following lines should go to a module in SMT package
@@ -316,7 +285,7 @@ while (<STDIN>) {
 
     if ($command eq 'Read') {
 	if ($path eq '.catalogs') {
-	    ycp::Return (GetAllCatalogs ());
+	    ycp::Return ($repositories->GetAllCatalogs (ALL_REPO_FILTER));
 	} elsif ($path eq '.patches') {
 	    ycp::Return (GetAllPatches ($arg));
 	} elsif ($path eq '.patch.testing') {

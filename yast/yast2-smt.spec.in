@@ -15,7 +15,8 @@ Requires:	/bin/chmod
 # For checking whether the DB->user is available on the system
 Requires:	/usr/bin/getent
 # Modified smt-catalogs (added --batch-mode)
-Requires:	smt >= 1.1.5
+# Repositories Perl module
+Requires:	smt >= 1.1.6
 # Icons
 Requires:	hicolor-icon-theme
 # any YaST theme
