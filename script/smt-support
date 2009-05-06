@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SVER=0.0.11
-SDATE="2009 04 29"
+SVER=0.82.0
+SDATE="2009 05 06"
 
 ##############################################################################
 #  smt-support - Maintains incoming SMT server archives to be uploaded
@@ -16,6 +16,8 @@ SMT_LOG=/var/log/smt/${CURRENT_SCRIPT}.log
 SMT_CONTACT_FILE=contact-smt-support.txt
 echo ${SMT_INCOMING:=/home/jrecord/smt-support/incoming} &> /dev/null
 UPLOAD_FILEPATH=""
+ARCH_FILE=""
+NEW_ARCH_FILE=""
 ACTION=0
 REPACKAGE=0
 RCODE=0
@@ -80,6 +82,7 @@ listIncoming() {
 	echo
 	cd $SMT_INCOMING
 	\ls -1 *t[b,g]z 2>> $SMT_LOG | tee -a $SMT_LOG
+	echo
 }
 
 validateSR() {
@@ -108,7 +111,7 @@ secureUpload() {
 	UPLOAD_URL=$(echo $SMT_UPLOAD_TARGET | sed -e "s/{[Tt][Aa][Rr][Bb][Aa][Ll][Ll]}/${UPLOAD_ARCHIVE}/g")
 	logFileEntry ' [Command]' "curl -v -s -L -A SupportConfig -T \"${FILE}\" \"${UPLOAD_URL}\""
 	logFileEntry ' [Output]'
-#	curl -v -s -L -A SupportConfig -T "${FILE}" "${UPLOAD_URL}" >> $SMT_LOG 2>&1
+	curl -v -s -L -A SupportConfig -T "${FILE}" "${UPLOAD_URL}" >> $SMT_LOG 2>&1
 	RC=$?
 	echo >> $SMT_LOG
 	return $RC
@@ -117,6 +120,9 @@ secureUpload() {
 # Requires checkIncoming
 # Sets ARCH_FILE
 repackageArchive() {
+	RCODE=0
+	UUID=$(uuidgen)
+	NEW_ARCH_FILE=$ARCH_FILE
 	if [ $SRNUM ]; then
 		if echo $ARCH_FILE | grep 'nts_SR[[:digit:]]' &> /dev/null; then
 			NEW_ARCH_FILE=$(echo $ARCH_FILE | sed -e "s/_SR[[:digit:]]*_/_SR${SRNUM}_/")
@@ -124,6 +130,13 @@ repackageArchive() {
 			NEW_ARCH_FILE=$(echo $ARCH_FILE | sed -e "s/nts_/nts_SR${SRNUM}_/")
 		fi
 	fi
+	if echo $ARCH_FILE | egrep "_[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}." &> /dev/null; then
+		TMP=$(echo $NEW_ARCH_FILE | sed -e "s/_[[:alnum:]]\{8\}-[[:alnum:]]\{4\}-[[:alnum:]]\{4\}-[[:alnum:]]\{4\}-[[:alnum:]]\{12\}/_${UUID}/g")
+	else
+		TAREXT=$(echo $ARCH_FILE | awk -F\. '{print $(NF-0)}')
+		TMP=$(echo $NEW_ARCH_FILE | sed -e "s/\.${TAREXT}$/_${UUID}\.${TAREXT}/g")
+	fi
+	NEW_ARCH_FILE=$TMP
 	logEntry Repackaging "${NEW_ARCH_FILE}"
 	cd $SMT_INCOMING
 	if echo $ARCH_FILE | grep 'tgz$' &> /dev/null; then
@@ -136,16 +149,19 @@ repackageArchive() {
 	NEW_ARCH_DIR=$(echo $NEW_ARCH_FILE | sed -e 's/\.t[b,g]z$//')
 	tar ${TARCMP}xf $ARCH_FILE >> $SMT_LOG 2>&1
 	if [ $? -gt 0 ]; then
-		showStatus "FAILED: ${INCOMING}/${ARCH_FILE}"
+		logEntry "   FAILED" ${INCOMING}/${ARCH_FILE}
 		rm	-rf $ARCH_DIR
+		RCODE=3
 	else
 		mv $ARCH_DIR $NEW_ARCH_DIR >> $SMT_LOG 2>&1
 		if [ ! -d $NEW_ARCH_DIR ]; then
 			showStatus "ERROR, Directory conversion failed"
-			exit 6
+			echo
+			RCODE=6
+			return
 		fi
 		LOGCONTACT="${NEW_ARCH_DIR}/${SMT_CONTACT_FILE}"
-		echo "Information Added by SMT Server" >> $LOGCONTACT
+		echo "Information Added by SMT Server" > $LOGCONTACT
 		echo "Date:                 $(date)" >> $LOGCONTACT
 		echo "-------------------------------------------------------" >> $LOGCONTACT
 		test -n "$SRNUM"           && echo "Service Request:      $SRNUM" >> $LOGCONTACT
@@ -161,8 +177,9 @@ repackageArchive() {
 		logEntry ' Archiving' 'In Progress'
 		tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_DIR}/* >> $SMT_LOG 2>&1
 		if [ $? -gt 0 ]; then
-			showStatus "FAILED: ${INCOMING}/${NEW_ARCH_DIR}"
+			logEntry "   FAILED" ${INCOMING}/${ARCH_FILE}
 			ARCH_FILE="Failed"
+			RCODE=5
 		else
 			md5sum ${NEW_ARCH_FILE} | cut -d' ' -f1 > ${NEW_ARCH_FILE}.md5
 			rm -f ${ARCH_FILE}
@@ -171,6 +188,7 @@ repackageArchive() {
 			ARCH_FILE=$NEW_ARCH_FILE
 		fi
 	fi
+	return $RCODE
 }
 
 showIncoming() {
@@ -202,9 +220,10 @@ emptyIncoming() {
 	setAction "Remove All"
 	countArchives
 	RC=$?
-	listIncoming
 	if [ $RC -gt 0 ]; then
-		rm -f ${SMT_INCOMING}/*
+		listIncoming
+		rm -f ${SMT_INCOMING}/*t[b,g]z
+		rm -f ${SMT_INCOMING}/*t[b,g]z.md5
 		showStatus Removed
 	else
 		showStatus Empty
@@ -219,7 +238,12 @@ uploadArchive() {
 	showArchive
 	COMPLETED=0
 	if (( REPACKAGE )); then
-		repackageArchive
+		if repackageArchive; then
+			showStatus "Repackage Failed"
+			echo
+			RCODE=5
+			return
+		fi
 	fi
 	UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
 	if [ -e ${UPLOAD_FILEPATH} ]; then
@@ -236,7 +260,6 @@ uploadArchive() {
 		fi
 	else
 		showStatus "ERROR, File not found: $UPLOAD_FILEPATH"
-		RCODE=2
 	fi
 }
 
@@ -250,13 +273,24 @@ uploadIncoming() {
 		COMPLETED=0
 		for ARCH_FILE in *t[b,g]z
 		do
+			logEntry Uploading $ARCH_FILE
+			if (( REPACKAGE )); then
+				if repackageArchive; then
+					showStatus "Repackage Failed"
+					RCODE=3
+					return
+				fi
+			fi
 			UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
-			logEntry Uploading $UPLOAD_FILEPATH
 			test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5
 			secureUpload ${UPLOAD_FILEPATH}
 			if [ $? -eq 0 ]; then
+				showStatus "Uploaded: $ARCH_FILE"
 				((COMPLETED++))
+			else
+				showStatus "Upload Failed: $ARCH_FILE"
 			fi
+			echo
 		done
 		showStatus "Uploaded: $COMPLETED"
 	else
