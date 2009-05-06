@@ -822,7 +822,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	// busy message
 	boolean uio = (boolean) UI::OpenDialog (`Label (_("Getting list of the currently available repositories...")));
 
-	list <map <string, string> > catalogs_states = (list <map <string, string> >) SCR::Read (.smt.catalogs);
+	list <map <string, string> > catalogs_states = (list <map <string, string> >) SCR::Read (.smt.repositories);
 	if (catalogs_states == nil) {
 	    y2error ("Error getting available repositories");
 	    catalogs_states = [];
@@ -971,7 +971,7 @@ Enter your SMT server URL in the following format: http:://server.name/
     boolean IsPatchFilteredByType (string patchid) {
 	map this_patch = $[
 	    "type" : current_patches[patchid, "type"]:"",
-	    "catalogid" : selected_catalog,
+	    "repositoryid" : selected_catalog,
 	];
 
 	return ((boolean) SCR::Read (.smt.staging.category_filter, this_patch) == true);
@@ -1094,7 +1094,7 @@ Enter your SMT server URL in the following format: http:://server.name/
     }
 
     void InitStagingTableDialog (string id) {
-	list <map> catalogs = (list <map>) SCR::Read (.smt.staging.catalogs);
+	list <map> catalogs = (list <map>) SCR::Read (.smt.staging.repositories);
 
 	list <term> items = maplist (map one_catalog, catalogs, {
 	    return `item (`id (one_catalog["CATALOGID"]:""),
@@ -1144,7 +1144,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	list <term> items = maplist (string patch_type, string type_translated, patch_categories, {
 	    map query = $[
 		"type" : patch_type,
-		"catalogid" : selected_catalog,
+		"repositoryid" : selected_catalog,
 	    ];
 	    return `item (
 		`id (patch_type), type_translated,
@@ -1164,7 +1164,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    foreach (string patch_type, string type_translated, patch_categories, {
 		map command = $[
 		    "type" : patch_type,
-		    "catalogid" : selected_catalog,
+		    "repositoryid" : selected_catalog,
 		    "status" : contains (newly_active_filters, patch_type),
 		];
 
@@ -1178,7 +1178,7 @@ Enter your SMT server URL in the following format: http:://server.name/
     boolean SetPatchStatus (string patchid, boolean new_status) {
 	return SCR::Write (
 	    .smt.staging.patch.testing,
-	    $["catalogid" : selected_catalog, "patchid" : patchid, "status" : new_status]
+	    $["repositoryid" : selected_catalog, "patchid" : patchid, "status" : new_status]
 	);
     }
 
@@ -1204,7 +1204,7 @@ and thus its status cannot be changed in this dialog."));
 
 	boolean current_status = (boolean) SCR::Read (
 	    .smt.staging.patch.testing,
-	    $["catalogid" : selected_catalog, "patchid" : sel_patchid]
+	    $["repositoryid" : selected_catalog, "patchid" : sel_patchid]
 	);
 
 	// update the cache

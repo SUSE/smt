@@ -1,8 +1,8 @@
 /**
  * File:
- *   smt_catalogs.scr
+ *   smt_repositories.scr
  * Summary:
- *   SCR Agent for reading Catalogs available in SMT
+ *   SCR Agent for reading Repositories available in SMT
  *   using the any-agent
  * Access:
  *   read-only
@@ -13,7 +13,7 @@
  *
  * Read the output from smt-catalogs script
  */
-.smt.catalogs
+.smt.repositories
 
 `ag_anyagent (
     `Description (
