@@ -4,6 +4,72 @@ package SMT::Repositories;
 use strict;
 use warnings;
 
+=head1 NAME
+
+SMT::Repositories - reads SMT repositories and returns their states
+
+=head1 SYNOPSIS
+
+ # Constructor
+ # DB connection is required
+ my $repos = SMT::Repositories::new ($dbh)
+
+ # Returns all repositories matching the filter
+ # filter can be empty
+ my $filter = {
+   SMT::Repositories::MIRRORABLE => SMT::Repositories::MIRRORABLE_TRUE,
+ };
+ my $filtered_rs = $repos->GetAllRepositories ($filter);
+
+ # Returns local path to a repository
+ # (relative to the current SMT mirroring base-path)
+ my $repository_id = '6df36d5532f9a85b362a93a55f8452c6adb72165';
+ my $path = $repos->GetRepositoryPath ($repository_id);
+
+=head1 DESCRIPTION
+
+TODO
+
+=head1 CONSTANTS
+
+=over 4
+
+=item SQL Table Cells
+
+MIRRORABLE
+    Defines whether repository can be mirrored
+
+MIRRORABLE_TRUE
+    Flag saying: repository can be mirrored
+
+MIRRORABLE_FALSE
+    Flag saying: repository can't be mirrored
+
+MIRRORING
+    Defines whether repository is being mirrored
+
+MIRRORING_TRUE
+    Flag saying: repository is being mirrored
+
+MIRRORING_FALSE
+    Flag saying: repository is not being mirrored
+
+STAGING
+    Defines whether repository has Staging feature enabled
+
+STAGING_TRUE
+    Flag saying: repository has staging feature enabled
+
+STAGING_FALSE
+    Flag saying: repository has not staging feature enabled
+
+REPOSITORYID
+    Defines ID to match a repository
+
+=back
+
+=cut
+
 use constant {
     # Repository can be mirrored
     MIRRORABLE		=> 'MIRRORABLE',
@@ -20,8 +86,20 @@ use constant {
     STAGING_TRUE	=> 'Y',
     STAGING_FALSE	=> 'N',
 
-    CATALOGID		=> 'CATALOGID',
+    REPOSITORYID	=> 'CATALOGID',
 };
+
+=head1 METHODS 
+
+=over 4
+
+=item new ($dbh)
+
+Constructor.
+
+my $repo = SMT::Repositories ($dbh);
+
+=cut
 
 sub new ($) {
     my $dbh = shift;
@@ -51,7 +129,26 @@ sub GetAndClearErrorMessage () {
     return $ret;
 }
 
-sub GetAllCatalogs ($$) {
+=item GetAllRepositories
+
+Returns hash filled up with repository description according to a filter
+given as a parameter.
+
+# Returns list of all repositories than can be mirrored
+$repo->GetAllRepositories ({
+    SMT::Repositories::MIRRORABLE => SMT::Repositories::MIRRORABLE_TRUE,
+});
+
+# Returns list of all repositories that are being mirrored
+# and have Staging feature enabled.
+$repo->GetAllRepositories ({
+    SMT::Repositories::MIRRORING => SMT::Repositories::MIRRORING_TRUE,
+    SMT::Repositories::STAGING => SMT::Repositories::STAGING_TRUE,
+});
+
+=cut
+
+sub GetAllRepositories ($$) {
     my $self = shift;
     my $filter = shift || {};
 
@@ -81,27 +178,49 @@ sub GetAllCatalogs ($$) {
     return $ret;
 }
 
-sub GetCatalogPath ($$) {
+=item GetRepositoryPath
+
+Returns a relative path of a given repository (ID) 
+
+$repo->GetRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
+    -> '$RCE/SLE11-SDK-Updates/sle-11-x86_64'
+
+=cut
+
+sub GetRepositoryPath ($$) {
     my $self = shift;
 
-    my $catalogid = shift || '';
-
-    if ($catalogid eq '') {
-	y2error ("CatalogID must be defined");
+    my $repository = shift || do {
+	$self->NewErrorMessage ("RepositoryID must be defined");
 	return undef;
-    }
+    };
  
-    my $catalogs = $self->GetAllCatalogs({CATALOGID => $catalogid});
-    my $catalog_local_path = '';
-    my $catalog = @{$catalogs}[0] || {};
+    # Matches right one repository
+    my $repos = $self->GetAllRepositories({SMT::Repositories::REPOSITORYID => $repository});
+    my $repo_local_path = '';
+    my $repo = @{$repos}[0] || {};
 
-    if (defined $catalog->{'LOCALPATH'}) {
-	$catalog_local_path = $catalog->{'LOCALPATH'};
+    if (defined $repo->{'LOCALPATH'}) {
+	$repo_local_path = $repo->{'LOCALPATH'};
     } else {
-	$self->NewErrorMessage ("Catalog ".$catalogid." matches but no 'LOCALPATH' is defined");
+	$self->NewErrorMessage ("Repository ".$repository." matches but no 'LOCALPATH' is defined");
     }
 
-    return $catalog_local_path;
+    return $repo_local_path;
 }
+
+=back
+
+=head1 NOTES
+
+=head1 AUTHOR
+
+locilka@suse.cz
+
+=head1 COPYRIGHT
+
+Copyright 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
 
 1;
