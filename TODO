@@ -94,6 +94,10 @@ DONE:
 - New SMT::Support Perl module to handle uploading the supportconfig
   profiles for NTS.
 
+- Created new Repositories.pm Perl module (AKA Catalogs) in smt package
+
+- yast2-smt: Using Repositories.pm from SCR agent
+
 Rejected:
 =========
 

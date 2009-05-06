@@ -98,6 +98,7 @@ install:
 	install -m 644 www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
 	install -m 644 www/perl-lib/SMT/Filter.pm $(DESTDIR)$(PERLMODDIR)/SMT/
+	install -m 644 www/perl-lib/SMT/Repositories.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	cd db/schemas; \
 	find mysql/ -name ".svn" -prune -o \
                 \( \
