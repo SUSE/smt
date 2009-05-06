@@ -13,7 +13,10 @@ drop table if exists ClientSubscriptions;
 drop table if exists RepositoryContentData;
 
 
-create table Clients(ID          INT AUTO_INCREMENT UNIQUE KEY,
+-- integer id for "Clients" for faster joins compared to GUID with CHAR(50)
+--    GUID remains primary key until all code that deals with GUIDs gets adapted
+--    all new tables refering to a Client should use Clients.ID from now on
+create table Clients(ID          INT UNSIGNED AUTO_INCREMENT UNIQUE KEY,
                      GUID        CHAR(50) PRIMARY KEY,
                      HOSTNAME    VARCHAR(100) DEFAULT '',
                      TARGET      VARCHAR(100),
@@ -141,4 +144,34 @@ create table RepositoryContentData(localpath   VARCHAR(300) PRIMARY KEY,
                                   );
 -- end
 
+--
+-- JobQueue 
+-- 
+-- TYPE is one of  (also refer to documentation)
+--      0  -  unknown/undefined
+--      1  -  patchstatus
+--      2  -  sw_push
+--      3  -  update
+--      4  -  execute
+--      5  -  reboot
+--      6  -  configure 
+--      7  -  wait
 
+create table JobQueue ( ID          INTEGER UNSIGNED NOT NULL,
+                        GUID_ID     INTEGER UNSIGNED NOT NULL,
+                        PARENT_ID   INTEGER UNSIGNED NULL default NULL,
+                        NAME        CHAR NOT NULL default '',
+                        DESCRIPTION MEDIUMTEXT,
+                        TYPE        INTEGER UNSIGNED NOT NULL default 0,
+                        ARGUMENTS   BLOB,
+                        RESULTS     BLOB,
+                        STATUS      TINYINT UNSIGNED NOT NULL default 0,
+                        STATUSTEXT  TEXT,
+                        REQUESTED   TIMESTAMP default CURRENT_TIMESTAMP,
+                        TARGETED    TIMESTAMP NULL default NULL,
+                        EXPIRES     TIMESTAMP NULL default NULL,
+                        FINISHED    TIMESTAMP NULL default NULL,
+                        PERSISTENT  TINYINT(1) NOT NULL default 0,
+                        TIMELAG     TIME NULL default NULL,
+                        PRIMARY KEY (ID, GUID_ID)
+                      );
