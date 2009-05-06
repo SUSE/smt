@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SVER=0.82.0
+SVER=0.82.2
 SDATE="2009 05 06"
 
 ##############################################################################
@@ -51,6 +51,14 @@ logEntry() {
 
 logFileEntry() {
 	printf "%-12s %s\n" "$1" "$2" >> $SMT_LOG
+}
+
+logFileCmd() {
+	CMDLINE="$@"
+	printf "%-12s %s\n" ' [Command]' "$CMDLINE" >> $SMT_LOG 2>&1
+	echo "$CMDLINE" | bash  >> $SMT_LOG 2>&1
+	EXIT_STATUS=$?
+	return $EXIT_STATUS
 }
 
 startLogEntry() {
@@ -109,9 +117,9 @@ secureUpload() {
 	UPLOAD_ARCHIVE=$(basename ${FILE})
 	unset UPLOAD_URL
 	UPLOAD_URL=$(echo $SMT_UPLOAD_TARGET | sed -e "s/{[Tt][Aa][Rr][Bb][Aa][Ll][Ll]}/${UPLOAD_ARCHIVE}/g")
-	logFileEntry ' [Command]' "curl -v -s -L -A SupportConfig -T \"${FILE}\" \"${UPLOAD_URL}\""
-	logFileEntry ' [Output]'
-	curl -v -s -L -A SupportConfig -T "${FILE}" "${UPLOAD_URL}" >> $SMT_LOG 2>&1
+	logFileEntry ' -[Command]' "curl -v -s -L -A SupportConfig -T \"${FILE}\" \"${UPLOAD_URL}\""
+	logFileEntry '  -[Output]'
+#	curl -v -s -L -A SupportConfig -T "${FILE}" "${UPLOAD_URL}" >> $SMT_LOG 2>&1
 	RC=$?
 	echo >> $SMT_LOG
 	return $RC
@@ -120,7 +128,7 @@ secureUpload() {
 # Requires checkIncoming
 # Sets ARCH_FILE
 repackageArchive() {
-	RCODE=0
+	RC=0
 	UUID=$(uuidgen)
 	NEW_ARCH_FILE=$ARCH_FILE
 	if [ $SRNUM ]; then
@@ -144,51 +152,52 @@ repackageArchive() {
 	else
 		TARCMP='j'
 	fi
-	logEntry ' Extracting' 'In Progress'
+	logEntry 'Extracting' 'In Progress'
 	ARCH_DIR=$(echo $ARCH_FILE | sed -e 's/\.t[b,g]z$//')
 	NEW_ARCH_DIR=$(echo $NEW_ARCH_FILE | sed -e 's/\.t[b,g]z$//')
-	tar ${TARCMP}xf $ARCH_FILE >> $SMT_LOG 2>&1
+	logFileCmd "tar ${TARCMP}xf $ARCH_FILE"
 	if [ $? -gt 0 ]; then
-		logEntry "   FAILED" ${INCOMING}/${ARCH_FILE}
-		rm	-rf $ARCH_DIR
-		RCODE=3
+		showStatus "${ARCH_FILE} - FAILED"
+		logFileCmd "rm -rf $ARCH_DIR"
+		RC=3
 	else
-		mv $ARCH_DIR $NEW_ARCH_DIR >> $SMT_LOG 2>&1
+		logFileCmd "mv $ARCH_DIR $NEW_ARCH_DIR"
 		if [ ! -d $NEW_ARCH_DIR ]; then
 			showStatus "ERROR, Directory conversion failed"
 			echo
-			RCODE=6
-			return
-		fi
-		LOGCONTACT="${NEW_ARCH_DIR}/${SMT_CONTACT_FILE}"
-		echo "Information Added by SMT Server" > $LOGCONTACT
-		echo "Date:                 $(date)" >> $LOGCONTACT
-		echo "-------------------------------------------------------" >> $LOGCONTACT
-		test -n "$SRNUM"           && echo "Service Request:      $SRNUM" >> $LOGCONTACT
-		test -n "$CONTACT_NAME"    && echo "Contact Name:         $CONTACT_NAME" >> $LOGCONTACT
-		test -n "$CONTACT_COMPANY" && echo "Company Name:         $CONTACT_COMPANY" >> $LOGCONTACT
-		test -n "$CONTACT_STOREID" && echo "Store ID:             $CONTACT_STOREID" >> $LOGCONTACT
-		test -n "$CONTACT_TERMID"  && echo "Terminal ID:          $CONTACT_TERMID" >> $LOGCONTACT
-		test -n "$CONTACT_PHONE"   && echo "Contact Phone:        $CONTACT_PHONE" >> $LOGCONTACT
-		test -n "$CONTACT_EMAIL"   && echo "Contact EMail:        $CONTACT_EMAIL" >> $LOGCONTACT
-		printf "\n\n" >> $LOGCONTACT
-		logEntry ' Details' Added
-
-		logEntry ' Archiving' 'In Progress'
-		tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_DIR}/* >> $SMT_LOG 2>&1
-		if [ $? -gt 0 ]; then
-			logEntry "   FAILED" ${INCOMING}/${ARCH_FILE}
-			ARCH_FILE="Failed"
-			RCODE=5
+			RC=6
 		else
-			md5sum ${NEW_ARCH_FILE} | cut -d' ' -f1 > ${NEW_ARCH_FILE}.md5
-			rm -f ${ARCH_FILE}
-			test -f ${ARCH_FILE}.md5 && rm -f ${ARCH_FILE}.md5
-			rm -rf ${NEW_ARCH_DIR}
-			ARCH_FILE=$NEW_ARCH_FILE
+			LOGCONTACT="${NEW_ARCH_DIR}/${SMT_CONTACT_FILE}"
+			echo "Information Added by SMT Server" > $LOGCONTACT
+			echo >> $LOGCONTACT
+			echo "Date:                 $(date)" >> $LOGCONTACT
+			echo "-------------------------------------------------------" >> $LOGCONTACT
+			test -n "$SRNUM"           && echo "Service Request:      $SRNUM" >> $LOGCONTACT
+			test -n "$CONTACT_COMPANY" && echo "Company Name:         $CONTACT_COMPANY" >> $LOGCONTACT
+			test -n "$CONTACT_NAME"    && echo "Contact Name:         $CONTACT_NAME" >> $LOGCONTACT
+			test -n "$CONTACT_PHONE"   && echo "Contact Phone:        $CONTACT_PHONE" >> $LOGCONTACT
+			test -n "$CONTACT_EMAIL"   && echo "Contact EMail:        $CONTACT_EMAIL" >> $LOGCONTACT
+			test -n "$CONTACT_STOREID" && echo "Store ID:             $CONTACT_STOREID" >> $LOGCONTACT
+			test -n "$CONTACT_TERMID"  && echo "Terminal ID:          $CONTACT_TERMID" >> $LOGCONTACT
+			echo >> $LOGCONTACT
+			logEntry 'Details' Added
+	
+			logEntry 'Archiving' 'In Progress'
+			logFileCmd "tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_DIR}/*"
+			if [ $? -gt 0 ]; then
+				showStatus "${NEW_ARCH_FILE} - FAILED"
+				ARCH_FILE="Failed"
+				RC=5
+			else
+				md5sum ${NEW_ARCH_FILE} | cut -d' ' -f1 > ${NEW_ARCH_FILE}.md5
+				rm -f ${ARCH_FILE}
+				test -f ${ARCH_FILE}.md5 && rm -f ${ARCH_FILE}.md5
+				rm -rf ${NEW_ARCH_DIR}
+				ARCH_FILE=$NEW_ARCH_FILE
+			fi
 		fi
 	fi
-	return $RCODE
+	return $RC
 }
 
 showIncoming() {
@@ -238,8 +247,10 @@ uploadArchive() {
 	showArchive
 	COMPLETED=0
 	if (( REPACKAGE )); then
-		if repackageArchive; then
-			showStatus "Repackage Failed"
+		repackageArchive
+		RPA=$?
+		if [ $RPA -gt 0 ]; then
+			showStatus "FAILED Repackage"
 			echo
 			RCODE=5
 			return
@@ -247,16 +258,16 @@ uploadArchive() {
 	fi
 	UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
 	if [ -e ${UPLOAD_FILEPATH} ]; then
-		logEntry Uploading $UPLOAD_FILEPATH
+		logEntry Uploading $ARCH_FILE
 		test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5
 		secureUpload ${UPLOAD_FILEPATH}
 		if [ $? -eq 0 ]; then
 			((COMPLETED++))
 		fi
 		if [ $COMPLETED -gt 0 ]; then
-			showStatus Uploaded
+			showStatus "$ARCH_FILE - Success"
 		else
-			showStatus "Upload Incomplete"
+			showStatus "$ARCH_FILE - FAILED secureUpload"
 		fi
 	else
 		showStatus "ERROR, File not found: $UPLOAD_FILEPATH"
@@ -268,31 +279,36 @@ uploadIncoming() {
 	checkIncoming
 	setAction "Upload All"
 	countArchives
-	if [ $? -gt 0 ]; then
+	ARCH_TOTAL=$?
+	if [ $ARCH_TOTAL -gt 0 ]; then
 		cd $SMT_INCOMING
 		COMPLETED=0
 		for ARCH_FILE in *t[b,g]z
 		do
 			logEntry Uploading $ARCH_FILE
+			RPG_ERR=0
 			if (( REPACKAGE )); then
-				if repackageArchive; then
-					showStatus "Repackage Failed"
-					RCODE=3
-					return
+				repackageArchive
+				RPA=$?
+				if [ $RPA -gt 0 ]; then
+					showStatus "FAILED Repackage"
+					RPG_ERR=1
 				fi
 			fi
-			UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
-			test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5
-			secureUpload ${UPLOAD_FILEPATH}
-			if [ $? -eq 0 ]; then
-				showStatus "Uploaded: $ARCH_FILE"
-				((COMPLETED++))
-			else
-				showStatus "Upload Failed: $ARCH_FILE"
+			if [ $RPG_ERR -eq 0 ]; then			
+				UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
+				test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5
+				secureUpload ${UPLOAD_FILEPATH}
+				if [ $? -eq 0 ]; then
+					showStatus "$ARCH_FILE - Success"
+					((COMPLETED++))
+				else
+					showStatus "$ARCH_FILE - FAILED secureUpload"
+				fi
 			fi
 			echo
 		done
-		showStatus "Uploaded: $COMPLETED"
+		showStatus "Uploaded: $COMPLETED of $ARCH_TOTAL"
 	else
 		showStatus Empty
 		RCODE=1
