@@ -89,7 +89,7 @@ sub LoadRepositoryData ($) {
     }
 
     my $repo_path = $base_path.'/repo/full/'.$repositories->GetRepositoryPath($repositoryid);
-    y2internal ("Using local path: ".$repo_path);
+    y2debug ("Using local path: ".$repo_path);
 
     # The following lines should go to a module in SMT package
     # New Patches-Parser handler
@@ -302,11 +302,7 @@ while (<STDIN>) {
 	    ycp::Return (WritePatchFilters());
 	} elsif ($path eq '.category_filter') {
 	    ycp::Return (ChangeCategoryFilterStatus ($arg));
-	} else {
-	    UnsupportedPath (\$command, \$path);
-	}
-    } elsif ($command eq 'Execute') {
-	if ($path eq '.production_snapshot') {
+	} elsif ($path eq '.production_snapshot') {
 	    # FIXME
 	    ycp::Return (YCP_TRUE);
 	} elsif ($path eq '.testing_snapshot') {
@@ -314,8 +310,10 @@ while (<STDIN>) {
 	    ycp::Return (YCP_TRUE);
 	} else {
 	    UnsupportedPath (\$command, \$path);
-	    ycp::Return (undef);
 	}
+    } elsif ($command eq 'Execute') {
+	    UnsupportedPath (\$command, \$path);
+	    ycp::Return (undef);
     # destructor
     } elsif ($command eq 'result') {
 	y2milestone ('Bye bye...');

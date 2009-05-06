@@ -1228,6 +1228,22 @@ and thus its status cannot be changed in this dialog."));
 	});
     }
 
+    void CreateTestingSnapshot () {
+	// a bussy message
+	UI::OpenDialog (`Label(_("Creating testing snapshot...")));
+	SCR::Write (.smt.staging.patches, nil);
+	SCR::Write (.smt.staging.testing_snapshot, selected_catalog);
+	UI::CloseDialog();
+    }
+
+    void CreateProductionSnapshot () {
+	// a bussy message
+	UI::OpenDialog (`Label(_("Creating production snapshot...")));
+	SCR::Write (.smt.staging.patches, nil);
+	SCR::Write (.smt.staging.production_snapshot, selected_catalog);
+	UI::CloseDialog();
+    }
+
     symbol HandleStagingTableDialog (string id, map event) {
 	any action = event["ID"]:nil;
 	any reason = event["EventReason"]:nil;
@@ -1260,9 +1276,9 @@ and thus its status cannot be changed in this dialog."));
 	    ChangeAllListedPatches (false);
 	    RedrawPatchesTable (GetSelectedPatchFilter());
 	} else if (action == `create_snapshot_testing) {
-	    // FIXME: there's no such functionality yet
+	    CreateTestingSnapshot();
 	} else if (action == `create_snapshot_production) {
-	    // FIXME: there's no such functionality yet
+	    CreateProductionSnapshot();
 	}
 
 	return nil;
