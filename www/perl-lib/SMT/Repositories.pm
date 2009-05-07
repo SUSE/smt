@@ -172,6 +172,7 @@ sub GetAllRepositories ($$) {
 
     while ($row = $sth->fetchrow_hashref()) {
 	$row->{'TARGET'} = '' if (not defined $row->{'TARGET'});
+	$row->{'LAST_MIRROR'} = '' if (not defined $row->{'LAST_MIRROR'});
 	push @{$ret}, $row;
     }
 
