@@ -2,7 +2,9 @@
 -- for comments refer to  ../0.10/100-smt-tables.sql
 --
 
-alter table Clients add COLUMN ID INT UNSIGNED AUTO_INCREMENT UNIQUE KEY FIRST;
+alter table Clients add COLUMN ID INTEGER UNSIGNED AUTO_INCREMENT UNIQUE KEY FIRST;
+
+alter table MachineData add COLUMN TYPE INTEGER UNSIGNED NOT NULL default 0;
 
 create table JobQueue ( ID          INTEGER UNSIGNED NOT NULL,
                         GUID_ID     INTEGER UNSIGNED NOT NULL,

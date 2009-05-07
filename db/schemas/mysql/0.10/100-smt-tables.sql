@@ -58,9 +58,16 @@ create table Registration(GUID         CHAR(50) NOT NULL,
                        -- FOREIGN KEY (ProductID) REFERENCES Products  -- FOREIGN KEY not supported by sqlite3
                          );
 
+--
+-- MachineData.TYPE is one of
+--   0 -  data that gets synced to NCC
+--   1 -  patchstatus information
+--   2 -  reserved for JobQueue usage
+--   3... <free>
 create table MachineData(GUID          CHAR(50) NOT NULL,
                          KEYNAME       CHAR(50) NOT NULL,
                          VALUE         BLOB,
+                         TYPE          INTEGER UNSIGNED NOT NULL default 0,
                          PRIMARY KEY(GUID, KEYNAME)
                       -- FOREIGN KEY (GUID) REFERENCES Registration (GUID) ON DELETE CASCADE -- FOREIGN KEY not supported by sqlite3
                         );
