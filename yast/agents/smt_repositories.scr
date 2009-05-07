@@ -15,36 +15,4 @@
  */
 .smt.repositories
 
-`ag_anyagent (
-    `Description (
-	// Run smt-catalogs to list all mirrorable ones
-	// LC_ALL=C is to get 'Yes', 'No' not translated
-	(`Run ("LC_ALL=C /usr/sbin/smt-catalogs --batch-mode --only-mirrorable 2>/dev/null")),
-	// Comments...
-	"\n",
-	// Read-only?
-	true,
-	(`List (
-	    `Tuple (
-		`Separator ("\t |"),
-		`mirroring (`String ("^|", " ")),
-		`Separator ("\t |"),
-		`id (`String ("^|", " ")),
-		`Separator ("\t |"),
-		`type (`String ("^|", " ")),
-		`Separator ("\t |"),
-		`name (`String ("^|", " ")),
-		`Separator ("\t |"),
-		`target (`String ("^|", " ")),
-		`Separator ("\t |"),
-		`description (`String ("^|", " ")),
-		`Separator ("\t |"),
-		`mirrorable (`String ("^|", " ")),
-		`Separator ("\t |"),
-		`staging (`String ("^|", " ")),
-		`Separator ("\t |")
-	    ),
-	    "\n"
-	))
-    )
-)
+`ag_smt_repositories()

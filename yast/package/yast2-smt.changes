@@ -1,5 +1,11 @@
 -------------------------------------------------------------------
-Tue Wed  6 14:41:14 CEST 2009 - locilka@suse.cz
+Thu May  7 12:13:14 CEST 2009 - locilka@suse.cz
+
+- Added new ag_smt_repositories SCR agent (.smt.repositories) to
+  use direct access to database instead of using smt-catalogs.
+
+-------------------------------------------------------------------
+Wed May  6 14:41:14 CEST 2009 - locilka@suse.cz
 
 - Using new Repositories.pm from SCR agent, no direct access to
   SQL anymore.

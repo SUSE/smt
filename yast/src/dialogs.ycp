@@ -247,6 +247,7 @@
 		    _("Target"),
 		    _("Mirroring"),
 		    _("Staging"),
+		    _("Mirrored"),
 		    _("Description")
 		),
 		[]
@@ -822,7 +823,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	// busy message
 	boolean uio = (boolean) UI::OpenDialog (`Label (_("Getting list of the currently available repositories...")));
 
-	list <map <string, string> > catalogs_states = (list <map <string, string> >) SCR::Read (.smt.repositories);
+	list <map <string, any> > catalogs_states = (list <map <string, any> >) SCR::Read (.smt.repositories.all);
 	if (catalogs_states == nil) {
 	    y2error ("Error getting available repositories");
 	    catalogs_states = [];
@@ -836,19 +837,19 @@ Enter your SMT server URL in the following format: http:://server.name/
 	map <integer, list <string> > filter_items = $[];
 	integer max_filter_item = -1;
 
-	list <term> items = maplist (map <string, string> one_catalog, catalogs_states, {
+	list <term> items = maplist (map <string, any> one_catalog, catalogs_states, {
 	    if (catalog_filter != nil) {
-		if (regexpmatch (one_catalog["name"]:"", "^" + catalog_filter + "-")) {
+		if (regexpmatch (one_catalog["NAME"]:"", "^" + catalog_filter + "-")) {
 		    // ...
-		} else if (one_catalog["name"]:"" == catalog_filter) {
+		} else if (one_catalog["NAME"]:"" == catalog_filter) {
 		    // ...
 		} else {
 		    return nil;
 		}
 	    }
 
-	    mirroring	= (one_catalog["mirroring"]:"" == "Yes");
-	    staging	= (one_catalog["staging"]:"" == "Yes");
+	    mirroring	= (one_catalog["DOMIRROR"]:"" == "Y");
+	    staging	= (one_catalog["STAGING"]:"" == "Y");
 
 	    integer splititem_nr = -1;
 	    // "SLE10-SDK-Updates" -> ["SLE10", "SDK", "Updates"]
@@ -865,21 +866,22 @@ Enter your SMT server URL in the following format: http:://server.name/
 		max_filter_item = splititem_nr;
 
 	    // used later in Handle* function
-	    catalogs_info[one_catalog["id"]:""] = $[
+	    catalogs_info[one_catalog["CATALOGID"]:""] = $[
 		"mirroring"	: mirroring,
 		"staging"	: staging,
-		"name"		: one_catalog["name"]:"",
+		"name"		: one_catalog["NAME"]:"",
 		// empty /--/ == no specific target
-		"target"	: (regexpmatch (one_catalog["target"]:"", "^-+$") ? "" : one_catalog["target"]:""),
+		"target"	: (regexpmatch (one_catalog["TARGET"]:"", "^-+$") ? "" : one_catalog["TARGET"]:""),
 	    ];
 
 	    return `item (
-		`id (one_catalog["id"]:""),
-		one_catalog["name"]:_("Unknown"),
-		one_catalog["target"]:_("Unknown"),
+		`id (one_catalog["CATALOGID"]:""),
+		one_catalog["NAME"]:_("Unknown"),
+		one_catalog["TARGET"]:_("Unknown"),
 		(mirroring ? yes : no),
 		(staging ? yes : no),
-		one_catalog["description"]:""
+		(one_catalog["LAST_MIRROR"]:"" != "" ? one_catalog["LAST_MIRROR"]:"" : no),
+		one_catalog["DESCRIPTION"]:""
 	    );
 	});
 

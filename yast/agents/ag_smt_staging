@@ -43,7 +43,7 @@ use constant {
     YCP_FALSE	=> 'false',
 
     # All Mirrored repositories with Staging feature enabled
-    ALL_REPO_FILTER => {
+    MIRRORED_REPO_FILTER => {
 	SMT::Repositories::MIRRORING	=> SMT::Repositories::MIRRORING_TRUE,
 	SMT::Repositories::STAGING	=> SMT::Repositories::STAGING_TRUE,
     },
@@ -285,7 +285,7 @@ while (<STDIN>) {
 
     if ($command eq 'Read') {
 	if ($path eq '.repositories') {
-	    ycp::Return ($repositories->GetAllRepositories (ALL_REPO_FILTER));
+	    ycp::Return ($repositories->GetAllRepositories (MIRRORED_REPO_FILTER));
 	} elsif ($path eq '.patches') {
 	    ycp::Return (GetAllPatches ($arg));
 	} elsif ($path eq '.patch.testing') {
