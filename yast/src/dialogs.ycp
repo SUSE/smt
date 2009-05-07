@@ -853,7 +853,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 
 	    integer splititem_nr = -1;
 	    // "SLE10-SDK-Updates" -> ["SLE10", "SDK", "Updates"]
-	    foreach (string one_item, splitstring (one_catalog["name"]:"", "-"), {
+	    foreach (string one_item, splitstring (one_catalog["NAME"]:"", "-"), {
 		splititem_nr = splititem_nr + 1;
 
 		if (! haskey (filter_items, splititem_nr))
