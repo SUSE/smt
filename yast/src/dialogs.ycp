@@ -814,6 +814,8 @@ Enter your SMT server URL in the following format: http:://server.name/
     void RedrawCatalogsTable (list <string> catalogs_filters) {
 	y2milestone ("Filter used: %1", catalogs_filters);
 
+	string current_item = (string) UI::QueryWidget (`id (`catalogs_table), `CurrentItem);
+
 	string catalog_filter = nil;
 	if (size (catalogs_filters) > 0 && catalogs_filters[size(catalogs_filters)-1]:"" == "")
 	    catalogs_filters = remove (catalogs_filters, size(catalogs_filters)-1);
@@ -838,6 +840,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	// $[0:["openSUSE", "SLE", ...], 1:["11.1", "SDK", ...], ...]
 	map <integer, list <string> > filter_items = $[];
 	integer max_filter_item = -1;
+	boolean current_item_present = false;
 
 	list <term> items = maplist (map <string, any> one_catalog, catalogs_states, {
 	    if (catalog_filter != nil) {
@@ -875,6 +878,9 @@ Enter your SMT server URL in the following format: http:://server.name/
 		// empty /--/ == no specific target
 		"target"	: (regexpmatch (one_catalog["TARGET"]:"", "^-+$") ? "" : one_catalog["TARGET"]:""),
 	    ];
+
+	    if (current_item == one_catalog["CATALOGID"]:"")
+		current_item_present = true;
 
 	    return `item (
 		`id (one_catalog["CATALOGID"]:""),
@@ -936,6 +942,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 	}
 
 	UI::ChangeWidget (`id (`catalogs_table), `Items, items);
+	if (current_item_present && current_item != nil)
+	    UI::ChangeWidget (`id (`catalogs_table), `CurrentItem, current_item);
     }
 
     void InitCatalogsTableDialog (string id) {
@@ -1515,6 +1523,8 @@ and thus its status cannot be changed in this dialog."));
 	UI::CloseDialog();
     }
 
+    list <string> filters = [];
+
     symbol HandleCatalogsTableDialog (string id, map event) {
 	if (id != "catalogs")
 	    return nil;
@@ -1529,6 +1539,7 @@ and thus its status cannot be changed in this dialog."));
 	    ToggleCatalog (current_id, "staging");
 	} else if (event_id == `mirror_now) {
 	    MirrorRepository (current_id);
+	    RedrawCatalogsTable (filters);
 	} else if (is (event_id, string) && regexpmatch (tostring (event_id), "^catalogs_filter_")) {
 	    integer filter_id = tointeger (regexpsub (tostring (event_id), "^catalogs_filter_(.*)", "\\1"));
 
@@ -1537,7 +1548,7 @@ and thus its status cannot be changed in this dialog."));
 		return nil;
 	    }
 
-	    list <string> filters = [];
+	    filters = [];
 	    integer current_fid = -1;
 	    string filter_item = nil;
 
