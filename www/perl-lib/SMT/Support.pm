@@ -82,8 +82,8 @@ sub UploadFile ($) {
 	return 0;
     };
 
-    # Removes all '../' for safety
-    $filename =~ s/\.\.\///g;
+    # Removing all but the real file name
+    $filename =~ s/.*\/([^\/]*)$/$1/g;
     $filename = UPLOAD_DIR.$filename;
 
     open (UPLOAD, ">$filename") || do {
