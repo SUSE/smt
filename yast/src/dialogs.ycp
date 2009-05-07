@@ -255,7 +255,9 @@
 	    `Left (
 		`HBox (
 		    `PushButton (`id (`toggle_mirroring), _("Toggle &Mirroring")),
-		    `PushButton (`id (`toggle_staging), _("Toggle &Staging"))
+		    `PushButton (`id (`toggle_staging), _("Toggle &Staging")),
+		    `HStretch(),
+		    `PushButton (`id (`mirror_now), _("Mirror &Now"))
 		)
 	    )
 	);
@@ -1433,6 +1435,86 @@ and thus its status cannot be changed in this dialog."));
 	}
     }
 
+    void MirrorRepository (string repository_id) {
+	if (repository_id == nil || repository_id == "") {
+	    y2error ("Unable to mirror: %1", repository_id);
+	}
+
+	y2milestone ("Mirroring repository: %1", repository_id);
+
+	string cmd = sformat ("/usr/sbin/smt-mirror --repository '%1'", String::Quote (repository_id));
+
+	y2milestone ("Starting process: %1", cmd);
+	integer process_PID = (integer) SCR::Execute (.process.start_shell, cmd);
+	y2milestone ("Got PID: %1", process_PID);
+
+	if (process_PID == nil) {
+	    // Error message
+	    Report::Error (_("Unable to mirror the selected repository."));
+	    return;
+	}
+
+	UI::OpenDialog (`VBox (
+	    `Left (`Heading (_("Mirroring Repository"))),
+	    `MinWidth (80, `LogView (`id (`log), _("&Progress"), 16, 1024)),
+	    `ReplacePoint (`id (`button), `PushButton (`id (`cancel), _("&Stop")))
+	));
+
+	UI::ChangeWidget (`id (`log), `LastLine,
+	    sformat(_("Started mirroring the selected repository with process ID: %1\n"), process_PID)
+	);
+
+	string line = "";
+	any ret = nil;
+	boolean aborted = false;
+
+	while ((boolean) SCR::Read (.process.running, process_PID) == true) {
+	    line = (string) SCR::Read (.process.read_line, process_PID);
+
+	    if (line != nil) {
+		UI::ChangeWidget (`id (`log), `LastLine, line + "\n");
+	    } else {
+		sleep (200);
+	    }
+
+	    ret = UI::PollInput();
+
+	    if (ret == `cancel) {
+		y2milestone ("Really abort?");
+		if (Popup::AnyQuestion (
+		    // a headline
+		    _("Aborting the Mirroring"),
+		    // a pop-up question
+		    _("Are you sure you want to abort the current mirroring process?"),
+		    Label::AbortButton(),
+		    Label::CancelButton(),
+		    `focus_no
+		)) {
+		    UI::ChangeWidget (`id (`log), `LastLine, _("Aborting...\n"));
+		    y2milestone ("Aborting...");
+		    SCR::Execute (.process.kill, process_PID);
+		    aborted = true;
+		    break;
+		}
+	    }
+	}
+
+	// any lines left in buffer?
+	line = (string) SCR::Read (.process.read, process_PID);
+	if (line != nil && size (line) > 0)
+	    UI::ChangeWidget (`id (`log), `LastLine, line + "\n");
+
+	SCR::Execute (.process.release, process_PID);
+
+	if (! aborted) {
+	    UI::ChangeWidget (`id (`log), `LastLine, _("Finished\n"));
+	    UI::ReplaceWidget (`id (`button), `PushButton (`id (`ok), Label::OKButton()));
+	    UI::UserInput();
+	}
+
+	UI::CloseDialog();
+    }
+
     symbol HandleCatalogsTableDialog (string id, map event) {
 	if (id != "catalogs")
 	    return nil;
@@ -1445,6 +1527,8 @@ and thus its status cannot be changed in this dialog."));
 	    ToggleCatalog (current_id, "mirroring");
 	} else if (event_id == `toggle_staging) {
 	    ToggleCatalog (current_id, "staging");
+	} else if (event_id == `mirror_now) {
+	    MirrorRepository (current_id);
 	} else if (is (event_id, string) && regexpmatch (tostring (event_id), "^catalogs_filter_")) {
 	    integer filter_id = tointeger (regexpsub (tostring (event_id), "^catalogs_filter_(.*)", "\\1"));
 

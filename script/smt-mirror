@@ -28,6 +28,10 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
+# Autoflush the STDOUT - Needed for YaST .process agent to read
+# the output ASAP and to display that to a user
+$| = 1;
+
 #
 # FIXME: what about /root/.curlrc for proxy settings?
 #
