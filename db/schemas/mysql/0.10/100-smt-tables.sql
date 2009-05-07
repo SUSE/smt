@@ -1,5 +1,6 @@
 
 drop table if exists Catalogs;
+drop table if exists Filters;
 drop table if exists Products;
 drop table if exists ProductCatalogs;
 drop table if exists Registration;
