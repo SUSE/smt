@@ -101,6 +101,9 @@ DONE:
 - Extended smt-mirror script to select just one --repository to mirror.
   Needed for YaST. Currently working with unique repository ID.
 
+- Extended smt-mirror script to update the LAST_MIRROR entry in Catalogs
+  table (when a repository was mirrored last time).
+
 Rejected:
 =========
 

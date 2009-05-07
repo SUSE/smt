@@ -310,6 +310,20 @@ else
     $array = $dbreplacement;
 }
 
+sub UpdateLastMirror ($$$) {
+    my $dryrun = shift;
+    my $entry = shift || {};
+    my $dbh = shift;
+
+    if (not defined $dryrun || $dryrun) {
+	return;
+    }
+
+    if (defined $entry->{CATALOGID}) {
+	$dbh->do ('UPDATE Catalogs set LAST_MIRROR=now() where CATALOGID='.$dbh->quote($entry->{CATALOGID}));
+    }
+}
+
 foreach my $entry (@{$array})
 {
     next if(!exists $entry->{CATALOGTYPE} || ! defined $entry->{CATALOGTYPE});
@@ -361,6 +375,8 @@ foreach my $entry (@{$array})
             $zyppMirror->uri( $zuri->as_string );
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirror( dryrun => $dryrun );
+
+	    UpdateLastMirror ($dryrun, $entry, $dbh);
 
             my $s = $zyppMirror->statistic();
             $download   += $s->{DOWNLOAD};

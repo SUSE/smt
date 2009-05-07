@@ -317,7 +317,7 @@ while (<STDIN>) {
     # destructor
     } elsif ($command eq 'result') {
 	y2milestone ('Bye bye...');
-	exit 0;
+	last;
     } else {
 	y2error ('Unknown SCR command: '.$command);
 	ycp::Return (undef);
@@ -325,4 +325,4 @@ while (<STDIN>) {
 }
 # the main() loop
 
-exit 1;
+exit 0;
