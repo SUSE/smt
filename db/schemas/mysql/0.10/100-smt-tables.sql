@@ -78,6 +78,7 @@ create table Catalogs(ID          INT AUTO_INCREMENT UNIQUE KEY,
                       MIRRORABLE  CHAR(1) DEFAULT 'N',
                       SRC         CHAR(1) DEFAULT 'N',    -- N NCC    C Custom
                       STAGING     CHAR(1) DEFAULT 'N',    -- N No  Y Yes
+                      LAST_MIRROR TIMESTAMP NULL DEFAULT NULL,
                       UNIQUE(NAME, TARGET)
                      );
 
