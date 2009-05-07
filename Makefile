@@ -137,9 +137,9 @@ install:
 	install -m 644 doc/SMT-Database-Schema.txt $(DESTDIR)$(DOCDIR)/smt/
 	make -C swig $@
 
-	mkdir -p $(DESTDIR)/srv/ftp/incoming/
-	chown smt:www $(DESTDIR)/srv/ftp/incoming/
-	chmod 775 $(DESTDIR)/srv/ftp/incoming/
+	mkdir -p $(DESTDIR)/var/spool/smt-support
+	chown smt:www $(DESTDIR)/var/spool/smt-support || echo "Set ownership manually: chown smt:www $(DESTDIR)/var/spool/smt-support"
+	chmod 775 $(DESTDIR)/var/spool/smt-support || echo "Set permission manually: chmod 775 $(DESTDIR)/var/spool/smt-support"
 
 test: clean
 	cd tests; perl tests.pl && cd -

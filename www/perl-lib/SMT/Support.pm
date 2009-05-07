@@ -10,7 +10,7 @@ use Apache2::RequestIO ();
 use Apache2::RequestUtil;
 
 use constant {
-    UPLOAD_DIR => '/srv/ftp/incoming/',
+    UPLOAD_DIR => '/var/spool/smt-support/',
     USER_AGENT_REQUIRED => 'SupportConfig',
 };
 

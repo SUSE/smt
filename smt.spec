@@ -173,6 +173,7 @@ exit 0
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
+%exclude /etc/smt.d/smt_support.conf
 %config /etc/smt.d/novell.com-smt
 %config /etc/logrotate.d/smt
 /etc/init.d/smt
@@ -185,6 +186,7 @@ exit 0
 %{perl_vendorarch}/auto/Sys/GRP/*.so
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/SMT/*.pm
+%exclude /srv/www/perl-lib/SMT/Support.pm
 /usr/sbin/smt-*
 %exclude /usr/sbin/smt-support
 /usr/sbin/smt
@@ -195,7 +197,6 @@ exit 0
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
 %doc %{_docdir}/smt/*
-%dir %attr(775, smt, www)/srv/ftp/incoming/
 
 %files -n res-signingkeys
 %defattr(-,root,root)
@@ -205,6 +206,9 @@ exit 0
 %files support
 %defattr(-,root,root)
 /usr/sbin/smt-support
+/srv/www/perl-lib/SMT/Support.pm
+%config /etc/smt.d/smt_support.conf
+%dir %attr(775, smt, www)/var/spool/smt-support
 %doc %attr(644, root, root) %{_mandir}/man1/smt-support.1.gz
 
 

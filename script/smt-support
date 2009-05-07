@@ -14,7 +14,7 @@ CURRENT_SCRIPT=$(basename $0)
 SMT_UPLOAD_TARGET='https://secure-www.novell.com/upload?appname=supportconfig&file={tarball}'
 SMT_LOG=/var/log/smt/${CURRENT_SCRIPT}.log
 SMT_CONTACT_FILE=contact-smt-support.txt
-echo ${SMT_INCOMING:=/var/spool/smt} &> /dev/null
+echo ${SMT_INCOMING:=/var/spool/smt-support} &> /dev/null
 UPLOAD_FILEPATH=""
 ARCH_FILE=""
 NEW_ARCH_FILE=""
