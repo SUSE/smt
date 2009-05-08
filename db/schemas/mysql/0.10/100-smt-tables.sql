@@ -164,7 +164,13 @@ create table RepositoryContentData(localpath   VARCHAR(300) PRIMARY KEY,
 --      4  -  execute
 --      5  -  reboot
 --      6  -  configure 
---      7  -  wait
+--      7  -  wait (time, jobstatus)
+--
+-- STATUS is one of
+--      0  -  not yet worked on
+--      1  -  successful
+--      2  -  failed
+--      3  -  denied by client 
 
 create table JobQueue ( ID          INTEGER UNSIGNED NOT NULL,
                         GUID_ID     INTEGER UNSIGNED NOT NULL,
@@ -173,14 +179,17 @@ create table JobQueue ( ID          INTEGER UNSIGNED NOT NULL,
                         DESCRIPTION MEDIUMTEXT,
                         TYPE        INTEGER UNSIGNED NOT NULL default 0,
                         ARGUMENTS   BLOB,
-                        RESULTS     BLOB,
-                        STATUS      TINYINT UNSIGNED NOT NULL default 0,
-                        STATUSTEXT  TEXT,
-                        REQUESTED   TIMESTAMP default CURRENT_TIMESTAMP,
+                        STATUS      TINYINT UNSIGNED NOT NULL default 0, -- this is the jobstatus
+                        STDOUT      BLOB,
+                        STDERR      BLOB,
+                        EXITCODE    INTEGER,   -- exitcode of the commands on the client side
+                        CREATED     TIMESTAMP default CURRENT_TIMESTAMP,
                         TARGETED    TIMESTAMP NULL default NULL,
                         EXPIRES     TIMESTAMP NULL default NULL,
+                        RETRIEVED   TIMESTAMP NULL default NULL,
                         FINISHED    TIMESTAMP NULL default NULL,
                         PERSISTENT  TINYINT(1) NOT NULL default 0,
+                        VERBOSE     TINYINT(1) NOT NULL default 0,
                         TIMELAG     TIME NULL default NULL,
                         PRIMARY KEY (ID, GUID_ID)
                       );
