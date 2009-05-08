@@ -94,15 +94,20 @@ sub parsejob
 ###############################################################################
 sub main
 {
-  my $xmldata = getnextjob();
 
-  my $jobid = parsejob($xmldata);
+  while()
+  {
 
-  print "running $jobid...\n";
+    my $xmldata = getnextjob();
 
-  my $returncode = `./processjob.pl $jobid`;
+    my $jobid = parsejob($xmldata);
 
-  print "$jobid returned: $returncode\n";
+    print "running $jobid...\n";
+    `./processjob.pl $jobid`;
+
+    sleep (1);
+  }
+
 
 }
 
