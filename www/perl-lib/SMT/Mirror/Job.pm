@@ -711,6 +711,9 @@ the file (depends on the option I<nohardlink> in new()).
 If a file was found and hardlink or copy was successfull this function 
 return 1 (true), otherwise 0 (false)
 
+Returns 0 also if checksum is not specified.
+Returns 0 also if such file (name) & checksum is not in the DB.
+
 =cut
 
 sub copyFromLocalIfAvailable
