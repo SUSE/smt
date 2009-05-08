@@ -151,10 +151,11 @@ sub loadjobhandler
 ###############################################################################
 sub main
 {
+  my  $jobid  =  $ARGV[0];
+  print "jobid: $jobid";
 
-  my $xmldata = getjob(42);
-
-  my %jobdata = parsejob($xmldata);
+  my $xmldata = getjob( $jobid );
+  my %jobdata = parsejob( $xmldata );
 
   loadjobhandler ( $jobdata{type}, $jobdata{id} ); 
 
@@ -163,7 +164,7 @@ sub main
   updatejob ( $jobdata{id}, $retval{success}, $retval{message}  );
 }
 
-main();
+main( );
 
 
 

@@ -102,7 +102,7 @@ sub main
 
   my $returncode = `./processjob.pl $jobid`;
 
-  print "returned $returncode\n";
+  print "$jobid returned: $returncode\n";
 
 }
 
