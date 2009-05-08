@@ -16,9 +16,12 @@ SMT::Parser::RpmMdPatches - parsers RpmMd repodata files and search for patches
 
 =head1 DESCRIPTION
 
-Parses metadata and search for patch descriptions. 
-It returns a hash patchid as key and the subkeys
-I<title>, I<description> and I<type>
+Parses metadata and searches for patch descriptions. It can handle both
+updateinfo.xml (RPMMD) files and patches.xml with patch-*.xml (SUSE extension
+to RPMMD used on openSUSE 10.x and SLE 10).
+
+It returns a hash with patchid ("name-version") as key and subkeys
+I<name>, I<version>, I<title>, I<description>, and I<type>.
 
 =head1 METHODS
 
@@ -26,27 +29,26 @@ I<title>, I<description> and I<type>
 
 =item new()
 
-Create a new SMT::Parser::RpmMdPatches object:
-
+Creates new SMT::Parser::RpmMdPatches object. Options are passed as keyword
+value pairs. Recognized options are:
 =over 4
 
-=item parse
+=item log
+Logger object created by SMT::Utils::openLog().
 
-Starts parsing and returns a hash with all patches found.
+=item vblevel
+Log verbosity level. See SMT::Utils::LOG* for possible values.
+
+=item filter
+Patch filter object (SMT::Filter). If specified, matching patches are discarded
+from the result. Additionaly, if output writer is specified, filtered
+updateinfo.xml is written to this writer (patches.xml is not written).
+
+=item out
+Output writer used to write filtered updateinfo.xml.
 
 =back
-
-=head1 AUTHOR
-
-mc@suse.de
-
-=head1 COPYRIGHT
-
-Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
-
 =cut
-
-# constructor
 sub new
 {
     my $pkgname = shift;
@@ -61,7 +63,9 @@ sub new
     $self->{VBLEVEL}   = 0;
 
     $self->{PATCHES} = {};
-    
+    $self->{FILTER} = undef;
+    $self->{OUT} = undef;
+
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
@@ -74,6 +78,16 @@ sub new
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
+    }
+
+    if(exists $opt{filter} && defined $opt{filter})
+    {
+        $self->{FILTER} = $opt{filter};
+    }
+
+    if(exists $opt{out} && defined $opt{out})
+    {
+        $self->{OUT} = $opt{out};
     }
 
     bless($self);
@@ -102,6 +116,12 @@ sub specialmdlocation
 }
 
 
+=item parse()
+
+Starts parsing and returns a hash with all patches found.
+
+=cut
+
 # parses a xml resource
 sub parse
 {
@@ -109,15 +129,24 @@ sub parse
     my @repodata = @_;
 
     my $path     = undef;
-    
+
     if(!defined $self->{RESOURCE})
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid resource");
         return $self->{PATCHES};
     }
-    
+
     foreach my $start (@repodata)
     {
+        if ($start =~ /updateinfo\.xml/ && defined $self->{OUT})
+        {
+            $self->{WRITE_OUT} = 1;
+        }
+        else
+        {
+            $self->{WRITE_OUT} = 0;
+        }
+
         $path = $self->{RESOURCE}."/$start";
 
         # for security reason strip all | characters.
@@ -140,8 +169,10 @@ sub parse
                                         Start=> sub { handle_start_tag($self, @_) },
                                         Char => sub { handle_char_tag($self, @_) },
                                         End=> sub { handle_end_tag($self, @_) },
+                                        Default => sub { handle_the_rest($self, @_) },
+                                        Final => sub { handle_the_end($self, @_) }
                                        });
-        
+
         if ( $path =~ /(.+)\.gz/ )
         {
             my $fh = IO::Zlib->new($path, "rb");
@@ -176,8 +207,16 @@ sub handle_start_tag
 {
     my $self = shift;
     my( $expat, $element, %attrs ) = @_;
+
     # ask the expat object about our position
-    #my $line = $expat->current_line;
+    # my $ln = $expat->current_line;
+
+    # store the original XML
+    my $line = $expat->original_string;
+    if ($self->{WRITE_OUT})
+    {
+        $self->{CURRENT}->{ORIGXML} .= $line; 
+    }
 
     if(! exists $self->{CURRENT}->{MAINELEMENT})
     {
@@ -191,7 +230,17 @@ sub handle_start_tag
         $self->{CURRENT}->{PATCHDESCR} = "";
     }
     
-    if ( lc($element) eq "patch" || lc($element) eq "data" )
+    if (lc($element) eq "updates")
+    {
+        # write out the original XML string read until now, the rest will be
+        # writen patch by patch (<update> element)
+        if ($self->{WRITE_OUT})
+        {
+            print {$self->{OUT}} $self->{CURRENT}->{ORIGXML};
+            $self->{CURRENT}->{ORIGXML} = "";
+        }
+    }
+    elsif ( lc($element) eq "patch" || lc($element) eq "data" )
     {
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
     }
@@ -243,6 +292,13 @@ sub handle_char_tag
     my $self = shift;
     my( $expat, $string ) = @_;
 
+    # store the original XML
+    my $line = $expat->original_string;
+    if ($self->{WRITE_OUT})
+    {
+        $self->{CURRENT}->{ORIGXML} .= $line; 
+    }
+
     if (defined $self->{CURRENT} && defined $self->{CURRENT}->{SUBELEMENT})
     {
         if ($self->{CURRENT}->{SUBELEMENT} eq "category")
@@ -278,6 +334,13 @@ sub handle_end_tag
     my $self = shift;
     my( $expat, $element ) = @_;
 
+    # store the original XML
+    my $line = $expat->original_string;
+    if ($self->{WRITE_OUT})
+    {
+        $self->{CURRENT}->{ORIGXML} .= $line; 
+    }
+
     if (exists $self->{CURRENT}->{MAINELEMENT} && defined $self->{CURRENT}->{MAINELEMENT} &&
            lc($element) eq $self->{CURRENT}->{MAINELEMENT} )
     {
@@ -291,11 +354,23 @@ sub handle_end_tag
             $self->{PATCHES}->{$str}->{title} = $self->{CURRENT}->{PATCHTITLE};
             $self->{PATCHES}->{$str}->{description} = $self->{CURRENT}->{PATCHDESCR};
 
+            # remove the patch if it matches current filter
+            if (defined $self->{FILTER} && $self->{FILTER}->matches($self->{PATCHES}->{$str}))
+            {
+                delete($self->{PATCHES}->{$str});
+            }
+            # write out the original XML string of current patch
+            elsif ($self->{WRITE_OUT})
+            {
+                print {$self->{OUT}} $self->{CURRENT}->{ORIGXML};
+            }
+
             $self->{CURRENT}->{PATCHID}   = "";
             $self->{CURRENT}->{PATCHVER}  = "";
             $self->{CURRENT}->{PATCHTYPE} = "";
             $self->{CURRENT}->{PATCHTITLE} = "";
             $self->{CURRENT}->{PATCHDESCR} = "";
+            $self->{CURRENT}->{ORIGXML} = "";
         }
 
         # second check location if we have other metadata files
@@ -310,9 +385,14 @@ sub handle_end_tag
                 # rewrite directory
                 $location =~ s/repodata/.repodata/;
             }
-            $self->parse($location);
+            my $parsenew = SMT::Parser::RpmMdPatches->new(
+                log => $self->{LOG},
+                vblevel => $self->{VBLEVEL});
+            $parsenew->resource($self->{RESOURCE});
+            $parsenew->specialmdlocation($self->{LOCATIONHACK});
+            $parsenew->parse($location);
         }
-        
+
         $self->{CURRENT} = undef;
     }
     elsif ( exists $self->{CURRENT}->{SUBELEMENT} && defined $self->{CURRENT}->{SUBELEMENT} &&
@@ -321,5 +401,45 @@ sub handle_end_tag
         $self->{CURRENT}->{SUBELEMENT} = undef;
     }
 }
+
+# called for all events which do not have their own handlers
+sub handle_the_rest
+{
+    my $self = shift;
+    my( $expat, $str ) = @_;
+
+    # store the original XML
+    my $line = $expat->original_string;
+    if ($self->{WRITE_OUT})
+    {
+        $self->{CURRENT}->{ORIGXML} .= $line; 
+    }
+}
+
+# called at the end of parsing
+sub handle_the_end
+{
+    my $self = shift;
+    my $expat = shift;
+
+    # print the original XML read from last <patch> to the end
+    my $line = $expat->original_string;
+    if ($self->{WRITE_OUT})
+    {
+        print {$self->{OUT}} $self->{CURRENT}->{ORIGXML} . $line;
+        $self->{CURRENT}->{ORIGXML} = ""
+    }
+}
+
+=back
+=head1 AUTHOR
+
+mc@suse.de, jkupec@suse.cz
+
+=head1 COPYRIGHT
+
+Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
 
 1;
