@@ -43,54 +43,15 @@ sub logger
 };
 
 
-###############################################################################
-# updates status of a job on the smt server
-# args: jobid, success, message 
-sub updatejob
-{
-  my ($jobid, $success, $message) =  @_;
-
-  logger( "updating job $jobid ($success) $message", $jobid);
-
-  my $job =
-  {
-    'id' => $jobid,
-    'success' =>  $success,
-    'message' => $message
-  };
-  my $xmljob = XMLout($job, rootname => "job");
-
-  my $ua = LWP::UserAgent->new;
-
-  my $response = $ua->request(POST HOST."/=v1=/smt/job/id/$jobid",
-    'Content-Type' => 'text/xml',
-     Content        => $xmljob
-  );
-
-  if (! $response->is_success )
-  {
-    # Do not pass the jobid to the error() because that 
-    # causes an infinit recursion
-    error( "Unable to update job: " . $response->status_line . "-" . $response->content );
-  }
-  else
-  {
-    logger( "successfully updated job $jobid");
-  }
-};
-
 
 ###############################################################################
-# retrieve the a job from the smt server
-# args: jobid
+# retrieve the next job from the smt server
+# args: none
 # returns: job description in xml
-sub getjob
+sub getnextjob
 {
-  my ($id) = @_;
-
-
   my $ua = LWP::UserAgent->new;
-  my $response = $ua->request(GET HOST."/=v1=/smt/job/id/$id");
+  my $response = $ua->request(GET HOST."/=v1=/smt/job/id/next");
 
   if (! $response->is_success )
   {
@@ -103,7 +64,7 @@ sub getjob
 ###############################################################################
 # parse xml job description
 # args:    xml
-# returns: hash (id, type, args)
+# returns: id
 sub parsejob
 {
   my $xmldata = shift;
@@ -112,8 +73,6 @@ sub parsejob
 
   my $job;
   my $jobid;
-  my $jobtype;
-  my $jobargs;
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
@@ -122,44 +81,29 @@ sub parsejob
 
   # retrieve variables
   $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
-  $jobtype = $job->{jobtype}   if ( defined ( $job->{jobtype} ) && ( $job->{jobtype} =~ /^[a-z]+$/ ));
-  $jobargs = $job->{arguments} if ( defined ( $job->{arguments} ));
 
   # check variables
   error( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
-  error( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
-  error( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
 
-  logger( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
+  logger( "got jobid \"$jobid\"");
 
-  return ( id=>$jobid, type=>$jobtype, args=>$jobargs );
+  return $jobid;
 };
-
-
-###############################################################################
-# load job handler
-# args: jobtype, jobid
-sub loadjobhandler
-{
-  my ( $jobtype, $jobid) =  @_;
-
-  eval { require "$jobtype.pl" };
-  error( "unable to load handler for jobtype \"$jobtype\": $@", $jobid ) if ( $@ );
-}
 
 
 ###############################################################################
 sub main
 {
-  my $xmldata = getjob(42);
+  my $xmldata = getnextjob();
 
-  my %jobdata = parsejob($xmldata);
+  my $jobid = parsejob($xmldata);
 
-  loadjobhandler ( $jobdata{type}, $jobdata{id} ); 
+  print "running $jobid...\n";
 
-  my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
+  my $returncode = `./processjob.pl $jobid`;
 
-  updatejob ( $jobdata{id}, $retval{success}, $retval{message}  );
+  print "returned $returncode\n";
+
 }
 
 main();
