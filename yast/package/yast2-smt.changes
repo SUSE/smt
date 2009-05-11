@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon May 11 14:30:25 CEST 2009 - locilka@suse.cz
+
+- smt.* renamed to smt-server.*
+
+-------------------------------------------------------------------
 Thu May  7 12:13:14 CEST 2009 - locilka@suse.cz
 
 - Added new ag_smt_repositories SCR agent (.smt.repositories) to

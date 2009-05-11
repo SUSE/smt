@@ -17,8 +17,8 @@ X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=smt
 
 Icon=yast-smt
-Exec=/sbin/yast2 smt
+Exec=/sbin/yast2 smt-server
 
-Name=SMT Configuration
-GenericName=SMT Configuration
+Name=SMT Server Configuration
+GenericName=SMT Server Configuration
 X-KDE-SubstituteUID=true
