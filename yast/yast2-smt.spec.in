@@ -54,6 +54,7 @@ mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/48x48/apps
 cd $RPM_BUILD_ROOT/@themedir@/current/icons
 for dir in 16x16 22x22 32x32 48x48; do
     cd $RPM_BUILD_ROOT/usr/share/icons/hicolor/$dir/apps
+    rm -rf yast-smt.png
     ln -s @themedir@/current/icons/$dir/apps/yast-smt.png .
 done
 

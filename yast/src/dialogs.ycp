@@ -946,7 +946,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    UI::ChangeWidget (`id (`catalogs_table), `CurrentItem, current_item);
     }
 
-    void InitCatalogsTableDialog (string id) {
+    void InitRepositoriesTableDialog (string id) {
 	RedrawCatalogsTable ([]);
     }
 
@@ -1525,8 +1525,8 @@ and thus its status cannot be changed in this dialog."));
 
     list <string> filters = [];
 
-    symbol HandleCatalogsTableDialog (string id, map event) {
-	if (id != "catalogs")
+    symbol HandleRepositoriesTableDialog (string id, map event) {
+	if (id != "repositories")
 	    return nil;
 
 	any event_id = event["ID"]:nil;

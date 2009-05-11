@@ -52,7 +52,7 @@ Some fields are enabled or disabled accordingly, e.g., <b>Day of the Week</b>
 is disabled for <tt>Daily</tt> job frequency.</p>
 "),
 
-	"catalogs" :
+	"repositories" :
 	    // TRANSLATORS: help e1
 	    _("<p><big><b>Repositories</b></big><br>
 Here you can see all repositories available for mirroring.</p>") + 

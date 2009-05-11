@@ -2,6 +2,8 @@
 Mon May 11 14:30:25 CEST 2009 - locilka@suse.cz
 
 - smt.* renamed to smt-server.*
+- Added new smt.ycp and smt.desktop for SMT Management (contains
+  Repositories and Staging moved here from smt-server).
 
 -------------------------------------------------------------------
 Thu May  7 12:13:14 CEST 2009 - locilka@suse.cz

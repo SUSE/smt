@@ -6,7 +6,7 @@ X-KDE-ModuleType=Library
 X-KDE-RootOnly=true
 X-KDE-HasReadOnlyMode=true
 X-KDE-Library=yast2
-X-SuSE-YaST-Call=smt-server
+X-SuSE-YaST-Call=smt
 
 X-SuSE-YaST-Group=Net_advanced
 X-SuSE-YaST-Argument=
@@ -17,8 +17,8 @@ X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=smt
 
 Icon=yast-smt
-Exec=/sbin/yast2 smt-server
+Exec=/sbin/yast2 smt
 
-Name=SMT Server Configuration
-GenericName=SMT Server Configuration
+Name=SMT Server Management
+GenericName=SMT Server Management
 X-KDE-SubstituteUID=true

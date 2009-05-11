@@ -62,13 +62,13 @@
 		"services" : [ "service:apache2", "service:apache2-ssl" ],
 		"display_details" : false,
 	    ]),
-	    "catalogs" : $[
+	    "repositories" : $[
 		"widget"	: `custom,
-		"help"		: HELPS["catalogs"]:"",
+		"help"		: HELPS["repositories"]:"",
 		"custom_widget"	: `Empty(),
-		"handle"	: HandleCatalogsTableDialog,
-		"init"		: InitCatalogsTableDialog,
-		// "store"	: StoreCatalogsTableDialog,
+		"handle"	: HandleRepositoriesTableDialog,
+		"init"		: InitRepositoriesTableDialog,
+		// "store"	: StoreRepositoriesTableDialog,
 	    ],
 	    "staging" : $[
 		"widget"	: `custom,
@@ -98,10 +98,10 @@
 					`VStretch()
 				    ),
 	    ],
-	    "catalogs" : $[
+	    "repositories" : $[
 		// TRANSLATORS: tab-header
 		"header"	: _("Repositories"),
-		"widget_names"	: ["catalogs"],
+		"widget_names"	: ["repositories"],
 		"contents"	: CatalogsTableContent(),
 	    ],
 	    "staging" : $[
@@ -140,28 +140,38 @@
 	return CWM::Run (w, $[]);
     }
 
-    any MainSequence() {
-	map <string, any> wd = $[
-	    "tab" : CWMTab::CreateWidget ($[
-		// This is the first YaST SMT run
-		"tab_order"	: (SMTData::IsFirstRun() ?
-		    // BNC #496886: SMT has to be configured before any
-		    // catalogs/repositories or patches or ... can be configured
-		    ["credentials", "database", "scheduled_downloads"]
-		    :
-		    // Not a first run, all tabs are available
-		    ["credentials", "database", "catalogs", "staging", "scheduled_downloads"]
-		),
-		"tabs"		: tabs,
-		"widget_descr"	: widgets,
-		"initial_tab"	: "credentials",
-	    ])
-	];
+    any MainSequence (string sequence_type) {
+	map <string, any> wd = $[];
+	string caption = "";
+
+	if (sequence_type == "config") {
+	    // TRANSLATORS: dialog caption
+	    caption = _("NU Configuration");
+	    wd = $[
+		"tab" : CWMTab::CreateWidget ($[
+		    "tab_order"	: ["credentials", "database", "scheduled_downloads"],
+		    "tabs"		: tabs,
+		    "widget_descr"	: widgets,
+		    "initial_tab"	: "credentials",
+		])
+	    ];
+	} else if (sequence_type == "management") {
+	    // TRANSLATORS: dialog caption
+	    caption = _("SMT Management");
+	    wd = $[
+		"tab" : CWMTab::CreateWidget ($[
+		    "tab_order"	: ["repositories", "staging"],
+		    "tabs"		: tabs,
+		    "widget_descr"	: widgets,
+		    "initial_tab"	: "repositories",
+		])
+	    ];
+	} else {
+	    y2error ("Unknown sequence_type: %1", sequence_type);
+	}
 
 	term contents = `VBox("tab");
 	list <map <string, any> > w = CWM::CreateWidgets (["tab"], (map <string, map <string, any> >) wd);
-	// TRANSLATORS: dialog caption
-	string caption = _("NU Configuration");
 	contents = CWM::PrepareDialog (contents, w);
 
 	Wizard::SetContentsButtons (
@@ -207,7 +217,7 @@
     any SMTSequence () {
 	map aliases = $[
 	    "read"  : [ ``( ReadDialog() ), true ],
-	    "main"  :   ``( MainSequence() ),
+	    "main"  :   ``( MainSequence ("config") ),
 	    "check" : [ ``( CheckConfigDialog() ), true ],
 	    "write" : [ ``( WriteDialog() ), true ]
 	];
@@ -229,6 +239,31 @@
 	    "write" : $[
 		`abort      : `abort,
 		`next       : `next
+	    ],
+	];
+
+	Wizard::CreateDialog();
+	Wizard::DisableBackButton();
+	Wizard::SetAbortButton(`abort, Label::CancelButton());
+	Wizard::SetNextButton(`next, Label::OKButton());
+	Wizard::SetTitleIcon ("yast-smt");
+
+	any ret = Sequencer::Run(aliases, sequence);
+	Wizard::CloseDialog();
+
+	return ret;
+    }
+
+    any SMTManagementSequence () {
+	map aliases = $[
+	    "main"  :   ``( MainSequence ("management") ),
+	];
+
+	map sequence = $[
+	    "ws_start" : "main",
+	    "main" : $[
+		`abort	: `abort,
+		`next	: `next,
 	    ],
 	];
 

@@ -4,6 +4,7 @@ yncludedir = @yncludedir@/smt
 
 client_DATA = \
 	smt.ycp \
+	smt-server.ycp \
 	inst_smt.ycp \
 	smt_generate_new_credentials.ycp
 
