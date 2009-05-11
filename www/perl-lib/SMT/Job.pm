@@ -1,4 +1,4 @@
-package Job;
+package SMT::Job;
 
 use strict;
 use warnings;
