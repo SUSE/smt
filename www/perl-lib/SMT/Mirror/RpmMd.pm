@@ -5,6 +5,8 @@ use LWP::UserAgent;
 use URI;
 use File::Path;
 use File::Find;
+use File::Temp qw/ tempdir /;
+use File::Copy;
 use Crypt::SSLeay;
 use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -116,6 +118,7 @@ sub new
     $self->{STATISTIC}->{NEWRECPATCHES} = 0;
     $self->{STATISTIC}->{NEWSECTITLES} = [];
     $self->{STATISTIC}->{NEWRECTITLES} = [];
+    $self->{FILTER} = undef;
     
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
@@ -156,6 +159,11 @@ sub new
     if(exists $opt{nohardlink} && defined $opt{nohardlink} && $opt{nohardlink})
     {
         $self->{NOHARDLINK} = 1;
+    }
+
+    if(exists $opt{filter} && defined $opt{filter})
+    {
+        $self->{FILTER} = $opt{filter};
     }
 
     bless($self);
@@ -576,19 +584,100 @@ sub mirror()
         $self->job2statistic($self->{JOBS}->{$r});
     }
 
+    my $newpatches;
+    my $oldpatches;
+
+    my $needupdateinfoupdate = 0;
+    my $needprimaryupdate = 0;      # TODO filter also packages
+
+    # to store the new (filtered) repodata
+    my $tmpdir = tempdir(CLEANUP => 1); 
+    # new updateinfo.xml file path
+    my $uifname = "$tmpdir/updateinfo.xml";
+
     #
     # calculate the new available patches
     #
-    my $parsenew = SMT::Parser::RpmMdPatches->new(log => $self->{LOG}, vblevel => $self->vblevel());
-    $parsenew->resource($self->fullLocalRepoPath());
-    $parsenew->specialmdlocation(1);
-    my $newpatches = $parsenew->parse( ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
+
+    # with filtering (generates new metadata)
+    if (defined $self->{FILTER})
+    {
+        # open file to write the new updateinfo.xml
+        my $out = new IO::File();
+        $out->open("> $uifname");
+
+        # parse with filter and writer
+        my $parsenew = SMT::Parser::RpmMdPatches->new(
+            log => $self->{LOG}, vblevel => $self->vblevel(),
+            filter => $self->{FILTER}, out => $out);
+        $parsenew->resource($self->fullLocalRepoPath());
+        $parsenew->specialmdlocation(1);
+        $newpatches = $parsenew->parse(
+            ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
+
+        # parse the original metadata with the filter
+        my $parseorig = SMT::Parser::RpmMdPatches->new(
+            log => $self->{LOG}, vblevel => $self->vblevel(),
+            filter => $self->{FILTER});
+        $parseorig->resource($self->fullLocalRepoPath());
+        $oldpatches = $parseorig->parse(
+            "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
+
+        $out->flush();
+
+        # compare checksums of old updateinfo & tmpfile
+
+        # new checksum
+        open(FILE, "< $uifname");
+        my $sha1 = Digest::SHA1->new;
+        $sha1->addfile(*FILE);
+        my $digest = $sha1->hexdigest();
+        close FILE;
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("new checksum %s", $digest ), 1);
+
+        # unzip the old file
+        open(FILE, "> $uifname.old");
+        my $fh = IO::Zlib->new($self->fullLocalRepoPath()."/.repodata/updateinfo.xml.gz", "rb");
+        print FILE while <$fh>;
+        $fh->close;
+        close FILE;
+
+        # old checksum
+        open(FILE, "< $uifname.old");
+        my $sha1 = Digest::SHA1->new;
+        $sha1->addfile(*FILE);
+        my $olddigest = $sha1->hexdigest();
+        close FILE;
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("old checksum %s", $olddigest ), 1);
+
+        # if checksums differ, overwrite the old updateinfo & update repomd later
+        if (not $digest eq $olddigest)
+        {
+            $needupdateinfoupdate = 1;
+            
+            # TODO remove unnecessary rpms
+        }
+    }
+    # without filtering (metadata stay untouched)
+    else
+    {
+        my $parsenew = SMT::Parser::RpmMdPatches->new(
+            log => $self->{LOG}, vblevel => $self->vblevel());
+        $parsenew->resource($self->fullLocalRepoPath());
+        $parsenew->specialmdlocation(1);
+        $newpatches = $parsenew->parse(
+            ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
     
-    my $parseorig = SMT::Parser::RpmMdPatches->new(log => $self->{LOG}, vblevel => $self->vblevel());
-    $parseorig->resource($self->fullLocalRepoPath());
-    my $oldpatches = $parseorig->parse( "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
+        my $parseorig = SMT::Parser::RpmMdPatches->new(
+            log => $self->{LOG}, vblevel => $self->vblevel());
+        $parseorig->resource($self->fullLocalRepoPath());
+        $oldpatches = $parseorig->parse(
+            "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
+    }
+
     my $pid;
-    
     foreach $pid (keys %{$oldpatches})
     {
         if( exists $newpatches->{$pid} )
@@ -610,7 +699,59 @@ sub mirror()
             push @{$self->{STATISTIC}->{NEWRECTITLES}}, $newpatches->{$pid}->{title};
         }
     }
-    
+
+    my $modifyrepopath = '/usr/bin/modifyrepo';
+    my $createrepopath = '/usr/bin/createrepo';
+
+    # TODO update package info (primary, filelist, other, deltainfo, susedata)
+    #
+    # write output to tmpdir, then copy to .repodata
+    if ($needprimaryupdate)
+    {
+        # createrepo --update <repobase> --outputdir $tmpdir $self->fullLocalRepoPath()
+    }
+
+    my $needrepomdupdate = $needprimaryupdate || $needupdateinfoupdate;
+
+    # update repomd.xml in .repodata
+    #
+    # this means injecting all additional metadata into repomd.xml which
+    # were not added by createrepo (other than primar, filelist, and other.xml)
+    if ($needrepomdupdate)
+    {
+        # update updateinfo.xml.gz info in repomd.xml
+        if ($needupdateinfoupdate)
+        {
+            # note: modifyrepo needs unzipped unpdateinfo.xml
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                "Executing $modifyrepopath $uifname ".$self->fullLocalRepoPath()."/.repodata");
+
+            system($modifyrepopath, $uifname, $self->fullLocalRepoPath()."/.repodata");
+            if ( $? == -1 )
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Command failed: $!");
+            }
+            else
+            {
+                my $rv = $? >> 8;
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Command returned %d.$rv");
+                # FIXME seems modifyrepo only returns 0. Need to check the actual output to see if it succeeded
+                if ($rv != 0)
+                {
+                    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Error from $modifyrepopath: $!");
+                    $self->{STATISTIC}->{ERROR}++;
+                }
+            }
+        }
+
+        if ($needprimaryupdate)
+        {
+            # modifyrepo <repobase>/repodata/<all_other_metadata> <repobase>/repodata # except primary & filelist & other
+        }
+
+        # TODO re-sign the repo
+    }
+
     #
     # if no error happens copy .repodata to repodata
     #
