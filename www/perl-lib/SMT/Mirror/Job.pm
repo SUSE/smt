@@ -19,8 +19,8 @@ SMT::Mirror::Job - represents a single resource mirror job
 
   $job = SMT::Mirror::Job->new(dbh => $dbh);
   $job->uri("http://foo.com/");
-  $job->localBaseDir("/srv/www/htdocs/repo/");
-  $job->localRepoDir("$RCE/SLES11-Updates/sle-11-i586/");
+  $job->localBasePath("/srv/www/htdocs/repo/");
+  $job->localRepoPath("$RCE/SLES11-Updates/sle-11-i586/");
   $job->localFileLocation("/repodata/repomd.xml");
   # when was it last time modified remotely
   print $job->modified()
@@ -449,7 +449,7 @@ sub updateDB
     my $self = shift;
 
     return if( $self->localFileLocation() ne $self->remoteFileLocation() ); # we do not store .repodata/ into the DB
-    
+
     return if( ! defined $self->{DBH} ); # don't try to update when running without a DB connection (e.g. --dbreplfile)
 
     eval 
