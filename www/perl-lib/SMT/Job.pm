@@ -8,18 +8,57 @@ use UNIVERSAL 'isa';
 sub new
 {
     my $class = shift;
+
+    my $arg1 = shift;
+    my $arg2 = shift;
+    my $arg3 = shift;
+
+    my $id;
+    my $type;
+    my $args;
+
+    if ( defined ( $arg2 ) )
+    {
+	$id   = $arg1;
+	$type = $arg2;
+	$args = $arg3;
+
+	if ( ! ( isa ( $args, 'HASH' )))
+        {
+          $args = XMLin( $args, forcearray => 1 );
+        }
+    }
+    else
+    {
+	my $xmldata = $arg1;
+
+	return error( "unable to create job. xml doesn't contain a job description" ) unless ( defined ( $xmldata ) );
+	return error( "unable to create job. xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
+
+	my $j;
+
+	# parse xml
+	eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
+	return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
+	return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
+
+	# retrieve variables
+	$id   = $j->{id}        if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
+	$type = $j->{type}      if ( defined ( $j->{type} ) );
+	$args = $j->{arguments} if ( defined ( $j->{arguments} ) );
+
+	# check variables
+	return error( "unable to create job. id unknown or invalid." )        unless defined( $id );
+	return error( "unable to create job. type unknown or invalid." )      unless defined( $type );
+	return error( "unable to create job. arguments unknown or invalid." ) unless defined( $args );
+    }
+
     my $self = 
     {
-	_id   => shift,
-	_type => shift,
-	_args => shift,
+	_id   => $id,
+	_type => $type,
+	_args => $args,
     };
-
-    # convert args given in xml to hash
-    if ( ! ( isa ($self->{_args}, 'HASH' )))
-    {
-      $self->{_args} = XMLin( $self->{_args}, forcearray => 1 );
-    }
 
     bless $self, $class;
     return $self;
@@ -33,7 +72,7 @@ sub asXML
     my $job =
     {
       'id'        => $self->{_id},
-      'jobtype'   => $self->{_type},
+      'type'      => $self->{_type},
       'arguments' => $self->{_args}
     };
 
@@ -97,6 +136,16 @@ sub getArgumentsXML
 {
     my ( $self ) = @_;
     return XMLout($self->{_args}, rootname => "arguments");
+}
+
+###############################################################################
+# writes error line to log
+# returns undef because that is passed to the caller
+sub error
+{
+    my $message = shift;
+    print "$message\n";
+    return undef;
 }
 
 

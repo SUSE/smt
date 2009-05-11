@@ -3,6 +3,8 @@ package SMT::Job;
 
 use strict;
 use warnings;
+use XML::Simple;
+use UNIVERSAL 'isa';
 use Job;
 
 
@@ -57,7 +59,6 @@ sub getNextJobID
 # returns a list of next jobs either in xml format
 # or in hash structure
 # if no clientID is passed jobs for all clients are taken
-#
 sub getJobList
 {
   my ( $clientID, $xmlformat ) = @_;
@@ -81,3 +82,45 @@ sub getJobList
   }
 }
 
+
+###############################################################################
+# returns a list of next jobs either in xml format
+# or in hash structure
+# if no clientID is passed jobs for all clients are taken
+#
+sub addJob
+{
+  my $arg = shift;
+  my $jobobject;
+
+  if ( isa ($arg, 'HASH' ))
+  {
+    $jobobject = $arg;
+  }
+  else
+  {
+    $jobobject = new Job ( $arg );
+  }
+
+  #TODO: write job to database
+
+  print $jobobject->getId();
+
+  return 1;
+};
+
+
+###############################################################################
+# writes error line to log
+# returns undef because that is passed to the caller
+sub error
+{
+  my $message = shift;
+  print "$message\n";
+  return undef;
+}
+
+
+#my $job = new Job ('<job id="42" type="softwarepush"><arguments></arguments></job>');
+my $job = new Job (42, "swpush", "<args></args>");
+print $job->getId();
