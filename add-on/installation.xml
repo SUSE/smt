@@ -22,7 +22,7 @@
 			<modules config:type="list">
 			    <module>
 				<label>Enterprise Proxy</label>
-				<name>yep</name>
+				<name>smt</name>
 			    </module>
 			</modules>
 		    </insert_module>
