@@ -5,6 +5,17 @@ use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
 
+# constructs a job
+#
+# perl arguments:
+#  my $job = new Job ( 42, "swpush", { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] } );
+#
+# xml only:
+#  my $job = new Job ( <job id="42" type="softwarepush"><arguments><force>true</force></arguments></job>" );
+#
+# mixed perl and xml:
+#  my $job = new Job ( 42, "softwarepush", "<arguments><force>true</force></arguments>" );
+
 sub new
 {
     my $class = shift;
@@ -25,7 +36,8 @@ sub new
 
 	if ( ! ( isa ( $args, 'HASH' )))
         {
-          $args = XMLin( $args, forcearray => 1 );
+          eval { $args = XMLin( $args, forcearray => 1 ) };
+	  return error( "unable to create job. unable to parse xml argument list: $@" ) if ( $@ );
         }
     }
     else
@@ -118,7 +130,8 @@ sub setArguments
     # convert args given in xml to hash
     if ( ! ( isa ($self->{_args}, 'HASH' )))
     {
-      $self->{_args} = XMLin( $self->{_args}, forcearray => 1 );
+	eval { $self->{_args} = XMLin( $self->{_args}, forcearray => 1 ) };
+	return error( "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
     }
 
     return $self->{_args};

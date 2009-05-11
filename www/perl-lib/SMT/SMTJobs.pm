@@ -111,6 +111,22 @@ sub addJob
 
 
 ###############################################################################
+# returns a list of next jobs either in xml format
+# or in hash structure
+# if no clientID is passed jobs for all clients are taken
+#
+sub deleteJob
+{
+  my $jobid = shift;
+
+  #delte job from database
+
+  return 1;
+};
+
+
+
+###############################################################################
 # writes error line to log
 # returns undef because that is passed to the caller
 sub error
@@ -122,5 +138,5 @@ sub error
 
 
 #my $job = new Job ('<job id="42" type="softwarepush"><arguments></arguments></job>');
-my $job = new Job (42, "swpush", "<args></args>");
-print $job->getId();
+#my $job = new Job (42, "swpush", { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] });
+#print $job->getArgumentsXML();
