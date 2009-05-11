@@ -40,6 +40,8 @@ Requires:       perl-DBIx-Transaction
 Requires:       logrotate
 Requires:       suseRegister
 Requires:       htmldoc
+Requires:       createrepo
+Requires:       gpg2
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
