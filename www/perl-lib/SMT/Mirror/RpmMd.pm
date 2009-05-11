@@ -351,6 +351,8 @@ sub job2statistic
  Start the mirror process.
  Returns the count of errors.
 
+Available options:
+
 =over 4
 
 =item dryrun
@@ -358,6 +360,12 @@ sub job2statistic
 If set to 1, only the metadata are downloaded to a temporary directory and all
 files which are outdated are reported. After this is finished, the directory 
 containing the metadata is removed.
+
+=item keyid
+
+ID of the gpg key to use to sign the metadata (repomd.xml file) in case they
+have been changed (due to filtering). If not specified, any existing signature
+and exported key will be deleted.
 
 =back
 
@@ -367,10 +375,12 @@ sub mirror()
     my $self = shift;
     my %options = @_;
     my $dryrun  = 0;
+    my $keyid = undef;
     my $isYum = (ref($self) eq "SMT::Mirror::Yum");
     my $t0 = [gettimeofday] ;
     
     $dryrun = 1 if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
+    $keyid = $options{keyid} if(exists $options{keyid} && defined $options{keyid} && $options{keyid});
 
     # reset the counter
     $self->{STATISTIC}->{ERROR}         = 0;
@@ -734,7 +744,7 @@ sub mirror()
             else
             {
                 my $rv = $? >> 8;
-                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Command returned %d.$rv");
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Command returned $rv.");
                 # FIXME seems modifyrepo only returns 0. Need to check the actual output to see if it succeeded
                 if ($rv != 0)
                 {
@@ -749,7 +759,8 @@ sub mirror()
             # modifyrepo <repobase>/repodata/<all_other_metadata> <repobase>/repodata # except primary & filelist & other
         }
 
-        # TODO re-sign the repo
+        # re-sign the repo
+        $self->signrepo($keyid);
     }
 
     #
@@ -1155,6 +1166,62 @@ sub verify_handler
             }
         }
     }
+}
+
+=item signrepo([$keyid])
+
+Sign the repository index file, repomd.xml using the key specified by $keyid
+argument. If $keyid is not specified, remove previous signature and public key
+(repomd.xml.asc and repomd.xml.key). 
+
+=cut
+sub signrepo
+{
+    my ($self, $keyid) = @_;
+
+    my $repomdfile = $self->fullLocalRepoPath()."/.repodata/repomd.xml";
+
+    if (-e "$repomdfile.asc")
+    {
+        unlink "$repomdfile.asc";
+    }
+    if (-e "$repomdfile.key")
+    {
+        unlink "$repomdfile.key";
+    }
+
+    if (not defined $keyid)
+    {
+        return 1;
+    }
+
+    # sign the repomd.xml
+
+    system('gpg', '-sab', "-u $keyid", '-o', "$repomdfile.asc", $repomdfile);
+    if ($? == -1 || ($? >> 8) != 0 || not -e "$repomdfile.asc")
+    {
+      printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+        "Failed to sign the repository.");
+      return 0;
+    }
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+        "$repomdfile has been signed.");
+
+    # export the public signing key
+
+    system('gpg', '--export', '-a', '-o', "$repomdfile.key", $keyid);
+    if ($? == -1 || ($? >> 8) != 0 || not -e "$repomdfile.key")
+    {
+      printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+        "Failed to export the repo signing key.");
+      return 0;
+    }
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+        "$repomdfile.key successfully generated.");
+
+    return 1;
 }
 
 =back
