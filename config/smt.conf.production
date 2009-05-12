@@ -47,6 +47,16 @@ requiredAuthType=none
 #
 smtUser=smt
 
+#
+# ID of the GPG key to be used to sign modified (filtered) repositories.
+# The key must be accessible by the user who runs SMT, i.e. the user specified
+# in the 'smtUser' configuration option.
+#
+# If empty, the modified repositories will be unsigned.
+#
+signingKeyID=
+
+
 [REPORT]
 # comma separated list of eMail addresses where the status reports will be sent to
 reportEmail=
