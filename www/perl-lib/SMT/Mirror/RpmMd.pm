@@ -661,7 +661,7 @@ sub mirror()
 
         # old checksum
         open(FILE, "< $uifname.old");
-        my $sha1 = Digest::SHA1->new;
+        $sha1 = Digest::SHA1->new;
         $sha1->addfile(*FILE);
         my $olddigest = $sha1->hexdigest();
         close FILE;
