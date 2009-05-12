@@ -363,9 +363,13 @@ containing the metadata is removed.
 
 =item keyid
 
-ID of the gpg key to use to sign the metadata (repomd.xml file) in case they
+ID of the GPG key to use to sign the metadata (repomd.xml file) in case they
 have been changed (due to filtering). If not specified, any existing signature
 and exported key will be deleted.
+
+=item keypass
+
+Passphrase to the GPG key for signing the metadata.
 
 =back
 
@@ -376,11 +380,13 @@ sub mirror()
     my %options = @_;
     my $dryrun  = 0;
     my $keyid = undef;
+    my $keypass = undef;
     my $isYum = (ref($self) eq "SMT::Mirror::Yum");
     my $t0 = [gettimeofday] ;
     
     $dryrun = 1 if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
     $keyid = $options{keyid} if(exists $options{keyid} && defined $options{keyid} && $options{keyid});
+    $keypass = $options{keypass} if(exists $options{keypass} && defined $options{keypass} && $options{keypass});
 
     # reset the counter
     $self->{STATISTIC}->{ERROR}         = 0;
@@ -760,7 +766,10 @@ sub mirror()
         }
 
         # re-sign the repo
-        $self->signrepo($keyid);
+        if ($self->signrepo($self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass))
+        {
+            $self->{STATISTIC}->{ERROR}++;
+        }
     }
 
     #
@@ -1168,18 +1177,29 @@ sub verify_handler
     }
 }
 
-=item signrepo([$keyid])
+=item signrepo($repodatadir, [$keyid, $passphrase])
 
-Sign the repository index file, repomd.xml using the key specified by $keyid
-argument. If $keyid is not specified, remove previous signature and public key
-(repomd.xml.asc and repomd.xml.key). 
+Signs the repository index file, repomd.xml using the key specified by $keyid
+argument and specified $passphrase. If $keyid is not specified, the function
+removes any previous signature and public key (repomd.xml.asc and
+repomd.xml.key). 
+
+The function works on the repodata located at $repodatadir.
 
 =cut
 sub signrepo
 {
-    my ($self, $keyid) = @_;
+    my ($self, $repodatadir, $keyid, $passphrase) = @_;
 
-    my $repomdfile = $self->fullLocalRepoPath()."/.repodata/repomd.xml";
+    if (not defined $repodatadir || not -d $repodatadir)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+            "Invalid repodata directory specified: $repodatadir.");
+        return 0;
+    }
+
+    $repodatadir .= '/' if (not $repodatadir =~ /\/$/);
+    my $repomdfile = $repodatadir."repomd.xml";
 
     if (-e "$repomdfile.asc")
     {
@@ -1197,12 +1217,20 @@ sub signrepo
 
     # sign the repomd.xml
 
-    system('gpg', '-sab', "-u $keyid", '-o', "$repomdfile.asc", $repomdfile);
-    if ($? == -1 || ($? >> 8) != 0 || not -e "$repomdfile.asc")
+    system('gpg', '-sab', '--batch',
+        '-u', $keyid, '--passphrase', $passphrase,
+        '-o', "$repomdfile.asc", $repomdfile);
+    if ($? == -1)
     {
-      printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-        "Failed to sign the repository.");
-      return 0;
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+            "Failed to sign the repository: $!.");
+        return 0;
+    }
+    elsif ($? >> 8 != 0 || not -e "$repomdfile.asc")
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+            "Failed to sign the repository, gpg returned ".($? >> 8).".");
+        return 0;
     }
 
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
@@ -1210,12 +1238,12 @@ sub signrepo
 
     # export the public signing key
 
-    system('gpg', '--export', '-a', '-o', "$repomdfile.key", $keyid);
+    system('gpg', '--batch', '--export', '-a', '-o', "$repomdfile.key", $keyid);
     if ($? == -1 || ($? >> 8) != 0 || not -e "$repomdfile.key")
     {
-      printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-        "Failed to export the repo signing key.");
-      return 0;
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+            "Failed to export the repo signing key.");
+        return 0;
     }
 
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
@@ -1228,7 +1256,7 @@ sub signrepo
 
 =head1 AUTHOR
 
-dmacvicar@suse.de, mc@suse.de
+dmacvicar@suse.de, mc@suse.de, jkupec@suse.cz
 
 =head1 COPYRIGHT
 
