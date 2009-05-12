@@ -74,6 +74,7 @@ Authors:
 License:        GPL v2 or later
 Summary:        Signing Key for RES
 Group:          Productivity/Networking/Web/Proxy
+Prereq:         smt = %version
 
 %description -n res-signingkeys
 This package contain the signing key for RES.
@@ -82,6 +83,7 @@ This package contain the signing key for RES.
 License:        GPL v2 or later
 Summary:        SMT support proxy
 Group:          Productivity/Networking/Web/Proxy
+Prereq:         smt = %version
 
 %description support
 This package contain proxy for support data
