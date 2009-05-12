@@ -96,12 +96,14 @@ cp -p %{S:1} .
 make
 mkdir man
 cd script
-for prog in smt*; do
+for prog in smt* smt*.pod; do #processes *.pod twice, but this way they are processed after the real scripts and thir data does not get rewritten
+    progfile=`echo "$prog" | sed 's/\(.*\)\.pod/\1/'`
     if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" $prog > $prog.$$$$ ; then
-        perl -p -e 's/.if n .na/.\\\".if n .na/;' $prog.$$$$ > ../man/$prog.1;
+        perl -p -e 's/.if n .na/.\\\".if n .na/;' $prog.$$$$ > ../man/$progfile.1;
     fi
     rm -f $prog.$$$$
 done
+rm smt*.pod #don't package .pod-files
 cd -
 #make test
 # ---------------------------------------------------------------------------

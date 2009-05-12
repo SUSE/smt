@@ -1,0 +1,109 @@
+#
+# Manpage
+#
+
+=head1 NAME
+
+smt support
+
+=head1 SYNOPSIS
+
+smt support [OPTION [OPTION ...]]
+
+=head1 DESCRIPTION
+
+C<smt support> manages uploaded support data (comming from the supportconfig
+tool or its equivalents), allows to forward them to Novell, either selectively
+or all.
+
+=head1 OPTIONS
+
+=head2 COMMANDLINE
+
+=over
+
+=item -h
+
+Shows the help screen
+
+=item -i <directory>
+
+Sets the incoming directory where supportconfig archives are uploaded.
+Also set with SMT_INCOMING environment variable.
+
+=item -s <SR number>
+
+The Novell Service Request 11 digit number
+
+=item -n <Name>
+
+Contact's first and last name in quotes
+
+=item -c <Company>
+
+Company name
+
+=item -d <id>
+
+Enter the store ID if applicable
+
+=item -t <id>
+
+Enter the Terminal ID if applicable
+
+=item -p <Phone>
+
+The contact phone number
+
+=item -e <Email>
+
+Contact email address
+
+=item -l
+
+Lists the uploaded supportconfig archives
+
+=item -r <archive>
+
+Deletes the specified archive
+
+=item -R
+
+Deletes all archives in the incoming directory
+
+=item -u <archive>
+
+Uploads the specified archive to Novell, and repackages archive with
+contact information if options -sncpe are given
+
+=item -U
+
+Uploads all archives in the incoming directory to Novell
+
+=back
+
+=head1 AUTHORS and CONTRIBUTORS
+
+Duncan Mac-Vicar Prett, Lukas Ocilka, Jens Daniel Schmidt, Michael Calmer,
+Jason Record, Jiri Srain
+
+=head1 LICENSE
+
+Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 675 Mass
+Ave, Cambridge, MA 02139, USA.
+
+=cut
+
+
