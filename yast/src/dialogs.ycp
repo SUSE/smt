@@ -1266,7 +1266,7 @@ and thus its status cannot be changed in this dialog."));
 	// a bussy message
 	UI::OpenDialog (`Label(_("Creating testing snapshot...")));
 	SCR::Write (.smt.staging.patches, nil);
-	SCR::Write (.smt.staging.testing_snapshot, selected_catalog);
+	SCR::Write (.smt.staging.snapshot, $["repositoryid":selected_catalog, "type":"testing"]);
 	UI::CloseDialog();
     }
 
@@ -1274,7 +1274,7 @@ and thus its status cannot be changed in this dialog."));
 	// a bussy message
 	UI::OpenDialog (`Label(_("Creating production snapshot...")));
 	SCR::Write (.smt.staging.patches, nil);
-	SCR::Write (.smt.staging.production_snapshot, selected_catalog);
+	SCR::Write (.smt.staging.snapshot, $["repositoryid":selected_catalog, "type":"production"]);
 	UI::CloseDialog();
     }
 

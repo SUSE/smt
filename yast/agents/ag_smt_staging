@@ -23,6 +23,7 @@ use SMT::CLI;
 use SMT::Filter;
 use SMT::Repositories;
 use SMT::Parser::RpmMdPatches;
+use SMT::Mirror::RpmMd;
 
 # For debugging only
 # use Data::Dumper;
@@ -35,7 +36,12 @@ if(! SMT::Utils::dropPrivileges()) {
 
 # Initialize SMT
 my ($cfg, $dbh, $nuri) = SMT::CLI::init();
-my $base_path = $cfg->val("LOCAL", "MirrorTo") || '/srv/www/htdocs';
+my $base_path = $cfg->val('LOCAL', 'MirrorTo') || '/srv/www/htdocs';
+
+# Used for re-signing repositories (during staging)
+my $keyid	= $cfg->val('LOCAL', 'signingKeyID')		|| '';
+my $passphrase	= $cfg->val('LOCAL', 'signingKeyPassphrase')	|| '';
+
 my $repositories = SMT::Repositories::new($dbh);
 
 use constant {
@@ -48,6 +54,9 @@ use constant {
 	SMT::Repositories::STAGING	=> SMT::Repositories::STAGING_TRUE,
     },
 };
+
+my $log = SMT::Utils::openLog ('/var/log/smt/smt-staging.log');
+my $vblevel = LOG_DEBUG|LOG_DEBUG2|LOG_WARN|LOG_ERROR|LOG_INFO1|LOG_INFO2;
 
 # Reports that the agent has been called using an unsupported path
 sub UnsupportedPath ($$) {
@@ -88,13 +97,31 @@ sub LoadRepositoryData ($) {
 	$ret = 0;
     }
 
-    my $repo_path = $base_path.'/repo/full/'.$repositories->GetRepositoryPath($repositoryid);
-    y2debug ("Using local path: ".$repo_path);
+    # Repository path relative to the base-path
+    my $repo_path_suffix = $repositories->GetRepositoryPath($repositoryid);
+
+    # repo/$REPOSITORY
+    # repo/testing/$REPOSITORY
+    # repo/full/$REPOSITORY
+    $fph->{$repositoryid}->{'paths'} = {
+	# The base local path to all repos
+	'base'		=> $base_path.'/repo/',
+	# Particular subrepositories
+	# * 'full' contains the mirrored data
+	'full'		=> 'full/'.$repo_path_suffix,
+	# * 'testing' is a snapshot intended for testing
+	'testing'	=> 'testing/'.$repo_path_suffix,
+	# * 'production' is a snapshot intended for production
+	'production'	=> $repo_path_suffix,
+    };
+
+    my $repository_path = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
+    y2milestone ("Parsing local repository: ".$repository_path);
 
     # The following lines should go to a module in SMT package
     # New Patches-Parser handler
     $fph->{$repositoryid}->{'ph'} = SMT::Parser::RpmMdPatches->new();
-    $fph->{$repositoryid}->{'ph'}->resource($repo_path);
+    $fph->{$repositoryid}->{'ph'}->resource($repository_path);
     $fph->{$repositoryid}->{'ph'}->parse("repodata/updateinfo.xml.gz", "repodata/patches.xml");
 
     return $ret;
@@ -272,6 +299,56 @@ sub SecurityLevelFilterExists ($) {
     return (FilterExists ($func_args) ? YCP_TRUE:YCP_FALSE);
 }
 
+sub CreateSnapshot ($) {
+    my $arg = shift || {};
+
+    # Identifies the repository
+    my $repositoryid = $arg->{'repositoryid'} || do {
+	y2error ("Parameter 'repositoryid' not defined");
+	return YCP_FALSE;
+    };
+
+    # Defines a type of generated subrepository
+    my $type = $arg->{'type'} || do {
+	y2error ("Parameter 'type' not defined");
+	return YCP_FALSE;
+    };
+
+    # 'testing' or 'production' or ...
+    if (not defined $fph->{$repositoryid}->{'paths'}->{$type}) {
+	y2error ("Unknown 'type': ".$type);
+	return YCP_FALSE;
+    }
+
+    # Optional parameter, if a passphrase is defined, we use it and remember
+    if (defined $arg->{'passphrase'}) {
+	y2milestone ("Using passphrase defined as a parameter");
+	$passphrase = $arg->{'passphrase'};
+    }
+
+    LoadRepositoryData($repositoryid);
+
+    my $mirror = SMT::Mirror::RpmMd->new(
+	log => $log,
+	vblevel => $vblevel,
+	filter => $fph->{$repositoryid}->{'fh'}
+    );
+
+    # The source of data
+    $mirror->uri('file://'.$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
+    y2milestone ("Source: ".'file://'.$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
+
+    # Where the resulting subrepository is created
+    y2milestone ("Base: ".$fph->{$repositoryid}->{'paths'}->{'base'}." Repo: ".$fph->{$repositoryid}->{'paths'}->{$type});
+    $mirror->localBasePath($fph->{$repositoryid}->{'paths'}->{'base'});
+    $mirror->localRepoPath($fph->{$repositoryid}->{'paths'}->{$type});
+
+    # And GO!
+    $mirror->mirror ($keyid, $passphrase);
+
+    return YCP_TRUE;
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -302,12 +379,8 @@ while (<STDIN>) {
 	    ycp::Return (WritePatchFilters());
 	} elsif ($path eq '.category_filter') {
 	    ycp::Return (ChangeCategoryFilterStatus ($arg));
-	} elsif ($path eq '.production_snapshot') {
-	    # FIXME
-	    ycp::Return (YCP_TRUE);
-	} elsif ($path eq '.testing_snapshot') {
-	    # FIXME
-	    ycp::Return (YCP_TRUE);
+	} elsif ($path eq '.snapshot') {
+	    ycp::Return (CreateSnapshot ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}
