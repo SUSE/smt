@@ -69,6 +69,7 @@ my $errors = 0;
 my $size = 0;
 my $secpatches = 0;
 my $recpatches = 0;
+my $fromlocalsmt = 0;
 
 my $nohardlink = 0;
 
@@ -80,6 +81,7 @@ my $result = GetOptions ("debug|d"      => \$debug,
                          "hardlink=i"   => \$hardlink,
                          "directory=s"  => \$LocalBasePath,
                          "fromdir=s"    => \$FromLocalBasePath,
+                         "fromlocalsmt" => \$fromlocalsmt,
                          "deepverify"   => \$deepverify,
                          "dryrun|n"     => \$dryrun,
                          "nohardlink"   => \$nohardlink,
@@ -224,6 +226,29 @@ if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
         }
     }
 }
+if ( $fromlocalsmt )
+{
+    if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
+                sprintf( __("Using '--fromlocalsmt' requires the '--directory' argument.")));
+        if(!SMT::Utils::unLock("smt-mirror"))
+        {
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+        }
+        exit 1;
+    }
+    if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
+                sprintf( __("The options '--fromlocalsmt' and '--fromdir' cannot be used at the same time")));
+        if(!SMT::Utils::unLock("smt-mirror"))
+        {
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+        }
+        exit 1;
+    }
+}
 
 if($hardlink > 0)
 {
@@ -339,6 +364,10 @@ foreach my $entry (@{$array})
         {
             $zuri = URI::file->new($FromLocalBasePath.$entry->{LOCALPATH});
         }
+        elsif ( $fromlocalsmt )
+        {
+            $zuri = URI::file->new($cfg->val("LOCAL", "MirrorTo")."/repo/".$entry->{LOCALPATH});
+        }
         else
         {
             $zuri = URI->new($entry->{EXTURL});
@@ -351,7 +380,14 @@ foreach my $entry (@{$array})
         # is STAGING is Y, put full/ infront of LOCALPATH
         if( exists $entry->{STAGING} && defined $entry->{STAGING} && uc($entry->{STAGING}) eq "Y")
         {
-            $entry->{LOCALPATH} = "$stagingDir/".$entry->{LOCALPATH};
+            if ( $fromlocalsmt )
+            {
+                $zuri->path($cfg->val("LOCAL", "MirrorTo")."/repo/$stagingDir/".$entry->{LOCALPATH});
+            }
+            else
+            {
+                $entry->{LOCALPATH} = "$stagingDir/".$entry->{LOCALPATH};
+            }
         }
 
         &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $entry->{LOCALPATH} ) );
