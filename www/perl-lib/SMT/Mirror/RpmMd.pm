@@ -404,9 +404,15 @@ sub mirror()
    
     if ( ! -d $dest )
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "'$dest' does not exist");
-        $self->{STATISTIC}->{ERROR} += 1;
-        return $self->{STATISTIC}->{ERROR};
+        mkpath($dest, {error => \my $err});
+        if (@$err)
+        {
+            my ($file, $emsg) = each %{$err->[0]};
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                "Could not create the destination directory '$dest': $emsg");
+            $self->{STATISTIC}->{ERROR} += 1;
+            return $self->{STATISTIC}->{ERROR};
+        }
     }
     if ( !defined $self->uri() || $self->uri() !~ /^http/ && $self->uri() !~ /^file/ )
     {
