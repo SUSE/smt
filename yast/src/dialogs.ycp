@@ -31,6 +31,7 @@
 	"/usr/lib/SMT/bin/smt-repeated-register"	: _("NCC Registration"),
 	"/usr/lib/SMT/bin/smt-daily"			: _("Synchronization of Updates"),
 	"/usr/lib/SMT/bin/smt-gen-report"		: _("Generation of Reports"),
+	"/usr/sbin/smt-support -U"			: _("Uploading Support Configs"),
     ];
 
     // patch categories translation map

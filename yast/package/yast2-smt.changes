@@ -3,6 +3,7 @@ Tue May 12 16:20:24 CEST 2009 - locilka@suse.cz
 
 - Extended SCR agent to enable creating 'testing' and 'production'
   snapshots.
+- Added possibility to configure 'smt-support -U' call in cron.
 
 -------------------------------------------------------------------
 Mon May 11 14:30:25 CEST 2009 - locilka@suse.cz
