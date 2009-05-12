@@ -286,21 +286,24 @@ Returns true if the subfilter already existed or was successfully added, false o
 =cut
 sub add
 {
-    my ($self, $type, $value) = @_;
+    my ($self, $type, @values) = @_;
 
     if (defined $type && is_whole_number($type))
     {
-        if (!$self->contains($type, $value))
+        foreach my $value (@values)
         {
-            $self->{FILTERS}->{"$type$value"} = [$type, $value];
-            $self->{DIRTY} = 1;
+            if (!$self->contains($type, $value))
+            {
+                $self->{FILTERS}->{"$type$value"} = [$type, $value];
+                $self->{DIRTY} = 1;
+            }
         }
         return 1;
     }
-    else
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid arguments. Expecting a (number, string), got ($type, $value).");
-    }
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid arguments. Expecting a number as the first argument, got '$type'.");
+
+    return 0;
 }
 
 =item remove()
