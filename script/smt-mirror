@@ -111,6 +111,9 @@ if($help)
     print "                        " . __("default value in smt.conf\n");
     print "--fromdir arg           " . __("Mirror from the directory give here, instead of mirroring from the remote sources.\n");
     print "                        " . __("The directory can e.g. be created by calling smt-mirror --directory\n");
+    print "--fromlocalsmt          " . __("Mirror from the local running SMT server. This options requires the --directory\n");
+    print "                        " . __("option being set. The resulting directory can  e.g later be imported to another server\n");
+    print "                        " . __("using smt-mirror --fromdir\n");
     print "--deepverify            " . __("Verify all checksums \n");
     print "--dryrun -n             " . __("Run mirror algorithm without downloading the rpms \n");
     print "                        " . __("(but it needs to download the metadata into a temporary directory).\n");
@@ -619,6 +622,14 @@ Use the directory (B<path>) as the source for mirroring instead of contacting th
 remote mirrors. It expects a directory structure created by:
 
 smt-mirror --directory <path>
+
+=item --fromlocalsmt
+
+Mirror from the local running SMT server. This options requires the --directory
+option being set. The resulting directory can  e.g later be imported to another server
+using:
+
+smt-mirror --fromdir <path>
 
 =item --logfile -L <file>
 
