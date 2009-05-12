@@ -380,7 +380,11 @@ foreach my $entry (@{$array})
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirror( dryrun => $dryrun );
 
-	    UpdateLastMirror ($dryrun, $entry, $dbh);
+            # Don't update last mirror timestamp when mirroring to a custom directory
+            if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
+            {
+	        UpdateLastMirror ($dryrun, $entry, $dbh);
+            }
 
             my $s = $zyppMirror->statistic();
             $download   += $s->{DOWNLOAD};
