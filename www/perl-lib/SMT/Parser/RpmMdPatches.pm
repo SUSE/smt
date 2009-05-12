@@ -374,7 +374,9 @@ sub handle_end_tag
         }
 
         # second check location if we have other metadata files
-        
+        # this is basically to retrieve the patches from SUSE's
+        # code 10 repodata/patch-*.xml files
+
         if(exists $self->{CURRENT}->{LOCATION} && defined $self->{CURRENT}->{LOCATION} &&
            $self->{CURRENT}->{LOCATION} =~ /(.+)\.xml(.*)/)
         {
@@ -385,12 +387,18 @@ sub handle_end_tag
                 # rewrite directory
                 $location =~ s/repodata/.repodata/;
             }
+            # create new parser, since reusing this one would cause
+            # concatenating of all the XMLs to the $self->{OUT} output.
             my $parsenew = SMT::Parser::RpmMdPatches->new(
                 log => $self->{LOG},
                 vblevel => $self->{VBLEVEL});
             $parsenew->resource($self->{RESOURCE});
             $parsenew->specialmdlocation($self->{LOCATIONHACK});
-            $parsenew->parse($location);
+            my $patches = $parsenew->parse($location);
+            foreach my $key (keys %{$patches})
+            {
+                $self->{PATCHES}->{$key} = $patches->{$key};
+            }
         }
 
         $self->{CURRENT} = undef;
