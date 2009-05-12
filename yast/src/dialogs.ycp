@@ -498,7 +498,7 @@ to be readable by %2 user."),
 	    // TRANSLATORS: Dialog caption
 	    _("Writing SMT Configuration"),
 	    " ",
-	    9,
+	    8,
 	    [
 		// TRANSLATORS: Progress stage
 		_("Adjust SMT configuration"),
@@ -512,8 +512,6 @@ to be readable by %2 user."),
 		_("Adjust SMT service"),
 		// TRANSLATORS: Progress stage
 		_("Write firewall settings"),
-		// TRANSLATORS: Progress stage
-		_("Write patches"),
 		// TRANSLATORS: Progress stage
 		_("Write cron settings"),
 		// TRANSLATORS: Progress stage
@@ -532,8 +530,6 @@ to be readable by %2 user."),
 		_("Adjusting SMT service..."),
 		// TRANSLATORS: Bussy message /progress/
 		_("Writing firewall settings..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Writing patches..."),
 		// TRANSLATORS: Bussy message /progress/
 		_("Writing cron settings..."),
 		// TRANSLATORS: Bussy message /progress/
@@ -583,11 +579,6 @@ to be readable by %2 user."),
 	Progress::NextStage();
 	sleep (sl);
 
-	WritePatches();
-
-	Progress::NextStage();
-	sleep (sl);
-
 	SMTData::WriteCronSettings();
 
 	Progress::NextStage();
@@ -601,6 +592,37 @@ to be readable by %2 user."),
 	if (SMTData::GetSMTServiceStatus() == true) {
 	    SMTData::RunSmallSync();
 	}
+
+	Progress::Finish();
+
+	return `next;
+    }
+
+    symbol WriteManagementDialog() {
+	Progress::New (
+	    // TRANSLATORS: Dialog caption
+	    _("Writing Changes"),
+	    " ",
+	    1,
+	    [
+		// TRANSLATORS: Progress stage
+		_("Write patches"),
+	    ],
+	    [
+		// TRANSLATORS: Bussy message /progress/
+		_("Writing patches..."),
+		Message::Finished(),
+	    ],
+	    ""
+	);
+	Wizard::SetTitleIcon("yast-smt");
+	Wizard::RestoreHelp(HELPS["write"]:"");
+
+	Progress::NextStage();
+
+	WritePatches();
+
+	sleep (sl);
 
 	Progress::Finish();
 

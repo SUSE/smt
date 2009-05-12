@@ -256,12 +256,17 @@
 
     any SMTManagementSequence () {
 	map aliases = $[
-	    "main"  :   ``( MainSequence ("management") ),
+	    "main"  :	``( MainSequence ("management") ),
+	    "write" :	[ ``( WriteManagementDialog() ), true ]
 	];
 
 	map sequence = $[
 	    "ws_start" : "main",
 	    "main" : $[
+		`abort	: `abort,
+		`next	: "write",
+	    ],
+	    "write" : $[
 		`abort	: `abort,
 		`next	: `next,
 	    ],
