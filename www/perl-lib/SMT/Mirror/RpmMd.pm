@@ -346,6 +346,18 @@ sub job2statistic
     }
 } 
 
+=item newpatches()
+
+Returns a hash with new patches since last mirroring or an empty hash.
+If mirror() has not been called so far, it returns undef.
+
+=cut
+sub newpatches
+{
+    my $self = shift;
+    return $self->{NEWPATCHES};
+}
+
 =item mirror()
 
  Start the mirror process.
@@ -381,12 +393,16 @@ sub mirror()
     my $dryrun  = 0;
     my $keyid = undef;
     my $keypass = undef;
+
     my $isYum = (ref($self) eq "SMT::Mirror::Yum");
     my $t0 = [gettimeofday] ;
     
-    $dryrun = 1 if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
-    $keyid = $options{keyid} if(exists $options{keyid} && defined $options{keyid} && $options{keyid});
-    $keypass = $options{keypass} if(exists $options{keypass} && defined $options{keypass} && $options{keypass});
+    $dryrun = 1
+        if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
+    $keyid = $options{keyid}
+        if(exists $options{keyid} && defined $options{keyid} && $options{keyid});
+    $keypass = $options{keypass}
+        if(exists $options{keypass} && defined $options{keypass});
 
     # reset the counter
     $self->{STATISTIC}->{ERROR}         = 0;
@@ -399,6 +415,7 @@ sub mirror()
     $self->{STATISTIC}->{NEWRECPATCHES} = 0;
     $self->{STATISTIC}->{NEWSECTITLES} = [];
     $self->{STATISTIC}->{NEWRECTITLES} = [];
+    $self->{NEWPATCHES} = {};
 
     my $dest = $self->fullLocalRepoPath();
    
@@ -721,6 +738,8 @@ sub mirror()
             push @{$self->{STATISTIC}->{NEWRECTITLES}}, $newpatches->{$pid}->{title};
         }
     }
+
+    $self->{NEWPATCHES} = $newpatches;
 
     my $modifyrepopath = '/usr/bin/modifyrepo';
     my $createrepopath = '/usr/bin/createrepo';
