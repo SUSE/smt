@@ -15,9 +15,9 @@ use UNIVERSAL 'isa';
 # args: message, jobid
 sub error
 {
-  my ( $message, $jobid) =  @_;
+  my ( $message, $jobid ) =  @_;
 
-  if ( defined ($jobid))
+  if ( defined ($jobid ) )
   {
     logger ("let's tell the server that $jobid failed");
     updatejob ( $jobid, "false", $message );
@@ -117,8 +117,8 @@ sub parsejob
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  error( "unable to parse xml: $@" )              if ( $@ );
-  error( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
+  error ( "unable to parse xml: $@" )              if ( $@ );
+  error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
 
   # retrieve variables
   $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
@@ -126,11 +126,11 @@ sub parsejob
   $jobargs = $job->{arguments} if ( defined ( $job->{arguments} ));
 
   # check variables
-  error( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
-  error( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
-  error( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
+  error ( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
+  error ( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
+  error ( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
 
-  logger( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
+  logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
 
   return ( id=>$jobid, type=>$jobtype, args=>$jobargs );
 };
@@ -152,7 +152,7 @@ sub loadjobhandler
 sub main
 {
   my  $jobid  =  $ARGV[0];
-  print "jobid: $jobid";
+  logger ( "jobid: $jobid" );
 
   my $xmldata = getjob( $jobid );
   my %jobdata = parsejob( $xmldata );

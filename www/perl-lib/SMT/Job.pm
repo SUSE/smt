@@ -1,5 +1,6 @@
 package SMT::Job;
 
+use SMT::Utils;
 use strict;
 use warnings;
 use XML::Simple;
@@ -8,7 +9,7 @@ use UNIVERSAL 'isa';
 # constructs a job
 #
 # perl arguments:
-#  my $job = new Job ( 42, "swpush", { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] } );
+#  my $job = new Job ( 42, "softwarepush", { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] } );
 #
 # xml only:
 #  my $job = new Job ( <job id="42" type="softwarepush"><arguments><force>true</force></arguments></job>" );
@@ -157,6 +158,12 @@ sub getArgumentsXML
 sub error
 {
     my $message = shift;
+
+    my $log = SMT::Utils::openLog()
+    printLog( $log, $self->vblevel(), LOG_ERROR, $message );
+
+
+
     print "$message\n";
     return undef;
 }

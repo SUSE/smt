@@ -17,6 +17,7 @@ sub jobhandler
 
   # collect and verify arguments
   my $force;
+  my $agreelicenses;
   my $packages;
 
 
@@ -24,18 +25,63 @@ sub jobhandler
   error( "argument missing: force", $jobid )		if ( ! defined( $force ) );
   error( "argument invalid: force", $jobid )		if ( ! ( $force eq "true" || $force eq "false" ) );
 
+  $agreelicenses = $args->[0]->{agreelicenses}->[0]	if ( defined ( $args->[0]->{agreelicenses}->[0] ) );
+  error( "argument missing: agreelicenses", $jobid )	if ( ! defined( $agreelicenses ) );
+  error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false" ) );
+
+
   $packages   = $args->[0]->{packages}->[0]->{package}	if ( defined ( $args->[0]->{packages}->[0]->{package}  ) );
   error( "argument missing: packages", $jobid ) 	if ( ! defined( $packages   ));
   error( "argument invalid: packages", $jobid )  	if ( ! isa($packages, 'ARRAY' ) );
 
 
-  # run business logics
-  logger ( "softwarepush args: force = \"$force\"", $jobid );
+  # assemble zypper commandline
+  my $commandline = "/usr/bin/zypper ";
+  $commandline .= " --non-cd ";					# ignore CD/DVD repositories
+  $commandline .= " -x ";					# xml output
+  $commandline .= " --non-interactive ";			# doesn't ask user
+  $commandline .= " in ";					# install
+  $commandline .= " -l " if ( $agreelicenses eq "true" );	# agree licenses
+  $commandline .= " -f " if ( $force eq "true" );		# reinstall
   foreach my $pack (@$packages)
   {
-    logger ( "softwarepush args: packagelist contains \"$pack\"", $jobid );
+    $commandline .= " $pack ";
   }
-  logger ( "end of softwarepush", $jobid );
+
+
+  logger ( "running zypper: $commandline", $jobid );
+
+#  $command = "xterm";
+
+#  my $pid = open3(\*IN, \*OUT, \*ERR, $command, @cmdArgs) or do {
+#    logPrintError($ctx, "Cannot execute $command ".join(" ", @cmdArgs).": $!\n",13);
+#    return;
+#  };
+#
+#  my $out;
+#  my $err;
+#
+#  while (<OUT>)
+#  {
+#    $out .= "$_";
+#  }
+#    
+#  while (<ERR>)
+#  {
+#    $err .= "$_";
+#  }
+#
+#  close OUT;
+#  close ERR;
+#  close IN;
+#
+#  waitpid $pid, 0;
+#
+#  $reval = ($?>>8);
+
+
+
+
 
 
   ## TODO run zypper

@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use constant HOST => 'http://localhost/cgi-bin/smt.cgi';
+use constant PROCESSJOB => '/home/store/yep/trunk/www/perl-lib/SMT/JobQueue/processjob.pl';
 use HTTP::Request;
 use HTTP::Request::Common;
 use LWP::UserAgent;
@@ -15,11 +16,11 @@ use UNIVERSAL 'isa';
 # args: message, jobid
 sub error
 {
-  my ( $message, $jobid) =  @_;
+  my ( $message, $jobid ) =  @_;
 
-  if ( defined ($jobid))
+  if ( defined ( $jobid ) )
   {
-    logger ("let's tell the server that $jobid failed");
+    logger ( "let's tell the server that $jobid failed" );
     updatejob ( $jobid, "false", $message );
   }
   die "Error: $message\n";
@@ -31,14 +32,14 @@ sub error
 # args: message, jobid
 sub logger
 {
-  my ( $message, $jobid) =  @_;
-  if (defined $jobid)
+  my ( $message, $jobid ) =  @_;
+  if ( defined ( $jobid ) )
   {
-    print ("Log: ($jobid) $message\n");
+    print ( "Log: ($jobid) $message\n" );
   }
   else
   {
-    print ("Log: () $message\n");
+    print ( "Log: () $message\n" );
   }
 };
 
@@ -69,46 +70,38 @@ sub parsejob
 {
   my $xmldata = shift;
 
-  error( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
+  error ( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
 
   my $job;
   my $jobid;
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  error( "unable to parse xml: $@" )              if ( $@ );
-  error( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
+  error ( "unable to parse xml: $@" )              if ( $@ );
+  error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' ) ) );
 
   # retrieve variables
-  $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
+  $jobid = $job->{id} if ( defined ( $job->{id} ) && ( $job->{id} =~ /^[0-9]+$/ ) );
 
-  # check variables
-  error( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
-
-  logger( "got jobid \"$jobid\"");
-
-  return $jobid;
+  return $jobid; 
 };
 
 
 ###############################################################################
 sub main
 {
+  my $jobid;
 
-  while()
+  while( defined ( $jobid = parsejob( getnextjob() )))
   {
+      # prevent command injection
+      error ( "cannot run jobs with non-numeric jobid." ) unless ( $jobid =~ /^[0-9]+$/ );
+      my $command = PROCESSJOB." ".$jobid;
 
-    my $xmldata = getnextjob();
-
-    my $jobid = parsejob($xmldata);
-
-    print "running $jobid...\n";
-    `./processjob.pl $jobid`;
-
-    sleep (1);
+      print "running $jobid...\n";
+      print `$command`;
+      sleep (3);
   }
-
-
 }
 
 main();
