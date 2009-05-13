@@ -182,7 +182,7 @@ if($mail)
     }
 }
 
-SMT::Utils::unLockAndExit( "smt-register", $exitcode1, $LOG, $vblevel );
+SMT::Utils::unLockAndExit( "smt-register", $exitcode, $LOG, $vblevel );
 
 
 #
