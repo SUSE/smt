@@ -7,7 +7,6 @@ use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 
 use Apache2::Const -compile => qw(OK SERVER_ERROR NOT_FOUND FORBIDDEN AUTH_REQUIRED :log);
-##use Apache2::Const -compile => qw(OK SERVER_ERROR :log);
 use Apache2::RequestUtil;
 use XML::Writer;
 
@@ -19,59 +18,55 @@ use DBI qw(:sql_types);
 #
 sub funcGET($)
 {
-    use Switch;   #need to "use" it inside each function ... grrrr
     my $r = shift;
     return undef unless defined $r;
 
     my $path = $r->path_info();
+    # crop the prefix and trailing slash -  '/=' rest service identifier, '/1' version number
     # there is only version 1 so far
-    $path =~ s/^\/(=\/)?1\///;  # crop the prefix:  '/=' rest service identifier, '/1' version number
-    $path =~ s/\/?$//;          # crop a trailing slash
+    $path =~ s/^\/(=\/)?1\///;
+    $path =~ s/\/?$//;
 
     # jobs (per client)
-    my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY job ids
+    my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY job (ids??)
     my $reJobsNext = qr{^jobs/\@next$};       # get MY next job id
     my $reJobsId   = qr{^jobs/([\d]+)$};      # get MY next job information
     # clients
-    my $reClients           = qr{^clients(/?\@all)?$};                 # get list of all client ids
+    my $reClients           = qr{^clients(/?\@all)?$};                 # get list of all client (ids??)
     my $reClientsId         = qr{^clients/([\w]+)$};                   # get client information
     # clients/jobs
     my $reClientsAllJobs    = qr{^clients/\@all/jobs(/?\@all)?$};      # get list of jobs of all clients
     my $reClientsIdJobs     = qr{^clients/([\w]+)/jobs(/?\@all)?$};    # get list of jobs of one client
-    my $reClientsIdJobsNext = qr{^clients/([\w]+)/jobs/\@next$};       # get next job id for one client
+    my $reClientsIdJobsNext = qr{^clients/([\w]+)/jobs/\@next$};       # get next job (id??) for one client
     my $reClientsIdJobsId   = qr{^clients/([\w]+)/jobs/(\d+)$};        # get job information of one job for one client
     # clients/patchstatus
     my $reClientsIdPatchstatus  = qr{^clients/([\d\w]+)/patchstatus$}; # get patchstatus info for one client
     my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
 
     # jobs
-    if ( $path =~ $reJobs)      {  return "wanna have MY joblist"    }
-    if ( $path =~ $reJobsNext ) {  return "wanna have MY next job"   }
-    if ( $path =~ $reJobsId )   {  return "wanna MY job with id: $1" }
-
-   # with "switch" the matched patterns in $1, $2 ... disappear ... grrr
-
-   # switch ($path)
-   #  {
-        # clients
-   #     case /$reClients/       return "wanna all clients";
-   #     case /$reClientsId/     return "wanna one client with id $1";
-   #     case /$reClientsIdJobs/  return "wanna all jobs of one client with id $1";
-    #    else
-    #    {
-    #        $r->log->error("Request to undefined REST handler: $path");
-    #        return undef;
-    #    }
-    #}
-
-    return $path;
+    if    ( $path =~ $reJobs)           { return "wanna have MY joblist" }
+    elsif ( $path =~ $reJobsNext )      { return "wanna have MY next job" }
+    elsif ( $path =~ $reJobsId )        { return "wanna MY job with id: $1" }
+    elsif ( $path =~ $reClients )       { return "wanna all clients"; }
+    elsif ( $path =~ $reClientsId )     { return "wanna one client with id: $1"; }
+    elsif ( $path =~ $reClientsAllJobs )        { return "wanna list of all jobs of all clients"; }
+    elsif ( $path =~ $reClientsIdJobs )         { return "wanna all jobs of one client with id $1"; }
+    elsif ( $path =~ $reClientsIdJobsNext )     { return "wanna next job for one client with id $1"; }
+    elsif ( $path =~ $reClientsIdJobsId )       { return "wanna job info of one job with id $2 for one client with id $1"; }
+    elsif ( $path =~ $reClientsIdPatchstatus )  { return "wanna have patchstatus information for for one client with id $1"; }
+    elsif ( $path =~ $reClientsAllPatchstatus ) { return "wanna have patchstatus information for all clients"; }
+    else
+    {
+        $r->log->error("Request to undefined REST handler ($path) with method GET");
+        return undef;
+    }
 };
 
 
 sub funcPOST($)
 {
     my $r = shift;
-    return unless defined $r;
+    return undef unless defined $r;
     return "yepp - it is POST" if ($r->method() eq 'POST');
     return "nope - its not POST"; 
 }
@@ -81,15 +76,27 @@ sub funcPOST($)
 sub funcPUT($)
 {
     my $r = shift;
-    return unless defined $r;
-    return "its PUT";
+    return undef unless defined $r;
+
+    my $path = $r->path_info();
+    $path =~ s/^\/(=\/)?1\///;
+    $path =~ s/\/?$//;
+
+    my $reJobsId   = qr{^jobs/([\d]+)$};
+
+    if ( $path =~ $reJobsId )    { return "wanna send results for my job with id $1" }
+    else
+    {
+        $r->log->error("Request to undefined REST handler ($path) with method PUT.");
+        return undef;
+    }
 }
 
 
 sub funcDELETE($)
 {
     my $r = shift;
-    return unless defined $r;
+    return undef unless defined $r;
     return "its DELETE";
 }
 
@@ -128,41 +135,30 @@ sub handler {
 
     if (not defined $res)
     {
-         $res = "da ist was kaputt";
-#        return Apache2::Const::NOT_FOUND;
+        # errors are logged in method handlers
+        return Apache2::Const::NOT_FOUND;
     }
 
-#    $res = '<jobs4smt>
-#<onejob id="47" method="GET" pathinfo="/1/" unparsed_uri="/=/1/" user="" args=""/>
-#<resultdata>yepp - it is GET</resultdata>
-#</jobs4smt>';
+    # output some data for testing
+    if (1) {
+        my $writer = new XML::Writer(NEWLINES => 0);
+        $writer->xmlDecl("UTF-8");
 
-#    print $res;
-
-# output some data for testing
-if (1) {
-    my $writer = new XML::Writer(NEWLINES => 0);
-    $writer->xmlDecl("UTF-8");
-
-    $writer->startTag("jobs4smt");
-    $writer->emptyTag('onejob',
-                      'id'   =>  42,
-                      'method'   => $r->method(),
-                 # this is the path we have to parse
-                      'pathinfo' => $r->path_info(),
-                 # this is the full request path (including the offset)
-                      'unparsed_uri' => $r->unparsed_uri(),
-                      'user'         => $r->user(),
-                 # we do not nee args
-                      'args'         => $r->args()
+        $writer->startTag("jobs4smt");
+        $writer->emptyTag('onejob',
+                          'id'   =>  42,
+                          'method'   => $r->method(),
+                          'pathinfo' => $r->path_info(),
+                          'unparsed_uri' => $r->unparsed_uri(),
+                          'user'         => $r->user(),
+                          'args'         => $r->args()
                      );
-    $writer->startTag('resultdata');
-    $writer->characters("$res");
-    $writer->endTag('resultdata');
-    $writer->endTag("jobs4smt");
-    $writer->end();
+        $writer->startTag('resultdata');
+        $writer->characters("$res");
+        $writer->endTag('resultdata');
+        $writer->endTag("jobs4smt");
+        $writer->end();
 }
-
 
     return Apache2::Const::OK;
 }
