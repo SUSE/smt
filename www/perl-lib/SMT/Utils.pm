@@ -222,6 +222,24 @@ sub unLock
     return 0;
 }
 
+=item unLockAndExit($progname, $exitcode, $log, $loglevel)
+
+Try to remove the lockfile, log to $log on failure.
+Exit program with $exitCode (regardless of success or 
+failure of the unlock)
+
+=cut
+sub unLockAndExit
+{
+    my ($progname, $exitcode, $log, $level) = @_;
+
+    if (!SMT::Utils::unLock($progname))
+    {
+        SMT::Utils::printLog($log, $level, LOG_ERROR, __("Cannot remove lockfile."));
+    }
+    exit $exitcode;
+}
+
 =item getLocalRegInfos()
 
 Return an array with ($NCCurl, $NUUser, $NUPassword)

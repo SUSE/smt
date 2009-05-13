@@ -169,12 +169,8 @@ eval
 };
 if($@ || !defined $cfg)
 {
-    if(!SMT::Utils::unLock("smt-mirror"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
-    }
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
 }
 
 if(!defined $LocalBasePath || $LocalBasePath eq "" )
@@ -182,12 +178,8 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" )
     $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
     if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     {
-        if(!SMT::Utils::unLock("smt-mirror"))
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-        }
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the local base path"));
-        exit 1;
+        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
     }
 }
 else
@@ -201,11 +193,7 @@ else
         if ($@) 
         {
             SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $LocalBasePath, $@));
-            if(!SMT::Utils::unLock("smt-mirror"))
-            {
-                SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-            }
-            exit 1;
+            SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
         }
     }
 }
@@ -221,11 +209,7 @@ if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
         if (! -d $FromLocalBasePath )
         {
             SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("The directory %s does not exist"), $FromLocalBasePath));
-            if(!SMT::Utils::unLock("smt-mirror"))
-            {
-                SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-            }
-            exit 1;
+            SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
         }
     }
 }
@@ -235,33 +219,20 @@ if ( $fromlocalsmt )
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
                 sprintf( __("Using '--fromlocalsmt' requires the '--directory' argument.")));
-        if(!SMT::Utils::unLock("smt-mirror"))
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-        }
-        exit 1;
+        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
     }
     if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
                 sprintf( __("The options '--fromlocalsmt' and '--fromdir' cannot be used at the same time")));
-        if(!SMT::Utils::unLock("smt-mirror"))
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-        }
-        exit 1;
+        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
     }
 }
 
 if($hardlink > 0)
 {
     SMT::CLI::hardlink(log => $LOG, size => $hardlink, vblevel => $vblevel, basepath => $LocalBasePath);
-    
-    if(!SMT::Utils::unLock("smt-mirror"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
-    }
-    exit 0;
+    SMT::Utils::unLockAndExit( "smt-mirror", 0, $LOG, $vblevel );
 }
 
 
@@ -273,12 +244,8 @@ if(!defined $dbreplfile)
     
     if(!$dbh)
     {
-        if(!SMT::Utils::unLock("smt-mirror"))
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
-        }
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot connect to database"));
-        exit 1;
+        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
     }
 }
 else
@@ -299,12 +266,8 @@ my $nuPass = $cfg->val("NU", "NUPass");
 if(!defined $nuUser || $nuUser eq "" ||
    !defined $nuPass || $nuPass eq "")
 {
-    if(!SMT::Utils::unLock("smt-mirror"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-    }
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the Mirror Credentials"));
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
 }
 
 
