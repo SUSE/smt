@@ -4,6 +4,8 @@ package SMT::Repositories;
 use strict;
 use warnings;
 
+use SMT::Utils; 
+
 =head1 NAME
 
 SMT::Repositories - reads SMT repositories and returns their states
@@ -107,6 +109,8 @@ sub new ($) {
     my $new = {
 	'dbh' => $dbh,
 	'error_message' => '',
+        REPOS => undef,
+        GOTALLREPOS => 0
     };
 
     bless $new;
@@ -152,6 +156,9 @@ sub GetAllRepositories ($$) {
     my $self = shift;
     my $filter = shift || {};
 
+    $self->{REPOS} = undef;
+    $self->{GOTALLREPOS} = 0;
+
     my $sql_filter = '';
 
     # Constructing the 'WHERE' part of the SQL query
@@ -167,16 +174,48 @@ sub GetAllRepositories ($$) {
     );
     $sth->execute();
 
-    my $ret = [];
+    my $ret = {};
     my $row = {};
 
     while ($row = $sth->fetchrow_hashref()) {
 	$row->{'TARGET'} = '' if (not defined $row->{'TARGET'});
 	$row->{'LAST_MIRROR'} = '' if (not defined $row->{'LAST_MIRROR'});
-	push @{$ret}, $row;
+	$ret->{$row->{'CATALOGID'}} = $row;
     }
 
+    $self->{REPOS} = $ret;
+    $self->{GOTALLREPOS} = 1 if (not %$filter);
+
     return $ret;
+}
+
+sub GetRepository($$)
+{
+    my $self = shift;
+
+    my $repository = shift || do {
+        $self->NewErrorMessage ("RepositoryID must be defined");
+        return undef;
+    };
+
+    my $repo;
+    if ($self->{GOTALLREPOS})
+    {
+        $repo = $self->{REPOS}->{$repository} || undef;
+    }
+    else
+    {
+        # Matches just one repository
+        my $repos = $self->GetAllRepositories({SMT::Repositories::REPOSITORYID => $repository});
+        $repo = @{$repos}[0] || undef;
+    }
+
+    if (not defined $repo)
+    {
+        $self->NewErrorMessage ("Repository with ID '$repository' not found.");
+    }
+
+    return $repo;
 }
 
 =item GetRepositoryPath
@@ -190,24 +229,92 @@ $repo->GetRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
 
 sub GetRepositoryPath ($$) {
     my $self = shift;
+    my $repository = shift;
 
-    my $repository = shift || do {
-	$self->NewErrorMessage ("RepositoryID must be defined");
-	return undef;
-    };
- 
-    # Matches right one repository
-    my $repos = $self->GetAllRepositories({SMT::Repositories::REPOSITORYID => $repository});
+    my $repo = $self->GetRepository($repository);
+    return undef if (not defined $repo); 
+
     my $repo_local_path = '';
-    my $repo = @{$repos}[0] || {};
-
     if (defined $repo->{'LOCALPATH'}) {
 	$repo_local_path = $repo->{'LOCALPATH'};
     } else {
 	$self->NewErrorMessage ("Repository ".$repository." matches but no 'LOCALPATH' is defined");
+	return undef;
     }
 
     return $repo_local_path;
+}
+
+sub GetRepositoryUrl ($$) {
+    my $self = shift;
+    my $repository = shift;
+
+    my $repo = $self->GetRepository($repository);
+    return undef if (not defined $repo); 
+
+    my $repo_url = '';
+    if (defined $repo->{'EXTURL'}) {
+        $repo_url = $repo->{'EXTURL'};
+    } else {
+        $self->NewErrorMessage ("Repository ".$repository." matches but no 'EXTURL' is defined");
+        return undef;
+    }
+
+    return $repo_url;
+}
+
+=item StagingAllowed($repositoryid, $basepath)
+
+Whether staging/filtering can be enabled for given repository.
+
+=cut
+sub StagingAllowed($$$)
+{
+    my ($self, $repository, $basepath) = @_;
+    
+    if (not defined $repository || not $repository || not defined $basepath || not $basepath)
+    {
+        $self->NewErrorMessage ("RepositoryID and local base path must be defined.");
+        return 0;
+    }
+
+    my $repo = $self->GetRepository($repository);
+    return undef if (not defined $repo); 
+
+    my $relrepopath = $repo->{'LOCALPATH'};
+    
+    if (defined $relrepopath && $relrepopath)
+    {
+        my $absrepopath = SMT::Utils::cleanPath($basepath, $relrepopath);
+    
+        if (-d $absrepopath)
+        {
+            return 1 if (-e "$absrepopath/repodata/updateinfo.xml.gz");
+            return 0;
+        }
+        
+        $absrepopath = SMT::Utils::cleanPath($basepath, 'full', $relrepopath);
+    
+        if (-d $absrepopath)
+        {
+            return 1 if (-e "$absrepopath/repodata/updateinfo.xml.gz");
+            return 0;
+        }
+    }
+
+    # if local repo dirs (production nor full) do not exist or can't be
+    # determined, check the remote repo URL
+
+    my $url = $repo->{'EXTURL'};
+    if (defined $relrepopath && $relrepopath)
+    {
+        #return 1 if TODO
+        return 0;
+    }   
+
+    $self->NewErrorMessage("Could not get the local path nor remote URL for repository '$repository'.");
+
+    return 0;
 }
 
 =back
