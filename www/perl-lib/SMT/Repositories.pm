@@ -17,7 +17,8 @@ SMT::Repositories - reads SMT repositories and returns their states
  my $repos = SMT::Repositories::new ($dbh)
 
  # Returns all repositories matching the filter
- # filter can be empty
+ # Filter can be empty (in that case the repository data is cached and reused
+ # in other functions. Reload by calling the following method again).
  my $filter = {
    SMT::Repositories::MIRRORABLE => SMT::Repositories::MIRRORABLE_TRUE,
  };
@@ -117,6 +118,12 @@ sub new ($) {
     return $new;
 }
 
+=item newErrorMessage($message)
+
+Sets $message as the last error message. Call getAndClearErrorMessage()
+to retrieve.
+
+=cut
 sub newErrorMessage ($$) {
     my $self = shift;
     my $new_error = shift || '';
@@ -124,6 +131,11 @@ sub newErrorMessage ($$) {
     $self->{'error_message'} .= (length ($self->{'error_message'}) > 0 ? "\n":"").$new_error;
 }
 
+=item getAndClearErrorMessage()
+
+Returns the last error message and clears it.
+
+=cut
 sub getAndClearErrorMessage () {
     my $self = shift;
 
@@ -135,8 +147,15 @@ sub getAndClearErrorMessage () {
 
 =item getAllRepositories
 
-Returns hash filled up with repository description according to a filter
-given as a parameter.
+Returns hash filled up with description of repositories matching the filter
+given as a parameter. If not filter is given, all repositories are returned.
+The hash has repository IDs as keys and hashes of repository data as values. 
+
+If no filter is used, all repositories are returned and cached. Any subsequent
+calls to getRepository*() functions then reuse the cached data without
+accessing the database until getAllRepositories() with filters is called.
+
+Examples:
 
 # Returns list of all repositories than can be mirrored
 $repo->getAllRepositories ({
@@ -189,6 +208,12 @@ sub getAllRepositories ($$) {
     return $ret;
 }
 
+=item getAllRepositories
+
+Returns a hash of repository data for given repository ID. The hash keys
+correspond to Catalogs database table. 
+
+=cut
 sub getRepository($$)
 {
     my $self = shift;
@@ -218,9 +243,10 @@ sub getRepository($$)
     return $repo;
 }
 
-=item getRepositoryPath
+=item getRepositoryPath($repoid)
 
-Returns a relative path of a given repository (ID) 
+Returns relative path of given repository (ID). The path is relative to the
+directory given in the LOCAL.MirrorTo option in smt.conf.  
 
 $repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
     -> '$RCE/SLE11-SDK-Updates/sle-11-x86_64'
@@ -245,6 +271,15 @@ sub getRepositoryPath ($$) {
     return $repo_local_path;
 }
 
+=item getRepositoryUrl($repoid)
+
+Returns source URL of given repository (ID).  
+
+$repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
+    -> 'http://download.opensuse.org/update/11.1'
+
+=cut
+
 sub getRepositoryUrl ($$) {
     my $self = shift;
     my $repository = shift;
@@ -263,7 +298,7 @@ sub getRepositoryUrl ($$) {
     return $repo_url;
 }
 
-=item StagingAllowed($repositoryid, $basepath)
+=item stagingAllowed($repositoryid, $basepath)
 
 Whether staging/filtering can be enabled for given repository.
 
