@@ -102,7 +102,7 @@ sub LoadRepositoryData ($) {
     }
 
     # Repository path relative to the base-path
-    my $repo_path_suffix = $repositories->GetRepositoryPath($repositoryid);
+    my $repo_path_suffix = $repositories->getRepositoryPath($repositoryid);
 
     # repo/$REPOSITORY
     # repo/testing/$REPOSITORY
@@ -374,7 +374,7 @@ while (<STDIN>) {
 
     if ($command eq 'Read') {
 	if ($path eq '.repositories') {
-	    ycp::Return ($repositories->GetAllRepositories (MIRRORED_REPO_FILTER));
+	    ycp::Return ($repositories->getAllRepositories (MIRRORED_REPO_FILTER));
 	} elsif ($path eq '.patches') {
 	    ycp::Return (GetAllPatches ($arg));
 	} elsif ($path eq '.patch.testing') {

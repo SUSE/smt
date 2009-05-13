@@ -232,7 +232,7 @@ sub getRepository($$)
     {
         # Matches just one repository
         my $repos = $self->getAllRepositories({SMT::Repositories::REPOSITORYID => $repository});
-        $repo = @{$repos}[0] || undef;
+        $repo = $repos->{$repository} || undef;
     }
 
     if (not defined $repo)

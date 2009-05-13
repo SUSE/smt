@@ -70,7 +70,7 @@ while (<STDIN>) {
 
     if ($command eq 'Read') {
 	if ($path eq '.all') {
-	    ycp::Return ($repositories->GetAllRepositories (ALL_REPO_FILTER));
+	    ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}

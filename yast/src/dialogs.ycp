@@ -850,10 +850,10 @@ Enter your SMT server URL in the following format: http:://server.name/
 	// busy message
 	boolean uio = (boolean) UI::OpenDialog (`Label (_("Getting list of the currently available repositories...")));
 
-	list <map <string, any> > catalogs_states = (list <map <string, any> >) SCR::Read (.smt.repositories.all);
+	map <string, map <string, any> > catalogs_states = (map <string, map <string, any> >) SCR::Read (.smt.repositories.all);
 	if (catalogs_states == nil) {
 	    y2error ("Error getting available repositories");
-	    catalogs_states = [];
+	    catalogs_states = $[];
 	}
 
 	boolean mirroring = nil;
@@ -865,7 +865,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	integer max_filter_item = -1;
 	boolean current_item_present = false;
 
-	list <term> items = maplist (map <string, any> one_catalog, catalogs_states, {
+	list <term> items = maplist (string catalogid, map <string, any> one_catalog, catalogs_states, {
 	    if (catalog_filter != nil) {
 		if (regexpmatch (one_catalog["NAME"]:"", "^" + catalog_filter + "-")) {
 		    // ...
@@ -894,7 +894,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 		max_filter_item = splititem_nr;
 
 	    // used later in Handle* function
-	    catalogs_info[one_catalog["CATALOGID"]:""] = $[
+	    catalogs_info[catalogid] = $[
 		"mirroring"	: mirroring,
 		"staging"	: staging,
 		"name"		: one_catalog["NAME"]:"",
@@ -1129,10 +1129,10 @@ Enter your SMT server URL in the following format: http:://server.name/
     }
 
     void InitStagingTableDialog (string id) {
-	list <map> catalogs = (list <map>) SCR::Read (.smt.staging.repositories);
+	map <string, map> catalogs = (map <string, map>) SCR::Read (.smt.staging.repositories);
 
-	list <term> items = maplist (map one_catalog, catalogs, {
-	    return `item (`id (one_catalog["CATALOGID"]:""),
+	list <term> items = maplist (string catalogid, map one_catalog, catalogs, {
+	    return `item (`id (catalogid),
 		(one_catalog["TARGET"]:"" != "" ?
 		    // Catalog Name (Target)
 		    sformat (_("%1 (%2)"), one_catalog["NAME"]:"", one_catalog["TARGET"]:"")
