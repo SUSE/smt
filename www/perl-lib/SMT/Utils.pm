@@ -235,7 +235,14 @@ sub unLockAndExit
 
     if (!SMT::Utils::unLock($progname))
     {
-        SMT::Utils::printLog($log, $level, LOG_ERROR, __("Cannot remove lockfile."));
+        if ( $log )
+        {
+            SMT::Utils::printLog($log, $level, LOG_ERROR, __("Cannot remove lockfile."));
+        }
+        else
+        {
+            print STDERR  __("Cannot remove lockfile.")."\n";
+        }
     }
     exit $exitcode;
 }

@@ -101,22 +101,14 @@ eval
 };
 if($@ || !defined $cfg)
 {
-    if(!SMT::Utils::unLock("smt-register"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
-    }
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-register", 1, $LOG, $vblevel );
 }
 
 my $allowRegister = $cfg->val("LOCAL", "forwardRegistration");
 if(!(defined $allowRegister && $allowRegister eq "true"))
 {
-    if(!SMT::Utils::unLock("smt-register"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
-    }
-    exit 0;
+    SMT::Utils::unLockAndExit( "smt-register", 0, $LOG, $vblevel );
 }
 my $nccEmail = $cfg->val("LOCAL", "nccEmail");
 
@@ -130,12 +122,8 @@ $dbh = SMT::Utils::db_connect();
 
 if(!$dbh)
 {
-    if(!SMT::Utils::unLock("smt-register"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-    }
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot connect to database"));
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-register", 1, $LOG, $vblevel );
 }
 
 my $exitcode = 0;
@@ -152,25 +140,13 @@ eval
     my $err = $nccreg->NCCRegister($sleeptime);
     if($err != 0)
     {
-        if(!SMT::Utils::unLock("smt-register"))
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-        }
         $exitcode = 1;
     }
 };
+
 if($@)
 {
-    if(!SMT::Utils::unLock("smt-register"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-    }
     $exitcode = 1;
-}
-
-if(!SMT::Utils::unLock("smt-register"))
-{
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
 }
 
 if($mail)
@@ -206,7 +182,7 @@ if($mail)
     }
 }
 
-exit $exitcode;
+SMT::Utils::unLockAndExit( "smt-register", $exitcode1, $LOG, $vblevel );
 
 
 #

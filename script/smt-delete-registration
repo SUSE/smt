@@ -90,27 +90,15 @@ eval
     my $err = $nccreg->NCCDeleteRegistration(@guids);
     if($err != 0)
     {
-        if(!SMT::Utils::unLock("smt-delete-registration"))
-        {
-            print STDERR __("Cannot remove lockfile.\n");
-        }
-        exit 1;
+        SMT::Utils::unLockAndExit( "smt-delete-registration", 1 );
     }
 };
 if($@)
 {
-    if(!SMT::Utils::unLock("smt-delete-registration"))
-    {
-        print STDERR __("Cannot remove lockfile.\n");
-    }
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-delete-registration", 1 );
 }
 
-if(!SMT::Utils::unLock("smt-delete-registration"))
-{
-    print STDERR __("Cannot remove lockfile.\n");
-}
-exit 0;
+SMT::Utils::unLockAndExit( "smt-delete-registration", 0 );
 
 
 #

@@ -84,12 +84,8 @@ eval {
 };
 if($@)
 {
-    if(!SMT::Utils::unLock("smt-mirror-sle9"))
-    {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR,  __("Cannot remove lockfile."));
-    }
     SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "$@");
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-mirror-sle9", 1, $LOG, $vblevel );
 }
 
 my $mirrorTo = $cfg->val("LOCAL", "MirrorTo");
@@ -236,13 +232,7 @@ foreach my $sname (@sections)
 }
 
 
-if(!SMT::Utils::unLock("smt-mirror-sle9"))
-{
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-    exit 1;
-}
-
-exit 0;
+SMT::Utils::unLockAndExit( "smt-mirror-sle9", 0, $LOG, $vblevel );
 
 #
 # Manpage
