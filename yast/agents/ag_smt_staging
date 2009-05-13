@@ -134,6 +134,7 @@ sub WritePatchFilters () {
 
     my $ret = 1;
 
+    # Runs through all already loaded repositories
     foreach $repositoryid (keys %{$fph}) {
 	y2milestone ("Calling save() on Catalog:".$repositoryid);
 	if (! $fph->{$repositoryid}->{'fh'}->save($dbh, $repositoryid)) {
@@ -288,12 +289,18 @@ sub FilterExists ($) {
 # Returns whether filter by patch type exists (is active)
 sub SecurityLevelFilterExists ($) {
     my $arg = shift;
+    my $repositoryid = $arg->{'repositoryid'} || do {
+	y2error ("Parameter 'repositoryid' not defined");
+	return undef;
+    };
+
+    LoadRepositoryData($repositoryid);
 
     my $func_args = {
 	'type' => SMT::Filter::TYPE_SECURITY_LEVEL,
 	# filter string is the security level of a patch
 	'filter' => (defined $arg->{'type'} ? $arg->{'type'}:''),
-	'repositoryid' => (defined $arg->{'repositoryid'} ? $arg->{'repositoryid'}:''),
+	'repositoryid' => $repositoryid,
     };
 
     return (FilterExists ($func_args) ? YCP_TRUE:YCP_FALSE);
@@ -314,6 +321,9 @@ sub CreateSnapshot ($) {
 	return YCP_FALSE;
     };
 
+    # Fills up also $fph->{$repositoryid}->{'paths'}
+    LoadRepositoryData($repositoryid);
+
     # 'testing' or 'production' or ...
     if (not defined $fph->{$repositoryid}->{'paths'}->{$type}) {
 	y2error ("Unknown 'type': ".$type);
@@ -325,8 +335,6 @@ sub CreateSnapshot ($) {
 	y2milestone ("Using passphrase defined as a parameter");
 	$passphrase = $arg->{'passphrase'};
     }
-
-    LoadRepositoryData($repositoryid);
 
     my $mirror = SMT::Mirror::RpmMd->new(
 	log => $log,
