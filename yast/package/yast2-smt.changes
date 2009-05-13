@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed May 13 18:00:00 CEST 2009 - locilka@suse.cz
+
+- Forcing default logging behavior in SCR Agents. STDOUT must not
+  be used for logging at all.
+
+-------------------------------------------------------------------
 Tue May 12 16:20:24 CEST 2009 - locilka@suse.cz
 
 - Extended SCR agent to enable creating 'testing' and 'production'

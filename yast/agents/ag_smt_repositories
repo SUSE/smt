@@ -25,6 +25,10 @@ use SMT::Repositories;
 # For debugging only
 # use Data::Dumper;
 
+# Suppress printing logs to STDOUT, to nemaji kralicci radi 
+# (SCR uses stdin/stdout for communication with agents) 
+SMT::Utils::setLogBehavior ({'doprint' => 0});
+
 if(! SMT::Utils::dropPrivileges()) {
     y2error ('Unable to drop privileges. Aborting...');
     ycp::Return (undef);
