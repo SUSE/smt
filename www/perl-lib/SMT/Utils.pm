@@ -446,6 +446,34 @@ sub cleanPath
     return $path;
 }
 
+=item setLogBehavior($new_behavior)
+
+Defines the logging behavior that replaces all other settings.
+This is required by YaST SCR (e.g., using STDOUT is not allowed).
+
+ setLogBehavior ({'doprint' => 0})
+
+Allowed parameters:
+
+=over
+
+=item doprint
+
+Suppresses printing logs to STDOUT
+
+=back
+
+=cut
+my $log_behavior = {};
+
+sub setLogBehavior ($) {
+    my $new_behavior = shift || {};
+
+    if (defined $new_behavior->{'doprint'}) {
+	$log_behavior->{'doprint'} = $new_behavior->{'doprint'};
+    }
+}
+
 =item printlog($loghandle, $vblevel, $category, $message [, $doprint [, $dolog]])
 
 Print a log message. If $doprint is true the message is printed on stderr or stdout.
@@ -492,34 +520,37 @@ sub printLog
 {
     my $LOG      = shift;
     my $vblevel  = shift;
-    my $category = shift;
-    my $message  = shift;
-    my $doprint  = shift;
-    my $dolog    = shift;
-    if (! defined $doprint) { $doprint = 1;}
-    if (! defined $dolog)   { $dolog   = 1;}
+    my $category = shift || 0;
+    my $message  = shift || '';
+    my $doprint  = shift || 1;
+    my $dolog    = shift || 1;
 
     return if( !($vblevel & $category) );
     $category = ($vblevel & $category);
-    
+
+    # Forcing the defualt behavior
+    $doprint = $log_behavior->{'doprint'}
+	if (defined $log_behavior->{'doprint'});
+
     if($doprint)
     {
         if(TOK2STRING->{$category} eq "error")
         {
-            print STDERR "$message\n";
+            print STDERR $message."\n";
         }
         else
         {
-            print "$message\n";
+            print $message."\n";
         }
     }
-    
+
     if($dolog && defined $LOG)
     {
-        my ($package, $filename, $line) = caller;
-        foreach (split(/\n/, $message))
+        my ($package, $line) = caller;
+
+        foreach $line (split(/\n/, $message))
         {
-            print $LOG getDBTimestamp()." $package - [".TOK2STRING->{$category}."]  $_\n";
+            print $LOG getDBTimestamp().' '.$package.' - ['.TOK2STRING->{$category}.']  '.$line."\n";
         }
     }
     return;
@@ -917,7 +948,7 @@ sub getSaveUri
 
 =head1 AUTHOR
 
-mc@suse.de, jdsn@suse.de, rhafer@suse.de
+mc@suse.de, jdsn@suse.de, rhafer@suse.de, locilka@suse.cz
 
 =head1 COPYRIGHT
 
