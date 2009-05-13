@@ -21,12 +21,12 @@ SMT::Repositories - reads SMT repositories and returns their states
  my $filter = {
    SMT::Repositories::MIRRORABLE => SMT::Repositories::MIRRORABLE_TRUE,
  };
- my $filtered_rs = $repos->GetAllRepositories ($filter);
+ my $filtered_rs = $repos->getAllRepositories ($filter);
 
  # Returns local path to a repository
  # (relative to the current SMT mirroring base-path)
  my $repository_id = '6df36d5532f9a85b362a93a55f8452c6adb72165';
- my $path = $repos->GetRepositoryPath ($repository_id);
+ my $path = $repos->getRepositoryPath ($repository_id);
 
 =head1 DESCRIPTION
 
@@ -117,14 +117,14 @@ sub new ($) {
     return $new;
 }
 
-sub NewErrorMessage ($$) {
+sub newErrorMessage ($$) {
     my $self = shift;
     my $new_error = shift || '';
 
     $self->{'error_message'} .= (length ($self->{'error_message'}) > 0 ? "\n":"").$new_error;
 }
 
-sub GetAndClearErrorMessage () {
+sub getAndClearErrorMessage () {
     my $self = shift;
 
     my $ret = $self->{'error_message'} || '';
@@ -133,26 +133,26 @@ sub GetAndClearErrorMessage () {
     return $ret;
 }
 
-=item GetAllRepositories
+=item getAllRepositories
 
 Returns hash filled up with repository description according to a filter
 given as a parameter.
 
 # Returns list of all repositories than can be mirrored
-$repo->GetAllRepositories ({
+$repo->getAllRepositories ({
     SMT::Repositories::MIRRORABLE => SMT::Repositories::MIRRORABLE_TRUE,
 });
 
 # Returns list of all repositories that are being mirrored
 # and have Staging feature enabled.
-$repo->GetAllRepositories ({
+$repo->getAllRepositories ({
     SMT::Repositories::MIRRORING => SMT::Repositories::MIRRORING_TRUE,
     SMT::Repositories::STAGING => SMT::Repositories::STAGING_TRUE,
 });
 
 =cut
 
-sub GetAllRepositories ($$) {
+sub getAllRepositories ($$) {
     my $self = shift;
     my $filter = shift || {};
 
@@ -189,12 +189,12 @@ sub GetAllRepositories ($$) {
     return $ret;
 }
 
-sub GetRepository($$)
+sub getRepository($$)
 {
     my $self = shift;
 
     my $repository = shift || do {
-        $self->NewErrorMessage ("RepositoryID must be defined");
+        $self->newErrorMessage ("RepositoryID must be defined");
         return undef;
     };
 
@@ -206,57 +206,57 @@ sub GetRepository($$)
     else
     {
         # Matches just one repository
-        my $repos = $self->GetAllRepositories({SMT::Repositories::REPOSITORYID => $repository});
+        my $repos = $self->getAllRepositories({SMT::Repositories::REPOSITORYID => $repository});
         $repo = @{$repos}[0] || undef;
     }
 
     if (not defined $repo)
     {
-        $self->NewErrorMessage ("Repository with ID '$repository' not found.");
+        $self->newErrorMessage ("Repository with ID '$repository' not found.");
     }
 
     return $repo;
 }
 
-=item GetRepositoryPath
+=item getRepositoryPath
 
 Returns a relative path of a given repository (ID) 
 
-$repo->GetRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
+$repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
     -> '$RCE/SLE11-SDK-Updates/sle-11-x86_64'
 
 =cut
 
-sub GetRepositoryPath ($$) {
+sub getRepositoryPath ($$) {
     my $self = shift;
     my $repository = shift;
 
-    my $repo = $self->GetRepository($repository);
+    my $repo = $self->getRepository($repository);
     return undef if (not defined $repo); 
 
     my $repo_local_path = '';
     if (defined $repo->{'LOCALPATH'}) {
 	$repo_local_path = $repo->{'LOCALPATH'};
     } else {
-	$self->NewErrorMessage ("Repository ".$repository." matches but no 'LOCALPATH' is defined");
+	$self->newErrorMessage ("Repository ".$repository." matches but no 'LOCALPATH' is defined");
 	return undef;
     }
 
     return $repo_local_path;
 }
 
-sub GetRepositoryUrl ($$) {
+sub getRepositoryUrl ($$) {
     my $self = shift;
     my $repository = shift;
 
-    my $repo = $self->GetRepository($repository);
+    my $repo = $self->getRepository($repository);
     return undef if (not defined $repo); 
 
     my $repo_url = '';
     if (defined $repo->{'EXTURL'}) {
         $repo_url = $repo->{'EXTURL'};
     } else {
-        $self->NewErrorMessage ("Repository ".$repository." matches but no 'EXTURL' is defined");
+        $self->newErrorMessage ("Repository ".$repository." matches but no 'EXTURL' is defined");
         return undef;
     }
 
@@ -268,17 +268,17 @@ sub GetRepositoryUrl ($$) {
 Whether staging/filtering can be enabled for given repository.
 
 =cut
-sub StagingAllowed($$$)
+sub stagingAllowed($$$)
 {
     my ($self, $repository, $basepath) = @_;
     
     if (not defined $repository || not $repository || not defined $basepath || not $basepath)
     {
-        $self->NewErrorMessage ("RepositoryID and local base path must be defined.");
+        $self->newErrorMessage ("RepositoryID and local base path must be defined.");
         return 0;
     }
 
-    my $repo = $self->GetRepository($repository);
+    my $repo = $self->getRepository($repository);
     return undef if (not defined $repo); 
 
     my $relrepopath = $repo->{'LOCALPATH'};
@@ -312,7 +312,7 @@ sub StagingAllowed($$$)
         return 0;
     }   
 
-    $self->NewErrorMessage("Could not get the local path nor remote URL for repository '$repository'.");
+    $self->newErrorMessage("Could not get the local path nor remote URL for repository '$repository'.");
 
     return 0;
 }
