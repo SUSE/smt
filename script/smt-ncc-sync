@@ -36,6 +36,7 @@ my $logfile = "/dev/null";
 my $help    = 0;
 my $fromdir = "";
 my $todir   = "";
+my $exportdir = "";
 my $createdbreplfile = "";
 my $mail     = 0;
 my $mailtempfile = undef;
@@ -45,14 +46,15 @@ my $exitcode = 0;
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
-                          'fromdir=s' => \$fromdir,
-                          'todir=s'   => \$todir,
+                          'fromdir=s'   => \$fromdir,
+                          'todir=s'     => \$todir,
                           'createdbreplacementfile=s' => \$createdbreplfile,
                           "logfile|L=s" => \$logfile,
-                          'debug|d'  => \$debug,
+                          'debug|d'     => \$debug,
                           "verboselevel|v=i" => \$vblevel,
-                          "mail|m"       => \$mail,
-                          'help|h'   => \$help
+                          "mail|m"      => \$mail,
+                          "export=s"    => \$exportdir,
+                          'help|h'      => \$help
                          );
 
 if ( defined $help and ( $help == 1 ) )
@@ -121,10 +123,36 @@ if($todir ne "" && $todir !~ /^\//)
     $todir = SMT::Utils::cleanPath($ENV{'PWD'}, $todir);
 }
 
+if($exportdir ne "" && $exportdir !~ /^\//)
+{
+    $exportdir = SMT::Utils::cleanPath($ENV{'PWD'}, $exportdir);
+}
+
 if($fromdir ne "" && ! -d $fromdir)
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Directory '%s' does not exist."), $fromdir));
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+}
+
+if( $exportdir ne "" )
+{
+    if ( $todir ne "" || $fromdir ne "" )
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
+                __("--exportdir and --todir or --fromdir cannot be used at the same time."));
+        SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+    }
+    if ( ! -d $exportdir )
+    {
+        eval {
+                &File::Path::mkpath($exportdir);
+        };
+        if ($@) 
+        {
+            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
+            SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+        }
+    }
 }
 
 if($todir ne "" && ! -d $todir)
@@ -136,7 +164,7 @@ if($todir ne "" && ! -d $todir)
     if ($@) 
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
-        exit 1;
+        SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
     }
 }
 
@@ -147,6 +175,65 @@ if($fromdir ne "")
 if($todir ne "")
 {
     printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Write to directory: %s"), $todir));
+}
+
+if ( $exportdir ne "" )
+{
+    
+    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Catalog information"));
+    SMT::CLI::db2Xml(outfile => "$exportdir/catalogs.xml",
+                     type => "catalogs",
+                     table => "Catalogs", 
+                     columns => [ 'CATALOGID', 'NAME', 'DESCRIPTION', 'TARGET', 'EXTHOST', 'EXTURL',
+                                  'CATALOGTYPE', 'MIRRORABLE' ]
+                    );
+
+    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Product information"));
+    SMT::CLI::db2Xml(outfile => "$exportdir/productdata.xml", 
+                     type => "productdata",
+                     table => "Products", 
+                     columns => [ 'PRODUCTDATAID', 'PRODUCT', 'VERSION', 'REL', 'ARCH', 'FRIENDLY', 
+                                  'PARAMLIST', 'NEEDINFO', 'SERVICE', 'PRODUCT_LIST', 'PRODUCT_CLASS' ]
+                    );
+
+    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Product/Catalog relations"));
+    SMT::CLI::db2Xml(outfile => "$exportdir/productcatalogs.xml", 
+                     type => "productcatalogs",
+                     table => "ProductCatalogs", 
+                     columns => [ 'PRODUCTDATAID', 'CATALOGID', 'OPTIONAL' ]
+                    );
+
+    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Target information"));
+    SMT::CLI::db2Xml(outfile => "$exportdir/targets.xml", 
+                     type => "targets",
+                     table => "Targets", 
+                     columns => [ 'OS', 'TARGET' ]
+                    );
+
+    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Subscription information"));
+    SMT::CLI::db2Xml(outfile => "$exportdir/listsubscriptions.xml", 
+                     type => "subscriptionlist",
+                     table => "Subscriptions", 
+                     columns => [ "SUBID", "REGCODE", "SUBNAME", "SUBTYPE", "SUBSTATUS", 
+                                  "SUBSTARTDATE", "SUBENDDATE", "SUBDURATION", "SERVERCLASS", 
+                                  "PRODUCT_CLASS" , "NODECOUNT", "CONSUMED", "CONSUMEDVIRT"],
+                     row_handler => \&subscriptions_handler );
+
+    # an empty registrations file should be enough for our purposes (later import into 
+    # an isolated SMT)
+    my $output = new IO::File("> $exportdir/listregistrations.xml");
+    if(!defined $output)
+    {
+        die "Cannot open file '$exportdir/listregistrations.xml':$!";
+    }
+    my $writer = new XML::Writer(OUTPUT => $output);
+    $writer->xmlDecl("UTF-8");
+    $writer->startTag("registration", xmlns => "http://www.novell.com/xml/center/regsvc-1_0");
+    $writer->endTag("registration");
+    $writer->end();
+    $output->close();
+
+    SMT::Utils::unLockAndExit( "smt-ncc-sync", 0, $LOG, $vblevel);
 }
 
 eval
@@ -232,11 +319,7 @@ eval
                                         log     => $LOG,
                                         vblevel => $vblevel);
         # if todir parameter is set, we can stop here. Everything is done.
-        if (!SMT::Utils::unLock("smt-ncc-sync"))
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-        }
-        exit 0;
+        SMT::Utils::unLockAndExit("smt-ncc-sync", 0);
     }
     
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged Catalogs which can be mirrored"));
@@ -258,17 +341,8 @@ eval
 };
 if ($@)
 {
-    if (!SMT::Utils::unLock("smt-ncc-sync"))
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-    }
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, $@);
     $exitcode = 1;
-}
-
-if (!SMT::Utils::unLock("smt-ncc-sync"))
-{
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
 }
 
 if($mail)
@@ -300,7 +374,38 @@ if($mail)
     SMT::Utils::sendMailToAdmins($subject, $body);
 }
 
-exit $exitcode;
+SMT::Utils::unLockAndExit("smt-ncc-sync", $exitcode, $LOG, $vblevel);
+
+
+sub subscriptions_handler
+{
+    my ($writer,$row) = @_;
+    # The SQL column name don't map 1to1 to the XML tag names for the Subscriptions-Table
+    my %col2tag = ( 
+        "SUBID"         => "subid",
+        "REGCODE"       => "regcode",
+        "SUBNAME"       => "subname",
+        "SUBTYPE"       => "type",
+        "SUBSTATUS"     => "substatus",
+        "SUBSTARTDATE"  => "start-date",
+        "SUBENDDATE"    => "end-date",
+        "SUBDURATION"   => "duration",
+        "SERVERCLASS"   => "server-class",
+        "PRODUCT_CLASS" => "product-class",
+        "NODECOUNT"     => "nodecount",
+        "CONSUMED"      => "consumed",
+        "CONSUMEDVIRT"  => "consumed-virtual"
+    );
+    $writer->startTag("subscription");
+    foreach my $col (keys %{$row})
+    {
+        $writer->startTag($col2tag{$col});
+        $writer->characters( $row->{$col} ?  $row->{$col} : "0");
+        $writer->endTag($col2tag{$col});
+    }
+    $writer->endTag("subscription");
+}
+
 
 #
 # Manpage
