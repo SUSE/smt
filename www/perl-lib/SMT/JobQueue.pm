@@ -1,11 +1,11 @@
 #!/usr/bin/perl
-package SMT::Job;
+package SMT::JobQueue;
 
 use strict;
 use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
-use Job;
+use SMT::Job;
 
 
 ###############################################################################
@@ -68,12 +68,12 @@ sub getJobList
 
   if ( defined ( $xmlformat ) )
   {
-    my $xml = "<joblist>\n";
+    my $xml = "<jobs>\n";
     foreach my $jobid ( @joblist )
     {
       $xml .= " <job id=\"$jobid\">\n";
     }
-    $xml .= "</joblist>";
+    $xml .= "</jobs>";
     return $xml;
   }
   else
