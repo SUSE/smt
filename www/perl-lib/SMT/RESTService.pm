@@ -1,4 +1,4 @@
-package SMT::JobQueue;
+package SMT::RESTService;
 
 use strict;
 use warnings;
