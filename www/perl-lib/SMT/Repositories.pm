@@ -128,7 +128,7 @@ sub newErrorMessage ($$) {
     my $self = shift;
     my $new_error = shift || '';
 
-    $self->{'error_message'} .= (length ($self->{'error_message'}) > 0 ? "\n":"").$new_error;
+    $self->{'error_message'} .= $new_error."\n";
 }
 
 =item getAndClearErrorMessage()
@@ -314,25 +314,28 @@ sub stagingAllowed($$$)
     }
 
     my $repo = $self->getRepository($repository);
-    return undef if (not defined $repo); 
+    if (not defined $repo) {
+	$self->newErrorMessage ('Cannot get repository data for '.$repository);
+	return undef;
+    }
 
     my $relrepopath = $repo->{'LOCALPATH'};
     
     if (defined $relrepopath && $relrepopath)
     {
-        my $absrepopath = SMT::Utils::cleanPath($basepath, $relrepopath);
+        my $absrepopath = SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
     
         if (-d $absrepopath)
         {
-            return 1 if (-e "$absrepopath/repodata/updateinfo.xml.gz");
+            return 1 if (-e $absrepopath.'/repodata/updateinfo.xml.gz');
             return 0;
         }
         
-        $absrepopath = SMT::Utils::cleanPath($basepath, 'full', $relrepopath);
+        $absrepopath = SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
     
         if (-d $absrepopath)
         {
-            return 1 if (-e "$absrepopath/repodata/updateinfo.xml.gz");
+            return 1 if (-e $absrepopath.'/repodata/updateinfo.xml.gz');
             return 0;
         }
     }
