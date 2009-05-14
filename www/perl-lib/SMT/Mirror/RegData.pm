@@ -95,8 +95,10 @@ sub new
     
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
-    
-    $self->{SMTGUID} = SMT::Utils::getSMTGuid();
+
+    if (! defined $opt{fromdir} ) {
+        $self->{SMTGUID} = SMT::Utils::getSMTGuid();
+    }
 
     $self->{TEMPDIR} = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
 
