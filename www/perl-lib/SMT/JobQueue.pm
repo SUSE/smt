@@ -16,7 +16,7 @@ use DBI qw(:sql_types);
 #
 # handle all GET requests
 #
-sub funcGET($)
+sub GEThandler($)
 {
     my $r = shift;
     return undef unless defined $r;
@@ -28,16 +28,16 @@ sub funcGET($)
     $path =~ s/\/?$//;
 
     # jobs (per client)
-    my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY job (ids??)
-    my $reJobsNext = qr{^jobs/\@next$};       # get MY next job id
+    my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY jobs
+    my $reJobsNext = qr{^jobs/\@next$};       # get MY next job
     my $reJobsId   = qr{^jobs/([\d]+)$};      # get MY next job information
     # clients
-    my $reClients           = qr{^clients(/?\@all)?$};                 # get list of all client (ids??)
+    my $reClients           = qr{^clients(/?\@all)?$};                 # get list of all clients
     my $reClientsId         = qr{^clients/([\w]+)$};                   # get client information
     # clients/jobs
     my $reClientsAllJobs    = qr{^clients/\@all/jobs(/?\@all)?$};      # get list of jobs of all clients
     my $reClientsIdJobs     = qr{^clients/([\w]+)/jobs(/?\@all)?$};    # get list of jobs of one client
-    my $reClientsIdJobsNext = qr{^clients/([\w]+)/jobs/\@next$};       # get next job (id??) for one client
+    my $reClientsIdJobsNext = qr{^clients/([\w]+)/jobs/\@next$};       # get next job for one client
     my $reClientsIdJobsId   = qr{^clients/([\w]+)/jobs/(\d+)$};        # get job information of one job for one client
     # clients/patchstatus
     my $reClientsIdPatchstatus  = qr{^clients/([\d\w]+)/patchstatus$}; # get patchstatus info for one client
@@ -63,17 +63,17 @@ sub funcGET($)
 };
 
 
-sub funcPOST($)
+sub POSThandler($)
 {
     my $r = shift;
     return undef unless defined $r;
-    return "yepp - it is POST" if ($r->method() eq 'POST');
-    return "nope - its not POST"; 
+
+    return "this is the POST handler"; 
 }
 
 
 
-sub funcPUT($)
+sub PUThandler($)
 {
     my $r = shift;
     return undef unless defined $r;
@@ -93,11 +93,11 @@ sub funcPUT($)
 }
 
 
-sub funcDELETE($)
+sub DELETEhandler($)
 {
     my $r = shift;
     return undef unless defined $r;
-    return "its DELETE";
+    return "this is the DELETE handler";
 }
 
 
@@ -109,28 +109,28 @@ sub handler {
     $r->log->info("REST service request");
 
     # try to connect to the database - else report server error
-    my $dbh = undef;
-    if ( ! ($dbh=SMT::Utils::db_connect()) ) 
-    {  
-        $r->log->error("Could not connect to database.");
-        return Apache2::Const::SERVER_ERROR; 
-    }
+    #my $dbh = undef;
+    #if ( ! ($dbh=SMT::Utils::db_connect()) ) 
+    #{
+    #    $r->log->error("Could not connect to database.");
+    #    return Apache2::Const::SERVER_ERROR; 
+    #}
 
-    $r->content_type('text/xml');
-##    $r->content_type('text/plain');
-    $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
-    $r->err_headers_out->add('Pragma' => "no-cache");
- 
-    my $res = "foobar"; # undef;
+    my $res = undef;
 
     switch( $r->method() )
     {
-        case /^GET$/i     { $res = funcGET($r) }
-        case /^HEAD$/i    { $res = funcGET($r) }
-        case /^PUT$/i     { $res = funcPUT($r) }
-        case /^POST$/i    { $res = funcPOST($r) }
-        case /^DELETE$/i  { $res = funcDELETE($r) }
-        else              { return Apache2::Const::SERVER_ERROR }
+        case /^GET$/i     { $res = GEThandler($r) }
+        # is HEAD really needed ? does it make sense?
+        case /^HEAD$/i    { $res = GEThandler($r) }
+        case /^PUT$/i     { $res = PUThandler($r) }
+        case /^POST$/i    { $res = POSThandler($r) }
+        case /^DELETE$/i  { $res = DELETEhandler($r) }
+        else
+        {
+            $r->log->error("Unknown request method in SMT rest service.");
+            return Apache2::Const::NOT_FOUND
+        }
     }
 
     if (not defined $res)
@@ -138,6 +138,13 @@ sub handler {
         # errors are logged in method handlers
         return Apache2::Const::NOT_FOUND;
     }
+
+    $r->content_type('text/xml');
+##    $r->content_type('text/plain');
+    $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
+    $r->err_headers_out->add('Pragma' => "no-cache");
+ 
+
 
     # output some data for testing
     if (1) {
@@ -158,7 +165,7 @@ sub handler {
         $writer->endTag('resultdata');
         $writer->endTag("jobs4smt");
         $writer->end();
-}
+    }
 
     return Apache2::Const::OK;
 }
