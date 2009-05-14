@@ -948,6 +948,11 @@ sub setMirrorableCatalogs
     if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
     {
         $indexfile = $opt{fromdir}."/repo/repoindex.xml";
+        if(! -f $indexfile )
+        {
+            # no index file don't set mirrorable flags
+            return;
+        }
     }
     else
     {
@@ -1238,6 +1243,58 @@ sub createDBReplacementFile
         $writer->endTag("row");
     }
     $writer->endTag("catalogs");
+    $writer->end();
+    $output->close();
+
+    return ;
+}
+
+sub db2Xml
+{
+    my %opts = @_;
+    my ($cfg, $dbh) = init();
+    
+    if(!defined $opts{table} || $opts{table} eq "")
+    {
+        die "No Table given.";
+    }
+    if(!defined $opts{outfile} || $opts{outfile} eq "")
+    {
+        die "No filename given.";
+    }
+    my $columstr = join ( ', ', @{$opts{columns}} ); 
+    my $dbout = $dbh->selectall_arrayref("SELECT $columstr from ".$opts{table} , { Slice => {} });
+
+    my $output = new IO::File("> ".$opts{outfile});
+    if(!defined $output)
+    {
+        die "Cannot open file '.".$opts{outfile}."':$!";
+    }
+    
+    my $writer = new XML::Writer(OUTPUT => $output);
+
+    $writer->xmlDecl("UTF-8");
+    $writer->startTag($opts{type}, xmlns => "http://www.novell.com/xml/center/regsvc-1_0");
+
+    foreach my $row (@{$dbout})
+    {
+        if ( defined $opts{row_handler} )
+        {
+            &{$opts{row_handler}}($writer,$row);
+        }
+        else
+        {
+            $writer->startTag("row");
+            foreach my $col (keys %{$row})
+            {
+                $writer->startTag("col", name => $col);
+                $writer->characters($row->{$col});
+                $writer->endTag("col");
+            }
+            $writer->endTag("row");
+        }
+    }
+    $writer->endTag($opts{type});
     $writer->end();
     $output->close();
 
