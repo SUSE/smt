@@ -48,7 +48,7 @@ sub logger
 # args: jobid, success, message 
 sub updatejob
 {
-  my ($jobid, $success, $message) =  @_;
+  my ($jobid, $success, $message, $stdout, $stderr, $returnvalue) =  @_;
 
   logger( "updating job $jobid ($success) $message", $jobid);
 
@@ -56,7 +56,10 @@ sub updatejob
   {
     'id' => $jobid,
     'success' =>  $success,
-    'message' => $message
+    'message' => $message,
+    'stdout' => $stdout,
+    'stderr' => $stderr,
+    'returnvalue' => $returnvalue
   };
   my $xmljob = XMLout($job, rootname => "job");
 
@@ -161,7 +164,8 @@ sub main
 
   my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
 
-  updatejob ( $jobdata{id}, $retval{success}, $retval{message}  );
+  logger ( "job:" . $jobdata{id}."success: ".$retval{success}."message: ".$retval{message}."stdout: ".$retval{stdout}."stderr: ".$retval{stderr}."retval: ".$retval{returnvalue} );
+  updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
 }
 
 main( );

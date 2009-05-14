@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use IPC::Open3;
+
 
 sub jobhandler
 {
@@ -35,62 +37,46 @@ sub jobhandler
   error( "argument invalid: packages", $jobid )  	if ( ! isa($packages, 'ARRAY' ) );
 
 
-  # assemble zypper commandline
-  my $commandline = "/usr/bin/zypper ";
-  $commandline .= " --non-cd ";					# ignore CD/DVD repositories
-  $commandline .= " -x ";					# xml output
-  $commandline .= " --non-interactive ";			# doesn't ask user
-  $commandline .= " in ";					# install
-  $commandline .= " -l " if ( $agreelicenses eq "true" );	# agree licenses
-  $commandline .= " -f " if ( $force eq "true" );		# reinstall
-  foreach my $pack (@$packages)
-  {
-    $commandline .= " $pack ";
-  }
+  #==  run zypper ==
+
+  my $command = "/usr/bin/zypper";
+  my @cmdArgs;
+  push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
+  push (@cmdArgs, "-x");					# xml output
+  push (@cmdArgs, "--non-interactive");				# doesn't ask user
+  push (@cmdArgs, "in");					# install
+  push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
+  push (@cmdArgs, "-f") if ( $force eq "true" );		# reinstall
+  push (@cmdArgs, "xterm");
+
+  my $stdout;
+  my $stderr;
+
+  my $pid = open3(\*IN, \*OUT, \*ERR, $command, @cmdArgs) or do {
+      error("Cannot execute $command ".join(" ", @cmdArgs), $jobid);
+  };
+
+  while (<OUT>) { $stdout .= "$_"; }
+  while (<ERR>) { $stderr .= "$_"; }
+
+  close OUT;
+  close ERR;
+  close IN;
+
+  waitpid $pid, 0;
+
+  my $retval = ($?>>8);
+
+  #== zypper done ==
 
 
-  logger ( "running zypper: $commandline", $jobid );
-
-#  $command = "xterm";
-
-#  my $pid = open3(\*IN, \*OUT, \*ERR, $command, @cmdArgs) or do {
-#    logPrintError($ctx, "Cannot execute $command ".join(" ", @cmdArgs).": $!\n",13);
-#    return;
-#  };
-#
-#  my $out;
-#  my $err;
-#
-#  while (<OUT>)
-#  {
-#    $out .= "$_";
-#  }
-#    
-#  while (<ERR>)
-#  {
-#    $err .= "$_";
-#  }
-#
-#  close OUT;
-#  close ERR;
-#  close IN;
-#
-#  waitpid $pid, 0;
-#
-#  $reval = ($?>>8);
-
-
-
-
-
-
-  ## TODO run zypper
-  %retval = (
-    success => "true",
-    message => "successfully installed packages"
+  return (
+    stdout => defined ( $stdout )? $stdout : "",
+    stderr => defined ( $stderr )? $stderr : "",
+    returnvalue => $retval,
+    success => ($retval == 0 ) ? "true" : "false",
+    message => ($retval == 0 ) ? "softwarepush successfully finished" : "softwarepush failed"
   );
-
-  return %retval;
 
 }
 
