@@ -9,6 +9,25 @@ use LWP::UserAgent;
 use XML::Simple;
 use Data::Dumper;
 use UNIVERSAL 'isa';
+use Config::IniFiles;
+
+
+
+sub getConfig
+{
+  my $filename = "/etc/suseRegister.conf";
+
+  my $cfg = new Config::IniFiles( -file => $filename );
+  if(!defined $cfg)
+  {
+    error ("unable to read configfile $filename");
+  }
+
+
+  my $url   = $cfg->val('url');
+  logger ($url);
+
+}
 
 
 ###############################################################################
@@ -92,6 +111,8 @@ sub main
 {
   my $jobid;
 
+  getConfig();
+
   while( defined ( $jobid = parsejob( getnextjob() )))
   {
       # prevent command injection
@@ -103,6 +124,11 @@ sub main
       sleep (3);
   }
 }
+
+
+my $cfg = getConfig();
+
+
 
 main();
 

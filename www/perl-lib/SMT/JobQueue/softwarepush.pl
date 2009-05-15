@@ -47,7 +47,12 @@ sub jobhandler
   push (@cmdArgs, "in");					# install
   push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
   push (@cmdArgs, "-f") if ( $force eq "true" );		# reinstall
-  push (@cmdArgs, "xterm");
+
+  foreach my $pack (@$packages)                                                             
+  {                                                                                         
+    push (@cmdArgs, $pack);
+  }    
+
 
   my $stdout;
   my $stderr;
@@ -68,7 +73,6 @@ sub jobhandler
   my $retval = ($?>>8);
 
   #== zypper done ==
-
 
   return (
     stdout => defined ( $stdout )? $stdout : "",
