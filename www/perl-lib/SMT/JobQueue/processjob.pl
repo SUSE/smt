@@ -1,46 +1,50 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use constant HOST => 'http://localhost/cgi-bin/smt.cgi';
 use HTTP::Request;
 use HTTP::Request::Common;
 use LWP::UserAgent;
 use XML::Simple;
 use Data::Dumper;
 use UNIVERSAL 'isa';
+use SMTConstants;
+use SMTConfig;
 
 
-###############################################################################
-# exit with error 
-# args: message, jobid
-sub error
-{
-  my ( $message, $jobid ) =  @_;
 
-  if ( defined ($jobid ) )
-  {
-    logger ("let's tell the server that $jobid failed");
-    updatejob ( $jobid, "false", $message );
-  }
-  die "Error: $message\n";
-};
-
-
-###############################################################################
-# write a log line 
-# args: message, jobid
-sub logger
-{
-  my ( $message, $jobid) =  @_;
-  if (defined $jobid)
-  {
-    print ("Log: ($jobid) $message\n");
-  }
-  else
-  {
-    print ("Log: () $message\n");
-  }
-};
+##############################################################################          
+# exit with error                                                                        
+# args: message, jobid                                                                   
+sub error                                                                                
+{                                                                                        
+  my ( $message, $jobid ) =  @_;                                                         
+                                                                                         
+  if ( defined ($jobid ) )                                                               
+  {                                                                                      
+    logger ("let's tell the server that $jobid failed");                                 
+    updatejob ( $jobid, "false", $message );                                             
+  }                                                                                      
+  die "Error: $message\n";                                                               
+};                                                                                       
+                                                                                         
+                                                                                         
+###############################################################################          
+# write a log line                                                                       
+# args: message, jobid                                                                   
+sub logger                                                                               
+{                                                                                        
+  my ( $message, $jobid) =  @_;                                                          
+  if (defined $jobid)                                                                    
+  {                                                                                      
+    print ("Log: ($jobid) $message\n");                                                  
+  }                                                                                      
+  else                                                                                   
+  {                                                                                      
+    print ("Log: () $message\n");                                                        
+  }                                                                                      
+};                                                                                       
+                                                                                         
+    
 
 
 ###############################################################################
@@ -48,6 +52,7 @@ sub logger
 # args: jobid, success, message 
 sub updatejob
 {
+  return;
   my ($jobid, $success, $message, $stdout, $stderr, $returnvalue) =  @_;
 
   logger( "updating job $jobid ($success) $message", $jobid);
@@ -65,7 +70,7 @@ sub updatejob
 
   my $ua = LWP::UserAgent->new;
 
-  my $response = $ua->request(POST HOST."/=v1=/smt/job/id/$jobid",
+  my $response = $ua->request(POST SMTConfig::smtUrl().SMTConstants::REST_UPDATE_JOB.$jobid,
     'Content-Type' => 'text/xml',
      Content        => $xmljob
   );
@@ -93,11 +98,10 @@ sub getjob
 
 
   my $ua = LWP::UserAgent->new;
-  my $response = $ua->request(GET HOST."/=v1=/smt/job/id/$id");
-
+  my $response = $ua->request(GET SMTConfig::smtUrl().SMTConstants::REST_GET_JOB.$id); 
   if (! $response->is_success )
   {
-    error( "Unable to request next job: " . $response->status_line . "-" . $response->content );
+    error( "Unable to request job $id: " . $response->status_line . "-" . $response->content );
   }
 
   return $response->content;
@@ -125,7 +129,7 @@ sub parsejob
 
   # retrieve variables
   $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
-  $jobtype = $job->{jobtype}   if ( defined ( $job->{jobtype} ) && ( $job->{jobtype} =~ /^[a-z]+$/ ));
+  $jobtype = $job->{jobtype}   if ( defined ( $job->{jobtype} ) && ( $job->{jobtype} =~ /^[0-9a-zA-Z.]+$/ ));
   $jobargs = $job->{arguments} if ( defined ( $job->{arguments} ));
 
   # check variables
@@ -146,7 +150,13 @@ sub loadjobhandler
 {
   my ( $jobtype, $jobid) =  @_;
 
-  eval { require "$jobtype.pl" };
+  # prevent command injection
+  error ( "cannot load non-alphanumeric jobs." ) unless ( $jobtype =~ /^[0-9A-Za-z]+$/ );
+
+
+  my $jobhandler = SMTConstants::JOB_HANDLER_PATH."/".$jobtype.".pl";
+
+  eval { require $jobhandler };
   error( "unable to load handler for jobtype \"$jobtype\": $@", $jobid ) if ( $@ );
 }
 
@@ -165,7 +175,7 @@ sub main
   my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
 
   logger ( "job:" . $jobdata{id}."success: ".$retval{success}."message: ".$retval{message}."stdout: ".$retval{stdout}."stderr: ".$retval{stderr}."retval: ".$retval{returnvalue} );
-  updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
+ updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
 }
 
 main( );

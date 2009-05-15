@@ -1,8 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use constant HOST => 'http://localhost/cgi-bin/smt.cgi';
-use constant PROCESSJOB => '/home/store/yep/trunk/www/perl-lib/SMT/JobQueue/processjob.pl';
 use HTTP::Request;
 use HTTP::Request::Common;
 use LWP::UserAgent;
@@ -10,24 +8,24 @@ use XML::Simple;
 use Data::Dumper;
 use UNIVERSAL 'isa';
 use Config::IniFiles;
+use SMTConstants;
+use SMTConfig;
 
-
-
-sub getConfig
-{
-  my $filename = "/etc/suseRegister.conf";
-
-  my $cfg = new Config::IniFiles( -file => $filename );
-  if(!defined $cfg)
-  {
-    error ("unable to read configfile $filename");
-  }
-
-
-  my $url   = $cfg->val('url');
-  logger ($url);
-
-}
+#sub getConfig
+#{
+#  my $filename = "/etc/suseRegister.conf";
+#
+#  my $cfg = new Config::IniFiles( -file => $filename );
+#  if(!defined $cfg)
+#  {
+#    error ("unable to read configfile $filename");
+#  }
+#
+#
+#  my $url   = $cfg->val('url');
+#  logger ($url);
+#
+#}
 
 
 ###############################################################################
@@ -71,7 +69,7 @@ sub logger
 sub getnextjob
 {
   my $ua = LWP::UserAgent->new;
-  my $response = $ua->request(GET HOST."/=v1=/smt/job/id/next");
+  my $response = $ua->request(GET SMTConfig::smtUrl().SMTConstants::REST_NEXT_JOB);
 
   if (! $response->is_success )
   {
@@ -111,13 +109,11 @@ sub main
 {
   my $jobid;
 
-  getConfig();
-
   while( defined ( $jobid = parsejob( getnextjob() )))
   {
       # prevent command injection
       error ( "cannot run jobs with non-numeric jobid." ) unless ( $jobid =~ /^[0-9]+$/ );
-      my $command = PROCESSJOB." ".$jobid;
+      my $command = SMTConstants::PROCESSJOB." ".$jobid;
 
       print "running $jobid...\n";
       print `$command`;
@@ -125,8 +121,6 @@ sub main
   }
 }
 
-
-my $cfg = getConfig();
 
 
 
