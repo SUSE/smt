@@ -57,6 +57,11 @@ use constant {
 	SMT::Repositories::MIRRORING	=> SMT::Repositories::MIRRORING_TRUE,
 	SMT::Repositories::STAGING	=> SMT::Repositories::STAGING_TRUE,
     },
+
+    # All Mirrored repositories with Staging feature enabled 
+    ALL_REPO_FILTER => {
+	SMT::Repositories::MIRRORABLE	=> SMT::Repositories::MIRRORABLE_TRUE,
+    },
 };
 
 my $log = SMT::Utils::openLog ('/var/log/smt/smt-staging.log');
@@ -193,6 +198,10 @@ sub ChangePatchStatus ($) {
     if ($patchid eq '') {
 	y2error ("Parameter 'patchid' not defined");
 	return YCP_FALSE;
+    }
+
+    if (! GetStagingAllowedInternal({'repositoryid' => $repositoryid})) {
+	y2error ('Repository '.$repositoryid.' does not allow filtering');
     }
 
     LoadRepositoryData($repositoryid);
@@ -340,11 +349,19 @@ sub CreateSnapshot ($) {
 	$passphrase = $arg->{'passphrase'};
     }
 
-    my $mirror = SMT::Mirror::RpmMd->new(
+    my %mirror_args = (
 	log => $log,
-	vblevel => $vblevel,
-	filter => $fph->{$repositoryid}->{'fh'}
+	vblevel => $vblevel
     );
+
+    # Use filters only if staging is allowed
+    if (GetStagingAllowedInternal ({'repositoryid' => $repositoryid})) {
+	$mirror_args{'filter'} = $fph->{$repositoryid}->{'fh'};
+    } else {
+	y2milestone ('Filtering is not allowed, not using filters');
+    }
+
+    my $mirror = SMT::Mirror::RpmMd->new(%mirror_args);
 
     # The source of data
     $mirror->uri('file://'.$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
@@ -361,6 +378,52 @@ sub CreateSnapshot ($) {
     return YCP_TRUE;
 }
 
+# Cache for 'stagingAllowed()' results
+my $st_allowed_cache = {};
+
+sub GetStagingAllowedInternal ($) {
+    my $arg = shift || {};
+
+    my $repositoryid = $arg->{'repositoryid'} || do {
+	y2error ('Parameter repositoryid must be defined');
+	return undef;
+    };
+
+    # Purge the old result to recheck
+    if (defined $arg->{'force_check'} && defined $st_allowed_cache->{$repositoryid}) {
+	y2milestone ('Purging cached info for repository '.$repositoryid.' on request');
+	$st_allowed_cache->{$repositoryid} = undef;
+    }
+
+    my $allowed = 0;
+    my $errors = '';
+
+    if (defined $st_allowed_cache->{$repositoryid}) {
+	$allowed = $st_allowed_cache->{$repositoryid};
+    } else {
+	# Clear all the previous errors
+	$repositories->getAndClearErrorMessage();
+	$allowed = $repositories->stagingAllowed($repositoryid, $base_path);
+	$errors = $repositories->getAndClearErrorMessage();
+	# Cache the result
+	$st_allowed_cache->{$repositoryid} = $allowed;
+    }
+
+    if ($errors) {
+	foreach my $eline (split (/\n/, $errors)) {
+	    y2error ("stagingAllowed: ".$eline);
+	}
+    }
+
+    return $allowed;
+}
+
+sub GetStagingAllowed ($) {
+    my $arg = shift || {};
+
+    return (GetStagingAllowedInternal($arg) ? YCP_TRUE:YCP_FALSE);
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -368,30 +431,34 @@ while (<STDIN>) {
     # y2internal ('Command:'.Dumper($command).' Path:'.Dumper($path).' Arg:'.Dumper($arg));
 
     # For Perl-only testing, otherwise already removed
-    if ($path =~ /^\.smt\.staging/) {
-	$path =~ s/^\.smt\.staging//;
+    if ($path =~ /^\.smt/) {
+	$path =~ s/^\.smt//;
     }
 
     if ($command eq 'Read') {
-	if ($path eq '.repositories') {
+	if ($path eq '.staging.repositories') {
 	    ycp::Return ($repositories->getAllRepositories (MIRRORED_REPO_FILTER));
-	} elsif ($path eq '.patches') {
+	} elsif ($path eq '.staging.patches') {
 	    ycp::Return (GetAllPatches ($arg));
-	} elsif ($path eq '.patch.testing') {
+	} elsif ($path eq '.staging.patch.testing') {
 	    ycp::Return (GetPatchStatus ($arg));
-	} elsif ($path eq '.category_filter') {
+	} elsif ($path eq '.staging.category_filter') {
 	    ycp::Return (SecurityLevelFilterExists ($arg));
+	} elsif ($path eq '.repositories.all') {
+	    ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER));
+	} elsif ($path eq '.repository.staging_allowed') {
+	    ycp::Return (GetStagingAllowed ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}
     } elsif ($command eq 'Write') {
-	if ($path eq '.patch.testing') {
+	if ($path eq '.staging.patch.testing') {
 	    ycp::Return (ChangePatchStatus ($arg));
-	} elsif ($path eq '.patches') {
+	} elsif ($path eq '.staging.patches') {
 	    ycp::Return (WritePatchFilters());
-	} elsif ($path eq '.category_filter') {
+	} elsif ($path eq '.staging.category_filter') {
 	    ycp::Return (ChangeCategoryFilterStatus ($arg));
-	} elsif ($path eq '.snapshot') {
+	} elsif ($path eq '.staging.snapshot') {
 	    ycp::Return (CreateSnapshot ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);

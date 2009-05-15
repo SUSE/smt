@@ -1,7 +1,8 @@
 /**
  * File:	smt_staging.scr
  *
- * Summary:	Agent for managing/filtering patches in mirrored repositories.
+ * Summary:	Agent for managing/filtering patches in mirrored repositories (.staging)
+ *		and for managing repositories (.repositories).
  *
  * Authors:	Lukas Ocilka <locilka@suse.cz>
  *
@@ -22,6 +23,6 @@
  *   FIXME: Add more examples
  */
 
-.smt.staging
+.smt
 
-`ag_smt_staging ()
+`ag_smt ()

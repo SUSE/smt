@@ -24,6 +24,7 @@
     import "Label";
     import "RunlevelEd";
     import "SuSEFirewall";
+    import "FileUtils";
 
     integer sl = 100;
 
@@ -31,7 +32,6 @@
 	"/usr/lib/SMT/bin/smt-repeated-register"	: _("NCC Registration"),
 	"/usr/lib/SMT/bin/smt-daily"			: _("Synchronization of Updates"),
 	"/usr/lib/SMT/bin/smt-gen-report"		: _("Generation of Reports"),
-	"/usr/sbin/smt-support -U"			: _("Uploading Support Configs"),
     ];
 
     // patch categories translation map
@@ -215,7 +215,11 @@
 		),
 		[]
 	    ),
-	    `Left (`Label (_("Patch Details"))),
+	    `HBox (
+		`Label (_("Patch Details")),
+		`HStretch(),
+		`ReplacePoint (`id (`patches_table_rp), `Empty())
+	    ),
 	    `VSquash (`MinHeight (4, `RichText (`id (`patch_details), ""))),
 	    `Left (
 		`HBox (
@@ -623,8 +627,6 @@ to be readable by %2 user."),
 
 	WritePatches();
 
-	sleep (sl);
-
 	Progress::Finish();
 
 	return `next;
@@ -1018,6 +1020,10 @@ Enter your SMT server URL in the following format: http:://server.name/
 	return patch_categories[patch_category]:sformat(_("Patch category '%1'"), patch_category);
     }
 
+    // Only some repositories support filtering, although
+    // snapshots can be created from every repository
+    boolean filtering_allowed_for_repository = false;
+
     /**
      * Fills up details widget with the current patch description
      */
@@ -1034,7 +1040,9 @@ Enter your SMT server URL in the following format: http:://server.name/
 	// If a patch is filtered by the 'patch type' filter, we don't offer
 	// to change it...
 	boolean filtered_by_type = IsPatchFilteredByType (sel_patchid);
-	UI::ChangeWidget (`id (`toggle_testing), `Enabled, (filtered_by_type == false));
+
+	boolean buttons_enabled = (filtered_by_type == false && filtering_allowed_for_repository == true);
+	UI::ChangeWidget (`id (`toggle_testing), `Enabled, buttons_enabled);
 
 	string patch_description = current_patches[sel_patchid,"description"]:"";
 
@@ -1065,6 +1073,9 @@ Enter your SMT server URL in the following format: http:://server.name/
      * categories ["security", "recommended", "optional"] or "" for no filter used)
      */
     void RedrawPatchesTable (string category_filter) {
+	// default
+	filtering_allowed_for_repository = false;
+
 	// The currently selected catalog
 	selected_catalog = (string) UI::QueryWidget (`id (`catalogs), `Value);
 
@@ -1080,6 +1091,10 @@ Enter your SMT server URL in the following format: http:://server.name/
 	if (selected_catalog == nil || selected_catalog == "") {
 	    y2warning ("No catalog selected");
 	} else {
+	    filtering_allowed_for_repository =
+		(boolean) SCR::Read (.smt.repository.staging_allowed, $["repositoryid":selected_catalog]);
+	    y2milestone ("Repository %1 filtering allowed: %2", selected_catalog, filtering_allowed_for_repository);
+
 	    current_patches = $[];
 
 	    list <map> patches = (list <map>) SCR::Read (.smt.staging.patches, selected_catalog);
@@ -1117,10 +1132,14 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    });
 	}
 
-	boolean enable_buttons = (size (items) > 0);
+	boolean enable_buttons = (size (items) > 0 && filtering_allowed_for_repository == true);
 
 	UI::ChangeWidget (`id (`patches_table), `Items, items);
 	UI::ChangeWidget (`id (`toggle_testing), `Enabled, enable_buttons);
+	UI::ChangeWidget (`id (`change_status), `Enabled, enable_buttons);
+
+	term additional_info = (enable_buttons == true ? `Empty():`Label(_("Repository does not allow patch-filtering")));
+	UI::ReplaceWidget (`id (`patches_table_rp), additional_info);
 
 	if (ci_is_listed)
 	    UI::ChangeWidget (`id (`patches_table), `CurrentItem, current_item);
@@ -1217,7 +1236,18 @@ Enter your SMT server URL in the following format: http:://server.name/
 	);
     }
 
+    void ReportFilteringNotAllowed () {
+	// a pop-up message
+	Report::Message (_("This repository does not allow patch filtering.
+You can create snapshots of its current stage thought."));
+    }
+
     void TogglePatchTesting () {
+	if (filtering_allowed_for_repository != true) {
+	    ReportFilteringNotAllowed();
+	    return;
+	}
+
 	string sel_patchid = (string) UI::QueryWidget (`id (`patches_table), `CurrentItem);
 
 	if (IsPatchFilteredByType (sel_patchid)) {
@@ -1250,6 +1280,11 @@ and thus its status cannot be changed in this dialog."));
     }
 
     void ChangeAllListedPatches (boolean new_state) {
+	if (filtering_allowed_for_repository != true) {
+	    ReportFilteringNotAllowed();
+	    return;
+	}
+
 	foreach (string patchid, map patchdetails, current_patches, {
 	    // Patch cannot be changed
 	    if (IsPatchFilteredByType (patchid))
@@ -1843,6 +1878,8 @@ you need to restart the YaST SMT Configuration module."));
 	return true;
     }
 
+    boolean smt_support_checked = nil;
+
     /**
      * Opens up dialog for adding or editing a cron-job entry.
      *
@@ -1850,6 +1887,16 @@ you need to restart the YaST SMT Configuration module."));
      *        -1 for adding a new entry
      */
     boolean AddEditScheduledMirroring (integer schd_id) {
+	// Offer adding the script only if exists
+	if (smt_support_checked != true) {
+	    smt_support_checked = true;
+
+	    if (FileUtils::Exists("/usr/sbin/smt-support")) {
+		y2milestone ("SMT support script exists");
+		smt_cron_scripts["/usr/sbin/smt-support -U"] = _("Uploading Support Configs");
+	    }
+	}
+
 	map settings = $[];
 	boolean editing = false;
 	boolean dialog_ret = false;

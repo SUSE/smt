@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Fri May 15 12:12:12 CEST 2009 - locilka@suse.cz
+
+- Offering managing filters only if it is available.
+
+-------------------------------------------------------------------
+Tue May 14 14:14:14 CEST 2009 - locilka@suse.cz
+
+- Two Perl SCR agents merged into one.
+
+-------------------------------------------------------------------
 Wed May 13 18:00:00 CEST 2009 - locilka@suse.cz
 
 - Forcing default logging behavior in SCR Agents. STDOUT must not
