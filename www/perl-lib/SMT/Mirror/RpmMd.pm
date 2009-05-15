@@ -633,13 +633,15 @@ sub mirror()
     my $tmpdir = tempdir(CLEANUP => 1); 
     # new updateinfo.xml file path
     my $uifname = "$tmpdir/updateinfo.xml";
+    # old updateinfo.xml.gz file path
+    my $olduifname = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
 
     #
     # calculate the new available patches
     #
 
     # with filtering (generates new metadata)
-    if (defined $self->{FILTER})
+    if (defined $self->{FILTER} && not $self->{FILTER}->empty() && -e $olduifname)
     {
         # open file to write the new updateinfo.xml
         my $out = new IO::File();
@@ -676,17 +678,11 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("new checksum %s", $digest ), 1);
 
         # unzip the old file
-	my $updateinfo = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
-
-	if (-e $updateinfo) {
-	    open(FILE, "> $uifname.old");
-	    my $fh = IO::Zlib->new($updateinfo, "rb");
-	    print FILE while <$fh>;
-	    $fh->close;
-	    close FILE;
-	} else {
-	    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,  sprintf("file not found %s", $updateinfo ), 1);
-	}
+        open(FILE, "> $uifname.old");
+        my $fh = IO::Zlib->new($olduifname, "rb");
+        print FILE while <$fh>;
+        $fh->close;
+        close FILE;
 
         # old checksum
         open(FILE, "< $uifname.old");
@@ -698,10 +694,10 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("old checksum %s", $olddigest ), 1);
 
         # if checksums differ, overwrite the old updateinfo & update repomd later
-        if (not $digest eq $olddigest)
+        if ($digest eq $olddigest)
         {
             $needupdateinfoupdate = 1;
-            
+
             # TODO remove unnecessary rpms
         }
     }
@@ -745,6 +741,7 @@ sub mirror()
         }
     }
 
+    # save the new patches for newpatches() function
     $self->{NEWPATCHES} = $newpatches;
 
     my $modifyrepopath = '/usr/bin/modifyrepo';
