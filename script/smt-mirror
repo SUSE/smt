@@ -12,6 +12,7 @@ use SMT::Utils;
 use SMT::CLI;
 use SMT::Parser::RegData;
 use SMT::Repositories;
+use SMT::Filter;
 use Config::IniFiles;
 use File::Path;
 use URI;
@@ -343,7 +344,7 @@ foreach my $entry (@{$array})
             }
         }
 
-        # is STAGING is Y, put full/ infront of LOCALPATH
+        # if STAGING is Y, put full/ infront of LOCALPATH
         if( exists $entry->{STAGING} && defined $entry->{STAGING} && uc($entry->{STAGING}) eq "Y")
         {
             if ( $fromlocalsmt )
@@ -396,6 +397,18 @@ foreach my $entry (@{$array})
             $size       += $s->{DOWNLOAD_SIZE};
             $secpatches += $s->{NEWSECPATCHES};
             $recpatches += $s->{NEWRECPATCHES};
+            
+            # filter new patches -> admin needs to manually allow which patches
+            # s/he wants (maybe this should be configurable)
+            my $rh = SMT::Repositories::new($dbh);
+            if ($rh->stagingAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
+            {
+                my $newpatches = $zyppMirror->newpatches();
+                my $filter = SMT::Filter::new();
+                $filter->load($dbh, $entry->{CATALOGID});
+                $filter->add(SMT::Filter->TYPE_NAME_VERSION, keys %$newpatches);
+                $filter->save($dbh, $entry->{CATALOGID});
+            }
         }
     }
 }
