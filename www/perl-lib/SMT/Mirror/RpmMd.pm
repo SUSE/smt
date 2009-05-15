@@ -770,7 +770,7 @@ sub mirror()
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
                 "Executing $modifyrepopath $uifname ".$self->fullLocalRepoPath()."/.repodata");
 
-            system($modifyrepopath, $uifname, $self->fullLocalRepoPath()."/.repodata");
+            system("$modifyrepopath $uifname ".$self->fullLocalRepoPath()."/.repodata > /dev/null");
             if ( $? == -1 )
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Command failed: $!");
