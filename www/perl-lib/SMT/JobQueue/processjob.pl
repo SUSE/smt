@@ -9,6 +9,7 @@ use Data::Dumper;
 use UNIVERSAL 'isa';
 use SMTConstants;
 use SMTConfig;
+use SMTUtils;
 
 
 
@@ -21,31 +22,13 @@ sub error
                                                                                          
   if ( defined ($jobid ) )                                                               
   {                                                                                      
-    logger ("let's tell the server that $jobid failed");                                 
+    SMTUtils::logger ("let's tell the server that $jobid failed");                                 
     updatejob ( $jobid, "false", $message );                                             
   }                                                                                      
   die "Error: $message\n";                                                               
 };                                                                                       
                                                                                          
                                                                                          
-###############################################################################          
-# write a log line                                                                       
-# args: message, jobid                                                                   
-sub logger                                                                               
-{                                                                                        
-  my ( $message, $jobid) =  @_;                                                          
-  if (defined $jobid)                                                                    
-  {                                                                                      
-    print ("Log: ($jobid) $message\n");                                                  
-  }                                                                                      
-  else                                                                                   
-  {                                                                                      
-    print ("Log: () $message\n");                                                        
-  }                                                                                      
-};                                                                                       
-                                                                                         
-    
-
 
 ###############################################################################
 # updates status of a job on the smt server
@@ -55,7 +38,7 @@ sub updatejob
   return;
   my ($jobid, $success, $message, $stdout, $stderr, $returnvalue) =  @_;
 
-  logger( "updating job $jobid ($success) $message", $jobid);
+  SMTUtils::logger( "updating job $jobid ($success) $message", $jobid);
 
   my $job =
   {
@@ -83,7 +66,7 @@ sub updatejob
   }
   else
   {
-    logger( "successfully updated job $jobid");
+    SMTUtils::logger( "successfully updated job $jobid");
   }
 };
 
@@ -137,7 +120,7 @@ sub parsejob
   error ( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
   error ( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
 
-  logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
+  SMTUtils::logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
 
   return ( id=>$jobid, type=>$jobtype, args=>$jobargs );
 };
@@ -165,7 +148,7 @@ sub loadjobhandler
 sub main
 {
   my  $jobid  =  $ARGV[0];
-  logger ( "jobid: $jobid" );
+  SMTUtils::logger ( "jobid: $jobid" );
 
   my $xmldata = getjob( $jobid );
   my %jobdata = parsejob( $xmldata );
@@ -174,7 +157,7 @@ sub main
 
   my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
 
-  logger ( "job:" . $jobdata{id}."success: ".$retval{success}."message: ".$retval{message}."stdout: ".$retval{stdout}."stderr: ".$retval{stderr}."retval: ".$retval{returnvalue} );
+  SMTUtils::logger ( "job:" . $jobdata{id}."success: ".$retval{success}."message: ".$retval{message}."stdout: ".$retval{stdout}."stderr: ".$retval{stderr}."retval: ".$retval{returnvalue} );
  updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
 }
 

@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use IPC::Open3;
 use SMTConstants;
+use SMTUtils;
 
 
 
@@ -11,8 +12,8 @@ sub jobhandler
   my %retval;
   my ($jobtype, $jobid, $args) =  @_;
 
-  logger ("jobhandler for softwarepush called", $jobid);
-  logger ("softwarepush runs jobid \"$jobid\"", $jobid);
+  SMTUtils::logger ("jobhandler for softwarepush called", $jobid);
+  SMTUtils::logger ("softwarepush runs jobid \"$jobid\"", $jobid);
 
 
   # check whether this handler can handle requested jobtype
@@ -86,7 +87,7 @@ sub jobhandler
 
 }
 
-logger ("successfully loaded handler for jobtype \"softwarepush\"");
+SMTUtils::logger ("successfully loaded handler for jobtype \"softwarepush\"");
 
 return 1;
 

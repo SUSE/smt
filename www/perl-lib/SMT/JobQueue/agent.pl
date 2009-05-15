@@ -10,6 +10,7 @@ use UNIVERSAL 'isa';
 use Config::IniFiles;
 use SMTConstants;
 use SMTConfig;
+use SMTUtils;
 
 #sub getConfig
 #{
@@ -37,27 +38,10 @@ sub error
 
   if ( defined ( $jobid ) )
   {
-    logger ( "let's tell the server that $jobid failed" );
+    SMTUtils::logger ( "let's tell the server that $jobid failed" );
     updatejob ( $jobid, "false", $message );
   }
   die "Error: $message\n";
-};
-
-
-###############################################################################
-# write a log line 
-# args: message, jobid
-sub logger
-{
-  my ( $message, $jobid ) =  @_;
-  if ( defined ( $jobid ) )
-  {
-    print ( "Log: ($jobid) $message\n" );
-  }
-  else
-  {
-    print ( "Log: () $message\n" );
-  }
 };
 
 
@@ -113,10 +97,9 @@ sub main
   {
       # prevent command injection
       error ( "cannot run jobs with non-numeric jobid." ) unless ( $jobid =~ /^[0-9]+$/ );
+      SMTUtils::logger ("running job $jobid", $jobid);
       my $command = SMTConstants::PROCESSJOB." ".$jobid;
-
-      print "running $jobid...\n";
-      print `$command`;
+      `$command`;
       sleep (3);
   }
 }
