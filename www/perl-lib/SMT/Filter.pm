@@ -278,6 +278,21 @@ sub contains
     return defined $self->{FILTERS}->{"$type$value"};
 }
 
+=item empty()
+
+Whether the filter has no entries.
+
+Example:
+$isempty = $filter->empty();
+
+=cut
+sub empty
+{
+    my $self = shift;
+    return 1 if (%{$self->{FILTERS}});
+    return 0;
+}
+
 =item add()
 
 Adds a filter element (subfilter) to current filter. Does not affect database.
