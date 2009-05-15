@@ -1,0 +1,231 @@
+#!/usr/bin/perl
+
+###############################################################################
+## Copyright (c) 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use File::Basename;
+
+use SMT::Utils;
+use SMT::Repositories;
+use SMT::Filter;
+use SMT::Mirror::RpmMd;
+use SMT::Parser::RpmMdPatches;
+
+
+#my $log = SMT::Utils::openLog('/local/jkupec/tmp/smt.log');
+#my $vblevel = LOG_DEBUG|LOG_DEBUG2|LOG_WARN|LOG_ERROR|LOG_INFO1|LOG_INFO2;
+my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
+my $debug    = 0;
+
+my $dbreplfile = undef;
+my $dbreplacement = [];
+
+my $LocalBasePath = "";
+my $FromLocalBasePath = "";
+
+my $help     = 0;
+my $logfile = "/dev/null";
+
+my $fromlocalsmt = 0;
+my $nohardlink = 0;
+my $dryrun = 0;
+
+my $repository;
+
+my $options = GetOptions("debug|d"      => \$debug,
+                         "verboselevel|v=i" => \$vblevel,
+                         "directory=s"  => \$LocalBasePath,
+                         "fromdir=s"    => \$FromLocalBasePath,
+                         "fromlocalsmt" => \$fromlocalsmt,
+                         "dryrun|n"     => \$dryrun,
+                         "nohardlink"   => \$nohardlink,
+                         "dbreplfile=s" => \$dbreplfile,
+                         "logfile|L=s"  => \$logfile,
+                         "help|h"       => \$help,
+                         "repository|r=s" => \$repository
+                        );
+
+if($help)
+{
+    print basename($0) . " createrepo  <repoid> [--testing] [--production]\n";
+    print basename($0) . " listupdates <repoid> [--forbidden] [--allowed]\n";
+    print basename($0) . " forbid      <repoid> <patch>\n";
+    print basename($0) . " allow       <repoid> <patch>\n";
+    print "\n";
+    print __("Options:\n");
+    print "--debug -d              " . __("enable debug mode\n");
+    print "--verboselevel -v level " . __("set the verbose level\n");
+    print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
+    print "                        " . __("for them\n");
+    print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
+    print "                        " . __("default value in smt.conf\n");
+    print "--fromdir arg           " . __("Mirror from the directory give here, instead of mirroring from the remote sources.\n");
+    print "                        " . __("The directory can e.g. be created by calling smt-mirror --directory\n");
+    print "--fromlocalsmt          " . __("Mirror from the local running SMT server. This options requires the --directory\n");
+    print "                        " . __("option being set. The resulting directory can  e.g later be imported to another server\n");
+    print "                        " . __("using smt-mirror --fromdir\n");
+    print "--dryrun -n             " . __("Run mirror algorithm without downloading the rpms \n");
+    print "                        " . __("(but it needs to download the metadata into a temporary directory).\n");
+    print "                        " . __("It shows only the names which would be downloaded \n");
+    print "--nohardlink            " . __("If a file already exists on the local harddisk do not link it into the\n");
+    print "                        " . __("mirrored repository, but copy it.\n");
+    print "--logfile -L file       " . __("Path to logfile\n");
+    print "--repository ID         " . __("Repository ID to mirror. By default, all repositories are selected.\n");
+    exit 0;
+}
+
+if (@ARGV < 2)
+{
+    print STDERR __("Too few arguments. At least the command and repository ID are required.\n");
+    exit 1;
+}
+
+#print "Non-option args: @ARGV\n";
+
+# the first non-option argument is the command
+
+my $command = undef;
+if (!($ARGV[0] eq 'createrepo' ||
+      $ARGV[0] eq 'listupdates' ||
+      $ARGV[0] eq 'forbid' ||
+      $ARGV[0] eq 'allow'))
+{
+    printf __("Unknown command '%s'\n"), $ARGV[0];
+    exit 1;
+}
+else
+{
+    $command = shift @ARGV;
+}
+
+# the second is always the repository id
+
+my $repoid = shift @ARGV;
+
+# get a lock
+
+if(!SMT::Utils::openLock("smt-staging"))
+{
+    print __("Other staging process is still running.\n");
+    exit 0;
+}
+
+# open the logfile
+
+my $log = SMT::Utils::openLog($logfile);
+
+# get the config
+
+my $cfg = undef;
+eval
+{
+    $cfg = SMT::Utils::getSMTConfig();
+};
+if($@ || !defined $cfg)
+{
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    SMT::Utils::unLockAndExit( "smt-mirror", 1, $log, $vblevel );
+}
+
+# connect to database (all commands need it)
+
+my $dbh = SMT::Utils::db_connect();
+if(!$dbh)
+{
+    if(!SMT::Utils::unLock("smt-staging"))
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+    }
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot connect to database"));
+    exit 1;
+}
+
+# get the repository from DB (all commands need it)
+
+my $rh = SMT::Repositories::new($dbh);
+my $repo = $rh->getRepository($repoid);
+if (not defined $repo)
+{
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf __("Repository ID '%s' not found."), $repoid);
+    printf __("Use '%s' to list all available repositories.\n"), 'smt-repos';
+    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+}
+
+# check if we can do staging for this repo
+
+my $canstage = $rh->stagingAllowed($repoid, $cfg->val("LOCAL", "MirrorTo"));
+my $error = $rh->getAndClearErrorMessage();
+if ($error)
+{
+    echo $error;
+}
+elsif (!$canstage)
+{
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+        sprintf __("Staging is not allowed for repository '%s', ID '%s'."), $repo->{NAME}, $repoid);
+    print __("The repository either does not contain update metadata, or the metadata are in an unsupported format.\n");
+    print __("Only openSUSE 11.x, SLE-11, and Fedora/RedHat XX? repositories are supported.\n");
+    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+}
+
+# now we're ready to do the work
+
+if ($command eq 'listupdates')
+{
+    my $localrepopath = SMT::Utils::cleanPath(
+        $cfg->val("LOCAL", "MirrorTo"), "repo/full", $repo->{LOCALPATH});
+        
+    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
+    $filter->load($dbh, $repoid);
+
+    my $parser = SMT::Parser::RpmMdPatches->new(
+        log => $log,
+        vblevel => $vblevel);
+    $parser->resource($localrepopath);
+    my $patches = $parser->parse("repodata/updateinfo.xml.gz");
+    
+    foreach my $patch (values %$patches)
+    {
+        my $allowed = not $filter->matches($patch);
+        print ( ($allowed ? '*' : ' ') . " | " . $patch->{name} . "\t | " . $patch->{version} . "\t | " . $patch->{title} . "\n"); 
+    }
+}
+
+elsif ($command eq 'forbid')
+{
+    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
+    $filter->load($dbh, $repoid);
+
+    if (@ARGV)
+    {
+        # TODO make sure user gave name-version, check if such patch exists, ...
+        $filter->add(SMT::Filter->TYPE_NAME_VERSION, @ARGV);
+    }
+
+    $filter->save($dbh, $repoid);
+}
+
+elsif ($command eq 'allow')
+{
+    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
+    $filter->load($dbh, $repoid);
+
+    if (@ARGV)
+    {
+        $filter->remove(SMT::Filter->TYPE_NAME_VERSION, @ARGV); # TODO make remove() accept multiple args
+    }
+
+    $filter->save($dbh, $repoid);
+}
+
+elsif ($command eq 'createrepo')
+{
+    print STDERR "not implemented yet\n";
+}
+
+SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
