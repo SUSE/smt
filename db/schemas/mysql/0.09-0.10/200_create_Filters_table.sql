@@ -1,4 +1,4 @@
-alter table Catalogs add column ID INT NOT NULL AUTO_INCREMENT UNIQUE KEY;
+alter table Catalogs add column ID INT NOT NULL AUTO_INCREMENT UNIQUE KEY FIRST;
 
 
 create table Filters(ID            INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
