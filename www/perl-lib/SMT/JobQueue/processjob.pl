@@ -25,6 +25,7 @@ sub error
     SMTUtils::logger ("let's tell the server that $jobid failed");                                 
     updatejob ( $jobid, "false", $message );                                             
   }                                                                                      
+  SMTUtils::logger ("ERROR: $message", $jobid);                                 
   die "Error: $message\n";                                                               
 };                                                                                       
                                                                                          
@@ -136,7 +137,6 @@ sub loadjobhandler
   # prevent command injection
   error ( "cannot load non-alphanumeric jobs." ) unless ( $jobtype =~ /^[0-9A-Za-z]+$/ );
 
-
   my $jobhandler = SMTConstants::JOB_HANDLER_PATH."/".$jobtype.".pl";
 
   eval { require $jobhandler };
@@ -157,8 +157,13 @@ sub main
 
   my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
 
-  SMTUtils::logger ( "job:" . $jobdata{id}."success: ".$retval{success}."message: ".$retval{message}."stdout: ".$retval{stdout}."stderr: ".$retval{stderr}."retval: ".$retval{returnvalue} );
- updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
+  SMTUtils::logger ( "job ". $jobdata{id}. (( $retval{success} eq "true")?" successfully finished":" FAILED"), $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " message: ".$retval{message}, $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " stdout: ".$retval{stdout}, $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " stderr: ".$retval{stderr}, $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " returnvalue: ".$retval{returnvalue}, $jobdata{id} );
+
+  updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
 }
 
 main( );

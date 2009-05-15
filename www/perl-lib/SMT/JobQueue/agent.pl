@@ -41,6 +41,7 @@ sub error
     SMTUtils::logger ( "let's tell the server that $jobid failed" );
     updatejob ( $jobid, "false", $message );
   }
+  SMTUtils::logger ("ERROR: $message", $jobid);
   die "Error: $message\n";
 };
 
