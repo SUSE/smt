@@ -373,9 +373,10 @@ sub CreateSnapshot ($) {
     $mirror->localRepoPath($fph->{$repositoryid}->{'paths'}->{$type});
 
     # And GO!
-    $mirror->mirror ($keyid, $passphrase);
+    my $ret = $mirror->mirror ($keyid, $passphrase);
 
-    return YCP_TRUE;
+    # Contains number of errors
+    return ($ret == 0 ? YCP_TRUE:YCP_FALSE);
 }
 
 # Cache for 'stagingAllowed()' results

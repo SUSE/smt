@@ -603,6 +603,36 @@ to be readable by %2 user."),
 	return `next;
     }
 
+    symbol ReadManagementDialog () {
+	Progress::New (
+	    // TRANSLATORS: Dialog caption
+	    _("Initializing SMT Configuration"),
+	    " ",
+	    1,
+	    [
+		// TRANSLATORS: Progress stage
+		_("Read SMT configuration"),
+		// TRANSLATORS: Progress stage
+	    ],
+	    [
+		// TRANSLATORS: Bussy message /progress/
+		_("Reading SMT configuration..."),
+		Message::Finished(),
+	    ],
+	    ""
+	);
+	Wizard::SetTitleIcon("yast-smt");
+	Wizard::RestoreHelp(HELPS["read"]:"");
+
+	Progress::NextStage();
+
+	SMTData::ReadCredentials();
+
+	Progress::Finish();
+
+	return `next;
+    }
+
     symbol WriteManagementDialog() {
 	Progress::New (
 	    // TRANSLATORS: Dialog caption
@@ -1298,20 +1328,46 @@ and thus its status cannot be changed in this dialog."));
 	});
     }
 
-    void CreateTestingSnapshot () {
-	// a bussy message
-	UI::OpenDialog (`Label(_("Creating testing snapshot...")));
-	SCR::Write (.smt.staging.patches, nil);
-	SCR::Write (.smt.staging.snapshot, $["repositoryid":selected_catalog, "type":"testing"]);
-	UI::CloseDialog();
+    boolean AskForSnapshotSigningKey (map <string, string> & snapshot_settings) {
+	// FIXME: do not use any key and password if there are no filters in use
+	// Sometimes filters even can't be used at all
+
+	string key_id = SMTData::GetCredentials("LOCAL", "signingKeyID");
+
+	if (key_id == nil || key_id == "") {
+	    y2milestone ("No signing key used");
+	    return true;
+	}
+
+	// FIXME: ...
+
+	return true;
     }
 
-    void CreateProductionSnapshot () {
+    boolean CreateSnapshot (string type) {
+	map <string, string> snapshot_settings = $["repositoryid":selected_catalog, "type":type];
+	// Do not log any passwords!
+	y2milestone ("Creating snapshot: %1", snapshot_settings);
+
+	if (AskForSnapshotSigningKey (snapshot_settings) != true)
+	    return false;
+
 	// a bussy message
-	UI::OpenDialog (`Label(_("Creating production snapshot...")));
+	UI::OpenDialog (`Label(_("Creating repository snapshot...")));
+
+	// Flush the cache (filters) from memory to database
 	SCR::Write (.smt.staging.patches, nil);
-	SCR::Write (.smt.staging.snapshot, $["repositoryid":selected_catalog, "type":"production"]);
+	// Create snapshot
+	boolean ret = (boolean) SCR::Write (.smt.staging.snapshot, snapshot_settings);
+	y2milestone ("Creating snapshot finished with result: %1", ret);
+
 	UI::CloseDialog();
+
+	if (ret != true)
+	    // a pop-up error message
+	    Report::Error (_("There were some errors during creating the snapshot."));
+
+	return ret;
     }
 
     symbol HandleStagingTableDialog (string id, map event) {
@@ -1346,9 +1402,9 @@ and thus its status cannot be changed in this dialog."));
 	    ChangeAllListedPatches (false);
 	    RedrawPatchesTable (GetSelectedPatchFilter());
 	} else if (action == `create_snapshot_testing) {
-	    CreateTestingSnapshot();
+	    CreateSnapshot ("testing");
 	} else if (action == `create_snapshot_production) {
-	    CreateProductionSnapshot();
+	    CreateSnapshot ("production");
 	}
 
 	return nil;
