@@ -5,8 +5,6 @@ use IPC::Open3;
 use SMTConstants;
 use SMTUtils;
 
-
-
 sub jobhandler
 {
   my %retval;
@@ -17,7 +15,7 @@ sub jobhandler
 
 
   # check whether this handler can handle requested jobtype
-  error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
+  SMTUtils::error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
 
 
   # collect and verify arguments
@@ -56,26 +54,7 @@ sub jobhandler
     push (@cmdArgs, $pack);
   }    
 
-
-  my $stdout;
-  my $stderr;
-
-  my $pid = open3(\*IN, \*OUT, \*ERR, $command, @cmdArgs) or do {
-      error("Cannot execute $command ".join(" ", @cmdArgs), $jobid);
-  };
-
-  while (<OUT>) { $stdout .= "$_"; }
-  while (<ERR>) { $stderr .= "$_"; }
-
-  close OUT;
-  close ERR;
-  close IN;
-
-  waitpid $pid, 0;
-
-  my $retval = ($?>>8);
-
-  #== zypper done ==
+  (my $retval, my $stdout, my $stderr) = SMTUtils::executeCommand ( $command, undef, @cmdArgs );
 
   return (
     stdout => defined ( $stdout )? $stdout : "",

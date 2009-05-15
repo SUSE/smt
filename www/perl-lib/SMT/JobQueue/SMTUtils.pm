@@ -5,6 +5,8 @@ use strict;
 use warnings;
 use SMTConstants;
 use IO::File;
+use IPC::Open3;
+
 
 
 sub openLog
@@ -44,6 +46,82 @@ sub logger
 }
 
 
+sub executeCommand
+{
+    my $command = shift;
+    my $input = shift;
+    my @arguments = @_;
+    
+    my $out = "";
+    my $err = "";
+    my $code = 0;
+    
+    my $lang     = $ENV{LANG};
+    my $language = $ENV{LANGUAGE};
+    
+
+    if(!defined $command || !-x $command)
+    {
+	SMTUtils::logger("invalid Command '$command'");
+        return undef;
+    }
+
+    # set lang to en_US to get output in english.
+    $ENV{LANG}     = "en_US";
+    $ENV{LANGUAGE} = "en_US";
+
+    my $pid = open3(\*IN, \*OUT, \*ERR, $command, @arguments) or do {
+        $ENV{LANG}     = $lang;
+        $ENV{LANGUAGE} = $language;
+	SMTUtils::logger("Cannot execute $command ".join(" ", @arguments).": $!\n");
+        return undef;
+    };
+    if(defined $input)
+    {
+        print IN $input;
+    }
+    close IN;
+    
+    while (<OUT>)
+    {
+        $out .= "$_";
+    }
+    while (<ERR>)
+    {
+        $err .= "$_";
+    }
+    close OUT;
+    close ERR;
+    
+    waitpid $pid, 0;
+    
+    chomp($out);
+    chomp($err);
+    
+    $ENV{LANG}     = $lang;
+    $ENV{LANGUAGE} = $language;
+
+    $code = ($?>>8);
+
+    return ($code, $err, $out);
+}
+
+
+###############################################################################
+# exit with error
+# args: message, jobid
+sub error
+{
+  my ( $message, $jobid ) =  @_;
+
+  if ( defined ( $jobid ) )
+  {
+    SMTUtils::logger ( "let's tell the server that $jobid failed" );
+    SMTRestXML::updatejob ( $jobid, "false", $message );
+  }
+  SMTUtils::logger ("ERROR: $message", $jobid);
+  die "Error: $message\n";
+};
 
 
 1;
