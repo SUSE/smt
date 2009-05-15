@@ -676,11 +676,17 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("new checksum %s", $digest ), 1);
 
         # unzip the old file
-        open(FILE, "> $uifname.old");
-        my $fh = IO::Zlib->new($self->fullLocalRepoPath()."/.repodata/updateinfo.xml.gz", "rb");
-        print FILE while <$fh>;
-        $fh->close;
-        close FILE;
+	my $updateinfo = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
+
+	if (-e $updateinfo) {
+	    open(FILE, "> $uifname.old");
+	    my $fh = IO::Zlib->new($updateinfo, "rb");
+	    print FILE while <$fh>;
+	    $fh->close;
+	    close FILE;
+	} else {
+	    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,  sprintf("file not found %s", $updateinfo ), 1);
+	}
 
         # old checksum
         open(FILE, "< $uifname.old");
