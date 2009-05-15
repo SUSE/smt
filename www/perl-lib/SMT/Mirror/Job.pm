@@ -752,7 +752,7 @@ sub copyFromLocalIfAvailable
     
     if(!$success)
     {
-        copy($otherpath, $self->fullLocalPath()) or do
+        File::Copy::copy($otherpath, $self->fullLocalPath()) or do
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "copy($otherpath, ".$self->fullLocalPath().") failed: $!") ;
             return 0;

@@ -532,7 +532,7 @@ sub mirror()
                 }
                 if(!$success)
                 {
-                    copy( $fullpath, $metatempdir."/$entry" ) or do
+                    File::Copy::copy( $fullpath, $metatempdir."/$entry" ) or do
                     {
                         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "copy metadata failed: $!");
                         $self->{STATISTIC}->{ERROR} += 1;
