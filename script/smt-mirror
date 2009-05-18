@@ -404,7 +404,7 @@ foreach my $entry (@{$array})
             if ($rh->stagingAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
             {
                 my $newpatches = $zyppMirror->newpatches();
-                my $filter = SMT::Filter::new();
+                my $filter = SMT::Filter->new();
                 $filter->load($dbh, $entry->{CATALOGID});
                 $filter->add(SMT::Filter->TYPE_NAME_VERSION, keys %$newpatches);
                 $filter->save($dbh, $entry->{CATALOGID});
