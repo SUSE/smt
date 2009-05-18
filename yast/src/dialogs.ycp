@@ -1629,6 +1629,9 @@ and thus its status cannot be changed in this dialog."));
 	SCR::Execute (.process.release, process_PID);
 
 	if (! aborted) {
+	    // Flush the internal cache after mirroring
+	    SCR::Read (.smt.repository.staging_allowed, $["repositoryid":repository_id, "force_check":true]);
+
 	    UI::ChangeWidget (`id (`log), `LastLine, _("Finished\n"));
 	    UI::ReplaceWidget (`id (`button), `PushButton (`id (`ok), Label::OKButton()));
 	    UI::UserInput();
