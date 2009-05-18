@@ -27,5 +27,9 @@ use constant REST_GET_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/';
 # log file
 use constant LOG_FILE		=> '/tmp/smtclient.log';
 
+# client config file
+use constant CLIENT_CONFIG_FILE	=> '/tmp/smtclient.conf';
+
+
 
 1;

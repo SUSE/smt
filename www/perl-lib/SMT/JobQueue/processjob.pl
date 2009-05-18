@@ -26,25 +26,32 @@ sub loadjobhandler
 
 
 
-
-
 my  $jobid  =  $ARGV[0];
 SMTUtils::logger ( "jobid: $jobid" );
 
 my $xmldata = SMTRestXML::getjob( $jobid );
 my %jobdata = SMTRestXML::parsejob( $xmldata );
 
-loadjobhandler ( $jobdata{type}, $jobdata{id} ); 
 
-my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
+if ( SMTConfig::getSMTClientConfig($jobdata{type}, "allowedtorun") ne "true" )
+{
+  SMTUtils::logger("Running ". $jobdata{type}. " denied by client policy", $jobdata{id} );
+  SMTRestXML::updatejob ( $jobdata{id}, "false", "denied by client policy", "", "", "" );
+}
+else
+{
+  loadjobhandler ( $jobdata{type}, $jobdata{id} ); 
 
-SMTUtils::logger ( "job ". $jobdata{id}. (( $retval{success} eq "true")?" successfully finished":" FAILED"), $jobdata{id} );
-SMTUtils::logger ( "job ". $jobdata{id}. " message: ".$retval{message}, $jobdata{id} );
-SMTUtils::logger ( "job ". $jobdata{id}. " stdout: ".$retval{stdout}, $jobdata{id} );
-SMTUtils::logger ( "job ". $jobdata{id}. " stderr: ".$retval{stderr}, $jobdata{id} );
-SMTUtils::logger ( "job ". $jobdata{id}. " returnvalue: ".$retval{returnvalue}, $jobdata{id} );
+  my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
 
-SMTRestXML::updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
+  SMTUtils::logger ( "job ". $jobdata{id}. (( $retval{success} eq "true")?" successfully finished":" FAILED"), $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " message: ".$retval{message}, $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " stdout: ".$retval{stdout}, $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " stderr: ".$retval{stderr}, $jobdata{id} );
+  SMTUtils::logger ( "job ". $jobdata{id}. " returnvalue: ".$retval{returnvalue}, $jobdata{id} );
+
+  SMTRestXML::updatejob ( $jobdata{id}, $retval{success}, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{returnvalue} );
+}
 
 
 

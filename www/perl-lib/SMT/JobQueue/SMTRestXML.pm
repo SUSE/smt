@@ -11,12 +11,6 @@ use UNIVERSAL 'isa';
 use SMTConstants;
 use SMTConfig;
 use SMTUtils;
-use HTTP::Request;
-use HTTP::Request::Common;
-use LWP::UserAgent;
-use XML::Simple;
-use Data::Dumper;
-use UNIVERSAL 'isa';
 
 
 
