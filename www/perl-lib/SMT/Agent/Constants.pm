@@ -1,19 +1,19 @@
 #!/usr/bin/env perl
 
-package SMTConstants;
+package SMT::Agent::Constants;
 
 use strict;
 use warnings;
 
 
 # script that processes jobs
-use constant PROCESSJOB 	=> '/home/store/yep/trunk/www/perl-lib/SMT/JobQueue/processjob.pl';
+use constant PROCESSJOB 	=> '/usr/lib/SMT/bin/processjob';
 
 # config file for smt server url
 use constant SUSEREGISTER_CONF	=> '/etc/suseRegister.conf';
 
-# rest path for job update (trailing slash is important)
-use constant JOB_HANDLER_PATH	=> '/home/store/yep/trunk/www/perl-lib/SMT/JobQueue/';
+# path for job handlers (like softwarepush) 
+use constant JOB_HANDLER_PATH	=> '/usr/lib/SMT/bin/job';
 
 # rest path for retriving next job id 
 use constant REST_NEXT_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/next';

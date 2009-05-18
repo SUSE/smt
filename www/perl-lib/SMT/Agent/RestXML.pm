@@ -1,16 +1,16 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-package SMTRestXML;
+package SMT::Agent::RestXML;
 use HTTP::Request;
 use HTTP::Request::Common;
 use LWP::UserAgent;
 use XML::Simple;
 use Data::Dumper;
 use UNIVERSAL 'isa';
-use SMTConstants;
-use SMTConfig;
-use SMTUtils;
+use SMT::Agent::Constants;
+use SMT::Agent::Config;
+use SMT::Agent::Utils;
 
 
 
@@ -24,10 +24,10 @@ sub error
                                                                                          
   if ( defined ($jobid ) )                                                               
   {                                                                                      
-    SMTUtils::logger ("let's tell the server that $jobid failed");                                 
+    SMT::Agent::Utils::logger ("let's tell the server that $jobid failed");                                 
     updatejob ( $jobid, "false", $message );                                             
   }                                                                                      
-  SMTUtils::logger ("ERROR: $message", $jobid);                                 
+  SMT::Agent::Utils::logger ("ERROR: $message", $jobid);                                 
   die "Error: $message\n";                                                               
 };                                                                                       
                                                                                          
@@ -41,7 +41,7 @@ sub updatejob
   return;
   my ($jobid, $success, $message, $stdout, $stderr, $returnvalue) =  @_;
 
-  SMTUtils::logger( "updating job $jobid ($success) $message", $jobid);
+  SMT::Agent::Utils::logger( "updating job $jobid ($success) $message", $jobid);
 
   my $job =
   {
@@ -56,7 +56,7 @@ sub updatejob
 
   my $ua = LWP::UserAgent->new;
 
-  my $response = $ua->request(POST SMTConfig::smtUrl().SMTConstants::REST_UPDATE_JOB.$jobid,
+  my $response = $ua->request(POST SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid,
     'Content-Type' => 'text/xml',
      Content        => $xmljob
   );
@@ -69,7 +69,7 @@ sub updatejob
   }
   else
   {
-    SMTUtils::logger( "successfully updated job $jobid");
+    SMT::Agent::Utils::logger( "successfully updated job $jobid");
   }
 };
 
@@ -84,7 +84,7 @@ sub getjob
 
 
   my $ua = LWP::UserAgent->new;
-  my $response = $ua->request(GET SMTConfig::smtUrl().SMTConstants::REST_GET_JOB.$id); 
+  my $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id); 
   if (! $response->is_success )
   {
     error( "Unable to request job $id: " . $response->status_line . "-" . $response->content );
@@ -101,7 +101,7 @@ sub getjob
 sub getnextjob
 {
   my $ua = LWP::UserAgent->new;
-  my $response = $ua->request(GET SMTConfig::smtUrl().SMTConstants::REST_NEXT_JOB);
+  my $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
 
   if (! $response->is_success )
   {
@@ -143,7 +143,7 @@ sub parsejob
   error ( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
   error ( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
 
-  SMTUtils::logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
+  SMT::Agent::Utils::logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
 
   return ( id=>$jobid, type=>$jobtype, args=>$jobargs );
 };

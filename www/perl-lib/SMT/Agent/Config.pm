@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
-package SMTConfig;
-use SMTUtils;
+package SMT::Agent::Config;
+use SMT::Agent::Utils;
 use Config::IniFiles;
 
 
@@ -38,7 +38,7 @@ sub readSmtUrl
   close FH;
   if(!defined $uri || $uri eq "")
   {
-    SMTUtils::error("Cannot read URL from /etc/suseRegister.conf");
+    SMT::Agent::Utils::error("Cannot read URL from /etc/suseRegister.conf");
   }
   return $uri;
 }
@@ -49,10 +49,10 @@ sub getSMTClientConfig
   my $section = shift;
   my $key = shift;
 
-  my $cfg = new Config::IniFiles( -file => SMTConstants::CLIENT_CONFIG_FILE );
+  my $cfg = new Config::IniFiles( -file => SMT::Agent::Constants::CLIENT_CONFIG_FILE );
   if(!defined $cfg)
   {
-    SMTUtils::error("Cannot read the SMT client configuration file");
+    SMT::Agent::Utils::error("Cannot read the SMT client configuration file");
   }
 
   return $cfg->val($section, $key);

@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
-package SMTUtils;
+package SMT::Agent::Utils;
 
 use strict;
 use warnings;
-use SMTConstants;
+use SMT::Agent::Constants;
 use IO::File;
 use IPC::Open3;
 
@@ -12,7 +12,7 @@ use IPC::Open3;
 sub openLog
 {
   my $LOG;
-  sysopen($LOG, SMTConstants::LOG_FILE, O_CREAT|O_APPEND|O_WRONLY, 0600) or die "Cannot open logfile".SMTConstants::LOG_FILE.": $!";
+  sysopen($LOG, SMT::Agent::Constants::LOG_FILE, O_CREAT|O_APPEND|O_WRONLY, 0600) or die "Cannot open logfile".SMT::Agent::Constants::LOG_FILE.": $!";
   $LOG->autoflush(1);
   
   return $LOG;
@@ -62,7 +62,7 @@ sub executeCommand
 
     if(!defined $command || !-x $command)
     {
-	SMTUtils::logger("invalid Command '$command'");
+	SMT::Agent::Utils::logger("invalid Command '$command'");
         return undef;
     }
 
@@ -73,7 +73,7 @@ sub executeCommand
     my $pid = open3(\*IN, \*OUT, \*ERR, $command, @arguments) or do {
         $ENV{LANG}     = $lang;
         $ENV{LANGUAGE} = $language;
-	SMTUtils::logger("Cannot execute $command ".join(" ", @arguments).": $!\n");
+	SMT::Agent::Utils::logger("Cannot execute $command ".join(" ", @arguments).": $!\n");
         return undef;
     };
     if(defined $input)
@@ -116,10 +116,10 @@ sub error
 
   if ( defined ( $jobid ) )
   {
-    SMTUtils::logger ( "let's tell the server that $jobid failed" );
-    SMTRestXML::updatejob ( $jobid, "false", $message );
+    SMT::Agent::Utils::logger ( "let's tell the server that $jobid failed" );
+    SMT::Agent::RestXML::updatejob ( $jobid, "false", $message );
   }
-  SMTUtils::logger ("ERROR: $message", $jobid);
+  SMT::Agent::Utils::logger ("ERROR: $message", $jobid);
   die "Error: $message\n";
 };
 

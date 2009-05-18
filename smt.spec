@@ -56,7 +56,7 @@ Source2:        smt-rpmlintrc
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
-This package provide everything you need to get a local NU and
+This package provides everything you need to get a local NU and
 registration proxy.
 
 
@@ -77,7 +77,7 @@ Group:          Productivity/Networking/Web/Proxy
 Prereq:         smt = %version
 
 %description -n res-signingkeys
-This package contain the signing key for RES.
+This package contains the signing key for RES.
 
 %package support
 License:        GPL v2 or later
@@ -86,7 +86,16 @@ Group:          Productivity/Networking/Web/Proxy
 Prereq:         smt = %version
 
 %description support
-This package contain proxy for support data
+This package contains proxy for support data
+
+%package client
+License:        GPL v2 or later
+Summary:        SMT client
+Group:          Productivity/Networking/Web/Proxy
+#Prereq:         smt = %version
+
+%description client
+This package contains a client for smt
 
 
 %prep
@@ -195,14 +204,19 @@ exit 0
 %exclude /srv/www/perl-lib/SMT/Support.pm
 /usr/sbin/smt-*
 %exclude /usr/sbin/smt-support
+%exclude /usr/sbin/smt-agent
 /usr/sbin/smt
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
+%exclude /usr/lib/SMT/bin/job
+%exclude /usr/lib/SMT/bin/processjob 
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
 %doc %{_docdir}/smt/*
+
+
 
 %files -n res-signingkeys
 %defattr(-,root,root)
@@ -216,6 +230,15 @@ exit 0
 %config /etc/smt.d/smt_support.conf
 %dir %attr(775, smt, www)/var/spool/smt-support
 %doc %attr(644, root, root) %{_mandir}/man1/smt-support.1.gz
+
+%files client
+%defattr(-,root,root)
+%dir %{perl_vendorlib}/SMT/Agent
+%{perl_vendorlib}/SMT/Agent/*.pm
+/usr/sbin/smt-agent
+%dir /usr/lib/SMT/bin/job/
+%dir /usr/lib/SMT/bin/job/*
+/usr/lib/SMT/bin/processjob
 
 
 %changelog

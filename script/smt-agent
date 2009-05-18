@@ -1,0 +1,24 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use SMT::Agent::Constants;
+use SMT::Agent::Config;
+use SMT::Agent::Utils;
+use SMT::Agent::RestXML;
+
+
+my $jobid;
+
+while( defined ( $jobid = SMT::Agent::RestXML::parsejobid( SMT::Agent::RestXML::getnextjob() )))
+{
+  # prevent command injection
+  SMT::Agent::Utils::error ( "cannot run jobs with non-numeric jobid." ) unless ( $jobid =~ /^[0-9]+$/ );
+  SMT::Agent::Utils::logger ("running job $jobid", $jobid);
+  SMT::Agent::Utils::executeCommand ( SMT::Agent::Constants::PROCESSJOB, undef, ( $jobid ) );
+  #TODO: check whther executeCommand failed
+
+  sleep (3);
+}
+
+
+

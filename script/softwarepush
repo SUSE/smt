@@ -2,20 +2,20 @@
 use strict;
 use warnings;
 use IPC::Open3;
-use SMTConstants;
-use SMTUtils;
+use SMT::Agent::Constants;
+use SMT::Agent::Utils;
 
 sub jobhandler
 {
   my %retval;
   my ($jobtype, $jobid, $args) =  @_;
 
-  SMTUtils::logger ("jobhandler for softwarepush called", $jobid);
-  SMTUtils::logger ("softwarepush runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::logger ("jobhandler for softwarepush called", $jobid);
+  SMT::Agent::Utils::logger ("softwarepush runs jobid \"$jobid\"", $jobid);
 
 
   # check whether this handler can handle requested jobtype
-  SMTUtils::error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
+  SMT::Agent::Utils::error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
 
 
   # collect and verify arguments
@@ -54,7 +54,7 @@ sub jobhandler
     push (@cmdArgs, $pack);
   }    
 
-  (my $retval, my $stdout, my $stderr) = SMTUtils::executeCommand ( $command, undef, @cmdArgs );
+  (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
   return (
     stdout => defined ( $stdout )? $stdout : "",
@@ -66,7 +66,7 @@ sub jobhandler
 
 }
 
-SMTUtils::logger ("successfully loaded handler for jobtype \"softwarepush\"");
+SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"softwarepush\"");
 
 return 1;
 
