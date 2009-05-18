@@ -17,65 +17,60 @@ use SMT::Mirror::RpmMd;
 use SMT::Parser::RpmMdPatches;
 
 
-#my $log = SMT::Utils::openLog('/local/jkupec/tmp/smt.log');
-#my $vblevel = LOG_DEBUG|LOG_DEBUG2|LOG_WARN|LOG_ERROR|LOG_INFO1|LOG_INFO2;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug    = 0;
+my $logfile = "/dev/null";
+my $help     = 0;
 
 my $dbreplfile = undef;
 my $dbreplacement = [];
-
-my $LocalBasePath = "";
 my $FromLocalBasePath = "";
-
-my $help     = 0;
-my $logfile = "/dev/null";
-
 my $fromlocalsmt = 0;
+
+my $gentest = 0;
+my $genprod = 0;
 my $nohardlink = 0;
-my $dryrun = 0;
+my $LocalBasePath = ""; # TODO what's this about
 
-my $repository;
-
-my $options = GetOptions("debug|d"      => \$debug,
-                         "verboselevel|v=i" => \$vblevel,
+my $options = GetOptions("testing|t"    => \$gentest,
+                         "production|p" => \$genprod,
+                         "nohardlink"   => \$nohardlink,
                          "directory=s"  => \$LocalBasePath,
+
                          "fromdir=s"    => \$FromLocalBasePath,
                          "fromlocalsmt" => \$fromlocalsmt,
-                         "dryrun|n"     => \$dryrun,
-                         "nohardlink"   => \$nohardlink,
                          "dbreplfile=s" => \$dbreplfile,
+
+                         "debug|d"      => \$debug,
+                         "verboselevel|v=i" => \$vblevel,
                          "logfile|L=s"  => \$logfile,
                          "help|h"       => \$help,
-                         "repository|r=s" => \$repository
                         );
 
 if($help)
 {
-    print basename($0) . " createrepo  <repoid> [--testing] [--production]\n";
     print basename($0) . " listupdates <repoid> [--forbidden] [--allowed]\n";
     print basename($0) . " forbid      <repoid> <patch>\n";
     print basename($0) . " allow       <repoid> <patch>\n";
+    print basename($0) . " createrepo  <repoid> --testing|--production [--nohardlink]\n";
     print "\n";
     print __("Options:\n");
-    print "--debug -d              " . __("enable debug mode\n");
-    print "--verboselevel -v level " . __("set the verbose level\n");
-    print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
-    print "                        " . __("for them\n");
-    print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
-    print "                        " . __("default value in smt.conf\n");
-    print "--fromdir arg           " . __("Mirror from the directory give here, instead of mirroring from the remote sources.\n");
-    print "                        " . __("The directory can e.g. be created by calling smt-mirror --directory\n");
-    print "--fromlocalsmt          " . __("Mirror from the local running SMT server. This options requires the --directory\n");
-    print "                        " . __("option being set. The resulting directory can  e.g later be imported to another server\n");
-    print "                        " . __("using smt-mirror --fromdir\n");
-    print "--dryrun -n             " . __("Run mirror algorithm without downloading the rpms \n");
-    print "                        " . __("(but it needs to download the metadata into a temporary directory).\n");
-    print "                        " . __("It shows only the names which would be downloaded \n");
+    print "--testing -t            " . __("Generate testing repository with selected updates.\n");
+    print "--production -p         " . __("Generate production repository with selected updates.\n");
+    #print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
+    #print "                        " . __("for them\n");
+    #print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
+    #print "                        " . __("default value in smt.conf\n");
+    #print "--fromdir arg           " . __("Mirror from the directory give here, instead of mirroring from the remote sources.\n");
+    #print "                        " . __("The directory can e.g. be created by calling smt-mirror --directory\n");
+    #print "--fromlocalsmt          " . __("Mirror from the local running SMT server. This options requires the --directory\n");
+    #print "                        " . __("option being set. The resulting directory can  e.g later be imported to another server\n");
+    #print "                        " . __("using smt-mirror --fromdir\n");
     print "--nohardlink            " . __("If a file already exists on the local harddisk do not link it into the\n");
     print "                        " . __("mirrored repository, but copy it.\n");
-    print "--logfile -L file       " . __("Path to logfile\n");
-    print "--repository ID         " . __("Repository ID to mirror. By default, all repositories are selected.\n");
+    print "--debug -d              " . __("Enable debug mode.\n");
+    print "--verboselevel -v level " . __("Set the level of verbosity.\n");
+    print "--logfile -L file       " . __("Log to specified file.\n");
     exit 0;
 }
 
@@ -117,6 +112,7 @@ if(!SMT::Utils::openLock("smt-staging"))
 
 # open the logfile
 
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 my $log = SMT::Utils::openLog($logfile);
 
 # get the config
@@ -173,12 +169,18 @@ elsif (!$canstage)
     SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
 }
 
-# now we're ready to do the work
+# now we're ready to do the real work
+
+my $localrepopath = SMT::Utils::cleanPath(
+    $cfg->val("LOCAL", "MirrorTo"), "repo/full", $repo->{LOCALPATH});
+
+
+###############################################################################
+# list the udates
+###############################################################################
 
 if ($command eq 'listupdates')
 {
-    my $localrepopath = SMT::Utils::cleanPath(
-        $cfg->val("LOCAL", "MirrorTo"), "repo/full", $repo->{LOCALPATH});
         
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
@@ -189,12 +191,17 @@ if ($command eq 'listupdates')
     $parser->resource($localrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
     
+    # TODO print nice table
     foreach my $patch (values %$patches)
     {
         my $allowed = not $filter->matches($patch);
         print ( ($allowed ? '*' : ' ') . " | " . $patch->{name} . "\t | " . $patch->{version} . "\t | " . $patch->{title} . "\n"); 
     }
 }
+
+###############################################################################
+# forbid an update
+###############################################################################
 
 elsif ($command eq 'forbid')
 {
@@ -210,6 +217,10 @@ elsif ($command eq 'forbid')
     $filter->save($dbh, $repoid);
 }
 
+###############################################################################
+# allow an update
+###############################################################################
+
 elsif ($command eq 'allow')
 {
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
@@ -223,9 +234,49 @@ elsif ($command eq 'allow')
     $filter->save($dbh, $repoid);
 }
 
+###############################################################################
+# create testing/production repo
+###############################################################################
+
 elsif ($command eq 'createrepo')
 {
-    print STDERR "not implemented yet\n";
+    if ($gentest && $genprod)
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf __("Options %s and %s cannot be used together."), '--testing', '--production');
+        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+    }
+    elsif (!($gentest || $genprod))
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf __("%s or %s?"), '--testing', '--production');
+        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+    }
+
+    my $localtargetrepopath = SMT::Utils::cleanPath(
+        'repo', ($gentest ? 'test' : ''), $repo->{LOCALPATH});
+
+    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
+    $filter->load($dbh, $repoid);
+
+    my $mirror = SMT::Mirror::RpmMd->new(
+        log        => $log,
+        vblevel    => $vblevel,
+        filter     => $filter,
+        nohardlink => $nohardlink);
+
+    $mirror->uri('file://'.$localrepopath);
+    $mirror->localBasePath($cfg->val("LOCAL", "MirrorTo"));
+    $mirror->localRepoPath($localtargetrepopath);
+
+    my $errcnt = $mirror->mirror();
+    if ($errcnt)
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, 'Something went wrong');
+        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+    }
+    else
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf __("Repository successfully generated at %s."), $localtargetrepopath);
+    }
 }
 
 SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
