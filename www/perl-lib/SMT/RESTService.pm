@@ -11,6 +11,7 @@ use Apache2::RequestUtil;
 use XML::Writer;
 
 use SMT::Utils;
+use SMT::JobQueue;
 use DBI qw(:sql_types);
 
 #
@@ -44,7 +45,8 @@ sub GEThandler($)
     my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
 
     # jobs
-    if    ( $path =~ $reJobs)           { return "wanna have MY joblist" }
+    #if    ( $path =~ $reJobs)           { return SMT::JobQueue.getJob(SMT::JobQueue.getNextJobID()) }
+    if    ( $path =~ $reJobs)           { return "STRING" }
     elsif ( $path =~ $reJobsNext )      { return "wanna have MY next job" }
     elsif ( $path =~ $reJobsId )        { return "wanna MY job with id: $1" }
     elsif ( $path =~ $reClients )       { return "wanna all clients"; }
@@ -138,16 +140,19 @@ sub handler {
         # errors are logged in method handlers
         return Apache2::Const::NOT_FOUND;
     }
+    else
+    {
+        # $r->content_type('text/xml');
+        $r->content_type('text/plain');
+        $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
+        $r->err_headers_out->add('Pragma' => "no-cache");
 
-    $r->content_type('text/xml');
-##    $r->content_type('text/plain');
-    $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
-    $r->err_headers_out->add('Pragma' => "no-cache");
- 
+        print $res;
+    }
 
 
     # output some data for testing
-    if (1) {
+    if (0) {
         my $writer = new XML::Writer(NEWLINES => 0);
         $writer->xmlDecl("UTF-8");
 
