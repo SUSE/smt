@@ -426,7 +426,7 @@ Are you sure you want to really skip it?"),
 		    if (check_ret == nil) {
 			// Error pop-up, %1 is replaced with a script name
 			Report::Error (sformat(_("Unable to generate new NCCcredentials,
-An error occured while calling %1"), "smt_generate_new_credentials"));
+An error occurred while calling %1"), "smt_generate_new_credentials"));
 			continue;
 		    }
 		}
@@ -1269,7 +1269,7 @@ Enter your SMT server URL in the following format: http:://server.name/
     void ReportFilteringNotAllowed () {
 	// a pop-up message
 	Report::Message (_("This repository does not allow patch filtering.
-You can create snapshots of its current stage thought."));
+You can create snapshots of its current stage though."));
     }
 
     void TogglePatchTesting () {
