@@ -139,3 +139,5 @@ sub error
 #my $job = new Job ('<job id="42" type="softwarepush"><arguments></arguments></job>');
 #my $job = new Job (42, "swpush", { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] });
 #print $job->getArgumentsXML();
+
+1;

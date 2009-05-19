@@ -159,8 +159,8 @@ sub error
 {
     my $message = shift;
 
-    my $log = SMT::Utils::openLog()
-    printLog( $log, $self->vblevel(), LOG_ERROR, $message );
+    my $log = SMT::Utils::openLog();
+#    printLog( $log, $self->vblevel(), LOG_ERROR, $message );
 
 
 
