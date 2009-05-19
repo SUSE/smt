@@ -107,7 +107,10 @@ sub LoadRepositoryData ($) {
     }
 
     # Repository path relative to the base-path
-    my $repo_path_suffix = $repositories->getRepositoryPath($repositoryid);
+    my $repo_path_suffix = $repositories->getRepositoryPath($repositoryid) || do {
+	y2error ('Unable to load repository data for: '.$repositoryid);
+	return;
+    };
 
     # repo/$REPOSITORY
     # repo/testing/$REPOSITORY
