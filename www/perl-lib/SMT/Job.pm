@@ -89,7 +89,10 @@ sub asXML
       'arguments' => $self->{_args}
     };
 
-    return XMLout($job, rootname => "job");
+    return XMLout($job, rootname => "job"
+                     # , noattr => 1
+                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
+                 );
 }
 
 
