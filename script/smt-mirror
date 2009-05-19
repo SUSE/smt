@@ -306,17 +306,55 @@ else
     $array = $dbreplacement;
 }
 
-sub UpdateLastMirror ($$$) {
+# params:
+#	- dryrun param
+#	- entry hash (defining a repository)
+#	- database handle
+#	- entry statistics hash
+#	- full local path to a repository
+sub UpdateLastMirror ($$$$$)
+{
     my $dryrun = shift;
     my $entry = shift || {};
     my $dbh = shift;
+    my $statistics = shift || {};
+    my $repopath = shift || '';
 
-    if (not defined $dryrun || $dryrun) {
+    if (not defined $dryrun || $dryrun)
+    {
 	return;
     }
 
-    if (defined $entry->{CATALOGID}) {
+    if (defined $entry->{CATALOGID})
+    {
 	$dbh->do ('UPDATE Catalogs set LAST_MIRROR=now() where CATALOGID='.$dbh->quote($entry->{CATALOGID}));
+    }
+
+    # Something new has been downloaded, update the mirroring timestamp
+    if (defined $statistics->{DOWNLOAD} && $statistics->{DOWNLOAD} > 0)
+    {
+	if ($repopath eq '')
+	{
+	    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot update mirroring timestamp"));
+	}
+	else
+	{
+	    my $mirrorfile = $repopath.'/.mirror';
+
+	    if (-e $mirrorfile)
+	    {
+		unlink $mirrorfile;
+	    }
+
+	    # Creates a .mirror file in the root of a repository
+	    open MIRROR, ">$mirrorfile" || do {
+		SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
+		    sprintf(__("Cannot update mirroring timestamp: %s"), $mirrorfile));
+		return;
+	    };
+	    print MIRROR time;
+	    close MIRROR;
+	}
     }
 }
 
@@ -383,12 +421,6 @@ foreach my $entry (@{$array})
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirror( dryrun => $dryrun );
 
-            # Don't update last mirror timestamp when mirroring to a custom directory
-            if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
-            {
-	        UpdateLastMirror ($dryrun, $entry, $dbh);
-            }
-
             my $s = $zyppMirror->statistic();
             $download   += $s->{DOWNLOAD};
             $link       += $s->{LINK};
@@ -397,7 +429,13 @@ foreach my $entry (@{$array})
             $size       += $s->{DOWNLOAD_SIZE};
             $secpatches += $s->{NEWSECPATCHES};
             $recpatches += $s->{NEWRECPATCHES};
-            
+
+            # Don't update last mirror timestamp when mirroring to a custom directory
+            if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
+            {
+	        UpdateLastMirror ($dryrun, $entry, $dbh, $s, $zyppMirror->fullLocalRepoPath());
+            }
+
             # filter new patches -> admin needs to manually allow which patches
             # s/he wants (maybe this should be configurable)
             my $rh = SMT::Repositories::new($dbh);
