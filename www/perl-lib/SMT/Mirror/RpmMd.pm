@@ -675,7 +675,7 @@ sub mirror()
         $sha1->addfile(*FILE);
         my $digest = $sha1->hexdigest();
         close FILE;
-
+        
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("new checksum %s", $digest ), 1);
 
         # unzip the old file
@@ -695,7 +695,7 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("old checksum %s", $olddigest ), 1);
 
         # if checksums differ, overwrite the old updateinfo & update repomd later
-        if ($digest eq $olddigest)
+        if (not $digest eq $olddigest)
         {
             $needupdateinfoupdate = 1;
 
@@ -762,11 +762,25 @@ sub mirror()
     #
     # this means injecting all additional metadata into repomd.xml which
     # were not added by createrepo (other than primar, filelist, and other.xml)
+    #
+    # CAUTION: we're modifying the metadata, so we need to make sure that we
+    # do not modify also their hard-linked aliases if we're using hardlinks
     if ($needrepomdupdate)
     {
+        # unlink the original repomd.xml first to avoid modifying the original
+        # repomd.xml on the source URI if hardlinked from elsewhere
+        my $repomdpath = $self->fullLocalRepoPath()."/.repodata/repomd.xml"; 
+        copy($repomdpath, "$repomdpath.tmp");
+        unlink ($repomdpath);
+        rename("$repomdpath.tmp", $repomdpath);
+
         # update updateinfo.xml.gz info in repomd.xml
         if ($needupdateinfoupdate)
         {
+            # unlink the original updateinfo.xml.gz first; modifyrepo would
+            # otherwise modify the source updateinfo.xml.gz as well 
+            unlink ($olduifname);
+
             # note: modifyrepo needs unzipped unpdateinfo.xml
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
                 "Executing $modifyrepopath $uifname ".$self->fullLocalRepoPath()."/.repodata");
@@ -795,7 +809,7 @@ sub mirror()
         }
 
         # re-sign the repo
-        if ($self->signrepo($self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass))
+        if (!$self->signrepo($self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass))
         {
             $self->{STATISTIC}->{ERROR}++;
         }
@@ -822,6 +836,11 @@ sub mirror()
         }
         if($success)
         {
+            # unlink repodata before moving .repodata to repodata - any changed
+            # metadata would otherwise overwrite the original file if hardlinked
+            # from elsewhere
+            rmtree($job->fullLocalRepoPath()."/repodata", 0, 0);
+
             $success = rename( $job->fullLocalRepoPath()."/.repodata", $job->fullLocalRepoPath()."/repodata");
             if(!$success)
             {
@@ -876,7 +895,7 @@ sub mirror()
     }
 
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
-    
+
     return $self->{STATISTIC}->{ERROR};
 }
 
@@ -1241,6 +1260,8 @@ sub signrepo
 
     if (not defined $keyid)
     {
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+            "No key ID given, the repository will not be signed.");
         return 1;
     }
 

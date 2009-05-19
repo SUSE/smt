@@ -297,6 +297,23 @@ sub fullRemoteURI
     return "$url/".$self->remoteFileLocation();
 }
 
+=item fullUri2local()
+
+Return the full local path of a source file if the URI has 'file' scheme.
+The path is constructed out of fullRemoteURI().
+
+=cut
+sub fullUri2local
+{
+    my $self = shift;
+    
+    return undef if ($self->uri() !~ /^file\:\/\//);
+    
+    my $uri = $self->fullRemoteURI();
+    $uri =~ s/^file\:\/\///;
+    return $uri;
+}
+
 =item checksum([checksum])
 
 Set and get the expected checksum for this file.
@@ -706,41 +723,55 @@ sub outdated
 
 =item copyFromLocalIfAvailable()
 
-Search if a file is available on the local system and hardlink or copy
-the file (depends on the option I<nohardlink> in new()).
+Search the DB (RepositoryContentData) if a file is available on the local
+system and hardlink or copy the file (depends on the option I<nohardlink>
+in new()). If the file is not found in DB, and the source URI is 'file://',
+hardlink or copy it, too.
+
 If a file was found and hardlink or copy was successfull this function 
-return 1 (true), otherwise 0 (false)
+return 1 (true), otherwise 0 (false). Returns 0 also if checksum is not known.
+The return value of 0 is to advise the caller to download the file (it is
+not available on the local filesystem).
 
-Returns 0 also if checksum is not specified.
-Returns 0 also if such file (name) & checksum is not in the DB.
-
+NOTE: the hardlinking will fail across different filesystems. The file will
+be copied as a fallback.
 =cut
 
 sub copyFromLocalIfAvailable
 {
     my $self = shift;
 
-    return 0 if(!defined $self->{DBH});
-
     my $name = basename( $self->localFileLocation() );
     my $checksum = $self->checksum();
-    
-    return 0 if(!defined $name || $name eq "" || !defined $checksum || $checksum eq "");
-    my $otherpath = undef;
-    
-    my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and localpath not like %s", 
-                            $self->{DBH}->quote($name), 
-                            $self->{DBH}->quote($checksum), 
-                            $self->{DBH}->quote($self->fullLocalRepoPath()."%") );
-    
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$statement") ;
-    my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
-    
-    if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )
+
+    return 0 if (!(defined $name && defined $checksum && $name && $checksum));
+
+    my $otherpath = undef; # source file path
+
+    # try to look for the same file based on the checksum in RepositoryContentData
+
+    if (defined $self->{DBH})
     {
-        $otherpath = $existingpath->[0];
+        my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and localpath not like %s", 
+                                $self->{DBH}->quote($name), 
+                                $self->{DBH}->quote($checksum), 
+                                $self->{DBH}->quote($self->fullLocalRepoPath()."%") );
+        
+        my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
+        
+        if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )
+        {
+            $otherpath = $existingpath->[0];
+        }
     }
     
+    # try to get the file location from the full source URI (if file://)
+
+    if (not defined $otherpath || not $otherpath || ! -e "$otherpath")
+    {
+        $otherpath = $self->fullUri2local();
+    }
+
     return 0 if( !defined $otherpath || $otherpath eq "" || ! -e "$otherpath" );
 
     my $success = 0;
@@ -749,7 +780,7 @@ sub copyFromLocalIfAvailable
     {
         $success = link($otherpath, $self->fullLocalPath());
     }
-    
+
     if(!$success)
     {
         File::Copy::copy($otherpath, $self->fullLocalPath()) or do
