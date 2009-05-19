@@ -185,7 +185,8 @@ if ( $exportdir ne "" )
                      type => "catalogs",
                      table => "Catalogs", 
                      columns => [ 'CATALOGID', 'NAME', 'DESCRIPTION', 'TARGET', 'EXTHOST', 'EXTURL',
-                                  'CATALOGTYPE', 'MIRRORABLE' ]
+                                  'CATALOGTYPE', 'DOMIRROR' ],
+                     row_handler => \&catalog_handler
                     );
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Product information"));
@@ -406,6 +407,18 @@ sub subscriptions_handler
     $writer->endTag("subscription");
 }
 
+sub catalog_handler
+{
+    my ($writer,$row) = @_;
+    $writer->startTag("row");
+    foreach my $col (keys %{$row})
+    {
+        $writer->startTag("col", name => ( $col eq "DOMIRROR" ? "MIRRORABLE" : $col ));
+        $writer->characters($row->{$col});
+        $writer->endTag("col");
+    }
+    $writer->endTag("row");
+}
 
 #
 # Manpage
