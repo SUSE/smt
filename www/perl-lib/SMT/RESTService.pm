@@ -46,11 +46,9 @@ sub GEThandler($)
     my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
 
     # jobs
-    #if    ( $path =~ $reJobs)           { return SMT::JobQueue.getJob(SMT::JobQueue.getNextJobID()) }
-    if    ( $path =~ $reJobs)           { return  SMT::JobQueue->getJob(SMT::JobQueue->getNextJobID()) }
-    elsif    ( $path =~ $reJobsId)      { return  SMT::JobQueue->getJob(SMT::JobQueue->getNextJobID()) }
-    ## elsif ( $path =~ $reJobsNext )      { return "wanna have MY next job" }
-    elsif ( $path =~ $reJobsId )        { return "wanna MY job with id: $1" }
+    if    ( $path =~ $reJobs)           { return SMT::JobQueue->getJobList( "guid14", 1 ) }
+    elsif ( $path =~ $reJobsNext )      { return SMT::JobQueue->getJob( "guid15", SMT::JobQueue->getNextJobID("guid15", 0), 1)   }
+    elsif ( $path =~ $reJobsId)         { return SMT::JobQueue->getJob( "guid16", $1, 1 ) }
     elsif ( $path =~ $reClients )       { return "wanna all clients"; }
     elsif ( $path =~ $reClientsId )     { return "wanna one client with id: $1"; }
     elsif ( $path =~ $reClientsAllJobs )        { return "wanna list of all jobs of all clients"; }

@@ -21,16 +21,19 @@ sub new
 {
     my $class = shift;
 
+    my $arg0 = shift;
     my $arg1 = shift;
     my $arg2 = shift;
     my $arg3 = shift;
 
+    my $guid;
     my $id;
     my $type;
     my $args;
 
     if ( defined ( $arg2 ) )
     {
+        $guid = $arg0;
 	$id   = $arg1;
 	$type = $arg2;
 	$args = $arg3;
@@ -68,9 +71,10 @@ sub new
 
     my $self = 
     {
-	_id   => $id,
-	_type => $type,
-	_args => $args,
+	id   => $id,
+	guid => $guid,
+	type => $type,
+	args => $args,
     };
 
     bless $self, $class;
@@ -84,75 +88,77 @@ sub asXML
 
     my $job =
     {
-      'id'        => $self->{_id},
-      'type'      => $self->{_type},
-      'arguments' => $self->{_args}
+      'id'        => $self->{id},
+      'guid'      => $self->{guid},
+      'type'      => $self->{type},
+      'arguments' => $self->{args}
     };
 
     return XMLout($job, rootname => "job"
                      # , noattr => 1
-                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
+                     , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
                  );
 }
+
 
 
 sub setId 
 {
     my ( $self, $id ) = @_;
-    $self->{_id} = $id if defined( $id );
-    return $self->{_id};
+    $self->{id} = $id if defined( $id );
+    return $self->{id};
 }
 
 
 sub getId
 {
     my ( $self ) = @_;
-    return $self->{_id};
+    return $self->{id};
 }
 
 
 sub setType 
 {
     my ( $self, $type ) = @_;
-    $self->{_type} = $type if defined( $type );
-    return $self->{_type};
+    $self->{type} = $type if defined( $type );
+    return $self->{type};
 }
 
 
 sub getType
 {
     my ( $self ) = @_;
-    return $self->{_type};
+    return $self->{type};
 }
 
 
 sub setArguments
 {
     my ( $self, $args ) = @_;
-    $self->{_args} = $args if defined( $args );
+    $self->{args} = $args if defined( $args );
 
     # convert args given in xml to hash
-    if ( ! ( isa ($self->{_args}, 'HASH' )))
+    if ( ! ( isa ($self->{args}, 'HASH' )))
     {
-	eval { $self->{_args} = XMLin( $self->{_args}, forcearray => 1 ) };
+	eval { $self->{args} = XMLin( $self->{args}, forcearray => 1 ) };
 	return error( "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
     }
 
-    return $self->{_args};
+    return $self->{args};
 }
 
 
 sub getArguments
 {
     my ( $self ) = @_;
-    return $self->{_args};
+    return $self->{args};
 }
 
 
 sub getArgumentsXML
 {
     my ( $self ) = @_;
-    return XMLout($self->{_args}, rootname => "arguments");
+    return XMLout($self->{args}, rootname => "arguments");
 }
 
 ###############################################################################

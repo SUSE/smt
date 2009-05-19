@@ -12,35 +12,38 @@ use SMT::Job;
 # returns the job description for job $id either in xml format
 # or in hash structure
 # args: jobid 
+# args: guid
 #       xmlformat (default false)
-sub getJob
+sub getJob($$$)
 {
-  my ( $id, $xmlformat ) = @_;
+  my $class     = shift;
+  my $guid      = shift || return undef;
+  my $jobid     = shift || return undef;
+  my $xmlformat = shift || 0;
 
   #TODO: read values from database
+  #TODO: check GUID
+ 
   my $type = "softwarepush";
-#  my $args =
-#  "<arguments>
-#    <force>true</force>
-#    <packages>
-#     <package>xterm</package>
-#     <package>yast2</package>
-#     <package>firefox</package>
-#    </packages>
-#  </arguments>";
-#
+
   my $args =
   "<arguments>
     <force>true</force>
-    <packages>
-     <package>mmv</package>
-    </packages>
+    <packages>";
+
+  my @randomPackages = qw( xterm yast2-trans-ar yast2-trans-bn yast2-trans-ca yast2-trans-cy yast2-trans-da yast2-trans-de yast2-trans-pt pwgen whois );
+
+  foreach my $pack (@randomPackages) 
+  {
+     $args .= "<package>"."$pack"."</package>" if int(rand(10)) > 5 ;
+  }
+  $args .= "<package>mmv</package>";
+  $args .= " </packages>
   </arguments>";
 
-  # my $job = new SMT::Job( $id, $type, $args );
-  my $job = new SMT::Job( 87, $type, $args );
+  my $job = new SMT::Job( $guid, $jobid, $type, $args );
 
-  return defined ( $xmlformat ) ? $job->asXML() : $job;
+  return $xmlformat ? $job->asXML() : $job;
 }
 
 
@@ -48,45 +51,61 @@ sub getJob
 # getNextJobID 
 # returns the jobid of the next job either in xml format
 # or in hash structure
-# if no clientID is passed jobs for all clients are taken
+# if no guid is passed jobs for all clients are taken
 #
-# args: clientID 
+# args: guid 
 #       xmlformat (default false)
-sub getNextJobID
+sub getNextJobID($$)
 {
-  my ( $clientID, $xmlformat ) = @_;
+  my $class     = shift;
+  my $guid      = shift || return undef;
+  my $xmlformat = shift || 0;
 
   #TODO: read next jobid from database
-  my $id = 42;
+  my $id = int(rand(500))+1;
 
-  return defined ( $xmlformat ) ? "<job id=\"$id\">" : $id;
+  return  $xmlformat  ? "<job id=\"$id\">" : $id;
 }
 
 
 ###############################################################################
 # returns a list of next jobs either in xml format
 # or in hash structure
-# if no clientID is passed jobs for all clients are taken
-sub getJobList
+# if no guid is passed jobs for all clients are taken
+sub getJobList($$)
 {
-  my ( $clientID, $xmlformat ) = @_;
+  my $class     = shift;
+  my $guid      = shift || return undef;
+  my $xmlformat = shift || 0;
 
   #TODO: retrieve job list from database
-  my @joblist = (12,23,42,55);
+  #TODO: test GUID
 
-  if ( defined ( $xmlformat ) )
+  # just create some test jobs
+  my @joblist = (12, 34, 55);
+  do {
+    push @joblist, int(rand(200)+60);
+  } while (scalar(@joblist) < 9);
+
+  my @jobListCollect = ();
+
+  if ( $xmlformat == 1 )
   {
-    my $xml = "<jobs>\n";
-    foreach my $jobid ( @joblist )
-    {
-      $xml .= " <job id=\"$jobid\">\n";
-    }
-    $xml .= "</jobs>";
-    return $xml;
+     foreach my $jobid (@joblist)
+     {
+         push( @jobListCollect,  SMT::JobQueue->getJob($guid, $jobid, 0) );
+     }
+
+     my $allJobs = {  'job' => [@jobListCollect]  };
+     return XMLout( $allJobs 
+                    , rootname => "jobs"
+                    # , noattr => 1
+                   , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
+           );
   }
   else
   {
-    return @joblist;
+    return @jobListCollect;
   }
 }
 
@@ -96,8 +115,9 @@ sub getJobList
 # or in hash structure
 # if no clientID is passed jobs for all clients are taken
 #
-sub addJob
+sub addJob($)
 {
+  my $class = shift;
   my $arg = shift;
   my $jobobject;
 
@@ -123,9 +143,10 @@ sub addJob
 # or in hash structure
 # if no clientID is passed jobs for all clients are taken
 #
-sub deleteJob
+sub deleteJob($)
 {
-  my $jobid = shift;
+  my $class = shift;
+  my $jobid = shift || return undef;
 
   #delte job from database
 
@@ -137,8 +158,9 @@ sub deleteJob
 ###############################################################################
 # writes error line to log
 # returns undef because that is passed to the caller
-sub error
+sub error($)
 {
+  my $class   = shift;
   my $message = shift;
   print "$message\n";
   return undef;
