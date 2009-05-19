@@ -357,8 +357,12 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
      *
      * @see SetCredentials
      *
+     * @param string location
      * @param string entry_name
      * @return string value
+     *
+     * @example
+     *   GetCredentials ("LOCAL", "MirrorTo") -> "/srv/www/htdocs"
      */
     global string GetCredentials (string location, string entry_name) {
 	if (! haskey (all_credentials, location)) {
@@ -373,12 +377,31 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
     }
 
     /**
+     * Returns whether pair location/entry_name is known.
+     *
+     * @param string location
+     * @param string entry_name
+     * @return boolean if known
+     *
+     * @example
+     *   GetCredentialsDefined ("LOCAL", "MirrorTo") -> true
+     *   GetCredentialsDefined ("LOCAL", "Unknown") -> false
+     */
+    global boolean GetCredentialsDefined (string location, string entry_name) {
+	return (haskey (all_credentials, location) && (haskey (all_credentials[location]:$[], entry_name)));
+    }
+
+    /**
      * Sets name/value credential pairs.
      *
      * @see GetCredentials
      *
+     * @param string location
      * @param string entry_name
      * @param string value
+     *
+     * @example
+     *   SetCredentials ("LOCAL", "MirrorTo", "/srv/www/htdocs")
      */
     global void SetCredentials (string location, string entry_name, string value) {
 	if (! haskey (all_credentials, location)) {

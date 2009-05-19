@@ -369,14 +369,15 @@ sub CreateSnapshot ($) {
     # The default source
     my $staging_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
 
-    # If there are no filters, we create the production snapshot from the testing one
-    if (not $staging_allowed && $type eq 'production') {
-	my $tmp_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'};
+    # If there are no filters allowed, we create the production snapshot from the testing one
+    # because the testing repository is actually the one we want to have in production snapshot
+    if (!$staging_allowed && $type eq 'production') {
+	my $check_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'};
 
-	# Testing snapshot exists
-	if (-e $tmp_source.'/.mirror') {
+	# Testing snapshot exists and is not empty
+	if (-e $check_source && -d $check_source && -s $check_source) {
 	    y2milestone ('Using \'testing\' repository as source for \'production\'');
-	    $staging_source = $tmp_source;
+	    $staging_source = $check_source;
 	# Using fallback (default one)
 	} else {
 	    y2warning ('Cannot use \'testing\' repository as a source for \'production\', using \'full\'');

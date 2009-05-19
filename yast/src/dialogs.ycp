@@ -1328,18 +1328,96 @@ and thus its status cannot be changed in this dialog."));
 	});
     }
 
+    string signing_passphrase = nil;
+
     boolean AskForSnapshotSigningKey (map <string, string> & snapshot_settings) {
-	// FIXME: do not use any key and password if there are no filters in use
-	// Sometimes filters even can't be used at all
+	map <string, string> backup_settings = snapshot_settings;
 
-	string key_id = SMTData::GetCredentials("LOCAL", "signingKeyID");
+	// uses 'repositoryid' key
+	boolean can_be_filtered = (boolean) SCR::Read (.smt.repository.staging_allowed, snapshot_settings);
 
+	// Repository cannot be filtered, thus cannot be modified
+	// thus doesn't need to be re/signed
+	if (can_be_filtered != true) {
+	    y2milestone ("Repository cannot be filtered, re/signing not required");
+	    return true;
+	}
+
+	// Read the key ID only if defined
+	string key_id = (SMTData::GetCredentialsDefined ("LOCAL", "signingKeyID") == true
+	    ? SMTData::GetCredentials ("LOCAL", "signingKeyID") : nil);
+
+	// No re/signing key in use, ignoring
 	if (key_id == nil || key_id == "") {
 	    y2milestone ("No signing key used");
 	    return true;
 	}
 
-	// FIXME: ...
+	y2milestone ("Using KeyID: %1", key_id);
+	snapshot_settings["key"] = key_id;
+
+	// Read the signingKeyPassphrase only if defined
+	string tmp_passphrase = (SMTData::GetCredentialsDefined ("LOCAL", "signingKeyPassphrase") == true
+	    ? SMTData::GetCredentials ("LOCAL", "signingKeyPassphrase") : nil);
+
+	// Passphrase defined in config file
+	if (tmp_passphrase != nil) {
+	    y2milestone ("Using KeyPassphrase from config file");
+	    snapshot_settings["passphrase"] = tmp_passphrase;
+	    return true;
+	// Passphrase already entered
+	} else if (signing_passphrase != nil) {
+	    y2milestone ("Using cached KeyPassphrase");
+	    snapshot_settings["passphrase"] = signing_passphrase;
+	    return true;
+	}
+
+	UI::OpenDialog (
+	    `VBox (
+		// pop-up heading
+		`Left (`Heading (_("Signing Key Passphrase"))),
+		// pop-up dialog message
+		// %1 is replaced with a Key ID
+		`Left (`Label (sformat(_("SMT is configured to sign the snapshot with key %1.
+
+Enter the key passphrase and press OK,
+otherwise press Cancel to skip the signing procedure."), key_id))),
+		`Password (`id (`pass1), _("Key &Passphrase")),
+		`Password (`id (`pass2), _("&Once Again")),
+		`ButtonBox (
+		    `PushButton (`id (`ok), `opt (`okButton, `default), Label::OKButton()),
+		    `PushButton (`id (`cancel), `opt (`cancelButton), Label::CancelButton())
+		)
+	    )
+	);
+
+	any ret = nil;
+
+	while (true) {
+	    ret = UI::UserInput();
+
+	    if (ret == `cancel) {
+		y2warning ("Signing will be disabled");
+		snapshot_settings = backup_settings;
+		break;
+	    } else if (ret == `ok) {
+		string p1 = (string) UI::QueryWidget (`id (`pass1), `Value);
+		string p2 = (string) UI::QueryWidget (`id (`pass2), `Value);
+
+		if (p1 != p2) {
+		    // pop-up error message
+		    Report::Error (_("Entered passphrases are not identical."));
+		    UI::SetFocus (`id (`pass1));
+		    continue;
+		}
+
+		y2milestone ("Passphrase has been entered");
+		snapshot_settings["passphrase"] = p1;
+		break;
+	    }
+	}
+
+	UI::CloseDialog();
 
 	return true;
     }
