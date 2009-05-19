@@ -53,6 +53,7 @@ Summary:        Subscription Management Tool
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.apache2-smt
 Source2:        smt-rpmlintrc
+Source3:        sysconfig.smt-client
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -128,6 +129,7 @@ make DESTDIR=$RPM_BUILD_ROOT install_conf
 
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
+install -m 644 sysconfig.smt-client  $RPM_BUILD_ROOT/var/adm/fillup-templates/
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
 cd man
 for manp in smt*.1; do
@@ -155,6 +157,10 @@ fi
 
 %post
 %{fillup_only -ans apache2 smt}
+exit 0
+
+%post client
+%{fillup_only}
 exit 0
 
 %postun
@@ -239,7 +245,7 @@ exit 0
 %dir /usr/lib/SMT/bin/job/
 %dir /usr/lib/SMT/bin/job/*
 /usr/lib/SMT/bin/processjob
-
+/var/adm/fillup-templates/sysconfig.smt-client
 
 %changelog
 * Thu Dec 04 2008 - mc@suse.de
