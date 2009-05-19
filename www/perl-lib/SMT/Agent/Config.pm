@@ -20,7 +20,7 @@ sub smtUrl
   }
     
   return $smtUrl;
-}
+};
 
 
 sub readSmtUrl
@@ -41,7 +41,7 @@ sub readSmtUrl
     SMT::Agent::Utils::error("Cannot read URL from /etc/suseRegister.conf");
   }
   return $uri;
-}
+};
 
 
 sub getSMTClientConfig
@@ -56,8 +56,32 @@ sub getSMTClientConfig
   }
 
   return $cfg->val($section, $key);
-}
+};
 
+
+sub getSyconfigValue
+{
+  my $file = shift;
+  my $key  = shift;
+  my $val  = undef;
+
+  if ( open(CNF, "< $file")) 
+  {
+    while(<CNF>)
+    {
+      if($_ =~ /^\s*#/)
+      {
+       next;
+      }
+      elsif($_ =~ /^$key\s*=\s*"*([^"\s]*)"*\s*/ && defined $1 && $1 ne "")
+      {
+	$val = $1;
+      }
+    }
+    close CNF;
+  }
+  return $val;
+};
 
 
 1;
