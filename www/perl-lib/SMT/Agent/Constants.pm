@@ -16,13 +16,15 @@ use constant SUSEREGISTER_CONF	=> '/etc/suseRegister.conf';
 use constant JOB_HANDLER_PATH	=> '/usr/lib/SMT/bin/job';
 
 # rest path for retriving next job id 
-use constant REST_NEXT_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/next';
+#use constant REST_NEXT_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/next';
+use constant REST_NEXT_JOB	=> '/=/1/jobs';
 
 # rest path for job update (trailing slash is important)
 use constant REST_UPDATE_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/';
 
 # rest path for job pickup (trailing slash is important)
-use constant REST_GET_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/';
+#use constant REST_GET_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/';
+use constant REST_GET_JOB	=> '/=/1/jobs/';
 
 # log file
 use constant LOG_FILE		=> '/tmp/smtclient.log';

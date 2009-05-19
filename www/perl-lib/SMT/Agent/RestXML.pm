@@ -135,7 +135,7 @@ sub parsejob
 
   # retrieve variables
   $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
-  $jobtype = $job->{jobtype}   if ( defined ( $job->{jobtype} ) && ( $job->{jobtype} =~ /^[0-9a-zA-Z.]+$/ ));
+  $jobtype = $job->{type}      if ( defined ( $job->{type} )    && ( $job->{type} =~ /^[0-9a-zA-Z.]+$/ ));
   $jobargs = $job->{arguments} if ( defined ( $job->{arguments} ));
 
   # check variables

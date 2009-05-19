@@ -25,17 +25,19 @@ sub jobhandler
 
 
   $force   = $args->[0]->{force}->[0]			if ( defined ( $args->[0]->{force}->[0] ) );
-  error( "argument missing: force", $jobid )		if ( ! defined( $force ) );
-  error( "argument invalid: force", $jobid )		if ( ! ( $force eq "true" || $force eq "false" ) );
+#  SMT::Agent::Utils::error( "argument missing: force", $jobid )		if ( ! defined( $force ) );
+  $force = "false"	if ( ! defined( $force ) );
+  SMT::Agent::Utils::error( "argument invalid: force", $jobid )		if ( ! ( $force eq "true" || $force eq "false" ) );
 
   $agreelicenses = $args->[0]->{agreelicenses}->[0]	if ( defined ( $args->[0]->{agreelicenses}->[0] ) );
-  error( "argument missing: agreelicenses", $jobid )	if ( ! defined( $agreelicenses ) );
-  error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false" ) );
+#  SMT::Agent::Utils::error( "argument missing: agreelicenses", $jobid )	if ( ! defined( $agreelicenses ) );
+  $agreelicenses = "false"	if ( ! defined( $agreelicenses ) );
+  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false" ) );
 
 
   $packages   = $args->[0]->{packages}->[0]->{package}	if ( defined ( $args->[0]->{packages}->[0]->{package}  ) );
-  error( "argument missing: packages", $jobid ) 	if ( ! defined( $packages   ));
-  error( "argument invalid: packages", $jobid )  	if ( ! isa($packages, 'ARRAY' ) );
+  SMT::Agent::Utils::error( "argument missing: packages", $jobid ) 	if ( ! defined( $packages   ));
+  SMT::Agent::Utils::error( "argument invalid: packages", $jobid )  	if ( ! isa($packages, 'ARRAY' ) );
 
 
   #==  run zypper ==
