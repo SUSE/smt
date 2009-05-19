@@ -357,21 +357,44 @@ sub CreateSnapshot ($) {
 	vblevel => $vblevel
     );
 
+    my $staging_allowed = GetStagingAllowedInternal ({'repositoryid' => $repositoryid});
+
     # Use filters only if staging is allowed
-    if (GetStagingAllowedInternal ({'repositoryid' => $repositoryid})) {
+    if ($staging_allowed) {
 	$mirror_args{'filter'} = $fph->{$repositoryid}->{'fh'};
     } else {
 	y2milestone ('Filtering is not allowed, not using filters');
     }
 
+    # The default source
+    my $staging_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
+
+    # If there are no filters, we create the production snapshot from the testing one
+    if (not $staging_allowed && $type eq 'production') {
+	my $tmp_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'};
+
+	# Testing snapshot exists
+	if (-e $tmp_source.'/.mirror') {
+	    y2milestone ('Using \'testing\' repository as source for \'production\'');
+	    $staging_source = $tmp_source;
+	# Using fallback (default one)
+	} else {
+	    y2warning ('Cannot use \'testing\' repository as a source for \'production\', using \'full\'');
+	}
+    }
+
     my $mirror = SMT::Mirror::RpmMd->new(%mirror_args);
 
     # The source of data
-    $mirror->uri('file://'.$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
-    y2milestone ("Source: ".'file://'.$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
+    y2milestone ('Source: '.$staging_source);
+    $mirror->uri('file://'.$staging_source);
 
     # Where the resulting subrepository is created
-    y2milestone ("Base: ".$fph->{$repositoryid}->{'paths'}->{'base'}." Repo: ".$fph->{$repositoryid}->{'paths'}->{$type});
+    y2milestone (
+	'Base: '.$fph->{$repositoryid}->{'paths'}->{'base'}.' '.
+	'Repo: '.$fph->{$repositoryid}->{'paths'}->{$type}.' '.
+	'Type: ('.$type.')'
+    );
     $mirror->localBasePath($fph->{$repositoryid}->{'paths'}->{'base'});
     $mirror->localRepoPath($fph->{$repositoryid}->{'paths'}->{$type});
 
