@@ -289,8 +289,8 @@ $isempty = $filter->empty();
 sub empty
 {
     my $self = shift;
-    return 1 if (%{$self->{FILTERS}});
-    return 0;
+    return 0 if (%{$self->{FILTERS}});
+    return 1;
 }
 
 =item add()
