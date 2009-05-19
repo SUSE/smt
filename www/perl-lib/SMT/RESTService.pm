@@ -12,6 +12,7 @@ use XML::Writer;
 
 use SMT::Utils;
 use SMT::JobQueue;
+use SMT::Job;
 use DBI qw(:sql_types);
 
 #
@@ -46,8 +47,9 @@ sub GEThandler($)
 
     # jobs
     #if    ( $path =~ $reJobs)           { return SMT::JobQueue.getJob(SMT::JobQueue.getNextJobID()) }
-    if    ( $path =~ $reJobs)           { return "STRING" }
-    elsif ( $path =~ $reJobsNext )      { return "wanna have MY next job" }
+    if    ( $path =~ $reJobs)           { return  SMT::JobQueue->getJob(SMT::JobQueue->getNextJobID()) }
+    elsif    ( $path =~ $reJobsId)      { return  SMT::JobQueue->getJob(SMT::JobQueue->getNextJobID()) }
+    ## elsif ( $path =~ $reJobsNext )      { return "wanna have MY next job" }
     elsif ( $path =~ $reJobsId )        { return "wanna MY job with id: $1" }
     elsif ( $path =~ $reClients )       { return "wanna all clients"; }
     elsif ( $path =~ $reClientsId )     { return "wanna one client with id: $1"; }
@@ -142,8 +144,8 @@ sub handler {
     }
     else
     {
-        # $r->content_type('text/xml');
-        $r->content_type('text/plain');
+        $r->content_type('text/xml');
+        # $r->content_type('text/plain');
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $r->err_headers_out->add('Pragma' => "no-cache");
 

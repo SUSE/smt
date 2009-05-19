@@ -19,17 +19,26 @@ sub getJob
 
   #TODO: read values from database
   my $type = "softwarepush";
+#  my $args =
+#  "<arguments>
+#    <force>true</force>
+#    <packages>
+#     <package>xterm</package>
+#     <package>yast2</package>
+#     <package>firefox</package>
+#    </packages>
+#  </arguments>";
+#
   my $args =
   "<arguments>
     <force>true</force>
     <packages>
-     <package>xterm</package>
-     <package>yast2</package>
-     <package>firefox</package>
+     <package>mmv</package>
     </packages>
   </arguments>";
 
-  my $job = new Job( $id, $type, $args );
+  # my $job = new SMT::Job( $id, $type, $args );
+  my $job = new SMT::Job( 87, $type, $args );
 
   return defined ( $xmlformat ) ? $job->asXML() : $job;
 }
@@ -98,7 +107,7 @@ sub addJob
   }
   else
   {
-    $jobobject = new Job ( $arg );
+    $jobobject = new SMT::Job ( $arg );
   }
 
   #TODO: write job to database
