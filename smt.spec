@@ -102,6 +102,7 @@ This package contains a client for smt
 %prep
 %setup -n %{name}-%{version}
 cp -p %{S:1} .
+cp -p %{S:3} .
 # ---------------------------------------------------------------------------
 
 %build
