@@ -90,29 +90,39 @@ use constant {
     STAGING_FALSE	=> 'N',
 
     REPOSITORYID	=> 'CATALOGID',
+
+    VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
 };
 
 =head1 METHODS 
 
 =over 4
 
-=item new ($dbh)
+=item new ($dbh, $logfile)
 
-Constructor.
+Constructor. Logfile parameter is optional.
 
-my $repo = SMT::Repositories ($dbh);
+my $repo = SMT::Repositories ($dbh, $logfile);
 
 =cut
 
-sub new ($) {
+sub new ($)
+{
     my $dbh = shift;
+    my $log = shift;
 
-    my $new = {
+    my $new =
+    {
 	'dbh' => $dbh,
 	'error_message' => '',
         REPOS => undef,
         GOTALLREPOS => 0
     };
+
+    if (defined $log)
+    {
+	$new->{LOG} = SMT::Utils::openLog ($log);
+    }
 
     bless $new;
     return $new;
@@ -355,13 +365,96 @@ sub stagingAllowed($$$)
     return 0;
 }
 
+=item updateLastMirror($args)
+
+Updates the database and re/creates a .mirror file containing timestamp of the last
+repository mirroring. File is re/created only if something has been changed.
+
+ updateLastMirror({
+   'repositoryid' => '86fed7f9cee6d69dddabd721436faa7c63b8b403',
+   'statistics'   => { 'DOWNLOAD' => 152 },
+   'fullrepopath' => '/srv/www/htdocs/repo/full/RPMMD/SLE10-SDK-Updates/i586/',
+ })
+
+=over
+
+=item Args
+
+'repositoryid'
+  A repository ID
+
+'statistics'
+  Mirroring statistics hash. Important is key 'DOWNLOAD'
+
+'fullrepopath'
+  Full local path to a mirrored repository.
+
+=back
+
+=cut
+
+sub updateLastMirror ($$)
+{
+    my $self = shift;
+    my $arg = shift || {};
+
+    my $repositoryid = $arg->{'repositoryid'} || do {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"))
+	    if (defined $self->{LOG});
+	return 0;
+    };
+
+    my $statistics = $arg->{'statistics'} || do {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"))
+	    if (defined $self->{LOG});
+	return 0;
+    };
+
+    my $repopath = $arg->{'fullrepopath'} || do {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'fullrepopath' is required"))
+	    if (defined $self->{LOG});
+	return 0;
+    };
+
+    $self->{'dbh'}->do('UPDATE Catalogs set LAST_MIRROR=now() where CATALOGID='.$self->{'dbh'}->quote($repositoryid));
+    
+    # Something new has been downloaded, update the mirroring timestamp 
+    if (defined $statistics->{DOWNLOAD} && $statistics->{DOWNLOAD} > 0)
+    {
+	if ($repopath eq '')
+	{
+	    SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Cannot update mirroring timestamp"))
+		if (defined $self->{LOG});
+	}
+	else
+	{
+	    my $mirrorfile = $repopath.'/.mirror';
+
+	    unlink $mirrorfile if (-e $mirrorfile);
+
+	    # Creates a .mirror file in the root of a repository 
+	    open MIRROR, ">$mirrorfile" || do {
+		SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+		    sprintf(__("Cannot update mirroring timestamp: %s: %s"), $mirrorfile, $!))
+			if (defined $self->{LOG});
+		return 1;
+	    };
+	    print MIRROR time;
+	    close MIRROR;
+	}
+    }
+
+    return 1;
+}
+
+
 =back
 
 =head1 NOTES
 
 =head1 AUTHOR
 
-locilka@suse.cz
+locilka@suse.cz, jkupec@suse.cz
 
 =head1 COPYRIGHT
 
