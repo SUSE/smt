@@ -33,7 +33,7 @@ my $xmldata = SMT::Agent::RestXML::getjob( $jobid );
 my %jobdata = SMT::Agent::RestXML::parsejob( $xmldata );
 
 
-if ( SMT::Agent::Config::getSMTClientConfig($jobdata{type}, "allowedtorun") ne "true" )
+if ( ! SMT::Agent::Utils::isAgentAllowed ( $jobdata{type} ) )
 {
   SMT::Agent::Utils::logger("Running ". $jobdata{type}. " denied by client policy", $jobdata{id} );
   SMT::Agent::RestXML::updatejob ( $jobdata{id}, "false", "denied by client policy", "", "", "" );

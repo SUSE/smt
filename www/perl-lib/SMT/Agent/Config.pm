@@ -44,28 +44,27 @@ sub readSmtUrl
 };
 
 
-sub getSMTClientConfig
-{
-  my $section = shift;
-  my $key = shift;
-
-  my $cfg = new Config::IniFiles( -file => SMT::Agent::Constants::CLIENT_CONFIG_FILE );
-  if(!defined $cfg)
-  {
-    SMT::Agent::Utils::error("Cannot read the SMT client configuration file");
-  }
-
-  return $cfg->val($section, $key);
-};
+#sub getSMTClientConfig
+#{
+#  my $section = shift;
+#  my $key = shift;
+#
+#  my $cfg = new Config::IniFiles( -file => SMT::Agent::Constants::CLIENT_CONFIG_FILE );
+#  if(!defined $cfg)
+#  {
+#    SMT::Agent::Utils::error("Cannot read the SMT client configuration file");
+#  }
+#
+#  return $cfg->val($section, $key);
+#};
 
 
 sub getSyconfigValue
 {
-  my $file = shift;
   my $key  = shift;
   my $val  = undef;
 
-  if ( open(CNF, "< $file")) 
+  if ( open(CNF, "< ".SMT::Agent::Constants::CLIENT_CONFIG_FILE)) 
   {
     while(<CNF>)
     {
@@ -73,7 +72,7 @@ sub getSyconfigValue
       {
        next;
       }
-      elsif($_ =~ /^$key\s*=\s*"*([^"\s]*)"*\s*/ && defined $1 && $1 ne "")
+	elsif($_ =~ /^$key\s*=\s*"*(.+)"+\s*/ && defined $1 && $1 ne "")
       {
 	$val = $1;
       }

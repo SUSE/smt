@@ -6,6 +6,8 @@ use warnings;
 use SMT::Agent::Constants;
 use IO::File;
 use IPC::Open3;
+use constant false => 0;
+use constant true => not false;
 
 
 
@@ -123,5 +125,16 @@ sub error
   die "Error: $message\n";
 };
 
+
+sub isAgentAllowed
+{
+  my $agent = shift;
+
+  my $allowedagents = SMT::Agent::Config::getSyconfigValue( "ALLOWED_AGENTS" );
+  return false if (!defined $allowedagents );
+
+  return ( $allowedagents =~ /^(.*\s+)*$agent(\s+.*)*$/ );
+
+}
 
 1;

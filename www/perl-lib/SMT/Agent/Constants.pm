@@ -30,7 +30,7 @@ use constant REST_GET_JOB	=> '/=/1/jobs/';
 use constant LOG_FILE		=> '/tmp/smtclient.log';
 
 # client config file
-use constant CLIENT_CONFIG_FILE	=> '/tmp/smtclient.conf';
+use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smtclient';
 
 
 
