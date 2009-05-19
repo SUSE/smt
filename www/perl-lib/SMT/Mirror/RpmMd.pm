@@ -358,6 +358,25 @@ sub newpatches
     return $self->{NEWPATCHES};
 }
 
+# Internal function
+sub resetStatistics ($)
+{
+    my $self = shift;
+
+    $self->{STATISTIC}->{ERROR}         = 0;
+    $self->{STATISTIC}->{UPTODATE}      = 0;
+    $self->{STATISTIC}->{DOWNLOAD}      = 0;
+    $self->{STATISTIC}->{LINK}          = 0;
+    $self->{STATISTIC}->{COPY}          = 0;
+    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
+    $self->{STATISTIC}->{NEWSECPATCHES} = 0;
+    $self->{STATISTIC}->{NEWRECPATCHES} = 0;
+    $self->{STATISTIC}->{NEWSECTITLES} = [];
+    $self->{STATISTIC}->{NEWRECTITLES} = [];
+
+    return 1;
+}
+
 =item mirror()
 
  Start the mirror process.
@@ -405,16 +424,7 @@ sub mirror()
         if(exists $options{keypass} && defined $options{keypass});
 
     # reset the counter
-    $self->{STATISTIC}->{ERROR}         = 0;
-    $self->{STATISTIC}->{UPTODATE}      = 0;
-    $self->{STATISTIC}->{DOWNLOAD}      = 0;
-    $self->{STATISTIC}->{LINK}          = 0;
-    $self->{STATISTIC}->{COPY}          = 0;
-    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-    $self->{STATISTIC}->{NEWSECPATCHES} = 0;
-    $self->{STATISTIC}->{NEWRECPATCHES} = 0;
-    $self->{STATISTIC}->{NEWSECTITLES} = [];
-    $self->{STATISTIC}->{NEWRECTITLES} = [];
+    $self->resetStatistics();
     $self->{NEWPATCHES} = {};
 
     my $dest = $self->fullLocalRepoPath();
@@ -469,17 +479,8 @@ sub mirror()
         $removeinvalid = 0 if( $dryrun );
 
         $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => ($self->vblevel() != LOG_DEBUG) );
-        
-        $self->{STATISTIC}->{ERROR}    = 0;
-        $self->{STATISTIC}->{UPTODATE} = 0;
-        $self->{STATISTIC}->{DOWNLOAD} = 0;
-        $self->{STATISTIC}->{LINK}     = 0;
-        $self->{STATISTIC}->{COPY}     = 0;
-        $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-        $self->{STATISTIC}->{NEWSECPATCHES} = 0;
-        $self->{STATISTIC}->{NEWRECPATCHES} = 0;
-        $self->{STATISTIC}->{NEWSECTITLES} = [];
-        $self->{STATISTIC}->{NEWRECTITLES} = [];
+
+	$self->resetStatistics();
 
         if ( ! $dryrun )
         {
