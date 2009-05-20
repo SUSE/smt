@@ -135,6 +135,7 @@ install:
 	install -m 644 logrotate/smt $(DESTDIR)/etc/logrotate.d/
 	install -m 755 script/processjob $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/softwarepush $(DESTDIR)/usr/lib/SMT/bin/job
+	install -m 755 script/patchstatus $(DESTDIR)/usr/lib/SMT/bin/job
 
 	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/smt/
