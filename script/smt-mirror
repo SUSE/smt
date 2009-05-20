@@ -21,6 +21,7 @@ use Getopt::Long;
 use File::Basename;
 use File::Temp;
 use Time::HiRes qw(gettimeofday tv_interval);
+use SMT::Mirror::Utils;
 
 #use Data::Dumper;
 
