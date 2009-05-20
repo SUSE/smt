@@ -219,3 +219,7 @@ pot:
 	find script/ -maxdepth 1 -name "smt*" >> sourcefiles
 	xgettext --default-domain=smt --directory=. --keyword=__ -o smt.pot --files-from sourcefiles
 	rm -f sourcefiles
+
+package: dist
+	mv $(NAME)-$(VERSION).tar.bz2 package/
+
