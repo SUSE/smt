@@ -383,12 +383,16 @@ foreach my $entry (@{$array})
             # Update last mirror timestamp only if not mirroring to a custom directory
             if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") && !$dryrun )
             {
-		my $args = {
-		    'repositoryid'	=> $entry->{CATALOGID},
-		    'statistics'	=> $s,
-		    'fullrepopath'	=> $zyppMirror->fullLocalRepoPath(),
-		};
-	        $rh->updateLastMirror ($args, $logfile);
+	        $rh->updateLastMirror ($entry->{CATALOGID});
+                # Something new has been downloaded, update the mirroring timestamp 
+	        if ($download)
+	        {
+	            if (!SMT::Mirror::Utils::saveStatus($zyppMirror->fullLocalRepoPath()))
+	            {
+                        SMT::Utils::printLog($LOG, $vblevel, LOG_WARN,
+                            sprintf(__("Failed to save the mirror status at '%s'"), $zyppMirror->fullLocalRepoPath()));
+	            }
+	        }
             }
 
             # filter new patches -> admin needs to manually allow which patches

@@ -365,31 +365,12 @@ sub stagingAllowed($$$)
     return 0;
 }
 
-=item updateLastMirror($args)
+=item updateLastMirror($repoid)
 
-Updates the database and re/creates a .mirror file containing timestamp of the last
-repository mirroring. File is re/created only if something has been changed.
+Updates the time of last mirroring in the database. Returns 0 on failure and 1
+on success.
 
- updateLastMirror({
-   'repositoryid' => '86fed7f9cee6d69dddabd721436faa7c63b8b403',
-   'statistics'   => { 'DOWNLOAD' => 152 },
-   'fullrepopath' => '/srv/www/htdocs/repo/full/RPMMD/SLE10-SDK-Updates/i586/',
- })
-
-=over
-
-=item Args
-
-'repositoryid'
-  A repository ID
-
-'statistics'
-  Mirroring statistics hash. Important is key 'DOWNLOAD'
-
-'fullrepopath'
-  Full local path to a mirrored repository.
-
-=back
+$success = updateLastMirror('86fed7f9cee6d69dddabd721436faa7c63b8b403');
 
 =cut
 
@@ -398,55 +379,91 @@ sub updateLastMirror ($$)
     my $self = shift;
     my $arg = shift || {};
 
-    my $repositoryid = $arg->{'repositoryid'} || do {
+    my $repositoryid = $arg->{'repositoryid'} || do
+    {
 	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"))
-	    if (defined $self->{LOG});
-	return 0;
-    };
-
-    my $statistics = $arg->{'statistics'} || do {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"))
-	    if (defined $self->{LOG});
-	return 0;
-    };
-
-    my $repopath = $arg->{'fullrepopath'} || do {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'fullrepopath' is required"))
 	    if (defined $self->{LOG});
 	return 0;
     };
 
     $self->{'dbh'}->do('UPDATE Catalogs set LAST_MIRROR=now() where CATALOGID='.$self->{'dbh'}->quote($repositoryid));
-    
-    # Something new has been downloaded, update the mirroring timestamp 
-    if (defined $statistics->{DOWNLOAD} && $statistics->{DOWNLOAD} > 0)
-    {
-	if ($repopath eq '')
-	{
-	    SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Cannot update mirroring timestamp"))
-		if (defined $self->{LOG});
-	}
-	else
-	{
-	    my $mirrorfile = $repopath.'/.mirror';
-
-	    unlink $mirrorfile if (-e $mirrorfile);
-
-	    # Creates a .mirror file in the root of a repository 
-	    open MIRROR, ">$mirrorfile" || do {
-		SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-		    sprintf(__("Cannot update mirroring timestamp: %s: %s"), $mirrorfile, $!))
-			if (defined $self->{LOG});
-		return 1;
-	    };
-	    print MIRROR time;
-	    close MIRROR;
-	}
-    }
 
     return 1;
 }
 
+=item getStagingRepoPath($repoid, $cfg, $prefix)
+
+Returns absolute path to repository using specified $prefix.
+
+For internal use.
+
+=cut
+sub getStagingRepoPath($$$$)
+{
+    my ($self, $repoid, $cfg, $prefix) = @_;
+
+    my $base = $cfg->val("LOCAL", "MirrorTo");
+    return undef if (not defined $base || not $base);
+
+    my $repopath = $self->getRepositoryPath($repoid);
+
+    return SMT::Utils::cleanPath($base, 'repo', $prefix, $repopath);
+}
+
+=item getProductionRepoPath($repoid, $cfg)
+
+Returns absolute path to production repository. This path is where
+the repository from which clients will get updates is meant to reside.
+
+$repohandler = SMT::Repositories::new($dbh);
+$cfg = SMT::Utils::getSMTConfig();
+$repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
+$thepath = $repohandler->getProductionRepoPath($repoid, $cfg) 
+
+=cut
+
+sub getProductionRepoPath($$$)
+{
+    getStagingRepoPath(shift, shift, shift, '');
+}
+
+=item getFullRepoPath($repoid, $cfg)
+
+Returns absolute path to full (unfiltered) repository. This is the path where
+the repository is mirrored, without any filtering. This repository must not be
+exported to the clients. Testing and production repositories are generated out
+of this repository.
+
+$repohandler = SMT::Repositories::new($dbh);
+$cfg = SMT::Utils::getSMTConfig();
+$repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
+$thepath = getFullRepoPath($repoid, $cfg) 
+
+=cut
+
+sub getFullRepoPath($$$)
+{
+    getStagingRepoPath(shift, shift, shift, 'full');
+}
+
+=item getTestingRepoPath($repoid, $cfg)
+
+Returns absolute path to testing repository. This is the path where
+the repository is mirrored, eventually with filters applied, for testing.
+This repository can be exported to clients only using a special registration
+option.
+
+$repohandler = SMT::Repositories::new($dbh);
+$cfg = SMT::Utils::getSMTConfig();
+$repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
+$thepath = getTestingRepoPath($repoid, $cfg) 
+
+=cut
+
+sub getTestingRepoPath($$$)
+{
+    getStagingRepoPath(shift, shift, shift, 'testing');
+}
 
 =back
 
