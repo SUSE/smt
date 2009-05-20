@@ -17,7 +17,7 @@ use constant JOB_HANDLER_PATH	=> '/usr/lib/SMT/bin/job';
 
 # rest path for retriving next job id 
 #use constant REST_NEXT_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/next';
-use constant REST_NEXT_JOB	=> '/=/1/jobs';
+use constant REST_NEXT_JOB	=> '/=/1/jobs/@next';
 
 # rest path for job update (trailing slash is important)
 use constant REST_UPDATE_JOB	=> '/cgi-bin/smt.cgi/=v1=/smt/job/id/';
