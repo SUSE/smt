@@ -25,6 +25,7 @@
     import "RunlevelEd";
     import "SuSEFirewall";
     import "FileUtils";
+    import "GPG";
 
     integer sl = 100;
 
@@ -1372,16 +1373,37 @@ and thus its status cannot be changed in this dialog."));
 	    return true;
 	}
 
+	// 0xABDEF -> ABDEF
+	string key_id_match = key_id;
+	if (regexpmatch (key_id_match, "^0x.*"))
+	    key_id_match = regexpsub (key_id_match, "^0x(.*)", "\\1");
+
+	list <map> keys = filter (map one_key, GPG::PrivateKeys(), {
+	    return (one_key["id"]:nil == key_id_match || one_key["id"]:nil == "0x"+key_id_match);
+	});
+
+	// Key description
+	string key_description = sformat ("Key ID: %1", key_id);
+
+	if (size (keys) > 0) {
+	    // Multiline key description
+	    key_description = sformat (_("Key ID: %1
+UID: %2
+Fingerprint: %3"), key_id, mergestring (keys[0,"uid"]:[],"\n"), keys[0,"fingerprint"]:"");
+	}
+
 	UI::OpenDialog (
 	    `VBox (
 		// pop-up heading
 		`Left (`Heading (_("Signing Key Passphrase"))),
 		// pop-up dialog message
-		// %1 is replaced with a Key ID
-		`Left (`Label (sformat(_("SMT is configured to sign the snapshot with key %1.
+		// %1 is replaced with a (possibly multiline) key descrioption
+		`Left (`Label (sformat(_("SMT is configured to sign the snapshot with key
+%1.
 
 Enter the key passphrase and press OK,
-otherwise press Cancel to skip the signing procedure."), key_id))),
+otherwise press Cancel to skip the signing procedure."), key_description))),
+		`VSpacing (1),
 		`Password (`id (`pass1), _("Key &Passphrase")),
 		`Password (`id (`pass2), _("&Once Again")),
 		`ButtonBox (
