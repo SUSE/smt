@@ -3,6 +3,7 @@ Tue May 19 11:11:11 CEST 2009 - locilka@suse.cz
 
 - Providing more information on the key which is going to be used
   for signing a modified repository.
+- Copying .mirror file into a newly created snapshot.
 
 -------------------------------------------------------------------
 Tue May 19 11:11:11 CEST 2009 - locilka@suse.cz

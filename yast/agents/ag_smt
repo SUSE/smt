@@ -24,6 +24,7 @@ use SMT::Filter;
 use SMT::Repositories;
 use SMT::Parser::RpmMdPatches;
 use SMT::Mirror::RpmMd;
+use SMT::Mirror::Utils;
 
 # For debugging only
 # use Data::Dumper;
@@ -406,6 +407,19 @@ sub CreateSnapshot ($) {
 	%args = (keyid => $keyid, keypass => $passphrase);
     }
     my $ret = $mirror->mirror (%args);
+
+    if ($ret == 0) {
+	SMT::Mirror::Utils::copyStatus($staging_source,
+	    SMT::Utils::cleanPath(
+		$fph->{$repositoryid}->{'paths'}->{'base'},
+		$fph->{$repositoryid}->{'paths'}->{$type}
+	    )
+	);
+	SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+	    sprintf __("Repository successfully generated at %s."),
+		$fph->{$repositoryid}->{'paths'}->{$type}
+	);
+    }
 
     # Contains number of errors
     return ($ret == 0 ? YCP_TRUE:YCP_FALSE);
