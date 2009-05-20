@@ -67,13 +67,9 @@ Authors:
     Authors:
     --------
         dmacvicar@suse.de
-        jdsn@suse.de
-        jkupec@suse.cz
-        jsrain@suse.cz
-        locilka@suse.cz
         mc@suse.de
-        rhafer@suse.de
-        tgoettlicher@suse.de
+        jdsn@suse.de
+        locilka@suse.cz
 
 %package -n res-signingkeys
 License:        GPL v2 or later
