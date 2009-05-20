@@ -434,7 +434,7 @@ sub openLog
 =item cleanPath(@pathlist)
 
 Concatenate all parts of the pathlist, remove double slashes and return
-the result.
+the result as an absolute path.
 
 =cut
 sub cleanPath
