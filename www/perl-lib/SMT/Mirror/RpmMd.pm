@@ -782,25 +782,24 @@ sub mirror()
             unlink ($olduifname);
 
             # note: modifyrepo needs unzipped unpdateinfo.xml
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-                "Executing $modifyrepopath $uifname ".$self->fullLocalRepoPath()."/.repodata");
+	    my $cmd = $modifyrepopath.' '.$uifname.' '.$self->fullLocalRepoPath().'/.repodata';
+	    my $cmd_running = 1;
 
-            system("$modifyrepopath $uifname ".$self->fullLocalRepoPath()."/.repodata > /dev/null");
-            if ( $? == -1 )
-            {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Command failed: $!");
-            }
-            else
-            {
-                my $rv = $? >> 8;
-                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Command returned $rv.");
-                # FIXME seems modifyrepo only returns 0. Need to check the actual output to see if it succeeded
-                if ($rv != 0)
-                {
-                    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Error from $modifyrepopath: $!");
-                    $self->{STATISTIC}->{ERROR}++;
-                }
-            }
+	    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, 'Executing: '.$cmd);
+	    # A correct solution would be to use IPC::Run or IPC::Open3
+	    open (CMD, $cmd.'|') || do {
+		printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, 'Cannot run '.$modifyrepopath.': '.$!);
+		$self->{STATISTIC}->{ERROR}++;
+		$cmd_running = 0;
+	    };
+	    if ($cmd_running)
+	    {
+		while (my $output = <CMD>)
+		{
+		    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, 'ModifyRepo: '.$output);
+		}
+		close CMD;
+	    }
         }
 
         if ($needprimaryupdate)

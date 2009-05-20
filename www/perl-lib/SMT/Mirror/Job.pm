@@ -767,7 +767,7 @@ sub copyFromLocalIfAvailable
     
     # try to get the file location from the full source URI (if file://)
 
-    if (not defined $otherpath || not $otherpath || ! -e "$otherpath")
+    if (not defined $otherpath || ! $otherpath || ! -e $otherpath)
     {
         $otherpath = $self->fullUri2local();
     }
