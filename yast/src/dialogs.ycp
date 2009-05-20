@@ -1391,6 +1391,7 @@ otherwise press Cancel to skip the signing procedure."), key_id))),
 	    )
 	);
 
+	UI::SetFocus (`id (`pass1));
 	any ret = nil;
 
 	while (true) {
@@ -1443,7 +1444,7 @@ otherwise press Cancel to skip the signing procedure."), key_id))),
 
 	if (ret != true)
 	    // a pop-up error message
-	    Report::Error (_("There were some errors during creating the snapshot."));
+	    Report::Error (_("An error has occurred while creating the snapshot."));
 
 	return ret;
     }
