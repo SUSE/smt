@@ -1,4 +1,27 @@
 -------------------------------------------------------------------
+Wed May 20 16:19:42 CEST 2009 - jkupec@suse.cz
+
+- version 1.1.6
+  * added patch filtering capability to SMT::Mirror::RpmMd
+  * software push and client patch status reporting WIP
+  * smt-mirror: added --repository option for selecting the
+    repository to mirror, instead of mirroring all
+  * smt-support: added repackage functionality
+  * smt-ncc-sync: --export added to dump database tables, needed for
+    setting up a disconnected server, to XML files
+  * smt-mirror: --fromlocalsmt added to use the local running SMT
+    as the mirror-source (FATE #306252)
+  * smt-mirror: renamed --dryrun to --testrun (FATE #304899)
+  * added TYPE column to the MachineData table
+  * added LAST_MIRROR column to the Catalogs table
+  * JobQueue table added to DB
+  * LOCAL.signingKeyID smt.conf option added
+  * added NTS SMT::Support Perl module that allows uploading
+    supportconfigs
+  * added SMT::Repositories for handling things related to Catalogs
+    DB table
+
+-------------------------------------------------------------------
 Mon May  4 15:08:06 CEST 2009 - mc@suse.de
 
 - version 1.1.5
