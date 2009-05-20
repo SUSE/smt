@@ -384,7 +384,7 @@ foreach my $entry (@{$array})
             # Update last mirror timestamp only if not mirroring to a custom directory
             if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") && !$dryrun )
             {
-	        $rh->updateLastMirror ($entry->{CATALOGID});
+	        $rh->updateLastMirror ({'repositoryid'=>$entry->{CATALOGID}});
                 # Something new has been downloaded, update the mirroring timestamp 
 	        if ($download)
 	        {

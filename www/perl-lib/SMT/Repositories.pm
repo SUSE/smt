@@ -370,7 +370,7 @@ sub stagingAllowed($$$)
 Updates the time of last mirroring in the database. Returns 0 on failure and 1
 on success.
 
-$success = updateLastMirror('86fed7f9cee6d69dddabd721436faa7c63b8b403');
+$success = updateLastMirror({'repositoryid'=>'86fed7f9cee6d69dddabd721436faa7c63b8b403'});
 
 =cut
 
