@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use SMT::Mirror::RpmMd;
 use SMT::Mirror::Yum;
+use SMT::Mirror::Utils;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Parser::RegData;
@@ -21,7 +22,6 @@ use Getopt::Long;
 use File::Basename;
 use File::Temp;
 use Time::HiRes qw(gettimeofday tv_interval);
-use SMT::Mirror::Utils;
 
 #use Data::Dumper;
 
@@ -385,7 +385,7 @@ foreach my $entry (@{$array})
             # Update last mirror timestamp only if not mirroring to a custom directory
             if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") && !$dryrun )
             {
-	        $rh->updateLastMirror ({'repositoryid'=>$entry->{CATALOGID}});
+	        $rh->updateLastMirror ($entry->{CATALOGID});
                 # Something new has been downloaded, update the mirroring timestamp 
 	        if ($download)
 	        {

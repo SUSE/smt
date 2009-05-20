@@ -370,16 +370,16 @@ sub stagingAllowed($$$)
 Updates the time of last mirroring in the database. Returns 0 on failure and 1
 on success.
 
-$success = updateLastMirror({'repositoryid'=>'86fed7f9cee6d69dddabd721436faa7c63b8b403'});
+$success = updateLastMirror('86fed7f9cee6d69dddabd721436faa7c63b8b403');
 
 =cut
 
 sub updateLastMirror ($$)
 {
     my $self = shift;
-    my $arg = shift || {};
+    my $repositoryid = shift;
 
-    my $repositoryid = $arg->{'repositoryid'} || do
+    if (not defined $repositoryid || !$repositoryid)
     {
 	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"))
 	    if (defined $self->{LOG});
