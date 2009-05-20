@@ -85,6 +85,7 @@ my $result = GetOptions ("debug|d"      => \$debug,
                          "fromlocalsmt" => \$fromlocalsmt,
                          "deepverify"   => \$deepverify,
                          "dryrun|n"     => \$dryrun,
+                         "testrun"      => \$dryrun,
                          "nohardlink"   => \$nohardlink,
                          "dbreplfile=s" => \$dbreplfile,
                          "logfile|L=s"  => \$logfile,
@@ -96,7 +97,7 @@ my $result = GetOptions ("debug|d"      => \$debug,
 
 if($help)
 {
-    print basename($0) . " [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]\n";
+    print basename($0) . " [--directory path] [--deepverify] [--testrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]\n";
     print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
     print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
@@ -116,7 +117,7 @@ if($help)
     print "                        " . __("option being set. The resulting directory can  e.g later be imported to another server\n");
     print "                        " . __("using smt-mirror --fromdir\n");
     print "--deepverify            " . __("Verify all checksums \n");
-    print "--dryrun -n             " . __("Run mirror algorithm without downloading the rpms \n");
+    print "--testrun               " . __("Run mirror algorithm without downloading the rpms \n");
     print "                        " . __("(but it needs to download the metadata into a temporary directory).\n");
     print "                        " . __("It shows only the names which would be downloaded \n");
     print "--nohardlink            " . __("If a file already exists on the local harddisk do not link it into the\n");
@@ -525,7 +526,7 @@ smt mirror
 
 smt [help|--help|-h] mirror
 
-smt mirror [--directory path] [--deepverify] [--dryrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]
+smt mirror [--directory path] [--deepverify] [--testrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]
 
 smt mirror --clean [--directory path] [--dbreplfile file] [-L file] [--debug] [--verboselevel level]
 
@@ -576,7 +577,7 @@ default value in smt.conf
 Before starting the mirror procedure verify checksums of B<all> files in the catalogs
 and remove broken files. without this option only the metadata are verified.
 
-=item --dryrun -n
+=item --testrun
 
 Run mirror procedure without downloading the rpms (but it needs to download the metadata into a temporary directory).
 It shows only the names which would be downloaded.
