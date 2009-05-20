@@ -391,7 +391,7 @@ sub updateLastMirror ($$)
     return 1;
 }
 
-=item getStagingRepoPath($repoid, $cfg, $prefix)
+=item getStagingRepoPath($repoid, $basepath, $prefix)
 
 Returns absolute path to repository using specified $prefix.
 
@@ -400,25 +400,28 @@ For internal use.
 =cut
 sub getStagingRepoPath($$$$)
 {
-    my ($self, $repoid, $cfg, $prefix) = @_;
+    my ($self, $repoid, $basepath, $prefix) = @_;
 
-    my $base = $cfg->val("LOCAL", "MirrorTo");
-    return undef if (not defined $base || not $base);
+    $basepath = '' if (not defined $basepath);
 
     my $repopath = $self->getRepositoryPath($repoid);
 
-    return SMT::Utils::cleanPath($base, 'repo', $prefix, $repopath);
+    return SMT::Utils::cleanPath($basepath, 'repo', $prefix, $repopath);
 }
 
-=item getProductionRepoPath($repoid, $cfg)
+=item getProductionRepoPath($repoid [, $basepath])
 
-Returns absolute path to production repository. This path is where
+Returns path to production repository. This path is where
 the repository from which clients will get updates is meant to reside.
 
+If $basepath is specified, it is prependend to the resulting path, otherwise
+the portion of the path relative to a base path is returned. The returned path
+always starts with a slash.
+
 $repohandler = SMT::Repositories::new($dbh);
-$cfg = SMT::Utils::getSMTConfig();
+$basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
 $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
-$thepath = $repohandler->getProductionRepoPath($repoid, $cfg) 
+$thepath = $repohandler->getProductionRepoPath($repoid, $basepath);
 
 =cut
 
@@ -427,17 +430,21 @@ sub getProductionRepoPath($$$)
     getStagingRepoPath(shift, shift, shift, '');
 }
 
-=item getFullRepoPath($repoid, $cfg)
+=item getFullRepoPath($repoid [, $basepath])
 
-Returns absolute path to full (unfiltered) repository. This is the path where
+Returns path to full (unfiltered) repository. This is the path where
 the repository is mirrored, without any filtering. This repository must not be
 exported to the clients. Testing and production repositories are generated out
 of this repository.
 
+If $basepath is specified, it is prependend to the resulting path, otherwise
+the portion of the path relative to a base path is returned. The returned path
+always starts with a slash.
+
 $repohandler = SMT::Repositories::new($dbh);
-$cfg = SMT::Utils::getSMTConfig();
+$basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
 $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
-$thepath = getFullRepoPath($repoid, $cfg) 
+$thepath = getFullRepoPath($repoid, $basepath); 
 
 =cut
 
@@ -446,17 +453,21 @@ sub getFullRepoPath($$$)
     getStagingRepoPath(shift, shift, shift, 'full');
 }
 
-=item getTestingRepoPath($repoid, $cfg)
+=item getTestingRepoPath($repoid [, $basepath])
 
-Returns absolute path to testing repository. This is the path where
+Returns path to testing repository. This is the path where
 the repository is mirrored, eventually with filters applied, for testing.
 This repository can be exported to clients only using a special registration
 option.
 
+If $basepath is specified, it is prependend to the resulting path, otherwise
+the portion of the path relative to a base path is returned. The returned path
+always starts with a slash.
+
 $repohandler = SMT::Repositories::new($dbh);
-$cfg = SMT::Utils::getSMTConfig();
+$basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
 $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
-$thepath = getTestingRepoPath($repoid, $cfg) 
+$thepath = getTestingRepoPath($repoid, $basepath); 
 
 =cut
 
