@@ -13,9 +13,9 @@ use File::Basename;
 use SMT::Utils;
 use SMT::Repositories;
 use SMT::Filter;
+use SMT::Mirror::Utils;
 use SMT::Mirror::RpmMd;
 use SMT::Parser::RpmMdPatches;
-
 
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug    = 0;
@@ -251,8 +251,10 @@ elsif ($command eq 'createrepo')
         SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
-    my $localtargetrepopath = SMT::Utils::cleanPath(
-        'repo', ($gentest ? 'test' : ''), $repo->{LOCALPATH});
+    my $basepath = $cfg->val("LOCAL", "MirrorTo");
+    my $localtargetrepopath = ($gentest ?
+        $rh->getTestingRepoPath($repoid) :
+        $rh->getProductionnRepoPath($repoid));
 
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
@@ -264,7 +266,7 @@ elsif ($command eq 'createrepo')
         nohardlink => $nohardlink);
 
     $mirror->uri('file://'.$localrepopath);
-    $mirror->localBasePath($cfg->val("LOCAL", "MirrorTo"));
+    $mirror->localBasePath($basepath);
     $mirror->localRepoPath($localtargetrepopath);
 
     my $errcnt = $mirror->mirror();
@@ -275,6 +277,8 @@ elsif ($command eq 'createrepo')
     }
     else
     {
+        SMT::Mirror::Utils::copyStatus($localrepopath,
+            SMT::Utils::cleanPath($basepath, $localtargetrepopath));
         SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf __("Repository successfully generated at %s."), $localtargetrepopath);
     }
 }
