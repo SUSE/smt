@@ -141,7 +141,7 @@ while IFS== read -sr key val ; do
 done < $SMTCONF
 
 for dir in ${SMT_DIRS[@]}; do
-    echo -n "$CHOWN -R $USER.$GROUP $dir"
+    echo -n "$CHOWN -RL $USER.$GROUP $dir"
     if [ $DRYRUN -eq 1 ]; then
         echo
         continue
@@ -156,7 +156,7 @@ for dir in ${SMT_DIRS[@]}; do
         else
             echo
         fi
-        $CHOWN -R $USER.$GROUP $dir
+        $CHOWN -RL $USER.$GROUP $dir
     fi
 done
 
