@@ -785,6 +785,10 @@ sub mirror()
 	    my $cmd = $modifyrepopath.' '.$uifname.' '.$self->fullLocalRepoPath().'/.repodata';
 	    my $cmd_running = 1;
 
+            # escape $ to avoid interpreting it by shell
+            # FIXME run the commands using the ported executeCommand() from suseregister	    
+	    $cmd =~ s/\$/\\\$/g;
+
 	    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, 'Executing: '.$cmd);
 	    # A correct solution would be to use IPC::Run or IPC::Open3
 	    open (CMD, $cmd.'|') || do {
