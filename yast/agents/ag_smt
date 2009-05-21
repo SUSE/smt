@@ -44,8 +44,8 @@ my ($cfg, $dbh, $nuri) = SMT::CLI::init();
 my $base_path = $cfg->val('LOCAL', 'MirrorTo') || '/srv/www/htdocs';
 
 # Used for re-signing repositories (during staging)
-my $keyid	= $cfg->val('LOCAL', 'signingKeyID')		|| '';
-my $passphrase	= $cfg->val('LOCAL', 'signingKeyPassphrase')	|| '';
+my $keyid	= $cfg->val('LOCAL', 'signingKeyID');
+my $passphrase	= $cfg->val('LOCAL', 'signingKeyPassphrase');
 
 my $repositories = SMT::Repositories::new($dbh);
 
@@ -251,7 +251,8 @@ sub ChangeCategoryFilterStatus ($) {
     return YCP_TRUE;
 }
 
-# Returns whether patch is enabled in testing repository
+# Returns whether patch is enabled in snapshot
+# == not disabled by filter
 sub GetPatchStatus ($) {
     my $params = shift;
 
@@ -270,7 +271,7 @@ sub GetPatchStatus ($) {
     LoadRepositoryData($repositoryid);
 
     my $this_patch = $fph->{$repositoryid}->{'ph'}->{'PATCHES'}->{$patchid};
-    # The current patch status (in testing repo) -> ! matching (filters)
+    # The current patch status -> ! matching (filters)
     return ($fph->{$repositoryid}->{'fh'}->matches($this_patch) ? YCP_FALSE:YCP_TRUE);
 }
 
@@ -347,12 +348,6 @@ sub CreateSnapshot ($) {
 	return YCP_FALSE;
     }
 
-    # Optional parameter, if a passphrase is defined, we use it and remember
-    if (defined $arg->{'passphrase'}) {
-	y2milestone ("Using passphrase defined as a parameter");
-	$passphrase = $arg->{'passphrase'};
-    }
-
     my %mirror_args = (
 	log => $log,
 	vblevel => $vblevel
@@ -400,12 +395,24 @@ sub CreateSnapshot ($) {
     $mirror->localBasePath($fph->{$repositoryid}->{'paths'}->{'base'});
     $mirror->localRepoPath($fph->{$repositoryid}->{'paths'}->{$type});
 
-    # And GO!
     my %args = ();
-    if (defined $keyid && $keyid ne '' && defined $arg->{'passphrase'}) {
-	$passphrase = $arg->{'passphrase'};
-	%args = (keyid => $keyid, keypass => $passphrase);
+    my $passphrase_cached = 0;
+
+    # 'signingKeyID' should be used, passphrase is set
+    if (defined $arg->{'key'} && defined $arg->{'passphrase'}) {
+	y2milestone ("Using signing key ID: %1", $arg->{'key'});
+
+	# 'signingKeyPassphrase' (from smt.conf is not defined) but it came as a parameter
+	if (! defined $passphrase) {
+	    y2milestone ("Using passphrase defined as a parameter");
+	    $passphrase = $arg->{'passphrase'};
+	    $passphrase_cached = 1;
+	}
+
+	%args = (keyid => $arg->{'key'}, keypass => $passphrase);
     }
+
+    # And GO!
     my $ret = $mirror->mirror (%args);
 
     if ($ret == 0) {
@@ -419,6 +426,13 @@ sub CreateSnapshot ($) {
 	    sprintf __("Repository successfully generated at %s."),
 		$fph->{$repositoryid}->{'paths'}->{$type}
 	);
+    } else {
+	SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+	    sprintf __("Unable to generated repository %s."),
+		$fph->{$repositoryid}->{'paths'}->{$type}
+	);
+	# Reset the changed passphrase if generating failed
+	$passphrase = undef if ($passphrase_cached);
     }
 
     # Contains number of errors
@@ -487,7 +501,7 @@ while (<STDIN>) {
 	    ycp::Return ($repositories->getAllRepositories (MIRRORED_REPO_FILTER));
 	} elsif ($path eq '.staging.patches') {
 	    ycp::Return (GetAllPatches ($arg));
-	} elsif ($path eq '.staging.patch.testing') {
+	} elsif ($path eq '.staging.patch.status') {
 	    ycp::Return (GetPatchStatus ($arg));
 	} elsif ($path eq '.staging.category_filter') {
 	    ycp::Return (SecurityLevelFilterExists ($arg));
@@ -499,7 +513,7 @@ while (<STDIN>) {
 	    UnsupportedPath (\$command, \$path);
 	}
     } elsif ($command eq 'Write') {
-	if ($path eq '.staging.patch.testing') {
+	if ($path eq '.staging.patch.status') {
 	    ycp::Return (ChangePatchStatus ($arg));
 	} elsif ($path eq '.staging.patches') {
 	    ycp::Return (WritePatchFilters());

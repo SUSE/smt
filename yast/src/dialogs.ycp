@@ -211,7 +211,7 @@
 		    _("Patch Name"),
 		    _("Version"),
 		    _("Category"),
-		    _("Testing"),
+		    _("In Snapshot"),
 		    _("Summary")
 		),
 		[]
@@ -224,10 +224,10 @@
 	    `VSquash (`MinHeight (4, `RichText (`id (`patch_details), ""))),
 	    `Left (
 		`HBox (
-		    `PushButton (`id (`toggle_testing), _("&Toggle Patch Testing")),
+		    `PushButton (`id (`toggle_patch_status), _("&Toggle Patch Status")),
 		    `HStretch(),
 		    `MenuButton (`id (`change_status), _("Change &Status"), [
-			`item (`id (`additional_filters),	_("&Exclude from Testing...")),
+			`item (`id (`additional_filters),	_("&Exclude from Snapshot...")),
 			`menu (`id (`all_listed), _("&All listed..."), [
 			    `item (`id (`all_listed_enable),	_("&Enable")),
 			    `item (`id (`all_listed_disable),	_("&Disable")),
@@ -247,7 +247,7 @@
 	    `Left (`ReplacePoint (`id (`catalogs_filter), `Empty())),
 	    `Table (
 		`id (`catalogs_table),
-		`opt (`hstretch, `vstretch),
+		`opt (`hstretch, `vstretch, `notify, `immediate),
 		`header (
 		    _("Name"),
 		    _("Target"),
@@ -867,6 +867,22 @@ Enter your SMT server URL in the following format: http:://server.name/
 
     integer current_filter_level = -1;
 
+    void AdjustRepositoriesButtons () {
+	string current_item = (string) UI::QueryWidget (`id (`catalogs_table), `CurrentItem);
+
+	// nothing listed / nothing selected
+	if (current_item == nil || current_item == "")
+	    return;
+
+	// [Mirror Now]
+	boolean new_status_mirror = catalogs_info[current_item, "mirroring"]:true;
+	UI::ChangeWidget (`id (`mirror_now), `Enabled, new_status_mirror);
+
+	boolean new_status_staging = (catalogs_info[current_item, "mirroring"]:true
+	    || catalogs_info[current_item, "staging"]:true);
+	UI::ChangeWidget (`id (`toggle_staging), `Enabled, new_status_staging);
+    }
+
     void RedrawCatalogsTable (list <string> catalogs_filters) {
 	y2milestone ("Filter used: %1", catalogs_filters);
 
@@ -1000,6 +1016,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 	UI::ChangeWidget (`id (`catalogs_table), `Items, items);
 	if (current_item_present && current_item != nil)
 	    UI::ChangeWidget (`id (`catalogs_table), `CurrentItem, current_item);
+
+	AdjustRepositoriesButtons();
     }
 
     void InitRepositoriesTableDialog (string id) {
@@ -1073,7 +1091,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	boolean filtered_by_type = IsPatchFilteredByType (sel_patchid);
 
 	boolean buttons_enabled = (filtered_by_type == false && filtering_allowed_for_repository == true);
-	UI::ChangeWidget (`id (`toggle_testing), `Enabled, buttons_enabled);
+	UI::ChangeWidget (`id (`toggle_patch_status), `Enabled, buttons_enabled);
 
 	string patch_description = current_patches[sel_patchid,"description"]:"";
 
@@ -1148,7 +1166,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 			one_patch["name"]:"",
 			tostring (one_patch["version"]:0),
 			GetTranslatedPatchCategory (one_patch["type"]:""),
-			// Filtered -> Testing==no
+			// Filtered -> InSnapshot==no
 			(one_patch["filtered"]:false ? no:yes),
 			one_patch["title"]:""
 		    );
@@ -1166,7 +1184,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	boolean enable_buttons = (size (items) > 0 && filtering_allowed_for_repository == true);
 
 	UI::ChangeWidget (`id (`patches_table), `Items, items);
-	UI::ChangeWidget (`id (`toggle_testing), `Enabled, enable_buttons);
+	UI::ChangeWidget (`id (`toggle_patch_status), `Enabled, enable_buttons);
 	UI::ChangeWidget (`id (`change_status), `Enabled, enable_buttons);
 
 	term additional_info = (enable_buttons == true ? `Empty():`Label(_("Repository does not allow patch-filtering")));
@@ -1262,7 +1280,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 
     boolean SetPatchStatus (string patchid, boolean new_status) {
 	return SCR::Write (
-	    .smt.staging.patch.testing,
+	    .smt.staging.patch.status,
 	    $["repositoryid" : selected_catalog, "patchid" : patchid, "status" : new_status]
 	);
     }
@@ -1273,7 +1291,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 You can create snapshots of its current stage though."));
     }
 
-    void TogglePatchTesting () {
+    void TogglePatchStatus () {
 	if (filtering_allowed_for_repository != true) {
 	    ReportFilteringNotAllowed();
 	    return;
@@ -1299,7 +1317,7 @@ and thus its status cannot be changed in this dialog."));
 	}
 
 	boolean current_status = (boolean) SCR::Read (
-	    .smt.staging.patch.testing,
+	    .smt.staging.patch.status,
 	    $["repositoryid" : selected_catalog, "patchid" : sel_patchid]
 	);
 
@@ -1398,8 +1416,9 @@ Fingerprint: %3"), key_id, mergestring (keys[0,"uid"]:[],"\n"), keys[0,"fingerpr
 		`Left (`Heading (_("Signing Key Passphrase"))),
 		// pop-up dialog message
 		// %1 is replaced with a (possibly multiline) key descrioption
-		`Left (`Label (sformat(_("SMT is configured to sign the snapshot with key
-%1.
+		`Left (`Label (sformat(_("SMT is configured to sign the snapshot with the following key:
+
+%1
 
 Enter the key passphrase and press OK,
 otherwise press Cancel to skip the signing procedure."), key_description))),
@@ -1479,13 +1498,13 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	if (action == `patches_table) {
 	    // Double-click on patch in table
 	    if (reason == "Activated") {
-		TogglePatchTesting();
+		TogglePatchStatus();
 	    // The rest...
 	    } else {
 		RedrawPatchesDetails();
 	    }
-	} else if (action == `toggle_testing) {
-	    TogglePatchTesting();
+	} else if (action == `toggle_patch_status) {
+	    TogglePatchStatus();
 	// Selected another catalog
 	} else if (action == `catalogs) {
 	    // Reset the category filter when selecting another catalog
@@ -1588,7 +1607,7 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	return nil;
     }
 
-    boolean ToggleCatalog (string current_id, string entry) {
+    boolean ToggleRepository (string current_id, string entry) {
 	if (current_id == nil) {
 	    y2error ("Erroneous ID: %1", current_id);
 	    // pop-up error message
@@ -1643,6 +1662,7 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	// bussy message
 	boolean uio = (boolean) UI::OpenDialog (`Label ("Toggling catalog state..."));
 
+	// FIXME: use SCR agent (Repositories.pm)
 	boolean success = ((integer) SCR::Execute (.target.bash, cmd) == 0);
 	y2milestone ("Running >%1< returned: %2", cmd, success);
 
@@ -1656,6 +1676,8 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	    catalogs_info[current_id, entry] = current_state;
 	    UI::ChangeWidget (`id(`catalogs_table), `Item (current_id, col_to_change), (current_state == true ? yes:no));
 	}
+
+	AdjustRepositoriesButtons();
     }
 
     void MirrorRepository (string repository_id) {
@@ -1752,12 +1774,20 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	string current_id = (string) UI::QueryWidget (`id (`catalogs_table), `CurrentItem);
 
 	if (event_id == `toggle_mirroring) {
-	    ToggleCatalog (current_id, "mirroring");
+	    ToggleRepository (current_id, "mirroring");
 	} else if (event_id == `toggle_staging) {
-	    ToggleCatalog (current_id, "staging");
+	    ToggleRepository (current_id, "staging");
 	} else if (event_id == `mirror_now) {
 	    MirrorRepository (current_id);
 	    RedrawCatalogsTable (filters);
+	} else if (event_id == `catalogs_table) {
+	    // Table->double_click
+	    if (event["EventReason"]:"" == "Activated") {
+		ToggleRepository (current_id, "mirroring");
+	    // Table->selected(_other_item)
+	    } else {
+		AdjustRepositoriesButtons();
+	    }
 	} else if (is (event_id, string) && regexpmatch (tostring (event_id), "^catalogs_filter_")) {
 	    integer filter_id = tointeger (regexpsub (tostring (event_id), "^catalogs_filter_(.*)", "\\1"));
 

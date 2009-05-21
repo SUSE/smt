@@ -68,23 +68,22 @@ in the table and click <b>Toggle Staging</b>.</p>"),
 	    // TRANSLATORS: help f1
 	    _("<p><big><b>Staging</b></big><br>
 Here you can create testing and production snapshots from the mirrored
-repositories that have <tt>staging</tt> enabled. You can also modify
-the content of <tt>testing</tt> repository here, <tt>production</tt>
-snapshots are are generated from current <tt>testing</tt> repository
-on request.</p>") +
+repositories that have <tt>staging</tt> enabled. Repositories that contain
+patches allow patch-filtering, otherwise you can create full snapshots only
+(without any fitler in use).</p>") +
 	    // TRANSLATORS: help f2
 	    _("<p>Choosing a <b>Repository Name</b> will switch the current
 repository. Choosing a <b>Patch Category</b> applies a listing filter
 on the current repository.</p>") +
 	    // TRANSLATORS: help f3
-	    _("<p>To enable or disable <tt>patches</tt> in the <tt>testing</tt>
-repository, select a patch in the table and click <b>Toggle Patch Testing</b>.</p>") +
+	    _("<p>To enable or disable <tt>patches</tt> in the snapshot,
+select a patch in the table and click <b>Toggle Patch Status</b>.</p>") +
 	    // TRANSLATORS: help f4, '-&gt;' is actually '->' in HTML
 	    _("<p>If you want to change more patches at once, you can also use
 <b>Change Status-&gt;All Listed Patches...-&gt;Enable/Disable</b></p>") +
 	    // TRANSLATORS: help f5, '-&gt;' is actually '->' in HTML
 	    _("<p>To exclude all patches of a selected type from the <tt>testing</tt>
-snapshot, use <b>Change Status-&gt;Exclude from Testing...</b>.
+snapshot, use <b>Change Status-&gt;Exclude from Snapshot...</b>.
 Such patch cannot be enabled unless you remove the filter again.</p>") +
 	    _("<p>To create <tt>testing</tt> or <tt>production</tt> snapshots
 click <b>Create Snapshot...-&gt;Testing/Production Snapshot</b>.</p>"),
