@@ -53,20 +53,23 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-    print basename($0) . " [name] [target]: " . __("Enable or disable mirroring of a catalog\n");
-    print "   --enable-mirror   (-e) :     " . __("enable catalog mirorring for \$catalog\n");
-    print "   --disable-mirror  (-d) :     " . __("disable catalog mirroring for \$catalog\n");
-    print "   --enable-by-prod  (-p) arg : " . __("enable catalog mirroring by giving product data\n");
+    # can't use basename($0) because if called via the smt-catalogs symlink
+    # smt-catalogs would be shown - that would not inform the user about
+    # renaming of the script
+    print "smt-repos [name] [target]: " . __("Enable or disable mirroring of a repository\n");
+    print "   --enable-mirror   (-e) :     " . __("enable repository mirorring for \$repository\n");
+    print "   --disable-mirror  (-d) :     " . __("disable repository mirroring for \$repository\n");
+    print "   --enable-by-prod  (-p) arg : " . __("enable repository mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
-    print "   --disable-by-prod  arg :     " . __("disable catalog mirroring by giving product data\n");
+    print "   --disable-by-prod  arg :     " . __("disable repository mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
-    print "   --enable-staging       :     " . __("Enable staging for a catalog\n");
-    print "   --disable-staging      :     " . __("Disable staging for a catalog\n");
-    print "   --only-mirrorable (-m) :     " . __("only show mirrorable catalogs\n");
-    print "   --only-enabled    (-o) :     " . __("only show catalogs set to be mirrored\n");
-    print "   --verbose         (-v) :     " . __("show detailed catalog information\n");
+    print "   --enable-staging       :     " . __("Enable staging for a repository\n");
+    print "   --disable-staging      :     " . __("Disable staging for a repository\n");
+    print "   --only-mirrorable (-m) :     " . __("only show mirrorable repositories\n");
+    print "   --only-enabled    (-o) :     " . __("only show repositories set to be mirrored\n");
+    print "   --verbose         (-v) :     " . __("show detailed repository information\n");
     print "   --help            (-v) :     " . __("show this help\n");
     exit 0;
 }
@@ -236,7 +239,7 @@ if ( ! defined $disable && ! defined $enable &&
 
 if ( $count == 0 )
 {
-    die __(sprintf("no catalog named %s\n", $name));
+    die __(sprintf("no repository named %s\n", $name));
 }
 elsif ( $count == 1 )
 {
@@ -244,19 +247,21 @@ elsif ( $count == 1 )
     if ( $disable || $enable )
     {
         my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
-        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
+        # FIXME this should use gettext for variable mutliplicity
+        print sprintf(__("%d Repo(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
         exit 0;
     }
     elsif( $disableStaging || $enableStaging)
     {
         my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[0]);
-        print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+        # FIXME this should use gettext for variable mutliplicity
+        print sprintf(__("%d Repo(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
         exit 0;
     }
 }
 else
 {
-    print __(sprintf("Select catalog number (or all) to change,  (1-". $count.",a) :") );
+    print __(sprintf("Select repository number (or all) to change,  (1-". $count.",a) :") );
 
     my $answer = <STDIN>;
     chomp($answer);
@@ -266,13 +271,15 @@ else
         if ( $disable || $enable )
         {
             my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
-            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
+            # FIXME this should use gettext for variable mutliplicity
+            print sprintf(__("%d Repo(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
             exit 0;
         }
         elsif( $disableStaging || $enableStaging)
         {   
             my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, name => $name, target => $target);
-            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+            # FIXME this should use gettext for variable mutliplicity
+            print sprintf(__("%d Repo(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
             exit 0;
         }
     }
@@ -283,13 +290,15 @@ else
         if ( $disable || $enable )
         {
             my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
-            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
+            # FIXME this should use gettext for variable mutliplicity
+            print sprintf(__("%d Repo(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
             exit 0;
         }
         elsif( $disableStaging || $enableStaging)
         {
             my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[$number-1]);
-            print sprintf(__("%d Catalog(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+            # FIXME this should use gettext for variable mutliplicity
+            print sprintf(__("%d Repo(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
             exit 0;
         }
     }
@@ -307,15 +316,15 @@ exit 0;
 
 =head1 NAME
 
-smt catalogs -  
+smt repos -  
 
 =head1 SYNOPSIS
 
-smt catalogs [options] [name] [target]
+smt repos [options] [name] [target]
 
 =head1 DESCRIPTION
 
-C<smt catalogs> shows information about known catalogs allowing filtering by varous criteria, and allows to activate or deactivate catalogs for mirroring.
+C<smt repos> shows information about known repositories allowing filtering by varous criteria, and allows to activate or deactivate repositories for mirroring.
 
 =head1 OPTIONS
 
@@ -326,38 +335,38 @@ C<smt catalogs> shows information about known catalogs allowing filtering by var
 
 =item [name]
 
-Filters by catalog name.
+Filters by repository name.
 
 =item [target]
 
-Additionally to catalog name, filter by catalog target.
+Additionally to repository name, filter by repository target.
 
 =item --enable-mirror -e
 
-Enables mirroring of a catalog.
+Enables mirroring of a repository.
 
 =item --disable-mirror -d
 
-Disables mirroring of a catalog.
+Disables mirroring of a repository.
 
 =item --enable-by-prod -p arg
 
-Enables catalog mirroring by giving product data.
+Enables repository mirroring by giving product data.
 
 Product[,Version[,Architecture[,Release]]]
 (call smt list-products to get a list of known products)
 
 =item --only-mirrorable -m
 
-Shows mirrorable catalogs only.
+Shows mirrorable repositories only.
 
 =item --only-enabled -o 
 
-Shows catalogs set to be mirrored only.
+Shows repositories set to be mirrored only.
 
 =item --verbose -v
 
-Shows detailed catalog information.
+Shows detailed repository information.
 
 =head1 AUTHORS and CONTRIBUTORS
 
