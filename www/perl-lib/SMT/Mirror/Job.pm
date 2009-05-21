@@ -764,10 +764,10 @@ sub copyFromLocalIfAvailable
             $otherpath = $existingpath->[0];
         }
     }
-    
+
     # try to get the file location from the full source URI (if file://)
 
-    if (not defined $otherpath || ! $otherpath || ! -e $otherpath)
+    if (! defined $otherpath || ! $otherpath || ! -e $otherpath)
     {
         $otherpath = $self->fullUri2local();
     }
