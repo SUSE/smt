@@ -74,8 +74,6 @@ done
 /usr/share/YaST2/control/smt_control.xml
 
 # ... and icons (again)
-%dir @themedir@
-%dir @themedir@/current
 %dir @themedir@/current/icons
 %dir @themedir@/current/icons/16x16/
 %dir @themedir@/current/icons/16x16/apps/
