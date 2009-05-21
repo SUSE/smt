@@ -400,7 +400,7 @@ sub CreateSnapshot ($) {
 
     # 'signingKeyID' should be used, passphrase is set
     if (defined $arg->{'key'} && defined $arg->{'passphrase'}) {
-	y2milestone ("Using signing key ID: %1", $arg->{'key'});
+	y2milestone ("Using signing key ID: ", $arg->{'key'});
 
 	# 'signingKeyPassphrase' (from smt.conf is not defined) but it came as a parameter
 	if (! defined $passphrase) {
@@ -485,6 +485,31 @@ sub GetStagingAllowed ($) {
     return (GetStagingAllowedInternal($arg) ? YCP_TRUE:YCP_FALSE);
 }
 
+sub AdjustRepository ($) {
+    my $arg = shift || {};
+
+    my $repositoryid = $arg->{'repositoryid'} || do {
+	y2error ('Parameter repositoryid must be defined');
+	return undef;
+    };
+
+    if (! defined $arg->{'mirroring'} && ! defined $arg->{'staging'}) {
+	y2error ('Parameters staging or mirroring must be defined');
+	return undef;
+    }
+
+    LoadRepositoryData ($repositoryid);
+
+    my $repo_args = {
+	'repositoryid' => $arg->{'repositoryid'},
+    };
+
+    $repo_args->{'mirroring'}	= $arg->{'mirroring'}	if (defined $arg->{'mirroring'});
+    $repo_args->{'staging'}	= $arg->{'staging'}	if (defined $arg->{'staging'});
+
+    return ($repositories->changeRepoStatus($repo_args) ? YCP_TRUE:YCP_FALSE);
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -521,6 +546,8 @@ while (<STDIN>) {
 	    ycp::Return (ChangeCategoryFilterStatus ($arg));
 	} elsif ($path eq '.staging.snapshot') {
 	    ycp::Return (CreateSnapshot ($arg));
+	} elsif ($path eq '.repository.set') {
+	    ycp::Return (AdjustRepository ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}

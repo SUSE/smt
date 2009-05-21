@@ -1624,14 +1624,15 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	    return nil;
 	}
 
-	string selected_change = nil;
+	map <string, any> cmd_params = $["repositoryid":current_id];
 	integer col_to_change = 0;
+	boolean new_state = (current_state == false);
 
 	if (entry == "mirroring") {
-	    selected_change = (current_state == true ? "--disable-mirror":"--enable-mirror");
+	    cmd_params["mirroring"] = new_state;
 	    col_to_change = 2;
 	} else if (entry == "staging") {
-	    selected_change = (current_state == true ? "--disable-staging":"--enable-staging");
+	    cmd_params["staging"] = new_state;
 	    col_to_change = 3;
 	} else {
 	    y2error ("Unknown entry to change: %1", entry);
@@ -1640,39 +1641,14 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	    return nil;
 	}
 
-	string catalog_ident = nil;
-
-	if (catalogs_info[current_id, "name"]:"" == nil) {
-	    y2error ("Erroneous entry: %1 (no name)", catalogs_info[current_id]:$[]);
-	    // pop-up error message
-	    Report::Error (_("Internal Error: Cannot toggle the current state."));
-	} else {
-	    catalog_ident = sformat ("'%1'", String::Quote (catalogs_info[current_id, "name"]:""));
-	}
-
-	if (catalogs_info[current_id, "target"]:"" != "") {
-	    catalog_ident = sformat ("%1 '%2'", catalog_ident, String::Quote (catalogs_info[current_id, "target"]:""));
-	}
-
-	string cmd = sformat ("LC_ALL=C /usr/sbin/smt-catalogs --batch-mode %1 %2",
-	    selected_change,
-	    catalog_ident
-	);
-
-	// bussy message
-	boolean uio = (boolean) UI::OpenDialog (`Label ("Toggling catalog state..."));
-
-	// FIXME: use SCR agent (Repositories.pm)
-	boolean success = ((integer) SCR::Execute (.target.bash, cmd) == 0);
-	y2milestone ("Running >%1< returned: %2", cmd, success);
-
-	if (uio == true) UI::CloseDialog();
+	boolean success = (boolean) SCR::Write (.smt.repository.set, cmd_params);
+	y2milestone ("Adjusting repository %1: %2", cmd_params, success);
 
 	if (success != true) {
 	    Report::Error (_("Internal Error: Cannot toggle the current state."));
 	} else {
 	    // Switch the current state
-	    current_state = ! current_state;
+	    current_state = (current_state == false);
 	    catalogs_info[current_id, entry] = current_state;
 	    UI::ChangeWidget (`id(`catalogs_table), `Item (current_id, col_to_change), (current_state == true ? yes:no));
 	}
