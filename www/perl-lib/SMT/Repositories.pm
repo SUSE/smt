@@ -69,6 +69,9 @@ STAGING_FALSE
 REPOSITORYID
     Defines ID to match a repository
 
+REPOSITORIES
+    Table containing repositories
+
 =back
 
 =cut
@@ -90,6 +93,7 @@ use constant {
     STAGING_FALSE	=> 'N',
 
     REPOSITORYID	=> 'CATALOGID',
+    REPOSITORIES	=> 'Catalogs',
 
     VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
 };
@@ -102,7 +106,7 @@ use constant {
 
 Constructor. Logfile parameter is optional.
 
-my $repo = SMT::Repositories ($dbh, $logfile);
+ my $repo = SMT::Repositories ($dbh, $logfile);
 
 =cut
 
@@ -167,17 +171,17 @@ accessing the database until getAllRepositories() with filters is called.
 
 Examples:
 
-# Returns list of all repositories than can be mirrored
-$repo->getAllRepositories ({
-    SMT::Repositories::MIRRORABLE => SMT::Repositories::MIRRORABLE_TRUE,
-});
+ # Returns list of all repositories than can be mirrored
+ $repo->getAllRepositories ({
+     SMT::Repositories::MIRRORABLE => SMT::Repositories::MIRRORABLE_TRUE,
+ });
 
-# Returns list of all repositories that are being mirrored
-# and have Staging feature enabled.
-$repo->getAllRepositories ({
-    SMT::Repositories::MIRRORING => SMT::Repositories::MIRRORING_TRUE,
-    SMT::Repositories::STAGING => SMT::Repositories::STAGING_TRUE,
-});
+ # Returns list of all repositories that are being mirrored
+ # and have Staging feature enabled.
+ $repo->getAllRepositories ({
+     SMT::Repositories::MIRRORING => SMT::Repositories::MIRRORING_TRUE,
+     SMT::Repositories::STAGING => SMT::Repositories::STAGING_TRUE,
+ });
 
 =cut
 
@@ -258,8 +262,8 @@ sub getRepository($$)
 Returns relative path of given repository (ID). The path is relative to the
 directory given in the LOCAL.MirrorTo option in smt.conf.  
 
-$repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
-    -> '$RCE/SLE11-SDK-Updates/sle-11-x86_64'
+ $repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
+     -> '$RCE/SLE11-SDK-Updates/sle-11-x86_64'
 
 =cut
 
@@ -285,8 +289,8 @@ sub getRepositoryPath ($$) {
 
 Returns source URL of given repository (ID).  
 
-$repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
-    -> 'http://download.opensuse.org/update/11.1'
+ $repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
+     -> 'http://download.opensuse.org/update/11.1'
 
 =cut
 
@@ -370,7 +374,7 @@ sub stagingAllowed($$$)
 Updates the time of last mirroring in the database. Returns 0 on failure and 1
 on success.
 
-$success = updateLastMirror('86fed7f9cee6d69dddabd721436faa7c63b8b403');
+ $success = updateLastMirror('86fed7f9cee6d69dddabd721436faa7c63b8b403');
 
 =cut
 
@@ -418,10 +422,10 @@ If $basepath is specified, it is prependend to the resulting path, otherwise
 the portion of the path relative to a base path is returned. The returned path
 always starts with a slash.
 
-$repohandler = SMT::Repositories::new($dbh);
-$basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
-$repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
-$thepath = $repohandler->getProductionRepoPath($repoid, $basepath);
+ $repohandler = SMT::Repositories::new($dbh);
+ $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
+ $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
+ $thepath = $repohandler->getProductionRepoPath($repoid, $basepath);
 
 =cut
 
@@ -441,10 +445,10 @@ If $basepath is specified, it is prependend to the resulting path, otherwise
 the portion of the path relative to a base path is returned. The returned path
 always starts with a slash.
 
-$repohandler = SMT::Repositories::new($dbh);
-$basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
-$repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
-$thepath = getFullRepoPath($repoid, $basepath); 
+ $repohandler = SMT::Repositories::new($dbh);
+ $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
+ $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
+ $thepath = getFullRepoPath($repoid, $basepath); 
 
 =cut
 
@@ -464,16 +468,90 @@ If $basepath is specified, it is prependend to the resulting path, otherwise
 the portion of the path relative to a base path is returned. The returned path
 always starts with a slash.
 
-$repohandler = SMT::Repositories::new($dbh);
-$basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
-$repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
-$thepath = getTestingRepoPath($repoid, $basepath); 
+ $repohandler = SMT::Repositories::new($dbh);
+ $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
+ $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
+ $thepath = getTestingRepoPath($repoid, $basepath); 
 
 =cut
 
 sub getTestingRepoPath($$$)
 {
     getStagingRepoPath(shift, shift, shift, 'testing');
+}
+
+=item changeRepoStatus ($arg)
+
+Adjusts repository status, such as 'mirroring' or 'staging'.
+
+ $repohandler = SMT::Repositories::new($dbh);
+ $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
+ $repohandler->changeRepoStatus({ 'repositoryid' => $repoid, 'mirroring' => 1 })
+
+=over
+
+=item Required parameters:
+
+repositoryid
+ Identifies a repository
+
+=item Optional parameters:
+
+mirroring
+ Defines whether a repository should be mirrored
+
+staging
+ Defines whether a repository should support a staging feature
+
+=back
+
+=cut
+
+sub changeRepoStatus ($$)
+{
+    my $self = shift;
+    my $arg = shift || {};
+
+    if (! defined $arg->{'repositoryid'})
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+	    __("Parameter 'repositoryid' is required"));
+	return 0;
+    }
+
+    if (! defined $arg->{'mirroring'} && ! defined $arg->{'staging'})
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_WARN,
+	    __("Neither 'mirroring' nor 'staging' parameter is defined"));
+	return 1;
+    }
+
+    my $update_columns = '';
+    my $where_plus = '';
+
+    # 'mirroring' parameter
+    if (defined $arg->{'mirroring'}) {
+	$update_columns .= ' '.MIRRORING.'='.$self->{'dbh'}->quote($arg->{'mirroring'} ?
+	    MIRRORING_TRUE:MIRRORING_FALSE);
+	# only mirrorable repositories can be mirrored
+	$where_plus .= ' AND '.MIRRORABLE.'='.$self->{'dbh'}->quote(MIRRORABLE_TRUE);
+    }
+
+    # staging parameter
+    if (defined $arg->{'staging'}) {
+	$update_columns .= ' '.STAGING.'='.$self->{'dbh'}->quote($arg->{'staging'} ?
+	    STAGING_TRUE:STAGING_FALSE);
+    }
+
+    my $cmd = 'UPDATE '.REPOSITORIES.' '.
+	'SET '.$update_columns.' '.
+	'WHERE '.REPOSITORYID.'='.$self->{'dbh'}->quote($arg->{'repositoryid'}).' '.
+	$where_plus;
+
+    my $sth = $self->{'dbh'}->prepare($cmd);
+    $sth->execute();
+
+    return ($sth->rows() > 0);
 }
 
 =back

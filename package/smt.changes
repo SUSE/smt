@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu May 21 17:11:25 CEST 2009 - locilka@suse.cz
+
+- Extended SMT::Repositories module to allow to switch mirroring
+  and staging directly.
+
+-------------------------------------------------------------------
 Thu May 21 16:22:34 CEST 2009 - jkupec@suse.cz
 
 - smt-catalogs renamed to smt-repos, smt-catalogs is now symlink
