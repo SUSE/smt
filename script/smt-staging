@@ -275,7 +275,7 @@ elsif ($command eq 'createrepo')
     $mirror->localBasePath($basepath);
     $mirror->localRepoPath($localtargetrepopath);
 
-    my $errcnt = $mirror->mirror();
+    my $errcnt = $mirror->mirror(force => 1);
     if ($errcnt)
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, 'Something went wrong');
