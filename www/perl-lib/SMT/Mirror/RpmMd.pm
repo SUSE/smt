@@ -392,6 +392,12 @@ If set to 1, only the metadata are downloaded to a temporary directory and all
 files which are outdated are reported. After this is finished, the directory 
 containing the metadata is removed.
 
+=item force
+
+If set to 1, the mirroring will be forced even if the target seems to be
+up to date with the source. Use full to when mirroring with filters and the
+only thing changed is the filter.
+
 =item keyid
 
 ID of the GPG key to use to sign the metadata (repomd.xml file) in case they
@@ -410,18 +416,21 @@ sub mirror()
     my $self = shift;
     my %options = @_;
     my $dryrun  = 0;
-    my $keyid = undef;
+    my $keyid   = undef;
     my $keypass = undef;
+    my $force   = 0;
 
     my $isYum = (ref($self) eq "SMT::Mirror::Yum");
     my $t0 = [gettimeofday] ;
-    
+
     $dryrun = 1
         if(exists $options{dryrun} && defined $options{dryrun} && $options{dryrun});
     $keyid = $options{keyid}
         if(exists $options{keyid} && defined $options{keyid} && $options{keyid});
     $keypass = $options{keypass}
         if(exists $options{keypass} && defined $options{keypass});
+    $force = 1
+        if(exists $options{force} && defined $options{force} && $options{force});
 
     # reset the counter
     $self->resetStatistics();
@@ -489,13 +498,13 @@ sub mirror()
         }
     }
 
-    if ( !$job->outdated() && $verifySuccess )
+    if ( !$force && !$job->outdated() && $verifySuccess )
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
         return 0;
     }
-    # else $outdated or verify failed; we must download repomd.xml
+    # else if $outdated, forced, or verify failed; we must download repomd.xml
 
     # copy repodata to .repodata 
     # we do not want to damage the repodata until we
