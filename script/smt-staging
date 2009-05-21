@@ -17,6 +17,12 @@ use SMT::Mirror::Utils;
 use SMT::Mirror::RpmMd;
 use SMT::Parser::RpmMdPatches;
 
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR "Unable to drop privileges. Abort!\n";
+    exit 1;
+}
+
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug    = 0;
 my $logfile = "/dev/null";
