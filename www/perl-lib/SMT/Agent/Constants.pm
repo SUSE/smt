@@ -32,6 +32,15 @@ use constant LOG_FILE		=> '/tmp/smtclient.log';
 # client config file
 use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smtclient';
 
+# smt client credenitials file containing guid (SLE11)
+use constant CREDENTIALS_FILE	=> '/etc/zypp/credentials.d/NCCcredentials';
 
+# smt client credentials files (SLE10)
+use constant DEVICEID_FILE	=> '/etc/zmd/deviceid';
+use constant SECRET_FILE	=> '/etc/zmd/secret';
+
+# network location and realm used for authentication
+use constant AUTH_NETLOC => 'netloc';
+use constant AUTH_REALM => 'realm';
 
 1;

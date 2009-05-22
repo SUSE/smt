@@ -55,6 +55,7 @@ sub updatejob
   my $xmljob = XMLout($job, rootname => "job");
 
   my $ua = LWP::UserAgent->new;
+  $ua->protocols_allowed( [ 'https'] );
 
   my $response = $ua->request(POST SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid,
     'Content-Type' => 'text/xml',
@@ -82,8 +83,9 @@ sub getjob
 {
   my ($id) = @_;
 
-
   my $ua = LWP::UserAgent->new;
+  $ua->protocols_allowed( [ 'https'] );
+
   my $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id); 
   if (! $response->is_success )
   {
@@ -101,6 +103,9 @@ sub getjob
 sub getnextjob
 {
   my $ua = LWP::UserAgent->new;
+  $ua->protocols_allowed( [ 'https'] );
+  $ua->credentials( SMT::Agent::Constants::AUTH_NETLOC, SMT::Agent::Constants::AUTH_REALM, SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret() );
+
   my $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
 
   if (! $response->is_success )

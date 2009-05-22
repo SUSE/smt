@@ -4,6 +4,7 @@ package SMT::Agent::Utils;
 use strict;
 use warnings;
 use SMT::Agent::Constants;
+use SMT::Agent::Utils;
 use IO::File;
 use IPC::Open3;
 use constant false => 0;
@@ -136,5 +137,6 @@ sub isAgentAllowed
   return ( $allowedagents =~ /^(.*\s+)*$agent(\s+.*)*$/ );
 
 }
+
 
 1;
