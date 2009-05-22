@@ -4,6 +4,7 @@ Fri May 22 11:56:43 CEST 2009 - locilka@suse.cz
 - Mirroring (creating snapshot) is always forced - even if the
   repository is up-to-date, filters can change the metadata.
 - Added checking whether a repository is up to date.
+- Showing the repository status in UI.
 
 -------------------------------------------------------------------
 Thu May 21 10:11:12 CEST 2009 - locilka@suse.cz

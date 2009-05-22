@@ -200,10 +200,14 @@
 
     term StagingTableContent () {
 	return `VBox (
-	    `Left (`HSquash (`HBox (
-		`ReplacePoint (`id (`catalogs_rp), `ComboBox (`id (`catalogs), _("Repository &Name"), [])),
-		`ComboBox (`id (`category_filter), `opt (`notify), _("&Patch Category"), GetPatchCategoryItems())
-	    ))),
+	    `HBox (
+		`HSquash (`HBox (
+		    `ReplacePoint (`id (`catalogs_rp), `ComboBox (`id (`catalogs), _("Repository &Name"), [])),
+		    `ComboBox (`id (`category_filter), `opt (`notify), _("&Patch Category"), GetPatchCategoryItems())
+		)),
+		`HStretch(),
+		`VBox (`ReplacePoint (`id (`repo_details), `Empty()))
+	    ),
 	    `Table (
 		`id (`patches_table),
 		`opt (`hstretch, `vstretch, `notify, `immediate),
@@ -1081,7 +1085,6 @@ Enter your SMT server URL in the following format: http:://server.name/
 
 	// No patch listed, no patch selected
 	if (sel_patchid == nil || sel_patchid == "") {
-	    // informative message
 	    UI::ChangeWidget (`id (`patch_details), `Value, _("There are no patches available in this repository."));
 	    return;
 	}
@@ -1113,6 +1116,24 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    `id (`patch_details), `Value,
 	    FormatHTMLPatchDescription (patch_description)
 	);
+    }
+
+    void UpdateRepoDetails () {
+	list <string> additional_info = [];
+
+	if ((boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":selected_catalog, "type":"testing"]) != true) {
+	    additional_info = add (additional_info, _("Testing snapshot is not up-to-date"));
+	}
+
+	if ((boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":selected_catalog, "type":"production"]) != true) {
+	    additional_info = add (additional_info, _("Production snapshot is not up-to-date"));
+	}
+
+	if (size (additional_info) > 0) {
+	    UI::ReplaceWidget (`id (`repo_details), `Label (`opt (`boldFont), mergestring (additional_info, "\n")));
+	} else {
+	    UI::ReplaceWidget (`id (`repo_details), `Empty());
+	}
     }
 
     /**
@@ -1194,6 +1215,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    UI::ChangeWidget (`id (`patches_table), `CurrentItem, current_item);
 
 	RedrawPatchesDetails();
+	UpdateRepoDetails();
     }
 
     void InitStagingTableDialog (string id) {
@@ -1486,6 +1508,8 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	if (ret != true)
 	    // a pop-up error message
 	    Report::Error (_("An error has occurred while creating the snapshot."));
+
+	UpdateRepoDetails();
 
 	return ret;
     }
