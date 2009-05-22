@@ -19,7 +19,6 @@ use SMT::Agent::Utils;
 # args: jobid, success, message 
 sub updatejob
 {
-  return;
   my ($jobid, $success, $message, $stdout, $stderr, $returnvalue) =  @_;
 
   SMT::Agent::Utils::logger( "updating job $jobid ($success) $message", $jobid);
@@ -36,11 +35,13 @@ sub updatejob
   my $xmljob = XMLout($job, rootname => "job");
 
   my $ua = createUserAgent();
-  my $response; 
-  eval { $response = $ua->request(POST SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid,
-    'Content-Type' => 'text/xml',
-     Content        => $xmljob
-  ); };
+  my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid ,
+	  'Content-Type' => 'text/xml',
+          Content        => $xmljob );
+  $req->header( 'If-SSL-Cert-Subject' => SMT::Agent::Constants::CERT_SUBJECT );
+
+  my $response ;
+  eval { $response = $ua->request( $req ); };
   SMT::Agent::Utils::error ( "Unable to update job : $@" )              if ( $@ );
 
   if (! $response->is_success )
@@ -65,11 +66,12 @@ sub getjob
   my ($id) = @_;
 
   my $ua = createUserAgent();
+  my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id);
+  $req->header( 'If-SSL-Cert-Subject' => SMT::Agent::Constants::CERT_SUBJECT );
+  my $response ;
+  eval { $response = $ua->request( $req ); };
+  SMT::Agent::Utils::error ( "Unable to request job $id : $@" )              if ( $@ );
 
-  my $response;
-  
-  eval { $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id); }; 
-  SMT::Agent::Utils::error ( "Unable to request  job $id: $@" )              if ( $@ );
   if (! $response->is_success )
   {
     SMT::Agent::Utils::error( "Unable to request job $id: " . $response->status_line . "-" . $response->content );
@@ -87,16 +89,11 @@ sub getnextjob
 {
   my $ua = createUserAgent() ;
 
-#  my $ua = LWP::UserAgent->new;
-#  $ua->protocols_allowed( [ 'https'] );
-#  $ua->credentials( SMT::Agent::Constants::AUTH_NETLOC, SMT::Agent::Constants::AUTH_REALM, SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret() );
   my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
-#  $req->header('If-SSL-Cert-Subject' => '/CN=make-it-fail.tld');
-
+  $req->header( 'If-SSL-Cert-Subject' => SMT::Agent::Constants::CERT_SUBJECT );
   my $response ;
   eval { $response = $ua->request( $req ); };
   SMT::Agent::Utils::error ( "Unable to request next job : $@" )              if ( $@ );
-
 
   if (! $response->is_success )
   {
@@ -248,6 +245,8 @@ sub createUserAgent
 
     # set timeout to the same value as the iChain timeout
     $ua->timeout(130);
+
+    $ua->credentials( SMT::Agent::Constants::AUTH_NETLOC, SMT::Agent::Constants::AUTH_REALM, SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret() );
 
     return $ua;
 }

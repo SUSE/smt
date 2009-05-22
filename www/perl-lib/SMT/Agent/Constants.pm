@@ -43,4 +43,7 @@ use constant SECRET_FILE	=> '/etc/zmd/secret';
 use constant AUTH_NETLOC => 'netloc';
 use constant AUTH_REALM => 'realm';
 
+# ssl cert subject
+use constant CERT_SUBJECT => '/CN=e221.suse.de';
+
 1;
