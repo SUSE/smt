@@ -131,7 +131,7 @@ sub isAgentAllowed
 {
   my $agent = shift;
 
-  my $allowedagents = SMT::Agent::Config::getSyconfigValue( "ALLOWED_AGENTS" );
+  my $allowedagents = SMT::Agent::Config::getSysconfigValue( "ALLOWED_AGENTS" );
   return false if (!defined $allowedagents );
 
   return ( $allowedagents =~ /^(.*\s+)*$agent(\s+.*)*$/ );

@@ -7,3 +7,6 @@
 # List of allowed agents that can be called via SMT job queue
 #
 ALLOWED_AGENTS="softwarepush patchstatus"
+
+#HTTPS_PROXY="https://proxy:8080"
+#PROXY_USER="user:password"

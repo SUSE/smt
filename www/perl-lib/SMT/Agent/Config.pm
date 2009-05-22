@@ -68,7 +68,7 @@ sub readSmtUrl
 };
 
 
-sub getSyconfigValue
+sub getSysconfigValue
 {
   my $key  = shift;
   my $val  = undef;
@@ -146,19 +146,62 @@ sub readCredentials
 }
 
 
+sub getProxySettings
+{
+    my $httpsProxy = SMT::Agent::Config::getSysconfigValue( "HTTPS_PROXY" );
+    my $proxyUser  = SMT::Agent::Config::getSysconfigValue( "PROXY_USER" );
+    
+    $httpsProxy = undef if(defined $httpsProxy && $httpsProxy =~ /^\s*$/);
+    $proxyUser  = undef if(defined $proxyUser  && $proxyUser =~ /^\s*$/);
+    
+    if(! defined $httpsProxy)
+    {
+        if(exists $ENV{https_proxy} && defined $ENV{https_proxy} && $ENV{https_proxy} =~ /^http/)
+        {
+            # required for Crypt::SSLeay HTTPS Proxy support
+            $httpsProxy = $ENV{https_proxy};
+        }
+    }
+
+    # strip trailing /
+    $httpsProxy  =~ s/\/*$// if(defined $httpsProxy);
+
+    if(! defined $proxyUser)
+    {
+        if( -r "/root/.curlrc")
+        {
+            # read /root/.curlrc
+            open(RC, "< /root/.curlrc") or return ($httpsProxy, undef);
+            while(<RC>)
+            {
+                if($_ =~ /^\s*proxy-user\s*=\s*"(.+)"\s*$/ && defined $1 && $1 ne "")
+                {
+                    $proxyUser = $1;
+                }
+                elsif($_ =~ /^\s*--proxy-user\s+"(.+)"\s*$/ && defined $1 && $1 ne "")
+                {
+                    $proxyUser = $1;
+                }
+            }
+            close RC;
+        }
+    }
+    else
+    {
+        if($proxyUser =~ /^\s*"?(.+)"?\s*$/ && defined $1)
+        {
+            $proxyUser = $1;
+        }
+        else 
+        {
+            $proxyUser = undef;
+        }
+    }
+
+    return ($httpsProxy, $proxyUser);
+}
+
+
 
 1;
 
-
-
-
-
-
-
-
-
-
-
-
-
-1;

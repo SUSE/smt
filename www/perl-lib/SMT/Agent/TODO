@@ -1,4 +1,2 @@
 change http type from POST to PUT in agent's update command 
-test server certificate on ssl handshake
 submit clientid and password
-configure which jobs are allowed to run

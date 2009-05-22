@@ -14,25 +14,6 @@ use SMT::Agent::Utils;
 
 
 
-
-##############################################################################          
-# exit with error                                                                        
-# args: message, jobid                                                                   
-sub error                                                                                
-{                                                                                        
-  my ( $message, $jobid ) =  @_;                                                         
-                                                                                         
-  if ( defined ($jobid ) )                                                               
-  {                                                                                      
-    SMT::Agent::Utils::logger ("let's tell the server that $jobid failed");                                 
-    updatejob ( $jobid, "false", $message );                                             
-  }                                                                                      
-  SMT::Agent::Utils::logger ("ERROR: $message", $jobid);                                 
-  die "Error: $message\n";                                                               
-};                                                                                       
-                                                                                         
-                                                                                         
-
 ###############################################################################
 # updates status of a job on the smt server
 # args: jobid, success, message 
@@ -54,19 +35,19 @@ sub updatejob
   };
   my $xmljob = XMLout($job, rootname => "job");
 
-  my $ua = LWP::UserAgent->new;
-  $ua->protocols_allowed( [ 'https'] );
-
-  my $response = $ua->request(POST SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid,
+  my $ua = createUserAgent();
+  my $response; 
+  eval { $response = $ua->request(POST SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid,
     'Content-Type' => 'text/xml',
      Content        => $xmljob
-  );
+  ); };
+  SMT::Agent::Utils::error ( "Unable to update job : $@" )              if ( $@ );
 
   if (! $response->is_success )
   {
     # Do not pass the jobid to the error() because that 
     # causes an infinit recursion
-    error( "Unable to update job: " . $response->status_line . "-" . $response->content );
+    SMT::Agent::Utils::error( "Unable to update job: " . $response->status_line . "-" . $response->content );
   }
   else
   {
@@ -83,13 +64,15 @@ sub getjob
 {
   my ($id) = @_;
 
-  my $ua = LWP::UserAgent->new;
-  $ua->protocols_allowed( [ 'https'] );
+  my $ua = createUserAgent();
 
-  my $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id); 
+  my $response;
+  
+  eval { $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id); }; 
+  SMT::Agent::Utils::error ( "Unable to request  job $id: $@" )              if ( $@ );
   if (! $response->is_success )
   {
-    error( "Unable to request job $id: " . $response->status_line . "-" . $response->content );
+    SMT::Agent::Utils::error( "Unable to request job $id: " . $response->status_line . "-" . $response->content );
   }
 
   return $response->content;
@@ -102,15 +85,22 @@ sub getjob
 # returns: job description in xml
 sub getnextjob
 {
-  my $ua = LWP::UserAgent->new;
-  $ua->protocols_allowed( [ 'https'] );
-  $ua->credentials( SMT::Agent::Constants::AUTH_NETLOC, SMT::Agent::Constants::AUTH_REALM, SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret() );
+  my $ua = createUserAgent() ;
 
-  my $response = $ua->request(GET SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
+#  my $ua = LWP::UserAgent->new;
+#  $ua->protocols_allowed( [ 'https'] );
+#  $ua->credentials( SMT::Agent::Constants::AUTH_NETLOC, SMT::Agent::Constants::AUTH_REALM, SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret() );
+  my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
+#  $req->header('If-SSL-Cert-Subject' => '/CN=make-it-fail.tld');
+
+  my $response ;
+  eval { $response = $ua->request( $req ); };
+  SMT::Agent::Utils::error ( "Unable to request next job : $@" )              if ( $@ );
+
 
   if (! $response->is_success )
   {
-    error( "Unable to request next job: " . $response->status_line . "-" . $response->content );
+    SMT::Agent::Utils::error( "Unable to request next job: " . $response->status_line . "-" . $response->content );
   }
 
   return $response->content;
@@ -126,7 +116,7 @@ sub parsejob
 {
   my $xmldata = shift;
 
-  error( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
+  SMT::Agent::Utils::error( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
 
   my $job;
   my $jobid;
@@ -135,8 +125,8 @@ sub parsejob
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  error ( "unable to parse xml: $@" )              if ( $@ );
-  error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
+  SMT::Agent::Utils::error ( "unable to parse xml: $@" )              if ( $@ );
+  SMT::Agent::Utils::error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
 
   # retrieve variables
   $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
@@ -144,9 +134,9 @@ sub parsejob
   $jobargs = $job->{arguments} if ( defined ( $job->{arguments} ));
 
   # check variables
-  error ( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
-  error ( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
-  error ( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
+  SMT::Agent::Utils::error ( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
+  SMT::Agent::Utils::error ( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
+  SMT::Agent::Utils::error ( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
 
   SMT::Agent::Utils::logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
 
@@ -161,15 +151,15 @@ sub parsejobid
 {                                                                              
   my $xmldata = shift;                                                         
 
-  error ( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
+  SMT::Agent::Utils::error ( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
 
   my $job;
   my $jobid;
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  error ( "unable to parse xml: $@" )              if ( $@ );
-  error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' ) ) );
+  SMT::Agent::Utils::error ( "unable to parse xml: $@" )              if ( $@ );
+  SMT::Agent::Utils::error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' ) ) );
 
   # retrieve variables
   $jobid = $job->{id} if ( defined ( $job->{id} ) && ( $job->{id} =~ /^[0-9]+$/ ) );
@@ -178,5 +168,89 @@ sub parsejobid
 };
 
 
-1;
 
+sub createUserAgent
+{
+    my %opts = @_;
+    
+    my $user = undef;
+    my $pass = undef;
+
+    my ($httpsProxy, $proxyUser) = SMT::Agent::Config::getProxySettings();
+    
+    if(defined $proxyUser)
+    {
+        ($user, $pass) = split(":", $proxyUser, 2);
+    }
+    
+    if(defined $httpsProxy)
+    {
+        # required for Crypt::SSLeay HTTPS Proxy support
+        $ENV{HTTPS_PROXY} = $httpsProxy;
+        
+        if(defined $user && defined $pass)
+        {
+            $ENV{HTTPS_PROXY_USERNAME} = $user;
+            $ENV{HTTPS_PROXY_PASSWORD} = $pass;
+        }
+        elsif(exists $ENV{HTTPS_PROXY_USERNAME} && exists $ENV{HTTPS_PROXY_PASSWORD})
+        {
+            delete $ENV{HTTPS_PROXY_USERNAME};
+            delete $ENV{HTTPS_PROXY_PASSWORD};
+        }
+    }
+
+    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
+    
+    # uncomment, if you want SSL debuging
+    #$ENV{HTTPS_DEBUG} = 1;
+
+    {
+        package RequestAgent;
+        @RequestAgent::ISA = qw(LWP::UserAgent);
+        
+        sub new
+        {
+            my($class, $puser, $ppass, %cnf) = @_;
+            
+            my $self = $class->SUPER::new(%cnf);
+            
+            bless {
+                   puser => $puser,
+                   ppass => $ppass
+                  }, $class;
+        }
+
+        sub get_basic_credentials
+        {
+            my($self, $realm, $uri, $proxy) = @_;
+            
+            if($proxy)
+            {
+                if(defined $self->{puser} && defined $self->{ppass})
+                {
+                    return ($self->{puser}, $self->{ppass});
+                }
+            }
+            return (undef, undef);
+        }
+    }
+
+    my $ua = RequestAgent->new($user, $pass, %opts);
+
+    $ua->protocols_allowed( [ 'https' ] );
+
+
+    # required to workaround a bug in LWP::UserAgent
+    $ua->no_proxy();
+
+    $ua->max_redirect(2);
+
+    # set timeout to the same value as the iChain timeout
+    $ua->timeout(130);
+
+    return $ua;
+}
+
+
+1;
