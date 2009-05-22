@@ -4,7 +4,8 @@ package SMT::Repositories;
 use strict;
 use warnings;
 
-use SMT::Utils; 
+use SMT::Utils;
+use SMT::Mirror::Utils;
 
 =head1 NAME
 
@@ -552,6 +553,88 @@ sub changeRepoStatus ($$)
     $sth->execute();
 
     return ($sth->rows() > 0);
+}
+
+=item isSnapshotUpToDate($args)
+
+=over
+
+=item Required parameters:
+
+repositoryid
+ Identifies a repository
+
+basepath
+ Defines the the base SMT path
+
+type
+ Defines a subrepository type ('testing' or 'production')
+
+=back
+
+=cut
+
+sub isSnapshotUpToDate ($)
+{
+    my $self = shift;
+    my $arg = shift || {};
+
+    # Checking all the parameters
+    if (! defined $arg->{'repositoryid'})
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"));
+	return undef;
+    }
+
+    if (! defined $arg->{'basepath'})
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'basepath' is required"));
+	return undef;
+    }
+
+    if (! defined $arg->{'type'})
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'type' is required"));
+	return undef;
+    }
+
+    # Define the paths to full and selected subrepositories
+    my $full_repopath = $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+    my $subrepo_path = undef;
+
+    if ($arg->{'type'} eq 'testing')
+    {
+	$subrepo_path = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+    }
+    elsif ($arg->{'type'} eq 'production')
+    {
+	$subrepo_path = $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+    }
+    else
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, sprintf (__("Unknown type %s"), $arg->{'type'}));
+	return undef;
+    }
+
+    my $timestamp_full = SMT::Mirror::Utils::getStatus($full_repopath);
+    my $timestamp_subrepo = SMT::Mirror::Utils::getStatus($subrepo_path);
+
+    if (! defined $timestamp_full || $timestamp_full eq '')
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_WARN, sprintf (__("Cannot get repository status %s"), $full_repopath));
+	return undef;
+    }
+
+    if (! defined $timestamp_subrepo || $timestamp_subrepo eq '')
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, sprintf (__("Cannot get repository status %s"), $subrepo_path));
+	return undef;
+    }
+
+    # $timestamp_full > $timestamp_subrepo -> full subrepo is newer
+    # $timestamp_full < $timestamp_subrepo -> full subrepo is older (nonsense)
+    # $timestamp_full = $timestamp_subrepo -> the same age
+    return ($timestamp_subrepo == $timestamp_full);
 }
 
 =back

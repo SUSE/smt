@@ -7,6 +7,10 @@ use File::Copy;
 
 use SMT::Utils;
 
+use constant {
+    TIMESTAMP_FILE => '.mirror',
+};
+
 =item saveStatus($path)
 
 Saves mirror status in the .mirror file under $path. $path must be
@@ -20,7 +24,7 @@ sub saveStatus($)
     my $repopath = shift;
     return 0 if (not $repopath || not -d $repopath);
 
-    my $mirrorfile = $repopath.'/.mirror';
+    my $mirrorfile = $repopath.'/'.TIMESTAMP_FILE;
     unlink $mirrorfile if (-e $mirrorfile);
 
     # Creates a .mirror file in the root of a repository 
@@ -60,17 +64,47 @@ sub copyStatus($$)
     my ($from, $to) = @_;
 
     # check for .mirror file in full repo
-    return 0 if (not defined $from || not $from || not -e $from.'/.mirror');
+    return 0 if (not defined $from || not $from || not -e $from.'/'.TIMESTAMP_FILE);
     return 0 if (not defined $to || not $to || not -d $to);
 
-    return 1 if File::Copy::copy($from.'/.mirror', $to.'/.mirror');
+    return 1 if File::Copy::copy($from.'/'.TIMESTAMP_FILE, $to.'/'.TIMESTAMP_FILE);
     return 0;
 }
 
-# from path
+=item getStatus($path)
+
+Gets saved mirror status from the .mirror file under $path. $path must be
+the full local path to the mirrored repository.
+
+Returns a timestamp of the last mirroring of a repository.
+
+=cut
 sub getStatus($)
 {
-    
+    my $from = shift;
+    return undef if (! defined $from || $from eq '' || ! -d $from);
+
+    my $read_timestamp =  $from.'/'.TIMESTAMP_FILE;
+    return 0 if (! -e $read_timestamp || ! -r $read_timestamp);
+
+    open TIMESTAMP, $read_timestamp || return 0;
+    my $ret = <TIMESTAMP>;
+    close TIMESTAMP;
+
+    $ret =~ s/^([0-9]+).*/$1/;
+    return $ret;
 }
+
+=head1 NOTES 
+ 
+=head1 AUTHOR 
+ 
+jkupec@suse.cz, locilka@suse.cz
+ 
+=head1 COPYRIGHT 
+ 
+Copyright 2009 SUSE LINUX Products GmbH, Nuernberg, Germany. 
+ 
+=cut
 
 1;

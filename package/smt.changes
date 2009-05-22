@@ -3,6 +3,7 @@ Thu May 21 17:11:25 CEST 2009 - locilka@suse.cz
 
 - Extended SMT::Repositories module to allow to switch mirroring
   and staging directly.
+- Added functions for checking whether subrepository is up to date.
 
 -------------------------------------------------------------------
 Thu May 21 16:22:34 CEST 2009 - jkupec@suse.cz
