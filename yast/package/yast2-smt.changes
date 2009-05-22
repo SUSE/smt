@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri May 22 11:56:43 CEST 2009 - locilka@suse.cz
+
+- Mirroring (creating snapshot) is always forced - even if the
+  repository is up-to-date, filters can change the metadata.
+
+-------------------------------------------------------------------
 Thu May 21 10:11:12 CEST 2009 - locilka@suse.cz
 
 - Fixed RPM conflict using a dependency on yast2_theme that creates

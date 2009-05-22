@@ -395,12 +395,13 @@ sub CreateSnapshot ($) {
     $mirror->localBasePath($fph->{$repositoryid}->{'paths'}->{'base'});
     $mirror->localRepoPath($fph->{$repositoryid}->{'paths'}->{$type});
 
-    my %args = ();
+    # Forcing mirroring
+    my %args = ('force' => 1);
     my $passphrase_cached = 0;
 
     # 'signingKeyID' should be used, passphrase is set
     if (defined $arg->{'key'} && defined $arg->{'passphrase'}) {
-	y2milestone ("Using signing key ID: ", $arg->{'key'});
+	y2milestone ("Using signing key ID: ".$arg->{'key'});
 
 	# 'signingKeyPassphrase' (from smt.conf is not defined) but it came as a parameter
 	if (! defined $passphrase) {
@@ -409,7 +410,8 @@ sub CreateSnapshot ($) {
 	    $passphrase_cached = 1;
 	}
 
-	%args = (keyid => $arg->{'key'}, keypass => $passphrase);
+	$args{keyid}	= $arg->{'key'};
+	$args{keypass}	= $passphrase;
     }
 
     # And GO!
