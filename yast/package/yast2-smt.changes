@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon May 25 13:06:13 CEST 2009 - locilka@suse.cz
+
+- Fixed requires and build-requires.
+
+-------------------------------------------------------------------
 Fri May 22 11:56:43 CEST 2009 - locilka@suse.cz
 
 - Mirroring (creating snapshot) is always forced - even if the

@@ -21,6 +21,8 @@ Requires:	smt >= 1.1.7
 Requires:	hicolor-icon-theme
 # any YaST theme
 Requires:	yast2_theme
+# 'current'
+PreReq:		yast2-branding
 
 # This YaST tool configures SMT (cron, apache2)
 Recommends:	mysql
@@ -34,6 +36,8 @@ BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-t
 BuildRequires:	hicolor-icon-theme
 # any YaST theme
 BuildRequires:	yast2_theme
+# build must not have any choice, using package that provides 'yast2-branding'
+BuildRequires:	yast2-branding-SLES
 
 BuildArchitectures:	noarch
 
