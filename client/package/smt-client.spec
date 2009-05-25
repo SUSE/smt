@@ -78,12 +78,21 @@ mkdir -p $RPM_BUILD_ROOT/var/log/smt-client
 mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt/
 mkdir -p $RPM_BUILD_ROOT/var/lib/smt
 
+# touching the ghost
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.d/
+touch $RPM_BUILD_ROOT/%{_sysconfdir}/cron.d/novell.com-smt-client
+
 # ---------------------------------------------------------------------------
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
 
-%post 
+
+%post
+if [ ! -s /etc/cron.d/novell.com-smt-client ]; then
+    minute=`expr $RANDOM % 60`
+    echo "$minute */3 * * * /usr/sbin/smt-agent" > %{_sysconfdir}/cron.d/novell.com-smt-client
+fi
 %{fillup_only}
 exit 0
 
@@ -99,5 +108,7 @@ exit 0
 %dir /usr/lib/perl5/vendor_perl/5.10.0/SMT
 /usr/lib/SMT/bin/processjob
 /var/adm/fillup-templates/sysconfig.smt-client
+%ghost %{_sysconfdir}/cron.d/novell.com-smt-client
+
 
 %changelog
