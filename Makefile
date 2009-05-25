@@ -91,7 +91,7 @@ install:
 	install -m 755 script/smt $(DESTDIR)/usr/sbin/
 	install -m 755 script/smt-* $(DESTDIR)/usr/sbin/
 	if [ -e $(DESTDIR)/usr/sbin/smt-catalogs ]; then rm -f $(DESTDIR)/usr/sbin/smt-catalogs; fi
-	ln -s $(DESTDIR)/usr/sbin/smt-repos $(DESTDIR)/usr/sbin/smt-catalogs
+	ln -s smt-repos $(DESTDIR)/usr/sbin/smt-catalogs
 	install -m 644 www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	install -m 644 www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Support.pm $(DESTDIR)/srv/www/perl-lib/SMT/

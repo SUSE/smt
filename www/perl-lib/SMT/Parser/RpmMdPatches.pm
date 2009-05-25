@@ -44,6 +44,18 @@ Patch filter object (SMT::Filter). If specified, matching patches are discarded
 from the result. Additionaly, if output writer is specified, filtered
 updateinfo.xml is written to this writer (patches.xml is not written).
 
+=item savefiltered
+
+Remember filtered patches. These will be available via filtered() method after
+calling parse().
+
+This option affects only updateinfo.xml.
+
+=item savepackages
+
+This option affects only updateinfo.xml.
+
+
 =item out
 Output writer used to write filtered updateinfo.xml.
 
@@ -64,6 +76,9 @@ sub new
 
     $self->{PATCHES} = {};
     $self->{FILTER} = undef;
+    $self->{SAVE_FILTERED} = 0;
+    $self->{FILTERED} = {};
+    $self->{SAVE_PACKAGES} = 0;
     $self->{OUT} = undef;
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
@@ -88,6 +103,16 @@ sub new
     if(exists $opt{out} && defined $opt{out})
     {
         $self->{OUT} = $opt{out};
+    }
+
+    if(exists $opt{savefiltered} && defined $opt{savefiltered} && $opt{savefiltered})
+    {
+        $self->{SAVE_FILTERED} = $opt{savefiltered};
+    }
+
+    if(exists $opt{savepackages} && defined $opt{savepackages} && $opt{savepackages})
+    {
+        $self->{SAVE_PACKAGES} = $opt{savepackages};
     }
 
     bless($self);
@@ -357,6 +382,10 @@ sub handle_end_tag
             # remove the patch if it matches current filter
             if (defined $self->{FILTER} && $self->{FILTER}->matches($self->{PATCHES}->{$str}))
             {
+                if ($self->{SAVE_FILTERED})
+                {
+                    $self->{FILTERED}->{$str} = $self->{PATCHES}->{$str};
+                }
                 delete($self->{PATCHES}->{$str});
             }
             # write out the original XML string of current patch
@@ -437,6 +466,12 @@ sub handle_the_end
         print {$self->{OUT}} $self->{CURRENT}->{ORIGXML} . $line;
         $self->{CURRENT}->{ORIGXML} = ""
     }
+}
+
+sub filtered()
+{
+    my $self = shift;
+    return $self->{FILTERED};
 }
 
 =back
