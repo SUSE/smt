@@ -1,0 +1,48 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use IPC::Open3;
+use SMT::Agent::Constants;
+use SMT::Agent::Utils;
+use XML::Simple;
+use UNIVERSAL 'isa';
+
+#use SMT::Agent::RestXML;
+#use Data::Dumper;
+
+sub jobhandler
+{
+  my %retval;
+  my ($jobtype, $jobid, $args) =  @_;
+
+  SMT::Agent::Utils::logger ("jobhandler for eject called", $jobid);
+  SMT::Agent::Utils::logger ("patchstatus runs jobid \"$jobid\"", $jobid);
+
+  # check whether this handler can handle requested jobtype
+  SMT::Agent::Utils::error ("wrong job handler: \"eject\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "eject" );
+
+  #==  run zypper ==
+
+  my $command = "/bin/eject";
+  my @cmdArgs;
+  push (@cmdArgs, "-T");			
+
+  (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
+
+  SMT::Agent::Utils::error ("eject failed", $jobid) if ( $retval != 0 );
+
+  return (
+    stdout => defined ( $stdout )? $stdout : "",
+    stderr => defined ( $stderr )? $stderr : "",
+    returnvalue => $retval,
+    success => ($retval == 0 ) ? "true" : "false",
+    message => ($retval == 0 ) ? "eject successfully finished" : "eject failed"
+  );
+
+
+}
+
+SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"eject\"");
+
+1;
+
