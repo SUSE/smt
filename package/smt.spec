@@ -53,7 +53,6 @@ Summary:        Subscription Management Tool
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.apache2-smt
 Source2:        smt-rpmlintrc
-Source3:        sysconfig.smt-client
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -93,20 +92,10 @@ Prereq:         smt = %version
 %description support
 This package contains proxy for support data
 
-%package client
-License:        GPL v2 or later
-Summary:        SMT client
-Group:          Productivity/Networking/Web/Proxy
-#Prereq:         smt = %version
-
-%description client
-This package contains a client for smt
-
 
 %prep
 %setup -n %{name}-%{version}
 cp -p %{S:1} .
-cp -p %{S:3} .
 # ---------------------------------------------------------------------------
 
 %build
@@ -134,7 +123,6 @@ make DESTDIR=$RPM_BUILD_ROOT install_conf
 
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
-install -m 644 sysconfig.smt-client  $RPM_BUILD_ROOT/var/adm/fillup-templates/
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
 cd man
 for manp in smt*.1; do
@@ -162,10 +150,6 @@ fi
 
 %post
 %{fillup_only -ans apache2 smt}
-exit 0
-
-%post client
-%{fillup_only}
 exit 0
 
 %postun
@@ -215,12 +199,9 @@ exit 0
 %exclude /srv/www/perl-lib/SMT/Support.pm
 /usr/sbin/smt-*
 %exclude /usr/sbin/smt-support
-%exclude /usr/sbin/smt-agent
 /usr/sbin/smt
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
-%exclude /usr/lib/SMT/bin/job
-%exclude /usr/lib/SMT/bin/processjob 
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
@@ -241,16 +222,6 @@ exit 0
 %config /etc/smt.d/smt_support.conf
 %dir %attr(775, smt, www)/var/spool/smt-support
 %doc %attr(644, root, root) %{_mandir}/man1/smt-support.1.gz
-
-%files client
-%defattr(-,root,root)
-%dir %{perl_vendorlib}/SMT/Agent
-%{perl_vendorlib}/SMT/Agent/*.pm
-/usr/sbin/smt-agent
-%dir /usr/lib/SMT/bin/job/
-%dir /usr/lib/SMT/bin/job/*
-/usr/lib/SMT/bin/processjob
-/var/adm/fillup-templates/sysconfig.smt-client
 
 %changelog
 * Thu Dec 04 2008 - mc@suse.de

@@ -78,7 +78,6 @@ install:
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Parser
-	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Agent
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
@@ -99,7 +98,6 @@ install:
 	install -m 644 www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
 	install -m 644 www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
-	install -m 644 www/perl-lib/SMT/Agent/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Agent/
 	install -m 644 www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
 	install -m 644 www/perl-lib/SMT/Filter.pm $(DESTDIR)$(PERLMODDIR)/SMT/
@@ -135,9 +133,6 @@ install:
 	install -m 755 cron/smt-gen-report $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-repeated-register $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 644 logrotate/smt $(DESTDIR)/etc/logrotate.d/
-	install -m 755 script/processjob $(DESTDIR)/usr/lib/SMT/bin/
-	install -m 755 script/softwarepush $(DESTDIR)/usr/lib/SMT/bin/job
-	install -m 755 script/patchstatus $(DESTDIR)/usr/lib/SMT/bin/job
 
 	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/smt/
