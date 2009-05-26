@@ -7,9 +7,78 @@ use UNIVERSAL 'isa';
 use SMT::Utils;
 
 
+=pod
+=head1 Client.pm - SMT Client API
+
+=over Query the SMT database for client information
+
+=item Usage
+
+All getClient[^s]* (except the '_internal' one) can be used to query the SMT database
+for client information. The parameter for functions ending with "ByID" or "ByGUID" 
+is the "ID" resp. the "GUID".
+
+For queries on all clients ( getClients* ) the parameter is a filter hash. This hash
+may contain the the keys that should be selected. If a value is assinged to the key,
+the result will be filtered. Only DB entries with the fieldname matching the value
+will be selected.
+
+The patchstatus query string is different. It is a set of 4 values separated by one
+colon. Each value may be an exact number to query or an empty string if it should
+not be filtered by that value. Or it may be a string like "<100" or ">0", so its
+value will be checked if it is lower than or greater that the given number.
+The 4 sets represent the pending patches for 1. the packagemanager, 2. security 
+updates, 3. recommended updates, 4. optional updates, in this order.
+If a string does not match a valid search pattern, undef will be returned.
+
+Patchstatus Query String Example:  ":>0::<100"
+  This queries for clients that have more than 0 security patches and less than
+  100 optional patches.
+
+
+Query Example: getClientsInfo({ 'GUID'        => '',
+                                'TARGET'      => 'foobar'
+                                'LASTCONTACT' => '' })
+  This queries all clients for their GUID, TARGET and LASTCONTACT information where
+  the TARGET equals 'foobar'.
+
+Possible query keys are:
+  ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE PATCHSTATUS
+
+
+
+The return value for all functions is a hash of hashes. The key is always the client ID 
+(not GUID) and the value-hash is a hash similar to the filter hash. This is also valid for
+the functions that only select information about one client. Only the patchstatus information
+is split into 4 separate keys: PATCHSTATUS_P for packagemanager, PATCHSTATUS_S for security
+updates, PATCHSTATUS_R for recommended updates and PATCHSTATUS_O for optional patches.
+
+The return value is empty for empty search results and it is undef for invaild 
+search queries.
+
+
+All current functions are:
+* getClientsInfo_internal($)      -  only internal usage
+* getClientsInfo($)               -  query all clients, filter the result; most generic function
+* getClientInfoByGUID($)          -  get one client's by GUID
+* getClientInfoByID($)            -  get one client's info by ID
+* getAllClientsInfo()             -  return all clients with all information
+* getClientGUIDByID($)            -  get the client's GUID by its ID
+* getClientIDByGUID($)            -  get the client's ID by its GUID
+* getClientPatchstatusByID($)     -  get one client's patchstatus by ID
+* getClientPatchstatusByGUID($)   -  get one client's patchstatus by GUID
+
+
+=back
+
+=cut
+
+
+
+
 
 #
-# small internal function to see if a string is in an array
+# small internal function to check if a string is in an array
 #
 sub in_Array($$)
 {
@@ -23,6 +92,7 @@ sub in_Array($$)
     }
     return 0;
 }
+
 
 #
 # parse Patchstatus Query String
@@ -39,10 +109,10 @@ sub parsePatchstatusQuery($)
     # check if general pattern matches: 4 strings separated by colon (empty string is ok)
     if ($q =~ /^([^:]*):([^:]*):([^:]*):([^:]*)$/)
     {
-        @fields = ( defined $1 ? "$1":"",
-                    defined $2 ? "$2":"",
-                    defined $3 ? "$3":"",
-                    defined $4 ? "$4":"",  );
+        @fields = ( defined $1 ? "$1":'',
+                    defined $2 ? "$2":'',
+                    defined $3 ? "$3":'',
+                    defined $4 ? "$4":'',  );
     }
     else
     {
@@ -62,6 +132,7 @@ sub parsePatchstatusQuery($)
                 # if not lower or greater is defined it means equal
                 $op = (defined $1) ? "$1":"=";
                 # create where statement snippet
+# FIXME adapt to database changes
                 push(@whereClause, " ( md.KEYNAME = \"$KEYS[$i]\" AND md.VALUE  $op $2 ) ");
             }
             elsif ( defined $fields[$i] )
@@ -71,7 +142,7 @@ sub parsePatchstatusQuery($)
             }
         }
     }
-
+# FIXME adapt to database changes
     return " md.TYPE = 1 AND ( " . join(" OR ", @whereClause) . " ) ";
 
 }
@@ -120,6 +191,29 @@ sub createSQLStatement($$)
         }
     }
 
+#####################
+
+    if ( exists ${$filter}{'PATCHSTATUS'} && defined ${$filter}{'PATCHSTATUS'} )
+    {
+        my $patchstatusQuery = parsePatchstatusQuery(${$filter}{'PATCHSTATUS'});
+        if ( defined $patchstatusQuery )
+        {
+## FIXME adapt to database changes
+            $patchstatusSelect = '';
+            $patchstatusFrom = " , MachineData md ";
+            push(@wherestr, " md.GUID = cl.GUID ");
+            push(@wherestr, $patchstatusQuery);
+        
+
+            foreach my $res (${$result})
+            {
+            ###  TODO
+            
+            }
+        }
+    }
+
+#####################
  
     if ( exists ${$filter}{'selectOnly'}  &&  defined ${$filter}{'selectOnly'} )
     {
@@ -136,11 +230,10 @@ sub createSQLStatement($$)
 }
 
 
-
 #
 # perform a select for client information - internal function
 #
-sub getAllClients_internal($)
+sub getClientsInfo_internal($)
 {
     my $dbh = my $dbh = SMT::Utils::db_connect();
     if ( !$dbh )
@@ -157,30 +250,12 @@ sub getAllClients_internal($)
     return undef unless defined $sql;
 
 
-
     my $result = $dbh->selectall_hashref($sql, 'ID');
     return undef unless defined $result;
 
-    if ( exists ${$filter}{'PATCHSTATUS'} && defined ${$filter}{'PATCHSTATUS'} )
-    {
-        my $patchstatusQuery = parsePatchstatusQuery(${$filter}{'PATCHSTATUS'});
-        if ( defined $patchstatusQuery )
-        {
-            $patchstatusSelect = '';
-            $patchstatusFrom = " , MachineData md ";
-            push(@wherestr, " md.GUID = cl.GUID ");
-            push(@wherestr, $patchstatusQuery);
-        
+    # TODO integrate patchstatus information
 
-            foreach my $res (${$result})
-            {
-            ###  TODO
-            
-            }
-        }
-    }
-
-
+    return $result;
 }
 
 
@@ -195,7 +270,7 @@ sub getClientsInfo($)
 {
     my $filter = shift || {};
     return undef unless ( isa($filter, 'HASH') );  
-    return getAllClientsInfo_internal($filter);
+    return getClientsInfo_internal($filter);
 }
 
 
@@ -210,7 +285,7 @@ sub getClientInfoByGUID($)
 {
     my $guid = shift || "";
     return undef unless (defined $guid && $guid !~ //);
-    return getAllClientsInfo_internal({'GUID' => $guid});
+    return getClientsInfo_internal({'GUID' => $guid});
 }
 
 
@@ -225,21 +300,7 @@ sub getClientInfoByID($)
 {
     my $id = shift || '';
     return undef unless (defined $id && $id !~ //);
-    return getAllClientsInfo_internal({'ID' => $id});
-}
-
-
-#
-# getClientsInfo
-#   query all clients for information filtered by filter
-#   parameters
-#    $filter (hash) : filter for the query
-#
-sub getClientsInfo($)
-{
-    my $filter = shift || {};
-    return undef unless ( isa($filter, 'HASH') );  
-    return getAllClientsInfo_internal($filter);
+    return getClientsInfo_internal({'ID' => $id});
 }
 
 
@@ -250,8 +311,9 @@ sub getClientsInfo($)
 #
 sub getAllClientsInfo()
 {
-    return getAllClientsInfo_internal({});
+    return getClientsInfo_internal({});
 }
+
 
 #
 # getClientGUIDByID
@@ -261,9 +323,10 @@ sub getClientGUIDByID($)
 {
     my $id = shift || "";
     return undef unless (defined $id && $id !~ //);
-    return getAllClientsInfo_internal({ 'ID' => $id,
+    return getClientsInfo_internal({ 'ID' => $id,
                                         'selectOnly' => 'GUID'  });
 }
+
 
 #
 # getClientIDByGUID
@@ -273,11 +336,30 @@ sub getClientIDByGUID($)
 {
     my $guid = shift || "";
     return undef unless (defined $guid && $guid !~ //);
-    return getAllClientsInfo_internal({ 'GUID' => $guid,
+    return getClientsInfo_internal({ 'GUID' => $guid,
                                         'selectOnly' => 'ID'  });
 }
 
 
+#
+# getPatchstatusByID
+#   get a client's patchstatus via its ID
+#   parameter: ID
+#
+sub getClientPatchstatusByID($)
+{
+    # TODO redirect to internal function with fitting filter
+}
+
+
+#
+# getPatchstatusByGUID
+#   get a client's patchstatus via its GUID
+#   parameter: GUID
+sub getClientPatchstatusByGUID($)
+{
+    # TODO redirect to internal function with fitting filter
+}
 
 
 1;
