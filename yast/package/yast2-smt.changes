@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue May 26 11:12:12 CEST 2009 - locilka@suse.cz
+
+- Checking the system (permissions) also in installation
+  (bnc #507022).
+
+-------------------------------------------------------------------
 Mon May 25 13:06:13 CEST 2009 - locilka@suse.cz
 
 - Fixed requires and build-requires.

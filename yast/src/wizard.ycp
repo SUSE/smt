@@ -305,7 +305,7 @@
 	    ],
 	    "main" : $[
 		`abort      : `abort,
-		`next       : "write"
+		`next       : "check"
 	    ],
 	    "check" : $[
 		`abort	: `abort,
