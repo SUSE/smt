@@ -7,9 +7,6 @@ use SMT::Agent::Utils;
 use XML::Simple;
 use UNIVERSAL 'isa';
 
-#use SMT::Agent::RestXML;
-#use Data::Dumper;
-
 sub jobhandler
 {
   my %retval;

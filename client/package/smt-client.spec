@@ -1,5 +1,5 @@
 #
-# spec file for package smt-client (
+# spec file for package smt-client
 #
 # Copyright (c) 2008,2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -19,16 +19,15 @@
 
 
 Name:           smt-client
-#BuildRequires:  apache2 apache2-mod_perl swig
 Version:        0.0.1
 Release:        0.1
 Requires:       perl = %{perl_version}
-Requires:       perl-Crypt-SSLeay
 Requires:       perl-Config-IniFiles
-Requires:       perl-XML-Parser
-Requires:       perl-XML-Writer
+Requires:       perl-XML-Simple
+Requires:	perl-base
+Requires:	perl-libwww-perl
 Requires:       logrotate
-PreReq:         %fillup_prereq apache2 apache2-mod_perl pwdutils
+PreReq:         %fillup_prereq 
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
 License:        GPL v2 or later
@@ -54,22 +53,10 @@ cp -p %{S:1} .
 
 %build
 make
-#mkdir man
-#cd script
-#for prog in smt* smt*.pod; do #processes *.pod twice, but this way they are processed after the real scripts and thir data does not get rewritten
-#    progfile=`echo "$prog" | sed 's/\(.*\)\.pod/\1/'`
-#    if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" $prog > $prog.$$$$ ; then
-#        perl -p -e 's/.if n .na/.\\\".if n .na/;' $prog.$$$$ > ../man/$progfile.1;
-#    fi
-#    rm -f $prog.$$$$
-#done
-#rm smt*.pod #don't package .pod-files
-#cd -
 
 %install
 
 make DESTDIR=$RPM_BUILD_ROOT DOCDIR=%{_docdir} install
-#make DESTDIR=$RPM_BUILD_ROOT install_conf
 
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.smt-client  $RPM_BUILD_ROOT/var/adm/fillup-templates/

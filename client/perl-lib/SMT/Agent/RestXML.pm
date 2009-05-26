@@ -6,7 +6,6 @@ use HTTP::Request;
 use HTTP::Request::Common;
 use LWP::UserAgent;
 use XML::Simple;
-use Data::Dumper;
 use UNIVERSAL 'isa';
 use SMT::Agent::Constants;
 use SMT::Agent::Config;
