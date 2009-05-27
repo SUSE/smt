@@ -56,6 +56,24 @@ updates, PATCHSTATUS_R for recommended updates and PATCHSTATUS_O for optional pa
 The return value is empty for empty search results and it is undef for invaild 
 search queries.
 
+The return value for the above example might look like this:
+$hashOfHashes =  {
+    '42' => {
+                'ID'   => '42',
+                'GUID' => 'guid42',
+                'TARGET' => 'foobar',
+                'LASTCONTACT' => '2009-05-25 16:43:07'
+            },
+    '83' => {
+                'ID'   => '83',
+                'GUID' => 'guid83',
+                'TARGET' => 'foobar',
+                'LASTCONTACT' => '2009-05-26 17:32:52'
+            }
+  }
+
+
+
 
 All current functions are:
 * getClientsInfo_internal($)      -  only internal usage
