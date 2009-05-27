@@ -251,7 +251,7 @@ sub getClientsInfo_internal($)
     return undef unless defined $sql;
 
     ## NOTE: This can be used for testing/debugging
-    ## NOTE: will only return the generated SQL statement but evaluate it
+    ## NOTE: will only return the generated SQL statement but not evaluate it
     #return $sql;
 
     return $dbh->selectall_hashref($sql, 'ID');
