@@ -188,9 +188,9 @@ create table JobQueue ( ID          INTEGER UNSIGNED NOT NULL,
                         PRIMARY KEY (ID, GUID_ID)
                       );
 
-create table Patchstatus ( CLIENT_ID    INTEGER UNSIGEND NOT NULL PRIMARY KEY,
-                           PKGMGR       INTEGER UNSIGNED NULL default 0,
-                           SECURITY     INTEGER UNSIGNED NULL default 0,
-                           RECOMMENDED  INTEGER UNSIGNED NULL default 0,
-                           OPTIONAL     INTEGER UNSIGNED NULL default 0
+create table Patchstatus ( CLIENT_ID    INTEGER UNSIGNED NOT NULL PRIMARY KEY,
+                           PKGMGR       INTEGER UNSIGNED NOT NULL default 0,
+                           SECURITY     INTEGER UNSIGNED NOT NULL default 0,
+                           RECOMMENDED  INTEGER UNSIGNED NOT NULL default 0,
+                           OPTIONAL     INTEGER UNSIGNED NOT NULL default 0
                          );
