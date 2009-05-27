@@ -97,12 +97,13 @@ sub in_Array($$)
 #
 # parse Patchstatus Query String
 #
-sub parsePatchstatusQuery($)
+sub createPatchstatusQuery($$)
 {
     my $q = shift || return undef;
+    my $dbh = shift || return undef;
 
     # these are the hardcoded keys for the MachineData table for the patchstatus (where TYPE is 1)
-    @KEYS = qw[PSp PSs PSr PSo];
+    @KEYS = qw[PKGMGR SECURITY RECOMMENDED OPTIONAL];
     my @fields = ();
     my @whereClause = ();
 
@@ -125,26 +126,32 @@ sub parsePatchstatusQuery($)
     {
         for ($i=0 ; $i<4 ; $i++)
         {
+            # match valid query string and empty string (skip if empty)
             if ( $fields[$i] =~ /^([<>])?(\d+)?$/ )
             {
                 # if no number is given skip to next
                 next unless defined $2;
                 # if not lower or greater is defined it means equal
-                $op = (defined $1) ? "$1":"=";
+                # $op should not be $dbh->quoted so make sure only  <, >, = are possible 
+                $op = (defined $1) ?  ($1 eq '>' ? '>':'<' ) : '=';
                 # create where statement snippet
-# FIXME adapt to database changes
-                push(@whereClause, " ( md.KEYNAME = \"$KEYS[$i]\" AND md.VALUE  $op $2 ) ");
+                push(@whereClause, sprintf(" ps.$KEYS[$i] $op %s ", $dbh->quote($2) ));
             }
             elsif ( defined $fields[$i] )
             {
-                # TODO log error: print "error on filter $STAT[$i]: $cut[$i]\n";
+                # TODO log error: print "error in patchstatus query filter\n";
                 return undef;
             }
         }
     }
-# FIXME adapt to database changes
-    return " md.TYPE = 1 AND ( " . join(" OR ", @whereClause) . " ) ";
+    else
+    {   # with the code above this else block will never be accessed
+        # TODO log error: print "error in creating the patchstatus query\n";
+        return undef;
+    }
 
+    # create where statement snippet for the patchstatus values
+    return join(' AND ', @whereClause);
 }
 
 
@@ -175,6 +182,7 @@ sub createSQLStatement($$)
 
     my @select = ();
     my @where = ();
+    my @from  = (' Clients cl ');
     my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
 
     # parse the filter hash
@@ -183,48 +191,42 @@ sub createSQLStatement($$)
     {
         if ( exists ${$filter}{$prop} )
         {
-            push (@select, "$prop as cl.$prop");
+            push (@select, " cl.$prop ");
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} ne '' )
             {
-                push (@where, " cl.$prop LIKE \"" . $dbh->quote(${$filter}{$prop}) . "\" ");
+                push( @where, " cl.$prop LIKE \"" . $dbh->quote(${$filter}{$prop}) . "\" " );
             }        
         }
     }
 
-#####################
-
-    if ( exists ${$filter}{'PATCHSTATUS'} && defined ${$filter}{'PATCHSTATUS'} )
+    # add query for patchstatus if defined
+    if ( exists ${$filter}{'PATCHSTATUS'}  &&  defined ${$filter}{'PATCHSTATUS'} )
     {
-        my $patchstatusQuery = parsePatchstatusQuery(${$filter}{'PATCHSTATUS'});
-        if ( defined $patchstatusQuery )
-        {
-## FIXME adapt to database changes
-            $patchstatusSelect = '';
-            $patchstatusFrom = " , MachineData md ";
-            push(@wherestr, " md.GUID = cl.GUID ");
-            push(@wherestr, $patchstatusQuery);
-        
+        # parse and create the patchstatus query
+        my $patchstatusQuery = createPatchstatusQuery(${$filter}{'PATCHSTATUS'}, $dbh);
+        return undef unless defined $patchstatusQuery;
 
-            foreach my $res (${$result})
-            {
-            ###  TODO
-            
-            }
-        }
+        push( @from,  ' Patchstatus ps ');
+        push( @select ' ps.PKGMGR      as PATCHSTATUS_P ');
+        push( @select ' ps.SECURITY    as PATCHSTATUS_S ');
+        push( @select ' ps.RECOMMENDED as PATCHSTATUS_R ');
+        push( @select ' ps.OPTIONAL    as PATCHSTATUS_O ');
+
+        push( @where, ' cl.ID = ps.CLIENT_ID ');
+        push( @where, $patchstatusQuery);
     }
-
-#####################
  
     if ( exists ${$filter}{'selectOnly'}  &&  defined ${$filter}{'selectOnly'} )
     {
         @select = $dbh->quote(${$filter}{'selectOnly'}) if ( in_Array(${$filter}{'selectOnly'}, \@PROPS) );
-        push (@select, 'ID') unless ( in_Array('ID', \@select) );
+        push( @select, 'ID' ) unless ( in_Array('ID', \@select) );
     }
 
     my $selectstr = join(', ', @select);
+    my $fromstr   = join(', ', @from);
     my $wherestr  = join(' AND ', @where);
 
-    my $sqlstatement = " select $selectstr from Clients cl $patchstatusFrom where $wherestr ";
+    my $sqlstatement = " select  $selectstr  from  $fromstr  where  $wherestr ";
 
     return $sqlstatement;
 }
@@ -252,8 +254,6 @@ sub getClientsInfo_internal($)
 
     my $result = $dbh->selectall_hashref($sql, 'ID');
     return undef unless defined $result;
-
-    # TODO integrate patchstatus information
 
     return $result;
 }
@@ -284,7 +284,7 @@ sub getClientsInfo($)
 sub getClientInfoByGUID($)
 {
     my $guid = shift || "";
-    return undef unless (defined $guid && $guid !~ //);
+    return undef unless (defined $guid && $guid !~ /^$/);
     return getClientsInfo_internal({'GUID' => $guid});
 }
 
@@ -299,7 +299,7 @@ sub getClientInfoByGUID($)
 sub getClientInfoByID($)
 {
     my $id = shift || '';
-    return undef unless (defined $id && $id !~ //);
+    return undef unless (defined $id && $id !~ /^$/);
     return getClientsInfo_internal({'ID' => $id});
 }
 
@@ -322,7 +322,7 @@ sub getAllClientsInfo()
 sub getClientGUIDByID($)
 {
     my $id = shift || "";
-    return undef unless (defined $id && $id !~ //);
+    return undef unless (defined $id && $id !~ /^$/);
     return getClientsInfo_internal({ 'ID' => $id,
                                         'selectOnly' => 'GUID'  });
 }
@@ -335,7 +335,7 @@ sub getClientGUIDByID($)
 sub getClientIDByGUID($)
 {
     my $guid = shift || "";
-    return undef unless (defined $guid && $guid !~ //);
+    return undef unless (defined $guid && $guid !~ /^$/);
     return getClientsInfo_internal({ 'GUID' => $guid,
                                         'selectOnly' => 'ID'  });
 }
@@ -348,7 +348,10 @@ sub getClientIDByGUID($)
 #
 sub getClientPatchstatusByID($)
 {
-    # TODO redirect to internal function with fitting filter
+    my $id = shift || '';
+    return undef unless (defined $id && $id !~ /^$/);
+    return getClientsInfo_internal({'ID' => $id,
+                                    'PATCHSTATUS' => '' });
 }
 
 
@@ -358,7 +361,10 @@ sub getClientPatchstatusByID($)
 #   parameter: GUID
 sub getClientPatchstatusByGUID($)
 {
-    # TODO redirect to internal function with fitting filter
+    my $guid = shift || '';
+    return undef unless (defined $guid && $guid !~ /^$/);
+    return getClientsInfo_internal({'GUID' => $guid,
+                                    'PATCHSTATUS' => '' });
 }
 
 
