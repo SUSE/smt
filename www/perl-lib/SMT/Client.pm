@@ -63,8 +63,8 @@ All current functions are:
 * getClientInfoByGUID($)          -  get one client's by GUID
 * getClientInfoByID($)            -  get one client's info by ID
 * getAllClientsInfo()             -  return all clients with all information
-* getClientGUIDByID($)            -  get the client's GUID by its ID
-* getClientIDByGUID($)            -  get the client's ID by its GUID
+* getClientGUIDByID($)            -  get the client's GUID by its ID (returns only the GUID)
+* getClientIDByGUID($)            -  get the client's ID by its GUID (returns only the ID)
 * getClientPatchstatusByID($)     -  get one client's patchstatus by ID
 * getClientPatchstatusByGUID($)   -  get one client's patchstatus by GUID
 
@@ -84,9 +84,8 @@ sub in_Array($$)
 {
     my $str = shift || "";
     my $arr = shift || ();
-    my $one = "";
 
-    while ( $one = shift(@{$arr}) )
+    foreach my $one (@{$arr}) 
     {
         return 1 if $one =~ /^$str$/;
     }
@@ -99,17 +98,23 @@ sub in_Array($$)
 #
 sub createPatchstatusQuery($$)
 {
-    my $q = shift || return undef;
+    my $q = shift || '';
     my $dbh = shift || return undef;
 
     # these are the hardcoded keys for the MachineData table for the patchstatus (where TYPE is 1)
-    @KEYS = qw[PKGMGR SECURITY RECOMMENDED OPTIONAL];
+    my @KEYS = qw[PKGMGR SECURITY RECOMMENDED OPTIONAL];
     my @fields = ();
     my @whereClause = ();
 
-    # check if general pattern matches: 4 strings separated by colon (empty string is ok)
-    if ($q =~ /^([^:]*):([^:]*):([^:]*):([^:]*)$/)
+    # check query string
+    if ( $q =~ /^$/ )
     {
+        # allow empty query string
+        @fields = ('', '', '', '');
+    }
+    elsif ( $q =~ /^([^:]*):([^:]*):([^:]*):([^:]*)$/ )
+    {
+        # check if general pattern matches: set of 4 strings separated by colon (empty string is ok)
         @fields = ( defined $1 ? "$1":'',
                     defined $2 ? "$2":'',
                     defined $3 ? "$3":'',
@@ -124,7 +129,7 @@ sub createPatchstatusQuery($$)
     # if there are 4 fields continue parsing
     if ( scalar(@fields) == 4 )
     {
-        for ($i=0 ; $i<4 ; $i++)
+        for (my $i=0 ; $i<4 ; $i++)
         {
             # match valid query string and empty string (skip if empty)
             if ( $fields[$i] =~ /^([<>])?(\d+)?$/ )
@@ -133,7 +138,7 @@ sub createPatchstatusQuery($$)
                 next unless defined $2;
                 # if not lower or greater is defined it means equal
                 # $op should not be $dbh->quoted so make sure only  <, >, = are possible 
-                $op = (defined $1) ?  ($1 eq '>' ? '>':'<' ) : '=';
+                my $op = (defined $1) ?  ($1 eq '>' ? '>':'<' ) : '=';
                 # create where statement snippet
                 push(@whereClause, sprintf(" ps.$KEYS[$i] $op %s ", $dbh->quote($2) ));
             }
@@ -167,23 +172,23 @@ sub createSQLStatement($$)
     # get dbh handle for the quoting function
     my $dbh = shift || return undef;
 
-    # assign default filter if filter is empty
-    # default is: get all properties witout a filter
-    $filter = {
-        ID => '',
-        GUID => '',
-        HOSTNAME => '',
-        TARGET => '',
-        DESCRIPTION => '',
-        LASTCONTACT => '',
-        NAMESPACE => '',
-        PATCHSTATUS => ''
-    } if $filter == {}; 
+    my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
+    my @ALLPROPS = @PROPS;
+    push( @ALLPROPS, 'PATCHSTATUS' );
+
+    # fillup the filter if needed or filter empty
+    if ( scalar( keys %{$filter} ) == 0 ||
+         ( exists ${$filter}{'selectAll'}  &&  defined ${$filter}{'selectAll'} )  )
+    {
+        foreach my $prop (@ALLPROPS)
+        {
+            ${$filter}{$prop} = '' unless (exists ${$filter}{$prop}  &&  defined ${$filter}{$prop} );
+        }
+    }
 
     my @select = ();
     my @where = ();
-    my @from  = (' Clients cl ');
-    my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
+    my $fromstr  = ' Clients cl ';
 
     # parse the filter hash
     # collect the select and where statements and quote the input strings
@@ -192,9 +197,9 @@ sub createSQLStatement($$)
         if ( exists ${$filter}{$prop} )
         {
             push (@select, " cl.$prop ");
-            if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} ne '' )
+            if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
-                push( @where, " cl.$prop LIKE \"" . $dbh->quote(${$filter}{$prop}) . "\" " );
+                push( @where, " cl.$prop LIKE " . $dbh->quote(${$filter}{$prop}) . ' ' );
             }        
         }
     }
@@ -206,29 +211,23 @@ sub createSQLStatement($$)
         my $patchstatusQuery = createPatchstatusQuery(${$filter}{'PATCHSTATUS'}, $dbh);
         return undef unless defined $patchstatusQuery;
 
-        push( @from,  ' Patchstatus ps ');
-        push( @select ' ps.PKGMGR      as PATCHSTATUS_P ');
-        push( @select ' ps.SECURITY    as PATCHSTATUS_S ');
-        push( @select ' ps.RECOMMENDED as PATCHSTATUS_R ');
-        push( @select ' ps.OPTIONAL    as PATCHSTATUS_O ');
+        $fromstr .= ' LEFT JOIN Patchstatus ps ON ( cl.ID = ps.CLIENT_ID ) ';
+        push( @select, ' ps.PKGMGR      as PATCHSTATUS_P ');
+        push( @select, ' ps.SECURITY    as PATCHSTATUS_S ');
+        push( @select, ' ps.RECOMMENDED as PATCHSTATUS_R ');
+        push( @select, ' ps.OPTIONAL    as PATCHSTATUS_O ');
 
-        push( @where, ' cl.ID = ps.CLIENT_ID ');
-        push( @where, $patchstatusQuery);
+        push( @where, $patchstatusQuery) unless ( $patchstatusQuery eq '');
     }
  
-    if ( exists ${$filter}{'selectOnly'}  &&  defined ${$filter}{'selectOnly'} )
-    {
-        @select = $dbh->quote(${$filter}{'selectOnly'}) if ( in_Array(${$filter}{'selectOnly'}, \@PROPS) );
-        push( @select, 'ID' ) unless ( in_Array('ID', \@select) );
-    }
+    # make sure the ID is in the select statement in any case
+    push( @select, " cl.ID " ) unless ( in_Array(" cl.ID ", \@select) );
 
-    my $selectstr = join(', ', @select);
-    my $fromstr   = join(', ', @from);
-    my $wherestr  = join(' AND ', @where);
+    my $selectstr = join(', ', @select) || return undef;
+    $fromstr      = $fromstr || return undef;
+    my $wherestr  = join(' AND ', @where) || ' 1 '; # create 'where 1' if $wherestr is empty
 
-    my $sqlstatement = " select  $selectstr  from  $fromstr  where  $wherestr ";
-
-    return $sqlstatement;
+    return " select  $selectstr  from  $fromstr  where  $wherestr ";
 }
 
 
@@ -237,7 +236,7 @@ sub createSQLStatement($$)
 #
 sub getClientsInfo_internal($)
 {
-    my $dbh = my $dbh = SMT::Utils::db_connect();
+    my $dbh = SMT::Utils::db_connect();
     if ( !$dbh )
     {
         # TODO  log error: "Cannot connect to database";
@@ -251,11 +250,11 @@ sub getClientsInfo_internal($)
     my $sql = createSQLStatement($filter, $dbh);
     return undef unless defined $sql;
 
+    ## NOTE: This can be used for testing/debugging
+    ## NOTE: will only return the generated SQL statement but evaluate it
+    #return $sql;
 
-    my $result = $dbh->selectall_hashref($sql, 'ID');
-    return undef unless defined $result;
-
-    return $result;
+    return $dbh->selectall_hashref($sql, 'ID');
 }
 
 
@@ -285,7 +284,8 @@ sub getClientInfoByGUID($)
 {
     my $guid = shift || "";
     return undef unless (defined $guid && $guid !~ /^$/);
-    return getClientsInfo_internal({'GUID' => $guid});
+    return getClientsInfo_internal({'GUID' => $guid,
+                                    'selectAll' => ''});
 }
 
 
@@ -300,7 +300,8 @@ sub getClientInfoByID($)
 {
     my $id = shift || '';
     return undef unless (defined $id && $id !~ /^$/);
-    return getClientsInfo_internal({'ID' => $id});
+    return getClientsInfo_internal({'ID' => $id,
+                                    'selectAll' => ''});
 }
 
 
@@ -311,6 +312,7 @@ sub getClientInfoByID($)
 #
 sub getAllClientsInfo()
 {
+    # emtpy filter means: select all information
     return getClientsInfo_internal({});
 }
 
@@ -322,9 +324,18 @@ sub getAllClientsInfo()
 sub getClientGUIDByID($)
 {
     my $id = shift || "";
+    my $guid = undef;
     return undef unless (defined $id && $id !~ /^$/);
-    return getClientsInfo_internal({ 'ID' => $id,
-                                        'selectOnly' => 'GUID'  });
+    my $res = getClientsInfo_internal({ 'ID' => $id,
+                                        'GUID' => ''  });
+    if ( keys %{$res} == 1 )
+    {
+        foreach my $key (keys %{$res})
+        {
+            return ${$res}{$key}{'GUID'} if ( ${$res}{$key}{'ID'} eq $id )
+        }
+    }
+    return undef;
 }
 
 
@@ -336,8 +347,16 @@ sub getClientIDByGUID($)
 {
     my $guid = shift || "";
     return undef unless (defined $guid && $guid !~ /^$/);
-    return getClientsInfo_internal({ 'GUID' => $guid,
-                                        'selectOnly' => 'ID'  });
+    my $res = getClientsInfo_internal({ 'GUID' => $guid, 
+                                        'ID' => ''  });
+    if ( keys %{$res} == 1 )
+    {
+        foreach my $key (keys %{$res})
+        {
+            return ${$res}{$key}{'ID'} if ( ${$res}{$key}{'GUID'} eq $guid )
+        }
+    }
+    return undef;
 }
 
 
