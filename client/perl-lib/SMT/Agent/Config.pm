@@ -81,7 +81,8 @@ sub getSysconfigValue
       {
        next;
       }
-	elsif($_ =~ /^$key\s*=\s*"*(.+)"+\s*/ && defined $1 && $1 ne "")
+#	elsif($_ =~ /^$key\s*=\s*"*(.+)"+\s*/ && defined $1 && $1 ne "")
+	elsif($_ =~ /^$key\s*=\s*"(.*)"\s*/ && defined $1 && $1 ne "")
       {
 	$val = $1;
       }

@@ -32,7 +32,7 @@ use constant REST_GET_JOB	=> REST_START_SEQ.REST_VERSION.'/jobs/';
 use constant LOG_FILE		=> '/tmp/smtclient.log';
 
 # client config file
-use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smtclient';
+use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smt-client';
 
 # smt client credenitials file containing guid (SLE11)
 use constant CREDENTIALS_FILE	=> '/etc/zypp/credentials.d/NCCcredentials';
@@ -45,7 +45,5 @@ use constant SECRET_FILE	=> '/etc/zmd/secret';
 use constant AUTH_NETLOC => 'netloc';
 use constant AUTH_REALM => 'realm';
 
-# ssl cert subject
-use constant CERT_SUBJECT => '/CN=e221.suse.de';
 
 1;

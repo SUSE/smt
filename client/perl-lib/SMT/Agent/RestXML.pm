@@ -37,7 +37,6 @@ sub updatejob
   my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid ,
 	  'Content-Type' => 'text/xml',
           Content        => $xmljob );
-  $req->header( 'If-SSL-Cert-Subject' => SMT::Agent::Constants::CERT_SUBJECT );
 
   my $response ;
   eval { $response = $ua->request( $req ); };
@@ -66,7 +65,6 @@ sub getjob
 
   my $ua = createUserAgent();
   my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id);
-  $req->header( 'If-SSL-Cert-Subject' => SMT::Agent::Constants::CERT_SUBJECT );
   my $response ;
   eval { $response = $ua->request( $req ); };
   SMT::Agent::Utils::error ( "Unable to request job $id : $@" )              if ( $@ );
@@ -89,7 +87,6 @@ sub getnextjob
   my $ua = createUserAgent() ;
 
   my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
-  $req->header( 'If-SSL-Cert-Subject' => SMT::Agent::Constants::CERT_SUBJECT );
   my $response ;
   eval { $response = $ua->request( $req ); };
   SMT::Agent::Utils::error ( "Unable to request next job : $@" )              if ( $@ );
@@ -167,6 +164,36 @@ sub parsejobid
 
 sub createUserAgent
 {
+
+    my $ssl_ca_file = SMT::Agent::Config::getSysconfigValue("SSL_CA_FILE");
+    $ssl_ca_file = undef if ( defined $ssl_ca_file && $ssl_ca_file eq "" );
+
+    my $ssl_ca_path = SMT::Agent::Config::getSysconfigValue("SSL_CA_PATH");
+    $ssl_ca_path = undef if ( defined $ssl_ca_path && $ssl_ca_path eq "" );
+
+    my $ssl_cn_name = SMT::Agent::Config::getSysconfigValue("SSL_CN_NAME");
+    $ssl_cn_name = undef if ( defined $ssl_cn_name && $ssl_cn_name eq "" );
+
+    if ( defined $ssl_ca_path && defined $ssl_ca_file )
+    {
+      SMT::Agent::Utils::error ( "Configuration is inconsistent. Don't define SSL_CA_PATH when you want to use SSL_CA_FILE."  );
+    }
+
+    use IO::Socket::SSL 'debug0';
+
+    IO::Socket::SSL::set_ctx_defaults(
+        SSL_verifycn_scheme => {
+        wildcards_in_cn => 'anywhere',
+        wildcards_in_alt => 'anywhere',
+        check_cn => 'when_only'
+        },
+        SSL_verify_mode => 1,
+        SSL_ca_file => $ssl_ca_file ,
+        SSL_ca_path => $ssl_ca_path ,
+        SSL_verifycn_name => $ssl_cn_name
+    );
+
+
     my %opts = @_;
     
     my $user = undef;

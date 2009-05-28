@@ -8,5 +8,39 @@
 #
 ALLOWED_AGENTS="softwarepush patchstatus eject"
 
+## Type:    string
+#
+# Proxy for https
+#
 #HTTPS_PROXY="https://proxy:8080"
+
+## Type:    string
+#
+# User and password for proxy
+#
 #PROXY_USER="user:password"
+
+## Type:    string
+## Default: "/etc/ssl/certs/"
+#
+# Path to the trusted ssl certificate files
+# If empty a trusted certificate needs to be configured using SSL_CA_FILE.
+#
+SSL_CA_PATH="/etc/ssl/certs/"
+
+## Type:    string
+## Default: "/etc/ssl/certs/"
+#
+# Filename of the trusted ssl certificate file
+# If empty trusted certificates are figured out by using SSL_CA_PATH.
+# Please do not define a SSL_CA_PATH if you want to use a single file by setting SSL_CA_FILE.
+#
+SSL_CA_FILE=""
+
+## Type:    string
+#
+# Certificate Common Name 
+# Empty if you don't want to verify the CN
+#
+SSL_CN_NAME=""
+
