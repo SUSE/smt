@@ -5,6 +5,8 @@ use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
 use SMT::Job;
+use SMT::Utils;
+use Data::Dumper;
 
 
 ###############################################################################
@@ -23,27 +25,33 @@ sub getJob($$$)
 
   #TODO: read values from database
   #TODO: check GUID
- 
-  my $type = "softwarepush";
 
-  my $args =
-  "<arguments>
-    <force>true</force>
-    <packages>";
 
-  my @randomPackages = qw( xterm yast2-trans-ar yast2-trans-bn yast2-trans-ca yast2-trans-cy yast2-trans-da yast2-trans-de yast2-trans-pt pwgen whois );
 
-  foreach my $pack (@randomPackages) 
+  my $dbh = SMT::Utils::db_connect();
+  if ( !$dbh )
   {
-     $args .= "<package>"."$pack"."</package>" if int(rand(10)) > 5 ;
+    # TODO  log error: "Cannot connect to database";
+    die "Please contact your administrator.";
   }
-  $args .= "<package>mmv</package>";
-  $args .= " </packages>
-  </arguments>";
 
-  my $job = new SMT::Job( $guid, $jobid, $type, $args );
+  my $sql = "select ID, GUID_ID, TYPE, ARGUMENTS from JobQueue where ID=$jobid"; 
 
+  my $result = $dbh->selectall_hashref($sql, "ID")->{$jobid};
+
+  my $type = "unknown";
+  $type = "patchstatus"  if ( $result->{TYPE} == 1);
+  $type = "softwarepush" if ( $result->{TYPE} == 2);
+  $type = "update"       if ( $result->{TYPE} == 3);
+  $type = "execute"      if ( $result->{TYPE} == 4);
+  $type = "reboot"       if ( $result->{TYPE} == 5);
+  $type = "configure"    if ( $result->{TYPE} == 6);
+  $type = "wait"         if ( $result->{TYPE} == 7);
+
+  my $job = new SMT::Job( $result->{GUID_ID}, $result->{ID}, $type, $result->{ARGUMENTS} );
+ 
   return $xmlformat ? $job->asXML() : $job;
+
 }
 
 
@@ -58,13 +66,29 @@ sub getJob($$$)
 sub getNextJobID($$)
 {
   my $class     = shift;
-  my $guid      = shift || return undef;
+  my $guid      = shift;
   my $xmlformat = shift || 0;
 
-  #TODO: read next jobid from database
-  my $id = int(rand(500))+1;
+  my $dbh = SMT::Utils::db_connect();
+  if ( !$dbh )
+  {
+    # TODO  log error: "Cannot connect to database";
+    die "Please contact your administrator.";
+  }
+
+  my $sql = "select ID from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) "; 
+  $sql .= " where STATUS   =  ". 0;          #( =not yet worked on)
+  $sql .= " and   TARGETED <= ". SMT::Utils::getDBTimestamp();
+  $sql .= " and   EXPIRES  >  ". SMT::Utils::getDBTimestamp();
+
+  $sql .= "and Clients.GUID = $guid" if (defined $guid);
+
+  my $result = $dbh->selectall_arrayref($sql, "ID")->{$jobid};
+
+  my $id = $result->{ID};
 
   return  $xmlformat  ? "<job id=\"$id\">" : $id;
+
 }
 
 
@@ -158,13 +182,13 @@ sub deleteJob($)
 ###############################################################################
 # writes error line to log
 # returns undef because that is passed to the caller
-sub error($)
-{
-  my $class   = shift;
-  my $message = shift;
-  print "$message\n";
-  return undef;
-}
+#sub error($)
+#{
+#  my $class   = shift;
+#  my $message = shift;
+#  print "$message\n";
+#  return undef;
+#}
 
 
 #my $job = new Job ('<job id="42" type="softwarepush"><arguments></arguments></job>');
