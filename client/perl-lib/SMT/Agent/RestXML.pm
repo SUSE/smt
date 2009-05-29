@@ -20,7 +20,7 @@ sub updatejob
 {
   my ($jobid, $success, $message, $stdout, $stderr, $returnvalue) =  @_;
 
-  SMT::Agent::Utils::logger( "updating job $jobid ($success) $message", $jobid);
+  SMT::Agent::Utils::logger( "updating job $jobid ($success) message: $message", $jobid);
 
   my $job =
   {
@@ -32,11 +32,10 @@ sub updatejob
     'returnvalue' => $returnvalue
   };
   my $xmljob = XMLout($job, rootname => "job");
-
   my $ua = createUserAgent();
-  my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid ,
-	  'Content-Type' => 'text/xml',
-          Content        => $xmljob );
+  my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid );
+  $req->content_type ( "text/xml" );
+  $req->content ( $xmljob );
 
   my $response ;
   eval { $response = $ua->request( $req ); };

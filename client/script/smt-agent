@@ -20,5 +20,6 @@ while( defined ( $jobid = SMT::Agent::RestXML::parsejobid( SMT::Agent::RestXML::
   sleep (3);
 }
 
+SMT::Agent::Utils::logger ("no jobs left. exit.");
 
 
