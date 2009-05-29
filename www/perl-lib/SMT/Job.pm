@@ -30,10 +30,15 @@ sub new
     my $id;
     my $type;
     my $args;
+    my $message;
+    my $returnvalue;
+    my $stdout;
+    my $stderr;
+    my $success;
 
     if ( defined ( $arg2 ) )
     {
-        $guid = $arg0;
+        $guid = $arg0;			#TODO: fix utterly brocken api by sloppily added argument guid !!!
 	$id   = $arg1;
 	$type = $arg2;
 	$args = $arg3;
@@ -58,15 +63,29 @@ sub new
 	return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
 	return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
 
+
+	#TODO: check values ion order to prevent sql injection 
+
 	# retrieve variables
 	$id   = $j->{id}        if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
 	$type = $j->{type}      if ( defined ( $j->{type} ) );
 	$args = $j->{arguments} if ( defined ( $j->{arguments} ) );
+	$returnvalue   = $j->{returnvalue} if ( defined ( $j->{returnvalue} ) && ( $j->{returnvalue} =~ /^[0-9]+$/ ) );
+	$stdout = $j->{stdout}      if ( defined ( $j->{stdout} ) );
+	$stderr = $j->{stderr}      if ( defined ( $j->{stderr} ) );
+	$message = $j->{message}      if ( defined ( $j->{message} ) );
+	$success = $j->{success}      if ( defined ( $j->{success} ) );
 
+
+	$stdout =~ s/[\"\']//g;
+	$stderr =~ s/[\"\']//g;
+	$message =~ s/[\"\']//g;
+	$success =~ s/[\"\']//g;
+#
 	# check variables
 	return error( "unable to create job. id unknown or invalid." )        unless defined( $id );
-	return error( "unable to create job. type unknown or invalid." )      unless defined( $type );
-	return error( "unable to create job. arguments unknown or invalid." ) unless defined( $args );
+#	return error( "unable to create job. type unknown or invalid." )      unless defined( $type );
+#	return error( "unable to create job. arguments unknown or invalid." ) unless defined( $args );
     }
 
     my $self = 
@@ -75,6 +94,11 @@ sub new
 	guid => $guid,
 	type => $type,
 	args => $args,
+	returnvalue => $returnvalue,
+	stdout => $stdout,
+	stderr => $stderr,
+	message => $message,
+	success => $success
     };
 
     bless $self, $class;
@@ -92,6 +116,9 @@ sub asXML
       'guid'      => $self->{guid},
       'type'      => $self->{type},
       'arguments' => $self->{args}
+
+    #TODO: add outher attributes
+
     };
 
     return XMLout($job, rootname => "job"
@@ -153,6 +180,41 @@ sub getArguments
     my ( $self ) = @_;
     return $self->{args};
 }
+
+sub getReturnValue
+{
+    my ( $self ) = @_;
+    return $self->{returnvalue};
+}
+
+sub getStdout
+{
+    my ( $self ) = @_;
+    return $self->{stdout};
+}
+
+sub getStderr
+{
+    my ( $self ) = @_;
+    return $self->{stderr};
+}
+
+sub getMessage
+{
+    my ( $self ) = @_;
+    return $self->{message};
+}
+
+sub getSuccess
+{
+    my ( $self ) = @_;
+    return $self->{success};
+}
+
+
+
+
+
 
 
 sub getArgumentsXML

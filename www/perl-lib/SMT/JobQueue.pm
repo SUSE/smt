@@ -176,7 +176,43 @@ sub addJob($)
 
 sub updateJob($)
 {
-  return 1;
+  my $class = shift;
+  my $guid      = shift || return undef;
+  my $jobxml = shift;
+
+  my $job = new SMT::Job( "guiddummy", $jobxml );
+
+  my $dbh = SMT::Utils::db_connect();
+  if ( !$dbh )
+  {
+    # TODO  log error: "Cannot connect to database";
+    die "Please contact your administrator.";
+  }
+
+
+  my $status ;
+  if ( $job->getSuccess() eq "true")
+  {
+    $status = "1";  
+  }
+  else
+  {
+    $status = "2";  
+  }
+
+  my $sql = "update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )";
+#  $sql .= " j.MESSAGE = \"". $job->getMessage() . "\"";	# TODO: where is message in daba
+  $sql .= " set j.STDERR = \"". $job->getStderr() . "\"";
+  $sql .= ", j.STDOUT = \"". $job->getStdout() . "\"";
+  $sql .= ", j.EXITCODE = ". $job->getReturnValue()  ;
+  $sql .= ", j.STATUS = ". $status ;
+
+  $sql .= " where j.ID = ".$job->getId();
+  $sql .= " and c.GUID = \"".$guid."\"";
+
+  return $dbh->do($sql);
+
+
 };
 
 ###############################################################################

@@ -96,6 +96,8 @@ sub PUThandler($)
     my $r = shift;
     return undef unless defined $r;
 
+    my $guid="guid12";
+
     my $path = $r->path_info();
     $path =~ s/^\/(=\/)?1\///;
     $path =~ s/\/?$//;
@@ -106,7 +108,7 @@ sub PUThandler($)
     {
 	# TODO: check content type
 	my $c = read_post($r);
-	return SMT::JobQueue->updateJob($c);
+	return SMT::JobQueue->updateJob($guid, $c);
     }
     else
     {
