@@ -174,6 +174,11 @@ sub addJob($)
 };
 
 
+sub updateJob($)
+{
+  return 1;
+};
+
 ###############################################################################
 # returns a list of next jobs either in xml format
 # or in hash structure
