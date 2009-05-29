@@ -23,6 +23,13 @@ sub getJob($$$)
   my $jobid     = shift || return undef;
   my $xmlformat = shift || 0;
 
+  if ( ! defined $jobid )
+  {
+    return $xmlformat ? "<job/>" : undef;
+
+  }
+
+
   my $dbh = SMT::Utils::db_connect();
   if ( !$dbh )
   {
