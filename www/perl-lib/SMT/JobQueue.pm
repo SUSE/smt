@@ -23,11 +23,6 @@ sub getJob($$$)
   my $jobid     = shift || return undef;
   my $xmlformat = shift || 0;
 
-  #TODO: read values from database
-  #TODO: check GUID
-
-
-
   my $dbh = SMT::Utils::db_connect();
   if ( !$dbh )
   {
@@ -35,9 +30,15 @@ sub getJob($$$)
     die "Please contact your administrator.";
   }
 
-  my $sql = "select ID, GUID_ID, TYPE, ARGUMENTS from JobQueue where ID=$jobid"; 
+  my $sql = "select Clients.GUID, JobQueue.ID jid, TYPE, ARGUMENTS from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) where JobQueue.ID =$jobid"; 
+  $sql .= " and Clients.GUID = \"$guid\" " if (defined $guid);
 
-  my $result = $dbh->selectall_hashref($sql, "ID")->{$jobid};
+  my $result = $dbh->selectall_hashref($sql, "jid")->{$jobid};
+
+  if ( ! defined $result )
+  {
+    return $xmlformat ? "<job/>" : undef;
+  }
 
   my $type = "unknown";
   $type = "patchstatus"  if ( $result->{TYPE} == 1);
@@ -48,10 +49,9 @@ sub getJob($$$)
   $type = "configure"    if ( $result->{TYPE} == 6);
   $type = "wait"         if ( $result->{TYPE} == 7);
 
-  my $job = new SMT::Job( $result->{GUID_ID}, $result->{ID}, $type, $result->{ARGUMENTS} );
+  my $job = new SMT::Job( $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
  
   return $xmlformat ? $job->asXML() : $job;
-
 }
 
 
@@ -78,12 +78,13 @@ sub getNextJobID($$)
 
   my $sql = "select ID from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) "; 
   $sql .= " where STATUS   =  ". 0;          #( =not yet worked on)
-  $sql .= " and   TARGETED <= ". SMT::Utils::getDBTimestamp();
-  $sql .= " and   EXPIRES  >  ". SMT::Utils::getDBTimestamp();
+#  $sql .= " and   TARGETED <= ". SMT::Utils::getDBTimestamp();
+#  $sql .= " and   EXPIRES  >  ". SMT::Utils::getDBTimestamp();
 
-  $sql .= "and Clients.GUID = $guid" if (defined $guid);
+  $sql .= "and Clients.GUID = \"$guid\"" if (defined $guid);
 
-  my $result = $dbh->selectall_arrayref($sql, "ID")->{$jobid};
+#  my $result = $dbh->selectall_arrayref($sql, "ID")->{$jobid};
+  my $result = $dbh->selectall_arrayref($sql);
 
   my $id = $result->{ID};
 
