@@ -76,19 +76,23 @@ sub getNextJobID($$)
     die "Please contact your administrator.";
   }
 
-  my $sql = "select ID from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) "; 
-  $sql .= " where STATUS   =  ". 0;          #( =not yet worked on)
-#  $sql .= " and   TARGETED <= ". SMT::Utils::getDBTimestamp();
-#  $sql .= " and   EXPIRES  >  ". SMT::Utils::getDBTimestamp();
+  my $sql = "select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) "; 
+  $sql .= " where STATUS   = " . 0				 ;          #( =not yet worked on)
+#  $sql .= " and   TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
+#  $sql .= " and   EXPIRES  >  \"". SMT::Utils::getDBTimestamp() . "\"";
 
-  $sql .= "and Clients.GUID = \"$guid\"" if (defined $guid);
+  $sql .= " and Clients.GUID = \"$guid\"" if (defined $guid);
 
-#  my $result = $dbh->selectall_arrayref($sql, "ID")->{$jobid};
-  my $result = $dbh->selectall_arrayref($sql);
+  my $id = $dbh->selectall_arrayref($sql)->[0]->[0];
 
-  my $id = $result->{ID};
-
-  return  $xmlformat  ? "<job id=\"$id\">" : $id;
+  if ( defined $id)
+  {
+    return $xmlformat ? "<job id=\"$id\">" : $id;
+  }
+  else
+  {
+    return $xmlformat ? "<job/>" : undef;
+  }
 
 }
 
