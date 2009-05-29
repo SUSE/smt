@@ -19,8 +19,8 @@ use Data::Dumper;
 sub getJob($$$)
 {
   my $class     = shift;
-  my $guid      = shift || return undef;
-  my $jobid     = shift || return undef;
+  my $guid      = shift;
+  my $jobid     = shift;
   my $xmlformat = shift || 0;
 
   if ( ! defined $jobid )
