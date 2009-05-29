@@ -78,6 +78,13 @@
 		"init"		: InitStagingTableDialog,
 		// "store"	: StoreStagingTableDialog,
 	    ],
+	    "clients" : $[
+		"widget"	: `custom,
+		"help"		: HELPS["staging"]:"",
+		"custom_widget"	: `Empty(),
+		"handle"	: HandleClientsTableDialog,
+		"init"		: InitClientsTableDialog,
+	    ],
     ];
 
     map <string, any> tabs = $[
@@ -109,6 +116,12 @@
 		"header"	: _("Staging"),
 		"widget_names"	: ["staging"],
 		"contents"	: StagingTableContent(),
+	    ],
+	    "clients" : $[
+		// TRANSLATORS: tab-header
+		"header"	: _("Clients Status"),
+		"widget_names"	: ["clients"],
+		"contents"	: ClientsTableContent(),
 	    ],
 	    "scheduled_downloads" : $[
 		// TRANSLATORS: tab-header
@@ -160,7 +173,7 @@
 	    caption = _("SMT Management");
 	    wd = $[
 		"tab" : CWMTab::CreateWidget ($[
-		    "tab_order"	: ["repositories", "staging"],
+		    "tab_order"	: ["repositories", "staging", "clients"],
 		    "tabs"		: tabs,
 		    "widget_descr"	: widgets,
 		    "initial_tab"	: "repositories",

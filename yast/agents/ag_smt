@@ -21,6 +21,7 @@ use strict;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Filter;
+use SMT::Client;
 use SMT::Repositories;
 use SMT::Parser::RpmMdPatches;
 use SMT::Mirror::RpmMd;
@@ -531,6 +532,12 @@ sub IsSubrepositoryUpToDate ($) {
     return ($repositories->isSnapshotUpToDate($repo_args) ? YCP_TRUE:YCP_FALSE);
 }
 
+sub GetAllClientsStatus ($) {
+    my $args = shift || {};
+
+    return SMT::Client::getAllClientsInfo();
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -557,6 +564,8 @@ while (<STDIN>) {
 	    ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER));
 	} elsif ($path eq '.repository.staging_allowed') {
 	    ycp::Return (GetStagingAllowed ($arg));
+	} elsif ($path eq '.clients.status') {
+	    ycp::Return (GetAllClientsStatus ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}

@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri May 29 16:00:00 CEST 2009 - locilka@suse.cz
+
+- Listing clients with their statuses (FATE #306250).
+
+-------------------------------------------------------------------
 Tue May 26 11:12:12 CEST 2009 - locilka@suse.cz
 
 - Checking the system (permissions) also in installation

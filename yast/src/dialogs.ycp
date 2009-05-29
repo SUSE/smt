@@ -273,6 +273,23 @@
 	);
     }
 
+    term ClientsTableContent () {
+	return `VBox (
+	    `Left (`ReplacePoint (`id (`clients_filter), `Empty())),
+	    `Table (
+		`id (`clients_table),
+		`opt (`hstretch, `vstretch, `notify, `immediate),
+		`header (
+		    _("Status"),
+		    _("Host Name"),
+		    _("Last Contact")
+		),
+		[]
+	    ),
+	    `VSquash (`MinHeight (5, `RichText (`id (`client_details), "")))
+	);
+    }
+
     symbol ReadDialog() {
 	// Checking for root's permissions
 	if (!Confirm::MustBeRoot())
@@ -1218,6 +1235,98 @@ Enter your SMT server URL in the following format: http:://server.name/
 	UpdateRepoDetails();
     }
 
+    map <string, string> known_patch_statuses = $[
+	"PATCHSTATUS_P" : _("Package manager patches: %1"),
+	"PATCHSTATUS_S" : _("Security patches: %1"),
+	"PATCHSTATUS_R" : _("Recommended patches: %1"),
+	"PATCHSTATUS_O" : _("Optional patches: %1"),
+    ];
+
+    boolean GetPatchStatus (map <string, any> client_info) {
+	boolean ret = true;
+
+	foreach (string patch_status, string translation, known_patch_statuses, {
+	    if (client_info[patch_status]:nil == nil || client_info[patch_status]:0 > 0) {
+		ret = false;
+		break;
+	    }
+	});
+
+	return ret;
+    }
+
+    map <integer, map <string, any> > clients_status = $[];
+
+    void RedrawClientsTableDetails () {
+	integer current_item = (integer) UI::QueryWidget (`id (`clients_table), `CurrentItem);
+	string description = "";
+
+	if (current_item != nil) {
+	    map <string, any> client_info = clients_status[current_item]:$[];
+	    boolean status = GetPatchStatus (client_info);
+
+	    description = sformat (
+		// %1 Client (is|is not) up-to-date
+		// %2 There are some patches pending...
+		_("%1<br>%2"),
+		(status == true ?
+		    _("Client is up-to-date")
+		    :
+		    _("<b>Client is not up-to-date</b>")
+		),
+		(status != true ?
+		    sformat (
+			// %1 is replaced with a comma-separated pieces of info, e.g., 'Security patches: 5'
+			_("There are some patches pending:<br>%1"),
+			// Merges list of pieces of info
+			mergestring (maplist (string key, string translation, known_patch_statuses, {
+			    // formats one piece of info using a key and translation
+			    return sformat (translation, (
+				// if the number of patches is defined but nil
+				(client_info[key]:0 == nil ?
+				    // Number of patches pending
+				    _("Status is unknown")
+				    :
+				    client_info[key]:0
+				)
+			    ));
+			}), ", ")
+		    )
+		    :
+		    ""
+		)
+	    );
+	} else {
+	    description = _("There are no registered clients or their status is unknown");
+	}
+
+	UI::ChangeWidget (`id (`client_details), `Value, description);
+    }
+
+    void RedrawClientsTableDialog () {
+	clients_status = (map <integer, map <string, any> >) SCR::Read (.smt.clients.status);
+
+	list <term> items = maplist (integer id, map <string, any> values, clients_status, {
+	    boolean status = GetPatchStatus (values);
+
+	    return `item (
+		`id (id),
+		(status == true ? yes:no),
+		values["HOSTNAME"]:values["GUID"]:"",
+		values["LASTCONTACT"]:_("Never")
+	    );
+	});
+
+	if (items == nil) items = [];
+	UI::ChangeWidget (`id (`clients_table), `Items, items);
+
+	RedrawClientsTableDetails();
+    }
+
+    void InitClientsTableDialog (string id) {
+	RedrawClientsTableDialog();
+    }
+
     void InitStagingTableDialog (string id) {
 	map <string, map> catalogs = (map <string, map>) SCR::Read (.smt.staging.repositories);
 
@@ -1512,6 +1621,15 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	UpdateRepoDetails();
 
 	return ret;
+    }
+
+    symbol HandleClientsTableDialog (string id, map event) {
+	any action = event["ID"]:nil;
+
+	if (action == `clients_table)
+	    RedrawClientsTableDetails();
+
+	return nil;
     }
 
     symbol HandleStagingTableDialog (string id, map event) {
