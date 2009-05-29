@@ -3,17 +3,30 @@ package SMT::RESTService;
 use strict;
 use warnings;
 
+use APR::Brigade ();
+use APR::Bucket ();
+use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
+use constant IOBUFSIZE => 8192;
+use Apache2::Filter ();
+
+use APR::Brigade;
+
+
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
+use Apache2::Access ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR NOT_FOUND FORBIDDEN AUTH_REQUIRED :log);
+use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES :log);
 use Apache2::RequestUtil;
+
+
 use XML::Writer;
 
 use SMT::Utils;
 use SMT::JobQueue;
 use SMT::Job;
 use DBI qw(:sql_types);
+use Data::Dumper;
 
 #
 # handle all GET requests
@@ -28,6 +41,9 @@ sub GEThandler($)
     # there is only version 1 so far
     $path =~ s/^\/(=\/)?1\///;
     $path =~ s/\/?$//;
+
+    # TODO: read $guid 
+    my $guid="guid12";
 
     # jobs (per client)
     my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY jobs
@@ -46,9 +62,9 @@ sub GEThandler($)
     my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
 
     # jobs
-    if    ( $path =~ $reJobs)           { return SMT::JobQueue->getJobList( "guid14", 1 ) }
-    elsif ( $path =~ $reJobsNext )      { return SMT::JobQueue->getJob( "guid15", SMT::JobQueue->getNextJobID("guid15", 0), 1)   }
-    elsif ( $path =~ $reJobsId)         { return SMT::JobQueue->getJob( "guid16", $1, 1 ) }
+    if    ( $path =~ $reJobs)           { return SMT::JobQueue->getJobList( $guid, 1 ) }
+    elsif ( $path =~ $reJobsNext )      { return SMT::JobQueue->getJob( $guid, SMT::JobQueue->getNextJobID($guid, 0), 1)   }
+    elsif ( $path =~ $reJobsId)         { return SMT::JobQueue->getJob( $guid, $1, 1 ) }
     elsif ( $path =~ $reClients )       { return "wanna all clients"; }
     elsif ( $path =~ $reClientsId )     { return "wanna one client with id: $1"; }
     elsif ( $path =~ $reClientsAllJobs )        { return "wanna list of all jobs of all clients"; }
@@ -86,7 +102,12 @@ sub PUThandler($)
 
     my $reJobsId   = qr{^jobs/([\d]+)$};
 
-    if ( $path =~ $reJobsId )    { return "wanna send results for my job with id $1" }
+    if ( $path =~ $reJobsId )
+    {
+	# TODO: check content type
+	my $c = read_post($r);
+	return SMT::JobQueue->updateJob($c);
+    }
     else
     {
         $r->log->error("Request to undefined REST handler ($path) with method PUT.");
@@ -174,4 +195,52 @@ sub handler {
 
     return Apache2::Const::OK;
 }
+
+
+
+
+
+
+#
+# read the content of a POST and return the data
+#
+sub read_post {
+    my $r = shift;
+
+    my $bb = APR::Brigade->new($r->pool,
+                               $r->connection->bucket_alloc);
+
+    my $data = '';
+    my $seen_eos = 0;
+    do {
+        $r->input_filters->get_brigade($bb, Apache2::Const::MODE_READBYTES,
+                                       APR::Const::BLOCK_READ, IOBUFSIZE);
+
+        for (my $b = $bb->first; $b; $b = $bb->next($b)) {
+            if ($b->is_eos) {
+                $seen_eos++;
+                last;
+            }
+
+            if ($b->read(my $buf)) {
+                $data .= $buf;
+            }
+
+            $b->remove; # optimization to reuse memory
+        }
+
+    } while (!$seen_eos);
+
+    $bb->destroy;
+
+    $r->log->info("Got content: $data");
+
+    return $data;
+}
+
+
+
+
+
+
 1;
