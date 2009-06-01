@@ -16,8 +16,9 @@ use Data::Dumper;
 # args: jobid 
 # args: guid
 #       xmlformat (default false)
-sub getJob($$$)
+sub getJob($$$$)
 {
+  my $self      = shift;
   my $class     = shift;
   my $guid      = shift;
   my $jobid     = shift;
@@ -29,18 +30,13 @@ sub getJob($$$)
 
   }
 
+  my $sql = 'select Clients.GUID, JobQueue.ID as jid, TYPE, ARGUMENTS '.
+    'from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) '.
+    'where JobQueue.ID='.$self->{'dbh'}->quote($jobid);
 
-  my $dbh = SMT::Utils::db_connect();
-  if ( !$dbh )
-  {
-    # TODO  log error: "Cannot connect to database";
-    die "Please contact your administrator.";
-  }
+  $sql .= ' and Clients.GUID='.$self->{'dbh'}->quote($guid).' ' if (defined $guid);
 
-  my $sql = "select Clients.GUID, JobQueue.ID jid, TYPE, ARGUMENTS from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) where JobQueue.ID =$jobid"; 
-  $sql .= " and Clients.GUID = \"$guid\" " if (defined $guid);
-
-  my $result = $dbh->selectall_hashref($sql, "jid")->{$jobid};
+  my $result = $self->{'dbh'}->selectall_hashref($sql, 'jid')->{$jobid};
 
   if ( ! defined $result )
   {
@@ -56,7 +52,7 @@ sub getJob($$$)
   $type = "configure"    if ( $result->{TYPE} == 6);
   $type = "wait"         if ( $result->{TYPE} == 7);
 
-  my $job = new SMT::Job( $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
+  my $job = new SMT::Job( $self->{dbh}, $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
  
   return $xmlformat ? $job->asXML() : $job;
 }
@@ -70,35 +66,29 @@ sub getJob($$$)
 #
 # args: guid 
 #       xmlformat (default false)
-sub getNextJobID($$)
+sub getNextJobID($$$)
 {
+  my $self      = shift;
   my $class     = shift;
   my $guid      = shift;
   my $xmlformat = shift || 0;
 
-  my $dbh = SMT::Utils::db_connect();
-  if ( !$dbh )
-  {
-    # TODO  log error: "Cannot connect to database";
-    die "Please contact your administrator.";
-  }
+  my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) '; 
+     $sql .= ' where STATUS  = ' . 0				 ;          #( =not yet worked on)
+#    $sql .= " and   TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
+#    $sql .= " and   EXPIRES  >  \"". SMT::Utils::getDBTimestamp() . "\"";
 
-  my $sql = "select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) "; 
-  $sql .= " where STATUS   = " . 0				 ;          #( =not yet worked on)
-#  $sql .= " and   TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
-#  $sql .= " and   EXPIRES  >  \"". SMT::Utils::getDBTimestamp() . "\"";
+  $sql .= ' and Clients.GUID='.$self->{dbh}->quote($guid) if (defined $guid);
 
-  $sql .= " and Clients.GUID = \"$guid\"" if (defined $guid);
-
-  my $id = $dbh->selectall_arrayref($sql)->[0]->[0];
+  my $id = $self->{dbh}->selectall_arrayref($sql)->[0]->[0];
 
   if ( defined $id)
   {
-    return $xmlformat ? "<job id=\"$id\">" : $id;
+    return $xmlformat ? '<job id="'.$id.'">' : $id;
   }
   else
   {
-    return $xmlformat ? "<job/>" : undef;
+    return $xmlformat ? '<job/>' : undef;
   }
 
 }
@@ -110,7 +100,7 @@ sub getNextJobID($$)
 # if no guid is passed jobs for all clients are taken
 sub getJobList($$)
 {
-  my $class     = shift;
+  my $self      = shift;
   my $guid      = shift || return undef;
   my $xmlformat = shift || 0;
 
@@ -129,7 +119,7 @@ sub getJobList($$)
   {
      foreach my $jobid (@joblist)
      {
-         push( @jobListCollect,  SMT::JobQueue->getJob($guid, $jobid, 0) );
+         push( @jobListCollect,  $self->getJob($guid, $jobid, 0) );
      }
 
      my $allJobs = {  'job' => [@jobListCollect]  };
@@ -153,7 +143,7 @@ sub getJobList($$)
 #
 sub addJob($)
 {
-  my $class = shift;
+  my $self = shift;
   my $arg = shift;
   my $jobobject;
 
@@ -163,7 +153,7 @@ sub addJob($)
   }
   else
   {
-    $jobobject = new SMT::Job ( $arg );
+    $jobobject = new SMT::Job ( $self->{dbh}, $arg );
   }
 
   #TODO: write job to database
@@ -176,19 +166,11 @@ sub addJob($)
 
 sub updateJob($)
 {
-  my $class = shift;
+  my $self = shift;
   my $guid      = shift || return undef;
   my $jobxml = shift;
 
-  my $job = new SMT::Job( "guiddummy", $jobxml );
-
-  my $dbh = SMT::Utils::db_connect();
-  if ( !$dbh )
-  {
-    # TODO  log error: "Cannot connect to database";
-    die "Please contact your administrator.";
-  }
-
+  my $job = new SMT::Job( $self->{dbh}, "guiddummy", $jobxml );
 
   my $status ;
   if ( $job->getSuccess() eq "true")
@@ -200,17 +182,17 @@ sub updateJob($)
     $status = "2";  
   }
 
-  my $sql = "update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )";
+  my $sql = 'update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )'.
 #  $sql .= " j.MESSAGE = \"". $job->getMessage() . "\"";	# TODO: where is message in daba
-  $sql .= " set j.STDERR = \"". $job->getStderr() . "\"";
-  $sql .= ", j.STDOUT = \"". $job->getStdout() . "\"";
-  $sql .= ", j.EXITCODE = ". $job->getReturnValue()  ;
-  $sql .= ", j.STATUS = ". $status ;
+	' set j.STDERR = '.$self->{dbh}->quote($job->getStderr()).
+	', j.STDOUT = '.$self->{dbh}->quote($job->getStdout()).
+	', j.EXITCODE = '.$self->{dbh}->quote($job->getReturnValue()).
+	', j.STATUS = '.$self->{dbh}->quote($status).
 
-  $sql .= " where j.ID = ".$job->getId();
-  $sql .= " and c.GUID = \"".$guid."\"";
+	' where j.ID = '.$self->{dbh}->quote($job->getId()).
+	' and c.GUID = '.$self->{dbh}->quote($guid);
 
-  return $dbh->do($sql);
+  return $self->{dbh}->do($sql);
 
 
 };
@@ -222,7 +204,7 @@ sub updateJob($)
 #
 sub deleteJob($)
 {
-  my $class = shift;
+  my $self = shift;
   my $jobid = shift || return undef;
 
   #delte job from database

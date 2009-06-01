@@ -1,7 +1,8 @@
 -------------------------------------------------------------------
 Mon Jun  1 12:58:21 CEST 2009 - locilka@suse.cz
 
-- SMT::Clients turned into object-oriented API (for speedup).
+- SMT::Clients, SMT::Job, and SMT::JobQueue turned into
+  object-oriented API (for speedup).
 
 -------------------------------------------------------------------
 Mon May 25 13:45:31 CEST 2009 - jkupec@suse.cz

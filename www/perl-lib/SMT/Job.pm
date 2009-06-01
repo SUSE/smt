@@ -9,39 +9,39 @@ use UNIVERSAL 'isa';
 # constructs a job
 #
 # perl arguments:
-#  my $job = new Job ( 42, "softwarepush", { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] } );
+#  my $job = new Job ( $dbh, 'guid3', 42, 'softwarepush',
+#    { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] } );
 #
 # xml only:
-#  my $job = new Job ( <job id="42" type="softwarepush"><arguments><force>true</force></arguments></job>" );
+#  my $job = new Job ( $dbh, 'guid3', '<job id="42" type="softwarepush"><arguments><force>true</force></arguments></job>' );
 #
 # mixed perl and xml:
-#  my $job = new Job ( 42, "softwarepush", "<arguments><force>true</force></arguments>" );
+#  my $job = new Job ( $dbh, 'guid3', 42, 'softwarepush', '<arguments><force>true</force></arguments>' );
 
 sub new
 {
     my $class = shift;
 
-    my $arg0 = shift;
-    my $arg1 = shift;
-    my $arg2 = shift;
-    my $arg3 = shift;
+    my ($dbh, @params) = @_;
 
     my $guid;
     my $id;
     my $type;
     my $args;
+
     my $message;
     my $returnvalue;
     my $stdout;
     my $stderr;
     my $success;
 
-    if ( defined ( $arg2 ) )
+    # Perl-only
+    if ( defined ( $params[2] ) )
     {
-        $guid = $arg0;			#TODO: fix utterly brocken api by sloppily added argument guid !!!
-	$id   = $arg1;
-	$type = $arg2;
-	$args = $arg3;
+        $guid = $params[0];
+	$id   = $params[1];
+	$type = $params[2];
+	$args = $params[3];
 
 	if ( ! ( isa ( $args, 'HASH' )))
         {
@@ -51,7 +51,7 @@ sub new
     }
     else
     {
-	my $xmldata = $arg1;
+	my $xmldata = $params[1];
 
 	return error( "unable to create job. xml doesn't contain a job description" ) unless ( defined ( $xmldata ) );
 	return error( "unable to create job. xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
@@ -89,6 +89,7 @@ sub new
 
     my $self = 
     {
+	dbh  => $dbh,
 	id   => $id,
 	guid => $guid,
 	type => $type,
