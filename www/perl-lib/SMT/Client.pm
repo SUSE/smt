@@ -76,6 +76,7 @@ $hashOfHashes =  {
 
 
 All current functions are:
+* new($$)                         -  constructor
 * getClientsInfo_internal($)      -  only internal usage
 * getClientsInfo($)               -  query all clients, filter the result; most generic function
 * getClientInfoByGUID($)          -  get one client's by GUID
@@ -91,9 +92,24 @@ All current functions are:
 
 =cut
 
+#
+# constructor
+#
+sub new ($$)
+{
+    my $class = shift;
+    my $params = shift || {};
 
+    my $self = {};
 
+    $self->{'dbh'} = $params->{'dbh'} || do {
+	# TODO: log error
+	return undef;
+    };
 
+    bless($self, $class);
+    return $self;
+}
 
 #
 # small internal function to check if a string is in an array
@@ -116,8 +132,8 @@ sub in_Array($$)
 #
 sub createPatchstatusQuery($$)
 {
+    my $self = shift;
     my $q = shift || '';
-    my $dbh = shift || return undef;
 
     # these are the hardcoded keys for the MachineData table for the patchstatus (where TYPE is 1)
     my @KEYS = qw[PKGMGR SECURITY RECOMMENDED OPTIONAL];
@@ -155,10 +171,10 @@ sub createPatchstatusQuery($$)
                 # if no number is given skip to next
                 next unless defined $2;
                 # if not lower or greater is defined it means equal
-                # $op should not be $dbh->quoted so make sure only  <, >, = are possible 
+                # $op should not be $self->{'dbh'}->quote~d so make sure only  <, >, = are possible 
                 my $op = (defined $1) ?  ($1 eq '>' ? '>':'<' ) : '=';
                 # create where statement snippet
-                push(@whereClause, sprintf(" ps.$KEYS[$i] $op %s ", $dbh->quote($2) ));
+                push(@whereClause, sprintf(" ps.$KEYS[$i] $op %s ", $self->{'dbh'}->quote($2) ));
             }
             elsif ( defined $fields[$i] )
             {
@@ -184,11 +200,10 @@ sub createPatchstatusQuery($$)
 #
 sub createSQLStatement($$)
 {
+    my $self = shift;
+
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
-
-    # get dbh handle for the quoting function
-    my $dbh = shift || return undef;
 
     my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
     my @ALLPROPS = @PROPS;
@@ -217,7 +232,7 @@ sub createSQLStatement($$)
             push (@select, " cl.$prop ");
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
-                push( @where, " cl.$prop LIKE " . $dbh->quote(${$filter}{$prop}) . ' ' );
+                push( @where, " cl.$prop LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
             }        
         }
     }
@@ -226,7 +241,7 @@ sub createSQLStatement($$)
     if ( exists ${$filter}{'PATCHSTATUS'}  &&  defined ${$filter}{'PATCHSTATUS'} )
     {
         # parse and create the patchstatus query
-        my $patchstatusQuery = createPatchstatusQuery(${$filter}{'PATCHSTATUS'}, $dbh);
+        my $patchstatusQuery = $self->createPatchstatusQuery(${$filter}{'PATCHSTATUS'});
         return undef unless defined $patchstatusQuery;
 
         $fromstr .= ' LEFT JOIN Patchstatus ps ON ( cl.ID = ps.CLIENT_ID ) ';
@@ -254,25 +269,20 @@ sub createSQLStatement($$)
 #
 sub getClientsInfo_internal($)
 {
-    my $dbh = SMT::Utils::db_connect();
-    if ( !$dbh )
-    {
-        # TODO  log error: "Cannot connect to database";
-        die "Please contact your administrator.";
-    }
+    my $self = shift;
 
     my $filter = shift || {};
     return undef unless ( isa($filter, 'HASH') );
 
     # let create the SQL statement
-    my $sql = createSQLStatement($filter, $dbh);
+    my $sql = $self->createSQLStatement($filter);
     return undef unless defined $sql;
 
     ## NOTE: This can be used for testing/debugging
     ## NOTE: will only return the generated SQL statement but not evaluate it
     #return $sql;
 
-    return $dbh->selectall_hashref($sql, 'ID');
+    return $self->{'dbh'}->selectall_hashref($sql, 'ID');
 }
 
 
@@ -281,13 +291,16 @@ sub getClientsInfo_internal($)
 #   query all clients about information, filtered by filter
 #   this is the mose generic function to query clients (besides the internal one)
 #   parameters
+#    $self
 #    $filter (hash) : filter for the query
 #
-sub getClientsInfo($)
+sub getClientsInfo($$)
 {
+    my $self = shift;
     my $filter = shift || {};
+
     return undef unless ( isa($filter, 'HASH') );  
-    return getClientsInfo_internal($filter);
+    return $self->getClientsInfo_internal($filter);
 }
 
 
@@ -296,13 +309,17 @@ sub getClientsInfo($)
 #   get detailled information about one client via his GUID
 #   For future compatibility there are both functions available ~ByID and ~ByGUID, as 
 #   we will move to IDs as primary key in a later version.
-#   parameter: guid (string)
+#   parameters:
+#    self
+#    guid (string)
 #
-sub getClientInfoByGUID($)
+sub getClientInfoByGUID($$)
 {
+    my $self = shift;
     my $guid = shift || "";
+
     return undef unless (defined $guid && $guid !~ /^$/);
-    return getClientsInfo_internal({'GUID' => $guid,
+    return $self->getClientsInfo_internal({'GUID' => $guid,
                                     'selectAll' => ''});
 }
 
@@ -312,13 +329,17 @@ sub getClientInfoByGUID($)
 #   get detailled information about one client via his ID (internal SMT client ID)
 #   For future compatibility there are both functions available ~ByID and ~ByGUID, as 
 #   we will move to IDs as primary key in a later version.
-#   parameter: id (integer)
+#   parameters:
+#    self
+#    id (integer)
 #
-sub getClientInfoByID($)
+sub getClientInfoByID($$)
 {
+    my $self = shift;
     my $id = shift || '';
+
     return undef unless (defined $id && $id !~ /^$/);
-    return getClientsInfo_internal({'ID' => $id,
+    return $self->getClientsInfo_internal({'ID' => $id,
                                     'selectAll' => ''});
 }
 
@@ -326,12 +347,15 @@ sub getClientInfoByID($)
 #
 # getAllClientsInfo
 #   get detailled information about all clients with all information
-#   no parameters
+#   parameter
+#    self
 #
-sub getAllClientsInfo()
+sub getAllClientsInfo($)
 {
+    my $self = shift;
+
     # emtpy filter means: select all information
-    return getClientsInfo_internal({});
+    return $self->getClientsInfo_internal({});
 }
 
 
@@ -339,12 +363,14 @@ sub getAllClientsInfo()
 # getClientGUIDByID
 #   get a client's GUID via its ID
 #
-sub getClientGUIDByID($)
+sub getClientGUIDByID($$)
 {
+    my $self = shift;
     my $id = shift || "";
     my $guid = undef;
+
     return undef unless (defined $id && $id !~ /^$/);
-    my $res = getClientsInfo_internal({ 'ID' => $id,
+    my $res = $self->getClientsInfo_internal({ 'ID' => $id,
                                         'GUID' => ''  });
     if ( keys %{$res} == 1 )
     {
@@ -361,11 +387,13 @@ sub getClientGUIDByID($)
 # getClientIDByGUID
 #   get a client's ID via its GUID
 #
-sub getClientIDByGUID($)
+sub getClientIDByGUID($$)
 {
+    my $self = shift;
     my $guid = shift || "";
+
     return undef unless (defined $guid && $guid !~ /^$/);
-    my $res = getClientsInfo_internal({ 'GUID' => $guid, 
+    my $res = $self->getClientsInfo_internal({ 'GUID' => $guid, 
                                         'ID' => ''  });
     if ( keys %{$res} == 1 )
     {
@@ -381,13 +409,17 @@ sub getClientIDByGUID($)
 #
 # getPatchstatusByID
 #   get a client's patchstatus via its ID
-#   parameter: ID
+#   parameters:
+#    self
+#    ID
 #
-sub getClientPatchstatusByID($)
+sub getClientPatchstatusByID($$)
 {
+    my $self = shift;
     my $id = shift || '';
+
     return undef unless (defined $id && $id !~ /^$/);
-    return getClientsInfo_internal({'ID' => $id,
+    return $self->getClientsInfo_internal({'ID' => $id,
                                     'PATCHSTATUS' => '' });
 }
 
@@ -395,12 +427,16 @@ sub getClientPatchstatusByID($)
 #
 # getPatchstatusByGUID
 #   get a client's patchstatus via its GUID
-#   parameter: GUID
-sub getClientPatchstatusByGUID($)
+#   parameters:
+#    self
+#    GUID
+sub getClientPatchstatusByGUID($$)
 {
+    my $self = shift;
     my $guid = shift || '';
+
     return undef unless (defined $guid && $guid !~ /^$/);
-    return getClientsInfo_internal({'GUID' => $guid,
+    return $self->getClientsInfo_internal({'GUID' => $guid,
                                     'PATCHSTATUS' => '' });
 }
 

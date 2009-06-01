@@ -63,8 +63,7 @@ sub new
 	return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
 	return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
 
-
-	#TODO: check values ion order to prevent sql injection 
+	#TODO: check values in order to prevent sql injection
 
 	# retrieve variables
 	$id   = $j->{id}        if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );

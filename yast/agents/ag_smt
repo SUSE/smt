@@ -49,6 +49,7 @@ my $keyid	= $cfg->val('LOCAL', 'signingKeyID');
 my $passphrase	= $cfg->val('LOCAL', 'signingKeyPassphrase');
 
 my $repositories = SMT::Repositories::new($dbh);
+my $clients = SMT::Client->new({'dbh' => $dbh});
 
 use constant {
     YCP_TRUE	=> 'true',
@@ -535,7 +536,7 @@ sub IsSubrepositoryUpToDate ($) {
 sub GetAllClientsStatus ($) {
     my $args = shift || {};
 
-    return SMT::Client::getAllClientsInfo();
+    return $clients->getAllClientsInfo();
 }
 
 # the main() loop
