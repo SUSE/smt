@@ -1,4 +1,4 @@
-package SMT::Parser::RpmMdPrimary;
+package SMT::Parser::RpmMdPrimaryFilter;
 
 use strict;
 
@@ -12,11 +12,11 @@ use Data::Dumper;
 
 =head1 NAME
 
-SMT::Parser::RpmMdPrimary - parses and filters rpm-md primary.xml file
+SMT::Parser::RpmMdPrimaryFilter - parses and filters rpm-md primary.xml file
 
 =head1 SYNOPSIS
 
-  $parser = SMT::Parser::RpmMdPackages->new(OUT => $filehandle);
+  $parser = SMT::Parser::RpmMdPrimaryFilter->new(OUT => $filehandle);
   $parser->resource('/path/to/repository/directory/');
   $parser->parse();
 
@@ -35,15 +35,15 @@ too, if needed.
 
 =item new()
 
-Create a new SMT::Parser::RpmMdPrimary object.
+Create a new SMT::Parser::RpmMdPrimaryFilter object.
 
 =item parse()
 
 Starts parsing
 
-=item unwanted()
+=item found()
 
-Returns a hash with data of unwanted packages. Pkgid (rpm package checksum)
+Returns a hash with data of found unwanted packages. Pkgid (rpm package checksum)
 as a key and hashes with name, epo, ver, rel, arch keys as values.
 
 Example:
@@ -128,7 +128,7 @@ sub resource
     return $self->{RESOURCE};
 }
 
-sub parsed
+sub found()
 {
     my $self = shift;
     return $self->{UNWANTED_FOUND};
@@ -200,7 +200,7 @@ sub parse($$)
     {
         # ignore the errors, but print them
         chomp($@);
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::RpmMdPackages: Invalid XML in '$path': $@");
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::RpmMdPrimaryFilter: Invalid XML in '$path': $@");
         $self->{ERRORS} += 1;
     }
 
@@ -218,7 +218,7 @@ sub handle_start_tag
     {
         $self->{CURRENT}->{MAINELEMENT} = undef;
         $self->{CURRENT}->{SUBELEMENT} = undef;
-        $self->{CURRENT}->{CHECKSUM} = undef;
+        $self->{CURRENT}->{PKGID} = undef;
         $self->{CURRENT}->{NAME} = undef;
         $self->{CURRENT}->{VERSION} = undef;
         $self->{CURRENT}->{RELEASE} = undef;
@@ -237,7 +237,7 @@ sub handle_start_tag
             $self->{CURRENT} = {};
             $self->{CURRENT}->{MAINELEMENT} = undef;
             $self->{CURRENT}->{SUBELEMENT} = undef;
-            $self->{CURRENT}->{CHECKSUM} = undef;
+            $self->{CURRENT}->{PKGID} = undef;
             $self->{CURRENT}->{ARCH} = ((defined $parentarch && $parentarch)? $parentarch : $self->{DEFAULTARCH});
         }
         else
@@ -371,7 +371,7 @@ sub handle_end_tag
             }
 
             $self->{CURRENT}->{SUBELEMENT} = undef;
-            $self->{CURRENT}->{CHECKSUM} = undef;
+            $self->{CURRENT}->{PKGID} = undef;
             $self->{CURRENT}->{NAME} = undef;
             $self->{CURRENT}->{VERSION} = undef;
             $self->{CURRENT}->{RELEASE} = undef;
