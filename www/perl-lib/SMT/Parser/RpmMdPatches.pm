@@ -171,6 +171,13 @@ sub parse
         {
             $self->{WRITE_OUT} = 0;
         }
+        
+        if ($self->{SAVE_PACKAGES})
+        {
+            $self->{PACKAGES} = [];   
+        }
+        
+        $self->{STACK} = [];
 
         $path = $self->{RESOURCE}."/$start";
 
@@ -274,6 +281,7 @@ sub handle_start_tag
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
         $self->{CURRENT}->{PATCHTYPE} = $attrs{type};
         $self->{CURRENT}->{PATCHVER} = $attrs{version};
+        $self->{CURRENT}->{PACKAGES} = [];
     }
     elsif ( lc($element) eq "category" )
     {
@@ -309,6 +317,21 @@ sub handle_start_tag
     elsif ( lc($element) eq "location" )
     {
         $self->{CURRENT}->{LOCATION} = $attrs{href};
+    }
+    # updateinfo.xml's <package>
+    elsif ( lc($element) eq 'package' )
+    {
+        push @{$self->{STACK}}, $self->{CURRENT}->{MAINELEMENT};
+        $self->{CURRENT}->{MAINELEMENT} = 'package';
+        $self->{CURRENT}->{SUBELEMENT} = undef;
+        if ($self->{SAVE_PACKAGES})
+        {
+            $self->{CURRENT}->{PKGNAME} = $attrs{name};
+            $self->{CURRENT}->{PKGEPO} = $attrs{epoch};
+            $self->{CURRENT}->{PKGVER} = $attrs{version};
+            $self->{CURRENT}->{PKGREL} = $attrs{release};
+            $self->{CURRENT}->{PKGARCH} = $attrs{arch};
+        }
     }
 }
 
@@ -353,6 +376,7 @@ sub handle_char_tag
     }
 }
 
+use Data::Dumper;
 
 sub handle_end_tag
 {
@@ -369,8 +393,25 @@ sub handle_end_tag
     if (exists $self->{CURRENT}->{MAINELEMENT} && defined $self->{CURRENT}->{MAINELEMENT} &&
            lc($element) eq $self->{CURRENT}->{MAINELEMENT} )
     {
-        if( $self->{CURRENT}->{PATCHID} ne "" && $self->{CURRENT}->{PATCHTYPE} ne "" &&
-            $self->{CURRENT}->{PATCHVER} ne "")
+        if ($self->{CURRENT}->{MAINELEMENT} eq 'package')
+        {
+            if ($self->{SAVE_PACKAGES})
+            {
+                my $pkg = {};
+                $pkg->{name} = $self->{CURRENT}->{PKGNAME}; 
+                $pkg->{epo}  = $self->{CURRENT}->{PKGEPO}; 
+                $pkg->{ver}  = $self->{CURRENT}->{PKGVER}; 
+                $pkg->{rel}  = $self->{CURRENT}->{PKGREL}; 
+                $pkg->{arch} = $self->{CURRENT}->{PKGARCH}; 
+                push @{$self->{CURRENT}->{PACKAGES}}, $pkg;
+            }
+            $self->{CURRENT}->{MAINELEMENT} = pop @{$self->{STACK}}; 
+        }
+
+        elsif (($self->{CURRENT}->{MAINELEMENT} eq 'update' || $self->{CURRENT}->{MAINELEMENT} eq 'patch') &&
+            $self->{CURRENT}->{PATCHID}   ne "" &&
+            $self->{CURRENT}->{PATCHTYPE} ne "" &&
+            $self->{CURRENT}->{PATCHVER}  ne "")
         {
             my $str = $self->{CURRENT}->{PATCHID}."-".$self->{CURRENT}->{PATCHVER};
             $self->{PATCHES}->{$str}->{name} = $self->{CURRENT}->{PATCHID};
@@ -385,6 +426,10 @@ sub handle_end_tag
                 if ($self->{SAVE_FILTERED})
                 {
                     $self->{FILTERED}->{$str} = $self->{PATCHES}->{$str};
+                }
+                if ($self->{SAVE_PACKAGES})
+                {
+                    push @{$self->{PACKAGES}}, @{$self->{CURRENT}->{PACKAGES}}; 
                 }
                 delete($self->{PATCHES}->{$str});
             }
@@ -429,8 +474,6 @@ sub handle_end_tag
                 $self->{PATCHES}->{$key} = $patches->{$key};
             }
         }
-
-        $self->{CURRENT} = undef;
     }
     elsif ( exists $self->{CURRENT}->{SUBELEMENT} && defined $self->{CURRENT}->{SUBELEMENT} &&
             lc($element) eq $self->{CURRENT}->{SUBELEMENT} )
@@ -472,6 +515,12 @@ sub filtered()
 {
     my $self = shift;
     return $self->{FILTERED};
+}
+
+sub filteredpkgs()
+{
+    my $self = shift;
+    return $self->{PACKAGES};
 }
 
 =back
