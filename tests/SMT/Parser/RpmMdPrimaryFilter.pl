@@ -17,8 +17,8 @@ my $wd = Cwd::cwd();       # current working dir
 
 # packages to remove
 my @remove = (
-    {name => 'logwatch', ver => '7.3.6', rel => '60.6.1', arch => 'noarch'},
-    {name => 'audacity', ver => '1.3.5', rel => '49.12.1', arch => 'i586'}
+    {name => 'logwatch', epo => undef, ver => '7.3.6', rel => '60.6.1', arch => 'noarch'},
+    {name => 'audacity', epo => 0, ver => '1.3.5', rel => '49.12.1', arch => 'i586'}
     );
 
 my $parser = SMT::Parser::RpmMdPrimaryFilter->new(); #out => $fh); use $fh if test of the written file is needed

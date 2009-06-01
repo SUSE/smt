@@ -157,8 +157,11 @@ sub parse($$)
     $self->{UNWANTED_GIVEN} = {};
     foreach my $pkg (@$unwanted)
     {
-        # FIXME what about epoch? Does updateinfo.xml.gz package data ('ver' attr) contain it or not?
-        my $nvra = $pkg->{name} . '-' . $pkg->{ver} . '-' . $pkg->{rel} . '.' . $pkg->{arch};
+        my $nvra = $pkg->{name} . '-' .
+            (defined $pkg->{epo} ? $pkg->{epo} : '0') . ':' .  
+            $pkg->{ver} . '-' .
+            $pkg->{rel} . '.' .
+            $pkg->{arch};
         $self->{UNWANTED_GIVEN}->{$nvra} = 1;
     }
 
@@ -233,7 +236,6 @@ sub handle_start_tag
             $self->{CURRENT}->{MAINELEMENT})
         {
             my $parentarch = $self->{CURRENT}->{ARCH};
-            push @{$self->{STORE}}, $self->{CURRENT};
             $self->{CURRENT} = {};
             $self->{CURRENT}->{MAINELEMENT} = undef;
             $self->{CURRENT}->{SUBELEMENT} = undef;
@@ -270,7 +272,8 @@ sub handle_start_tag
         elsif (lc($element) eq 'version')
         {
             $self->{CURRENT}->{SUBELEMENT} = '';
-            $self->{CURRENT}->{EPOCH}   = $attrs{epoch};
+            $self->{CURRENT}->{EPOCH}   = $attrs{epoch} or
+                $self->{CURRENT}->{EPOCH} = 0;
             $self->{CURRENT}->{VERSION} = $attrs{ver};
             $self->{CURRENT}->{RELEASE} = $attrs{rel};
         }
@@ -344,6 +347,7 @@ sub handle_end_tag
         {
             my $nvra =
                 $self->{CURRENT}->{NAME} . '-' .
+                $self->{CURRENT}->{EPOCH} . ':' .
                 $self->{CURRENT}->{VERSION} . '-' .
                 $self->{CURRENT}->{RELEASE} . '.' .
                 $self->{CURRENT}->{ARCH};
