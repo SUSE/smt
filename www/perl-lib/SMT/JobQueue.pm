@@ -10,7 +10,7 @@ use Data::Dumper;
 
 sub new ($$)
 {
-    my $jqass = shift;
+    my $class = shift;
     my $params = shift || {};
 
     my $self = {};
@@ -25,7 +25,7 @@ sub new ($$)
 	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
     }
 
-    bless $self, $jqass;
+    bless $self, $class;
     return $self;
 }
 
@@ -189,24 +189,14 @@ sub getJobList($$)
 
 
 ###############################################################################
+# add a job (arg = jobobject)
 sub addJob($)
 {
   my $self = shift;
-  my $arg = shift;
-  my $jobobject = SMT::Job->new({ dbh => $self->{dbh} });
+  my $job = shift;
 
-  if ( isa ($arg, 'HASH' ))
-  {
-    $jobobject->addJob( $arg );
-  }
-  else
-  {
-    $jobobject->addJob( $arg );
-  }
+  my $sql = "insert into ";
 
-  #TODO: write job to database
-
-  print $jobobject->getId();
 
   return 1;
 };
@@ -262,18 +252,33 @@ sub getNextAvailableJobID()
 
   my $cookie = SMT::Utils::getDBTimestamp()." - ".rand(1024);
 
-  my $sql1 = 'insert into JobQueue ( NAME ) values ("'.$cookie.'")' ;
+  # TODO: for cleanup 
+  # TODO: add expires = today + 1day
+  # TODO: add status or type undefined
+
+  my $sql1 = 'insert into JobQueue ( DESCRIPTION ) values ("'.$cookie.'")' ;
   $self->{dbh}->do($sql1) || return ( undef, $cookie);
 
-
   my $sql2 = 'select ID from JobQueue '; 
-     $sql2 .= ' where NAME  = "'.$cookie.'"';
+     $sql2 .= ' where DESCRIPTION  = "'.$cookie.'"';
 
   my $id = $self->{dbh}->selectall_arrayref($sql2)->[0]->[0];
 
   return ($id, $cookie);
 
 }
+
+sub deleteJobIDCookie()
+{
+  my $self   = shift;
+  my $id     = shift;
+  my $cookie = shift;
+
+  my $sql1 = 'delete from JobQueue where ID = "$id" and DESCRIPTION = "$cookie"' ;
+  return $self->{dbh}->do($sql1);
+}
+
+
 
 
 
