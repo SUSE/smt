@@ -15,7 +15,6 @@ my $c = SMT::JobQueue->new({'dbh' => $dbh});
 
 
 #print $c->getNextJobID("guid10", 0);
-#print $c->retrieveJob("guid10", 42,1);
 #print $c->finishJob("guid10", 42,1);
 #my ($id, $cookie) = $c->getNextAvailableJobID();
 #print "$id - $cookie";
@@ -45,15 +44,16 @@ $job->description("thomastest");
 
 #print $c->addJob($job);
 
-if ( $c->addJobForMultipleGUIDs($job, ("guid10", "guid12", "guid11")) )
-{
-  print "success";
-}
-else
-{
-  print "err";
-}
+#if ( $c->addJobForMultipleGUIDs($job, ("guid10", "guid12", "guid11")) )
+#{
+#  print "success";
+#}
+#else
+#{
+#  print "err";
+#}
 
 
+print $c->retrieveJob("guid11", 44,1);
 
 #print SMT::JobQueue->updateJob("guid10", '<job id="43" message="softwarepush failed" returnvalue="5" stderr="&lt;?xml version=\'1.0\'?&gt;\n&lt;stream&gt;\n&lt;message type=&quot;error&quot;&gt;Root privileges are required for installing or uninstalling packages.&lt;/message&gt;\n&lt;/stream&gt;" stdout="" success="false" />' );

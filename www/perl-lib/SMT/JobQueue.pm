@@ -57,8 +57,6 @@ sub retrieveJob($$$$)
 	' where j.ID = '.$self->{dbh}->quote($jobid).
 	' and c.GUID = '.$self->{dbh}->quote($guid);
  
-#  return $sql;
-
   $self->{dbh}->do($sql) || return undef;
 
   return getJob($self, $guid, $jobid, $xmlformat);
