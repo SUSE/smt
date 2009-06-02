@@ -206,12 +206,12 @@ sub addJobIntern($$)
   my @sqlkeys = ();
   my @sqlvalues = ();
   
-  my @attribs = qw( id parentid name description type status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success);
+  my @attribs = qw( id parentid name description type status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
 
 
   # GUID
   push ( @sqlkeys, "GUID_ID" );
-  push ( @sqlvalues, $guidid );
+  push ( @sqlvalues, $self->{dbh}->quote($guidid) );
 
   # arguments
   push ( @sqlkeys, "ARGUMENTS" );
@@ -272,14 +272,44 @@ sub addJobForMultipleGUIDs
 }
 
 
-sub pers
+sub isPersistent
 {
-#  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
-#  my $guidid = $client->getClientIDByGUID($job->guid) || return undef;
+  my $self  = shift;
+  my $guid  = shift || return undef;
+  my $jobid = shift || return undef;
 
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
+  my $sql = 'select PERSISTENT from JobQueue '; 
+     $sql .= ' where GUID_ID  = '. $self->{dbh}->quote($guidid) ;
+     $sql .= ' AND ID  = '. $self->{dbh}->quote($jobid) ;
+
+  my $pers = $self->{dbh}->selectall_arrayref($sql)->[0]->[0];
+
+  return $pers;
 
 }
+
+sub calcNextTargeted
+{
+  my $self  = shift;
+  my $guid  = shift || return undef;
+  my $jobid = shift || return undef;
+
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  my $guidid = $client->getClientIDByGUID($guid) || return undef;
+
+  my $sql = 'select ADDTIME("'.SMT::Utils::getDBTimestamp().'", TIMELAG ) from JobQueue '; 
+     $sql .= ' where GUID_ID  = '. $self->{dbh}->quote($guidid) ;
+     $sql .= ' AND ID  = '. $self->{dbh}->quote($jobid) ;
+
+  my $time = $self->{dbh}->selectall_arrayref($sql)->[0]->[0];
+
+  return $time;
+
+}
+
 
 
 ###############################################################################
@@ -289,12 +319,8 @@ sub finishJob($)
   my $guid      = shift || return undef;
   my $jobxml = shift;
 
-#  my $job = new SMT::Job( $self->{dbh}, $guid, $jobxml );
-
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $job->newJob( $guid, $jobxml );
-
-
 
   my $status = 0 ;
   if ( defined $job->success() )
@@ -309,15 +335,30 @@ sub finishJob($)
     }
   }
 
+
+
   my $sql = 'update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )'.
 	' set j.STDERR = '.$self->{dbh}->quote($job->stderr()).
 	', j.MESSAGE = '.$self->{dbh}->quote($job->message()). 
 	', j.STDOUT = '.$self->{dbh}->quote($job->stdout()).
 	', j.EXITCODE = '.$self->{dbh}->quote($job->exitcode()).
 	', j.STATUS = '.$self->{dbh}->quote($status).
-	', j.FINISHED = "'. SMT::Utils::getDBTimestamp().'"'.
+	', j.FINISHED = "'. SMT::Utils::getDBTimestamp().'"';
 
-	' where j.ID = '.$self->{dbh}->quote($job->id()).
+  if ( isPersistent($self, $guid, $job->{id}) )
+  {
+    $status = 0;
+
+    my $nexttime = calcNextTargeted($self, $guid, $job->{id});
+
+    if (defined $nexttime )
+    {
+      $sql .= ', j.TARGETED = '.$self->{dbh}->quote( $nexttime )  ; 
+    }
+  }
+
+
+  $sql .= ' where j.ID = '.$self->{dbh}->quote($job->id()).
 	' and c.GUID = '.$self->{dbh}->quote($guid);
 
   return $self->{dbh}->do($sql);

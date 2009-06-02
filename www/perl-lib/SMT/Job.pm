@@ -303,6 +303,13 @@ sub retrieved
 
 sub finished
 {
+      my ( $self, $finished ) = @_;
+      $self->{finished} = $finished if defined( $finished );
+      return $self->{finished};
+}
+
+sub persistent
+{
       my ( $self, $persistent ) = @_;
       $self->{persistent} = $persistent if defined( $persistent );
       return $self->{persistent};

@@ -39,7 +39,11 @@ $job->guid("guid11");
 $job->description("thomastest");
 $job->arguments("<arguments><thomas>true</thomas></arguments>");
 $job->expires("2009-08-02 20:07:20");
-$job->targeted("2009-02-02 20:07:20");
+$job->targeted("2009-06-02 22:07:20");
+$job->persistent(1);
+$job->timelag("14:00:00");
+$job->id(44);
+
 if ( $c->addJob($job) )
 {
   print "successfully added\n\n";
@@ -55,6 +59,7 @@ if ( $c->finishJob("guid11", "<job id='44' message='a'><success>true</success></
   print "successfully finished\n\n";
 }
 
+#print "pers: ".$c->isPersistent("guid11","44");
 
 
 
