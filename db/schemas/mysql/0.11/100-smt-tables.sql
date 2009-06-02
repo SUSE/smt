@@ -166,7 +166,7 @@ create table RepositoryContentData(localpath   VARCHAR(300) PRIMARY KEY,
 --      2  -  failed
 --      3  -  denied by client 
 
-create table JobQueue ( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+create table JobQueue ( ID          INTEGER UNSIGNED NOT NULL,
                         GUID_ID     INTEGER UNSIGNED NOT NULL,
                         PARENT_ID   INTEGER UNSIGNED NULL default NULL,
                         NAME        CHAR NOT NULL default '',
