@@ -71,6 +71,8 @@ if ( defined $help and ( $help == 1 ) )
     print "--logfile -L file         ".__("Path to logfile\n");
     print "--debug                   ".__("Enable debug mode\n");
     print "--verboselevel -v level   ".__("set the verbose level\n");
+    print "--export                  ".__("export NCC informations from the local database to a directory of XML files, the\n");
+    print "                          ".__("resulting files can be imported on another SMT instance with --fromdir\n");
     print "--mail -m                 ".__("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
     print "                          ".__("The output on stdout and stderr will be suppressed.\n");
   exit 0;
@@ -337,7 +339,6 @@ eval
             SMT::CLI::setDoMirrorFromXml( xml => $mirrorinfofile );
         }
     }
-
     
 };
 if ($@)
@@ -466,6 +467,12 @@ Enable display of debug information.
 
 Send output as e-mail to the administrators defined in reportEmail in smt.conf .
 The output on stdout and stderr will be suppressed in this mode.
+
+=item --export directory
+
+Export the NCC informations from the local database to a directory of XML files,
+that directory can later be imported on another SMT instance with 
+C<smt ncc-sync --fromdir directory>.
 
 =back
 
