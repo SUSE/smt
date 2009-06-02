@@ -2,31 +2,27 @@
 use File::Temp;
 
 BEGIN {
-    push @INC, "../../../www/perl-lib";
+    push @INC, "../www/perl-lib";
 }
 
 use SMT::Mirror::RpmMd;
 use IO::Zlib;
 use Test::Simple tests => 6;
 
-my $url = 'http://download.opensuse.org/repositories/home:/dmacvicar/openSUSE_10.3/';
+my $url = 'http://download.opensuse.org/repositories/home:/jkupec/openSUSE_11.1/';
 my $tempdir = File::Temp::tempdir(CLEANUP => 1);
 print STDERR "Saving $url to $tempdir\n";
 
 $mirror = SMT::Mirror::RpmMd->new();
 $mirror->uri( $url );
-# FIXME mirrorTo does not exist
-ok($mirror->mirrorTo( $tempdir ) == 0, "should mirror ok");
+$mirror->localBasePath("$tempdir");
+$mirror->localRepoPath('');
 
-# last should have been a full mirror
-ok($mirror->lastUpToDate() == 0, "first mirror should be full");
-
-# verify
-ok($mirror->verify($tempdir), "mirror should verify");
-
-# mirror again, we should be uptodate
-ok($mirror->mirrorTo( $tempdir ) == 0, "second mirror should work");
-ok($mirror->lastUpToDate() == 1, "second mirror should be fast");
+ok($mirror->mirror() == 0, "should mirror ok");
+ok($mirror->statistic()->{TOTALFILES} != $mirror->statistic()->{UPTODATE}, "first mirror() should download all the files");
+ok($mirror->verify(), "mirrored data should pass checksum verifications");
+ok($mirror->mirror() == 0, "second mirror should work");
+ok($mirror->statistic()->{TOTALFILES} == $mirror->statistic()->{UPTODATE}, "second mirror() should not download anything");
 
 # now lets corrupt the directory
 $fh = new IO::Zlib("$tempdir/repodata/other.xml.gz", "ab9");
@@ -39,9 +35,5 @@ else
 {
     die "Cannot open file $tempdir/repodata/other.xml.gz: $!";
 }
-
 # now it should not verify
-ok( $mirror->verify($tempdir) == 0, "should not verify after corrupted");
-
-
-
+ok( $mirror->verify() == 0, "should not verify after a file has been corrupted");

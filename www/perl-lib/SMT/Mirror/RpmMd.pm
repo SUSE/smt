@@ -108,16 +108,6 @@ sub new
     $self->{VERIFYJOBS}   = {};
     $self->{CLEANLIST}    = {};
 
-    $self->{STATISTIC}->{DOWNLOAD} = 0;
-    $self->{STATISTIC}->{LINK} = 0;
-    $self->{STATISTIC}->{COPY} = 0;
-    $self->{STATISTIC}->{UPTODATE} = 0;
-    $self->{STATISTIC}->{ERROR}    = 0;
-    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-    $self->{STATISTIC}->{NEWSECPATCHES} = 0;
-    $self->{STATISTIC}->{NEWRECPATCHES} = 0;
-    $self->{STATISTIC}->{NEWSECTITLES} = [];
-    $self->{STATISTIC}->{NEWRECTITLES} = [];
     $self->{FILTER} = undef;
     
     $self->{VBLEVEL} = 0;
@@ -165,6 +155,9 @@ sub new
     {
         $self->{FILTER} = $opt{filter};
     }
+
+    $self->{STATISTIC} = {};
+    resetStatistics($self->{STATISTIC});
 
     bless($self);
     return $self;
@@ -260,9 +253,21 @@ Available keys in this has are:
 
 =over 4
 
+=item TOTALFILES
+
+Total number of files in the repository (referenced from the metadata).   
+
 =item DOWNLOAD
 
-Number of new files (downloaded, hardlinked or copied)   
+Number of downloaded new/changed files.   
+
+=item LINK
+
+Number of files hardlinked from the source repo to mirror.
+
+=item COPY
+
+Number of files copied from the source repo to mirror.
 
 =item UPTODATE
 
@@ -324,6 +329,7 @@ sub job2statistic
     my $job  = shift || return;
 
     $self->{STATISTIC}->{DOWNLOAD_SIZE} += int($job->downloadSize());
+    $self->{STATISTIC}->{TOTALFILES}++;
     if( $job->wasError() )
     {
         $self->{STATISTIC}->{ERROR} += 1;
@@ -359,20 +365,21 @@ sub newpatches
 }
 
 # Internal function
-sub resetStatistics ($)
+sub resetStatistics($)
 {
-    my $self = shift;
+    my $stats = shift;
 
-    $self->{STATISTIC}->{ERROR}         = 0;
-    $self->{STATISTIC}->{UPTODATE}      = 0;
-    $self->{STATISTIC}->{DOWNLOAD}      = 0;
-    $self->{STATISTIC}->{LINK}          = 0;
-    $self->{STATISTIC}->{COPY}          = 0;
-    $self->{STATISTIC}->{DOWNLOAD_SIZE} = 0;
-    $self->{STATISTIC}->{NEWSECPATCHES} = 0;
-    $self->{STATISTIC}->{NEWRECPATCHES} = 0;
-    $self->{STATISTIC}->{NEWSECTITLES} = [];
-    $self->{STATISTIC}->{NEWRECTITLES} = [];
+    $stats->{TOTALFILES}    = 0;
+    $stats->{ERROR}         = 0;
+    $stats->{UPTODATE}      = 0;
+    $stats->{DOWNLOAD}      = 0;
+    $stats->{LINK}          = 0;
+    $stats->{COPY}          = 0;
+    $stats->{DOWNLOAD_SIZE} = 0;
+    $stats->{NEWSECPATCHES} = 0;
+    $stats->{NEWRECPATCHES} = 0;
+    $stats->{NEWSECTITLES} = [];
+    $stats->{NEWRECTITLES} = [];
 
     return 1;
 }
@@ -433,7 +440,7 @@ sub mirror()
         if(exists $options{force} && defined $options{force} && $options{force});
 
     # reset the counter
-    $self->resetStatistics();
+    resetStatistics $self->{STATISTIC};
     $self->{NEWPATCHES} = {};
 
     my $dest = $self->fullLocalRepoPath();
@@ -489,7 +496,7 @@ sub mirror()
 
         $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => ($self->vblevel() != LOG_DEBUG) );
 
-	$self->resetStatistics();
+	resetStatistics $self->{STATISTIC};
 
         if ( ! $dryrun )
         {
@@ -500,7 +507,7 @@ sub mirror()
 
     if ( !$force && !$job->outdated() && $verifySuccess )
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up to date."), $saveuri)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
         return 0;
     }
@@ -606,7 +613,7 @@ sub mirror()
         $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
         #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
     }
-    
+
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
     $parser->resource($self->fullLocalRepoPath());
@@ -635,15 +642,12 @@ sub mirror()
 
     my $newpatches;
     my $oldpatches;
-
-    my $needupdateinfoupdate = 0;
-    my $needprimaryupdate = 0;      # TODO filter also packages
+    my $pkgstoremove;
 
     # to store the new (filtered) repodata
-    my $tmpdir = tempdir(CLEANUP => 1); 
-    # new updateinfo.xml file path
-    my $uifname = "$tmpdir/updateinfo.xml";
-    # old updateinfo.xml.gz file path
+    my $tmpdir = tempdir(CLEANUP => 1);
+
+    # updateinfo.xml.gz file path
     my $olduifname = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
 
     #
@@ -653,6 +657,9 @@ sub mirror()
     # with filtering (generates new metadata)
     if (defined $self->{FILTER} && not $self->{FILTER}->empty() && -e $olduifname)
     {
+        # new updateinfo.xml file path
+        my $uifname = "$tmpdir/updateinfo.xml";
+
         # open file to write the new updateinfo.xml
         my $out = new IO::File();
         $out->open("> $uifname");
@@ -660,11 +667,15 @@ sub mirror()
         # parse with filter and writer
         my $parsenew = SMT::Parser::RpmMdPatches->new(
             log => $self->{LOG}, vblevel => $self->vblevel(),
-            filter => $self->{FILTER}, out => $out);
+            filter => $self->{FILTER},
+            savefiltered => 1,
+            savepackages => 1,
+            out => $out);
         $parsenew->resource($self->fullLocalRepoPath());
         $parsenew->specialmdlocation(1);
         $newpatches = $parsenew->parse(
             ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
+        $pkgstoremove = $parsenew->filteredpkgs();
 
         # parse the original metadata with the filter
         my $parseorig = SMT::Parser::RpmMdPatches->new(
@@ -706,9 +717,9 @@ sub mirror()
         # if checksums differ, overwrite the old updateinfo & update repomd later
         if (not $digest eq $olddigest)
         {
-            $needupdateinfoupdate = 1;
-
-            # TODO remove unnecessary rpms
+            #for (keys %{$self->{MDFILES}}) { if ($_ =~ /updateinfo.*xml/) { $mdkey = $_; last }} 
+            $self->{MDFILES}->{'repodata/updateinfo.xml.gz'}->{changednew} = $uifname;
+            $self->{MDFILES}->{'repodata/updateinfo.xml.gz'}->{changedorig} = $olduifname;
         }
     }
     # without filtering (metadata stay untouched)
@@ -754,77 +765,24 @@ sub mirror()
     # save the new patches for newpatches() function
     $self->{NEWPATCHES} = $newpatches;
 
-    my $modifyrepopath = '/usr/bin/modifyrepo';
-    my $createrepopath = '/usr/bin/createrepo';
-
-    # TODO update package info (primary, filelist, other, deltainfo, susedata)
-    #
-    # write output to tmpdir, then copy to .repodata
-    if ($needprimaryupdate)
+    if (defined $pkgstoremove && @$pkgstoremove)
     {
-        # createrepo --update <repobase> --outputdir $tmpdir $self->fullLocalRepoPath()
-    }
-
-    my $needrepomdupdate = $needprimaryupdate || $needupdateinfoupdate;
-
-    # update repomd.xml in .repodata
-    #
-    # this means injecting all additional metadata into repomd.xml which
-    # were not added by createrepo (other than primar, filelist, and other.xml)
-    #
-    # CAUTION: we're modifying the metadata, so we need to make sure that we
-    # do not modify also their hard-linked aliases if we're using hardlinks
-    if ($needrepomdupdate)
-    {
-        # unlink the original repomd.xml first to avoid modifying the original
-        # repomd.xml on the source URI if hardlinked from elsewhere
-        my $repomdpath = $self->fullLocalRepoPath()."/.repodata/repomd.xml"; 
-        copy($repomdpath, "$repomdpath.tmp");
-        unlink ($repomdpath);
-        rename("$repomdpath.tmp", $repomdpath);
-
-        # update updateinfo.xml.gz info in repomd.xml
-        if ($needupdateinfoupdate)
+        if (!$self->removePackages($pkgstoremove, $self->{MDFILES}))
         {
-            # unlink the original updateinfo.xml.gz first; modifyrepo would
-            # otherwise modify the source updateinfo.xml.gz as well 
-            unlink ($olduifname);
-
-            # note: modifyrepo needs unzipped unpdateinfo.xml
-	    my $cmd = $modifyrepopath.' '.$uifname.' '.$self->fullLocalRepoPath().'/.repodata';
-	    my $cmd_running = 1;
-
-            # escape $ to avoid interpreting it by shell
-            # FIXME run the commands using the ported executeCommand() from suseregister	    
-	    $cmd =~ s/\$/\\\$/g;
-
-	    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, 'Executing: '.$cmd);
-	    # A correct solution would be to use IPC::Run or IPC::Open3
-	    open (CMD, $cmd.'|') || do {
-		printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, 'Cannot run '.$modifyrepopath.': '.$!);
-		$self->{STATISTIC}->{ERROR}++;
-		$cmd_running = 0;
-	    };
-	    if ($cmd_running)
-	    {
-		while (my $output = <CMD>)
-		{
-		    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, 'ModifyRepo: '.$output);
-		}
-		close CMD;
-	    }
-        }
-
-        if ($needprimaryupdate)
-        {
-            # modifyrepo <repobase>/repodata/<all_other_metadata> <repobase>/repodata # except primary & filelist & other
-        }
-
-        # re-sign the repo
-        if (!$self->signrepo($self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass))
-        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                'Failed to remove filtered packages from the repository.');
             $self->{STATISTIC}->{ERROR}++;
         }
+    }
+
+    # update repomd.xml with changed metadata files
+    my $repodatadir = $self->fullLocalRepoPath() . '/.repodata';
+    if ($self->updateRepomd($self->{MDFILES}, $repodatadir))
+    {
+        # TODO do not sign the repo if nothing changed
+        # re-sign the repo
+        $self->signrepo(
+            $self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass);
     }
 
     #
@@ -884,6 +842,7 @@ sub mirror()
     else
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri)) if(!$isYum);
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total files                 : %s"), $self->{STATISTIC}->{TOTALFILES})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
                                                                     $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
@@ -1049,8 +1008,12 @@ sub verify()
                     unlink($job->fullLocalPath());
                 }
             }
-            $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($job->fullLocalPath() ) ) );
-            
+
+            if (defined $self->{DBH})
+            {
+                $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($job->fullLocalPath() ) ) );
+            }
+
             $self->{STATISTIC}->{ERROR} += 1;
         }
     }
@@ -1061,7 +1024,7 @@ sub verify()
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files             : %s"), $cnt ));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors            : %s"), $self->{STATISTIC}->{ERROR} ));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Verify Time       : %s"), SMT::Utils::timeFormat(tv_interval($t0)) ));
-        print "\n";
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "\n");
     }
     
     return ($self->{STATISTIC}->{ERROR} == 0);
@@ -1092,7 +1055,9 @@ sub download_handler
     my $data   = shift;
 
     my $invalidFile = 0;
-    
+
+    $self->{MDFILES} = {};
+
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "" && !exists $self->{JOBS}->{$data->{LOCATION}})
     {
@@ -1103,6 +1068,9 @@ sub download_handler
             
             return;
         }
+
+        # save locations of metadata files found in repomd.xml's <data> elements        
+        $self->{MDFILES}->{$data->{LOCATION}} = undef if ($data->{MAINELEMENT} eq 'data');
 
         # get the repository index
         my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
@@ -1255,6 +1223,7 @@ sub signrepo
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
             "Invalid repodata directory specified: $repodatadir.");
+        $self->{STATISTIC}->{ERROR}++;
         return 0;
     }
 
@@ -1286,12 +1255,14 @@ sub signrepo
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
             "Failed to sign the repository: $!.");
+        $self->{STATISTIC}->{ERROR}++;
         return 0;
     }
     elsif ($? >> 8 != 0 || not -e "$repomdfile.asc")
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
             "Failed to sign the repository, gpg returned ".($? >> 8).".");
+        $self->{STATISTIC}->{ERROR}++;
         return 0;
     }
 
@@ -1305,12 +1276,144 @@ sub signrepo
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
             "Failed to export the repo signing key.");
+        $self->{STATISTIC}->{ERROR}++;
         return 0;
     }
 
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
         "$repomdfile.key successfully generated.");
 
+    return 1;
+}
+
+
+
+sub removePackages($$$$)
+{
+    my ($self, $pkgstoremove, $mdfiles) = @_;
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+        'Going to remove ' . (scalar @$pkgstoremove) . ' unwanted packages.');
+
+    return 1 if (!@$pkgstoremove);
+    
+    my $rpms = [];
+    # update primary
+
+    # update other
+    if ($mdfiles->{'repodata/other.xml.gz'}->{changednew})
+    {
+        
+    }
+
+    # update filelists
+    if ($mdfiles->{'repodata/filelists.xml.gz'}->{changednew})
+    {
+        
+    }
+
+    # update susedata
+    if ($mdfiles->{'repodata/susedata.xml.gz'}->{changednew})
+    {
+        
+    }
+
+    # metadata are updated, now remove the packages from the filesystem
+
+    foreach my $rpm (@$rpms)
+    {
+        
+    }
+
+    return 1;
+}
+
+=item updateRepomd($mdfiles, $repodatadir)
+
+Update repomd.xml with changed metadata files (primary, filelist, other, susedata)
+
+$mdfiles =
+{
+    'repodata/primary.xml.gz' =>
+    {
+        'changedorig' => '.repodata/primary.xml.gz',
+        'changednew'  => '/tmp/asdfXYZ/primary.xml'
+    },
+
+    'repodata/updateinfo.xml.gz' =>
+    {
+        'changedorig' => '.repodata/updateinfo.xml.gz',
+        'changednew'  => '/tmp/asdfXYZ/updateinfo.xml'
+    },
+
+    ...
+    
+    'repodata/deltainfo.xml.gz' => undef
+}
+
+NOTE: Another alternative would be to use createrepo (see below) to update
+primary/other/filelists, but that would be slow, and we'd still need to
+parse primary.xml and deal with susedata.xml. So removing the package data
+from the files by ourselves seems to be better approach.
+ 
+# write output to tmpdir, then copy to .repodata
+# createrepo --update <repobase> --outputdir $tmpdir $self->fullLocalRepoPath()
+=cut
+
+sub updateRepomd($$$)
+{
+    my ($self, $mdfiles, $repodatadir) = @_;
+
+    my $modifyrepopath = '/usr/bin/modifyrepo';
+    my $createrepopath = '/usr/bin/createrepo';
+
+    # unlink the original repomd.xml first to avoid modifying the original
+    # repomd.xml on the source URI if hardlinked from elsewhere
+    my $repomdpath = SMT::Utils::cleanPath($repodatadir, 'repomd.xml'); 
+    copy($repomdpath, "$repomdpath.tmp");
+    unlink ($repomdpath);
+    rename("$repomdpath.tmp", $repomdpath);
+
+    my $errc = 0; 
+
+    # update changed metadata files in repomd.xml
+    foreach my $mdfile (values %$mdfiles)
+    {
+        # skip unchanged files
+        next if not exists $mdfile->{changednew};
+
+        # unlink the original file first - we do not want to modify all the
+        # aliases with modifyrepo 
+        unlink ($mdfile->{changedorig});
+
+        # note: modifyrepo needs unzipped unpdateinfo.xml
+        my $cmd = $modifyrepopath . ' ' . $mdfile->{changednew} . ' ' . $repodatadir;
+        my $cmd_running = 1;
+
+        # escape $ to avoid interpreting it by shell
+        # FIXME run the commands using the ported executeCommand() from suseregister            
+        $cmd =~ s/\$/\\\$/g;
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, 'Executing: '.$cmd);
+        # A correct solution would be to use IPC::Run or IPC::Open3
+        open (CMD, $cmd.'|') || do
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, 'Cannot run '.$modifyrepopath.': '.$!);
+            $self->{STATISTIC}->{ERROR}++;
+            $errc++;
+            $cmd_running = 0;
+        };
+        if ($cmd_running)
+        {
+            while (my $output = <CMD>)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, 'ModifyRepo: '.$output);
+            }
+            close CMD;
+        }
+    }
+
+    return 0 if ($errc);
     return 1;
 }
 
