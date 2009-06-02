@@ -181,7 +181,7 @@ sub getJobList($$)
      return XMLout( $allJobs 
                     , rootname => "jobs"
                     # , noattr => 1
-                   , xmldejq => '<?xml version="1.0" encoding="UTF-8" ?>'
+                   , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
            );
   }
   else

@@ -14,9 +14,6 @@ exit 1 unless defined $dbh;
 my $c = SMT::JobQueue->new({'dbh' => $dbh});
 
 
-print $c->getNextJobID("guid11", 0);
-
-print $c->getJob("guid11",$c->getNextJobID("guid11", 0),1);
 
 #print $c->finishJob("guid10", 42,1);
 #my ($id, $cookie) = $c->getNextAvailableJobID();
@@ -35,17 +32,25 @@ print $c->getJob("guid11",$c->getNextJobID("guid11", 0),1);
 #}
 
 
-#my $job = SMT::Job->new({ 'dbh' => $dbh });
-#$job->newJob();
-#$job->type("softwarepush");
-#$job->guid("guid10");
-#$job->description("thomastest");
-#"2009-06-02 20:07:20"
+my $job = SMT::Job->new({ 'dbh' => $dbh });
+$job->newJob();
+$job->type("softwarepush");
+$job->guid("guid11");
+$job->description("thomastest");
+#$job->expires("2009-06-02 20:07:20");
+#$job->targeted("2009-06-02 20:07:20");
+if ( $c->addJob($job) )
+{
+  print "successfully added\n\n";
+}
+
+print "Next id: ". $c->getNextJobID()."\n";
+
+print $c->getJob("guid11",$c->getNextJobID("guid11", 0),1);
 
 #print $job->asXML();
 #print Dumper($job);
 
-#print $c->addJob($job);
 
 #if ( $c->addJobForMultipleGUIDs($job, ("guid10", "guid12", "guid11")) )
 #{
