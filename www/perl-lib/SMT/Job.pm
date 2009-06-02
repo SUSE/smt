@@ -6,23 +6,54 @@ use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
 
+use constant
+{
+    VBLEVEL	=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
+};
+
+#
+# a real constructor
+#
+sub new ($$)
+{
+    my $class = shift;
+    my $params = shift || {};
+
+    my $self = {};
+
+    if (defined $params->{dbh})
+    {
+	$self->{dbh} = $params->{dbh};
+    }
+
+    if (defined $params->{LOG})
+    {
+	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
+    }
+
+    bless $self, $class;
+    return $self;
+}
+
 # constructs a job
 #
+# new object:
+#  my $job = Job->new ({ dbh => $dbh, LOG => '/var/log/smt/jobs.log' });
+#
 # perl arguments:
-#  my $job = new Job ( $dbh, 'guid3', 42, 'softwarepush',
+#  $job->newJob ( 'guid3', 42, 'softwarepush',
 #    { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] } );
 #
 # xml only:
-#  my $job = new Job ( $dbh, 'guid3', '<job id="42" type="softwarepush"><arguments><force>true</force></arguments></job>' );
+#  $job->newJob ( 'guid3', '<job id="42" type="softwarepush"><arguments><force>true</force></arguments></job>' );
 #
 # mixed perl and xml:
-#  my $job = new Job ( $dbh, 'guid3', 42, 'softwarepush', '<arguments><force>true</force></arguments>' );
+#  $job->newJob ( 'guid3', 42, 'softwarepush', '<arguments><force>true</force></arguments>' );
 
-sub new
+sub newJob
 {
-    my $class = shift;
-
-    my ($dbh, @params) = @_;
+    my $self = shift;
+    my @params = @_;
 
     my $guid;
     my $id;
@@ -87,24 +118,16 @@ sub new
 #	return error( "unable to create job. arguments unknown or invalid." ) unless defined( $args );
     }
 
-    my $self = 
-    {
-	dbh  => $dbh,
-	id   => $id,
-	guid => $guid,
-	type => $type,
-	args => $args,
-	returnvalue => $returnvalue,
-	stdout => $stdout,
-	stderr => $stderr,
-	message => $message,
-	success => $success
-    };
-
-    bless $self, $class;
-    return $self;
+    $self->{id}   = $id;
+    $self->{guid} = $guid;
+    $self->{type} = $type;
+    $self->{args} = $args;
+    $self->{returnvalue} = $returnvalue;
+    $self->{stdout} = $stdout;
+    $self->{stderr} = $stderr;
+    $self->{message} = $message;
+    $self->{success} = $success;
 }
-
 
 sub asXML
 {
@@ -126,8 +149,6 @@ sub asXML
                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
                  );
 }
-
-
 
 sub setId 
 {
@@ -211,12 +232,6 @@ sub getSuccess
     return $self->{success};
 }
 
-
-
-
-
-
-
 sub getArgumentsXML
 {
     my ( $self ) = @_;
@@ -228,14 +243,11 @@ sub getArgumentsXML
 # returns undef because that is passed to the caller
 sub error
 {
+    my $self = shift;
     my $message = shift;
 
-    my $log = SMT::Utils::openLog();
-#    printLog( $log, $self->vblevel(), LOG_ERROR, $message );
+    printLog( $self->{LOG}, VBLEVEL, LOG_ERROR, $message );
 
-
-
-    print "$message\n";
     return undef;
 }
 

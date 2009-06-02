@@ -8,6 +8,26 @@ use SMT::Job;
 use SMT::Utils;
 use Data::Dumper;
 
+sub new ($$)
+{
+    my $class = shift;
+    my $params = shift || {};
+
+    my $self = {};
+
+    if (defined $params->{dbh})
+    {
+	$self->{dbh} = $params->{dbh};
+    }
+
+    if (defined $params->{LOG})
+    {
+	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
+    }
+
+    bless $self, $class;
+    return $self;
+}
 
 ###############################################################################
 # getJob 
@@ -19,7 +39,7 @@ use Data::Dumper;
 sub getJob($$$$)
 {
   my $self      = shift;
-  my $class     = shift;
+
   my $guid      = shift;
   my $jobid     = shift;
   my $xmlformat = shift || 0;
@@ -52,7 +72,8 @@ sub getJob($$$$)
   $type = "configure"    if ( $result->{TYPE} == 6);
   $type = "wait"         if ( $result->{TYPE} == 7);
 
-  my $job = new SMT::Job( $self->{dbh}, $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
+  my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
+  $job->newJob( $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
  
   return $xmlformat ? $job->asXML() : $job;
 }
@@ -69,7 +90,7 @@ sub getJob($$$$)
 sub getNextJobID($$$)
 {
   my $self      = shift;
-  my $class     = shift;
+
   my $guid      = shift;
   my $xmlformat = shift || 0;
 
@@ -145,15 +166,15 @@ sub addJob($)
 {
   my $self = shift;
   my $arg = shift;
-  my $jobobject;
+  my $jobobject = SMT::Job->new({ dbh => $self->{dbh} });
 
   if ( isa ($arg, 'HASH' ))
   {
-    $jobobject = $arg;
+    $jobobject->addJob( $arg );
   }
   else
   {
-    $jobobject = new SMT::Job ( $self->{dbh}, $arg );
+    $jobobject->addJob( $arg );
   }
 
   #TODO: write job to database
@@ -193,8 +214,6 @@ sub updateJob($)
 	' and c.GUID = '.$self->{dbh}->quote($guid);
 
   return $self->{dbh}->do($sql);
-
-
 };
 
 ###############################################################################
@@ -219,15 +238,9 @@ sub deleteJob($)
 # returns undef because that is passed to the caller
 #sub error($)
 #{
-#  my $class   = shift;
+#  my $self   = shift;
 #  my $message = shift;
-#  print "$message\n";
 #  return undef;
 #}
-
-
-#my $job = new Job ('<job id="42" type="softwarepush"><arguments></arguments></job>');
-#my $job = new Job (42, "swpush", { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] });
-#print $job->getArgumentsXML();
 
 1;
