@@ -45,11 +45,19 @@ if ( $c->addJob($job) )
   print "successfully added\n\n";
 }
 
-print $job->getArgumentsXML();
-
 print "Next id: ". $c->getNextJobID()."\n";
 
 print $c->getJob("guid11",$c->getNextJobID("guid11", 0),1);
+
+
+if ( $c->finishJob("guid11", "<job id='44' message='a'><success>true</success></job>"))
+{
+  print "successfully finished\n\n";
+}
+
+
+
+
 
 #print $job->asXML();
 #print Dumper($job);

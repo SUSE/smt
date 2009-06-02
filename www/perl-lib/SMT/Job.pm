@@ -112,14 +112,14 @@ sub newJob
     {
 	my $xmldata = $params[1];
 
-	return error( "2unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-	return error( "3unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+	return error( "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
+	return error( "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
 
 	my $j;
 
 	# parse xml
 	eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-	return error( "4unable to create job. unable to parse xml: $@" ) if ( $@ );
+	return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
 	return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
 
 	# retrieve variables
@@ -133,10 +133,10 @@ sub newJob
 	$success     = $j->{success}      if ( defined ( $j->{success} ) );
 
 
-	$stdout =~ s/[\"\']//g;
-	$stderr =~ s/[\"\']//g;
-	$message =~ s/[\"\']//g;
-	$success =~ s/[\"\']//g;
+	if ( defined $stdout  ) { $stdout =~ s/[\"\']//g;  }
+	if ( defined $stderr  ) { $stderr =~ s/[\"\']//g;  }
+	if ( defined $message ) { $message =~ s/[\"\']//g; }
+	if ( defined $success ) { $success =~ s/[\"\']//g; }
 
 	# check variables
 #	return error( "unable to create job. id unknown or invalid." )        unless defined( $id );

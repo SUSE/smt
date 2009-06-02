@@ -272,6 +272,15 @@ sub addJobForMultipleGUIDs
 }
 
 
+sub pers
+{
+#  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+#  my $guidid = $client->getClientIDByGUID($job->guid) || return undef;
+
+
+
+}
+
 
 ###############################################################################
 sub finishJob($)
@@ -280,16 +289,24 @@ sub finishJob($)
   my $guid      = shift || return undef;
   my $jobxml = shift;
 
-  my $job = new SMT::Job( $self->{dbh}, "guiddummy", $jobxml );
+#  my $job = new SMT::Job( $self->{dbh}, $guid, $jobxml );
 
-  my $status ;
-  if ( $job->success() eq "true")
+  my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
+  $job->newJob( $guid, $jobxml );
+
+
+
+  my $status = 0 ;
+  if ( defined $job->success() )
   {
-    $status = "1";  
-  }
-  else
-  {
-    $status = "2";  
+    if ( $job->success() eq "true" )
+    {
+      $status = "1";  
+    }
+    else
+    {
+      $status = "2";  
+    }
   }
 
   my $sql = 'update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )'.
