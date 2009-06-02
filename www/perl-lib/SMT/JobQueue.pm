@@ -125,8 +125,12 @@ sub getNextJobID($$$)
 
   my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) '; 
      $sql .= ' where STATUS  = ' . 0				 ;          #( =not yet worked on)
-#    $sql .= " and   TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
-#    $sql .= " and   EXPIRES  >  \"". SMT::Utils::getDBTimestamp() . "\"";
+     $sql .= " and ";
+     $sql .= " ( TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
+     $sql .= "  OR TARGETED IS NULL ) ";
+     $sql .= " and ";
+     $sql .= " ( EXPIRES > \"". SMT::Utils::getDBTimestamp() . "\"";
+     $sql .= "  OR EXPIRES IS NULL ) ";
 
   $sql .= ' and Clients.GUID='.$self->{dbh}->quote($guid) if (defined $guid);
   $sql .= ' limit 1';
