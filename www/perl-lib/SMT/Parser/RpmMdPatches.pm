@@ -161,6 +161,11 @@ sub parse
         return $self->{PATCHES};
     }
 
+    if ($self->{SAVE_PACKAGES})
+    {
+        $self->{PACKAGES} = [];   
+    }
+
     foreach my $start (@repodata)
     {
         if ($start =~ /updateinfo\.xml/ && defined $self->{OUT})
@@ -171,12 +176,7 @@ sub parse
         {
             $self->{WRITE_OUT} = 0;
         }
-        
-        if ($self->{SAVE_PACKAGES})
-        {
-            $self->{PACKAGES} = [];   
-        }
-        
+
         $self->{STACK} = [];
 
         $path = $self->{RESOURCE}."/$start";
