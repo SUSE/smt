@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use UNIVERSAL 'isa';
-use SMT::Utils;
 
 
 =pod
@@ -86,7 +85,8 @@ All current functions are:
 * getClientIDByGUID($)            -  get the client's ID by its GUID (returns only the ID)
 * getClientPatchstatusByID($)     -  get one client's patchstatus by ID
 * getClientPatchstatusByGUID($)   -  get one client's patchstatus by GUID
-
+* authenticateByGUIDAndSecret     -  authenticate a user via its GUID and SECRET (returns {} on error, and info hash on success)
+* authenticateByIDAndSecret       -  authenticate a user via its ID and SECRET (returns {} on error, and info hash on success)
 
 =back
 
@@ -103,8 +103,8 @@ sub new ($$)
     my $self = {};
 
     $self->{'dbh'} = $params->{'dbh'} || do {
-	# TODO: log error
-	return undef;
+        # TODO: log error: print "Database handle missing or not defined.";
+        return undef;
     };
 
     bless($self, $class);
@@ -209,6 +209,7 @@ sub createSQLStatement($$)
     my @ALLPROPS = @PROPS;
     push( @ALLPROPS, 'PATCHSTATUS' );
 
+
     # fillup the filter if needed or filter empty
     if ( scalar( keys %{$filter} ) == 0 ||
          ( exists ${$filter}{'selectAll'}  &&  defined ${$filter}{'selectAll'} )  )
@@ -235,6 +236,12 @@ sub createSQLStatement($$)
                 push( @where, " cl.$prop LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
             }        
         }
+    }
+
+    # special handling for the SECRET - only add to where filter, but not to select
+    if ( exists ${$filter}{'SECRET'}  &&  defined ${$filter}{'SECRET'} )
+    {
+        push( @where, ' cl.SECRET = '. $self->{'dbh'}->quote(${$filter}{SECRET}) .' ' );
     }
 
     # add query for patchstatus if defined
@@ -283,6 +290,40 @@ sub getClientsInfo_internal($)
     #return $sql;
 
     return $self->{'dbh'}->selectall_hashref($sql, 'ID');
+}
+
+
+#
+# authenticateByGUIDAndSecret
+#   authenticate a user via its GUID and Secret
+#   returns an info hash on success with ID and GUID on success or {} on failure
+#
+sub authenticateByGUIDAndSecret($$$)
+{
+   my $self = shift;
+   my $guid = shift || return undef;
+   my $secret = shift || '';
+
+   return $self->getClientsInfo_internal({ 'ID'     => '',
+                                           'GUID'   => $guid,
+                                           'SECRET' => $secret });
+}
+
+
+#
+# authenticateByIDAndSecret
+#   authenticate a user via its GUID and Secret
+#   returns an info hash on success with ID and GUID on success or {} on failure
+#
+sub authenticateByIDAndSecret($$$)
+{
+   my $self = shift;
+   my $id = shift || return undef;
+   my $secret = shift || '';
+
+   return $self->getClientsInfo_internal({ 'ID'     => $id,
+                                           'GUID'   => '',
+                                           'SECRET' => $secret });
 }
 
 
@@ -442,4 +483,3 @@ sub getClientPatchstatusByGUID($$)
 
 
 1;
-
