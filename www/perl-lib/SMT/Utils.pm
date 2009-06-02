@@ -457,7 +457,7 @@ Allowed parameters:
 
 =over
 
-=item doprint
+=item setLogBehavior($logbehavior)
 
 Suppresses printing logs to STDOUT
 
