@@ -37,15 +37,15 @@ my $job = SMT::Job->new({ 'dbh' => $dbh });
 $job->newJob();
 $job->type("softwarepush");
 $job->guid("guid10");
-$job->expires("today");
 $job->description("thomastest");
+#$job->id(102);
 
 #print $job->asXML();
 #print Dumper($job);
 
 #print $c->addJob($job);
 
-if ( $c->addJob($job) )
+if ( $c->addJobForMultipleGUIDs($job, ("guid10", "guid12", "guid11")) )
 {
   print "success";
 }

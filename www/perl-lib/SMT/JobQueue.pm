@@ -226,22 +226,46 @@ sub addJobIntern($$)
 };
 
 
-sub addJob($)
+sub addJob($$)
 {
   my $self = shift;
   my $job = shift;
 
-  my ($id, $cookie) = getNextAvailableJobID($self);
-
-  return undef if ( ! defined $id );
-  return undef if ( ! defined $cookie );
-
-  $job->id($id);
-  addJobIntern($self, $job) || return undef;
-
-  return deleteJobIDCookie($self, $id, $cookie);
-
+  # if no jobid is defined we
+  # must ask for the next available id
+  if ( ! defined $job->{id} )
+  {
+    my ($id, $cookie) = getNextAvailableJobID($self);
+    return undef if ( ! defined $id );
+    return undef if ( ! defined $cookie );
+    $job->id($id);
+    addJobIntern($self, $job) || return undef;
+    return deleteJobIDCookie($self, $id, $cookie);
+  }
+  else
+  {
+    addJobIntern($self, $job) || return undef;
+  }
 }
+
+
+# add jobs for multiple guids
+# args: jobobject, guidlist
+sub addJobForMultipleGUIDs
+{
+  my $self = shift;
+  my $job = shift;
+  my @guids = @_;
+
+  foreach my $guid (@guids)
+  {
+    $job->guid($guid);
+    addJob($self,$job) || return undef;
+  }
+  return 1;
+}
+
+
 
 ###############################################################################
 sub finishJob($)
