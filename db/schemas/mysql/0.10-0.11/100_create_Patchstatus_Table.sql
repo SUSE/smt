@@ -13,3 +13,8 @@ create table Patchstatus ( CLIENT_ID    INTEGER UNSIGNED NOT NULL PRIMARY KEY,
 --
 alter table MachineData DROP COLUMN TYPE;
 
+
+--
+-- JobQueue has to have an auto-incrementing primary key
+--
+ALTER TABLE JobQueue MODIFY COLUMN ID INTEGER UNSIGNED NOT NULL AUTO_INCREMENT;
