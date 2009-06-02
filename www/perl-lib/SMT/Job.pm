@@ -9,6 +9,27 @@ use UNIVERSAL 'isa';
 use constant
 {
     VBLEVEL	=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
+
+    JOB_TYPE	=>
+    {
+	# Maps JOB_TYPE ID to JOB_TYPE NAME
+	1	=> 'patchstatus',
+	2	=> 'softwarepush',
+	3	=> 'update',
+	4	=> 'execute',
+	5	=> 'reboot',
+	6	=> 'configure',
+	7	=> 'wait',
+
+	# Maps JOB_TYPE NAME to JOB_TYPE ID
+	'patchstatus'	=>	1,
+	'softwarepush'	=>	2,
+	'update'	=>	3,
+	'execute'	=>	4,
+	'reboot'	=>	5,
+	'configure'	=>	6,
+	'wait'		=>	7,
+    },
 };
 
 #

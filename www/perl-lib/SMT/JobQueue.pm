@@ -63,14 +63,10 @@ sub getJob($$$$)
     return $xmlformat ? "<job/>" : undef;
   }
 
+
   my $type = "unknown";
-  $type = "patchstatus"  if ( $result->{TYPE} == 1);
-  $type = "softwarepush" if ( $result->{TYPE} == 2);
-  $type = "update"       if ( $result->{TYPE} == 3);
-  $type = "execute"      if ( $result->{TYPE} == 4);
-  $type = "reboot"       if ( $result->{TYPE} == 5);
-  $type = "configure"    if ( $result->{TYPE} == 6);
-  $type = "wait"         if ( $result->{TYPE} == 7);
+  # maps a job type NUMBER to a STRING representation
+  $type = SMT::Job::JOB_TYPE->{$result->{TYPE}} if (defined SMT::Job::JOB_TYPE->{$result->{TYPE}});
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $job->newJob( $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
