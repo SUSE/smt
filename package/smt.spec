@@ -172,6 +172,7 @@ exit 0
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/full
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/SMT/
+%dir /srv/www/perl-lib/SMT/Client
 %dir /usr/lib/SMT/
 %dir /usr/lib/SMT/bin/
 %dir %{_datadir}/schemas/
@@ -196,6 +197,7 @@ exit 0
 %{perl_vendorarch}/auto/Sys/GRP/*.so
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/SMT/*.pm
+/srv/www/perl-lib/SMT/Client/*.pm
 %exclude /srv/www/perl-lib/SMT/Support.pm
 /usr/sbin/smt-*
 %exclude /usr/sbin/smt-support

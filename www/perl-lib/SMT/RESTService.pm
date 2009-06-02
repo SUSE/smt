@@ -25,16 +25,20 @@ use XML::Writer;
 use SMT::Utils;
 use SMT::JobQueue;
 use SMT::Job;
+use SMT::Client;
 use DBI qw(:sql_types);
 use Data::Dumper;
+
 
 #
 # handle all GET requests
 #
-sub GEThandler($)
+sub GEThandler($$)
 {
-    my $r = shift;
-    return undef unless defined $r;
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
+    # username already checked in handler
+    my $username = $r->user;
 
     my $path = $r->path_info();
     # crop the prefix and trailing slash -  '/=' rest service identifier, '/1' version number
@@ -42,8 +46,6 @@ sub GEThandler($)
     $path =~ s/^\/(=\/)?1\///;
     $path =~ s/\/?$//;
 
-    # TODO: read $guid 
-    my $guid="guid12";
 
     # jobs (per client)
     my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY jobs
@@ -61,10 +63,13 @@ sub GEThandler($)
     my $reClientsIdPatchstatus  = qr{^clients/([\d\w]+)/patchstatus$}; # get patchstatus info for one client
     my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
 
+    # get a job request object
+    my $job = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
+
     # jobs
-    if    ( $path =~ $reJobs)           { return SMT::JobQueue->getJobList( $guid, 1 ) }
-    elsif ( $path =~ $reJobsNext )      { return SMT::JobQueue->getJob( $guid, SMT::JobQueue->getNextJobID($guid, 0), 1)   }
-    elsif ( $path =~ $reJobsId)         { return SMT::JobQueue->getJob( $guid, $1, 1 ) }
+    if    ( $path =~ $reJobs )          { return $job->getJobList( $username, 1 );   }
+    elsif ( $path =~ $reJobsNext )      { return $job->getJob( $username, $job->getNextJobID($username, 0), 1)   }
+    elsif ( $path =~ $reJobsId)         { return $job->getJob( $username, $1, 1 ) }
     elsif ( $path =~ $reClients )       { return "wanna all clients"; }
     elsif ( $path =~ $reClientsId )     { return "wanna one client with id: $1"; }
     elsif ( $path =~ $reClientsAllJobs )        { return "wanna list of all jobs of all clients"; }
@@ -81,7 +86,7 @@ sub GEThandler($)
 };
 
 
-sub POSThandler($)
+sub POSThandler($$)
 {
     my $r = shift;
     return undef unless defined $r;
@@ -91,7 +96,7 @@ sub POSThandler($)
 
 
 
-sub PUThandler($)
+sub PUThandler($$)
 {
     my $r = shift;
     return undef unless defined $r;
@@ -118,7 +123,7 @@ sub PUThandler($)
 }
 
 
-sub DELETEhandler($)
+sub DELETEhandler($$)
 {
     my $r = shift;
     return undef unless defined $r;
@@ -134,23 +139,28 @@ sub handler {
     $r->log->info("REST service request");
 
     # try to connect to the database - else report server error
-    #my $dbh = undef;
-    #if ( ! ($dbh=SMT::Utils::db_connect()) ) 
-    #{
-    #    $r->log->error("Could not connect to database.");
-    #    return Apache2::Const::SERVER_ERROR; 
-    #}
+    my $dbh = undef;
+    if ( ! ($dbh=SMT::Utils::db_connect()) ) 
+    {
+        $r->log->error("RESTService could not connect to database.");
+        return Apache2::Const::SERVER_ERROR; 
+    }
 
     my $res = undef;
 
+    # all REST Services need authentication
+    return Apache2::Const::AUTH_REQUIRED unless ( defined $r->user  &&  $r->user ne '' );
+
+    my ($status, $password) = $r->get_basic_auth_pw;
+    return $status unless $status == Apache2::Const::OK;
+  
+
     switch( $r->method() )
     {
-        case /^GET$/i     { $res = GEThandler($r) }
-        # is HEAD really needed ? does it make sense?
-        case /^HEAD$/i    { $res = GEThandler($r) }
-        case /^PUT$/i     { $res = PUThandler($r) }
-        case /^POST$/i    { $res = POSThandler($r) }
-        case /^DELETE$/i  { $res = DELETEhandler($r) }
+        case /^GET$/i     { $res = GEThandler( $r, $dbh ) }
+        case /^PUT$/i     { $res = PUThandler( $r, $dbh ) }
+        case /^POST$/i    { $res = POSThandler( $r, $dbh ) }
+        case /^DELETE$/i  { $res = DELETEhandler( $r, $dbh ) }
         else
         {
             $r->log->error("Unknown request method in SMT rest service.");
