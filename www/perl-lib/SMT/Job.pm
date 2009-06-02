@@ -215,8 +215,6 @@ sub id
       return $self->{id};
 }
 
-
-
 sub guid
 {
       my ( $self, $guid ) = @_;

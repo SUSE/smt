@@ -5,6 +5,7 @@ use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
 use SMT::Job;
+use SMT::Client;
 use SMT::Utils;
 use Data::Dumper;
 
@@ -189,18 +190,58 @@ sub getJobList($$)
 
 
 ###############################################################################
-# add a job (arg = jobobject)
+# add a job to the database (arg = jobobject)
+sub addJobIntern($$)
+{
+  my $self = shift;
+  my $job = shift;
+
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  my $guidid = $client->getClientIDByGUID($job->guid) || return undef;
+
+
+  my $sql = "insert into JobQueue ";
+  my @sqlkeys = ();
+  my @sqlvalues = ();
+  
+  my @attribs = qw( id parentid name description type status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success);
+
+
+  # GUID
+  push ( @sqlkeys, "GUID_ID" );
+  push ( @sqlvalues, $guidid );
+
+  foreach my $attrib (@attribs)
+  {
+    if ( defined $job->{$attrib} )
+    {
+      push ( @sqlkeys, uc($attrib) );
+      push ( @sqlvalues, $self->{dbh}->quote( $job->{$attrib} ));
+    }
+  }
+  $sql .= " (". join  (", ", @sqlkeys ) .") " ;
+  $sql .= " VALUES (". join  (", ", @sqlvalues ) .") " ;
+
+  return $self->{dbh}->do($sql);
+};
+
+
 sub addJob($)
 {
   my $self = shift;
   my $job = shift;
 
-  my $sql = "insert into ";
+  my ($id, $cookie) = getNextAvailableJobID($self);
 
+  return undef if ( ! defined $id );
+  return undef if ( ! defined $cookie );
 
-  return 1;
-};
+  $job->id($id);
+  addJobIntern($self, $job) || return undef;
 
+  return deleteJobIDCookie($self, $id, $cookie);
+
+}
 
 ###############################################################################
 sub finishJob($)
@@ -274,8 +315,8 @@ sub deleteJobIDCookie()
   my $id     = shift;
   my $cookie = shift;
 
-  my $sql1 = 'delete from JobQueue where ID = "$id" and DESCRIPTION = "$cookie"' ;
-  return $self->{dbh}->do($sql1);
+  my $sql = "delete from JobQueue where ID = '$id' and DESCRIPTION = '$cookie'" ;
+  return $self->{dbh}->do($sql);
 }
 
 
