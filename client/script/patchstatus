@@ -64,7 +64,7 @@ sub jobhandler
     stderr => defined ( $stderr )? $stderr : "",
     returnvalue => $retval,
     success => "true",
-    message => "PackageManager=$pkgmanager Security=$patchSecurity Recommended=$patchRecommended Optional=$patchOptional" 
+    message => "$pkgmanager:$patchSecurity:$patchRecommended:$patchOptional # PackageManager=$pkgmanager Security=$patchSecurity Recommended=$patchRecommended Optional=$patchOptional" 
   );
 
 }
