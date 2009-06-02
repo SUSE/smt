@@ -31,7 +31,7 @@ sub jobhandler
   return (
     stdout => defined ( $stdout )? $stdout : "",
     stderr => defined ( $stderr )? $stderr : "",
-    returnvalue => $retval,
+    exitcode => $retval,
     success => ($retval == 0 ) ? "true" : "false",
     message => ($retval == 0 ) ? "eject successfully finished" : "eject failed"
   );

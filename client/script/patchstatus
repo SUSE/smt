@@ -62,7 +62,7 @@ sub jobhandler
   return (
     stdout => defined ( $stdout )? $stdout : "",
     stderr => defined ( $stderr )? $stderr : "",
-    returnvalue => $retval,
+    exitcode => $retval,
     success => "true",
     message => "$pkgmanager:$patchSecurity:$patchRecommended:$patchOptional # PackageManager=$pkgmanager Security=$patchSecurity Recommended=$patchRecommended Optional=$patchOptional" 
   );

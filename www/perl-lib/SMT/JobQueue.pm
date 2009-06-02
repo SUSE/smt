@@ -10,7 +10,7 @@ use Data::Dumper;
 
 sub new ($$)
 {
-    my $class = shift;
+    my $jqass = shift;
     my $params = shift || {};
 
     my $self = {};
@@ -25,8 +25,42 @@ sub new ($$)
 	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
     }
 
-    bless $self, $class;
+    bless $self, $jqass;
     return $self;
+}
+
+###############################################################################
+# retriveJob 
+# returns the job description for job $id either in xml format and stets the
+# retrived date
+# or in hash structure
+# args: jobid 
+# args: guid
+#       xmlformat (default false)
+sub retrieveJob($$$$)
+{
+  my $self      = shift;
+
+  my $guid      = shift || return undef;
+  my $jobid     = shift;
+  my $xmlformat = shift || 0;
+
+
+  if ( ! defined getJob($self, $guid, $jobid, 0)  )
+  { 
+    return $xmlformat ? "<job/>" : undef;
+  }
+
+  my $sql = 'update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )'.
+	' set j.RETRIEVED = "'. SMT::Utils::getDBTimestamp().'"'.
+	' where j.ID = '.$self->{dbh}->quote($jobid).
+	' and c.GUID = '.$self->{dbh}->quote($guid);
+ 
+#  return $sql;
+
+  $self->{dbh}->do($sql) || return undef;
+
+  return getJob($self, $guid, $jobid, $xmlformat);
 }
 
 ###############################################################################
@@ -96,6 +130,7 @@ sub getNextJobID($$$)
 #    $sql .= " and   EXPIRES  >  \"". SMT::Utils::getDBTimestamp() . "\"";
 
   $sql .= ' and Clients.GUID='.$self->{dbh}->quote($guid) if (defined $guid);
+  $sql .= ' limit 1';
 
   my $id = $self->{dbh}->selectall_arrayref($sql)->[0]->[0];
 
@@ -143,7 +178,7 @@ sub getJobList($$)
      return XMLout( $allJobs 
                     , rootname => "jobs"
                     # , noattr => 1
-                   , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
+                   , xmldejq => '<?xml version="1.0" encoding="UTF-8" ?>'
            );
   }
   else
@@ -154,10 +189,6 @@ sub getJobList($$)
 
 
 ###############################################################################
-# returns a list of next jobs either in xml format
-# or in hash structure
-# if no clientID is passed jobs for all clients are taken
-#
 sub addJob($)
 {
   my $self = shift;
@@ -181,7 +212,8 @@ sub addJob($)
 };
 
 
-sub updateJob($)
+###############################################################################
+sub finishJob($)
 {
   my $self = shift;
   my $guid      = shift || return undef;
@@ -190,7 +222,7 @@ sub updateJob($)
   my $job = new SMT::Job( $self->{dbh}, "guiddummy", $jobxml );
 
   my $status ;
-  if ( $job->getSuccess() eq "true")
+  if ( $job->success() eq "true")
   {
     $status = "1";  
   }
@@ -200,23 +232,19 @@ sub updateJob($)
   }
 
   my $sql = 'update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )'.
-#  $sql .= " j.MESSAGE = \"". $job->getMessage() . "\"";	# TODO: where is message in daba
-	' set j.STDERR = '.$self->{dbh}->quote($job->getStderr()).
-	', j.STDOUT = '.$self->{dbh}->quote($job->getStdout()).
-	', j.EXITCODE = '.$self->{dbh}->quote($job->getReturnValue()).
+	' set j.STDERR = '.$self->{dbh}->quote($job->stderr()).
+	', j.MESSAGE = '.$self->{dbh}->quote($job->message()). 
+	', j.STDOUT = '.$self->{dbh}->quote($job->stdout()).
+	', j.EXITCODE = '.$self->{dbh}->quote($job->exitcode()).
 	', j.STATUS = '.$self->{dbh}->quote($status).
+	', j.FINISHED = "'. SMT::Utils::getDBTimestamp().'"'.
 
-	' where j.ID = '.$self->{dbh}->quote($job->getId()).
+	' where j.ID = '.$self->{dbh}->quote($job->id()).
 	' and c.GUID = '.$self->{dbh}->quote($guid);
 
   return $self->{dbh}->do($sql);
 };
 
-###############################################################################
-# returns a list of next jobs either in xml format
-# or in hash structure
-# if no clientID is passed jobs for all clients are taken
-#
 sub deleteJob($)
 {
   my $self = shift;
@@ -228,15 +256,28 @@ sub deleteJob($)
 };
 
 
+sub getNextAvailableJobID()
+{
+  my $self = shift;
 
-###############################################################################
-# writes error line to log
-# returns undef because that is passed to the caller
-#sub error($)
-#{
-#  my $self   = shift;
-#  my $message = shift;
-#  return undef;
-#}
+  my $cookie = SMT::Utils::getDBTimestamp()." - ".rand(1024);
+
+  my $sql1 = 'insert into JobQueue ( NAME ) values ("'.$cookie.'")' ;
+  $self->{dbh}->do($sql1) || return ( undef, $cookie);
+
+
+  my $sql2 = 'select ID from JobQueue '; 
+     $sql2 .= ' where NAME  = "'.$cookie.'"';
+
+  my $id = $self->{dbh}->selectall_arrayref($sql2)->[0]->[0];
+
+  return ($id, $cookie);
+
+}
+
+
+
+
+
 
 1;

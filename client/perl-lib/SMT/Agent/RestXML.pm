@@ -18,7 +18,7 @@ use SMT::Agent::Utils;
 # args: jobid, success, message 
 sub updatejob
 {
-  my ($jobid, $success, $message, $stdout, $stderr, $returnvalue) =  @_;
+  my ($jobid, $success, $message, $stdout, $stderr, $exitcode) =  @_;
 
   SMT::Agent::Utils::logger( "updating job $jobid ($success) message: $message", $jobid);
 
@@ -29,7 +29,7 @@ sub updatejob
     'message' => $message,
     'stdout' => $stdout,
     'stderr' => $stderr,
-    'returnvalue' => $returnvalue
+    'exitcode' => $exitcode
   };
   my $xmljob = XMLout($job, rootname => "job");
   my $ua = createUserAgent();
