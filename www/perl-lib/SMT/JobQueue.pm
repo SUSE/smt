@@ -163,20 +163,16 @@ sub getJobList($$)
   #TODO: test GUID
 
   # just create some test jobs
-  my @joblist = (12, 34, 55);
-  do {
-    push @joblist, int(rand(200)+60);
-  } while (scalar(@joblist) < 9);
-
+  my @joblist = (44);
   my @jobListCollect = ();
+ 
 
   if ( $xmlformat == 1 )
   {
      foreach my $jobid (@joblist)
      {
-         push( @jobListCollect,  $self->getJob($guid, $jobid, 0) );
+        push( @jobListCollect,  $self->getJob($guid, $jobid, 0) );
      }
-
      my $allJobs = {  'job' => [@jobListCollect]  };
      return XMLout( $allJobs 
                     , rootname => "jobs"
@@ -186,7 +182,7 @@ sub getJobList($$)
   }
   else
   {
-    return @jobListCollect;
+    return "@joblist";
   }
 }
 

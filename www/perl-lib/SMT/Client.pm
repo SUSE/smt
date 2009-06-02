@@ -3,6 +3,7 @@ package SMT::Client;
 use strict;
 use warnings;
 
+use XML::Simple;
 use UNIVERSAL 'isa';
 
 
@@ -205,9 +206,15 @@ sub createSQLStatement($$)
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
 
+    my %PSmap = ( 'PKGMGR' => 'PATCHSTATUS_P',
+                  'SECURITY' => 'PATCHSTATUS_S',
+                  'RECOMMENDED' => 'PATCHSTATUS_R',
+                  'OPTIONAL' => 'PATCHSTATUS_O'   );
+
     my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
     my @ALLPROPS = @PROPS;
     push( @ALLPROPS, 'PATCHSTATUS' );
+    my $asXML = ( exists ${$filter}{'asXML'}  &&  defined ${$filter}{'asXML'} ) ? 1 : 0;
 
 
     # fillup the filter if needed or filter empty
@@ -221,6 +228,7 @@ sub createSQLStatement($$)
     }
 
     my @select = ();
+    my @PSselect = ();
     my @where = ();
     my $fromstr  = ' Clients cl ';
 
@@ -230,7 +238,7 @@ sub createSQLStatement($$)
     {
         if ( exists ${$filter}{$prop} )
         {
-            push (@select, " cl.$prop ");
+            push (@select, "$prop" );
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
                 push( @where, " cl.$prop LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
@@ -252,18 +260,26 @@ sub createSQLStatement($$)
         return undef unless defined $patchstatusQuery;
 
         $fromstr .= ' LEFT JOIN Patchstatus ps ON ( cl.ID = ps.CLIENT_ID ) ';
-        push( @select, ' ps.PKGMGR      as PATCHSTATUS_P ');
-        push( @select, ' ps.SECURITY    as PATCHSTATUS_S ');
-        push( @select, ' ps.RECOMMENDED as PATCHSTATUS_R ');
-        push( @select, ' ps.OPTIONAL    as PATCHSTATUS_O ');
-
+        foreach my $PSkey (keys %PSmap)
+        {
+            # if XML gets exported then switch to lower case attributes
+            push( @PSselect, "  ps.$PSkey as  ".( $asXML ?  lc($PSmap{$PSkey}):$PSmap{$PSkey}).'  '  );
+        }
         push( @where, $patchstatusQuery) unless ( $patchstatusQuery eq '');
     }
  
     # make sure the ID is in the select statement in any case
-    push( @select, " cl.ID " ) unless ( in_Array(" cl.ID ", \@select) );
+    push( @select, "ID" ) unless ( in_Array("ID", \@select) );
+    # if XML gets exported then switch to lower case attributes
+    my @selectExpand = ();
+    foreach my $sel (@select)
+    {
+        push (@selectExpand,  "  cl.$sel as ".( $asXML ? lc($sel):$sel ).'  ' );
+    }
 
-    my $selectstr = join(', ', @select) || return undef;
+    my $selectstr = join(', ', @selectExpand) || return undef;
+    $selectstr   .= ' ,  '.join(', ', @PSselect)  if ( @selectExpand > 0 );
+
     $fromstr      = $fromstr || return undef;
     my $wherestr  = join(' AND ', @where) || ' 1 '; # create 'where 1' if $wherestr is empty
 
@@ -285,11 +301,34 @@ sub getClientsInfo_internal($)
     my $sql = $self->createSQLStatement($filter);
     return undef unless defined $sql;
 
+    my $asXML = ( exists ${$filter}{'asXML'} &&  defined ${$filter}{'asXML'} ) ? 1:0;
+
     ## NOTE: This can be used for testing/debugging
     ## NOTE: will only return the generated SQL statement but not evaluate it
     #return $sql;
 
-    return $self->{'dbh'}->selectall_hashref($sql, 'ID');
+    my $refKey = $asXML ? 'id':'ID';
+    my $result = $self->{'dbh'}->selectall_hashref($sql, $refKey);
+
+    if ( $asXML )
+    {
+        my @clientsList = ();
+        foreach my $key ( keys %{$result} )
+        {
+            push ( @clientsList, ${$result}{$key} );
+        }
+
+        my $clientsHash = {  'client' => [@clientsList]  };
+        return XMLout( $clientsHash
+                      , rootname => "clients"
+                      #, noattr => 1 
+                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
+                     );
+    }
+    else
+    {
+        return $result;
+    }
 }
 
 
@@ -397,6 +436,20 @@ sub getAllClientsInfo($)
 
     # emtpy filter means: select all information
     return $self->getClientsInfo_internal({});
+}
+
+
+#
+# getAllClientsInfoAsXML
+#   get detailled information about all clients with all information as XML
+#   parameter
+#    self
+sub getAllClientsInfoAsXML($)
+{
+    my $self = shift;
+
+    # emtpy filter means: select all information
+    return $self->getClientsInfo_internal({ 'asXML' => '', 'selectAll' => '' });
 }
 
 

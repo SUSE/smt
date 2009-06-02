@@ -40,6 +40,10 @@ sub GEThandler($$)
     # username already checked in handler
     my $username = $r->user;
 
+    #my $RR = $username eq 'RESTroot' ? 1:0;
+    my $RR = $username eq 'guid11' ? 1:0;
+    my $client = SMT::Client->new({ 'dbh' => $dbh });
+
     my $path = $r->path_info();
     # crop the prefix and trailing slash -  '/=' rest service identifier, '/1' version number
     # there is only version 1 so far
@@ -70,8 +74,9 @@ sub GEThandler($$)
     if    ( $path =~ $reJobs )          { return $job->getJobList( $username, 1 );   }
     elsif ( $path =~ $reJobsNext )      { return $job->getJob( $username, $job->getNextJobID($username, 0), 1)   }
     elsif ( $path =~ $reJobsId)         { return $job->getJob( $username, $1, 1 ) }
-    elsif ( $path =~ $reClients )       { return "wanna all clients"; }
-    elsif ( $path =~ $reClientsId )     { return "wanna one client with id: $1"; }
+    elsif ( $path =~ $reClients )       { return $RR ? $client->getAllClientsInfoAsXML() : undef; }
+    elsif ( $path =~ $reClientsId )     { return "want info about one client"; }
+   # elsif ( $path =~ $reClientsId )     { return $RR ? $client->getClientsInfo({'GUID' => $1, 'asXML' => '', 'selectAll' => ''}) : undef ; }
     elsif ( $path =~ $reClientsAllJobs )        { return "wanna list of all jobs of all clients"; }
     elsif ( $path =~ $reClientsIdJobs )         { return "wanna all jobs of one client with id $1"; }
     elsif ( $path =~ $reClientsIdJobsNext )     { return "wanna next job for one client with id $1"; }
