@@ -37,12 +37,15 @@ $job->newJob();
 $job->type("softwarepush");
 $job->guid("guid11");
 $job->description("thomastest");
-#$job->expires("2009-06-02 20:07:20");
-#$job->targeted("2009-06-02 20:07:20");
+$job->arguments("<arguments><thomas>true</thomas></arguments>");
+$job->expires("2009-08-02 20:07:20");
+$job->targeted("2009-02-02 20:07:20");
 if ( $c->addJob($job) )
 {
   print "successfully added\n\n";
 }
+
+print $job->getArgumentsXML();
 
 print "Next id: ". $c->getNextJobID()."\n";
 

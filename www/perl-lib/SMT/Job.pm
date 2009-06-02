@@ -82,7 +82,7 @@ sub newJob
     my $guid;
     my $id;
     my $type;
-    my $args;
+    my $arguments;
 
     my $message;
     my $exitcode;
@@ -96,12 +96,12 @@ sub newJob
         $guid = $params[0];
 	$id   = $params[1];
 	$type = $params[2];
-	$args = $params[3];
+	$arguments = $params[3];
 
-	if ( ! ( isa ( $args, 'HASH' )))
+	if ( ! ( isa ( $arguments, 'HASH' )))
         {
-          eval { $args = XMLin( $args, forcearray => 1 ) };
-	  return error( "unable to create job. unable to parse xml argument list: $@" ) if ( $@ );
+          eval { $arguments = XMLin( $arguments, forcearray => 1 ) };	# no arguments provided => use empty argument list
+	  if ( $@ ) { $arguments = XMLin ( "<arguments></arguments>", forcearray => 1 ); }	
         }
     }
     elsif (! defined ( $params[1] ) )
@@ -112,20 +112,20 @@ sub newJob
     {
 	my $xmldata = $params[1];
 
-	return error( "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-	return error( "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+	return error( "2unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
+	return error( "3unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
 
 	my $j;
 
 	# parse xml
 	eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-	return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
+	return error( "4unable to create job. unable to parse xml: $@" ) if ( $@ );
 	return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
 
 	# retrieve variables
 	$id   	     = $j->{id}           if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
 	$type	     = $j->{type}         if ( defined ( $j->{type} ) );
-	$args	     = $j->{arguments}    if ( defined ( $j->{arguments} ) );
+	$arguments	     = $j->{arguments}    if ( defined ( $j->{arguments} ) );
 	$exitcode    = $j->{exitcode}     if ( defined ( $j->{exitcode} ) && ( $j->{exitcode} =~ /^[0-9]+$/ ) );
 	$stdout	     = $j->{stdout}       if ( defined ( $j->{stdout} ) );
 	$stderr      = $j->{stderr}       if ( defined ( $j->{stderr} ) );
@@ -141,13 +141,13 @@ sub newJob
 	# check variables
 #	return error( "unable to create job. id unknown or invalid." )        unless defined( $id );
 #	return error( "unable to create job. type unknown or invalid." )      unless defined( $type );
-#	return error( "unable to create job. arguments unknown or invalid." ) unless defined( $args );
+#	return error( "unable to create job. arguments unknown or invalid." ) unless defined( $arguments );
     }
 
     $self->{id}   = $id;
     $self->{guid} = $guid;
     $self->{type} = $type;
-    $self->{args} = $args;
+    $self->{arguments} = $arguments;
     $self->{exitcode} = $exitcode;
     $self->{stdout} = $stdout;
     $self->{stderr} = $stderr;
@@ -164,7 +164,7 @@ sub asXML
       'id'        => $self->{id},
       'guid'      => $self->{guid},
       'type'      => $self->{type},
-      'arguments' => $self->{args}
+      'arguments' => $self->{arguments}
 
     #TODO: add outher attributes
 
@@ -179,32 +179,26 @@ sub asXML
 
 
 
-sub setArguments
+sub arguments
 {
-    my ( $self, $args ) = @_;
-    $self->{args} = $args if defined( $args );
+    my ( $self, $arguments ) = @_;
+    $self->{arguments} = $arguments if defined( $arguments );
 
-    # convert args given in xml to hash
-    if ( ! ( isa ($self->{args}, 'HASH' )))
+    # convert arguments given in xml to hash
+    if ( ! ( isa ($self->{arguments}, 'HASH' )))
     {
-	eval { $self->{args} = XMLin( $self->{args}, forcearray => 1 ) };
+	eval { $self->{arguments} = XMLin( $self->{arguments}, forcearray => 1 ) };
 	return error( "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
     }
 
-    return $self->{args};
+    return $self->{arguments};
 }
 
-
-sub getArguments
-{
-    my ( $self ) = @_;
-    return $self->{args};
-}
 
 sub getArgumentsXML
 {
     my ( $self ) = @_;
-    return XMLout($self->{args}, rootname => "arguments");
+    return XMLout($self->{arguments}, rootname => "arguments");
 }
 
 

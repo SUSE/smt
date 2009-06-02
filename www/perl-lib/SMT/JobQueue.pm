@@ -213,6 +213,10 @@ sub addJobIntern($$)
   push ( @sqlkeys, "GUID_ID" );
   push ( @sqlvalues, $guidid );
 
+  # arguments
+  push ( @sqlkeys, "ARGUMENTS" );
+  push ( @sqlvalues, $self->{dbh}->quote( $job->getArgumentsXML() ) );
+
   foreach my $attrib (@attribs)
   {
     if ( defined $job->{$attrib} )
