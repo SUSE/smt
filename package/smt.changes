@@ -1,8 +1,8 @@
 -------------------------------------------------------------------
 Wed Jun  3 12:15:41 CEST 2009 - locilka@suse.cz
 
-- Added new perl module SMT::Config that caches the current smt
-  configuration and DB connection.
+- Added caching of the current SMT configuration and DB connection
+  into the SMT::CLI.
 
 -------------------------------------------------------------------
 Wed Jun  3 11:08:55 CEST 2009 - jkupec@suse.cz

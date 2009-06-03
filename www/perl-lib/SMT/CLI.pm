@@ -26,19 +26,31 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-sub init
-{
-    my $dbh = undef;
-    my $cfg = undef;
+use constant {
+    # Set to '0' to disable reinitializing
+    REINIT_AFTER => 1024,
+};
 
-    $cfg = SMT::Utils::getSMTConfig();
-    
-    if ( not $dbh=SMT::Utils::db_connect($cfg) )
+my $smt_config = {};
+
+sub init_internal
+{
+    $smt_config->{cfg} = SMT::Utils::getSMTConfig();
+
+    if ( not $smt_config->{dbh}=SMT::Utils::db_connect($smt_config->{cfg}) )
     {
         die __("ERROR: Could not connect to the database");
     }
-    
-    return ($cfg, $dbh);
+}
+
+sub init
+{
+    $smt_config = {} if (defined $smt_config->{counter} && REINIT_AFTER > 0 && $smt_config->{counter} >= REINIT_AFTER);
+
+    init_internal() if (! defined $smt_config->{counter});
+    ++$smt_config->{counter};
+
+    return ($smt_config->{cfg}, $smt_config->{dbh});
 }
 
 
