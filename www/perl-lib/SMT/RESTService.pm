@@ -104,9 +104,11 @@ sub POSThandler($$)
 sub PUThandler($$)
 {
     my $r = shift;
+    my $dbh = shift || return undef;
     return undef unless defined $r;
 
-    my $guid="guid12";
+    # username already checked in handler
+    my $username = $r->user;
 
     my $path = $r->path_info();
     $path =~ s/^\/(=\/)?1\///;
@@ -114,11 +116,13 @@ sub PUThandler($$)
 
     my $reJobsId   = qr{^jobs/([\d]+)$};
 
+    my $job = SMT::JobQueue->new({ 'dbh' => $dbh });
+
     if ( $path =~ $reJobsId )
     {
-	# TODO: check content type
-	my $c = read_post($r);
-	return SMT::JobQueue->updateJob($guid, $c);
+        # TODO: check content type
+        my $c = read_post($r);
+        return $job->finishJob($username, $c);
     }
     else
     {

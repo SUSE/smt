@@ -278,7 +278,10 @@ sub createSQLStatement($$)
     }
 
     my $selectstr = join(', ', @selectExpand) || return undef;
-    $selectstr   .= ' ,  '.join(', ', @PSselect)  if ( @selectExpand > 0 );
+    if ( @PSselect > 0 )
+    {
+        $selectstr   .= ' ,  '.join(', ', @PSselect);
+    }
 
     $fromstr      = $fromstr || return undef;
     my $wherestr  = join(' AND ', @where) || ' 1 '; # create 'where 1' if $wherestr is empty
