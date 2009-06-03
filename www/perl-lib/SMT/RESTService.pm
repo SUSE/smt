@@ -75,8 +75,13 @@ sub GEThandler($$)
     elsif ( $path =~ $reJobsNext )      { return $job->retrieveJob( $username, $job->getNextJobID($username, 0), 1)   }
     elsif ( $path =~ $reJobsId)         { return $job->getJob( $username, $1, 1 ) }
     elsif ( $path =~ $reClients )       { return $RR ? $client->getAllClientsInfoAsXML() : undef; }
-    elsif ( $path =~ $reClientsId )     { return "want info about one client"; }
-   # elsif ( $path =~ $reClientsId )     { return $RR ? $client->getClientsInfo({'GUID' => $1, 'asXML' => '', 'selectAll' => ''}) : undef ; }
+    #elsif ( $path =~ $reClientsId )     { return "want info about one client"; }
+    elsif ( $path =~ $reClientsId )
+    {
+        return undef unless ($RR);
+        return undef unless ( $username eq $1 );
+        return $client->getClientsInfo({'GUID' => $1, 'asXML' => 'one', 'selectAll' => '' });
+    }
     elsif ( $path =~ $reClientsAllJobs )        { return "wanna list of all jobs of all clients"; }
     elsif ( $path =~ $reClientsIdJobs )         { return "wanna all jobs of one client with id $1"; }
     elsif ( $path =~ $reClientsIdJobsNext )     { return "wanna next job for one client with id $1"; }

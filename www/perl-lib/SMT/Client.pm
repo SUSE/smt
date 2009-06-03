@@ -315,18 +315,26 @@ sub getClientsInfo_internal($)
 
     if ( $asXML )
     {
-        my @clientsList = ();
-        foreach my $key ( keys %{$result} )
+        if ( keys %{$result} == 1  &&  ${$filter}{'asXML'} eq 'one' )
         {
-            push ( @clientsList, ${$result}{$key} );
+            my @keys = keys %{$result};
+            return XMLout( ${$result}{@keys[0]}
+                      , rootname => "client"
+                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>' );
         }
+        else
+        {
+            my @clientsList = ();
+            foreach my $key ( keys %{$result} )
+            {
+                push ( @clientsList, ${$result}{$key} );
+            }
 
-        my $clientsHash = {  'client' => [@clientsList]  };
-        return XMLout( $clientsHash
-                      , rootname => "clients"
-                      #, noattr => 1 
-                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
-                     );
+            my $clientsHash = {  'client' => [@clientsList]  };
+            return XMLout( $clientsHash
+                          , rootname => "clients"
+                          , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>' );
+        }
     }
     else
     {
