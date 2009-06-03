@@ -18,7 +18,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 if(!SMT::Utils::dropPrivileges())
 {
-    print STDERR "Unable to drop privileges. Abort!\n";
+    print STDERR _("Unable to drop privileges. Abort!\n");
     exit 1;
 }
 
@@ -28,7 +28,7 @@ sub help
     my @files;
     find( {wanted => sub { push(@files, $1) if $_ =~ /smt\-(.+)/; }, no_chdir => 1}, "/usr/sbin");
     
-    print "Subscroption Management Tool (SMT). (c)2007,2008 Novell Inc.\n\n";
+    print __("Subscroption Management Tool (SMT). (c)2007,2008 Novell Inc.\n\n");
 
     foreach my $cmd (@files)
     {

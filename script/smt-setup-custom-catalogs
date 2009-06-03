@@ -18,7 +18,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 if(!SMT::Utils::dropPrivileges())
 {
-    print STDERR "Unable to drop privileges. Abort!\n";
+    print STDERR __("Unable to drop privileges. Abort!\n");
     exit 1;
 }
 
