@@ -34,10 +34,13 @@ my $genprod = 0;
 my $nohardlink = 0;
 my $LocalBasePath = ""; # TODO what's this about
 
+my @patches = ();
+
 my $options = GetOptions("testing|t"    => \$gentest,
                          "production|p" => \$genprod,
                          "nohardlink"   => \$nohardlink,
                          "directory=s"  => \$LocalBasePath,
+                         "patch=s"      => \@patches,
 
                          "fromdir=s"    => \$FromLocalBasePath,
                          "fromlocalsmt" => \$fromlocalsmt,
@@ -54,8 +57,8 @@ sub printhelp
     my $scriptname = shift;
 
     print $scriptname . " listupdates <repository> [--forbidden] [--allowed]\n";
-    print $scriptname . " forbid      <repository> --patch <patch>\n";
-    print $scriptname . " allow       <repository> --patch <patch>\n";
+    print $scriptname . " forbid      <repository> --patch <patch> ...\n";
+    print $scriptname . " allow       <repository> --patch <patch> ...\n";
     print $scriptname . " createrepo  <repository> --testing|--production [--nohardlink]\n";
     print "\n";
     print __("Repository can be specified using its name and target or ID\n");
@@ -308,10 +311,17 @@ elsif ($command eq 'forbid')
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
 
-    if (@ARGV)
+    if (@patches)
     {
         # TODO make sure user gave name-version, check if such patch exists, ...
-        $filter->add(SMT::Filter->TYPE_NAME_VERSION, @ARGV);
+        $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+    }
+    else
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
+        print __("Specify at list one '--patch name-version'.") . "\n";
+        print __("Use 'smt-staging listupdates' to see the list of available patches.") . "\n";
+        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
     $filter->save($dbh, $repoid);
@@ -326,9 +336,16 @@ elsif ($command eq 'allow')
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
 
-    if (@ARGV)
+    if (@patches)
     {
-        $filter->remove(SMT::Filter->TYPE_NAME_VERSION, @ARGV); # TODO make remove() accept multiple args
+        $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+    }
+    else
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
+        print __("Specify at list one '--patch name-version'.") . "\n";
+        print __("Use 'smt-staging listupdates' to see the list of available patches.") . "\n";
+        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
     $filter->save($dbh, $repoid);
