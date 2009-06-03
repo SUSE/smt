@@ -21,7 +21,7 @@ use SMT::Utils;
 
 =head1 NAME
 
-SMT::Mirror::RpmMd - mirroring of a rpm metadata repository
+SMT::Mirror::RpmMd - mirroring and filtering of an RPMMD repository
 
 =head1 SYNOPSIS
 
@@ -38,7 +38,7 @@ SMT::Mirror::RpmMd - mirroring of a rpm metadata repository
 
 =head1 DESCRIPTION
 
-Mirroring of a rpm metadata repository.
+Provides mirroring and filtering of an RPMMD repository.
 
 The mirror function will not download the same files twice.
 
@@ -46,6 +46,9 @@ In order to clean the repository, that is removing all files
 which are not mentioned in the metadata, you can use the clean method:
 
  $mirror->clean();
+ 
+In order to filter unwanted patches from the repository, pass an SMT::Filter
+object to the constructor.
 
 =head1 METHODS
 
@@ -84,6 +87,11 @@ Set to 1 to disable the use of hardlinks. Copy is used instead of it.
 =item mirrorsrc
 
 Set to 0 to disable mirroring of source rpms.
+
+=item filter
+
+An SMT::Filter object defining patches that should be removed from the mirrored
+repository.
 
 =back
 
@@ -352,14 +360,18 @@ sub job2statistic
     {
         $self->{STATISTIC}->{COPY} += 1;
     }
-} 
+}
 
 =item newpatches()
 
 Returns a hash with new patches since last mirroring or an empty hash.
 If mirror() has not been called so far, it returns undef.
 
+The hash has the same structure as the one returned
+by SMT::Parser::RpmMdPatches::parse().
+
 =cut
+
 sub newpatches
 {
     my $self = shift;
@@ -385,6 +397,7 @@ sub resetStatistics($)
 
     return 1;
 }
+
 
 =item mirror()
 
@@ -418,8 +431,8 @@ and exported key will be deleted.
 Passphrase to the GPG key for signing the metadata.
 
 =back
-
 =cut
+
 sub mirror()
 {
     my $self = shift;
@@ -443,11 +456,18 @@ sub mirror()
 
     # reset the counter
     resetStatistics $self->{STATISTIC};
+
+    # hash to hold patches added since last mirroring
     $self->{NEWPATCHES} = {};
+
+    # repository's metadata files info
+    # gets initialized in download_handler form repomd.xml <data> data.
+    #
+    # see description in removePackages() for details of it's contents
     $self->{MDFILES} = {};
 
     my $dest = $self->fullLocalRepoPath();
-   
+
     if ( ! -d $dest )
     {
         mkpath($dest, {error => \my $err});
@@ -873,6 +893,7 @@ sub mirror()
     return $self->{STATISTIC}->{ERROR};
 }
 
+
 =item clean()
 
 Deletes all files not referenced in the rpmmd resource chain
@@ -931,6 +952,7 @@ sub clean()
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0) if(!$isYum);
 }
+
 
 =item verify([%params])
 
@@ -1288,8 +1310,55 @@ sub signrepo
 }
 
 
+=item removePackages($pkgstoremove, $mdfiles)
 
-sub removePackages($$$$)
+Removes packages given in $pkgstoremove from primary.xml and several other
+metadata files which contain additional package information like other.xml.gz,
+filelists.xml.gz, and susedata.xml.gz, and from the filesystem.
+
+Packages are not removed from the filesystem until successfully removed from
+the metadata.
+
+$pkgstoremove is a list of hashes with package data as returned
+by SMT::Parser::RpmMdPatches::filteredpkgs()
+
+$mdfiles is a hash with information about metadata files found in repository's
+repomd.xml file, their changed status, etc. This method uses this info to
+check whether the repository contains the metadata it is interested in and
+to add information about any changed metadata files to it.
+
+Example of input data:
+
+ $pkgstoremove = {
+     {name => 'logwatch', epo => undef, ver => '7.3.6', rel => '60.6.1', arch => 'noarch'},
+    {name => 'audacity', epo => 0, ver => '1.3.5', rel => '49.12.1', arch => 'i586'}
+ };
+
+ # repository metadata info
+ #
+ # exists $mdfiles->{'repodata/susedata.xml.gz'} means the repository contains
+ # susedata.xml.gz file
+ #
+ # exists $mdfiles->{'repodata/susedata.xml.gz'}->{changedorig} means
+ # the susedata file has been changed, and the value is the location
+ # of the original file. $mdfiles->{'repodata/susedata.xml.gz'}->{changednew}
+ # then contains the path to new metadata file, non-gzipped.
+ #
+ $mdfiles = {                                                                                                 
+    'repodata/primary.xml.gz' => undef,
+    'repodata/other.xml.gz' => undef,
+    'repodata/filelists.xml.gz' => undef,
+    'repodata/updateinfo.xml.gz' => {
+                  'changedorig' => '/path/to/repo/.repodata/updateinfo.xml.gz',
+                  'changednew' => '/tmp/yakHpx8kvP/updateinfo.xml'
+                  },
+    'repodata/susedata.xml.gz' => undef,
+    'repodata/deltainfo.xml.gz' => undef
+    };
+
+=cut
+
+sub removePackages($$$)
 {
     my ($self, $pkgstoremove, $mdfiles) = @_;
     
@@ -1403,28 +1472,42 @@ sub removePackages($$$$)
     return 1;
 }
 
+
 =item updateRepomd($mdfiles, $repodatadir)
 
-Update repomd.xml with changed metadata files (primary, filelist, other, susedata)
+Updates repository with changed metadata files described in $mdfiles.
+The method uses modifyrepo utility to update repomd.xml and put gzipped metadata
+files into the repository's metadata directory pointed to by $repodatadir.
 
-$mdfiles =
-{
-    'repodata/primary.xml.gz' =>
-    {
-        'changedorig' => '.repodata/primary.xml.gz',
-        'changednew'  => '/tmp/asdfXYZ/primary.xml'
-    },
+Example of input data:
 
-    'repodata/updateinfo.xml.gz' =>
-    {
-        'changedorig' => '.repodata/updateinfo.xml.gz',
-        'changednew'  => '/tmp/asdfXYZ/updateinfo.xml'
-    },
-
-    ...
-    
+ # repository metadata info
+ #
+ # exists $mdfiles->{'repodata/susedata.xml.gz'} means the repository contains
+ # susedata.xml.gz file
+ #
+ # exists $mdfiles->{'repodata/susedata.xml.gz'}->{changedorig} means
+ # the susedata file has been changed, and the value is the location
+ # of the original file. $mdfiles->{'repodata/susedata.xml.gz'}->{changednew}
+ # then contains the path to new metadata file, non-gzipped.
+ #
+ $mdfiles = {                                                                                                 
+    'repodata/primary.xml.gz' => {
+                  'changedorig' => '/path/to/repo/.repodata/primary.xml.gz',
+                  'changednew'  => '/tmp/yakHpx8kvP/primary.xml'
+                  },
+    'repodata/other.xml.gz' => undef,
+    'repodata/filelists.xml.gz' => undef,
+    'repodata/updateinfo.xml.gz' => {
+                  'changedorig' => '/path/to/repo/.repodata/updateinfo.xml.gz',
+                  'changednew' => '/tmp/yakHpx8kvP/updateinfo.xml'
+                  },
+    'repodata/susedata.xml.gz' => undef,
     'repodata/deltainfo.xml.gz' => undef
-}
+    };
+
+ $repodatadir = '/path/to/repo/.repodata/';
+
 
 NOTE: Another alternative would be to use createrepo (see below) to update
 primary/other/filelists, but that would be slow, and we'd still need to
