@@ -60,6 +60,9 @@ sub readSmtUrl
     }
   }
   close FH;
+
+  $uri =~ s/^([hH][tT][tT][Pp][Ss]:\/\/[^\/]+)\/.*/$1/ ;
+
   if(!defined $uri || $uri eq "")
   {
     SMT::Agent::Utils::error("Cannot read URL from /etc/suseRegister.conf");
