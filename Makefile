@@ -76,6 +76,7 @@ install:
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/full
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/NU
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT
+	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT/Client
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Parser
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
@@ -98,6 +99,7 @@ install:
 	install -m 644 www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
 	install -m 644 www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
+	install -m 644 www/perl-lib/SMT/Client/*.pm /$(DESTDIR)/srv/www/perl-lib/SMT/Client/
 	install -m 644 www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
 	install -m 644 www/perl-lib/SMT/Filter.pm $(DESTDIR)$(PERLMODDIR)/SMT/
