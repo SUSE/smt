@@ -703,6 +703,14 @@ sub insertRegistration
             $aff = 0;
         }
     }
+
+    my $client = SMT::Client->new({ 'dbh' => $dbh });
+    
+    if ( not  $client->insertPatchstatusJob( $regdata->{register}->{guid} ) )
+    {
+        $r->log_error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
+                              $regdata->{register}->{guid} )  );
+    }
     
     return \@list;
 }

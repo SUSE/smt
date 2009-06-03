@@ -580,4 +580,28 @@ sub updatePatchstatus($$)
 }
 
 
+#
+# insertPatchstatusJob
+#   Inserts (or updates) a patchstatus job for a client (by GUID)
+#   parameter:  guid
+#
+sub insertPatchstatusJob($)
+{
+    my $self = shift;
+    my $guid = shift || return undef;
+
+    my $cid = $self->getClientIDByGUID($guid) || return undef;
+
+    my $sqlFindJob = "SELECT ID FROM JobQueue where GUID_ID = '$cid' AND TYPE = 1";
+    my $findResult = $self->{'dbh'}->selectcol_arrayref($sqlFindJob);
+    if ( @{$findResult} == 0)
+    {
+        my $sql = "INSERT INTO JobQueue (GUID_ID, TYPE, PERSISTENT, DESCRIPTION, TIMELAG) ";
+        $sql .= " VALUES ( $cid, 1, 1, 'Patchstatus Job for Client $guid' , '23:00:00' ) ";
+        $self->{'dbh'}->do($sql);
+    }
+    return 1;
+}
+
+
 1;
