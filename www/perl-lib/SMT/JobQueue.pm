@@ -331,20 +331,19 @@ sub finishJob($)
     }
   }
 
-
+  my $persistent = isPersistent($self, $guid, $job->{id}) ? 1:0;
+  $status = 0 if ( $persistent );
 
   my $sql = 'update JobQueue as j left join Clients as c on ( j.GUID_ID = c.ID )'.
-	' set j.STDERR = '.$self->{dbh}->quote($job->stderr()).
-	', j.MESSAGE = '.$self->{dbh}->quote($job->message()). 
-	', j.STDOUT = '.$self->{dbh}->quote($job->stdout()).
-	', j.EXITCODE = '.$self->{dbh}->quote($job->exitcode()).
-	', j.STATUS = '.$self->{dbh}->quote($status).
-	', j.FINISHED = "'. SMT::Utils::getDBTimestamp().'"';
+            ' set j.STDERR = '.$self->{dbh}->quote($job->stderr()).
+            ', j.MESSAGE = '.$self->{dbh}->quote($job->message()). 
+            ', j.STDOUT = '.$self->{dbh}->quote($job->stdout()).
+            ', j.EXITCODE = '.$self->{dbh}->quote($job->exitcode()).
+            ', j.STATUS = '.$self->{dbh}->quote($status).
+            ', j.FINISHED = "'. SMT::Utils::getDBTimestamp().'"';
 
-  if ( isPersistent($self, $guid, $job->{id}) )
+  if ( $persistent )
   {
-    $status = 0;
-
     my $nexttime = calcNextTargeted($self, $guid, $job->{id});
 
     if (defined $nexttime )
@@ -355,7 +354,7 @@ sub finishJob($)
 
 
   $sql .= ' where j.ID = '.$self->{dbh}->quote($job->id()).
-	' and c.GUID = '.$self->{dbh}->quote($guid);
+          ' and c.GUID = '.$self->{dbh}->quote($guid);
 
   return $self->{dbh}->do($sql);
 };
