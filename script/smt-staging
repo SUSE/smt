@@ -57,7 +57,7 @@ sub printhelp
     print $scriptname . " allow       <repository> --patch <patch>\n";
     print $scriptname . " createrepo  <repository> --testing|--production [--nohardlink]\n";
     print "\n";
-    print __("Repository can be specified using it's name and target or ID\n");
+    print __("Repository can be specified using its name and target or ID\n");
     print __("from smt-repos output.\n");
     print "\n";
     print __("Options:\n");
