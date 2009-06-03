@@ -159,6 +159,7 @@ create table RepositoryContentData(localpath   VARCHAR(300) PRIMARY KEY,
 --      5  -  reboot
 --      6  -  configure 
 --      7  -  wait (time, jobstatus)
+--      8  -  eject ( eject cd-rom for debugging)
 --
 -- STATUS is one of
 --      0  -  not yet worked on

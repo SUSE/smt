@@ -20,6 +20,7 @@ use constant
     5       => 'reboot',
     6       => 'configure',
     7       => 'wait',
+    8       => 'eject',
 
     # Maps JOB_TYPE NAME to JOB_TYPE ID
     'patchstatus'   =>      1,
@@ -29,6 +30,7 @@ use constant
     'reboot'        =>      5,
     'configure'     =>      6,
     'wait'          =>      7,
+    'eject'         =>      8,
   },
 };
 
