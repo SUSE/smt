@@ -93,6 +93,7 @@ install:
 	ln -s smt-repos $(DESTDIR)/usr/sbin/smt-catalogs
 	install -m 644 www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	install -m 644 www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	install -m 644 www/perl-lib/SMT/Config.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Support.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Utils.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
