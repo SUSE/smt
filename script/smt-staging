@@ -35,12 +35,14 @@ my $nohardlink = 0;
 my $LocalBasePath = ""; # TODO what's this about
 
 my @patches = ();
+my $category = undef;
 
 my $options = GetOptions("testing|t"    => \$gentest,
                          "production|p" => \$genprod,
                          "nohardlink"   => \$nohardlink,
                          "directory=s"  => \$LocalBasePath,
                          "patch=s"      => \@patches,
+                         "category=s"   => \$category,
 
                          "fromdir=s"    => \$FromLocalBasePath,
                          "fromlocalsmt" => \$fromlocalsmt,
@@ -57,8 +59,8 @@ sub printhelp
     my $scriptname = shift;
 
     print $scriptname . " listupdates <repository> [--forbidden] [--allowed]\n";
-    print $scriptname . " forbid      <repository> --patch <patch> ...\n";
-    print $scriptname . " allow       <repository> --patch <patch> ...\n";
+    print $scriptname . " forbid      <repository> [--patch <patch> ... | --category <category>]\n";
+    print $scriptname . " allow       <repository> [--patch <patch> ... | --category <category>]\n";
     print $scriptname . " createrepo  <repository> --testing|--production [--nohardlink]\n";
     print "\n";
     print __("Repository can be specified using its name and target or ID\n");
@@ -286,11 +288,11 @@ if ($command eq 'listupdates')
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
     
     my $t = new Text::ASCIITable;
-    $t->setCols(__("Allowed"), __("Name"), __("Version"), __("Summary"));
+    $t->setCols(__("Allowed"), __("Name"), __("Version"), __("Category"), __("Summary"));
     foreach my $patch (values %$patches)
     {
         my $allowed = not $filter->matches($patch);
-        $t->addRow(($allowed ? __("Yes") : __("No")), $patch->{name}, $patch->{version}, $patch->{title}); 
+        $t->addRow(($allowed ? __("Yes") : __("No")), $patch->{name}, $patch->{version}, $patch->{type}, $patch->{title}); 
     }
     if (%$patches)
     {
@@ -316,6 +318,11 @@ elsif ($command eq 'forbid')
         # TODO make sure user gave name-version, check if such patch exists, ...
         $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
     }
+    elsif (defined $category && $category)
+    {
+        # TODO check if the category is known
+        $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+    }
     else
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
@@ -339,6 +346,11 @@ elsif ($command eq 'allow')
     if (@patches)
     {
         $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+    }
+    elsif (defined $category)
+    {
+        # TODO check if the category is known
+        $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
     }
     else
     {
