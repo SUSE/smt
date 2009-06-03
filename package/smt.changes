@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Wed Jun  3 11:08:55 CEST 2009 - jkupec@suse.cz
+
+- SMT::Mirror::RpmMd: removing of packages belonging to filtered
+  patches done (fate #306251).
+- SMT::Parser::RpmMdPrimaryFilter added
+- SMT::Parser::RpmMdOtherFilter added
+- SMT::Parser::RpmMdPatches 
+- most of the testsuite fixed
+- Total number of files added to mirror statistics
+
+-------------------------------------------------------------------
 Mon Jun  1 12:58:21 CEST 2009 - locilka@suse.cz
 
 - SMT::Clients, SMT::Job, and SMT::JobQueue turned into
