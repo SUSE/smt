@@ -380,7 +380,7 @@ foreach my $entry (@{$array})
             $secpatches += $s->{NEWSECPATCHES};
             $recpatches += $s->{NEWRECPATCHES};
 
-            my $rh = SMT::Repositories::new($dbh);
+            my $rh = SMT::Repositories::new($dbh, $logfile);
 
             # Update last mirror timestamp only if not mirroring to a custom directory
             if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") && !$dryrun )

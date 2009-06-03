@@ -111,7 +111,7 @@ Constructor. Logfile parameter is optional.
 
 =cut
 
-sub new ($)
+sub new
 {
     my $dbh = shift;
     my $log = shift;
@@ -127,6 +127,12 @@ sub new ($)
     if (defined $log)
     {
 	$new->{LOG} = SMT::Utils::openLog ($log);
+    }
+
+    # Checking the params
+    if (! defined $new->{dbh} && defined $log)
+    {
+	SMT::Utils::printLog($new->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'dbh' is required"))
     }
 
     bless $new;
