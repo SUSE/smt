@@ -17,11 +17,6 @@ use SMT::Mirror::Utils;
 use SMT::Mirror::RpmMd;
 use SMT::Parser::RpmMdPatches;
 
-if(!SMT::Utils::dropPrivileges())
-{
-    print STDERR __("Unable to drop privileges. Abort!\n");
-    exit 1;
-}
 
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug    = 0;
@@ -53,12 +48,14 @@ my $options = GetOptions("testing|t"    => \$gentest,
                          "help|h"       => \$help,
                         );
 
-if($help)
+sub printhelp
 {
-    print basename($0) . " listupdates <repoid> [--forbidden] [--allowed]\n";
-    print basename($0) . " forbid      <repoid> <patch>\n";
-    print basename($0) . " allow       <repoid> <patch>\n";
-    print basename($0) . " createrepo  <repoid> --testing|--production [--nohardlink]\n";
+    my $scriptname = shift;
+
+    print $scriptname . " listupdates <repoid> [--forbidden] [--allowed]\n";
+    print $scriptname . " forbid      <repoid> <patch>\n";
+    print $scriptname . " allow       <repoid> <patch>\n";
+    print $scriptname . " createrepo  <repoid> --testing|--production [--nohardlink]\n";
     print "\n";
     print __("Options:\n");
     print "--testing -t            " . __("Generate testing repository with selected updates.\n");
@@ -77,12 +74,25 @@ if($help)
     print "--debug -d              " . __("Enable debug mode.\n");
     print "--verboselevel -v level " . __("Set the level of verbosity.\n");
     print "--logfile -L file       " . __("Log to specified file.\n");
-    exit 0;
+}
+
+if ($help)
+{
+    printhelp(basename($0));
+    exit 0;    
+}
+
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR __("Unable to drop privileges. Abort!\n");
+    exit 1;
 }
 
 if (@ARGV < 2)
 {
-    print STDERR __("Too few arguments. At least the command and repository ID are required.\n");
+    print STDERR __("Too few arguments. At least a command and repository ID are required.\n");
+    print "\n";
+    printhelp(basename($0));
     exit 1;
 }
 
@@ -96,7 +106,9 @@ if (!($ARGV[0] eq 'createrepo' ||
       $ARGV[0] eq 'forbid' ||
       $ARGV[0] eq 'allow'))
 {
-    printf __("Unknown command '%s'\n"), $ARGV[0];
+    printf STDERR __("Unknown command '%s'\n"), $ARGV[0];
+    print "\n";
+    printhelp(basename($0));
     exit 1;
 }
 else
