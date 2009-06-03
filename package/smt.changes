@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jun  3 18:07:21 CEST 2009 - jkupec@suse.cz
+
+- smt-staging script added
+- 1.1.8
+
+-------------------------------------------------------------------
 Wed Jun  3 12:15:41 CEST 2009 - locilka@suse.cz
 
 - Added caching of the current SMT configuration and DB connection
