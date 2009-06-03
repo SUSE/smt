@@ -93,21 +93,25 @@ use constant {
     STAGING_TRUE	=> 'Y',
     STAGING_FALSE	=> 'N',
 
+    NAME                => 'NAME',
+    TARGET              => 'TARGET',
+
     REPOSITORYID	=> 'CATALOGID',
     REPOSITORIES	=> 'Catalogs',
 
-    VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
+    VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2,
 };
 
 =head1 METHODS 
 
 =over 4
 
-=item new ($dbh, $logfile)
+=item new ($dbh[, $log])
 
-Constructor. Logfile parameter is optional.
+Constructor. Log object parameter is optional.
 
- my $repo = SMT::Repositories ($dbh, $logfile);
+ my $log = SMT::Utils::openLog ($logfile);
+ my $repo = SMT::Repositories ($dbh, $log);
 
 =cut
 
@@ -126,7 +130,7 @@ sub new
 
     if (defined $log)
     {
-	$new->{LOG} = SMT::Utils::openLog ($log);
+	$new->{LOG} = $log;
     }
 
     # Checking the params
@@ -210,8 +214,11 @@ sub getAllRepositories ($$) {
 
     my $sth = $self->{'dbh'}->prepare ('SELECT * FROM Catalogs'.
 	# Use the 'WHERE' part if defined
-	(length ($sql_filter) > 0 ? ' WHERE '.$sql_filter:'')
+	(length ($sql_filter) > 0 ? ' WHERE '.$sql_filter : '') .
+        # always order by name and target
+	' ORDER BY NAME, TARGET'
     );
+
     $sth->execute();
 
     my $ret = {};

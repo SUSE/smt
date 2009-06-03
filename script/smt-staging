@@ -52,10 +52,13 @@ sub printhelp
 {
     my $scriptname = shift;
 
-    print $scriptname . " listupdates <repoid> [--forbidden] [--allowed]\n";
-    print $scriptname . " forbid      <repoid> <patch>\n";
-    print $scriptname . " allow       <repoid> <patch>\n";
-    print $scriptname . " createrepo  <repoid> --testing|--production [--nohardlink]\n";
+    print $scriptname . " listupdates <repository> [--forbidden] [--allowed]\n";
+    print $scriptname . " forbid      <repository> --patch <patch>\n";
+    print $scriptname . " allow       <repository> --patch <patch>\n";
+    print $scriptname . " createrepo  <repository> --testing|--production [--nohardlink]\n";
+    print "\n";
+    print __("Repository can be specified using it's name and target or ID\n");
+    print __("from smt-repos output.\n");
     print "\n";
     print __("Options:\n");
     print "--testing -t            " . __("Generate testing repository with selected updates.\n");
@@ -96,8 +99,6 @@ if (@ARGV < 2)
     exit 1;
 }
 
-#print "Non-option args: @ARGV\n";
-
 # the first non-option argument is the command
 
 my $command = undef;
@@ -116,9 +117,11 @@ else
     $command = shift @ARGV;
 }
 
-# the second is always the repository id
+# the second is the repository id or name (if there is the third argument)
+my $reponameid = shift @ARGV;
 
-my $repoid = shift @ARGV;
+# the third (optional) is always the repository target (from the smt-repos output)
+my $target = shift @ARGV;
 
 # get a lock
 
@@ -155,19 +158,88 @@ if(!$dbh)
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     }
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot connect to database"));
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot connect to database."));
     exit 1;
 }
 
 # get the repository from DB (all commands need it)
 
-my $rh = SMT::Repositories::new($dbh);
-my $repo = $rh->getRepository($repoid);
+my $rh = SMT::Repositories::new($dbh, $log);
+my $repo = $rh->getRepository($reponameid) if (not defined $target);
+my $repoid = undef;
+$rh->getAndClearErrorMessage();
+
 if (not defined $repo)
 {
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf __("Repository ID '%s' not found."), $repoid);
-    printf __("Use '%s' to list all available repositories.\n"), 'smt-repos';
-    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+    if (not defined $target)
+    {
+        # not found by CATALOGID, lets try by ID (row number) from smt-repos
+
+        my $repos = $rh->getAllRepositories();
+        my $err = $rh->getAndClearErrorMessage();
+        my $count = scalar keys %$repos;
+
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, 'DB error: ' . $err)
+            if ($err);
+
+        if ( $reponameid =~ /^[0-9]+$/ &&
+            int($reponameid) > 0 && int($reponameid) <= $count)
+        {
+            my $id = 1;
+            foreach my $r (keys %$repos)
+            {
+                if ($id == int($reponameid))
+                {
+                    $repo = $repos->{$r};
+                    $repoid = $r;
+                    last;
+                }
+                $id++;
+            }
+        }
+        else
+        {
+            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+                sprintf __("Repository ID '%s' not found."), $reponameid);
+            printf __("Use '%s' to list all available repositories.\n"), 'smt-repos';
+            SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+        }
+    }
+    # try to find by name & target
+    else
+    {
+        my $repos = $rh->getAllRepositories({
+            SMT::Repositories::NAME => $reponameid,
+            SMT::Repositories::TARGET => $target
+        });
+
+        my $count = scalar keys %$repos; 
+        if ($count <= 0)
+        {
+            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+                sprintf __("Repository named '%s' with target '%s' not found."), $reponameid, $target);
+            printf __("Use '%s' to list all available repositories.\n"), 'smt-repos';
+            SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+        }
+        elsif ($count == 1)
+        {
+            $repo = $repos;
+        }
+        else
+        {
+            # select manually
+            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+                sprintf __("Multiple repositories named '%s' with target '%s' found."), $reponameid, $target);
+            print "Selection from multiple not implemented. Use repository ID.\n";
+            SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+        }
+    }
+}
+else
+{
+    SMT::Utils::printLog($log, $vblevel, LOG_DEBUG,
+        sprintf "Found repository by CATALOGID '%s'.", $reponameid);
+    $repoid = $reponameid;
 }
 
 # check if we can do staging for this repo
@@ -176,12 +248,12 @@ my $canstage = $rh->stagingAllowed($repoid, $cfg->val("LOCAL", "MirrorTo"));
 my $error = $rh->getAndClearErrorMessage();
 if ($error)
 {
-    echo $error;
+    print $error . "\n";
 }
 elsif (!$canstage)
 {
     SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-        sprintf __("Staging is not allowed for repository '%s', ID '%s'."), $repo->{NAME}, $repoid);
+        sprintf __("Staging is not allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
     print __("The repository either does not contain update metadata, or the metadata are in an unsupported format.\n");
     print __("Only openSUSE 11.x, SLE-11, and Fedora/RedHat XX? repositories are supported.\n");
     SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
