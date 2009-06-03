@@ -50,7 +50,7 @@ else
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " stderr: ".$retval{stderr}, $jobdata{id} );
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " exitcode: ".$retval{exitcode}, $jobdata{id} );
 
-  SMT::Agent::RestXML::updatejob ( $jobdata{id}, (( $retval{success} eq "true")?1:2 , $retval{message}, $retval{stdout}, $retval{stderr}, $retval{exitcode} );
+  SMT::Agent::RestXML::updatejob ( $jobdata{id}, ($retval{success} eq "true")?1:2 , $retval{message}, $retval{stdout}, $retval{stderr}, $retval{exitcode} );
 }
 
 
