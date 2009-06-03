@@ -110,10 +110,10 @@ use constant
 	'OK'		=> __("Up-to-date"),
 	'UNKNOWN'	=> __("Unknown"),
     },
-
-    # Defines the patch status order, first hit wins
-    STATUS_PRIO => ['PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O'],
 };
+
+# Defines the patch status order, first hit wins
+my @STATUS_PRIO = ('PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O');
 
 #
 # constructor
@@ -633,8 +633,8 @@ sub getPatchStatusLabel ($)
     my $client_data = shift || {};
     my $status_key = '';
     my $ret = CLIENT_STATUS->{OK};
-    
-    foreach $status_key (STATUS_PRIO)
+
+    foreach $status_key (@STATUS_PRIO)
     {
 	if (! defined $client_data->{$status_key})
 	{
