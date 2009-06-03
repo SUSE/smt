@@ -536,7 +536,15 @@ sub IsSubrepositoryUpToDate ($) {
 sub GetAllClientsStatus ($) {
     my $args = shift || {};
 
-    return $clients->getAllClientsInfo();
+    my $info = $clients->getAllClientsInfo();
+    my $info_copy = $info;
+
+    my $id = '';
+    foreach $id (keys %{$info_copy}) {
+	$info->{$id}->{STATUSLABEL} = SMT::Client::getPatchStatusLabel($info_copy->{$id});
+    }
+
+    return $info;
 }
 
 # the main() loop

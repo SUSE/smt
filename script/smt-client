@@ -1,0 +1,145 @@
+#!/usr/bin/perl -w
+
+###############################################################################
+## Copyright (c) 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use File::Basename;
+
+use Text::ASCIITable;
+use Locale::gettext();
+use POSIX();
+
+use SMT::CLI;
+use SMT::Utils;
+use SMT::Client;
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR __("Unable to drop privileges. Abort!\n");
+    exit 1;
+}
+
+my $vblevel	= LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
+my $debug	= 0;
+my $logfile	= "/dev/null";
+my $help	= 0;
+my $command	= $ARGV[0] || 'status';
+my $hostname	= undef;
+my $showdetails	= 0;
+
+Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
+my $options = Getopt::Long::GetOptions
+(
+    'help'		=> \$help,
+    'debug|d'		=> \$debug,
+    'logfile|L=s'	=> \$logfile,
+    'hostname|h=s'	=> \$hostname,
+    'show-details|s'	=> \$showdetails,
+);
+
+if($help)
+{
+    print basename($0). " status [--hostname hostname]\n";
+    print "\n";
+    print __("Options:\n");
+    print "--help -h            ".__("This help.\n");
+    print "--debug -d           ".__("Enable debug mode.\n");
+    print "--hostname -H        ".__("Operate on a specified hostname (name starting with).\n");
+    print "--show-details -s    ".__("Show details on patches.\n");
+    print "--logfile -L         ".__("Log to a specified file.\n");
+    exit 0;
+}
+
+# get a lock
+if(!SMT::Utils::openLock("smt-client"))
+{
+    print __("Other smt-client process is still running.\n");
+    exit 2;
+}
+
+# open the logfile
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
+my $log = SMT::Utils::openLog($logfile);
+
+# connect to database
+my ($cfg, $dbh) = SMT::CLI::init();
+if (! defined $dbh) {
+    print __("Cannot connect to database");
+    exit 3;
+}
+
+my $clients = SMT::Client->new({'dbh' => $dbh});
+
+sub doesHostnameMatch ($) {
+    my $check_hostname = shift;
+
+    return (substr ($check_hostname, 0, length($hostname)) eq $hostname);
+}
+
+if ($command eq 'status')
+{
+    my $client_info = $clients->getAllClientsInfo();
+    if ($client_info)
+    {
+	my $t = new Text::ASCIITable;
+
+	if ($showdetails) {
+	    $t->setCols(
+		__("Hostname"),
+		__("Status"),
+		__("Last Contact"),
+		__("Security\nPatches"),
+		__("Patches for\nPackage Manager"),
+		__("Recommended\nPatches"),
+		__("Optional\nPatches")
+	    );
+	} else {
+	    $t->setCols(
+		__("Hostname"),
+		__("Status"),
+		__("Last Contact")
+	    );
+	}
+
+	my $key = '';
+	foreach my $key (sort ({$client_info->{$a}->{HOSTNAME} cmp $client_info->{$b}->{HOSTNAME}} keys %{$client_info})) {
+	    next if (defined $hostname && ! doesHostnameMatch($client_info->{$key}->{HOSTNAME}));
+
+	    if ($showdetails) {
+		$t->addRow(
+		    $client_info->{$key}->{HOSTNAME},
+		    SMT::Client::getPatchStatusLabel($client_info->{$key}),
+		    $client_info->{$key}->{LASTCONTACT},
+		    (defined $client_info->{$key}->{PATCHSTATUS_S} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown")),
+		    (defined $client_info->{$key}->{PATCHSTATUS_P} ? $client_info->{$key}->{PATCHSTATUS_P}:__("Unknown")),
+		    (defined $client_info->{$key}->{PATCHSTATUS_R} ? $client_info->{$key}->{PATCHSTATUS_R}:__("Unknown")),
+		    (defined $client_info->{$key}->{PATCHSTATUS_O} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown"))
+		);
+	    } else {
+		$t->addRow(
+		    $client_info->{$key}->{HOSTNAME},
+		    SMT::Client::getPatchStatusLabel($client_info->{$key}),
+		    $client_info->{$key}->{LASTCONTACT}
+		);
+	    }
+	}
+
+	print $t->draw();
+    }
+}
+else
+{
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf(__("Unknown command: %s"), $command));
+}
+
+# release the lock
+SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+
+exit 0;

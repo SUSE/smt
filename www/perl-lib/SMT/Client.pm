@@ -5,7 +5,12 @@ use warnings;
 
 use XML::Simple;
 use UNIVERSAL 'isa';
+use SMT::Utils;
 
+use Locale::gettext();
+use POSIX();
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 =pod
 =head1 Client.pm - SMT Client API
@@ -92,6 +97,23 @@ All current functions are:
 =back
 
 =cut
+
+use constant
+{
+    # Defines a client status according to the number of patches pending
+    CLIENT_STATUS =>
+    {
+	'PATCHSTATUS_S'	=> __("Critical"),
+	'PATCHSTATUS_P'	=> __("Updates available"),
+	'PATCHSTATUS_R'	=> __("Updates available"),
+	'PATCHSTATUS_O'	=> __("Updates available"),
+	'OK'		=> __("Up-to-date"),
+	'UNKNOWN'	=> __("Unknown"),
+    },
+
+    # Defines the patch status order, first hit wins
+    STATUS_PRIO => ['PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O'],
+};
 
 #
 # constructor
@@ -579,6 +601,32 @@ sub updatePatchstatus($$)
     return $self->{'dbh'}->do($sql);
 }
 
+#
+# Counts the number of patches of particular patch level
+# and returns an appropriate label that describes such status
+#
+sub getPatchStatusLabel ($)
+{
+    my $client_data = shift || {};
+    my $status_key = '';
+    my $ret = CLIENT_STATUS->{OK};
+
+    foreach $status_key (STATUS_PRIO)
+    {
+	if (! defined $client_data->{$status_key})
+	{
+	    $ret = CLIENT_STATUS->{'UNKNOWN'};
+	    last;
+	}
+	elsif ($client_data->{$status_key} > 0)
+	{
+	    $ret = CLIENT_STATUS->{$status_key};
+	    last;
+	}
+    }
+
+    return $ret;
+}
 
 #
 # insertPatchstatusJob

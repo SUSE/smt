@@ -280,9 +280,10 @@
 		`id (`clients_table),
 		`opt (`hstretch, `vstretch, `notify, `immediate),
 		`header (
-		    _("Status"),
+		    _("OK"),
 		    _("Host Name"),
-		    _("Last Contact")
+		    _("Last Contact"),
+		    _("Status")
 		),
 		[]
 	    ),
@@ -1313,7 +1314,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 		`id (id),
 		(status == true ? yes:no),
 		values["HOSTNAME"]:values["GUID"]:"",
-		values["LASTCONTACT"]:_("Never")
+		values["LASTCONTACT"]:_("Never"),
+		values["STATUSLABEL"]:_("Unknown Status")
 	    );
 	});
 

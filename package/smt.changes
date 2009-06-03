@@ -3,6 +3,10 @@ Wed Jun  3 12:15:41 CEST 2009 - locilka@suse.cz
 
 - Added caching of the current SMT configuration and DB connection
   into the SMT::CLI.
+- Created new smt-client script to show the clients state and
+  manage their tasks.
+- Adjusted SMT::Client to provide unified labels for client
+  statuses according to the pending patchs status.
 
 -------------------------------------------------------------------
 Wed Jun  3 11:08:55 CEST 2009 - jkupec@suse.cz
