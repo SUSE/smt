@@ -8,7 +8,7 @@ use SMT::Agent::Utils;
 sub jobhandler
 {
   my %retval;
-  my ($jobtype, $jobid, $args) =  @_;
+  my ($jobtype, $jobid, $args, $verbose) =  @_;
 
   SMT::Agent::Utils::logger ("jobhandler for softwarepush called", $jobid);
   SMT::Agent::Utils::logger ("softwarepush runs jobid \"$jobid\"", $jobid);
@@ -57,6 +57,13 @@ sub jobhandler
   }    
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
+
+  if ( $verbose ne "true" )
+  {
+    $stdout="";
+    $stderr="";
+  }
+
 
   return (
     stdout => defined ( $stdout )? $stdout : "",

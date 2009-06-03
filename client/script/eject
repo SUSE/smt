@@ -10,7 +10,7 @@ use UNIVERSAL 'isa';
 sub jobhandler
 {
   my %retval;
-  my ($jobtype, $jobid, $args) =  @_;
+  my ($jobtype, $jobid, $args, $verbose) =  @_;
 
   SMT::Agent::Utils::logger ("jobhandler for eject called", $jobid);
   SMT::Agent::Utils::logger ("patchstatus runs jobid \"$jobid\"", $jobid);
@@ -27,6 +27,13 @@ sub jobhandler
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
   SMT::Agent::Utils::error ("eject failed", $jobid) if ( $retval != 0 );
+
+
+  if ( $verbose ne "true" )
+  {
+    $stdout="";
+    $stderr="";
+  }
 
   return (
     stdout => defined ( $stdout )? $stdout : "",

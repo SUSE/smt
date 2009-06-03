@@ -169,7 +169,8 @@ sub asXML
       'id'        => $self->{id},
       'guid'      => $self->{guid},
       'type'      => $self->{type},
-      'arguments' => $self->{arguments}
+      'arguments' => $self->{arguments},
+      'verbose'   => ( $self->{verbose} == 1 )? "true" : "false"
 
     #TODO: add outher attributes
 

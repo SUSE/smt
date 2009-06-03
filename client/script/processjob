@@ -42,7 +42,7 @@ else
 {
   loadjobhandler ( $jobdata{type}, $jobdata{id} ); 
 
-  my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args} );
+  my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args}, ( defined  $jobdata{verbose} ) ? $jobdata{verbose} : "false"  );
 
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. (( $retval{success} eq "true")?" successfully finished":" FAILED"), $jobdata{id} );
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " message: ".$retval{message}, $jobdata{id} );
