@@ -9,6 +9,7 @@ use warnings;
 
 use Getopt::Long;
 use File::Basename;
+use Text::ASCIITable;
 
 use SMT::Utils;
 use SMT::Repositories;
@@ -281,11 +282,20 @@ if ($command eq 'listupdates')
     $parser->resource($localrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
     
-    # TODO print nice table
+    my $t = new Text::ASCIITable;
+    $t->setCols(__("Allowed"), __("Name"), __("Version"), __("Summary"));
     foreach my $patch (values %$patches)
     {
         my $allowed = not $filter->matches($patch);
-        print ( ($allowed ? '*' : ' ') . " | " . $patch->{name} . "\t | " . $patch->{version} . "\t | " . $patch->{title} . "\n"); 
+        $t->addRow(($allowed ? __("Yes") : __("No")), $patch->{name}, $patch->{version}, $patch->{title}); 
+    }
+    if (%$patches)
+    {
+        print $t->draw();
+    }
+    else
+    {
+        print __("This repository does not contain any patches.") . "\n";
     }
 }
 
