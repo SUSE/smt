@@ -397,15 +397,18 @@ foreach my $entry (@{$array})
 	        }
             }
 
-            # filter new patches -> admin needs to manually allow which patches
-            # s/he wants (maybe this should be configurable)
-            if ($rh->stagingAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
+            if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
             {
-                my $newpatches = $zyppMirror->newpatches();
-                my $filter = SMT::Filter->new();
-                $filter->load($dbh, $entry->{CATALOGID});
-                $filter->add(SMT::Filter->TYPE_NAME_VERSION, keys %$newpatches);
-                $filter->save($dbh, $entry->{CATALOGID});
+                # filter new patches -> admin needs to manually allow which patches
+                # s/he wants (maybe this should be configurable)
+                if ($rh->stagingAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
+                {
+                    my $newpatches = $zyppMirror->newpatches();
+                    my $filter = SMT::Filter->new();
+                    $filter->load($dbh, $entry->{CATALOGID});
+                    $filter->add(SMT::Filter->TYPE_NAME_VERSION, keys %$newpatches);
+                    $filter->save($dbh, $entry->{CATALOGID});
+                }
             }
         }
     }
