@@ -27,6 +27,7 @@ Requires:       perl-XML-Simple
 Requires:	perl-base
 Requires:	perl-libwww-perl
 Requires:       logrotate
+Requires:	cron
 PreReq:         %fillup_prereq 
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
@@ -96,7 +97,7 @@ exit 0
 /usr/lib/SMT/bin/processjob
 /var/adm/fillup-templates/sysconfig.smt-client
 %ghost %{_sysconfdir}/cron.d/novell.com-smt-client
-%config /etc/logrotate.d/smtclient
+%config /etc/logrotate.d/smt-client
 %dir /var/run/smtclient
 
 

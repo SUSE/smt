@@ -29,7 +29,7 @@ install:
 	install -m 755 script/softwarepush $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/patchstatus $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/eject $(DESTDIR)/usr/lib/SMT/bin/job
-	install -m 644 logrotate/smtclient $(DESTDIR)/etc/logrotate.d/
+	install -m 644 logrotate/smt-client $(DESTDIR)/etc/logrotate.d/
 
 #	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
 #	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/smt/
@@ -57,7 +57,7 @@ dist: clean
 #	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
 #	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
 	@cp script/* $(NAME)-$(VERSION)/script/
-#	@cp logrotate/smt $(NAME)-$(VERSION)/logrotate/
+	@cp logrotate/smt-client $(NAME)-$(VERSION)/logrotate/
 	find perl-lib -name ".svn" -prune -o \
                 \( \
                   \( -type d -exec install -m755 -d $(NAME)-$(VERSION)/\{\} \; \) \
