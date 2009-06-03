@@ -93,6 +93,10 @@ sub GEThandler($$)
 
 sub POSThandler($$)
 {
+    # DISABLE REQUEST TYPE
+    return undef;
+    # needs to be enabled for full REST support (eg. create jobs via REST)
+
     my $r = shift;
     return undef unless defined $r;
 
@@ -114,6 +118,7 @@ sub PUThandler($$)
     $path =~ s/^\/(=\/)?1\///;
     $path =~ s/\/?$//;
 
+    # currently only supports job update via PUT:/job/<id>
     my $reJobsId   = qr{^jobs/([\d]+)$};
 
     my $job = SMT::JobQueue->new({ 'dbh' => $dbh });
@@ -134,6 +139,10 @@ sub PUThandler($$)
 
 sub DELETEhandler($$)
 {
+     # DISABLE REQUEST TYPE
+    return undef;
+    # needs to be enabled for full REST support (eg. create jobs via REST)
+
     my $r = shift;
     return undef unless defined $r;
     return "this is the DELETE handler";
