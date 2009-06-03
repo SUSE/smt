@@ -112,7 +112,7 @@ use constant
     },
 
     # Defines the patch status order, first hit wins
-    STATUS_PRIO => ['PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O'],
+    STATUS_PRIO => ('PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O'),
 };
 
 #
@@ -602,33 +602,6 @@ sub updatePatchstatus($$)
 }
 
 #
-# Counts the number of patches of particular patch level
-# and returns an appropriate label that describes such status
-#
-sub getPatchStatusLabel ($)
-{
-    my $client_data = shift || {};
-    my $status_key = '';
-    my $ret = CLIENT_STATUS->{OK};
-
-    foreach $status_key (STATUS_PRIO)
-    {
-	if (! defined $client_data->{$status_key})
-	{
-	    $ret = CLIENT_STATUS->{'UNKNOWN'};
-	    last;
-	}
-	elsif ($client_data->{$status_key} > 0)
-	{
-	    $ret = CLIENT_STATUS->{$status_key};
-	    last;
-	}
-    }
-
-    return $ret;
-}
-
-#
 # insertPatchstatusJob
 #   Inserts (or updates) a patchstatus job for a client (by GUID)
 #   parameter:  guid
@@ -651,5 +624,31 @@ sub insertPatchstatusJob($)
     return 1;
 }
 
+# 
+# Counts the number of patches of particular patch level 
+# and returns an appropriate label that describes such status 
+# 
+sub getPatchStatusLabel ($)
+{
+    my $client_data = shift || {};
+    my $status_key = '';
+    my $ret = CLIENT_STATUS->{OK};
+    
+    foreach $status_key (STATUS_PRIO)
+    {
+	if (! defined $client_data->{$status_key})
+	{
+	    $ret = CLIENT_STATUS->{'UNKNOWN'};
+	    last;
+	}
+	elsif ($client_data->{$status_key} > 0)
+	{
+	    $ret = CLIENT_STATUS->{$status_key};
+	    last;
+	}
+    }
+
+    return $ret;
+}
 
 1;
