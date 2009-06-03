@@ -112,7 +112,7 @@ use constant
     },
 
     # Defines the patch status order, first hit wins
-    STATUS_PRIO => ('PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O'),
+    STATUS_PRIO => ['PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O'],
 };
 
 #
