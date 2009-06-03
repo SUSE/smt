@@ -15,6 +15,8 @@ use Digest::SHA1  qw(sha1 sha1_hex);
 use SMT::Mirror::Job;
 use SMT::Parser::RpmMdLocation;
 use SMT::Parser::RpmMdPatches;
+use SMT::Parser::RpmMdPrimaryFilter; # for removing of filtered packages from MD
+use SMT::Parser::RpmMdOtherFilter;   # for removing of filtered packages from MD
 use SMT::Utils;
 
 =head1 NAME
@@ -442,6 +444,7 @@ sub mirror()
     # reset the counter
     resetStatistics $self->{STATISTIC};
     $self->{NEWPATCHES} = {};
+    $self->{MDFILES} = {};
 
     my $dest = $self->fullLocalRepoPath();
    
@@ -645,7 +648,7 @@ sub mirror()
     my $pkgstoremove;
 
     # to store the new (filtered) repodata
-    my $tmpdir = tempdir(CLEANUP => 1);
+    $self->{TMPDIR} = my $tmpdir = tempdir(CLEANUP => 1);
 
     # updateinfo.xml.gz file path
     my $olduifname = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
@@ -1056,8 +1059,6 @@ sub download_handler
 
     my $invalidFile = 0;
 
-    $self->{MDFILES} = {};
-
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "" && !exists $self->{JOBS}->{$data->{LOCATION}})
     {
@@ -1291,39 +1292,113 @@ sub signrepo
 sub removePackages($$$$)
 {
     my ($self, $pkgstoremove, $mdfiles) = @_;
-
+    
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-        'Going to remove ' . (scalar @$pkgstoremove) . ' unwanted packages.');
+        'Going to remove ' . (scalar @$pkgstoremove) . ' filtered packages.');
 
     return 1 if (!@$pkgstoremove);
-    
-    my $rpms = [];
+
+    my $errc = 0;
+    my $tgtrepopath = $self->fullLocalRepoPath();
+
+    # first, remove the unwanted packages from primary.xml.gz 
+
+    # file to write the new primary.xml
+    my $primarynew = SMT::Utils::cleanPath($self->{TMPDIR}, '/primary.xml');
+    my $primaryfh = new IO::File();
+    $primaryfh->open('>' . $primarynew);
+
     # update primary
+    my $parser = SMT::Parser::RpmMdPrimaryFilter->new(out => $primaryfh);
+    $parser->resource($tgtrepopath);
+    $parser->specialmdlocation(1);
+    $errc = $parser->parse($pkgstoremove);
+    $primaryfh->close;
 
-    # update other
-    if ($mdfiles->{'repodata/other.xml.gz'}->{changednew})
+    if ($errc)
     {
-        
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+            'Failed to remove unwanted packages from primary.xml.gz.');
+        $self->{ERRORS}++;
+        return 0;
+    }
+    else
+    {
+        $mdfiles->{'repodata/primary.xml.gz'}->{changednew} = "$primarynew";
+        $mdfiles->{'repodata/primary.xml.gz'}->{changedorig} = $tgtrepopath . "/.repodata/primary.xml.gz";
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+            'Packages successfully removed from primary.xml.gz.');
     }
 
-    # update filelists
-    if ($mdfiles->{'repodata/filelists.xml.gz'}->{changednew})
-    {
-        
-    }
+    # these are packages that were actually found in primary.xml
+    my $pkgsfound = $parser->found();
 
-    # update susedata
-    if ($mdfiles->{'repodata/susedata.xml.gz'}->{changednew})
+
+    # now remove corresponding package data from the following metadata files 
+
+    my %mdtoupdate = (
+        'repodata/other.xml.gz' =>
+            {'new' => 'other.xml',     'orig' => '.repodata/other.xml.gz' },
+        'repodata/filelists.xml.gz' =>
+            {'new' => 'filelists.xml', 'orig' => '.repodata/filelists.xml.gz' },
+        'repodata/susedata.xml.gz' =>
+            {'new' => 'susedata.xml',  'orig' => '.repodata/susedata.xml.gz' }
+        );
+
+    foreach my $mdfile (keys %mdtoupdate)
     {
-        
+        # skip the ones which do not exist in the repo
+        next if not exists $mdfiles->{$mdfile};
+
+        # file to write the new *.xml files
+        my $mdnew = SMT::Utils::cleanPath(
+            $self->{TMPDIR}, $mdtoupdate{$mdfile}->{'new'});
+        my $mdfh = new IO::File();
+        $mdfh->open('>' . $mdnew);
+
+        # update the *.xml
+        my $parser = SMT::Parser::RpmMdOtherFilter->new(out => $mdfh);
+        $parser->resource($tgtrepopath);
+        $errc = $parser->parse($mdtoupdate{$mdfile}->{'orig'}, $pkgsfound);
+        $mdfh->close;
+
+        if ($errc)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                'Failed to remove unwanted packages from other.xml.gz.');
+            $self->{ERRORS}++;
+            return 0;
+        }
+        else
+        {
+            $mdfiles->{$mdfile}->{changednew} = "$mdnew";
+            $mdfiles->{$mdfile}->{changedorig} = $tgtrepopath . "/.repodata/other.xml.gz";
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                'Packages successfully removed from other.xml.gz.');
+        }
     }
 
     # metadata are updated, now remove the packages from the filesystem
 
-    foreach my $rpm (@$rpms)
+    $tgtrepopath = $tgtrepopath . '\\' if ($tgtrepopath !~ /\/$/);
+    foreach my $pkg (values %$pkgsfound)
     {
-        
+        if (not unlink $tgtrepopath . $pkg->{loc})
+        {
+            # No need to fail because of this; the important thing is the
+            # packages were removed from the metadata. Just warn here.
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN,
+                "unlink($tgtrepopath$pkg->{loc}) failed: $!");
+        }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+                "Deleted $tgtrepopath$pkg->{loc}");
+        }
     }
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+        "All filtered packages successfully removed.");
 
     return 1;
 }
@@ -1365,7 +1440,7 @@ sub updateRepomd($$$)
     my ($self, $mdfiles, $repodatadir) = @_;
 
     my $modifyrepopath = '/usr/bin/modifyrepo';
-    my $createrepopath = '/usr/bin/createrepo';
+    # my $createrepopath = '/usr/bin/createrepo';
 
     # unlink the original repomd.xml first to avoid modifying the original
     # repomd.xml on the source URI if hardlinked from elsewhere
