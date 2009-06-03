@@ -83,7 +83,7 @@ sub getJob($$$$)
 
   }
 
-  my $sql = 'select Clients.GUID, JobQueue.ID as jid, TYPE, ARGUMENTS '.
+  my $sql = 'select Clients.GUID, JobQueue.ID as jid, TYPE, ARGUMENTS, VERBOSE '.
     'from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) '.
     'where JobQueue.ID='.$self->{'dbh'}->quote($jobid);
 
@@ -103,6 +103,7 @@ sub getJob($$$$)
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $job->newJob( $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
+  $job->verbose ( $result->{VERSBOSE} );
  
   return $xmlformat ? $job->asXML() : $job;
 }
