@@ -6,7 +6,7 @@
 #
 # List of allowed agents that can be called via SMT job queue
 #
-ALLOWED_AGENTS="softwarepush patchstatus eject"
+ALLOWED_AGENTS="softwarepush patchstatus"
 
 ## Type:    string
 #
