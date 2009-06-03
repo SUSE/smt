@@ -139,4 +139,106 @@ sub isAgentAllowed
 }
 
 
+
+#
+# lock file support
+#
+
+=item openLock($progname)
+
+Try to create a lock file in /var/run/smtclient/$progname.pid .
+Return TRUE on success, otherwise FALSE.
+
+=cut
+sub openLock
+{
+    my $progname = shift;
+    my $pid = $$;
+    
+    my $dir  = "/var/run/smtclient";
+    my $path = "$dir/$progname.pid";
+    
+    return 0 if( !-d $dir || !-w $dir );
+
+    if( -e $path )
+    {
+        # check if the process is still running
+
+        my $oldpid = "";
+        
+        open(LOCK, "< $path") and do {
+            $oldpid = <LOCK>;
+            close LOCK;
+        };
+        
+        chomp($oldpid);
+        
+        if( ! -e "/proc/$oldpid/cmdline")
+        {
+            # pid does not exists; remove lock
+            unlink $path;
+        }
+        else
+        {
+            my $cmdline = "";
+            open(CMDLINE, "< /proc/$oldpid/cmdline") and do {
+                $cmdline = <CMDLINE>;
+                close CMDLINE;
+            };
+            
+            if($cmdline !~ /$progname/)
+            {
+                # this pid is a different process; remove the lock
+                unlink $path;
+            }
+            else
+            {
+                # process still running
+                return 0;
+            }
+        }
+    }
+    
+    sysopen(LOCK, $path, O_WRONLY | O_EXCL | O_CREAT, 0640) or return 0;
+    print LOCK "$pid";
+    close LOCK;
+
+    return 1;
+}
+
+=item unLock($progname)
+
+Try to remove the lockfile
+Return TRUE on success, otherwise false
+
+=cut
+sub unLock
+{
+    my $progname = shift;
+    my $pid = $$;
+    
+    my $path = "/var/run/smtclient/$progname.pid";
+    
+    if(! -e $path )
+    {
+        return 1;
+    }
+    
+    open(LOCK, "< $path") or return 0;
+    my $dp = <LOCK>;
+    close LOCK;
+    
+    if($dp ne "$pid")
+    {
+        return 0;
+    }
+    
+    my $cnt = unlink($path);
+    return 1 if($cnt == 1);
+    
+    return 0;
+}
+
 1;
+
+

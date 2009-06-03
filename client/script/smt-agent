@@ -6,6 +6,10 @@ use SMT::Agent::Config;
 use SMT::Agent::Utils;
 use SMT::Agent::RestXML;
 
+if ( ! SMT::Agent::Utils::openLock("smt-agent") )
+{
+  SMT::Agent::Utils::error ("Cannot open Lock. Process still running?");
+}
 
 my $jobid;
 
@@ -21,5 +25,10 @@ while( defined ( $jobid = SMT::Agent::RestXML::parsejobid( SMT::Agent::RestXML::
 }
 
 SMT::Agent::Utils::logger ("no jobs left. exit.");
+
+if ( ! SMT::Agent::Utils::unLock("smt-agent") )
+{
+  SMT::Agent::Utils::error ("Cannot remove Lock.");
+}
 
 

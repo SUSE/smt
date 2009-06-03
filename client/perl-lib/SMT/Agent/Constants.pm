@@ -29,7 +29,7 @@ use constant REST_UPDATE_JOB	=> REST_START_SEQ.REST_VERSION.'/jobs/';
 use constant REST_GET_JOB	=> REST_START_SEQ.REST_VERSION.'/jobs/';
 
 # log file
-use constant LOG_FILE		=> '/tmp/smtclient.log';
+use constant LOG_FILE		=> '/var/log/smtclient.log';
 
 # client config file
 use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smt-client';

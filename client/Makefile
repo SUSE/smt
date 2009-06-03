@@ -3,17 +3,13 @@ VERSION       = 0.0.1
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
-#SMT_SQLITE_DB = $(DESTDIR)/var/lib/SMT/db/smt.db
 TEMPF         = $(shell mktemp)
 DOCDIR        = /usr/share/doc/packages
 
-#all:
-#	make -C swig
 all:
 	echo that is all
 
 install_all: install 
-#install_conf 
 
 #install_conf:
 #	mkdir -p $(DESTDIR)/etc/
@@ -22,9 +18,6 @@ install_all: install
 
 install:
 	mkdir -p $(DESTDIR)/usr/sbin/
-	mkdir -p $(DESTDIR)/etc/apache2
-	mkdir -p $(DESTDIR)/etc/init.d
-#	mkdir -p $(DESTDIR)/etc/smt.d/
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Agent
 	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
@@ -32,14 +25,11 @@ install:
 	mkdir -p $(DESTDIR)$(DOCDIR)/smt
 	install -m 755 script/smt-* $(DESTDIR)/usr/sbin/
 	install -m 644 perl-lib/SMT/Agent/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Agent/
-#	install -m 755 config/rc.smt $(DESTDIR)/etc/init.d/smt
-#	install -m 644 cron/smt-cron.conf $(DESTDIR)/etc/smt.d/
-#	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
-#	install -m 644 logrotate/smt $(DESTDIR)/etc/logrotate.d/
 	install -m 755 script/processjob $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/softwarepush $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/patchstatus $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/eject $(DESTDIR)/usr/lib/SMT/bin/job
+	install -m 644 logrotate/smtclient $(DESTDIR)/etc/logrotate.d/
 
 #	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
 #	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/smt/
@@ -54,7 +44,6 @@ clean:
 	rm -rf $(NAME)-$(VERSION)/
 	rm -f $(NAME)-$(VERSION).tar.bz2
 	rm -f package/$(NAME)-$(VERSION).tar.bz2
-#	make -C swig $@
 
 dist: clean
 	rm -rf $(NAME)-$(VERSION)/
