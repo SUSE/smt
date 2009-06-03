@@ -31,8 +31,14 @@ use constant {
     REINIT_AFTER => 1024,
 };
 
+# caches the current configuration and DB connection
 my $smt_config = {};
 
+#
+# init_internal
+#  internal function that reads the configuration and initializes DB connection
+#  use init()
+#
 sub init_internal
 {
     $smt_config->{cfg} = SMT::Utils::getSMTConfig();
@@ -41,12 +47,21 @@ sub init_internal
     {
         die __("ERROR: Could not connect to the database");
     }
+
+    $smt_config->{counter} = 0;
 }
 
+#
+# init
+#  returns the current smt configuration and database connection
+#  both are cached
+#
 sub init
 {
+    # Flushes the cached configuration and DB after REINIT_AFTER calls
     $smt_config = {} if (defined $smt_config->{counter} && REINIT_AFTER > 0 && $smt_config->{counter} >= REINIT_AFTER);
 
+    # Initialize the configuration and DB if not yet configured
     init_internal() if (! defined $smt_config->{counter});
     ++$smt_config->{counter};
 
