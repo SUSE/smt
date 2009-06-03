@@ -537,5 +537,39 @@ sub getClientPatchstatusByGUID($$)
                                     'PATCHSTATUS' => '' });
 }
 
+sub updatePatchstatus($$)
+{
+    my $self = shift;
+    my $guid = shift || return undef;
+    my $pInfo = shift || return undef;
+
+    # get Client id
+    my $cid = $self->getClientIDByGUID($guid) || return undef;
+
+    # crop spaces and comment information
+    $pInfo =~ s/^\s+//;
+    $pInfo =~ s/\s*#.*$//;
+
+    # check if exists PS
+    my $sql = ' INSERT INTO Patchstatus (CLIENT_ID, PKGMGR, SECURITY, RECOMMENDED, OPTIONAL) VALUES ';
+    if ( $pInfo =~ /^(\d+):(\d+):(\d+):(\d+)$/  )
+    {
+        my $PSp = $self->{'dbh'}->quote($1) || 'NULL';
+        my $PSs = $self->{'dbh'}->quote($2) || 'NULL';
+        my $PSr = $self->{'dbh'}->quote($3) || 'NULL';
+        my $PSo = $self->{'dbh'}->quote($4) || 'NULL';
+ 
+        $sql .= " ( $cid, $PSp, $PSs, $PSr, $PSo ) ";     
+        $sql .= ' ON DUPLICATE KEY UPDATE ';
+        $sql .= " PKGMGR = $PSp , SECURITY = $PSs , RECOMMENDED = $PSr , OPTIONAL = $PSo ";
+    }
+    else
+    {
+        return undef;
+    }
+
+    return $self->{'dbh'}->do($sql);
+}
+
 
 1;

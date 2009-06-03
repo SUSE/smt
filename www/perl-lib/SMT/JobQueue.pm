@@ -331,6 +331,13 @@ sub finishJob($)
     }
   }
 
+  # TODO: CKECK Job Type - and only do this for type 1 - for security reasons
+  if (1)
+  {
+      my $client = SMT::Client->new( {'dbh' => $self->{'dbh'} });
+      $client->updatePatchstatus( $guid, $job->message() );
+  }
+
   my $persistent = isPersistent($self, $guid, $job->{id}) ? 1:0;
   $status = 0 if ( $persistent );
 
