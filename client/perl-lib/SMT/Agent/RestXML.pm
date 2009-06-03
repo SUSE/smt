@@ -34,6 +34,7 @@ sub updatejob
   my $xmljob = XMLout($job, rootname => "job");
   my $ua = createUserAgent();
   my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid );
+  $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   $req->content_type ( "text/xml" );
   $req->content ( $xmljob );
 
@@ -64,6 +65,7 @@ sub getjob
 
   my $ua = createUserAgent();
   my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id);
+  $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   my $response ;
   eval { $response = $ua->request( $req ); };
   SMT::Agent::Utils::error ( "Unable to request job $id : $@" )              if ( $@ );
@@ -86,6 +88,7 @@ sub getnextjob
   my $ua = createUserAgent() ;
 
   my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
+  $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   my $response ;
   eval { $response = $ua->request( $req ); };
   SMT::Agent::Utils::error ( "Unable to request next job : $@" )              if ( $@ );
@@ -270,8 +273,6 @@ sub createUserAgent
 
     # set timeout to the same value as the iChain timeout
     $ua->timeout(130);
-
-    $ua->credentials( SMT::Agent::Constants::AUTH_NETLOC, SMT::Agent::Constants::AUTH_REALM, SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret() );
 
     return $ua;
 }
