@@ -103,7 +103,7 @@ sub getJob($$$$)
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $job->newJob( $result->{GUID}, $result->{jid}, $type, $result->{ARGUMENTS} );
-  $job->verbose ( $result->{VERSBOSE} );
+  $job->verbose ( $result->{VERBOSE} );
  
   return $xmlformat ? $job->asXML() : $job;
 }
