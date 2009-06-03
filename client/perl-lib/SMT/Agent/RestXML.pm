@@ -15,17 +15,17 @@ use SMT::Agent::Utils;
 
 ###############################################################################
 # updates status of a job on the smt server
-# args: jobid, success, message 
+# args: jobid, status, message 
 sub updatejob
 {
-  my ($jobid, $success, $message, $stdout, $stderr, $exitcode) =  @_;
+  my ($jobid, $status, $message, $stdout, $stderr, $exitcode) =  @_;
 
-  SMT::Agent::Utils::logger( "updating job $jobid ($success) message: $message", $jobid);
+  SMT::Agent::Utils::logger( "updating job $jobid ($status) message: $message", $jobid);
 
   my $job =
   {
     'id' => $jobid,
-    'success' =>  $success,
+    'status' =>  $status,
     'message' => $message,
     'stdout' => $stdout,
     'stderr' => $stderr,

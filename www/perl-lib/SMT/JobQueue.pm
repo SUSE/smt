@@ -318,18 +318,7 @@ sub finishJob($)
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $job->newJob( $guid, $jobxml );
 
-  my $status = 0 ;
-  if ( defined $job->success() )
-  {
-    if ( $job->success() eq "true" )
-    {
-      $status = "1";  
-    }
-    else
-    {
-      $status = "2";  
-    }
-  }
+  my $status = $job->status() || 0;
 
   # TODO: CKECK Job Type - and only do this for type 1 - for security reasons
   if (1)

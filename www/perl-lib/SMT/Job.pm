@@ -89,6 +89,7 @@ sub newJob
     my $stdout;
     my $stderr;
     my $success;
+    my $status;
 
     # Perl-only
     if ( defined ( $params[2] ) )
@@ -131,6 +132,7 @@ sub newJob
 	$stderr      = $j->{stderr}       if ( defined ( $j->{stderr} ) );
 	$message     = $j->{message}      if ( defined ( $j->{message} ) );
 	$success     = $j->{success}      if ( defined ( $j->{success} ) );
+	$status      = $j->{status}       if ( defined ( $j->{status} ) && ( $j->{status} =~ /^[0-9]+$/ ) );
 
 
 	if ( defined $stdout  ) { $stdout =~ s/[\"\']//g;  }
@@ -153,6 +155,7 @@ sub newJob
     $self->{stderr} = $stderr;
     $self->{message} = $message;
     $self->{success} = $success;
+    $self->{status} = $status;
 }
 
 sub asXML
