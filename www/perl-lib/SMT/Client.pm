@@ -318,7 +318,7 @@ sub getClientsInfo_internal($)
         if ( keys %{$result} == 1  &&  ${$filter}{'asXML'} eq 'one' )
         {
             my @keys = keys %{$result};
-            return XMLout( ${$result}{@keys[0]}
+            return XMLout( ${$result}{$keys[0]}
                       , rootname => "client"
                       , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>' );
         }
