@@ -91,6 +91,7 @@ sub new
     $self->{WRITE_OUT}   = 0;
 
     $self->{RESOURCE}    = undef;
+    $self->{LOCATIONHACK}= 0;
     $self->{DEFAULTARCH} = "noarch";
     $self->{CURRENT}     = undef;
 
@@ -126,6 +127,13 @@ sub resource
     my $self = shift;
     if (@_) { $self->{RESOURCE} = shift }
     return $self->{RESOURCE};
+}
+
+sub specialmdlocation
+{
+    my $self = shift;
+    if (@_) { $self->{LOCATIONHACK} = shift }
+    return $self->{LOCATIONHACK};
 }
 
 sub found()
@@ -165,7 +173,8 @@ sub parse($$)
         $self->{UNWANTED_GIVEN}->{$nvra} = 1;
     }
 
-    my $path = $self->{RESOURCE} . '/repodata/primary.xml.gz';
+    my $path = SMT::Utils::cleanPath($self->{RESOURCE},
+        $self->{LOCATIONHACK} ? '.repodata' : 'repodata', 'primary.xml.gz');
 
     # for security reason strip all | characters.
     # XML::Parser ->parsefile( $path ) might be problematic
@@ -366,6 +375,7 @@ sub handle_end_tag
                 $self->{UNWANTED_FOUND}->{$pkgid}->{ver} = $self->{CURRENT}->{VERSION};
                 $self->{UNWANTED_FOUND}->{$pkgid}->{rel} = $self->{CURRENT}->{RELEASE};
                 $self->{UNWANTED_FOUND}->{$pkgid}->{arch} = $self->{CURRENT}->{ARCH};
+                $self->{UNWANTED_FOUND}->{$pkgid}->{loc} = $self->{CURRENT}->{LOCATION};
             }
             # write out the original XML string of current (wanted) package
             elsif ($self->{WRITE_OUT})
