@@ -72,7 +72,7 @@ sub GEThandler($$)
 
     # jobs
     if    ( $path =~ $reJobs )          { return $job->getJobList( $username, 1 );   }
-    elsif ( $path =~ $reJobsNext )      { return $job->getJob( $username, $job->getNextJobID($username, 0), 1)   }
+    elsif ( $path =~ $reJobsNext )      { return $job->retrieveJob( $username, $job->getNextJobID($username, 0), 1)   }
     elsif ( $path =~ $reJobsId)         { return $job->getJob( $username, $1, 1 ) }
     elsif ( $path =~ $reClients )       { return $RR ? $client->getAllClientsInfoAsXML() : undef; }
     elsif ( $path =~ $reClientsId )     { return "want info about one client"; }
