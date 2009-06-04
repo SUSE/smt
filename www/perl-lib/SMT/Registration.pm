@@ -16,6 +16,7 @@ use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
 use constant IOBUFSIZE => 8192;
 
 use SMT::Utils;
+use SMT::Client;
 use DBI qw(:sql_types);
 
 use Data::Dumper;
@@ -706,7 +707,7 @@ sub insertRegistration
 
     my $client = SMT::Client->new({ 'dbh' => $dbh });
     
-    if ( not  $client->insertPatchstatusJob( $regdata->{register}->{guid} ) )
+    if ( !  $client->insertPatchstatusJob( $regdata->{register}->{guid} ) )
     {
         $r->log_error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
                               $regdata->{register}->{guid} )  );
