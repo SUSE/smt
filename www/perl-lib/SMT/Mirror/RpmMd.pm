@@ -1426,9 +1426,9 @@ sub removePackages($$$)
         $mdfh->open('>' . $mdnew);
 
         # update the *.xml
-        my $parser = SMT::Parser::RpmMdOtherFilter->new(out => $mdfh);
+        my $parser = SMT::Parser::RpmMdOtherFilter->new();
         $parser->resource($tgtrepopath);
-        $errc = $parser->parse($mdtoupdate{$mdfile}->{'orig'}, $pkgsfound);
+        $errc = $parser->parse($mdtoupdate{$mdfile}->{'orig'}, $pkgsfound, out => $mdfh);
         $mdfh->close;
 
         if ($errc)
