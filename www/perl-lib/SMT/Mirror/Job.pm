@@ -560,7 +560,8 @@ sub mirror
         {
             $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->fullLocalPath() );
 	    $self->{DOWNLOAD_SIZE} = 0 if (! defined $self->{DOWNLOAD_SIZE});
-            $self->{DOWNLOAD_SIZE} += int($response->header("Content-Length"));
+            $self->{DOWNLOAD_SIZE} += int($response->header("Content-Length"))
+                if (defined $response->header("Content-Length"));
         };
         if($@)
         {
