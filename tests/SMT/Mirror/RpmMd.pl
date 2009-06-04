@@ -17,6 +17,7 @@ $mirror = SMT::Mirror::RpmMd->new();
 $mirror->uri( $url );
 $mirror->localBasePath("$tempdir");
 $mirror->localRepoPath('');
+$mirror->vblevel(0xffff);
 
 ok($mirror->mirror() == 0, "should mirror ok");
 ok($mirror->statistic()->{TOTALFILES} != $mirror->statistic()->{UPTODATE}, "first mirror() should download all the files");
