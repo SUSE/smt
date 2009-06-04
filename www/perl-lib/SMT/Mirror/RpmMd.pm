@@ -800,9 +800,9 @@ sub mirror()
 
     # update repomd.xml with changed metadata files
     my $repodatadir = $self->fullLocalRepoPath() . '/.repodata';
-    if ($self->updateRepomd($self->{MDFILES}, $repodatadir))
+    if ($self->metadataChanged($self->{MDFILES}) &&
+        $self->updateRepomd($self->{MDFILES}, $repodatadir))
     {
-        # TODO do not sign the repo if nothing changed
         # re-sign the repo
         $self->signrepo(
             $self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass);
@@ -1470,6 +1470,25 @@ sub removePackages($$$)
         "All filtered packages successfully removed.");
 
     return 1;
+}
+
+
+=item updateRepomd($mdfiles)
+
+Whether the $mdfiles hash indicates that some of the metadata files have been
+changend.
+
+See updateRepomd() for details on the $mdfiles structure.
+=cut
+
+sub metadataChanged()
+{
+    my ($self, $mdfiles) = @_;
+    for (values %$mdfiles)
+    {
+        return 1 if (defined $_->{changednew});
+    }
+    return 0;
 }
 
 
