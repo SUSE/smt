@@ -1,7 +1,10 @@
 -------------------------------------------------------------------
 Thu Jun  4 14:27:57 CEST 2009 - jkupec@suse.cz
 
-- Fixed unnecessary re-signing of mirrored repositories.
+- Fixed unnecessary re-signing of mirrored repositories
+  (bnc #509909).
+- Fixed missing SMT::Client include in SMT::Registration
+- Fixed few bugs when generating filtered repositories.
 - 1.1.9
 
 -------------------------------------------------------------------
