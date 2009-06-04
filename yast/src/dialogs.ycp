@@ -39,11 +39,16 @@
 
     string status_icons_dir = "/usr/share/icons/hicolor/16x16/status";
 
-    map <string, string> smt_client_status_icons = $[
+    map <string, string> smt_status_icons = $[
+	// clients
 	"critical"		: sformat ("%1/client-%2.xpm", status_icons_dir, "critical"),
 	"unknown"		: sformat ("%1/client-%2.xpm", status_icons_dir, "unknown"),
 	"updates-available"	: sformat ("%1/client-%2.xpm", status_icons_dir, "updates-available"),
 	"up-to-date"		: sformat ("%1/client-%2.xpm", status_icons_dir, "up-to-date"),
+
+	// repositories
+	"repo-up-to-date"	: sformat ("%1/repo-%2.xpm", status_icons_dir, "up-to-date"),
+	"repo-not-up-to-date"	: sformat ("%1/repo-%2.xpm", status_icons_dir, "not-up-to-date"),
     ];
 
     // patch categories translation map
@@ -1329,7 +1334,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 		(text_mode ?
 		    values["STATUSLABEL"]:_("Unknown Status")
 		    :
-		    `cell (`icon (smt_client_status_icons[statusstring]:""), values["STATUSLABEL"]:_("Unknown Status"))
+		    `cell (`icon (smt_status_icons[statusstring]:""), values["STATUSLABEL"]:_("Unknown Status"))
 		),
 		values["HOSTNAME"]:values["GUID"]:"",
 		values["LASTCONTACT"]:_("Never")
@@ -1346,22 +1351,33 @@ Enter your SMT server URL in the following format: http:://server.name/
 	RedrawClientsTableDialog();
     }
 
-    void InitStagingTableDialog (string id) {
+    void RedrawRepositoriesStagingMenu () {
 	map <string, map> catalogs = (map <string, map>) SCR::Read (.smt.staging.repositories);
+	boolean repository_uptodate = nil;
+
+	// Remember the selected value
+	string current_value = nil;
+	if (UI::WidgetExists (`catalogs))
+	    current_value = (string) UI::QueryWidget (`id (`catalogs), `Value);
 
 	list <term> items = maplist (string catalogid, map one_catalog, catalogs, {
+	    repository_uptodate = (boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":catalogid, "type":"testing"]) &&
+		(boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":catalogid, "type":"production"]);
+
 	    return `item (`id (catalogid),
+		`icon(repository_uptodate ? smt_status_icons["repo-up-to-date"]:"":smt_status_icons["repo-not-up-to-date"]:""),
 		(one_catalog["TARGET"]:"" != "" ?
 		    // Catalog Name (Target)
 		    sformat (_("%1 (%2)"), one_catalog["NAME"]:"", one_catalog["TARGET"]:"")
 		    :
 		    one_catalog["NAME"]:""
-		)
+		),
+		(catalogid == current_value)
 	    );
 	});
 
 	items = sort (term x, term y, items, {
-	    return toupper(x[1]:"") < toupper (y[1]:"");
+	    return toupper(x[2]:"") < toupper (y[2]:"");
 	});
 
 	if (items == nil) items = [];
@@ -1370,7 +1386,10 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    `id (`catalogs_rp),
 	    `Left (`ComboBox (`id (`catalogs), `opt(`notify), _("Repository &Name"), items))
 	);
+    }
 
+    void InitStagingTableDialog (string id) {
+	RedrawRepositoriesStagingMenu();
 	RedrawPatchesTable ("");
     }
 
@@ -1637,6 +1656,7 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	    // a pop-up error message
 	    Report::Error (_("An error has occurred while creating the snapshot."));
 
+	RedrawRepositoriesStagingMenu();
 	UpdateRepoDetails();
 
 	return ret;
