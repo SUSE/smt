@@ -1434,22 +1434,23 @@ sub removePackages($$$)
         if ($errc)
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                'Failed to remove unwanted packages from other.xml.gz.');
+                sprintf (__('Failed to remove unwanted packages from \'%s\'.'), $mdfile));
             $self->{ERRORS}++;
             return 0;
         }
         else
         {
             $mdfiles->{$mdfile}->{changednew} = "$mdnew";
-            $mdfiles->{$mdfile}->{changedorig} = $tgtrepopath . "/.repodata/other.xml.gz";
+            $mdfiles->{$mdfile}->{changedorig} =
+                SMT::Utils::cleanPath($tgtrepopath, $mdtoupdate{$mdfile}->{'orig'});
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-                'Packages successfully removed from other.xml.gz.');
+                'Packages successfully removed from ' . $mdfile);
         }
     }
 
     # metadata are updated, now remove the packages from the filesystem
 
-    $tgtrepopath = $tgtrepopath . '\\' if ($tgtrepopath !~ /\/$/);
+    $tgtrepopath = $tgtrepopath . '/' if ($tgtrepopath !~ /\/$/);
     foreach my $pkg (values %$pkgsfound)
     {
         if (not unlink $tgtrepopath . $pkg->{loc})
@@ -1560,7 +1561,7 @@ sub updateRepomd($$$)
         next if not exists $mdfile->{changednew};
 
         # unlink the original file first - we do not want to modify all the
-        # aliases with modifyrepo 
+        # aliases with modifyrepo
         unlink ($mdfile->{changedorig});
 
         # note: modifyrepo needs unzipped unpdateinfo.xml
