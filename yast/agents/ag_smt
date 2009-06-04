@@ -541,7 +541,8 @@ sub GetAllClientsStatus ($) {
 
     my $id = '';
     foreach $id (keys %{$info_copy}) {
-	$info->{$id}->{STATUSLABEL} = SMT::Client::getPatchStatusLabel($info_copy->{$id});
+	($info->{$id}->{STATUSLABEL}, $info->{$id}->{STATUSSTRING}) =
+	    SMT::Client::getPatchStatusLabel($info_copy->{$id});
     }
 
     return $info;

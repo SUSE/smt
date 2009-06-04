@@ -29,10 +29,21 @@
 
     integer sl = 100;
 
+    boolean text_mode = UI::TextMode();
+
     map <string, string> smt_cron_scripts = $[
 	"/usr/lib/SMT/bin/smt-repeated-register"	: _("NCC Registration"),
 	"/usr/lib/SMT/bin/smt-daily"			: _("Synchronization of Updates"),
 	"/usr/lib/SMT/bin/smt-gen-report"		: _("Generation of Reports"),
+    ];
+
+    string status_icons_dir = "/usr/share/icons/hicolor/16x16/status";
+
+    map <string, string> smt_client_status_icons = $[
+	"critical"		: sformat ("%1/client-%2.xpm", status_icons_dir, "critical"),
+	"unknown"		: sformat ("%1/client-%2.xpm", status_icons_dir, "unknown"),
+	"updates-available"	: sformat ("%1/client-%2.xpm", status_icons_dir, "updates-available"),
+	"up-to-date"		: sformat ("%1/client-%2.xpm", status_icons_dir, "up-to-date"),
     ];
 
     // patch categories translation map
@@ -280,10 +291,9 @@
 		`id (`clients_table),
 		`opt (`hstretch, `vstretch, `notify, `immediate),
 		`header (
-		    _("OK"),
+		    _("Status"),
 		    _("Host Name"),
-		    _("Last Contact"),
-		    _("Status")
+		    _("Last Contact")
 		),
 		[]
 	    ),
@@ -1307,15 +1317,22 @@ Enter your SMT server URL in the following format: http:://server.name/
     void RedrawClientsTableDialog () {
 	clients_status = (map <integer, map <string, any> >) SCR::Read (.smt.clients.status);
 
+	boolean status = nil;
+	string statusstring = nil;
+
 	list <term> items = maplist (integer id, map <string, any> values, clients_status, {
-	    boolean status = GetPatchStatus (values);
+	    status = GetPatchStatus (values);
+	    statusstring = values["STATUSSTRING"]:"";
 
 	    return `item (
 		`id (id),
-		(status == true ? yes:no),
+		(text_mode ?
+		    values["STATUSLABEL"]:_("Unknown Status")
+		    :
+		    `cell (`icon (smt_client_status_icons[statusstring]:""), values["STATUSLABEL"]:_("Unknown Status"))
+		),
 		values["HOSTNAME"]:values["GUID"]:"",
-		values["LASTCONTACT"]:_("Never"),
-		values["STATUSLABEL"]:_("Unknown Status")
+		values["LASTCONTACT"]:_("Never")
 	    );
 	});
 

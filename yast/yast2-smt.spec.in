@@ -87,6 +87,7 @@ done
 %dir @themedir@/current/icons/32x32/apps/
 %dir @themedir@/current/icons/48x48/
 %dir @themedir@/current/icons/48x48/apps/
+
 @themedir@/current/icons/16x16/apps/yast-smt.png
 @themedir@/current/icons/22x22/apps/yast-smt.png
 @themedir@/current/icons/32x32/apps/yast-smt.png
@@ -96,7 +97,12 @@ done
 %dir /usr/share/icons/hicolor/22x22/apps/
 %dir /usr/share/icons/hicolor/32x32/apps/
 %dir /usr/share/icons/hicolor/48x48/apps/
+
 /usr/share/icons/hicolor/16x16/apps/yast-smt.png
 /usr/share/icons/hicolor/22x22/apps/yast-smt.png
 /usr/share/icons/hicolor/32x32/apps/yast-smt.png
 /usr/share/icons/hicolor/48x48/apps/yast-smt.png
+
+# client status icons
+%dir /usr/share/icons/hicolor/16x16/status
+/usr/share/icons/hicolor/16x16/status/client-*.xpm
