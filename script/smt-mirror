@@ -380,25 +380,24 @@ foreach my $entry (@{$array})
             $secpatches += $s->{NEWSECPATCHES};
             $recpatches += $s->{NEWRECPATCHES};
 
-            my $rh = SMT::Repositories::new($dbh, $LOG);
-
-            # Update last mirror timestamp only if not mirroring to a custom directory
-            if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") && !$dryrun )
-            {
-	        $rh->updateLastMirror ($entry->{CATALOGID});
-                # Something new has been downloaded, update the mirroring timestamp 
-	        if ($download)
-	        {
-	            if (!SMT::Mirror::Utils::saveStatus($zyppMirror->fullLocalRepoPath()))
-	            {
-                        SMT::Utils::printLog($LOG, $vblevel, LOG_WARN,
-                            sprintf(__("Failed to save the mirror status at '%s'"), $zyppMirror->fullLocalRepoPath()));
-	            }
-	        }
-            }
-
+            # Update last mirror timestamp and filtering only if not mirroring
+            # to a custom directory
             if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
             {
+                my $rh = SMT::Repositories::new($dbh, $LOG);
+                if ( !$dryrun ) 
+                {
+                    $rh->updateLastMirror ($entry->{CATALOGID});
+                    # Something new has been downloaded, update the mirroring timestamp 
+                    if ($download)
+                    {
+                        if (!SMT::Mirror::Utils::saveStatus($zyppMirror->fullLocalRepoPath()))
+                        {
+                            SMT::Utils::printLog($LOG, $vblevel, LOG_WARN,
+                                sprintf(__("Failed to save the mirror status at '%s'"), $zyppMirror->fullLocalRepoPath()));
+                        }
+                    }
+                }
                 # filter new patches -> admin needs to manually allow which patches
                 # s/he wants (maybe this should be configurable)
                 if ($rh->stagingAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
