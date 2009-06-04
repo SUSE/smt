@@ -1473,7 +1473,7 @@ sub removePackages($$$)
 }
 
 
-=item updateRepomd($mdfiles)
+=item metadataChanged($mdfiles)
 
 Whether the $mdfiles hash indicates that some of the metadata files have been
 changend.
