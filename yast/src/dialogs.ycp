@@ -1644,8 +1644,11 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	// a bussy message
 	UI::OpenDialog (`Label(_("Creating repository snapshot...")));
 
+	y2milestone ("Writing patches...");
 	// Flush the cache (filters) from memory to database
 	SCR::Write (.smt.staging.patches, nil);
+
+	y2milestone ("Writing snapshot...");
 	// Create snapshot
 	boolean ret = (boolean) SCR::Write (.smt.staging.snapshot, snapshot_settings);
 	y2milestone ("Creating snapshot finished with result: %1", ret);

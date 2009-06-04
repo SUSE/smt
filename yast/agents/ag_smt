@@ -418,7 +418,9 @@ sub CreateSnapshot ($) {
     }
 
     # And GO!
+    y2milestone ("Running mirror()");
     my $ret = $mirror->mirror (%args);
+    y2milestone ("mirror() returned: ".$ret);
 
     if ($ret == 0) {
 	SMT::Mirror::Utils::copyStatus($staging_source,
