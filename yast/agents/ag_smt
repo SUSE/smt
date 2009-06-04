@@ -373,7 +373,8 @@ sub CreateSnapshot ($) {
 	my $check_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'};
 
 	# Testing snapshot exists and is not empty
-	if (-e $check_source && -d $check_source && -s $check_source) {
+	# And contains a flag: successful mirroring
+	if (-e $check_source && -d $check_source && -s $check_source && SMT::Mirror::Utils::getStatus ($check_source)) {
 	    y2milestone ('Using \'testing\' repository as source for \'production\'');
 	    $staging_source = $check_source;
 	# Using fallback (default one)
