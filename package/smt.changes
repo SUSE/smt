@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun  5 16:29:23 CEST 2009 - mc@suse.de
+
+- use a dynamic id for the NU service based on LocalNUUrl 
+  in smt.conf (bnc#510340)
+
+-------------------------------------------------------------------
 Fri Jun  5 11:32:12 CEST 2009 - locilka@suse.cz
 
 - Changed isSubrepoUpToDate logic (bnc #510314).
