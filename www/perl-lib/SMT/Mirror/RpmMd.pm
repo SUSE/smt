@@ -1565,30 +1565,13 @@ sub updateRepomd($$$)
         unlink ($mdfile->{changedorig});
 
         # note: modifyrepo needs unzipped unpdateinfo.xml
-        my $cmd = $modifyrepopath . ' ' . $mdfile->{changednew} . ' ' . $repodatadir;
-        my $cmd_running = 1;
+        my @args = ($mdfile->{changednew}, $repodatadir);
+        my ($exitcode, $out, $err) =
+            SMT::Utils::executeCommand(
+                {log => $self->{LOG}, vblevel => $self->vblevel()},
+                $modifyrepopath, @args);
 
-        # escape $ to avoid interpreting it by shell
-        # FIXME run the commands using the ported executeCommand() from suseregister            
-        $cmd =~ s/\$/\\\$/g;
-
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, 'Executing: '.$cmd);
-        # A correct solution would be to use IPC::Run or IPC::Open3
-        open (CMD, $cmd.'|') || do
-        {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, 'Cannot run '.$modifyrepopath.': '.$!);
-            $self->{STATISTIC}->{ERROR}++;
-            $errc++;
-            $cmd_running = 0;
-        };
-        if ($cmd_running)
-        {
-            while (my $output = <CMD>)
-            {
-                printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, 'ModifyRepo: '.$output);
-            }
-            close CMD;
-        }
+        $errc++ if ($exitcode || $exitcode == -1);
     }
 
     return 0 if ($errc);
