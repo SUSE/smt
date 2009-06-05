@@ -100,11 +100,21 @@ All current functions are:
 
 use constant
 {
-    # Defines a client status according to the number of patches pending
-    CLIENT_STATUS =>
+    CLIENT_STATUS	=>
+    {
+	'PATCHSTATUS_S'	=> 'critical',
+	'PATCHSTATUS_P'	=> 'critical',
+	'PATCHSTATUS_R'	=> 'updates-available',
+	'PATCHSTATUS_O'	=> 'updates-available',
+	'OK'		=> 'up-to-date',
+	'UNKNOWN'	=> 'unknown',
+    },
+
+    # Defines a client status label according to the number of patches pending
+    CLIENT_STATUS_LABEL =>
     {
 	'PATCHSTATUS_S'	=> __("Critical"),
-	'PATCHSTATUS_P'	=> __("Updates available"),
+	'PATCHSTATUS_P'	=> __("Critical"),
 	'PATCHSTATUS_R'	=> __("Updates available"),
 	'PATCHSTATUS_O'	=> __("Updates available"),
 	'OK'		=> __("Up-to-date"),
@@ -113,7 +123,7 @@ use constant
 };
 
 # Defines the patch status order, first hit wins
-my @STATUS_PRIO = ('PATCHSTATUS_S', 'PATCHSTATUS_P', 'PATCHSTATUS_R', 'PATCHSTATUS_O');
+my @STATUS_PRIO = ('PATCHSTATUS_P', 'PATCHSTATUS_S', 'PATCHSTATUS_R', 'PATCHSTATUS_O');
 
 #
 # constructor
@@ -626,29 +636,40 @@ sub insertPatchstatusJob($)
 
 # 
 # Counts the number of patches of particular patch level 
-# and returns an appropriate label that describes such status 
+# and returns an appropriate label that describes such status
+# and non-localized status string
+#
+# See CLIENT_STATUS_LABEL and CLIENT_STATUS constants
 # 
 sub getPatchStatusLabel ($)
 {
     my $client_data = shift || {};
     my $status_key = '';
-    my $ret = CLIENT_STATUS->{OK};
+
+    my $label	= CLIENT_STATUS_LABEL->{OK};
+    my $status	= CLIENT_STATUS->{OK};
 
     foreach $status_key (@STATUS_PRIO)
     {
 	if (! defined $client_data->{$status_key})
 	{
-	    $ret = CLIENT_STATUS->{'UNKNOWN'};
+	    $label	= (defined CLIENT_STATUS_LABEL->{'UNKNOWN'}
+			    ? CLIENT_STATUS_LABEL->{'UNKNOWN'}:__("Internal Error"));
+	    $status	= (defined CLIENT_STATUS->{'UNKNOWN'}
+			    ? CLIENT_STATUS->{'UNKNOWN'}:'internal-error');
 	    last;
 	}
 	elsif ($client_data->{$status_key} > 0)
 	{
-	    $ret = CLIENT_STATUS->{$status_key};
+	    $label	= (CLIENT_STATUS_LABEL->{$status_key}
+			    ? CLIENT_STATUS_LABEL->{$status_key}:$status_key);
+	    $status	= (CLIENT_STATUS->{$status_key}
+			    ? CLIENT_STATUS->{$status_key}:$status_key);
 	    last;
 	}
     }
 
-    return $ret;
+    return ($label, $status);
 }
 
 1;

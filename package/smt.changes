@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jun  4 14:47:20 CEST 2009 - locilka@suse.cz
+
+- Extended Client::getPatchStatusLabel to return translated status
+  label and as a second value - non-translated status string.
+
+-------------------------------------------------------------------
 Thu Jun  4 14:27:57 CEST 2009 - jkupec@suse.cz
 
 - Fixed unnecessary re-signing of mirrored repositories
