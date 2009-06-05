@@ -840,7 +840,11 @@ sub buildZmdConfig
         $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
         die "SMT server is missconfigured. Please contact your administrator.";
     }
-    
+    my $localID = "SMT-".$LocalNUUrl;
+    $localID =~ s/:*\/+/_/g;
+    $localID =~ s/\./_/g;
+    $localID =~ s/_$//;
+
     my $nuCatCount = 0;
     foreach my $cat (keys %{$catalogs})
     {
@@ -863,7 +867,7 @@ sub buildZmdConfig
     if($nuCatCount > 0)
     {
         $writer->startTag("service", 
-                          "id"          => "local_nu_server",
+                          "id"          => "$localID",
                           "description" => "Local NU Server",
                           "type"        => "nu");
         $writer->startTag("param", "id" => "url");
