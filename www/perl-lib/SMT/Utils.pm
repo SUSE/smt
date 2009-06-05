@@ -947,7 +947,11 @@ sub getSaveUri
 =item executeCommand($options, $command, @arguments)
 
 Executes command using open3 function, logs the result and returns
-the exit code, and normal and error output of the command. 
+the exit code, and normal and error output of the command.
+
+If the command fails to execute, the return value is (-1, undef, undef).
+Otherwise ($exitcode, $out, $err) is returned, where $exitcode is the value
+returned by the command, and $out/$err is it's normal/error output.
 
 Options:
 
@@ -998,14 +1002,14 @@ sub executeCommand
     $ENV{LANGUAGE} = "en_US" if(defined $language);
 
     printLog($log, $vblevel, LOG_DEBUG,
-        'Executing \' ' . $command . join(" ", @arguments) . '\'');
+        'Executing \'' . $command . ' ' . join(" ", @arguments) . '\'');
 
     my $pid = open3(\*IN, \*OUT, \*ERR, $command, @arguments) or do
     {
         $ENV{LANG}     = $lang if(defined $lang);
         $ENV{LANGUAGE} = $language  if(defined $language);
         printLog($log, $vblevel, LOG_ERROR,
-            'Could not execute command ' . $command .
+            'Could not execute command \'' . $command . ' ' .
             join(" ", @arguments) . '\': ' . $!);
         return -1;
     };
