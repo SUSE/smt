@@ -2,6 +2,8 @@
 Fri Jun  5 11:32:12 CEST 2009 - locilka@suse.cz
 
 - Changed isSubrepoUpToDate logic (bnc #510314).
+- Fixed smt-mirror to reset .mirror file only if a particular
+  repository has changed (bnc #510320).
 
 -------------------------------------------------------------------
 Thu Jun  4 14:47:20 CEST 2009 - locilka@suse.cz

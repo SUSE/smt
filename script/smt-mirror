@@ -388,8 +388,9 @@ foreach my $entry (@{$array})
                 if ( !$dryrun ) 
                 {
                     $rh->updateLastMirror ($entry->{CATALOGID});
-                    # Something new has been downloaded, update the mirroring timestamp 
-                    if ($download)
+                    # Something new has been downloaded, update the mirroring timestamp
+                    # BNC #510320: Downloaded per repository, not a total download size
+                    if ($s->{DOWNLOAD})
                     {
                         if (!SMT::Mirror::Utils::saveStatus($zyppMirror->fullLocalRepoPath()))
                         {
