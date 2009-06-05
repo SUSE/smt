@@ -24,6 +24,7 @@ Release:        0.1
 Requires:       perl = %{perl_version}
 Requires:       perl-Config-IniFiles
 Requires:       perl-XML-Simple
+Requires:	perl-IO-Socket-SSL
 Requires:	perl-base
 Requires:	perl-libwww-perl
 Requires:       logrotate
