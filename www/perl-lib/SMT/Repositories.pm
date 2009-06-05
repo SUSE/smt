@@ -615,12 +615,25 @@ sub isSnapshotUpToDate ($)
     my $full_repopath = $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
     my $subrepo_path = undef;
 
+    # Testing subrepository is always compared with the full (mirrored) repository
     if ($arg->{'type'} eq 'testing')
     {
 	$subrepo_path = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
     }
+    # Production subrepository is compared either with the testing or the full repository
     elsif ($arg->{'type'} eq 'production')
     {
+	# Checking whether the testing repository exists
+	# See BNC #510314
+	my $fullrepo_tmp = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+	my $fullrepo_tmp_status = SMT::Mirror::Utils::getStatus($fullrepo_tmp);
+
+	# Will be compared with the testing repository
+	if (defined $fullrepo_tmp_status && $fullrepo_tmp_status > 0)
+	{
+	    $full_repopath = $fullrepo_tmp;
+	}
+
 	$subrepo_path = $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
     }
     else
