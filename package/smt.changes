@@ -8,6 +8,12 @@ Thu Jun  4 14:27:57 CEST 2009 - jkupec@suse.cz
 - 1.1.9
 
 -------------------------------------------------------------------
+Thu Jun  4 09:47:51 CEST 2009 - visnov@suse.cz
+
+- Remove sysconfig.smt-client file
+- Remove superflous 'exit 0'
+
+-------------------------------------------------------------------
 Wed Jun  3 18:07:21 CEST 2009 - jkupec@suse.cz
 
 - smt-staging script added

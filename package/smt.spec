@@ -150,7 +150,6 @@ fi
 
 %post
 %{fillup_only -ans apache2 smt}
-exit 0
 
 %postun
 %restart_on_update smt
