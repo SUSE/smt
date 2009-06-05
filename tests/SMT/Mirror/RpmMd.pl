@@ -9,6 +9,7 @@ use SMT::Mirror::RpmMd;
 use IO::Zlib;
 use Test::Simple tests => 6;
 
+# FIXME need some solid URI, ideally an ad hoc local http server
 my $url = 'http://download.opensuse.org/repositories/home:/jkupec/openSUSE_11.1/';
 my $tempdir = File::Temp::tempdir(CLEANUP => 1);
 print STDERR "Saving $url to $tempdir\n";
