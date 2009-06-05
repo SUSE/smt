@@ -7,6 +7,7 @@ use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
 use IO::File;
+use IPC::Open3;  # for exectuteCommand
 
 use MIME::Lite;  # sending eMails
 use Net::SMTP;   # sending eMails via smtp relay
@@ -941,6 +942,103 @@ sub getSaveUri
         $saveuri->userinfo(undef);
     }
     return $saveuri->as_string();
+}
+
+=item executeCommand($options, $command, @arguments)
+
+Executes command using open3 function, logs the result and returns
+the exit code, and normal and error output of the command. 
+
+Options:
+
+=over 4
+
+=item log
+
+Logger object returned by openLog()
+
+=item vblevel
+
+Log/output verbosity level. If not given, only execution errors will be logged.
+
+=item input
+
+Optional input to pass on to the command.
+
+=back
+
+=cut
+
+sub executeCommand
+{
+    my ($opt, $command, @arguments) = @_;
+    
+    my $log = $opt->{log};
+    my $vblevel = LOG_ERROR;
+    $vblevel = $opt->{vblevel} if (defined $opt->{vblevel});
+
+    my $out = "";
+    my $err = "";
+    my $exitcode = 0;
+
+    my $lang     = $ENV{LANG};
+    my $language = $ENV{LANGUAGE};
+    
+    $lang = undef if($lang =~ /^en_/);
+    $language = undef if($language =~ /^en_/);
+    
+    if(!defined $command || !-x $command)
+    {
+        printLog($log, $vblevel, LOG_ERROR, "Invalid command '$command'");
+        return -1;
+    }
+
+    # set lang to en_US to get output in english.
+    $ENV{LANG}     = "en_US" if(defined $lang);
+    $ENV{LANGUAGE} = "en_US" if(defined $language);
+
+    printLog($log, $vblevel, LOG_DEBUG,
+        'Executing \' ' . $command . join(" ", @arguments) . '\'');
+
+    my $pid = open3(\*IN, \*OUT, \*ERR, $command, @arguments) or do
+    {
+        $ENV{LANG}     = $lang if(defined $lang);
+        $ENV{LANGUAGE} = $language  if(defined $language);
+        printLog($log, $vblevel, LOG_ERROR,
+            'Could not execute command ' . $command .
+            join(" ", @arguments) . '\': ' . $!);
+        return -1;
+    };
+
+    print IN $opt->{input} if(defined $opt->{input});
+    close IN;
+
+    while (<OUT>)
+    {
+        $out .= "$_";
+    }
+    while (<ERR>)
+    {
+        $err .= "$_";
+    }
+    close OUT;
+    close ERR;
+
+    waitpid $pid, 0;
+
+    chomp($out);
+    chomp($err);
+
+    $ENV{LANG}     = $lang if(defined $lang);
+    $ENV{LANGUAGE} = $language if(defined $language);
+
+    $exitcode = ($? >> 8);
+
+    printLog($log, $vblevel, LOG_DEBUG,
+        'Command returned ' . $exitcode . ($err ? ': ' . $err : ''));
+    printLog($log, $vblevel, LOG_DEBUG2, "Command output:\n" . $out) if ($out);
+
+    return ($exitcode, $err, $out);
 }
 
 
