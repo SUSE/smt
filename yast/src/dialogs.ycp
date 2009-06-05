@@ -1116,8 +1116,11 @@ Enter your SMT server URL in the following format: http:://server.name/
     void RedrawPatchesDetails () {
 	string sel_patchid = (string) UI::QueryWidget (`id (`patches_table), `CurrentItem);
 
+	// No repositories at all (with staging enabled)
+	if (selected_catalog == nil || selected_catalog == "") {
+	    UI::ChangeWidget (`id (`patch_details), `Value, "");
 	// No patch listed, no patch selected
-	if (sel_patchid == nil || sel_patchid == "") {
+	} else if (sel_patchid == nil || sel_patchid == "") {
 	    UI::ChangeWidget (`id (`patch_details), `Value, _("There are no patches available in this repository."));
 	    return;
 	}
@@ -1154,12 +1157,20 @@ Enter your SMT server URL in the following format: http:://server.name/
     void UpdateRepoDetails () {
 	list <string> additional_info = [];
 
-	if ((boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":selected_catalog, "type":"testing"]) != true) {
-	    additional_info = add (additional_info, _("Testing snapshot is not up-to-date"));
-	}
+	if (selected_catalog == nil || selected_catalog == "") {
+	    additional_info = add (additional_info, _("There are no repositories with staging enabled"));
+	} else {
+	    if ((boolean) SCR::Read(.smt.staging.repository.uptodate,
+		$["repositoryid":selected_catalog, "type":"testing"]
+	    ) != true) {
+		additional_info = add (additional_info, _("Testing snapshot is not up-to-date"));
+	    }
 
-	if ((boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":selected_catalog, "type":"production"]) != true) {
-	    additional_info = add (additional_info, _("Production snapshot is not up-to-date"));
+	    if ((boolean) SCR::Read(.smt.staging.repository.uptodate,
+		$["repositoryid":selected_catalog, "type":"production"]
+	    ) != true) {
+		additional_info = add (additional_info, _("Production snapshot is not up-to-date"));
+	    }
 	}
 
 	if (size (additional_info) > 0) {
@@ -1192,7 +1203,7 @@ Enter your SMT server URL in the following format: http:://server.name/
 	list <term> items = [];
 
 	if (selected_catalog == nil || selected_catalog == "") {
-	    y2warning ("No catalog selected");
+	    y2milestone ("No catalog selected");
 	} else {
 	    filtering_allowed_for_repository =
 		(boolean) SCR::Read (.smt.repository.staging_allowed, $["repositoryid":selected_catalog]);
@@ -1235,13 +1246,15 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    });
 	}
 
+	boolean any_catalog = (selected_catalog != nil && selected_catalog != "");
 	boolean enable_buttons = (size (items) > 0 && filtering_allowed_for_repository == true);
 
 	UI::ChangeWidget (`id (`patches_table), `Items, items);
 	UI::ChangeWidget (`id (`toggle_patch_status), `Enabled, enable_buttons);
 	UI::ChangeWidget (`id (`change_status), `Enabled, enable_buttons);
 
-	term additional_info = (enable_buttons == true ? `Empty():`Label(_("Repository does not allow patch-filtering")));
+	term additional_info = (enable_buttons == true || any_catalog != true ?
+	    `Empty():`Label(_("Repository does not allow patch-filtering")));
 	UI::ReplaceWidget (`id (`patches_table_rp), additional_info);
 
 	if (ci_is_listed)
@@ -1386,6 +1399,16 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    `id (`catalogs_rp),
 	    `Left (`ComboBox (`id (`catalogs), `opt(`notify), _("Repository &Name"), items))
 	);
+
+	if (size (items) > 0) {
+	    UI::ChangeWidget (`id (`create_snapshot), `Enabled, true);
+	    UI::ChangeWidget (`id (`category_filter), `Enabled, true);
+	    UI::ChangeWidget (`id (`catalogs), `Enabled, true);
+	} else {
+	    UI::ChangeWidget (`id (`create_snapshot), `Enabled, false);
+	    UI::ChangeWidget (`id (`category_filter), `Enabled, false);
+	    UI::ChangeWidget (`id (`catalogs), `Enabled, false);
+	}
     }
 
     void InitStagingTableDialog (string id) {
