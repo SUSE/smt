@@ -56,11 +56,11 @@ if($help)
     print basename($0). " status [--hostname hostname]\n";
     print "\n";
     print __("Options:\n");
-    print "--help -h            ".__("This help.\n");
-    print "--debug -d           ".__("Enable debug mode.\n");
-    print "--hostname -H        ".__("Operate on a specified hostname (name starting with).\n");
+    print "--help         -h    ".__("This help.\n");
+    print "--debug        -d    ".__("Enable debug mode.\n");
+    print "--hostname     -n    ".__("Operate on a specified hostname (name starting with...).\n");
     print "--show-details -s    ".__("Show details on patches.\n");
-    print "--logfile -L         ".__("Log to a specified file.\n");
+    print "--logfile      -L    ".__("Log to a specified file.\n");
     exit 0;
 }
 
