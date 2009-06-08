@@ -30,19 +30,26 @@ my $vblevel	= LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug	= 0;
 my $logfile	= "/dev/null";
 my $help	= 0;
-my $command	= $ARGV[0] || 'status';
+# No command defined, use fallback
+my $command	= $ARGV[0] || '';
 my $hostname	= undef;
 my $showdetails	= 0;
 
 Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 my $options = Getopt::Long::GetOptions
 (
-    'help'		=> \$help,
+    'help|h'		=> \$help,
     'debug|d'		=> \$debug,
     'logfile|L=s'	=> \$logfile,
-    'hostname|h=s'	=> \$hostname,
+    'hostname|n=s'	=> \$hostname,
     'show-details|s'	=> \$showdetails,
 );
+
+# No command defined, but some arguments are, using fallback
+if (defined $command && $command =~ /^-/)
+{
+    $command = '';
+}
 
 if($help)
 {
@@ -83,7 +90,7 @@ sub doesHostnameMatch ($) {
     return (substr ($check_hostname, 0, length($hostname)) eq $hostname);
 }
 
-if ($command eq 'status')
+if ($command eq '' || $command eq 'status')
 {
     my $client_info = $clients->getAllClientsInfo();
     if ($client_info)
@@ -108,14 +115,18 @@ if ($command eq 'status')
 	    );
 	}
 
-	my $key = '';
+	my ($key, $status_label);
+
 	foreach my $key (sort ({$client_info->{$a}->{HOSTNAME} cmp $client_info->{$b}->{HOSTNAME}} keys %{$client_info})) {
 	    next if (defined $hostname && ! doesHostnameMatch($client_info->{$key}->{HOSTNAME}));
+
+	    # Function returns two values
+	    ($status_label) = SMT::Client::getPatchStatusLabel($client_info->{$key});
 
 	    if ($showdetails) {
 		$t->addRow(
 		    $client_info->{$key}->{HOSTNAME},
-		    SMT::Client::getPatchStatusLabel($client_info->{$key}),
+		    $status_label,
 		    $client_info->{$key}->{LASTCONTACT},
 		    (defined $client_info->{$key}->{PATCHSTATUS_S} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown")),
 		    (defined $client_info->{$key}->{PATCHSTATUS_P} ? $client_info->{$key}->{PATCHSTATUS_P}:__("Unknown")),
@@ -125,7 +136,7 @@ if ($command eq 'status')
 	    } else {
 		$t->addRow(
 		    $client_info->{$key}->{HOSTNAME},
-		    SMT::Client::getPatchStatusLabel($client_info->{$key}),
+		    $status_label,
 		    $client_info->{$key}->{LASTCONTACT}
 		);
 	    }

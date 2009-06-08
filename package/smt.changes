@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jun  8 16:04:01 CEST 2009 - locilka@suse.cz
+
+- Fixed smt-client commandline arguments (bnc #510888).
+
+-------------------------------------------------------------------
 Fri Jun  5 16:29:23 CEST 2009 - mc@suse.de
 
 - use a dynamic id for the NU service based on LocalNUUrl 
