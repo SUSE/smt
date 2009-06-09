@@ -359,6 +359,7 @@ sub CreateSnapshot ($) {
 
     # Use filters only if staging is allowed
     if ($staging_allowed) {
+	y2milestone ('Filtering is allowed, using all defined filters');
 	$mirror_args{'filter'} = $fph->{$repositoryid}->{'fh'};
     } else {
 	y2milestone ('Filtering is not allowed, not using filters');

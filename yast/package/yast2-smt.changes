@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jun  9 16:15:14 CEST 2009 - locilka@suse.cz
+
+- Fixed default sorting of tables and combo boxes (bnc #511256).
+
+-------------------------------------------------------------------
 Fri Jun  5 12:31:48 CEST 2009 - locilka@suse.cz
 
 - Better handling in Staging tab if there are no repositories with

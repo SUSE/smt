@@ -1006,6 +1006,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    return item != nil;
 	});
 
+	items = sort (term a, term b, items, ``(a[1]:"" < b[1]:""));
+
 	integer current_item_nr = -1;
 	term filter_UI_items = `HBox();
 	boolean more_items_lasttime = false;
@@ -1016,6 +1018,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    list <term> fitems = maplist (string one_fitem, filter_items[current_item_nr]:[], {
 		return `item (`id (one_fitem), one_fitem, (nrofitems == 1));
 	    });
+
+	    fitems = sort (term a, term b, fitems, ``(a[1]:"" < b[1]:""));
 
 	    // internal error
 	    if (size (fitems) < 1) break;
@@ -1246,6 +1250,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    });
 	}
 
+	items = sort (term a, term b, items, ``(a[1]:"" < b[1]:""));
+
 	boolean any_catalog = (selected_catalog != nil && selected_catalog != "");
 	boolean enable_buttons = (size (items) > 0 && filtering_allowed_for_repository == true);
 
@@ -1355,6 +1361,9 @@ Enter your SMT server URL in the following format: http:://server.name/
 	});
 
 	if (items == nil) items = [];
+
+	items = sort (term a, term b, items, ``(a[1]:"" < b[1]:""));
+
 	UI::ChangeWidget (`id (`clients_table), `Items, items);
 
 	RedrawClientsTableDetails();
@@ -1394,6 +1403,8 @@ Enter your SMT server URL in the following format: http:://server.name/
 	});
 
 	if (items == nil) items = [];
+
+	items = sort (term a, term b, items, ``(a[1]:"" < b[1]:""));
 
 	UI::ReplaceWidget (
 	    `id (`catalogs_rp),
