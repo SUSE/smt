@@ -263,11 +263,11 @@ sub save
   $sql .= " values (". join  (", ", @sqlvalues ) .") " ;
   $sql .= " on duplicate key update ". join (", ", @updatesql );
 
-  return $self->{dbh}->do($sql);
+  $self->{dbh}->do($sql) || return undef ;
 
   deleteJobIDCookie($self, $self->{id}, $cookie) if defined $cookie;
 
-
+  return $self->{id};
 }
 
 sub asXML
