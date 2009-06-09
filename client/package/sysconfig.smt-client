@@ -44,3 +44,17 @@ SSL_CA_FILE=""
 #
 SSL_CN_NAME=""
 
+
+## Type:    string
+#
+# List of smt servers smt-client isn't allowed to connect to
+# Please use the fully qualified host name or fully quilfied domain name
+# if an entry starts with a dot (.) the whole domain is denied
+# Example: smt.foo .bar
+#
+DENIED_SMT_SERVERS=".novell.com"
+
+
+
+
+

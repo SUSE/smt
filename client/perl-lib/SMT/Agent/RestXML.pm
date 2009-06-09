@@ -196,6 +196,16 @@ sub createUserAgent
     );
 
 
+
+    # check whether smt url is allowed
+
+    if ( SMT::Agent::Utils::isServerDenied( SMT::Agent::Config::smtUrl() ) )
+    {
+      SMT::Agent::Utils::error ( "Configuration doesn't allow to connect to ".SMT::Agent::Config::smtUrl() );
+    }
+
+
+
     my %opts = @_;
     
     my $user = undef;

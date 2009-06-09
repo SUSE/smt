@@ -140,6 +140,27 @@ sub isAgentAllowed
 
 
 
+# check whether smt url is denied
+sub isServerDenied
+{
+  my $server =  shift || SMT::Agent::Config::smtUrl();
+  $server =~ s/.*:\/\///;	#remove protocol part from url 
+
+  my $denied = SMT::Agent::Config::getSysconfigValue( "DENIED_SMT_SERVERS" );
+  return false unless defined $denied;
+
+  my @deniedlist = split(/ /, $denied);
+
+  foreach my $item ( @deniedlist )
+  {
+    return true if ( substr($item,0,1) ne "." &&  $server =~ /^$item$/ );	# host match
+    return true if ( substr($item,0,1) eq "." && $server =~/.*$item$/ ); 	# domain match
+  }
+
+  return false;
+}
+
+
 #
 # lock file support
 #
