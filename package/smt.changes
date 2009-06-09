@@ -9,6 +9,8 @@ Tue Jun  9 11:59:59 CEST 2009 - locilka@suse.cz
 
 - Added --format=csv output format option into smt-list-products
   and smt-list-registrations scripts (bnc #499440).
+- Added manual page for smt-catalogs (symlink to smt-repos)
+  (bnc #511168).
 
 -------------------------------------------------------------------
 Mon Jun  8 16:04:01 CEST 2009 - locilka@suse.cz

@@ -110,6 +110,8 @@ for prog in smt* smt*.pod; do #processes *.pod twice, but this way they are proc
     rm -f $prog.$$$$
 done
 rm smt*.pod #don't package .pod-files
+# BNC #511168 (smt-catalogs is a symlink to smt-repos)
+ln -s smt-repos.1 ../man/smt-catalogs.1
 cd -
 #make test
 # ---------------------------------------------------------------------------

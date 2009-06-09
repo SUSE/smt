@@ -316,7 +316,7 @@ exit 0;
 
 =head1 NAME
 
-smt repos -  
+smt repos
 
 =head1 SYNOPSIS
 
@@ -368,9 +368,11 @@ Shows repositories set to be mirrored only.
 
 Shows detailed repository information.
 
+=back
+
 =head1 AUTHORS and CONTRIBUTORS
 
-Duncan Mac-Vicar Prett, Lukas Ocilka, Jens Daniel Schmidt, Michael Calmer
+Duncan Mac-Vicar Prett, Lukas Ocilka, Jens Daniel Schmidt, Michael Calmer, Jan Kupec
 
 =head1 LICENSE
 
