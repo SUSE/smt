@@ -1055,6 +1055,9 @@ sub productSubscriptionReport
     my $now = SMT::Utils::getDBTimestamp();
     my $sth = undef;
     my $subnamesByProductClass = {};
+
+    my $subhash = {};
+
     
     $statement = "select distinct PRODUCT_CLASS, SUBNAME from Subscriptions;";
 
@@ -1076,13 +1079,43 @@ sub productSubscriptionReport
             $subnamesByProductClass->{$product_class} = "$subname";
         }
 
-        $calchash->{$product_class}->{MACHINES}       = 0;
-        $calchash->{$product_class}->{TOTMACHINES}    = 0;
-        $calchash->{$product_class}->{VMCOUNT}        = 0;
-        $calchash->{$product_class}->{SUM_ACTIVE_SUB} = 0;
-        $calchash->{$product_class}->{SUM_ESOON_SUB}  = 0;
+        $subhash->{$product_class}->{NODECOUNT_ACTIVE}  = 0;
+        $subhash->{$product_class}->{NODECOUNT_EXPSOON} = 0;
+        $subhash->{$product_class}->{ASSIGNEDMACHINES}  = 0;
+        $subhash->{$product_class}->{VMCOUNT}           = 0;
+        $subhash->{$product_class}->{MACHINES_LEFT}     = 0;
+    }
+    $statement = "select PRODUCT_CLASS, SUM(NODECOUNT) as NODECOUNT_ACTIVE, MIN(SUBENDDATE) as MINDATE from Subscriptions where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL) group by PRODUCT_CLASS;";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->execute;
+    $res = $sth->fetchall_arrayref({});
+
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    foreach my $node (@{$res})
+    {
+        $subhash->{$node->{PRODUCT_CLASS}}->{NODECOUNT_ACTIVE} = int($node->{NODECOUNT_ACTIVE});
+        $subhash->{$node->{PRODUCT_CLASS}}->{MINDATE_ACTIVE} = ((defined $node->{MINDATE})?"$node->{MINDATE}":"never");
     }
     
+    $statement  = "select PRODUCT_CLASS, SUM(NODECOUNT) as NODECOUNT_EXPSOON, MIN(SUBENDDATE) as MINDATE ";
+    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ?";
+    $statement .= "group by PRODUCT_CLASS;";
+    $sth = $dbh->prepare($statement);
+    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
+    $sth->bind_param(2, $now, SQL_TIMESTAMP);
+    $sth->execute;
+    $res = $sth->fetchall_arrayref({});
+
+    printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
+
+    foreach my $node (@{$res})
+    {
+        $subhash->{$node->{PRODUCT_CLASS}}->{NODECOUNT_EXPSOON} = int($node->{NODECOUNT_EXPSOON});
+        $subhash->{$node->{PRODUCT_CLASS}}->{MINDATE_EXPSOON} = ((defined $node->{MINDATE})?"$node->{MINDATE}":"never");
+    }
+
     $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID";
 
     printLog($options{log}, "debug", "STATEMENT: $statement") if ($debug);
@@ -1104,6 +1137,14 @@ sub productSubscriptionReport
         #
         next if(exists $dhash->{$key});
         
+        if(!exists $calchash->{$set->{PRODUCT_CLASS}})
+        {
+            $calchash->{$set->{PRODUCT_CLASS}}->{VMCOUNT}       = 0;
+            $calchash->{$set->{PRODUCT_CLASS}}->{MACHINES_LEFT} = 0;
+            $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINES}   = 0;
+        }
+        
+
         $statement = sprintf("select VALUE from MachineData where GUID='%s' and KEYNAME='host';", $set->{GUID});
         my $arr = $dbh->selectcol_arrayref($statement);
         
@@ -1114,50 +1155,170 @@ sub productSubscriptionReport
             #
             $calchash->{$set->{PRODUCT_CLASS}}->{VMCOUNT} += 1;
 
-            #
-            # currently we do not count subscriptions for VMs
-            #
             next;
-            
-            #my $newkey =  $set->{PRODUCT_CLASS}." ".$arr->[0];
-            #if(exists $dhash->{$newkey})
-            #{
-                #
-                # This is a virtual machine and this PRODUCT_CLASS/ID combination
-                # has already a subscription. Skip the rest.
-                #
-            #    next;
-            #}
-            
-            #
-            # this is a VM which do not have a subscription. So use the PRODUCT_CLASS/hostGUID as key
-            # and add it to the dhash.
-            #
-            #$key = $newkey;
         }
         $dhash->{$key} = $set;
         
         #
         # count the machines which need a subscription
         #
-        $calchash->{$set->{PRODUCT_CLASS}}->{MACHINES}    += 1;
-        $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINES} += 1;
+        $calchash->{$set->{PRODUCT_CLASS}}->{MACHINES_LEFT} += 1;
+        $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINES}   += 1;
     }
     
-    #
-    # Active Subscriptions
-    #
-    
-    $statement  = "select PRODUCT_CLASS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
-    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL) ";
-    $statement .= "group by PRODUCT_CLASS order by PRODUCT_CLASS;";
-    $sth = $dbh->prepare($statement);
-    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
-    $sth->execute;
-    $res = $sth->fetchall_hashref("PRODUCT_CLASS");
+    printLog($options{log}, "debug", "SUBSCRIPTION HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$subhash])) if ($debug);
+    printLog($options{log}, "debug", "CALC HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$calchash])) if ($debug);
 
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
+    foreach my $subprodclass (keys %{$subhash})
+    {
+        # multi class in the second iteration
+        next if($subprodclass =~ /,/);
+        
+        if(exists $calchash->{$subprodclass} && $calchash->{$subprodclass}->{MACHINES_LEFT} > 0 &&
+           ( $subhash->{$subprodclass}->{ASSIGNEDMACHINES} < ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) ||
+             $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1 || $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1)
+          )
+        {
+            # we have not assigned machines and the subscription has free nodecounts
+            
+            my $free = ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) - $subhash->{$subprodclass}->{ASSIGNEDMACHINES};
+            
+            if( $free >= $calchash->{$subprodclass}->{MACHINES_LEFT} || 
+                $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1  ||
+                $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1 )
+            {
+                # we have more (or equal) free subscriptions left then registered maschines to assign
+                # => we can assign all machines to this subscription
+
+                $subhash->{$subprodclass}->{ASSIGNEDMACHINES} += $calchash->{$subprodclass}->{MACHINES_LEFT};
+                $calchash->{$subprodclass}->{MACHINES_LEFT} = 0;
+            }
+            elsif ( $free > 0 )
+            {
+                # we have free subscriptions, but not enough to assign them all
+
+                $subhash->{$subprodclass}->{ASSIGNEDMACHINES} += $free;
+                $calchash->{$subprodclass}->{MACHINES_LEFT}   -= $free;
+            }
+        }
+    }
     
+    printLog($options{log}, "debug", "SUBSCRIPTION HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$subhash])) if ($debug);
+    printLog($options{log}, "debug", "CALC HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$calchash])) if ($debug);
+    
+    foreach my $subprodclass (keys %{$subhash})
+    {
+        # all single product class subscriptions are finished
+        # concentrate on multi product class subscriptions now
+        next if($subprodclass !~ /,/);
+
+        my @prodclasses = split(/,/, $subprodclass);
+        
+        foreach my $pc (@prodclasses)
+        {
+            if(exists $calchash->{$pc} && $calchash->{$pc}->{MACHINES_LEFT} > 0 &&
+               ( $subhash->{$subprodclass}->{ASSIGNEDMACHINES} < ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) ||
+                 $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1 || $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1)
+              )
+            {
+                # we have not assigned machines and the subscription has free nodecounts
+            
+                my $free = ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) - $subhash->{$subprodclass}->{ASSIGNEDMACHINES};
+            
+                if( $free >= $calchash->{$pc}->{MACHINES_LEFT} || $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1 || $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1 )
+                {
+                    # we have more (or equal) free subscriptions left then registered maschines to assign
+                    # => we can assign all machines to this subscription
+                    
+                    $subhash->{$subprodclass}->{ASSIGNEDMACHINES} += $calchash->{$pc}->{MACHINES_LEFT};
+                    $calchash->{$pc}->{MACHINES_LEFT} = 0;
+                }
+                elsif ( $free > 0 )
+                {
+                    # we have free subscriptions, but not enough to assign them all
+                    
+                    $subhash->{$subprodclass}->{ASSIGNEDMACHINES} += $free;
+                    $calchash->{$pc}->{MACHINES_LEFT}   -= $free;
+                }
+            }
+        }
+    }
+    
+    printLog($options{log}, "debug", "SUBSCRIPTION HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$subhash])) if ($debug);
+    printLog($options{log}, "debug", "CALC HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$calchash])) if ($debug);
+
+    # search now for left registrations and virtual machines
+
+    foreach my $pc_string (keys %{$calchash})
+    {
+        if(exists $subhash->{$pc_string} && defined $calchash->{$pc_string}->{VMCOUNT} &&
+           int($calchash->{$pc_string}->{VMCOUNT}) > 0)
+        {
+            $subhash->{$pc_string}->{VMCOUNT} = $calchash->{$pc_string}->{VMCOUNT};
+        }
+
+        if(exists $subhash->{$pc_string} && defined $calchash->{$pc_string}->{MACHINES_LEFT} &&
+           int($calchash->{$pc_string}->{MACHINES_LEFT}) > 0)
+        {
+            $subhash->{$pc_string}->{MACHINES_LEFT} = $calchash->{$pc_string}->{MACHINES_LEFT};
+        }
+        
+        if(exists $subhash->{$pc_string} && defined $calchash->{$pc_string}->{MACHINES_LEFT} &&
+           int($calchash->{$pc_string}->{MACHINES_LEFT}) <= 0)
+        {
+            delete $calchash->{$pc_string};
+        }
+    }
+    
+    # now the same for multi product class subscriptions
+
+    foreach my $pc_string (keys %{$calchash})
+    {
+        #next if(!defined $calchash->{$pc_string}->{MACHINES_LEFT} ||
+        #        int($calchash->{$pc_string}->{MACHINES_LEFT}) <= 0);
+        
+        my $found = 0;
+        
+        foreach my $spc (keys %{$subhash})
+        {
+            next if($spc !~ /,/);
+            
+            my @spclasses = split(/,/, $spc);
+            foreach my $productclass (@spclasses)
+            {
+                $found = 1 if($productclass eq $pc_string);
+                last;
+            }
+            if($found == 1)
+            {
+                if(exists $calchash->{$pc_string} && defined $calchash->{$pc_string}->{VMCOUNT} &&
+                   int($calchash->{$pc_string}->{VMCOUNT}) > 0)
+                {
+                    $subhash->{$spc}->{VMCOUNT} += $calchash->{$pc_string}->{VMCOUNT};
+                }
+                
+                $subhash->{$spc}->{MACHINES_LEFT} += $calchash->{$pc_string}->{MACHINES_LEFT};
+                delete $calchash->{$pc_string};
+                last;
+            }
+        }
+    }
+
+    printLog($options{log}, "debug", "SUBSCRIPTION HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$subhash])) if ($debug);
+    printLog($options{log}, "debug", "CALC HASH") if ($debug);
+    printLog($options{log}, "debug", Data::Dumper->Dump([$calchash])) if ($debug);
+
+    #
+    # Active
+    #
+
     my @AHEAD = ( {
                    name => __("Subscriptions"),
                    align => "auto"
@@ -1177,57 +1338,32 @@ sub productSubscriptionReport
     my @AVALUES = ();
     my %AOPTIONS = ( 'headingText' => __("Active Subscriptions"." ($time)" ), drawRowLine => 1 );
 
-    foreach my $product_class (keys %{$res})
+    foreach my $pc (keys %{$subhash})
     {
-        my $assignedMachines = 0;
-        my $nc =  (int $res->{$product_class}->{SUM_NODECOUNT});
-        
-        if($res->{$product_class}->{UNLIMITED})
+        if( $subhash->{$pc}->{NODECOUNT_ACTIVE} == -1 || 
+            $subhash->{$pc}->{NODECOUNT_ACTIVE} >= $subhash->{$pc}->{ASSIGNEDMACHINES} )
         {
-            $calchash->{$product_class}->{SUM_ACTIVE_SUB} = -1;
-            $assignedMachines = $calchash->{$product_class}->{MACHINES};
-            $calchash->{$product_class}->{MACHINES} = 0;
-            $nc = "unlimited";
+            # we can assign all machines to this node
+            $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE} = $subhash->{$pc}->{ASSIGNEDMACHINES};
         }
-        else
+        elsif( $subhash->{$pc}->{NODECOUNT_ACTIVE} < $subhash->{$pc}->{ASSIGNEDMACHINES} )
         {
-            $calchash->{$product_class}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$product_class}->{SUM_ACTIVE_SUB} != -1);
+            $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE} = $subhash->{$pc}->{NODECOUNT_ACTIVE};
+        }
 
-            if($nc >= (int $calchash->{$product_class}->{MACHINES}))
-            {
-                $assignedMachines = $calchash->{$product_class}->{MACHINES};
-                $calchash->{$product_class}->{MACHINES} = 0;
-            }
-            else
-            {
-                $assignedMachines = $nc;
-                $calchash->{$product_class}->{MACHINES} -= $nc;                
-            }
-        }
-                
-        push @AVALUES, [ $subnamesByProductClass->{$product_class},
-                         $nc,
-                         $assignedMachines,
-                         (defined $res->{$product_class}->{MINENDDATE})?$res->{$product_class}->{MINENDDATE}:"never"
+        push @AVALUES, [ $subnamesByProductClass->{$pc},
+                         (($subhash->{$pc}->{NODECOUNT_ACTIVE} == -1)?"unlimited":$subhash->{$pc}->{NODECOUNT_ACTIVE}),
+                         ($subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE} + $subhash->{$pc}->{MACHINES_LEFT}),
+                         $subhash->{$pc}->{MINDATE_ACTIVE}
                        ];
     }
     $report{'active'} = {'cols' => \@AHEAD, 'vals' => \@AVALUES, 'opts' => \%AOPTIONS };
 
+
     #
     # Expire soon
     #
-    
-    $statement  = "select PRODUCT_CLASS, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MIN(SUBENDDATE) as MINENDDATE ";
-    $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ?";
-    $statement .= "group by PRODUCT_CLASS order by PRODUCT_CLASS;";
-    $sth = $dbh->prepare($statement);
-    $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
-    $sth->bind_param(2, $now, SQL_TIMESTAMP);
-    $sth->execute;
-    $res = $sth->fetchall_hashref("PRODUCT_CLASS");
-
-    printLog($options{log}, "debug", "STATEMENT: ".$sth->{Statement}) if ($debug);
-    
+ 
     my @SHEAD = ( {
                    name => __("Subscriptions"),
                    align => "auto"
@@ -1247,52 +1383,28 @@ sub productSubscriptionReport
     my @SVALUES = ();
     my %SOPTIONS = ( 'headingText' => __("Subscriptions which expired within the next 30 days")." ($time)", drawRowLine => 1 );
 
-    foreach my $product_class (keys %{$res})
+    foreach my $pc (keys %{$subhash})
     {
-        my $assignedMachines = 0;
-        my $nc = (int $res->{$product_class}->{SUM_NODECOUNT});
-        
-        #if(!exists $expireSoonMachines->{$product_class} || ! defined $expireSoonMachines->{$product_class})
-        #{
-        #    $expireSoonMachines->{$product_class} = 0;
-        #}
-        
-        if($res->{$product_class}->{UNLIMITED})
+        if( $subhash->{$pc}->{NODECOUNT_EXPSOON} == -1 || 
+            $subhash->{$pc}->{NODECOUNT_EXPSOON} >= ($subhash->{$pc}->{ASSIGNEDMACHINES} - $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE}) )
         {
-            $calchash->{$product_class}->{SUM_ESOON_SUB} = -1;
-            $assignedMachines = $calchash->{$product_class}->{MACHINES};
-            $calchash->{$product_class}->{MACHINES} = 0;
-            $nc = "unlimited";
+            # we can assign all machines to this node
+            $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON} = ($subhash->{$pc}->{ASSIGNEDMACHINES} - $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE});
         }
-        else
+        elsif( $subhash->{$pc}->{NODECOUNT_EXPSOON} < ($subhash->{$pc}->{ASSIGNEDMACHINES} - $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE}) )
         {
-            $calchash->{$product_class}->{SUM_ESOON_SUB} += $nc if($calchash->{$product_class}->{SUM_ESOON_SUB} != -1);
-
-            if($nc >= (int $calchash->{$product_class}->{MACHINES}))
-            {
-                $assignedMachines = $calchash->{$product_class}->{MACHINES};
-                $calchash->{$product_class}->{MACHINES} = 0;
-            }
-            else
-            {
-                $assignedMachines = $nc;
-                $calchash->{$product_class}->{MACHINES} -= $nc;                
-            }
+            $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON} = ($subhash->{$pc}->{ASSIGNEDMACHINES} - $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE});
         }
 
-        #if($assignedMachines > 0)
-        #{
-        #    $expireSoonMachines->{$product_class} += int $assignedMachines;
-        #}
-        
-        push @SVALUES, [ $subnamesByProductClass->{$product_class},
-                         $nc,
-                         $assignedMachines,
-                         $res->{$product_class}->{MINENDDATE}
+        next if($subhash->{$pc}->{NODECOUNT_EXPSOON} == 0 && $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON} == 0);
+
+        push @SVALUES, [ $subnamesByProductClass->{$pc},
+                         ($subhash->{$pc}->{NODECOUNT_EXPSOON}==-1)?"unlimited":$subhash->{$pc}->{NODECOUNT_EXPSOON},
+                         $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON},
+                         $subhash->{$pc}->{MINDATE_EXPSOON}
                       ];
     }
     $report{'soon'} = (@SVALUES > 0)?{'cols' => \@SHEAD, 'vals' => \@SVALUES, 'opts' => \%SOPTIONS }:undef;
-
 
     #
     # Expired Subscriptions
@@ -1317,10 +1429,6 @@ sub productSubscriptionReport
                    align => "right"
                   },
                   {
-                   name => __("Used\nLocally"),
-                   align => "auto"
-                  },
-                  {
                    name => __("Subscription\nExpires"),
                    align => "auto"
                   });
@@ -1329,34 +1437,25 @@ sub productSubscriptionReport
     
     foreach my $product_class (keys %{$res})
     {
-        my $assignedMachines = int $calchash->{$product_class}->{MACHINES};
         my $nc =  (int $res->{$product_class}->{SUM_NODECOUNT});
 
-        #if(!exists $expiredMachines->{$product_class} || ! defined $expiredMachines->{$product_class})
-        #{
-        #    $expiredMachines->{$product_class} = 0;
-        #}
-        
         if($res->{$product_class}->{UNLIMITED})
         {
             $nc = "unlimited";
         }
         
-        #next if($assignedMachines == 0);
-
-        #$expiredMachines->{$product_class} += int $assignedMachines;
-        
         push @EVALUES, [ $subnamesByProductClass->{$product_class},
                          $nc,
-                         $assignedMachines,
                          $res->{$product_class}->{MAXENDDATE}
                        ];
     }
 
     $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => \@EVALUES, 'opts' => \%EOPTIONS } : undef; 
 
-    #printLog($options{log}, "debug", "CALCHASH:".Data::Dumper->Dump([$calchash]));
-   
+    #
+    # Summary
+    #
+  
     my $alerts = ''; 
     my $warning = ''; 
 
@@ -1373,7 +1472,7 @@ sub productSubscriptionReport
                      align => "right"
                     },
                     {
-                     name => __("Soon expiring\nPurchase Counts"), 
+                     name => __("Soon expiring\nPurchase Counts"),
                      align => "right"
                     },
                     {
@@ -1385,86 +1484,63 @@ sub productSubscriptionReport
     my %SUMOPTIONS = ( 'headingText' => __('Summary')." ($time)", drawRowLine => 1 );
 
 
-    foreach my $product_class (keys %{$calchash})
+    foreach my $product_class (keys %{$subhash})
     {
         #
         # not exists means no subscription dataset from NCC available
         # this happens for "free" products like the SDK
         # skip these in the summary
         #
-        next if(! exists $calchash->{$product_class}->{SUM_ACTIVE_SUB});
-        
-        my $missing = $calchash->{$product_class}->{TOTMACHINES} - $calchash->{$product_class}->{SUM_ACTIVE_SUB} - $calchash->{$product_class}->{SUM_ESOON_SUB};
-        $missing = 0 if ($missing < 0);
-        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
-           $calchash->{$product_class}->{SUM_ESOON_SUB}  == -1)
-        {
-            $missing = 0;
-        }
-        
+        #if(! exists $subhash->{$product_class})
+        #{
+        #    my $foundpc = 0;
+        #    
+        #    # additionally we need to to test for multi product class subscriptions
+        #    foreach my $pcs (keys %{$subhash})
+        #    {
+        #        my @pc = split(/,/, $pcs);
+        #        foreach my $pc (@pc)
+        #        {
+        #            if( $pc eq "$product_class")
+        #            {
+        #                $foundpc = 1;
+        #            }
+        #        }
+        #    }
+        #    
+        #    next if(!$foundpc);
+        #}
+                      
         #my $vmtext = (exists $calchash->{$product_class}->{VMCOUNT} &&
         #              defined $calchash->{$product_class}->{VMCOUNT} &&
         #              $calchash->{$product_class}->{VMCOUNT} > 0)?"  (+ ".$calchash->{$product_class}->{VMCOUNT}." VMs)":"";
 
         push @SUMVALUES, [$subnamesByProductClass->{$product_class},
-                          $calchash->{$product_class}->{TOTMACHINES},
-                          ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB},
-                          ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB},
-                          $missing];
+                          $subhash->{$product_class}->{ASSIGNEDMACHINES} + $subhash->{$product_class}->{MACHINES_LEFT},
+                          ($subhash->{$product_class}->{NODECOUNT_ACTIVE}==-1)?"unlimited":$subhash->{$product_class}->{NODECOUNT_ACTIVE},
+                          ($subhash->{$product_class}->{NODECOUNT_EXPSOON}==-1)?"unlimited":$subhash->{$product_class}->{NODECOUNT_EXPSOON},
+                          $subhash->{$product_class}->{MACHINES_LEFT}];
 
-        my $used_active = 0;
-        my $used_esoon  = 0;
-        my $used_expired = 0;
-        my $dummy = $calchash->{$product_class}->{TOTMACHINES};
+        if($subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON} == 1)
+        {
+            $warning .= sprintf(__("%d machine use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"),
+                                $subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON}, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+        }
+        elsif($subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON} > 1)
+        {
+            $warning .= sprintf(__("%d machines use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"),
+                                $subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON}, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+        }
         
-        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
-           $dummy <= $calchash->{$product_class}->{SUM_ACTIVE_SUB})
-        {
-            $used_active = $dummy;
-            $dummy = 0;
-        }
-        else
-        {
-            $used_active = $calchash->{$product_class}->{SUM_ACTIVE_SUB};
-            $dummy -= $calchash->{$product_class}->{SUM_ACTIVE_SUB};
-        }
-
-        if($calchash->{$product_class}->{SUM_ESOON_SUB} == -1 ||
-           $dummy <= $calchash->{$product_class}->{SUM_ESOON_SUB})
-        {
-            $used_esoon = $dummy;
-            $dummy = 0;
-        }
-        else
-        {
-            $used_esoon = $calchash->{$product_class}->{SUM_ESOON_SUB};
-            $dummy -= $calchash->{$product_class}->{SUM_ESOON_SUB};
-        }
-
-        $used_expired = $dummy;
-
-        
-        if($used_esoon == 1)
-        {
-            $warning .= sprintf(__("%d machine use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
-                                $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
-        }
-        elsif($used_esoon > 1)
-        {
-            $warning .= sprintf(__("%d machines use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
-                                $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
-        }
-
-        
-        if($missing == 1)
+        if($subhash->{$product_class}->{MACHINES_LEFT} == 1)
         {
             $alerts .= sprintf(__("%d machine use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
-                               $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+                               $subhash->{$product_class}->{MACHINES_LEFT}, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
-        elsif($missing > 1)
+        elsif($subhash->{$product_class}->{MACHINES_LEFT} > 1)
         {
             $alerts .= sprintf(__("%d machines use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
-                               $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
+                               $subhash->{$product_class}->{MACHINES_LEFT}, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
     }
 
@@ -1480,16 +1556,15 @@ sub productSubscriptionReport
     $report{'alerts'} = "";
     if($alerts ne "")
     {
-        $report{'alerts'} = __("Alerts:\n").$alerts ;
+        $report{'alerts'} .= __("Alerts:\n").$alerts ;
     }
     if($warning ne "")
     {
-        $report{'alerts'} = "\n".__("Warnings:\n").$warning ;
+        $report{'alerts'} .= "\n".__("Warnings:\n").$warning ;
     }
         
     return \%report;
 }
-
 
 #
 # based on real NCC data
