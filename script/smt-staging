@@ -316,58 +316,66 @@ if ($command eq 'listupdates')
     }
 }
 
+
 ###############################################################################
-# forbid an update
+# allow/forbid an update
 ###############################################################################
 
-elsif ($command eq 'forbid')
+elsif ($command eq 'allow' || $command eq 'forbid')
 {
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
 
-    if (@patches)
-    {
-        # TODO make sure user gave name-version, check if such patch exists, ...
-        $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
-    }
-    elsif (defined $category && $category)
-    {
-        # TODO check if the category is known
-        $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
-    }
-    else
-    {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
-        print __("Specify at list one '--patch name-version'.") . "\n";
-        print __("Use 'smt-staging listupdates' to see the list of available patches.") . "\n";
-        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
-    }
-
-    $filter->save($dbh, $repoid);
-}
-
-###############################################################################
-# allow an update
-###############################################################################
-
-elsif ($command eq 'allow')
-{
-    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    my $allow = $command eq 'allow';
 
     if (@patches)
     {
-        $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+        if (defined $category)
+        {
+            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
+                '--category', '--patch') . "\n";
+        }
+        if ($allow)
+        {
+            $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+        }
+        else
+        {
+            # TODO make sure user gave name-version, check if such patch exists, ...
+            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+        }
     }
     elsif (defined $category)
     {
-        # TODO check if the category is known
-        $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+        # list of known patch categories
+        my %exists_category = (
+            'recommended'   => 1,
+            'security'      => 1,
+            'optional'      => 1);
+
+        if ($exists_category{$category})
+        {
+            if ($allow)
+            {
+                $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+            }
+            else
+            {
+                $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+            }
+        }
+        else
+        {
+            SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Invalid category '$category'.");
+            print sprintf (__("Invalid category '%s'."), $category) . "\n";
+            print sprintf (__("See '%s' for the list of known categories."), 'man smt-staging') . "\n";
+            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+        }
     }
     else
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
-        print __("Specify at list one '--patch name-version'.") . "\n";
+        print __("Specify at least one '--patch name-version'.") . "\n";
         print __("Use 'smt-staging listupdates' to see the list of available patches.") . "\n";
         SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
