@@ -160,6 +160,116 @@ sub newJob
     $self->{status} = $status;
 }
 
+
+
+sub imaginaryConstructor	# TODO: change when constructor is cleaned up
+{
+  my $self = shift;
+  my $arg1 = shift || undef;
+  my $arg2 = shift || undef;
+  my $arg3 = shift || undef;
+  my $arg4 = shift || undef;
+  
+  # constructed by jobid, guid
+  if ( defined $arg1 && defined $arg2 && ! defined $arg3)
+  {
+    readJobFromDatabase($self, $arg1, $arg2);
+  }
+}
+
+
+sub readJobFromDatabase
+{
+  my $self = shift;
+  my $jobid = shift || return undef;
+  my $guid  = shift || return undef;
+
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  my $guidid = $client->getClientIDByGUID($guid) || return undef;
+
+
+  my $sql = 'select * from JobQueue '
+          . 'where ID      = ' . $self->{'dbh'}->quote($jobid)
+          . 'and   GUID_ID = ' . $self->{'dbh'}->quote($guidid);
+
+  my $result = $self->{'dbh'}->selectall_hashref($sql, 'ID')->{$jobid};
+  return undef unless defined $result;
+
+  $self->{id}        = $jobid;
+  $self->{guid}      = $guid;
+
+  $self->{type}      = SMT::Job::JOB_TYPE->{ $result->{TYPE} } if defined SMT::Job::JOB_TYPE->{$result->{TYPE}};
+
+  $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ); # convert xml to hash
+
+  my @attribs = qw(id parentid name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+
+  foreach my $attrib (@attribs)
+  {
+    $self->{$attrib} = $result->{uc($attrib) }  if ( defined $result->{uc($attrib)} );
+  }
+}
+
+
+sub save
+{
+  my $self = shift;
+  my $cookie = undef;
+
+  return undef unless defined $self->{guid};
+
+  # retrieve next job id from database if no id is known
+  if (!defined $self->{id})
+  {
+    (my $id, $cookie) = getNextAvailableJobID( $self );
+    return undef unless defined $id and defined $cookie;
+    $self->{id} = $id;
+  }
+
+
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  my $guidid = $client->getClientIDByGUID($self->{guid}) || return undef;
+
+
+  my $sql = "insert into JobQueue ";
+  my @sqlkeys = ();
+  my @sqlvalues = ();
+  my @updatesql = ();
+ 
+  my @attribs = qw(id parentid name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+
+  # TYPE
+  push ( @sqlkeys, "TYPE" );
+  push ( @sqlvalues,  SMT::Job::JOB_TYPE->{ $self->{type} } );
+
+  # GUID
+  push ( @sqlkeys, "GUID_ID" );
+  push ( @sqlvalues, $self->{dbh}->quote($guidid) );
+
+  # arguments
+  push ( @sqlkeys, "ARGUMENTS" );
+  push ( @sqlvalues, $self->{dbh}->quote( getArgumentsXML( $self ) ) ); # hash to xml
+
+  foreach my $attrib (@attribs)
+  {
+    if ( defined $self->{$attrib} )
+    {
+      push ( @sqlkeys, uc($attrib) );
+      push ( @sqlvalues, $self->{dbh}->quote( $self->{$attrib} ));
+      push ( @updatesql, uc($attrib) . " = " .  $self->{dbh}->quote( $self->{$attrib} ));
+    }
+  }
+  $sql .= " (". join  (", ", @sqlkeys ) .") " ;
+  $sql .= " values (". join  (", ", @sqlvalues ) .") " ;
+  $sql .= " on duplicate key update ". join (", ", @updatesql );
+
+  return $self->{dbh}->do($sql);
+
+  deleteJobIDCookie($self, $self->{id}, $cookie) if defined $cookie;
+
+
+}
+
 sub asXML
 {
     my ( $self ) = @_;
@@ -172,7 +282,7 @@ sub asXML
       'arguments' => $self->{arguments},
       'verbose'   => ( $self->{verbose} eq "1" ) ? "true" : "false"
 
-    #TODO: add outher attributes
+    #TODO: add other attributes
 
     };
 
@@ -371,6 +481,43 @@ sub error
 }
 
 
+sub getNextAvailableJobID()
+{
+  my $self = shift;
+
+  my $cookie = SMT::Utils::getDBTimestamp()." - ".rand(1024);
+
+  # TODO: for cleanup 
+  # TODO: add expires = today + 1day
+  # TODO: add status or type undefined
+
+  my $sql1 = 'insert into JobQueue ( DESCRIPTION ) values ("'.$cookie.'")' ;
+  $self->{dbh}->do($sql1) || return ( undef, $cookie);
+
+  my $sql2 = 'select ID from JobQueue '; 
+     $sql2 .= ' where DESCRIPTION  = "'.$cookie.'"';
+
+  my $id = $self->{dbh}->selectall_arrayref($sql2)->[0]->[0];
+
+  return ($id, $cookie);
+
+}
+
+sub deleteJobIDCookie()
+{
+  my $self   = shift;
+  my $id     = shift;
+  my $cookie = shift;
+
+  my $sql = "delete from JobQueue where ID = '$id' and DESCRIPTION = '$cookie'" ;
+  return $self->{dbh}->do($sql);
+}
+
+
+
+
+
+
+
 
 1;
-
