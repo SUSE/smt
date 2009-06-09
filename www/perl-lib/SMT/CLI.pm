@@ -68,6 +68,17 @@ sub init
     return ($smt_config->{cfg}, $smt_config->{dbh});
 }
 
+sub checkFormat ($)
+{
+    my $checkformat = lc (shift);
+
+    if ($checkformat eq 'asciitable' || $checkformat eq 'csv') {
+	return 1;
+    } else {
+	printf STDERR (__("Unknown format '%s'. Supported are 'asciitable' and 'csv'.\n"), $checkformat);
+	return 0;
+    }
+}
 
 #
 # escapeCSVRow
@@ -602,7 +613,11 @@ sub getProducts
 #
 sub listProducts
 {
-    print renderReport(getProducts(@_), 'asciitable', '');
+    my %options = @_;
+
+    $options{format} = 'asciitable' if (! defined $options{format});
+
+    print renderReport(getProducts(%options), $options{format}, '');
 }
 
 
@@ -642,7 +657,9 @@ sub getRegistrations
 sub listRegistrations
 {
     my %options = @_;
-    
+
+    $options{format} = 'asciitable' if (! defined $options{format});
+
     if(exists $options{verbose} && defined $options{verbose} && $options{verbose})
     {
         my ($cfg, $dbh) = init();
@@ -695,8 +712,10 @@ sub listRegistrations
     }
     else
     {
-        print renderReport(getRegistrations(), 'asciitable', '');
+	print renderReport(getRegistrations(), $options{format}, '');
     }
+
+    return 1;
 }
 
 

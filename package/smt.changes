@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jun  9 11:59:59 CEST 2009 - locilka@suse.cz
+
+- Added --format=csv output format option into smt-list-products
+  and smt-list-registrations scripts (bnc #499440).
+
+-------------------------------------------------------------------
 Mon Jun  8 16:04:01 CEST 2009 - locilka@suse.cz
 
 - Fixed smt-client commandline arguments (bnc #510888).

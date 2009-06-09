@@ -25,22 +25,35 @@ my $mirrorable;
 my $domirror;
 my $verbose;
 my $help;
+my $format;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
 &Getopt::Long::GetOptions(
          'verbose|v' => \$verbose,
-         'help|h' => \$help
+         'help|h' => \$help,
+         'format|f=s' => \$format,
 );
 
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " : " . __("list active registrations\n");
-  print "    --verbose    (-v) : " . __("show detailed informations about the registered devices.\n");
+  print "    --help       (-h) : " . __("show this help\n");
+  print "    --verbose    (-v) : " . __("show detailed informations about the registered devices\n");
+  print "    --format     (-f) : " . __("format the output ('asciitable', 'csv')\n");
+  # Option --outfile would make this script write the output into the smt's directory
+  # because of the dropPrivileges call
   exit 0;
 }
 
-SMT::CLI::listRegistrations(verbose => $verbose);
+my %params = (verbose => $verbose);
+$params{format} = (defined $format ? lc($format):'asciitable');
+
+if (! SMT::CLI::checkFormat($params{format})) {
+    exit 1;
+}
+
+SMT::CLI::listRegistrations(%params);
 
 exit 0;
 

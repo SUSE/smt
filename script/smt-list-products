@@ -27,6 +27,7 @@ my $verbose;
 my $used;
 my $catstat;
 my $help;
+my $format;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
@@ -34,20 +35,30 @@ use Getopt::Long;
          'used|u' => \$used,
          'catstat|c' => \$catstat,
          'verbose|v' => \$verbose,
-         'help|h' => \$help
+         'help|h' => \$help,
+         'format|f=s' => \$format,
 );
 
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " : " . __("list known products\n");
   print "   --used       (-u) : " . __("show only used products\n");
-  print "   --catstat    (-c) : " . __("show catalog status. Are all catalogs localy mirrored, which are required for this product?\n");
+  print "   --catstat    (-c) : " . __("show catalog status: Are all catalogs localy mirrored, which are required for this product?\n");
 #  print "    -verbose    (-v) : " . __("show detailed product information\n");
   print "   --help       (-h) : " . __("show this help\n");
+  print "   --format     (-f) : " . __("format the output ('asciitable', 'csv')\n");
   exit 0;
 }
 
-SMT::CLI::listProducts(verbose => $verbose, used => $used, catstat => $catstat);
+my %params = (verbose => $verbose, used => $used, catstat => $catstat);
+
+$params{format} = (defined $format ? lc($format):'asciitable');
+
+if (! SMT::CLI::checkFormat($params{format})) {
+    exit 1;
+}
+
+SMT::CLI::listProducts(%params);
 
 exit 0;
 
