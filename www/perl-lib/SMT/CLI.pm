@@ -1082,6 +1082,8 @@ sub productSubscriptionReport
         $subhash->{$product_class}->{NODECOUNT_ACTIVE}  = 0;
         $subhash->{$product_class}->{NODECOUNT_EXPSOON} = 0;
         $subhash->{$product_class}->{ASSIGNEDMACHINES}  = 0;
+        $subhash->{$product_class}->{ASSIGNEDMACHINES_ACTIVE}  = 0;
+        $subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON}  = 0;
         $subhash->{$product_class}->{VMCOUNT}           = 0;
         $subhash->{$product_class}->{MACHINES_LEFT}     = 0;
     }
@@ -1340,6 +1342,9 @@ sub productSubscriptionReport
 
     foreach my $pc (keys %{$subhash})
     {
+	# skip subscription with a nodecount of 0
+	next if($subhash->{$pc}->{NODECOUNT_ACTIVE} == 0);
+
         if( $subhash->{$pc}->{NODECOUNT_ACTIVE} == -1 || 
             $subhash->{$pc}->{NODECOUNT_ACTIVE} >= $subhash->{$pc}->{ASSIGNEDMACHINES} )
         {
@@ -1385,6 +1390,9 @@ sub productSubscriptionReport
 
     foreach my $pc (keys %{$subhash})
     {
+	# skip subscription with a nodecount of 0
+	next if($subhash->{$pc}->{NODECOUNT_EXPSOON} == 0);
+
         if( $subhash->{$pc}->{NODECOUNT_EXPSOON} == -1 || 
             $subhash->{$pc}->{NODECOUNT_EXPSOON} >= ($subhash->{$pc}->{ASSIGNEDMACHINES} - $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE}) )
         {
