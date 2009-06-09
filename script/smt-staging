@@ -58,17 +58,29 @@ sub printhelp
 {
     my $scriptname = shift;
 
-    print $scriptname . " listupdates <repository> [--forbidden] [--allowed]\n";
-    print $scriptname . " forbid      <repository> [--patch <patch> ... | --category <category>]\n";
-    print $scriptname . " allow       <repository> [--patch <patch> ... | --category <category>]\n";
-    print $scriptname . " createrepo  <repository> --testing|--production [--nohardlink]\n";
+    print $scriptname . " listupdates <repository>\n";
+    print "    [--forbidden] [--allowed]\n";
+    print "\n";
+    print $scriptname . " forbid <repository>\n";
+    print "    [--patch <patch> ... | --category <category>]\n";
+    print "\n";
+    print $scriptname . " allow <repository>\n";
+    print "    [--patch <patch> ... | --category <category>]\n";
+    print "\n";
+    print $scriptname . " createrepo <repository>\n";
+    print "    --testing|--production [--nohardlink]\n";
+    print "\n";
+    print $scriptname . " --help | -h\n";
     print "\n";
     print __("Repository can be specified using its name and target or ID\n");
     print __("from smt-repos output.\n");
     print "\n";
     print __("Options:\n");
-    print "--testing -t            " . __("Generate testing repository with selected updates.\n");
-    print "--production -p         " . __("Generate production repository with selected updates.\n");
+    print "--testing          (-t) " . __("Generate testing repository with selected updates.\n");
+    print "--production       (-p) " . __("Generate production repository with selected updates.\n");
+    print "--patch <name-ver>      " . __("Specify patch to forbid or allow using name and version.\n");
+    print "--category <category>   " . __("Specify patch category to forbid or allow.\n");
+    print "                        " . __("Choose one of: recommended, security, optional.\n");
     #print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     #print "                        " . __("for them\n");
     #print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
@@ -78,11 +90,11 @@ sub printhelp
     #print "--fromlocalsmt          " . __("Mirror from the local running SMT server. This options requires the --directory\n");
     #print "                        " . __("option being set. The resulting directory can  e.g later be imported to another server\n");
     #print "                        " . __("using smt-mirror --fromdir\n");
-    print "--nohardlink            " . __("If a file already exists on the local harddisk do not link it into the\n");
-    print "                        " . __("mirrored repository, but copy it.\n");
-    print "--debug -d              " . __("Enable debug mode.\n");
-    print "--verboselevel -v level " . __("Set the level of verbosity.\n");
-    print "--logfile -L file       " . __("Log to specified file.\n");
+    print "--nohardlink            " . __("If a file already exists on local filesystem, do not\n");
+    print "                        " . __("link it into the mirrored repository. Copy it instead.\n");
+    print "--debug            (-d) " . __("Enable debug mode.\n");
+    print "--verboselevel     (-v) " . __("Set the level of verbosity.\n");
+    print "--logfile <file>   (-L) " . __("Log to specified file.\n");
 }
 
 if ($help)
