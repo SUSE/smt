@@ -1,0 +1,7 @@
+
+testcases for smt-report
+
+$> cat *.sql | mysql -usmt -p smt
+Password:...
+$> smt-report --nonccsync [--local|--ncc]
+
