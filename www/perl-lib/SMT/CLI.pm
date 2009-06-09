@@ -1087,7 +1087,7 @@ sub productSubscriptionReport
         $subhash->{$product_class}->{VMCOUNT}           = 0;
         $subhash->{$product_class}->{MACHINES_LEFT}     = 0;
     }
-    $statement = "select PRODUCT_CLASS, SUM(NODECOUNT) as NODECOUNT_ACTIVE, MIN(SUBENDDATE) as MINDATE from Subscriptions where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL) group by PRODUCT_CLASS;";
+    $statement = "select PRODUCT_CLASS, SUM(NODECOUNT) as NODECOUNT_ACTIVE, MIN(NODECOUNT) = -1 as UNLIMITED_ACTIVE, MIN(SUBENDDATE) as MINDATE from Subscriptions where SUBSTATUS = 'ACTIVE' and (SUBENDDATE > ? or SUBENDDATE IS NULL) group by PRODUCT_CLASS;";
     $sth = $dbh->prepare($statement);
     $sth->bind_param(1, $nowP30day, SQL_TIMESTAMP);
     $sth->execute;
@@ -1099,9 +1099,10 @@ sub productSubscriptionReport
     {
         $subhash->{$node->{PRODUCT_CLASS}}->{NODECOUNT_ACTIVE} = int($node->{NODECOUNT_ACTIVE});
         $subhash->{$node->{PRODUCT_CLASS}}->{MINDATE_ACTIVE} = ((defined $node->{MINDATE})?"$node->{MINDATE}":"never");
+        $subhash->{$node->{PRODUCT_CLASS}}->{UNLIMITED_ACTIVE} = $node->{UNLIMITED_ACTIVE};
     }
     
-    $statement  = "select PRODUCT_CLASS, SUM(NODECOUNT) as NODECOUNT_EXPSOON, MIN(SUBENDDATE) as MINDATE ";
+    $statement  = "select PRODUCT_CLASS, SUM(NODECOUNT) as NODECOUNT_EXPSOON, MIN(NODECOUNT) = -1 as UNLIMITED_EXPSOON, MIN(SUBENDDATE) as MINDATE ";
     $statement .= "from Subscriptions where SUBSTATUS = 'ACTIVE' and SUBENDDATE <= ? and SUBENDDATE > ?";
     $statement .= "group by PRODUCT_CLASS;";
     $sth = $dbh->prepare($statement);
@@ -1116,6 +1117,7 @@ sub productSubscriptionReport
     {
         $subhash->{$node->{PRODUCT_CLASS}}->{NODECOUNT_EXPSOON} = int($node->{NODECOUNT_EXPSOON});
         $subhash->{$node->{PRODUCT_CLASS}}->{MINDATE_EXPSOON} = ((defined $node->{MINDATE})?"$node->{MINDATE}":"never");
+        $subhash->{$node->{PRODUCT_CLASS}}->{UNLIMITED_EXPSOON} = $node->{UNLIMITED_EXPSOON};
     }
 
     $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID";
@@ -1180,7 +1182,7 @@ sub productSubscriptionReport
         
         if(exists $calchash->{$subprodclass} && $calchash->{$subprodclass}->{MACHINES_LEFT} > 0 &&
            ( $subhash->{$subprodclass}->{ASSIGNEDMACHINES} < ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) ||
-             $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1 || $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1)
+             $subhash->{$subprodclass}->{UNLIMITED_ACTIVE} || $subhash->{$subprodclass}->{UNLIMITED_EXPSOON} )
           )
         {
             # we have not assigned machines and the subscription has free nodecounts
@@ -1188,8 +1190,8 @@ sub productSubscriptionReport
             my $free = ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) - $subhash->{$subprodclass}->{ASSIGNEDMACHINES};
             
             if( $free >= $calchash->{$subprodclass}->{MACHINES_LEFT} || 
-                $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1  ||
-                $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1 )
+                $subhash->{$subprodclass}->{UNLIMITED_ACTIVE}  ||
+                $subhash->{$subprodclass}->{UNLIMITED_EXPSOON} )
             {
                 # we have more (or equal) free subscriptions left then registered maschines to assign
                 # => we can assign all machines to this subscription
@@ -1224,14 +1226,16 @@ sub productSubscriptionReport
         {
             if(exists $calchash->{$pc} && $calchash->{$pc}->{MACHINES_LEFT} > 0 &&
                ( $subhash->{$subprodclass}->{ASSIGNEDMACHINES} < ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) ||
-                 $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1 || $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1)
+                 $subhash->{$subprodclass}->{UNLIMITED_ACTIVE} || $subhash->{$subprodclass}->{UNLIMITED_EXPSOON} )
               )
             {
                 # we have not assigned machines and the subscription has free nodecounts
             
                 my $free = ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) - $subhash->{$subprodclass}->{ASSIGNEDMACHINES};
             
-                if( $free >= $calchash->{$pc}->{MACHINES_LEFT} || $subhash->{$subprodclass}->{NODECOUNT_ACTIVE} == -1 || $subhash->{$subprodclass}->{NODECOUNT_EXPSOON} == -1 )
+                if( $free >= $calchash->{$pc}->{MACHINES_LEFT} || 
+                    $subhash->{$subprodclass}->{UNLIMITED_ACTIVE} || 
+                    $subhash->{$subprodclass}->{UNLIMITED_EXPSOON} )
                 {
                     # we have more (or equal) free subscriptions left then registered maschines to assign
                     # => we can assign all machines to this subscription
@@ -1345,7 +1349,7 @@ sub productSubscriptionReport
 	# skip subscription with a nodecount of 0
 	next if($subhash->{$pc}->{NODECOUNT_ACTIVE} == 0);
 
-        if( $subhash->{$pc}->{NODECOUNT_ACTIVE} == -1 || 
+        if( $subhash->{$pc}->{UNLIMITED_ACTIVE} || 
             $subhash->{$pc}->{NODECOUNT_ACTIVE} >= $subhash->{$pc}->{ASSIGNEDMACHINES} )
         {
             # we can assign all machines to this node
@@ -1357,7 +1361,7 @@ sub productSubscriptionReport
         }
 
         push @AVALUES, [ $subnamesByProductClass->{$pc},
-                         (($subhash->{$pc}->{NODECOUNT_ACTIVE} == -1)?"unlimited":$subhash->{$pc}->{NODECOUNT_ACTIVE}),
+                         (($subhash->{$pc}->{UNLIMITED_ACTIVE})?"unlimited":$subhash->{$pc}->{NODECOUNT_ACTIVE}),
                          ($subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE} + $subhash->{$pc}->{MACHINES_LEFT}),
                          $subhash->{$pc}->{MINDATE_ACTIVE}
                        ];
@@ -1393,7 +1397,7 @@ sub productSubscriptionReport
 	# skip subscription with a nodecount of 0
 	next if($subhash->{$pc}->{NODECOUNT_EXPSOON} == 0);
 
-        if( $subhash->{$pc}->{NODECOUNT_EXPSOON} == -1 || 
+        if( $subhash->{$pc}->{UNLIMITED_EXPSOON} || 
             $subhash->{$pc}->{NODECOUNT_EXPSOON} >= ($subhash->{$pc}->{ASSIGNEDMACHINES} - $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE}) )
         {
             # we can assign all machines to this node
@@ -1407,7 +1411,7 @@ sub productSubscriptionReport
         next if($subhash->{$pc}->{NODECOUNT_EXPSOON} == 0 && $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON} == 0);
 
         push @SVALUES, [ $subnamesByProductClass->{$pc},
-                         ($subhash->{$pc}->{NODECOUNT_EXPSOON}==-1)?"unlimited":$subhash->{$pc}->{NODECOUNT_EXPSOON},
+                         ($subhash->{$pc}->{UNLIMITED_EXPSOON})?"unlimited":$subhash->{$pc}->{NODECOUNT_EXPSOON},
                          $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON},
                          $subhash->{$pc}->{MINDATE_EXPSOON}
                       ];
@@ -1525,8 +1529,8 @@ sub productSubscriptionReport
 
         push @SUMVALUES, [$subnamesByProductClass->{$product_class},
                           $subhash->{$product_class}->{ASSIGNEDMACHINES} + $subhash->{$product_class}->{MACHINES_LEFT},
-                          ($subhash->{$product_class}->{NODECOUNT_ACTIVE}==-1)?"unlimited":$subhash->{$product_class}->{NODECOUNT_ACTIVE},
-                          ($subhash->{$product_class}->{NODECOUNT_EXPSOON}==-1)?"unlimited":$subhash->{$product_class}->{NODECOUNT_EXPSOON},
+                          ($subhash->{$product_class}->{UNLIMITED_ACTIVE})?"unlimited":$subhash->{$product_class}->{NODECOUNT_ACTIVE},
+                          ($subhash->{$product_class}->{UNLIMITED_EXPSOON})?"unlimited":$subhash->{$product_class}->{NODECOUNT_EXPSOON},
                           $subhash->{$product_class}->{MACHINES_LEFT}];
 
         if($subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON} == 1)
