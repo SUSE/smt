@@ -523,8 +523,10 @@ sub printLog
     my $vblevel  = shift;
     my $category = shift || 0;
     my $message  = shift || '';
-    my $doprint  = shift || 1;
-    my $dolog    = shift || 1;
+    my $doprint  = shift;
+    $doprint = 1 if (not defined $doprint);
+    my $dolog    = shift;
+    $dolog = 1 if (not defined $dolog);
 
     return if( !($vblevel & $category) );
     $category = ($vblevel & $category);
