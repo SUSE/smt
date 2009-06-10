@@ -669,7 +669,7 @@ sub modified
         };
         if($@)
         {
-            printLog($self->{LOG}, $self->vblevel(), "warn", "head request failed: $@") if(!$doNotLog);
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "head request failed: $@") if(!$doNotLog);
             return undef;
         }
 
