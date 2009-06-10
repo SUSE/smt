@@ -363,12 +363,10 @@ sub stagingAllowed($$$)
             -d $absrepopath &&
             -e $absrepopath.'/repodata/updateinfo.xml.gz');
     }
-    else
-    {
-        printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
-            "stagingAllowed(): updateinfo.xml.gz not found in local" .
-            " repo copies, will check remote URI.");
-    }
+
+    printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
+        "stagingAllowed(): updateinfo.xml.gz not found in local" .
+        " repo copies, will check remote URI...");
 
     # if local repo dirs (production or full) do not exist or can't be
     # determined, check the remote repo URL
@@ -378,7 +376,9 @@ sub stagingAllowed($$$)
     {
         #return 1 if TODO
         return 0;
-    }   
+    }
+
+    printLog($self->{LOG}, VBLEVEL, LOG_DEBUG, "stagingAllowed(): no luck");
 
     return 0;
 }
