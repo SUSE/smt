@@ -4,6 +4,7 @@ Wed Jun 10 15:14:45 CEST 2009 - mc@suse.de
 - do not append queryparameter to zypp or yum URLs. 
   SLES10 and RES do not know them (bnc#511519).
 - fix invalid parameter (bnc#511289)
+- For y/n questions expect <enter> to finish the input (bnc#511496)
 
 -------------------------------------------------------------------
 Tue Jun  9 14:50:46 CEST 2009 - mc@suse.de
