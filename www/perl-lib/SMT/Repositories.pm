@@ -348,27 +348,29 @@ sub stagingAllowed($$$)
     }
 
     my $relrepopath = $repo->{'LOCALPATH'};
-    
+
     if (defined $relrepopath && $relrepopath)
     {
-        my $absrepopath = SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
-    
-        if (-d $absrepopath)
-        {
-            return 1 if (-e $absrepopath.'/repodata/updateinfo.xml.gz');
-            return 0;
-        }
-        
-        $absrepopath = SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
-    
-        if (-d $absrepopath)
-        {
-            return 1 if (-e $absrepopath.'/repodata/updateinfo.xml.gz');
-            return 0;
-        }
+        my $absrepopath =
+            SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
+        return 1 if (
+            -d $absrepopath &&
+            -e $absrepopath.'/repodata/updateinfo.xml.gz');
+
+        $absrepopath =
+            SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
+        return 1 if (
+            -d $absrepopath &&
+            -e $absrepopath.'/repodata/updateinfo.xml.gz');
+    }
+    else
+    {
+        printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
+            "stagingAllowed(): updateinfo.xml.gz not found in local" .
+            " repo copies, will check remote URI.");
     }
 
-    # if local repo dirs (production nor full) do not exist or can't be
+    # if local repo dirs (production or full) do not exist or can't be
     # determined, check the remote repo URL
 
     my $url = $repo->{'EXTURL'};
@@ -377,8 +379,6 @@ sub stagingAllowed($$$)
         #return 1 if TODO
         return 0;
     }   
-
-    $self->newErrorMessage("Could not get the local path nor remote URL for repository '$repository'.");
 
     return 0;
 }
