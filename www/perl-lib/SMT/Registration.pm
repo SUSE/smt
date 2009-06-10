@@ -925,7 +925,11 @@ sub buildZmdConfig
             $catalogURL = "$LocalNUUrl/repo/$namespace/".$catalogs->{$cat}->{LOCALPATH};
             $catalogName = $catalogs->{$cat}->{NAME}.":$namespace";
         }
-        $catalogURL .= "?credentials=NCCcredentials";
+        #
+        # this does not work
+        # NCCcredentials are not known in SLE10 and not in RES
+        #
+        #$catalogURL .= "?credentials=NCCcredentials";
         
         $writer->startTag("service", 
                           "id"          => $catalogName,
