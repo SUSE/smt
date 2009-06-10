@@ -1622,8 +1622,10 @@ Fingerprint: %3"), key_id, mergestring (keys[0,"uid"]:[],"\n"), keys[0,"fingerpr
 Enter the key passphrase and press OK,
 otherwise press Cancel to skip the signing procedure."), key_description))),
 		`VSpacing (1),
-		`Password (`id (`pass1), _("Key &Passphrase")),
-		`Password (`id (`pass2), _("&Once Again")),
+		`HSquash (`MinWidth (25, `VBox (
+		    `Password (`id (`pass1), `opt(`hstretch), _("Key &Passphrase")),
+		    `Password (`id (`pass2), `opt(`hstretch), _("&Once Again"))
+		))),
 		`ButtonBox (
 		    `PushButton (`id (`ok), `opt (`okButton, `default), Label::OKButton()),
 		    `PushButton (`id (`cancel), `opt (`cancelButton), Label::CancelButton())

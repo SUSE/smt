@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jun 10 16:15:14 CEST 2009 - locilka@suse.cz
+
+- Better 'Enter passphrase' UI layout.
+
+-------------------------------------------------------------------
 Tue Jun  9 16:15:14 CEST 2009 - locilka@suse.cz
 
 - Fixed default sorting of tables and combo boxes (bnc #511256).
