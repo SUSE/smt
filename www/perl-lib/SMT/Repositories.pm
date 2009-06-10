@@ -6,6 +6,17 @@ use warnings;
 
 use SMT::Utils;
 use SMT::Mirror::Utils;
+use SMT::Mirror::Job;        # for stagingAllowed()
+
+# TODO seems we have a mess in logging and error reporting:
+# we should use
+# - newErrorMessage() to set __(translated) message to show to user
+#   * does this module have anything interesting to say to the user? 
+# - printLog to print and/or log untranslated message
+#   * or even better, we should not print anything in this module
+#     (use printLog with doprint = 0 parameter), the front-end code (UI) should
+#   * OR the verbosity level should be adjustable in new() and proper level
+#     should be used
 
 =head1 NAME
 
@@ -334,51 +345,71 @@ Whether staging/filtering can be enabled for given repository.
 sub stagingAllowed($$$)
 {
     my ($self, $repository, $basepath) = @_;
-    
-    if (not defined $repository || not $repository || not defined $basepath || not $basepath)
+
+    if (not
+        defined $repository && $repository && defined $basepath && $basepath)
     {
-        $self->newErrorMessage ("RepositoryID and local base path must be defined.");
-        return 0;
+        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+            "Repository ID or local base path parameter is not defined.", 0);
+        return undef;
     }
 
     my $repo = $self->getRepository($repository);
-    if (not defined $repo) {
-	$self->newErrorMessage ('Cannot get repository data for '.$repository);
+    if (not defined $repo)
+    {
+        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+            'Cannot get repository data for repository ' . $repository, 0);
 	return undef;
     }
 
     my $relrepopath = $repo->{'LOCALPATH'};
-
-    if (defined $relrepopath && $relrepopath)
+    if (not defined $relrepopath && $relrepopath)
     {
-        my $absrepopath =
-            SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
-        return 1 if (
-            -d $absrepopath &&
-            -e $absrepopath.'/repodata/updateinfo.xml.gz');
-
-        $absrepopath =
-            SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
-        return 1 if (
-            -d $absrepopath &&
-            -e $absrepopath.'/repodata/updateinfo.xml.gz');
+        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+            'LOCALPATH is not defined for repository '. $repo->{'NAME'} .
+            ' ID ' . $repository, 0);
+        return undef;
     }
+
+    my $absrepopath =
+        SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
+    return 1 if (
+        -d $absrepopath &&
+        -e $absrepopath.'/repodata/updateinfo.xml.gz');
+
+    $absrepopath =
+        SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
+    return 1 if (
+        -d $absrepopath &&
+        -e $absrepopath.'/repodata/updateinfo.xml.gz');
 
     printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
         "stagingAllowed(): updateinfo.xml.gz not found in local" .
-        " repo copies, will check remote URI...");
+        " repo copies, will check remote URI...", 0);
 
     # if local repo dirs (production or full) do not exist or can't be
     # determined, check the remote repo URL
 
     my $url = $repo->{'EXTURL'};
-    if (defined $relrepopath && $relrepopath)
+    if (defined $url && $url)
     {
-        #return 1 if TODO
-        return 0;
-    }
+        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
 
-    printLog($self->{LOG}, VBLEVEL, LOG_DEBUG, "stagingAllowed(): no luck");
+        my $job = SMT::Mirror::Job->new();
+        $job->uri($url);
+        $job->localBasePath("$tempdir");
+        $job->localRepoPath('');
+        $job->localFileLocation('repodata/updateinfo.xml.gz');
+
+        return 1 if (defined $job->modified());
+    }
+    else
+    {
+        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+            'EXTURL is not defined for repository '. $repo->{'NAME'} .
+            ' ID ' . $repository, 0);
+        return undef;
+    }
 
     return 0;
 }

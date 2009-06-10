@@ -263,10 +263,12 @@ else
 # check if we can do staging for this repo
 
 my $canstage = $rh->stagingAllowed($repoid, $cfg->val("LOCAL", "MirrorTo"));
-my $error = $rh->getAndClearErrorMessage();
-if ($error)
+if (not defined $canstage)
 {
-    print $error . "\n";
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+        sprintf __("Cannot determine whether staging is allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
+    print __("See the log for more details.\n");
+    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
 }
 elsif (!$canstage)
 {
@@ -366,7 +368,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         }
         else
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Invalid category '$category'.");
+            SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Invalid category '$category'.", 0);
             print sprintf (__("Invalid category '%s'."), $category) . "\n";
             print sprintf (__("See '%s' for the list of known categories."), 'man smt-staging') . "\n";
             SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
