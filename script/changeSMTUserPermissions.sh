@@ -147,8 +147,7 @@ for dir in ${SMT_DIRS[@]}; do
         continue
     else
         if [ $YES -ne 1 ]; then
-            read -p " Execute? [y/n] " -n 1 YN
-            echo
+            read -p " Execute? [y/n] " YN
             if [ "$YN" != "Y" -a "$YN" != "y" ]; then
                 echo "Skipped."
                 continue
@@ -167,8 +166,7 @@ for file in ${SMT_ROOT_FILES[@]}; do
         continue
     else
         if [ $YES -ne 1 ]; then
-            read -p " Execute? [y/n] " -n 1 YN
-            echo
+            read -p " Execute? [y/n] " YN
             if [ "$YN" != "Y" -a "$YN" != "y" ]; then
                 echo "Skipped."
                 continue
@@ -191,8 +189,7 @@ if ! `$SU -c "$CAT $NCC_CREDENTIAL >/dev/null 2>&1" -m $USER`; then
         HAVEPERM=1
     else
         if [ $YES -ne 1 ]; then
-            read -p " Execute? [y/n] " -n 1 YN
-            echo
+            read -p " Execute? [y/n] " YN
             if [ "$YN" != "Y" -a "$YN" != "y" ]; then
                 echo "Skipped."
                 SKIP=1
@@ -216,8 +213,7 @@ if ! `$SU -c "$CAT $NCC_CREDENTIAL >/dev/null 2>&1" -m $USER`; then
             echo
         else
             if [ $YES -ne 1 ]; then
-                read -p " Execute? [y/n] " -n 1 YN
-                echo
+                read -p " Execute? [y/n] " YN
                 if [ "$YN" != "Y" -a "$YN" != "y" ]; then
                     echo "Skipped."
                     SKIP=1

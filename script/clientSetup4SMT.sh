@@ -142,9 +142,8 @@ fi
 
 $OPENSSL x509 -in $TEMPFILE -text -noout
 
-read -p "Do you accept this certificate? [y/n] " -n 1 YN
+read -p "Do you accept this certificate? [y/n] " YN
 
-echo "";
 if [ "$YN" != "Y" -a "$YN" != "y" ]; then
 	echo "Abort.";
 	exit 1;
@@ -219,8 +218,7 @@ for key in `ls $TMPDIR/*.key 2>/dev/null`; do
 
     $GPG --no-default-keyring --no-greeting --no-permission-warning --homedir $TMPDIR/.gnupg --list-public-keys --with-fingerprint
 
-    read -p "Trust and import this key? [y/n] " -n 1 YN
-    echo "";
+    read -p "Trust and import this key? [y/n] " YN
     rm -rf $TMPDIR/.gnupg/
     if [ "$YN" != "Y" -a "$YN" != "y" ]; then
         continue ;
@@ -233,9 +231,8 @@ rm -rf $TMPDIR/
 
 echo "Client setup finished."
 
-read -p "Start the registration now? [y/n] " -n 1 YN
+read -p "Start the registration now? [y/n] " YN
 
-echo "";
 if [ "$YN" != "Y" -a "$YN" != "y" ]; then
 	exit 0;
 fi
