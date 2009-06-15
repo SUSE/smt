@@ -44,20 +44,20 @@ my $mailtempfile = undef;
 my $exitcode = 0;
 
 use Getopt::Long;
-&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
-&Getopt::Long::GetOptions(
-                          'fromdir=s'   => \$fromdir,
-                          'todir=s'     => \$todir,
-                          'createdbreplacementfile=s' => \$createdbreplfile,
-                          "logfile|L=s" => \$logfile,
-                          'debug|d'     => \$debug,
-                          "verboselevel|v=i" => \$vblevel,
-                          "mail|m"      => \$mail,
-                          "export=s"    => \$exportdir,
-                          'help|h'      => \$help
-                         );
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = Getopt::Long::GetOptions(
+                                      'fromdir=s'   => \$fromdir,
+                                      'todir=s'     => \$todir,
+                                      'createdbreplacementfile=s' => \$createdbreplfile,
+                                      "logfile|L=s" => \$logfile,
+                                      'debug|d'     => \$debug,
+                                      "verboselevel|v=i" => \$vblevel,
+                                      "mail|m"      => \$mail,
+                                      "export=s"    => \$exportdir,
+                                      'help|h'      => \$help
+                                     );
 
-if ( defined $help and ( $help == 1 ) )
+if ( (defined $help && $help == 1 ) || !$optres )
 {
     print basename($0) . " : " . __("Get data from NCC and update the local database.\n\n");
     print __("Usage:\n");

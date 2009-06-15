@@ -22,7 +22,7 @@ if(!SMT::Utils::dropPrivileges())
     exit 1;
 }
 
-my $help;
+my $help = 0;
 
 my @productids = ();
 my $catalogid = "";
@@ -32,17 +32,17 @@ my $exturl = "";
 my @delete = ();
 
 use Getopt::Long;
-&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
-&Getopt::Long::GetOptions(
-                          'productid=i'   => \@productids,
-                          'name=s'        => \$name,
-                          'description=s' => \$description,
-                          'exturl=s'      => \$exturl,
-                          'delete=s'      => \@delete,
-                          'help|h'        => \$help
-                         );
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = Getopt::Long::GetOptions(
+                                      'productid=i'   => \@productids,
+                                      'name=s'        => \$name,
+                                      'description=s' => \$description,
+                                      'exturl=s'      => \$exturl,
+                                      'delete=s'      => \@delete,
+                                      'help|h'        => \$help
+                                     );
 
-if ( defined $help and ( $help == 1 ) )
+if ( $help || !$optres )
 {
     print basename($0) . __(" : setup a custom catalog\n");
     print "    --productid arg     " . __("Product id this catalog belongs to.\n");

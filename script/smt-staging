@@ -37,22 +37,22 @@ my $LocalBasePath = ""; # TODO what's this about
 my @patches = ();
 my $category = undef;
 
-my $options = GetOptions("testing|t"    => \$gentest,
-                         "production|p" => \$genprod,
-                         "nohardlink"   => \$nohardlink,
-                         "directory=s"  => \$LocalBasePath,
-                         "patch=s"      => \@patches,
-                         "category=s"   => \$category,
-
-                         "fromdir=s"    => \$FromLocalBasePath,
-                         "fromlocalsmt" => \$fromlocalsmt,
-                         "dbreplfile=s" => \$dbreplfile,
-
-                         "debug|d"      => \$debug,
-                         "verboselevel|v=i" => \$vblevel,
-                         "logfile|L=s"  => \$logfile,
-                         "help|h"       => \$help,
-                        );
+my $optres = GetOptions("testing|t"    => \$gentest,
+                        "production|p" => \$genprod,
+                        "nohardlink"   => \$nohardlink,
+                        "directory=s"  => \$LocalBasePath,
+                        "patch=s"      => \@patches,
+                        "category=s"   => \$category,
+                        
+                        "fromdir=s"    => \$FromLocalBasePath,
+                        "fromlocalsmt" => \$fromlocalsmt,
+                        "dbreplfile=s" => \$dbreplfile,
+                        
+                        "debug|d"      => \$debug,
+                        "verboselevel|v=i" => \$vblevel,
+                        "logfile|L=s"  => \$logfile,
+                        "help|h"       => \$help,
+                       );
 
 sub printhelp
 {
@@ -97,7 +97,7 @@ sub printhelp
     print "--logfile <file>   (-L) " . __("Log to specified file.\n");
 }
 
-if ($help)
+if ($help || !$optres)
 {
     printhelp(basename($0));
     exit 0;    

@@ -35,14 +35,14 @@ my $command	= $ARGV[0] || '';
 my $hostname	= undef;
 my $showdetails	= 0;
 
-Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
-my $options = Getopt::Long::GetOptions
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = Getopt::Long::GetOptions
 (
-    'help|h'		=> \$help,
-    'debug|d'		=> \$debug,
-    'logfile|L=s'	=> \$logfile,
-    'hostname|n=s'	=> \$hostname,
-    'show-details|s'	=> \$showdetails,
+ 'help|h'		=> \$help,
+ 'debug|d'		=> \$debug,
+ 'logfile|L=s'	=> \$logfile,
+ 'hostname|n=s'	=> \$hostname,
+ 'show-details|s'	=> \$showdetails,
 );
 
 # No command defined, but some arguments are, using fallback
@@ -51,7 +51,7 @@ if (defined $command && $command =~ /^-/)
     $command = '';
 }
 
-if($help)
+if($help || !$optres)
 {
     print basename($0). " status [--hostname hostname]\n";
     print "\n";

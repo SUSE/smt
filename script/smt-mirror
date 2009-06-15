@@ -77,7 +77,8 @@ my $nohardlink = 0;
 
 my $repository;
 
-my $result = GetOptions ("debug|d"      => \$debug,
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = GetOptions ("debug|d"      => \$debug,
                          "verboselevel|v=i" => \$vblevel,
                          "cleanup|c"    => \$clean,
                          "hardlink=i"   => \$hardlink,
@@ -96,7 +97,7 @@ my $result = GetOptions ("debug|d"      => \$debug,
                         );
 
 
-if($help)
+if($help || !$optres)
 {
     print basename($0) . " [--directory path] [--deepverify] [--testrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]\n";
     print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";

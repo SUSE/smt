@@ -31,13 +31,13 @@ my $logfile = "/dev/null";
 
 my @guids = ();
 
-my $result = GetOptions ("guid|g=s"    => \@guids,
+my $optres = GetOptions ("guid|g=s"    => \@guids,
                          "logfile|L=s" => \$logfile,
                          "debug|d"     => \$debug,
                          "help|h"      => \$help
                         );
 
-if($help)
+if($help || !$optres)
 {
     print basename($0) . __(" [OPTIONS]\n");
     print __("Delete one or more registration from NCC and SMT\n");

@@ -453,26 +453,26 @@ sub getSeparateReports($)
 
 ### MAIN #####################################################################
 
-&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
-&Getopt::Long::GetOptions(
-                          'local'      => \$localreport,
-                          'ncc'        => \$nccreport,
-                          'nonccsync'  => \$nonccsync,
-                          'debug|d'    => \$debug,
-                          "verboselevel|v=i" => \$vblevel,
-                          'help|h'     => \$help,
-                          'mail|m'     => \$mail,
-                          'attach|a'   => \$attach,
-                          'quiet|q'    => \$quiet,
-                          'csv|c'      => \$csv,
-                          'pdf|p'      => \$pdf,
-                          'xml|x'      => \$xml,
-                          'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
-                          'logfile|L=s'=> \$logfile,
-                          'dailycheck' => \$dailycheck
-                         );
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = Getopt::Long::GetOptions(
+                                      'local'      => \$localreport,
+                                      'ncc'        => \$nccreport,
+                                      'nonccsync'  => \$nonccsync,
+                                      'debug|d'    => \$debug,
+                                      "verboselevel|v=i" => \$vblevel,
+                                      'help|h'     => \$help,
+                                      'mail|m'     => \$mail,
+                                      'attach|a'   => \$attach,
+                                      'quiet|q'    => \$quiet,
+                                      'csv|c'      => \$csv,
+                                      'pdf|p'      => \$pdf,
+                                      'xml|x'      => \$xml,
+                                      'file|F:s'   => \$file,      # file name is optional; if missing, it will use a default name 
+                                      'logfile|L=s'=> \$logfile,
+                                      'dailycheck' => \$dailycheck
+                                     );
 
-if ( defined $help && ( $help == 1 ) )
+if ( (defined $help && $help == 1 ) || !$optres )
 {
     printUsage();  
     exit 0;

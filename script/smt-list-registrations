@@ -28,14 +28,14 @@ my $help;
 my $format;
 
 use Getopt::Long;
-&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev');
-&Getopt::Long::GetOptions(
-         'verbose|v' => \$verbose,
-         'help|h' => \$help,
-         'format|f=s' => \$format,
-);
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = Getopt::Long::GetOptions(
+                                      'verbose|v' => \$verbose,
+                                      'help|h' => \$help,
+                                      'format|f=s' => \$format,
+                                     );
 
-if ( defined $help and ( $help == 1 ) )
+if ( (defined $help && $help == 1 ) || !$optres )
 {
   print basename($0) . " : " . __("list active registrations\n");
   print "    --help       (-h) : " . __("show this help\n");

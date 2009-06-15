@@ -42,12 +42,13 @@ my $help     = 0;
 my $logfile = "/dev/null";
 
 
-my $result = GetOptions ("debug|d"     => \$debug,
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = GetOptions ("debug|d"     => \$debug,
                          "verboselevel|v=i" => \$vblevel,
                          "logfile|L=s" => \$logfile,
                          "help|h"      => \$help
                         );
-if($help)
+if($help || !$optres)
 {
     print basename($0) . " [--debug] [--logfile <file>]";
     print "\n";
@@ -85,7 +86,7 @@ eval {
 if($@)
 {
     SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "$@");
-    SMT::Utils::unLockAndExit( "smt-mirror-sle9", 1, $LOG, $vblevel );
+    SMT::Utils::unLockAndExit( "smt-mirror-sle9", 1, $log, $vblevel );
 }
 
 my $mirrorTo = $cfg->val("LOCAL", "MirrorTo");
@@ -232,7 +233,7 @@ foreach my $sname (@sections)
 }
 
 
-SMT::Utils::unLockAndExit( "smt-mirror-sle9", 0, $LOG, $vblevel );
+SMT::Utils::unLockAndExit( "smt-mirror-sle9", 0, $log, $vblevel );
 
 #
 # Manpage
