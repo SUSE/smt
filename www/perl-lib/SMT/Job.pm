@@ -61,21 +61,10 @@ sub new ($$)
     return $self;
 }
 
-# constructs a job
 #
-# new object:
-#  my $job = Job->new ({ dbh => $dbh, LOG => '/var/log/smt/jobs.log' });
+# creates a new job (for compatibility)
+# please use if possible: readJobFromXML, readJobFromDatabase
 #
-# perl arguments:
-#  $job->newJob ( 'guid3', 42, 'softwarepush',
-#    { 'packages' => [ { 'package' => [ 'xterm', 'yast2', 'firefox' ] } ], 'force' => [ 'true' ] } );
-#
-# xml only:
-#  $job->newJob ( 'guid3', '<job id="42" type="softwarepush"><arguments><force>true</force></arguments></job>' );
-#
-# mixed perl and xml:
-#  $job->newJob ( 'guid3', 42, 'softwarepush', '<arguments><force>true</force></arguments>' );
-
 sub newJob
 {
     my $self = shift;
@@ -128,7 +117,7 @@ sub newJob
 	# retrieve variables
 	$id   	     = $j->{id}           if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
 	$type	     = $j->{type}         if ( defined ( $j->{type} ) );
-	$arguments	     = $j->{arguments}    if ( defined ( $j->{arguments} ) );
+	$arguments   = $j->{arguments}    if ( defined ( $j->{arguments} ) );
 	$exitcode    = $j->{exitcode}     if ( defined ( $j->{exitcode} ) && ( $j->{exitcode} =~ /^[0-9]+$/ ) );
 	$stdout	     = $j->{stdout}       if ( defined ( $j->{stdout} ) );
 	$stderr      = $j->{stderr}       if ( defined ( $j->{stderr} ) );
@@ -142,10 +131,6 @@ sub newJob
 	if ( defined $message ) { $message =~ s/[\"\']//g; }
 	if ( defined $success ) { $success =~ s/[\"\']//g; }
 
-	# check variables
-#	return error( "unable to create job. id unknown or invalid." )        unless defined( $id );
-#	return error( "unable to create job. type unknown or invalid." )      unless defined( $type );
-#	return error( "unable to create job. arguments unknown or invalid." ) unless defined( $arguments );
     }
 
     $self->{id}   = $id;
@@ -160,24 +145,9 @@ sub newJob
     $self->{status} = $status;
 }
 
-
-
-sub imaginaryConstructor	# TODO: change when constructor is cleaned up
-{
-  my $self = shift;
-  my $arg1 = shift || undef;
-  my $arg2 = shift || undef;
-  my $arg3 = shift || undef;
-  my $arg4 = shift || undef;
-  
-  # constructed by jobid, guid
-  if ( defined $arg1 && defined $arg2 && ! defined $arg3)
-  {
-    readJobFromDatabase($self, $arg1, $arg2);
-  }
-}
-
-
+#
+# reads job specified by jobid and guid from database
+#
 sub readJobFromDatabase
 {
   my $self = shift;
@@ -188,6 +158,7 @@ sub readJobFromDatabase
   my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
 
+  #TODO: replace * with attrib names
   my $sql = 'select * from JobQueue '
           . 'where ID      = ' . $self->{'dbh'}->quote($jobid)
           . 'and   GUID_ID = ' . $self->{'dbh'}->quote($guidid);
@@ -202,7 +173,7 @@ sub readJobFromDatabase
 
   $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ); # convert xml to hash
 
-  my @attribs = qw(id parentid name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
 
   foreach my $attrib (@attribs)
   {
@@ -211,6 +182,47 @@ sub readJobFromDatabase
 }
 
 
+sub isValid
+{
+  my $self = shift;
+
+  return (defined $self->{type} );
+}
+
+#
+# read tags from xml and sets job attributes
+#
+sub readJobFromXML
+{
+  my $self = shift || return undef;
+  my $guid = shift || return undef;
+  my $xmldata = shift || return undef;
+
+  return error( "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
+  return error( "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+
+  my $j;
+
+  # parse xml
+  eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
+  return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
+  return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
+
+  my @attribs = qw(id guid parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+
+  foreach my $attrib (@attribs)
+  {
+    $self->{$attrib} = $j->{$attrib}  if ( defined $j->{$attrib} );
+  }
+
+  return error ("guid from xml does not match client's guid.") if ( defined $self->{guid} && $self->{guid} ne $guid );
+
+  $self->{guid} = $guid;
+}
+
+#
+# writes job to database
+#
 sub save
 {
   my $self = shift;
@@ -236,7 +248,7 @@ sub save
   my @sqlvalues = ();
   my @updatesql = ();
  
-  my @attribs = qw(id parentid name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
 
   # TYPE
   push ( @sqlkeys, "TYPE" );
@@ -270,9 +282,15 @@ sub save
   return $self->{id};
 }
 
+
+#
+# returns job in xml
+#
 sub asXML
 {
     my ( $self ) = @_;
+
+    return "<job/>" unless isValid( $self );
 
     my $job =
     {
@@ -294,6 +312,10 @@ sub asXML
 
 
 
+
+## 
+## getters and setters
+##
 
 sub arguments
 {
@@ -332,11 +354,11 @@ sub guid
       return $self->{guid};
 }
 
-sub parentid
+sub parent_id
 {
-      my ( $self, $parentid ) = @_;
-      $self->{parentid} = $parentid if defined( $parentid );
-      return $self->{guid};
+      my ( $self, $parent_id ) = @_;
+      $self->{parent_id} = $parent_id if defined( $parent_id );
+      return $self->{parent_id};
 }
 
 sub name
@@ -512,9 +534,6 @@ sub deleteJobIDCookie()
   my $sql = "delete from JobQueue where ID = '$id' and DESCRIPTION = '$cookie'" ;
   return $self->{dbh}->do($sql);
 }
-
-
-
 
 
 
