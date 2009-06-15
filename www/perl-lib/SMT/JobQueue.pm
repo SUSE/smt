@@ -88,6 +88,46 @@ sub getJob($$$$)
 
 
 ###############################################################################
+# getNextJob
+# returns the next job either in xml format
+# or in hash structure
+# if no guid is passed jobs for all clients are taken
+#
+# args: guid 
+#       xmlformat (default false)
+sub getNextJob($$$)
+{
+  my $self      = shift;
+
+  my $guid      = shift;
+  my $xmlformat = shift || 0;
+
+  return getJob($self, $guid, getNextJobID($self, $guid, 0), $xmlformat );
+}
+
+###############################################################################
+# retrieveNextJob
+# returns the next job either in xml format
+# or in hash structure and stets the retrived date
+# if no guid is passed jobs for all clients are taken
+#
+# args: guid 
+#       xmlformat (default false)
+sub retrieveNextJob($$$)
+{
+  my $self      = shift;
+
+  my $guid      = shift;
+  my $xmlformat = shift || 0;
+
+  return retrieveJob($self, $guid, getNextJobID($self, $guid, 0), $xmlformat );
+}
+
+
+
+
+
+###############################################################################
 # getNextJobID 
 # returns the jobid of the next job either in xml format
 # or in hash structure
