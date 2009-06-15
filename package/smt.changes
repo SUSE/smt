@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jun 15 11:46:19 CEST 2009 - mc@suse.de
+
+- remove unsupported YOU9 mirror definitions 
+  YOU9-Novell-Linux-Desktop, YOU9-Novell-Linux-Desktop-SDK, 
+  YOU9-Novell-Linux-POS, YOU9-Open-Enterprise-Server (bnc#498614)
+
+-------------------------------------------------------------------
 Wed Jun 10 15:14:45 CEST 2009 - mc@suse.de
 
 - do not append queryparameter to zypp or yum URLs. 
