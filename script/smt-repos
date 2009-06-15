@@ -40,9 +40,9 @@ my $optres = &Getopt::Long::GetOptions(
                                        'enable-mirror|e'      => \$enable,
                                        'disable-mirror|d'     => \$disable,
                                        'enable-by-prod|p=s'   => \$enableByProduct,
-                                       'disable-by-prod=s'    => \$disableByProduct,
-                                       'enable-staging'       => \$enableStaging,
-                                       'disable-staging'      => \$disableStaging,
+                                       'disable-by-prod|P=s'  => \$disableByProduct,
+                                       'enable-staging|s'     => \$enableStaging,
+                                       'disable-staging|S'    => \$disableStaging,
                                        'only-mirrorable|m'    => \$mirrorable,
                                        'only-enabled|o'       => \$domirror,
                                        'verbose|v'            => \$verbose,
@@ -62,15 +62,15 @@ if ( (defined $help && $help == 1 ) || (defined $optres && $optres == 0) )
     print "   --enable-by-prod  (-p) arg : " . __("enable repository mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
-    print "   --disable-by-prod      arg : " . __("disable repository mirroring by giving product data\n");
+    print "   --disable-by-prod (-P) arg : " . __("disable repository mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
-    print "   --enable-staging           : " . __("Enable staging for a repository\n");
-    print "   --disable-staging          : " . __("Disable staging for a repository\n");
+    print "   --enable-staging  (-s)     : " . __("Enable staging for a repository\n");
+    print "   --disable-staging (-S)     : " . __("Disable staging for a repository\n");
     print "   --only-mirrorable (-m)     : " . __("only show mirrorable repositories\n");
     print "   --only-enabled    (-o)     : " . __("only show repositories set to be mirrored\n");
     print "   --verbose         (-v)     : " . __("show detailed repository information\n");
-    print "   --help            (-v)     : " . __("show this help\n");
+    print "   --help            (-h)     : " . __("show this help\n");
     exit 0;
 }
 
@@ -355,6 +355,21 @@ Enables repository mirroring by giving product data.
 
 Product[,Version[,Architecture[,Release]]]
 (call smt list-products to get a list of known products)
+
+=item --disable-by-prod -P arg
+
+Disables repository mirroring by giving product data.
+
+Product[,Version[,Architecture[,Release]]]
+(call smt list-products to get a list of known products)
+
+=item --enable-staging -s
+
+Enable staging for a repository.
+
+=item --disable-staging -S
+
+Disable staging for a repository.
 
 =item --only-mirrorable -m
 
