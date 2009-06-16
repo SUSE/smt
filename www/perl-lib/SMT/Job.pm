@@ -10,6 +10,20 @@ use constant
 {
   VBLEVEL     => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
 
+  JOB_STATUS =>
+  {
+      0  =>  'not yet worked on',
+      1  =>  'successful',
+      2  =>  'failed',
+      3  =>  'denied by client',
+
+      'not yet worked on' => 0,
+      'successful' 	  => 1,
+      'failed'            => 2,
+      'denied by client'  => 3,
+  },
+
+
   JOB_TYPE    =>
   {
     # Maps JOB_TYPE ID to JOB_TYPE NAME
@@ -157,8 +171,6 @@ sub readJobFromDatabase
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
   my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
-
-  #TODO: replace * with attrib names
   my $sql = 'select * from JobQueue '
           . 'where ID      = ' . $self->{'dbh'}->quote($jobid)
           . 'and   GUID_ID = ' . $self->{'dbh'}->quote($guidid);
@@ -522,10 +534,6 @@ sub getNextAvailableJobID()
 
   my $cookie = SMT::Utils::getDBTimestamp()." - ".rand(1024);
 
-  # TODO: for cleanup 
-  # TODO: add expires = today + 1day
-  # TODO: add status or type undefined
-
   my $sql1 = 'insert into JobQueue ( DESCRIPTION ) values ("'.$cookie.'")' ;
   $self->{dbh}->do($sql1) || return ( undef, $cookie);
 
@@ -549,6 +557,22 @@ sub deleteJobIDCookie()
 }
 
 
+
+sub resolveJobType
+{
+  my $self   = shift || return undef;
+  my $type   = shift || return undef;
+
+  return JOB_TYPE->{ $type };
+}
+
+sub resolveJobStatus
+{
+  my $self   = shift || return undef;
+  my $status = shift || return undef;
+
+  return JOB_STATUS->{ $status };
+}
 
 
 
