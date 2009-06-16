@@ -473,8 +473,9 @@ sub createSQLStatement($$)
     }
 
  
-    # make sure the ID is in the select statement in any case
+    # make sure the primary key is in the select statement in any case
     push( @select, "ID" ) unless ( in_Array("ID", \@select) );
+    push( @select, "GUID_ID" ) unless ( in_Array("GUID_ID", \@select) );
     # if XML gets exported then switch to lower case attributes
     my @selectExpand = ();
     foreach my $sel (@select)
@@ -524,11 +525,22 @@ sub getJobsInfo_internal($)
     ## NOTE: will only return the generated SQL statement but not evaluate it
     #return $sql;
 
-    my $refKey = $asXML ? 'id':'ID';
-    my $result = $self->{'dbh'}->selectall_hashref($sql, $refKey);
+    my @refKeys = $asXML ? ( 'guid_id', 'id' ) : ( 'GUID_ID', 'ID' );
+    my $result = $self->{'dbh'}->selectall_hashref($sql, \@refKeys );
+
+    my $argArg = $asXML ? 'arguments':'ARGUMENTS';
+
+    foreach my $xguid ( keys %{$result} )
+    {
+	foreach my $xjobid ( keys %{${$result}{$xguid}} )
+	{
+	   eval { ${$result}{$xguid}{$xjobid}{$argArg} = XMLin( ${$result}{$xguid}{$xjobid}{$argArg} , forcearray => 1 ) };
+	}
+    }
 
     if ( $asXML )
     {
+
         if ( keys %{$result} == 1  &&  ${$filter}{'asXML'} eq 'one' )
         {
             my @keys = keys %{$result};
