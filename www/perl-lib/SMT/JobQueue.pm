@@ -314,12 +314,12 @@ sub deleteJob($)
   ' where GUID_ID  = '.$self->{dbh}->quote($guidid).
   ' and ID = '.$self->{dbh}->quote($jobid);
 
-  $self->{dbh}->do($sql) || return undef;
+  my $result = $self->{dbh}->do($sql);
 
-  # if deletion fails with some error, the parentFinished part will be corrected via a cleanup cron script
+  # if parentFinished fails it will be corrected via a cleanup cron script
   $self->parentFinished($guid, $jobid);
 
-  return 1;
+  return $result;
 };
 
 
