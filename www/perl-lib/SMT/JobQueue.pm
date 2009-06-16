@@ -335,6 +335,36 @@ sub deleteJob($)
 
 
 
+#
+# the following api functions are similar to Client's api.
+# 
+# 
+# Query Example: 
+#
+#  getJobsInfo({ 'ID'      => undef,
+#                'STATUS'  => 0,
+#                'TYPE>'   => 1 });
+#
+# The suffix '>' after 'TYPE' indicates to search for values that are greater then 1.
+#
+# Possible suffixes are:
+#  >	greater
+#  <    less
+#  =    equal  (same as no suffix)
+#  !    not equal
+#  ~    like
+#  +    NOT NULL
+#  -    IS NULL
+
+#
+# Possible query keys are:
+#   ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT 
+#   STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED 
+#   PERSISTENT VERBOSE TIMELAG GUID
+#
+# Note: GUID doesn't support suffixes.
+
+
 
 #
 # small internal function to check if a string is in an array
@@ -373,6 +403,11 @@ sub createSQLStatement($$)
     {
       push (@PROPS, $prop.">");
       push (@PROPS, $prop."<");
+      push (@PROPS, $prop."+");
+      push (@PROPS, $prop."-");
+      push (@PROPS, $prop."=");
+      push (@PROPS, $prop."!");
+      push (@PROPS, $prop."~");
     }
 
     my $asXML = ( exists ${$filter}{'asXML'}  &&  defined ${$filter}{'asXML'} ) ? 1 : 0;
@@ -402,20 +437,24 @@ sub createSQLStatement($$)
 	    my $p = $prop;
 	    $p =~ s/\>$//;
 	    $p =~ s/\<$//;
+	    $p =~ s/\+$//;
+	    $p =~ s/\-$//;
+	    $p =~ s/\=$//;
+	    $p =~ s/\!$//;
+	    $p =~ s/\~$//;
             push (@select, "$p" );
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
-		if ( $prop =~ /.*\>/ )
-		{
-                  push( @where, " jq.$p > " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
-		}
-		elsif ( $prop =~ /.*\</ )
-		{
-                  push( @where, " jq.$p < " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
-		}
+		if    ( $prop =~ /.*\>/ ) { push( @where, " jq.$p > " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+		elsif ( $prop =~ /.*\</ ) { push( @where, " jq.$p < " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+		elsif ( $prop =~ /.*\+/ ) { push( @where, " jq.$p IS NOT NULL" ); }
+		elsif ( $prop =~ /.*\-/ )  { push( @where, " jq.$p IS NULL " ); }
+		elsif ( $prop =~ /.*\=/ )  { push( @where, " jq.$p =  " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+		elsif ( $prop =~ /.*\!/ )  { push( @where, " jq.$p <> " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+		elsif ( $prop =~ /.*\~/ )  { push( @where, " jq.$p LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
 		else
 		{
-                  push( @where, " jq.$prop LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
+                  push( @where, " jq.$prop = " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
 		}
             }        
         }
