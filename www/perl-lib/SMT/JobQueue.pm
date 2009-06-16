@@ -534,7 +534,10 @@ sub getJobsInfo_internal($)
     {
 	foreach my $xjobid ( keys %{${$result}{$xguid}} )
 	{
-	   eval { ${$result}{$xguid}{$xjobid}{$argArg} = XMLin( ${$result}{$xguid}{$xjobid}{$argArg} , forcearray => 1 ) };
+	   if ( defined ${$result}{$xguid}{$xjobid}{$argArg} )
+	   {
+	    eval { ${$result}{$xguid}{$xjobid}{$argArg} = XMLin( ${$result}{$xguid}{$xjobid}{$argArg} , forcearray => 1 ) } ;
+	   } 
 	}
     }
 
