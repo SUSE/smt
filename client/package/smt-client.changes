@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jun 16 17:54:55 CEST 2009 - tgoettlicher@suse.de
+
+- cleaned-up package requirements
+- version 0.0.3 
+
+-------------------------------------------------------------------
 Mon May 25 11:54:53 CEST 2009 - tgoettlicher@suse.de
 
 - version 0.0.1 - initial version 
