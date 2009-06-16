@@ -180,31 +180,12 @@ sub getJobList($$)
   my $guid      = shift || return undef;
   my $xmlformat = shift || 0;
 
-  #TODO: retrieve job list from database
-  #TODO: test GUID
+  my $filter = {};
+  ${$filter}{'asXML'} = '' if ($xmlformat);
+  ${$filter}{'selectAll'} = '';
+  ${$filter}{'GUID'} = $guid;
 
-  # just create some test jobs
-  my @joblist = (44);
-  my @jobListCollect = ();
- 
-
-  if ( $xmlformat == 1 )
-  {
-     foreach my $jobid (@joblist)
-     {
-        push( @jobListCollect,  $self->getJob($guid, $jobid, 0) );
-     }
-     my $allJobs = {  'job' => [@jobListCollect]  };
-     return XMLout( $allJobs 
-                    , rootname => "jobs"
-                    # , noattr => 1
-                   , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
-           );
-  }
-  else
-  {
-    return "@joblist";
-  }
+  return $self->getJobsInfo($filter);
 }
 
 
@@ -257,10 +238,9 @@ sub calcNextTargeted
 }
 
 
-sub parentFinished
+sub parentFinished($$)
 {
   my $self      = shift;
-
   my $guid      = shift;	
   my $jobid     = shift; 	#jobid of parent job
  
@@ -315,8 +295,7 @@ sub finishJob($)
     $job->status( 0 );
   }
 
-
-  parentFinished($self, $guid, $job->{id} );
+  $self->parentFinished($guid, $job->{id} );
 
   return $job->save();
 
@@ -328,7 +307,17 @@ sub deleteJob($)
   my $jobid = shift || return undef;
   my $guid = shift || return undef;
 
-  #TODO: delete job from database
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  my $guidid = $client->getClientIDByGUID($guid) || return undef;
+
+  my $sql = 'delete from JobQueue'.
+  ' where GUID_ID  = '.$self->{dbh}->quote($guidid).
+  ' and ID = '.$self->{dbh}->quote($jobid);
+
+  $self->{dbh}->do($sql) || return undef;
+
+  # if deletion fails with some error, the parentFinished part will be corrected via a cleanup cron script
+  $self->parentFinished($guid, $jobid);
 
   return 1;
 };
@@ -424,7 +413,7 @@ sub createSQLStatement($$)
     }
 
     my @select = ();
-    my @PSselect = ();
+    my @JQselect = ();
     my @where = ();
     my $fromstr  = ' JobQueue jq ';
 
@@ -435,14 +424,8 @@ sub createSQLStatement($$)
         if ( exists ${$filter}{$prop} )
         {
 	    my $p = $prop;
-	    $p =~ s/\>$//;
-	    $p =~ s/\<$//;
-	    $p =~ s/\+$//;
-	    $p =~ s/\-$//;
-	    $p =~ s/\=$//;
-	    $p =~ s/\!$//;
-	    $p =~ s/\~$//;
-            push (@select, "$p" );
+	    $p =~ s/[<>+-=!~]+//;
+            push (@JQselect, "$p");
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
 		if    ( $prop =~ /.*\>/ ) { push( @where, " jq.$p > " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
@@ -460,42 +443,38 @@ sub createSQLStatement($$)
         }
     }
 
-    # add query for guid if defined
-    if ( exists ${$filter}{'GUID'} )
-    {
-        $fromstr .= ' LEFT JOIN Clients cl ON ( jq.GUID_ID = cl.ID ) ';
-        push (@select, "cl.GUID" );
+    # make sure all jobs have the GUID of the client
+    # in the database the primaray key of a job is the jobid and the guid_id, but logically its the jobid and the guid
+    ${$filter}{'GUID'} = '' if ( not exists ${$filter}{'GUID'} );
+
+    # add query for guid
+    $fromstr .= ' LEFT JOIN Clients cl ON ( jq.GUID_ID = cl.ID ) ';
+    push (@select, "GUID" );
       
-	if ( defined ${$filter}{'GUID'}  &&  ${$filter}{'GUID'} !~ /^$/ )
-	{
-                push( @where, " cl.GUID LIKE " . $self->{'dbh'}->quote(${$filter}{'GUID'}) . ' ' );
-	}
+    if ( defined ${$filter}{'GUID'}  &&  ${$filter}{'GUID'} !~ /^$/ )
+    {
+        push( @where, " cl.GUID = " . $self->{'dbh'}->quote(${$filter}{'GUID'}) . ' ' );
     }
 
  
     # make sure the primary key is in the select statement in any case
-    push( @select, "ID" ) unless ( in_Array("ID", \@select) );
-    push( @select, "GUID_ID" ) unless ( in_Array("GUID_ID", \@select) );
+    push( @JQselect, "ID" ) unless ( in_Array("ID", \@JQselect) );
+    push( @JQselect, "GUID_ID" ) unless ( in_Array("GUID_ID", \@JQselect) );
     # if XML gets exported then switch to lower case attributes
     my @selectExpand = ();
+
     foreach my $sel (@select)
     {
-	if ( $sel =~ /\./ )
-	{
-	  my $s = $sel;
-	  $s =~ s/^.*\.//;
-          push (@selectExpand,  "  $sel as ".( $asXML ? lc($s):$s ).'  ' );
-	}
-	else
-	{
-          push (@selectExpand,  "  jq.$sel as ".( $asXML ? lc($sel):$sel ).'  ' );
-	}
+        push (@selectExpand,  "  cl.$sel as ".( $asXML ? lc($sel):$sel ).'  ' );
     }
 
     my $selectstr = join(', ', @selectExpand) || return undef;
-    if ( @PSselect > 0 )
+    if ( @JQselect > 0 )
     {
-        $selectstr   .= ' ,  '.join(', ', @PSselect);
+        foreach my $jqsel (@JQselect)
+        {
+            $selectstr   .= " , jq.$jqsel as  ".( $asXML ? lc($jqsel):$jqsel ).'  ';
+        }
     }
 
     $fromstr      = $fromstr || return undef;
