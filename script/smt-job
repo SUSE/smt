@@ -1,0 +1,363 @@
+#!/usr/bin/perl
+
+###############################################################################
+## Copyright (c) 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+###############################################################################
+
+use strict;
+use warnings;
+
+use SMT::CLI;
+use SMT::Utils;
+use SMT::Client;
+use SMT::JobQueue;
+use SMT::Job;
+
+use File::Basename;
+use Locale::gettext ();
+#use UNIVERSAL 'isa';
+use POSIX ();     # Needed for setlocale()
+
+use Data::Dumper;
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+use constant JOB_TYPE    =>
+  {
+    # Maps JOB_TYPE ID to JOB_TYPE NAME
+    1       => 'patchstatus',
+    2       => 'softwarepush',
+    3       => 'update',
+    4       => 'execute',
+    5       => 'reboot',
+    6       => 'configure',
+    7       => 'wait',
+    8       => 'eject',
+
+    # Maps JOB_TYPE NAME to JOB_TYPE ID
+    'patchstatus'   =>      1,
+    'softwarepush'  =>      2,
+    'update'        =>      3,
+    'execute'       =>      4,
+    'reboot'        =>      5,
+    'configure'     =>      6,
+    'wait'          =>      7,
+    'eject'         =>      8,
+  };
+
+#### START LOCAL FUNCTIONS ####
+
+sub getJobTypeID($)
+{
+    my $q = shift || return undef;
+
+    if ( $q =~ /^\d+$/ )
+    {
+        return $q if exists JOB_TYPE->{$q};
+        return undef;
+    }
+    elsif ( exists JOB_TYPE->{$q}  )
+    {
+        return  JOB_TYPE->{$q};
+    }
+
+    return undef;
+}
+
+
+
+#### END LOCAL FUNCTIONS ####
+
+
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR __("Unable to drop privileges. Abort!\n");
+    exit 1;
+}
+
+# connect to database
+my ($cfg, $dbh) = SMT::CLI::init();
+if (! defined $dbh) {
+    print __("Cannot connect to database");
+    exit 3;
+}
+
+
+my ($verbose, $help, $quiet) = undef;
+my ($create, $edit, $delete, $list, $guid, $jobid, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $EXECcommand, $WAITtime, $WAITstatus) = undef;
+
+use Getopt::Long;
+&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev', 'no_ignore_case');
+&Getopt::Long::GetOptions(
+         'help|h' => \$help,
+         'verbose|v' => \$verbose,
+         'quiet|q' => \$quiet,
+         # the four basic modes of smt job
+         'create|c' => \$create,
+         'edit|e' => \$edit,
+         'delete|d' => \$delete,
+         'list|l' => \$list,
+         # job identifier
+         'guid|g=s' => \$guid,
+         'jobid|j=i' => \$jobid,
+         # data fields for create and edit:
+         'type|t=s' => \$type,
+         'name|n=s' => \$name,
+         'description=s' => \$description,
+         'targeted=s' => \$targeted,
+         'expires=s' =>  \$expires,
+         'timelag=s' =>  \$timelag,
+         # general switches
+         'finished|f!' => \$finished,
+         'verbosejob|V!' => \$verbosejob,
+         'persistent!' => \$persistent,
+         'parent=i' => \$parent,
+         # job specific arguments
+         'package|P=s@' => \@SWpackagelist,
+         'forceinstall|F!' => \$SWforce,
+         'exec|X=s' => \$EXECcommand,
+         'waittime=i' => \$WAITtime,
+         'waitstatus=i' => \$WAITstatus
+);
+
+if ( defined $help and ( $help == 1 ) )
+{
+  print basename($0) . " : " . __("list jobs from SMT job queue")."\n";
+  print "   --help       (-h) : " . __("show this help")."\n";
+  print "   --verbose    (-v) : " . __("show detailed job information")."\n";
+  print '  '.__("basic operation modes")."\n";
+  print "   --list       (-l) : " . __("list jobs")."\n";
+  print "   --create     (-c) : " . __("create job")."\n";
+  print "   --edit       (-e) : " . __("edit job")."\n";
+  print "   --delete     (-d) : " . __("delete job")."\n";
+  print '  '.__("search queries")."\n";
+#  print "   --help       (-h) : " . __("show this help\n");
+
+  exit 0;
+}
+
+########################################################################################
+#
+# get and check all passed parameters
+#
+
+my %query = ();
+$query{'GUID'} = $guid if (defined $guid);
+$query{'ID'} = $jobid if (defined $jobid);
+
+my $typeID = getJobTypeID($type);
+if ( defined $type && not defined $typeID )
+{
+    print "Job type unkown.\n";
+    exit 4;
+}
+$query{'TYPE'} = $typeID if (defined $typeID);
+$query{'NAME'} = $name if (defined $name);
+$query{'DESCRIPTION'} = $description if (defined $description);
+# check time format
+$query{'TARGETED'} = $targeted if (defined $targeted);
+$query{'EXPIRES'} = $expires if (defined $expires);
+$query{'TIMELAG'} = $timelag if (defined $timelag);
+
+if ( exists $query{'TARGETED'} )
+{
+    if ( $query{'TARGETED'} !~ /^\d{4}-\d{2}-\d{2}[-_+ ](\d{2}:\d{2}(:\d{2})?)?$/ )
+    {
+	print __("Invalid time format for 'targeted' time.")."\n";
+	exit 4;
+    }
+}
+if ( exists $query{'EXPIRES'} )
+{
+    if ( $query{'EXPIRES'} !~ /^\d{4}-\d{2}-\d{2}[-_+ ](\d{2}:\d{2}(:\d{2})?)?$/ )
+    {
+	print __("Invalid time format for 'expires' time.")."\n";
+	exit 4;
+    }
+}
+if ( exists $query{'TIMELAG'} )
+{
+    if ( $query{'TIMELAG'} !~ /^\d{2}:\d{2}(:\d{2})?$/ )
+    {
+	print __("Invalid time format for 'timelag'.")."\n";
+	exit 4;
+    }
+}
+
+
+if (defined $finished)
+{
+    $query{'FINISHED+'} = 'NULL' if ($finished);
+    $query{'FINISHED-'} = 'NULL' if (not $finished);
+}
+
+$query{'VERBOSE'} = $verbosejob if (defined $verbosejob);
+$query{'PERSISTENT'} = $persistent if (defined $persistent);
+$query{'PARENT'} = $persistent if (defined $parent);
+
+my %para = ();
+$para{'PACKAGELIST'} = \@SWpackagelist if (@SWpackagelist);
+$para{'SWFORCE'} = $SWforce if (defined $SWforce);
+$para{'EXECCOMMAND'} = $EXECcommand if (defined $EXECcommand);
+$para{'WAITTIME'} = $WAITtime if (defined $WAITtime);
+$para{'WAITSTATUS'} = $WAITstatus if (defined $WAITstatus);
+
+
+
+#######################################################################################
+#
+# MAIN routine
+#
+
+
+## my $clients = SMT::Client->new({'dbh' => $dbh});
+
+if ( defined $create )
+{
+    ## CREATE ##
+
+    print "create\n";
+
+    if (@SWpackagelist)
+    {
+      print "Packages:\n";
+      foreach my $pack (@SWpackagelist)
+      {
+        print "  + $pack\n";
+      }
+    }
+    else
+    {
+      print "no package\n";
+    }
+
+
+}
+elsif ( defined $edit )
+{
+   ## EDIT  ##
+
+   print "edit\n";
+}
+elsif ( defined $delete )
+{
+   ##  DELETE  ##
+  
+   if ( not defined $jobid)
+   {
+       print __("The job id is invalid")."\n";
+       exit 3;
+   }
+   if ( not defined $guid)
+   {
+       print __("The guid is invalid")."\n";
+       exit 3;
+   }
+
+   print sprintf(__("Deleting job %s for guid %s"), $jobid, $guid )."\n" unless $quiet;
+   my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
+
+   if ( not $JobQ->deleteJob($jobid, $guid) )
+   {
+       print sprintf(__("An error occurred when deleting job %s for guid %s"), $jobid, $guid )."\n";
+   }
+   else
+   {
+       print __("Successfully deleted job.")."\n" unless $quiet;
+   }
+}
+else
+{
+    ## LIST  ##
+
+    print "list\n";
+    my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
+    if ( not defined $JobQ )
+    {
+        print __("Can not query the job queue.")."\n";
+        exit 3;
+    }
+
+    if (defined $guid && defined $jobid)
+    {
+        print "This is easy - get job $jobid for guid $guid\n";
+    }
+    else
+    {
+        print "This is more complex\n";
+        $query{'selectAll'} = '';
+#        my $res = $JobQ->getJobsInfo();
+        my $res = $JobQ->getJobsInfo(\%query);
+        print Data::Dumper->Dump([$res],['res']) if (defined $res);
+
+#print Data::Dumper->Dump([\%query],['foo']);
+#print Data::Dumper->Dump([\%para],['bar']);
+
+    }   
+}
+
+
+
+
+## print debugging output
+if (0)
+{
+    print "\n----------------------------\n";
+    print Data::Dumper->Dump([$create], ["create"]);
+    print Data::Dumper->Dump([$edit], ["edit"]);
+    print Data::Dumper->Dump([$delete], ["delete"]);
+    print Data::Dumper->Dump([$list], ["list"]);
+    print Data::Dumper->Dump([$targeted], ["targeted"]);
+}
+
+exit 0;
+
+
+#
+# Manpage
+#
+
+=head1 NAME
+
+smt job
+
+=head1 SYNOPSIS
+
+smt job [options]
+
+=head1 DESCRIPTION
+
+C<smt job> view, create, delete and edit jobs in the SMT job queue.
+
+=head1 OPTIONS
+
+=item --used -u
+
+Shows only used products.
+
+=item --catstat -c
+
+Shows catalog status. Are all catalogs localy mirrored, which are required for this product?.
+
+=head1 AUTHORS and CONTRIBUTORS
+
+Jens Daniel Schmidt
+
+=head1 LICENSE
+
+Copyright (c) 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 675 Mass
+Ave, Cambridge, MA 02139, USA.
+
+=cut
