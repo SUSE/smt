@@ -189,6 +189,19 @@ sub isValid
   return (defined $self->{type} );
 }
 
+
+sub readJobFromHash
+{
+  my $self = shift || return undef;
+  my $attribs = shift || return undef;
+
+  foreach my $key (keys %$attribs)
+  {
+    $self->{$key} = $attribs->{$key};
+  }
+}
+
+
 #
 # read tags from xml and sets job attributes
 #
@@ -298,7 +311,7 @@ sub asXML
       'guid'      => $self->{guid},
       'type'      => $self->{type},
       'arguments' => $self->{arguments},
-      'verbose'   => ( $self->{verbose} eq "1" ) ? "true" : "false"
+      'verbose'   => ( defined $self->{verbose} && $self->{verbose} eq "1" ) ? "true" : "false"
 
     #TODO: add other attributes
 
