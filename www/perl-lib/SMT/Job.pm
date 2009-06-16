@@ -118,15 +118,15 @@ sub newJob
     {
 	my $xmldata = $params[1];
 
-	return error( "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-	return error( "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+	return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
+	return error( $self, "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
 
 	my $j;
 
 	# parse xml
 	eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-	return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
-	return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
+	return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
+	return error( $self, "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
 
 	# retrieve variables
 	$id   	     = $j->{id}           if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
@@ -223,15 +223,15 @@ sub readJobFromXML
   my $guid = shift || return undef;
   my $xmldata = shift || return undef;
 
-  return error( "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-  return error( "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+  return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
+  return error( $self, "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
 
   my $j;
 
   # parse xml
   eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-  return error( "unable to create job. unable to parse xml: $@" ) if ( $@ );
-  return error( "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
+  return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
+  return error( $self, "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
 
   my @attribs = qw(id guid parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
 
@@ -240,7 +240,7 @@ sub readJobFromXML
     $self->{$attrib} = $j->{$attrib}  if ( defined $j->{$attrib} );
   }
 
-  return error ("guid from xml does not match client's guid.") if ( defined $self->{guid} && $self->{guid} ne $guid );
+  return error ( $self, "guid from xml does not match client's guid.") if ( defined $self->{guid} && $self->{guid} ne $guid );
 
   $self->{guid} = $guid;
 }
@@ -351,7 +351,7 @@ sub arguments
     if ( ! ( isa ($self->{arguments}, 'HASH' )))
     {
 	eval { $self->{arguments} = XMLin( $self->{arguments}, forcearray => 1 ) };
-	return error( "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
+	return error( $self, "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
     }
 
     return $self->{arguments};
