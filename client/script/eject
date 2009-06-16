@@ -18,7 +18,7 @@ sub jobhandler
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"eject\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "eject" );
 
-  #==  run zypper ==
+  #==  run eject ==
 
   my $command = "/bin/eject";
   my @cmdArgs;

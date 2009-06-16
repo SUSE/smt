@@ -19,10 +19,9 @@
 
 
 Name:           smt-client
-Version:        0.0.1
+Version:        0.0.2
 Release:        0.1
 Requires:       perl = %{perl_version}
-Requires:       perl-Config-IniFiles
 Requires:       perl-XML-Simple
 Requires:	perl-IO-Socket-SSL
 Requires:	perl-base

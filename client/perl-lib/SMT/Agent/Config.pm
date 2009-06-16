@@ -2,7 +2,6 @@
 
 package SMT::Agent::Config;
 use SMT::Agent::Utils;
-use Config::IniFiles;
 use strict;
 use warnings;
 
