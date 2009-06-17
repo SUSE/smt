@@ -281,7 +281,7 @@ elsif (!$canstage)
 
 # now we're ready to do the real work
 
-my $localrepopath = SMT::Utils::cleanPath(
+my $localfullrepopath = SMT::Utils::cleanPath(
     $cfg->val("LOCAL", "MirrorTo"), "repo/full", $repo->{LOCALPATH});
 
 
@@ -298,7 +298,7 @@ if ($command eq 'listupdates')
     my $parser = SMT::Parser::RpmMdPatches->new(
         log => $log,
         vblevel => $vblevel);
-    $parser->resource($localrepopath);
+    $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
     
     my $t = new Text::ASCIITable;
@@ -384,7 +384,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
 
     # check consistency of the resulting repository before applying changes
     my $checker = SMT::Parser::FilteredRepoChecker->new(log => $log, vblevel => $vblevel); 
-    $checker->repoPath($localrepopath);
+    $checker->repoPath($localfullrepopath);
     $checker->filter($filter);
     printLog ($log, $vblevel, LOG_DEBUG, 'checking dependencies', 0);
     my ($result, $problems, $causes) = $checker->check();
@@ -430,9 +430,22 @@ elsif ($command eq 'createrepo')
     }
 
     my $basepath = $cfg->val("LOCAL", "MirrorTo");
+
+    # source
+    my $testingrepopath = $basepath.'/'.$rh->getTestingRepoPath($repoid); 
+    my $sourcerepourl = 'file://';
+    # generate the production repo from the testing repo, not full
+    # TODO: check the testing repo status using the SMT::Mirror:Utils
+    if (! $gentest && -e $testingrepopath . '/repodata/repomd.xml')
+    { $sourcerepourl .= $testingrepopath; }
+    else
+    { $sourcerepourl .= $localfullrepopath; }
+
+    # target
     my $localtargetrepopath = ($gentest ?
         $rh->getTestingRepoPath($repoid) :
         $rh->getProductionRepoPath($repoid));
+    
 
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
@@ -443,7 +456,7 @@ elsif ($command eq 'createrepo')
         filter     => $filter,
         nohardlink => $nohardlink);
 
-    $mirror->uri('file://'.$localrepopath);
+    $mirror->uri($sourcerepourl);
     $mirror->localBasePath($basepath);
     $mirror->localRepoPath($localtargetrepopath);
 
@@ -455,7 +468,7 @@ elsif ($command eq 'createrepo')
     }
     else
     {
-        SMT::Mirror::Utils::copyStatus($localrepopath,
+        SMT::Mirror::Utils::copyStatus($localfullrepopath,
             SMT::Utils::cleanPath($basepath, $localtargetrepopath));
         SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf __("Repository successfully generated at %s."), $localtargetrepopath);
     }
