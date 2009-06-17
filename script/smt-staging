@@ -475,17 +475,16 @@ smt staging
 
 smt staging <command> <repository> [options]
 
-smt staging listupdates <repository>
-    [general-options] [--forbidden] [--allowed]
+smt staging listupdates <repository> [general-options]
 
-smt staging forbid <repository>
-    [general-options] [--patch <patch> ... | --category <category>]
+smt staging forbid <repository> [general-options]
+    [--patch <patch> ... | --category <category>]
 
-smt staging allow <repository>
-    [general-options] [--patch <patch> ... | --category <category>]
+smt staging allow <repository> [general-options]
+    [--patch <patch> ... | --category <category>]
 
-smt staging createrepo <repository>
-    [general-options] --testing|--production [--nohardlink]
+smt staging createrepo <repository> [general-options]
+    --testing|--production [--nohardlink]
 
 smt staging --help | -h
 
@@ -495,22 +494,44 @@ C<smt staging> script allows setting up patch (update) filters for update
 repositories and generate repositories for testing or use in production
 environment.
 
+Use the B<listupdates> command to list available patches and their
+allowed/forbidden status, B<allow>/B<forbid> commands to allow or forbid
+specified patches, and, finally B<createrepo> to generate testing or production
+repository containing only allowed patches.
+
+=head1 TERMINOLOGY
+
+=over 4
+
+=item patch
+
+An update of a package or group of packages. The term I<update> and I<patch> are
+interchangable throughout this manual and in the C<smt staging> script. 
+
+=back
+
 =head1 ARGUMENTS
 
-The first argument of C<smt staging> is always the I<command>. The command must
-be followed by I<repository>. A repository can be specified using the ID or
-name and target from the table returned by C<smt repos>.
+The first argument of C<smt staging> is always the B<command>. The command must
+be followed by I<repository>. Repository can be specified using the I<ID> or
+I<Name and Target> from the table returned by C<smt repos>. The third alternative
+is to use the hexadecimal I<CatalogID> found in C<smt repos -v> output.
 
 Example:
 
-=item
-smt staging createrepo 1 --testing
+=over 4
+
+=item $ smt staging createrepo 1 --testing
 
 creates testing repository from repository number 1 from C<smt repos> table.
+
+=back
 
 =head1 GENERAL OPTIONS
 
 The following options apply to any command.
+
+=over 4
 
 =item -L, --logfile <filepath>
 
@@ -525,11 +546,57 @@ Turn on debugging output and log.
 
 Enable more detailed output.
 
+=back
+
+
 =head1 COMMAND-SPECIFIC OPTIONS
+
+=over 4
 
 =item --patch
 
-specify patch
+Specify a patch using its ID, that is 'I<patchname-version>'. To get a list
+of available patches, use the B<listupates> command. This option can be
+used multiple times.
+
+This option is used in the B<allow> and B<forbid> commands. 
+
+=item --category
+
+Specify patch (update) category. The following categories are available:
+ security
+ recommended
+ optional
+
+This option is used in the B<allow> and B<forbid> commands. 
+
+=item --testing
+
+Used in the B<createrepo> command to generate a repository for testing.
+The testing repository will be generated from the full unfiltered local mirror
+of the remote repository and written into <MirrorTo>/repo/testing directory,
+where MirrorTo is the value taken from the smt.conf configuration file.
+
+=item --production
+
+Used in the B<createrepo> command to generate a repository for production use.
+This command should be used after testing have been made on the testing
+reposity.
+
+The 'production' repository will be generated from the testing repository
+and written into <MirrorTo>/repo directory, where MirrorTo is the value taken
+from the smt.conf configuration file. If the testing repository does not exist,
+the production repository will be generated from the full unfiltered local
+mirror of the remote repository.
+
+=item --nohardlink
+
+Avoid creating of hard links instead of copying files when creating
+the testing or production repositories using B<createrepo> command.
+If not specified, hard links are created instead of copying wherever possible
+to save space and time.
+
+=back
 
 =head1 AUTHORS and CONTRIBUTORS
 
