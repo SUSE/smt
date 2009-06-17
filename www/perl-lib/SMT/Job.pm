@@ -183,7 +183,10 @@ sub readJobFromDatabase
 
   $self->{type}      = SMT::Job::JOB_TYPE->{ $result->{TYPE} } if defined SMT::Job::JOB_TYPE->{$result->{TYPE}};
 
-  $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ); # convert xml to hash
+  if (exists $result->{ARGUMENTS} && defined $result->{ARGUMENTS})
+  {
+      $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ); # convert xml to hash
+  }
 
   my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
 
