@@ -258,7 +258,7 @@ sub save
   # retrieve next job id from database if no id is known
   if (!defined $self->{id})
   {
-    (my $id, $cookie) = getNextAvailableJobID( $self );
+    (my $id, $cookie) = $self->getNextAvailableJobID();
     return undef unless defined $id and defined $cookie;
     $self->{id} = $id;
   }
