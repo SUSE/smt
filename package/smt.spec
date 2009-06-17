@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.1.9)
+# spec file for package smt (Version 1.1.10)
 #
 # Copyright (c) 2008,2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -20,7 +20,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.1.9
+Version:        1.1.10
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       perl-DBI
@@ -42,6 +42,7 @@ Requires:       suseRegister
 Requires:       htmldoc
 Requires:       createrepo
 Requires:       gpg2
+Requires:       satsolver-tools
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
