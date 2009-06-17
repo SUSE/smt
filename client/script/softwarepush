@@ -24,12 +24,12 @@ sub jobhandler
   my $packages;
 
 
-  $force   = $args->[0]->{force}->[0]			if ( defined ( $args->[0]->{force}->[0] ) );
+  $force   = $args->[0]->{force}  if ( defined ( $args->[0]->{force} ) );
 #  SMT::Agent::Utils::error( "argument missing: force", $jobid )		if ( ! defined( $force ) );
   $force = "false"	if ( ! defined( $force ) );
   SMT::Agent::Utils::error( "argument invalid: force", $jobid )		if ( ! ( $force eq "true" || $force eq "false" ) );
 
-  $agreelicenses = $args->[0]->{agreelicenses}->[0]	if ( defined ( $args->[0]->{agreelicenses}->[0] ) );
+  $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
 #  SMT::Agent::Utils::error( "argument missing: agreelicenses", $jobid )	if ( ! defined( $agreelicenses ) );
   $agreelicenses = "false"	if ( ! defined( $agreelicenses ) );
   SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false" ) );
