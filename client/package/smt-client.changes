@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jun 17 18:56:12 CEST 2009 - jkupec@suse.cz
+
+- fixed handling of force and agreelicenses, they can only appear
+  once
+- version 0.0.4
+
+-------------------------------------------------------------------
 Tue Jun 16 17:54:55 CEST 2009 - tgoettlicher@suse.de
 
 - cleaned-up package requirements
