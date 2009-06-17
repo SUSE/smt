@@ -44,7 +44,7 @@ my $optres = Getopt::Long::GetOptions(
 
 if ( $help || !$optres )
 {
-    print basename($0) . __(" : setup a custom repository\n");
+    print 'smt-setup-custom-repos' . __(" : setup a custom repository\n");
     print "    --productid arg     " . __("Product id this repository belongs to.\n");
     print "                        " . __("You can use this option multiple times\n");
     print "                        " . __("to assign a repository to multiple products \n");
