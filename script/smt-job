@@ -84,7 +84,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, $guid, $jobid, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $EXECcommand, $WAITtime, $WAITstatus) = undef;
+my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev', 'no_ignore_case');
@@ -98,8 +98,9 @@ use Getopt::Long;
          'delete|d' => \$delete,
          'list|l' => \$list,
          # job identifier
-         'guid|g=s' => \$guid,
+         'guid|g=s' => \@guid,
          'jobid|j=i' => \$jobid,
+         'deleteall|A' => \$deleteall,
          # data fields for create and edit:
          'type|t=s' => \$type,
          'name|n=s' => \$name,
@@ -115,6 +116,7 @@ use Getopt::Long;
          # job specific arguments
          'package|P=s@' => \@SWpackagelist,
          'forceinstall|F!' => \$SWforce,
+         'agreelicence|L!' => \$SWagree,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus
@@ -142,7 +144,19 @@ if ( defined $help and ( $help == 1 ) )
 #
 
 my %query = ();
-$query{'GUID'} = $guid if (defined $guid);
+
+my $GUID = undef;
+if (@guid && @guid > 0)
+{
+    # searching only supports one guid
+    $query{'GUID'} = $guid[0];
+    # for methods that only operate on one guid
+    $GUID = $guid[0];
+}
+else
+{
+    @guid = undef;
+}
 $query{'ID'} = $jobid if (defined $jobid);
 
 my $typeID = getJobTypeID($type);
@@ -210,25 +224,117 @@ $para{'WAITSTATUS'} = $WAITstatus if (defined $WAITstatus);
 #
 
 
-## my $clients = SMT::Client->new({'dbh' => $dbh});
+my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
+my $Job = SMT::Job->new({ 'dbh' => $dbh });
+## my $Client = SMT::Client->new({'dbh' => $dbh});
 
 if ( defined $create )
 {
     ## CREATE ##
 
-    print "create\n";
-
-    if (@SWpackagelist)
+    if ( not defined $typeID )
     {
-      print "Packages:\n";
-      foreach my $pack (@SWpackagelist)
-      {
-        print "  + $pack\n";
-      }
+        print __("The job type is invalid.")."\n";
+        exit 3;
+    }
+    if ( not defined $GUID )
+    {
+        print __("The guid is invalid.")."\n";
+        exit 3;
+    }
+
+    $Job->newJob( @guid > 0 ? undef:$GUID, undef, $typeID, undef );
+
+    # fill in parameters if they are specified - maybe overwritten in job type handling below
+    $Job->{'name'}        = $query{'NAME'}        if ( exists $query{'NAME'}        && defined $query{'NAME'} );
+    $Job->{'description'} = $query{'DESCRIPTION'} if ( exists $query{'DESCRIPTION'} && defined $query{'DESCRIPTION'} );
+    $Job->{'verbose'}     = $query{'VERBOSE'}     if ( exists $query{'VERBOSE'}     && defined $query{'VERBOSE'} );
+    $Job->{'persistent'}  = $query{'PERSISTENT'}  if ( exists $query{'PERSISTENT'}  && defined $query{'PERSISTENT'} );
+    $Job->{'parent'}      = $query{'PARENT'}      if ( exists $query{'PARENT'}      && defined $query{'PARENT'} );
+    $Job->{'targeted'}    = $query{'TARGETED'}    if ( exists $query{'TARGETED'}    && defined $query{'TARGETED'} );
+    $Job->{'expires'}     = $query{'EXPIRES'}     if ( exists $query{'EXPIRES'}     && defined $query{'EXPIRES'} );
+    $Job->{'timelag'}     = $query{'TIMELAG'}     if ( exists $query{'TIMELAG'}     && defined $query{'TIMELAG'} );
+
+    if ( $typeID == 1 )
+    {
+        ## PATCHSTATUS ##
+        $Job->{'name'}        = $query{'NAME'} || 'Patchstatus Job';
+        $Job->{'description'} = $query{'DESCRIPTION'} || "Patchstatus Job for Client $GUID";
+        $Job->{'persistent'}  = $query{'PERSISTENT'} || 1;
+        $Job->{'timelag'}     = $query{'TIMELAG'} || '23:00';
+    }
+    elsif ( $typeID == 2 )
+    {
+        ## SOFTWARE PUSH ##
+
+        if ( not @SWpackagelist || @SWpackagelist == 0 )
+        {
+            print __("Please define at least one package for a software push job.");
+            exit 3;
+        }
+
+        $Job->{'name'}        = $query{'NAME'} || 'Software Push';        
+        $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
+        #$Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ],
+        #                          'force' => (defined $SWforce) ? $SWforce : 0,
+        #                          'agreelicenses' => (defined $SWagree) ? $SWagree : 0
+        #                        }; 
+        $Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ] };
+        $Job->{'arguments'}{'force'} = $SWforce if (defined $SWforce);
+        $Job->{'arguments'}{'agreelicenses'} = $SWagree if (defined $SWagree);
+    }
+    elsif ( $typeID == 3 )
+    {
+        ## update ##
+        $Job->{'name'}        = $query{'NAME'} || 'Software Push';
+        $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
+        $Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ]  };
+    }
+    elsif ( $typeID == 4 )
+    {
+        print __("")."\n";
+    }
+    elsif ( $typeID == 5 )
+    {
+        print __("")."\n";
+    }
+    elsif ( $typeID == 6 )
+    {
+        print __("")."\n";
+    }
+    elsif ( $typeID == 7 )
+    {
+        print __("")."\n";
+    }
+    elsif ( $typeID == 8 )
+    {
+        print __("")."\n";
     }
     else
     {
-      print "no package\n";
+        print __("This job type is unsupported.")."\n";
+        exit 3;
+    }
+
+    my $newjobid = undef;
+    if (@guid > 0)
+    {
+        ##  job for multiple guids ##
+        $newjobid = $JobQ->addJobForMultipleGUIDs($Job, @guid);
+    }
+    else
+    {
+        ## single job ##
+        $newjobid = $Job->save();
+    }
+
+    if ( $newjobid )
+    {
+        print sprintf(__("Successfully created new job. The job id is: %s"), $newjobid )."\n" unless $quiet;
+    }
+    else
+    {
+        print __("An error occurred when creating a new job.")."\n";
     }
 
 
@@ -242,24 +348,42 @@ elsif ( defined $edit )
 elsif ( defined $delete )
 {
    ##  DELETE  ##
-  
-   if ( not defined $jobid)
+ 
+   if ( not defined $jobid )
    {
-       print __("The job id is invalid")."\n";
+       print __("The job id is invalid.")."\n";
        exit 3;
    }
-   if ( not defined $guid)
+   if ( not defined $GUID )
    {
-       print __("The guid is invalid")."\n";
-       exit 3;
+       if ( not $deleteall )
+       {
+           print __("The guid is invalid.")."\n";
+           exit 3;
+       }
    }
 
-   print sprintf(__("Deleting job %s for guid %s"), $jobid, $guid )."\n" unless $quiet;
+   if ($deleteall)
+   {
+       print sprintf(__("Deleting job %s for all guids."), $jobid, $GUID )."\n" unless $quiet;
+   }
+   else
+   {
+       print sprintf(__("Deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
+   }
+
    my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
 
-   if ( not $JobQ->deleteJob($jobid, $guid) )
+   if ( not $JobQ->deleteJob($jobid, $deleteall ? 'ALL':$GUID) )
    {
-       print sprintf(__("An error occurred when deleting job %s for guid %s"), $jobid, $guid )."\n";
+       if ($deleteall)
+       {
+           print sprintf(__("An error occurred when deleting job %s for all guids."), $jobid )."\n" unless $quiet;
+       }
+       else
+       {
+           print sprintf(__("An error occurred when deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
+       }
    }
    else
    {
@@ -271,16 +395,15 @@ else
     ## LIST  ##
 
     print "list\n";
-    my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
     if ( not defined $JobQ )
     {
         print __("Can not query the job queue.")."\n";
         exit 3;
     }
 
-    if (defined $guid && defined $jobid)
+    if (defined $GUID && defined $jobid)
     {
-        print "This is easy - get job $jobid for guid $guid\n";
+        print "This is easy - get job $jobid for guid $GUID\n";
     }
     else
     {
