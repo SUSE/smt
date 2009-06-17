@@ -182,7 +182,7 @@ if($todir ne "")
 if ( $exportdir ne "" )
 {
     
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Catalog information"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting repository information"));
     SMT::CLI::db2Xml(outfile => "$exportdir/catalogs.xml",
                      type => "catalogs",
                      table => "Catalogs", 
@@ -199,7 +199,7 @@ if ( $exportdir ne "" )
                                   'PARAMLIST', 'NEEDINFO', 'SERVICE', 'PRODUCT_LIST', 'PRODUCT_CLASS' ]
                     );
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Product/Catalog relations"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting product/repository relations"));
     SMT::CLI::db2Xml(outfile => "$exportdir/productcatalogs.xml", 
                      type => "productcatalogs",
                      table => "ProductCatalogs", 
@@ -274,11 +274,11 @@ eval
     $rd->table("Catalogs");
     $rd->key("CATALOGID");
     
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Catalog information"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading repository information"));
     $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Catalogs data."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching repository data."));
         $exitcode = 1;
     }
     
@@ -286,7 +286,7 @@ eval
     $rd->table("ProductCatalogs");
     $rd->key(['PRODUCTDATAID', 'CATALOGID']);
     
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product/Catalog relations"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product/Repository relations"));
     $res = $rd->sync();
     if ($res)
     {
@@ -325,7 +325,7 @@ eval
         SMT::Utils::unLockAndExit("smt-ncc-sync", 0);
     }
     
-    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged Catalogs which can be mirrored"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
                                     todir   => ($todir ne "")?$todir:undef,
                                     log     => $LOG,

@@ -552,7 +552,7 @@ sub getProducts
 
     if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
     {
-        push @HEAD,  __('Catalogs mirrored?');
+        push @HEAD,  __('Repos mirrored?');
     }
     
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
@@ -775,14 +775,14 @@ sub setCatalogsByProduct
         
         if($enable && uc($row->{MIRRORABLE}) ne "Y")
         {
-            print sprintf(__("Catalog [%s %s] cannot be enabled. Access on the server denied.\n"), 
+            print sprintf(__("Repository [%s %s] cannot be enabled. Access on the server denied.\n"), 
                           $row->{NAME}, 
                           ($row->{TARGET}) ? $row->{TARGET} : "");
         }
         else
         {
             SMT::CLI::setCatalogDoMirror(enabled => $enable, name => $row->{NAME}, target => $row->{TARGET});
-            print sprintf(__("Catalog [%s %s] %s.\n"),
+            print sprintf(__("Repository [%s %s] %s.\n"),
                           $row->{NAME}, 
                           ($row->{TARGET}) ? $row->{TARGET} : "",
                           ($enable?__("enabled"):__("disabled")));
@@ -1031,7 +1031,7 @@ sub setMirrorableCatalogs
                            if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
                            {
                                printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
-                                        sprintf(__("* New mirrorable catalog '%s %s' ."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                                        sprintf(__("* New mirrorable repository '%s %s' ."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
                                my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
                                                            $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                            }
@@ -1047,7 +1047,7 @@ sub setMirrorableCatalogs
             if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
             {
                 printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
-                         sprintf(__("* catalog not longer mirrorable '%s %s' ."), $cname, $target ));
+                         sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
                 my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s", 
                                             $dbh->quote($cname), $dbh->quote($target) ));
             }
@@ -2797,7 +2797,7 @@ disabled => 1 or disabled => 0 are supported as well
 =item catalogDoMirrorFlag
 
 Pass id => foo to select the catalog.
-true if the catalog is ser to be mirrored, false otherwise
+true if the catalog is set to be mirrored, false otherwise
 
 =back
 

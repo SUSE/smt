@@ -9,17 +9,17 @@ use DBI qw(:sql_types);
 
 =head1 NAME
 
-SMT::Filter - reads/stores patch filters for catalogs and tells whether
+SMT::Filter - reads/stores patch filters for repository and tells whether
   a patch matches the filter.
   
 =head1 SYNOPSIS
 
   # to get a filter object
   my $filter = SMT::Filter->new();
-  my $success = SMT::Filte->load($dbh, $catalogid);
+  my $success = SMT::Filte->load($dbh, $repoid);
 
   # to store into db
-  my $success = $filter->save($dbh, $catalogid);
+  my $success = $filter->save($dbh, $repoid);
 
   # to edit existing filter
   $filter->add($filtertype, $value);
@@ -173,7 +173,7 @@ sub save
     my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
     my $cid = $array->[0]->{ID};
 
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "got catalog id '$cid'", 0);
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "got repo id '$cid'", 0);
 
     my $dbfilters = {};
     eval

@@ -426,8 +426,8 @@ if(!defined $dbreplfile)
     if(keys %{$hash} > 0)
     {
     
-        my $warning = __("WARNING: The following Catalogs cannot be mirrored.\n");
-        $warning   .= __("         Maybe you have not enough permissions to download these Catalogs?\n\n");
+        my $warning = __("WARNING: The following repositories cannot be mirrored.\n");
+        $warning   .= __("         Maybe you have not enough permissions to download these repositories?\n\n");
         
         foreach my $id (keys %{$hash})
         {
@@ -539,9 +539,9 @@ smt mirror --hardlink size [--directory path] [-L file] [--debug] [--verboseleve
 
 =head1 DESCRIPTION
 
-C<smt mirror> performs the mirroring procedure and downloads catalogs which are set to be mirrored.
+C<smt mirror> performs the mirroring procedure and downloads repositories which are set to be mirrored.
 
-If it is called with the B<--clean> parameter it searches inside of the mirrored catalogs for
+If it is called with the B<--clean> parameter it searches inside of the mirrored repositories for
 obsolete files and remove them.
 
 The B<--hardlink> paramter cause C<smt mirror> to search for files greater then I<size>. If it finds 
@@ -579,7 +579,7 @@ default value in smt.conf
 
 =item --deepverify
 
-Before starting the mirror procedure verify checksums of B<all> files in the catalogs
+Before starting the mirror procedure verify checksums of B<all> files in the repositories
 and remove broken files. without this option only the metadata are verified.
 
 =item --testrun
@@ -674,7 +674,8 @@ The output on stdout and stderr will be suppressed in this mode.
 
 =item --clean
 
-Enable clean mode. With this parameter C<smt mirror> searches inside of the mirrored catalogs for
+Enable clean mode. With this parameter C<smt mirror> searches inside of
+the mirrored repositories for
 obsolete files and remove them. It does not mirror new files. 
 
 =item --directory <path>
@@ -745,7 +746,7 @@ run mirror with verifing all checksums and debug mode
 
  smt mirror -d --deepverify
 
-clean the catalogs from files, which are no longer mentioned in the metadata
+clean the repositories from files, which are no longer mentioned in the metadata
 
  smt mirror --clean 
 

@@ -472,7 +472,8 @@ Shows only used products.
 
 =item --catstat -c
 
-Shows catalog status. Are all catalogs localy mirrored, which are required for this product?.
+Shows repository (catalog) status. Are all repositories localy mirrored,
+which are required for this product?.
 
 =head1 AUTHORS and CONTRIBUTORS
 

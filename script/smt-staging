@@ -515,7 +515,7 @@ interchangable throughout this manual and in the C<smt staging> script.
 The first argument of C<smt staging> is always the B<command>. The command must
 be followed by I<repository>. Repository can be specified using the I<ID> or
 I<Name and Target> from the table returned by C<smt repos>. The third alternative
-is to use the hexadecimal I<CatalogID> found in C<smt repos -v> output.
+is to use the hexadecimal I<Repository ID> found in C<smt repos -v> output.
 
 Example:
 

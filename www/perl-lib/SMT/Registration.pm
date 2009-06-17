@@ -880,7 +880,7 @@ sub buildZmdConfig
             if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
                $catalogs->{$cat}->{LOCALPATH} eq "")
             {
-                $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
+                $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
                 next;
             }
 
@@ -914,7 +914,7 @@ sub buildZmdConfig
         if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
            $catalogs->{$cat}->{LOCALPATH} eq "")
         {
-            $r->log_error("Path for catalog '$cat' does not exists. Skipping Catalog.");
+            $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
             next;
         }
 

@@ -44,20 +44,20 @@ my $optres = Getopt::Long::GetOptions(
 
 if ( $help || !$optres )
 {
-    print basename($0) . __(" : setup a custom catalog\n");
-    print "    --productid arg     " . __("Product id this catalog belongs to.\n");
+    print basename($0) . __(" : setup a custom repository\n");
+    print "    --productid arg     " . __("Product id this repository belongs to.\n");
     print "                        " . __("You can use this option multiple times\n");
-    print "                        " . __("to assign a catalog to multiple products \n");
-    print "    --name  arg         " . __("The name of this catalog.\n");
+    print "                        " . __("to assign a repository to multiple products \n");
+    print "    --name  arg         " . __("The name of this repository.\n");
     print "    --description arg   " . __("A description\n");
-    print "    --exturl arg        " . __("The URL where this catalog can be mirrored from\n");
-    print "    --delete arg        " . __("Remove a custom catalog with the given ID. You can use this option multiple times.\n");
-    print "                        " . __("Call 'smt catalogs --verbose' to find out the Catalog ID\n");
-    print "                        " . __("of the catalog you want to delete.\n");
+    print "    --exturl arg        " . __("The URL where this repository can be mirrored from\n");
+    print "    --delete arg        " . __("Remove custom repository with the given ID. You can use this option multiple times.\n");
+    print "                        " . __("Call 'smt repos --verbose' to find out the Repository ID\n");
+    print "                        " . __("of the repository you want to delete.\n");
     print "\n\n";
     print __("Examples:\n\n");
-    print "  smt-setup-custom-catalogs --productid 434 --name 'My_Catalog' --exturl 'http://my.domain.top/My_Catalog'\n";
-    print "  smt-setup-custom-catalogs --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc\n";
+    print "  smt-setup-custom-repos --productid 434 --name 'My_Repository' --exturl 'http://my.domain.top/My_Repository'\n";
+    print "  smt-setup-custom-repos --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc\n";
     
     exit 0;
 }
@@ -73,7 +73,7 @@ if(@delete > 0)
     my $statement = sprintf("SELECT CATALOGID, NAME, TARGET from Catalogs where CATALOGID IN ('%s')", join("','", @delete));
     my $arr = $dbh->selectall_arrayref($statement, {Slice=>{}});
 
-    print __("Realy delete the following catalogs:\n");
+    print __("Realy delete the following repositories:\n");
     foreach my $entry (@$arr)
     {
         print " ".$entry->{CATALOGID}.":".$entry->{NAME};
@@ -98,12 +98,12 @@ if(@delete > 0)
         }
         if(!$removed)
         {
-            print __("No catalog removed.\n");
+            print __("No repository removed.\n");
             exit 1;
         }
         else
         {
-            print __(sprintf("%d Catalogs removed.\n", $removed));
+            print __(sprintf("%d repositories removed.\n", $removed));
         }
     }
     exit 0;
@@ -111,9 +111,9 @@ if(@delete > 0)
 
 while($name !~ /^[a-zA-Z\d_-]+$/)
 {
-    print __("Invalid catalog name. Allowed characters are characters, numbers, - and _\n");
+    print __("Invalid repository name. Allowed characters are characters, numbers, - and _\n");
     
-    print __("Catalog Name:");
+    print __("Repository Name:");
     $name = <STDIN>;
 }
 chomp($name);
@@ -143,7 +143,7 @@ my $anotherone = 0;
 
 if(@productids == 0 )
 {
-    print __("Select a product where this catalog belong to.\n\n");
+    print __("Select product where this repository belongs to.\n\n");
 
     foreach my $item (@{$array})
     {
@@ -173,7 +173,7 @@ while(@productids == 0 || $anotherone)
     }
     push @productids, $pid;
     
-    print __("Select an additional product for this catalog(y/n)?");
+    print __("Select an additional product for this repository (y/n)?");
     my $yn = <STDIN>;
     chomp($yn);
     
@@ -199,12 +199,12 @@ my %options = (
 my $success = SMT::CLI::setupCustomCatalogs( %options );
 if($success)
 {
-    print __("Catalog successfully added.\n");
+    print __("Repository successfully added.\n");
     exit 0;
 }
 else
 {
-    print __("Adding catalog failed.\n");
+    print __("Adding repository failed.\n");
     exit 1;
 }
 
@@ -214,19 +214,19 @@ else
 
 =head1 NAME
 
-smt setup-custom-catalogs
+smt setup-custom-repos
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] setup-custom-catalogs 
-smt setup-custom-catalogs --delete <catalogid>
-smt-setup-custom-catalogs --productid <product_id> --name <catalog name> --exturl <url>
+smt [help|--help|-h] setup-custom-repos 
+smt setup-custom-repos --delete <repositoryid>
+smt-setup-custom-repos --productid <product_id> --name <repository name> --exturl <url>
 
 =head1 DESCRIPTION
 
-The smt-setup-custom-catalogs script is a tool for setup custom catalogs 
-(catalogs not present in NU) to be used with SMT. 
-It can be used for adding a new catalog to the SMT database or to delete a catalog
+The smt-setup-custom-repos script is a tool for setup custom repositories 
+(repositories not present in NU) to be used with SMT. 
+It can be used for adding a new repository to the SMT database or to delete a repository
 from the database.
 
 
@@ -238,42 +238,42 @@ from the database.
 
 =item --productid <id>
 
-ID of a product the catalog belongs to. If the catalog should belong to multiple
-products, use this option multiple times to assign catalog to all relevant products.
+ID of a product the repository belongs to. If the repository should belong to multiple
+products, use this option multiple times to assign repository to all relevant products.
 
-=item --name <catalog name>
+=item --name <repository name>
 
-The name of the custom catalog.
+The name of the custom repository.
 
 =item --description <description>
 
-The description of the custom catalog.
+The description of the custom repository.
 
 =item --exturl <url>
 
-The URL where this catalog can be mirrored from.
+The URL where this repository can be mirrored from.
 
-=item --delete <catalogID>
+=item --delete <Repository ID>
 
-The command smt-setup-custom-catalogs --delete ID removes a
-custom catalog with a given ID from the SMT database.
+The command smt-setup-custom-repos --delete ID removes a
+custom repository with a given ID from the SMT database.
 
-Call B<smt catalogs --verbose> to find out the Catalog ID of the catalog
+Call B<smt repos --verbose> to find out the Repository ID of the repository
 you want to delete.
 
 =back
 
 =head1 EXAMPLES
 
-Configure a new custom catalog:
+Configure a new custom repository:
 
- smt-setup-custom-catalogs --productid 431 --productid 432 --productid 433 --productid 434 --productid 435 \
- --name 'My_Catalog' --exturl 'http://my.domain.top/My_Catalog'
+ smt-setup-custom-repos --productid 431 --productid 432 --productid 433 --productid 434 --productid 435 \
+ --name 'My_Repository' --exturl 'http://my.domain.top/My_Repository'
 
 
-Remove the catalog with the id I<1cf336d819e8e5904f4d4b05ee081971a0cc8afc>:
+Remove the repository with the id I<1cf336d819e8e5904f4d4b05ee081971a0cc8afc>:
 
-  smt-setup-custom-catalogs --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc
+  smt-setup-custom-repos --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc
 
 =head1 AUTHORS and CONTRIBUTORS
 

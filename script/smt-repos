@@ -197,7 +197,7 @@ while ( my $v = $sth->fetchrow_hashref() )
         print "          (" . $v->{DESCRIPTION} .")\n";
         print "          " . $v->{EXTURL} ."\n";
         print "          " . $v->{LOCALPATH} ."\n";
-        print "          CatalogID: " . $v->{CATALOGID} ."\n";
+        print "          Repository ID: " . $v->{CATALOGID} ."\n";
         print "          Staging  : " . $catStaging ."\n";
         foreach my $h (@{$products})
         {
