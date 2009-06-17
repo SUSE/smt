@@ -435,3 +435,94 @@ elsif ($command eq 'createrepo')
 }
 
 SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+
+#
+# Manpage
+#
+
+=head1 NAME
+
+smt staging
+
+=head1 SYNOPSIS
+
+smt staging <command> <repository> [options]
+
+smt staging listupdates <repository>
+    [general-options] [--forbidden] [--allowed]
+
+smt staging forbid <repository>
+    [general-options] [--patch <patch> ... | --category <category>]
+
+smt staging allow <repository>
+    [general-options] [--patch <patch> ... | --category <category>]
+
+smt staging createrepo <repository>
+    [general-options] --testing|--production [--nohardlink]
+
+smt staging --help | -h
+
+=head1 DESCRIPTION
+
+C<smt staging> script allows setting up patch (update) filters for update
+repositories and generate repositories for testing or use in production
+environment.
+
+=head1 ARGUMENTS
+
+The first argument of C<smt staging> is always the I<command>. The command must
+be followed by I<repository>. A repository can be specified using the ID or
+name and target from the table returned by C<smt repos>.
+
+Example:
+
+=item
+smt staging createrepo 1 --testing
+
+creates testing repository from repository number 1 from C<smt repos> table.
+
+=head1 GENERAL OPTIONS
+
+The following options apply to any command.
+
+=item -L, --logfile <filepath>
+
+Write log to the specified file. If the file does not exist, it will be
+created. 
+
+=item -d, --debug
+
+Turn on debugging output and log.
+
+=item -v, --verbose 
+
+Enable more detailed output.
+
+=head1 COMMAND-SPECIFIC OPTIONS
+
+=item --patch
+
+specify patch
+
+=head1 AUTHORS and CONTRIBUTORS
+
+Jan Kupec
+
+=head1 LICENSE
+
+Copyright (c) 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 675 Mass
+Ave, Cambridge, MA 02139, USA.
+
+=cut
