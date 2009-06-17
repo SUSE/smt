@@ -991,7 +991,7 @@ sub _sendData
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Failed to download '%s'"), 
                                                     $regurl->as_string()));
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, $@);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@);
             return 0;
         }
         

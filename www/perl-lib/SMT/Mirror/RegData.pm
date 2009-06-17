@@ -320,7 +320,7 @@ sub _requestData
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Failed to POST '%s'"), 
                                                     $uri->as_string()));
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, $@);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@);
             return undef;
         }
 
