@@ -307,12 +307,18 @@ sub deleteJob($)
   my $jobid = shift || return undef;
   my $guid = shift || return undef;
 
-  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
-  my $guidid = $client->getClientIDByGUID($guid) || return undef;
+  my $guidid = undef;
+  if ($guid ne 'ALL')
+  {
+      my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+      $guidid = $client->getClientIDByGUID($guid) || return undef;
+  }
 
-  my $sql = 'delete from JobQueue'.
-  ' where GUID_ID  = '.$self->{dbh}->quote($guidid).
-  ' and ID = '.$self->{dbh}->quote($jobid);
+  my $sql = 'delete from JobQueue where ID = '.$self->{dbh}->quote($jobid);
+  if ($guid ne 'ALL')
+  {
+      $sql .= ' and GUID_ID  = '.$self->{dbh}->quote($guidid);
+  }
 
   my $result = $self->{dbh}->do($sql);
 
