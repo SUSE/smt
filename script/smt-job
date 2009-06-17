@@ -116,7 +116,7 @@ use Getopt::Long;
          # job specific arguments
          'package|P=s@' => \@SWpackagelist,
          'forceinstall|F!' => \$SWforce,
-         'agreelicence|L!' => \$SWagree,
+         'agreelicense|L!' => \$SWagree,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus
@@ -125,15 +125,54 @@ use Getopt::Long;
 if ( defined $help and ( $help == 1 ) )
 {
   print basename($0) . " : " . __("list jobs from SMT job queue")."\n";
-  print "   --help       (-h) : " . __("show this help")."\n";
-  print "   --verbose    (-v) : " . __("show detailed job information")."\n";
-  print '  '.__("basic operation modes")."\n";
-  print "   --list       (-l) : " . __("list jobs")."\n";
-  print "   --create     (-c) : " . __("create job")."\n";
-  print "   --edit       (-e) : " . __("edit job")."\n";
-  print "   --delete     (-d) : " . __("delete job")."\n";
-  print '  '.__("search queries")."\n";
-#  print "   --help       (-h) : " . __("show this help\n");
+  print "   --help        (-h) : " . __("show this help")."\n";
+  print "   --verbose     (-v) : " . __("show detailed job information")."\n";
+  print "   --quiet       (-q) : " . __("quiet mode, suppress success messages")."\n";
+  print "\n";
+  print ' '.__("basic operation modes")."\n";
+  print "   --list        (-l) : " . __("list jobs (default)")."\n";
+  print "   --create      (-c) : " . __("create job")."\n";
+  print "   --edit        (-e) : " . __("edit job")."\n";
+  print "   --delete      (-d) : " . __("delete job")."\n";
+  print "\n";
+  print ' '.__("main parameters")."\n";
+  print "   --guid        (-g) <guid> : " . __("the clients guid")."\n";
+  print __("                               can be used multiple times when creating a job")."\n";
+  print "   --jobid       (-j) <id>   : " . __("the jobid")."\n";
+  print __("                        will be ignored when creating a job")."\n";
+  print "   --deleteall   (-A)        : " . __("allows to omit either the guid or the jobid parameter")."\n";
+  print __("                       the missing parameter will then match all")."\n";
+  print "\n";
+  print ' '.__("parameters to search for or change")."\n";
+  print "   --type        (-t) <type> : " . __("job type (name or its id)")."\n";
+  print "   --name        (-n) <name> : " . __("job name")."\n";
+  print "   --description      <desc> : " . __("job description")."\n";
+  print "   --parent           <id>   : " . __("parent job, describes a dependency")."\n";
+  print "   --verbosejob  (-V)        : " . __("verbosity of job")."\n";
+  print "   --persistent              : " . __("persistency of job")."\n";
+  print "   --finished                : " . __("finds finished jobs")."\n";
+  print "\n";
+  print ' '.__("parameters for timing (timeformat: see below)")."\n";
+  print "   --targeted                : " . __("targeted date and time")."\n";
+  print "   --expires                 : " . __("date and time when job expires")."\n";
+  print "   --timelag                 : " . __("time interval for persistent jobs")."\n";
+  print "\n";
+  print ' '.__("job specific parameters (only for creating a job)")."\n";
+  print '  '.__("for software push jobs")."\n";
+  print "   --package     (-P) <pack> : " . __("a package name")."\n";
+  print __("                               can be used multiple times")."\n";
+  print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
+  print "   --agreelicense (-L)       : " . __("auto-agree to licenses")."\n";
+  print '  '.__("for execute jobs")."\n";
+  print "   --exec         (-X) <cmd> : " . __("the command to execute")."\n";
+  print '  '.__("for wait jobs")."\n";
+  print "   --waittime         <time> : " . __("time in seconds the job should take")."\n";
+  print "   --waitstatus       <exit> : " . __("exit code for the job to return with")."\n";
+  print "\n";
+  print ' '.__("used time format")."\n";
+  print "   targeted/expires          : " . __("'YYYY-MM-DD[-HH:MM[:SS]]'")."\n";
+  print "   timelag                   : " . __("'HH:MM[:SS]'")."\n";
+
 
   exit 0;
 }
@@ -287,10 +326,6 @@ if ( defined $create )
 
         $Job->{'name'}        = $query{'NAME'} || 'Software Push';        
         $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
-        #$Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ],
-        #                          'force' => (defined $SWforce) ? $SWforce : 0,
-        #                          'agreelicenses' => (defined $SWagree) ? $SWagree : 0
-        #                        }; 
         $Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ] };
         $Job->{'arguments'}{'force'} = $SWforce if (defined $SWforce);
         $Job->{'arguments'}{'agreelicenses'} = $SWagree if (defined $SWagree);
@@ -304,23 +339,39 @@ if ( defined $create )
     }
     elsif ( $typeID == 4 )
     {
-        print __("")."\n";
+        ## exec ##
+        $Job->{'name'}        = $query{'NAME'} || 'Execute';
+        $Job->{'description'} = $query{'DESCRIPTION'} || 'Execute custom command';
+        $Job->{'arguments'}{'command'} = (exists $para{'EXECCOMMAND'} && defined $para{'EXECCOMMAND'}) ? $para{'EXECCOMMAND'} : ' /bin/true ' ;
     }
     elsif ( $typeID == 5 )
     {
-        print __("")."\n";
+        ## reboot ##
+        $Job->{'name'}        = $query{'NAME'} || 'Reboot';
+        $Job->{'description'} = $query{'DESCRIPTION'} || 'Reboot now';
     }
     elsif ( $typeID == 6 )
     {
-        print __("")."\n";
+        ## configure ##
+        print __("The configure job type is not supported. Its reserved for future use.")."\n";
+        exit 1;
     }
     elsif ( $typeID == 7 )
     {
-        print __("")."\n";
+        ## wait ##
+        my $sec = $para{'WAITTIME'} || '1';
+        my $ret = $para{'WAITSTATUS'} || '0';
+
+        $Job->{'name'}        = $query{'NAME'} || sprintf("Wait %s sec. for exit %s.", $sec, $ret );
+        $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Wait for %s seconds and return with value %s.", $sec, $ret );
+        $Job->{'arguments'}{'waittime'} = $sec;
+        $Job->{'arguments'}{'exitcode'} = $ret;
     }
     elsif ( $typeID == 8 )
     {
-        print __("")."\n";
+        ## eject ##
+        $Job->{'name'}        = $query{'NAME'} || 'Eject job';
+        $Job->{'description'} = $query{'DESCRIPTION'} || 'Job to eject the CD/DVD drawer';
     }
     else
     {
@@ -353,54 +404,79 @@ if ( defined $create )
 }
 elsif ( defined $edit )
 {
-   ## EDIT  ##
+    ## EDIT  ##
 
-   print "edit\n";
+    if ( (not defined $GUID) || ( not defined $jobid ) )
+    {
+        print __("Please define one job id and one guid to edit a job.")."\n";
+        exit 3;
+    }
+
+    # get job data from database
+    $Job->readJobFromDatabase($jobid, $GUID);
+
+    # overwrite with new values
+    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT TARGETED EXPIRES TIMELAG);
+    foreach my $eprop (@EditProps)
+    {
+        $Job->{lc($eprop)} = $query{uc($eprop)} if ( exists $query{uc($eprop)}  && defined $query{uc($eprop)} );
+    }
+
+    # save job
+    my $result = $Job->save();
+    if ($result)
+    {
+        print __("Successfully saved the edited job.")."\n" unless $quiet;
+    }
+    else
+    {
+        print __("An error occurred when saving the edited job.")."\n";
+    }
 }
 elsif ( defined $delete )
 {
-   ##  DELETE  ##
- 
-   if ( not defined $jobid )
-   {
-       print __("The job id is invalid.")."\n";
-       exit 3;
-   }
-   if ( not defined $GUID )
-   {
-       if ( not $deleteall )
-       {
-           print __("The guid is invalid.")."\n";
-           exit 3;
-       }
-   }
+    ##  DELETE  ##
 
-   if ($deleteall)
-   {
-       print sprintf(__("Deleting job %s for all guids."), $jobid, $GUID )."\n" unless $quiet;
-   }
-   else
-   {
-       print sprintf(__("Deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
-   }
+    if ( not defined $jobid )
+    {
+        print __("The job id is invalid.")."\n";
+        exit 3;
+    }
+    if ( not defined $GUID )
+    {
+        if ( not $deleteall )
+        {
+            print __("The guid is invalid.")."\n";
+            exit 3;
+        }
+    }
 
-   my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
+    if ($deleteall)
+    {
+        print sprintf(__("Deleting job %s for all guids."), $jobid, $GUID )."\n" unless $quiet;
+    }
+    else
+    {
+        print sprintf(__("Deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
+    }
 
-   if ( not $JobQ->deleteJob($jobid, $deleteall ? 'ALL':$GUID) )
-   {
-       if ($deleteall)
-       {
-           print sprintf(__("An error occurred when deleting job %s for all guids."), $jobid )."\n" unless $quiet;
-       }
-       else
-       {
-           print sprintf(__("An error occurred when deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
-       }
-   }
-   else
-   {
-       print __("Successfully deleted job.")."\n" unless $quiet;
-   }
+    my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
+
+    if ( not $JobQ->deleteJob($jobid, $deleteall ? 'ALL':$GUID) )
+    {
+        if ($deleteall)
+        {
+            print sprintf(__("An error occurred when deleting job %s for all guids."), $jobid )."\n" unless $quiet;
+        }
+        else
+        {
+            print sprintf(__("An error occurred when deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
+        }
+    }
+    else
+    {
+        print __("Successfully deleted job.")."\n" unless $quiet;
+    }
 }
 else
 {
