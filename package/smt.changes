@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jun 17 10:29:14 CEST 2009 - mc@suse.de
+
+- log the reason for a failed post request as error and not as debug
+
+-------------------------------------------------------------------
 Mon Jun 15 11:46:19 CEST 2009 - mc@suse.de
 
 - remove unsupported YOU9 mirror definitions 
