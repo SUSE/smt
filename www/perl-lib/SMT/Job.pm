@@ -277,7 +277,7 @@ sub save
 
   # TYPE
   push ( @sqlkeys, "TYPE" );
-  push ( @sqlvalues,  SMT::Job::JOB_TYPE->{ $self->{type} } );
+  push ( @sqlvalues,  $self->{type} =~ /^\d+$/ ? $self->{type} : SMT::Job::JOB_TYPE->{ $self->{type} } );
 
   # GUID
   push ( @sqlkeys, "GUID_ID" );
