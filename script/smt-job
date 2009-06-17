@@ -228,6 +228,18 @@ my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
 my $Job = SMT::Job->new({ 'dbh' => $dbh });
 ## my $Client = SMT::Client->new({'dbh' => $dbh});
 
+my $opc = 0;
+$opc++ if (defined $create);
+$opc++ if (defined $edit);
+$opc++ if (defined $delete);
+$opc++ if (defined $list);
+if ( $opc > 1 )
+{
+    print __("Please define only one operation mode.")."\n";
+    exit 3;
+}
+
+
 if ( defined $create )
 {
     ## CREATE ##
