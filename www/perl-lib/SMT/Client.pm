@@ -627,8 +627,8 @@ sub insertPatchstatusJob($)
     my $findResult = $self->{'dbh'}->selectcol_arrayref($sqlFindJob);
     if ( @{$findResult} == 0)
     {
-        my $sql = "INSERT INTO JobQueue (GUID_ID, TYPE, PERSISTENT, DESCRIPTION, TIMELAG) ";
-        $sql .= " VALUES ( $cid, 1, 1, 'Patchstatus Job for Client $guid' , '23:00:00' ) ";
+        my $sql = "INSERT INTO JobQueue (GUID_ID, TYPE, PERSISTENT, NAME, DESCRIPTION, TIMELAG) ";
+        $sql .= " VALUES ( $cid, 1, 1, 'Patchstatus Job', 'Patchstatus Job for Client $guid' , '23:00:00' ) ";
         $self->{'dbh'}->do($sql);
     }
     return 1;
