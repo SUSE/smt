@@ -129,10 +129,10 @@ sub check()
 
     # load the solv file
     my $pool = new satsolver::Pool;
-    $pool->set_arch('x86_64'); # TODO: get current arch
+    # $pool->set_arch('x86_64'); # is this needed if we only want to search the pool?
     my $repo = $pool->create_repo('checked-repo');
     $repo->add_solv($self->{SOLV});
-    
+
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
         'FilteredRepoChecker: repo loaded. Pool size: ' . $pool->size() .
         ', count: ' . $pool->count());    
