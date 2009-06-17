@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Jun 17 18:31:01 CEST 2009 - jkupec@suse.cz
+
+- checking for broken dependencies when manipulating filters
+  in smt-staging (YaST module needs adaptation yet).
+- replaced 'catalogs' with 'repositories' in all texts
+- smt-setup-custom-catalogs renamed to smt-setup-custom-repos
+- 1.1.10
+
+-------------------------------------------------------------------
 Wed Jun 17 10:29:14 CEST 2009 - mc@suse.de
 
 - log the reason for a failed post request as error and not as debug
