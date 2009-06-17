@@ -91,7 +91,7 @@ use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev', 'no_ignore_case');
 &Getopt::Long::GetOptions(
          'help|h' => \$help,
-         'verbose|v' => \$verbose,
+         'verbose|v+' => \$verbose,
          'quiet|q' => \$quiet,
          # the four basic modes of smt job
          'create|c' => \$create,
@@ -128,15 +128,16 @@ if ( defined $help and ( $help == 1 ) )
   print basename($0) . " : " . __("list jobs from SMT job queue")."\n";
   print "   --help        (-h) : " . __("show this help")."\n";
   print "   --verbose     (-v) : " . __("show detailed job information")."\n";
+  print __("                       up to 3 '-v's are possible for more verbosity (no bundling)")."\n";
   print "   --quiet       (-q) : " . __("quiet mode, suppress success messages")."\n";
   print "\n";
-  print ' '.__("basic operation modes")."\n";
+  print __("basic operation modes")."\n";
   print "   --list        (-l) : " . __("list jobs (default)")."\n";
   print "   --create      (-c) : " . __("create job")."\n";
   print "   --edit        (-e) : " . __("edit job")."\n";
   print "   --delete      (-d) : " . __("delete job")."\n";
   print "\n";
-  print ' '.__("main parameters")."\n";
+  print __("main parameters")."\n";
   print "   --guid        (-g) <guid> : " . __("the clients guid")."\n";
   print __("                               can be used multiple times when creating a job")."\n";
   print "   --jobid       (-j) <id>   : " . __("the jobid")."\n";
@@ -144,7 +145,7 @@ if ( defined $help and ( $help == 1 ) )
   print "   --deleteall   (-A)        : " . __("allows to omit either the guid or the jobid parameter")."\n";
   print __("                       the missing parameter will then match all")."\n";
   print "\n";
-  print ' '.__("parameters to search for or change")."\n";
+  print __("parameters to search for or change")."\n";
   print "   --type        (-t) <type> : " . __("job type (name or its id)")."\n";
   print "   --name        (-n) <name> : " . __("job name")."\n";
   print "   --description      <desc> : " . __("job description")."\n";
@@ -153,12 +154,12 @@ if ( defined $help and ( $help == 1 ) )
   print "   --persistent              : " . __("persistency of job")."\n";
   print "   --finished                : " . __("finds finished jobs")."\n";
   print "\n";
-  print ' '.__("parameters for timing (timeformat: see below)")."\n";
+  print __("parameters for timing (timeformat: see below)")."\n";
   print "   --targeted                : " . __("targeted date and time")."\n";
   print "   --expires                 : " . __("date and time when job expires")."\n";
   print "   --timelag                 : " . __("time interval for persistent jobs")."\n";
   print "\n";
-  print ' '.__("job specific parameters (only for creating a job)")."\n";
+  print __("job specific parameters (only for creating a job)")."\n";
   print '  '.__("for software push jobs")."\n";
   print "   --package     (-P) <pack> : " . __("a package name")."\n";
   print __("                               can be used multiple times")."\n";
@@ -170,9 +171,16 @@ if ( defined $help and ( $help == 1 ) )
   print "   --waittime         <time> : " . __("time in seconds the job should take")."\n";
   print "   --waitstatus       <exit> : " . __("exit code for the job to return with")."\n";
   print "\n";
-  print ' '.__("used time format")."\n";
+  print __("time format")."\n";
   print "   targeted/expires          : " . __("'YYYY-MM-DD[-HH:MM[:SS]]'")."\n";
   print "   timelag                   : " . __("'HH:MM[:SS]'")."\n";
+  print "\n";
+  print __("negatable parameters")."\n";
+  print "   --finished      :  --no-finished"."\n";
+  print "   --persistent    :  --no-persistent"."\n";
+  print "   --verbosejob    :  --no-verbosejob"."\n";
+  print "   --forceinstall  :  --no-forceinstall"."\n";
+  print "   --agreelicense  :  --no-agreelicense"."\n";
 
 
   exit 0;
@@ -483,48 +491,78 @@ else
 {
     ## LIST  ##
 
-    print "list\n";
     if ( not defined $JobQ )
     {
         print __("Can not query the job queue.")."\n";
         exit 3;
     }
 
-    if (defined $GUID && defined $jobid)
+    # make sure we select all data
+    $query{'selectAll'} = '';
+    my $res = $JobQ->getJobsInfo(\%query);
+
+    # reder the result
+    my $t = new Text::ASCIITable;
+
+    # basic job list info - without a --verbose switch
+    my @DPROP = qw(ID NAME TYPE STATUS);
+    $verbose = 0 if (not $verbose);
+
+    # set the level of verbosity
+    if ($verbose == 1)
     {
-        print "This is easy - get job $jobid for guid $GUID\n";
-        my $res = $JobQ->getJobsInfo(\%query);
-        print Data::Dumper->Dump([$res],['res']) if (defined $res);
+        @DPROP = qw(ID GUID NAME TYPE PERSISTENT STATUS);
     }
-    else
+    elsif ($verbose == 2)
     {
-        $query{'selectAll'} = '';
-        my $res = $JobQ->getJobsInfo(\%query);
-        print Data::Dumper->Dump([$res],['res']) if (defined $res);
+        @DPROP = qw(ID PARENT_ID GUID NAME TYPE VERBOSE PERSISTENT STATUS FINISHED DESCRIPTION);
+    }
+    elsif ($verbose == 3)
+    {
+        @DPROP = qw(ID PARENT_ID GUID NAME TYPE VERBOSE PERSISTENT STATUS FINISHED TARGETED EXPIRES TIMELAG DESCRIPTION);
+    }
 
-#print Data::Dumper->Dump([\%query],['foo']);
-#print Data::Dumper->Dump([\%para],['bar']);
+    # create the column titles
+    my @cols = ();
+    foreach my $prop (@DPROP)
+    {
+        $prop =~ s/PARENT_ID/PARENT/;
+        $prop =~ s/PERSISTENT/PERS./;
+        $prop =~ s/VERBOSE/VERB./;
+        push( @cols, ucfirst(lc($prop)) );
+    }    
+    $t->setCols(@cols);
 
-    }   
+    my $p = '';
+    my $h = undef;
+    my $onerow = [];
+    foreach my $xcid ( keys %{$res} )
+    {
+        foreach my $xjid ( keys %{${$res}{$xcid}} ) 
+        {
+            $onerow = [];
+            $h = ${$res}{$xcid}{$xjid};
+
+            foreach $p (@DPROP)
+            {
+                if ($p eq 'TYPE' && $verbose > 1) { ${$h}{$p} = JOB_TYPE->{${$h}{$p}}  }
+                push(@{$onerow}, defined ${$h}{$p} ?  ${$h}{$p}:'');
+                #print "$p : ${$h}{$p}\n"
+            }
+            $t->addRow($onerow);
+        }
+    }
+
+    # set the heading
+    $t->setOptions('headingText','Found jobs in SMT job queue');    
+    my $rendering = $t->draw();
+    print $rendering."\n";
 }
 
-
-
-
-## print debugging output
-if (0)
-{
-    print "\n----------------------------\n";
-    print Data::Dumper->Dump([$create], ["create"]);
-    print Data::Dumper->Dump([$edit], ["edit"]);
-    print Data::Dumper->Dump([$delete], ["delete"]);
-    print Data::Dumper->Dump([$list], ["list"]);
-    print Data::Dumper->Dump([$targeted], ["targeted"]);
-}
 
 exit 0;
 
-
+########################################################################################
 #
 # Manpage
 #
