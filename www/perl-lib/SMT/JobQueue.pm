@@ -208,12 +208,16 @@ sub addJobForMultipleGUIDs
   my $job = shift;
   my @guids = @_;
 
+  my $newjobid = undef;
+  my $error = 0;
   foreach my $guid (@guids)
   {
     $job->guid($guid);
-    $job->save() || return undef;
+    $newjobid = $job->save();
+    $error = 1 if (not defined $newjobid);
   }
-  return 1;
+
+  return $error ? undef:$newjobid;
 }
 
 
