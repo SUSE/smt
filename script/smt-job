@@ -13,6 +13,7 @@ use SMT::Client;
 use SMT::JobQueue;
 use SMT::Job;
 
+use Text::ASCIITable;
 use File::Basename;
 use Locale::gettext ();
 #use UNIVERSAL 'isa';
@@ -492,12 +493,12 @@ else
     if (defined $GUID && defined $jobid)
     {
         print "This is easy - get job $jobid for guid $GUID\n";
+        my $res = $JobQ->getJobsInfo(\%query);
+        print Data::Dumper->Dump([$res],['res']) if (defined $res);
     }
     else
     {
-        print "This is more complex\n";
         $query{'selectAll'} = '';
-#        my $res = $JobQ->getJobsInfo();
         my $res = $JobQ->getJobsInfo(\%query);
         print Data::Dumper->Dump([$res],['res']) if (defined $res);
 
@@ -542,14 +543,10 @@ C<smt job> view, create, delete and edit jobs in the SMT job queue.
 
 =head1 OPTIONS
 
-=item --used -u
+=item --help -h
 
-Shows only used products.
-
-=item --catstat -c
-
-Shows repository (catalog) status. Are all repositories localy mirrored,
-which are required for this product?.
+Show usage for the smt-job command. Lists all available parameters
+and time formats used for creating, deleting, editing jobs.
 
 =head1 AUTHORS and CONTRIBUTORS
 
