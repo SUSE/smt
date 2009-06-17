@@ -17,7 +17,7 @@ use SMT::Filter;
 use SMT::Mirror::Utils;
 use SMT::Mirror::RpmMd;
 use SMT::Parser::RpmMdPatches;
-
+use SMT::Parser::FilteredRepoChecker;
 
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug    = 0;
@@ -379,6 +379,33 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
         print __("Specify at least one '--patch name-version'.") . "\n";
         print __("Use 'smt-staging listupdates' to see the list of available patches.") . "\n";
+        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+    }
+
+    # check consistency of the resulting repository before applying changes
+    my $checker = SMT::Parser::FilteredRepoChecker->new(log => $log, vblevel => $vblevel); 
+    $checker->repoPath($localrepopath);
+    $checker->filter($filter);
+    printLog ($log, $vblevel, LOG_DEBUG, 'checking dependencies', 0);
+    my ($result, $problems, $causes) = $checker->check();
+    printLog ($log, $vblevel, LOG_DEBUG, 'DONE checking dependencies', 0);
+
+    if (not $result)
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+            __("Dependecy problems found."));
+
+        foreach my $pkg (keys %$problems)
+        {
+            printLog ($log, $vblevel, LOG_ERROR, sprintf (
+                __("Cannot remove package '%s' required by forbidden patch '%s'.\n"),
+                $pkg, $causes->{$pkg}));
+
+            printLog ($log, $vblevel, LOG_ERROR, sprintf (
+                __("The package is needed by patch '%s', which is allowed.\n"),
+                $problems->{$pkg}));
+        }
+
         SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
