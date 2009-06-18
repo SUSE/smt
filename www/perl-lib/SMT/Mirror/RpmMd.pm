@@ -638,6 +638,7 @@ sub mirror()
     }
 
     # parse it and find more resources
+    # download metadata right away and enqueue the rest of the files for later download
     my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
     $parser->resource($self->fullLocalRepoPath());
     $parser->specialmdlocation(1);
@@ -646,22 +647,9 @@ sub mirror()
     
     $self->{EXISTS} = undef;
 
-    foreach my $r ( sort keys %{$self->{JOBS}})
-    {
-        if( $dryrun )
-        {
-            #
-            # we have here only outdated files, so dryrun can display them all as "New File"
-            #
-            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,  sprintf("N %s", $self->{JOBS}->{$r}->fullLocalPath() ));
-            $self->{STATISTIC}->{DOWNLOAD} += 1;
-            
-            next;
-        }
-        
-        my $mres = $self->{JOBS}->{$r}->mirror();
-        $self->job2statistic($self->{JOBS}->{$r});
-    }
+    #
+    # parse old and new patch metadata
+    #
 
     my $newpatches;
     my $oldpatches;
@@ -673,11 +661,7 @@ sub mirror()
     # updateinfo.xml.gz file path
     my $olduifname = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
 
-    #
-    # calculate the new available patches
-    #
-
-    # with filtering (generates new metadata)
+    # with filtering (will generate new metadata later)
     if (defined $self->{FILTER} && not $self->{FILTER}->empty() && -e $olduifname)
     {
         # new updateinfo.xml file path
@@ -768,6 +752,10 @@ sub mirror()
             "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
     }
 
+    #
+    # create a list of new patches (the diff of before and after mirroring)
+    #
+
     my $pid;
     foreach $pid (keys %{$oldpatches})
     {
@@ -794,6 +782,11 @@ sub mirror()
     # save the new patches for newpatches() function
     $self->{NEWPATCHES} = $newpatches;
 
+    #
+    # remove unwanted packages from metadata and the download queue
+    # ($self->{JOBS})
+    #
+
     if (defined $pkgstoremove && @$pkgstoremove)
     {
         if (!$self->removePackages($pkgstoremove, $self->{MDFILES}))
@@ -804,7 +797,10 @@ sub mirror()
         }
     }
 
+    #
     # update repomd.xml with changed metadata files
+    #
+
     my $repodatadir = $self->fullLocalRepoPath() . '/.repodata';
     if ($self->metadataChanged($self->{MDFILES}) &&
         $self->updateRepomd($self->{MDFILES}, $repodatadir))
@@ -813,6 +809,31 @@ sub mirror()
         $self->signrepo(
             $self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass);
     }
+
+    #
+    # execute enqueued jobs (download the files)
+    #
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
+        'Finished downloading and parsing the metadata, going to download the rest of the files...');
+    foreach my $r ( sort keys %{$self->{JOBS}})
+    {
+        if( $dryrun )
+        {
+            #
+            # we have here only outdated files, so dryrun can display them all as "New File"
+            #
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
+                sprintf("N %s", $self->{JOBS}->{$r}->fullLocalPath()));
+            $self->{STATISTIC}->{DOWNLOAD} += 1;
+
+            next;
+        }
+
+        my $mres = $self->{JOBS}->{$r}->mirror();
+        $self->job2statistic($self->{JOBS}->{$r});
+    }
+
 
     #
     # if no error happens copy .repodata to repodata
@@ -1454,26 +1475,39 @@ sub removePackages($$$)
         }
     }
 
-    # metadata are updated, now remove the packages from the filesystem
+    # metadata are updated, now remove the packages from the download queue
+    # and filesystem
 
     $tgtrepopath = $tgtrepopath . '/' if ($tgtrepopath !~ /\/$/);
     foreach my $pkg (values %$pkgsfound)
     {
-        if (not unlink $tgtrepopath . $pkg->{loc})
+        # remove from filesystem
+        if (-e $tgtrepopath . $pkg->{loc})
         {
-            # No need to fail because of this; the important thing is the
-            # packages were removed from the metadata. Just warn here.
-            printLog($self->{LOG}, $self->vblevel(), LOG_WARN,
-                "unlink($tgtrepopath$pkg->{loc}) failed: $!");
+            if (not unlink $tgtrepopath . $pkg->{loc})
+            {
+                # No need to fail because of this; the important thing is the
+                # packages were removed from the metadata. Just warn here.
+                printLog($self->{LOG}, $self->vblevel(), LOG_WARN,
+                    "unlink($tgtrepopath$pkg->{loc}) failed: $!");
+            }
+            else
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
+                    "Deleted $tgtrepopath$pkg->{loc}");
+            }
         }
-        else
+
+        #remove from download queue
+        if (defined $self->{JOBS}->{$pkg->{loc}})
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
-                "Deleted $tgtrepopath$pkg->{loc}");
+            delete $self->{JOBS}->{$pkg->{loc}};
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                "Removing download job $pkg->{loc}");
         }
     }
 
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
         "All filtered packages successfully removed.");
 
     return 1;
