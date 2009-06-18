@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use IPC::Open3;
+use SMT::Agent::Constants;
+use SMT::Agent::Utils;
+
+sub jobhandler
+{
+  my %retval;
+  my ($jobtype, $jobid, $args, $verbose) =  @_;
+
+  SMT::Agent::Utils::logger ("jobhandler for execute called", $jobid);
+  SMT::Agent::Utils::logger ("execute runs jobid \"$jobid\"", $jobid);
+
+
+  # check whether this handler can handle requested jobtype
+  SMT::Agent::Utils::error ("wrong job handler: \"execute\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "execute" );
+
+
+  # collect and verify arguments
+  my $command;
+
+
+  my $commandline   = $args->[0]->{command}  if ( defined ( $args->[0]->{command} ) );
+
+  #==  run bash ==
+
+  my $command = "/bin/bash";
+  my @cmdArgs;
+  push (@cmdArgs, "-c");
+  push (@cmdArgs, $commandline);
+
+  (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
+
+  if ( $verbose ne "true" )
+  {
+    $stdout="";
+    $stderr="";
+  }
+
+
+  return (
+    stdout => defined ( $stdout )? $stdout : "",
+    stderr => defined ( $stderr )? $stderr : "",
+    exitcode => $retval,
+    success => ($retval == 0 ) ? "true" : "false",
+    message => ($retval == 0 ) ? "execute successfully finished" : "execute failed"
+  );
+
+}
+
+SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"execute\"");
+
+return 1;
+
