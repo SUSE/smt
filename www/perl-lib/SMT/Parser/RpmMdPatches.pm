@@ -190,7 +190,9 @@ sub parse
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "File not found $path");
             next;
         }
-    
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Found $path. Parsing...");
+
         # if we need these data sometimes later then we have to find
         # a new solution. But this save us 80% time.
         next if($start =~ /other\.xml[\.gz]*$/);
