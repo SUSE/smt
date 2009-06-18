@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jun 18 19:13:30 CEST 2009 - jkupec@suse.cz
+
+- avoiding downloading of (.rpm) files which would later be
+  removed because of patch filtering.
+
+-------------------------------------------------------------------
 Thu Jun 18 14:55:33 CEST 2009 - jkupec@suse.cz
 
 - fixed unknown LOG_MARK constant error (bnc #514354) (mc)
