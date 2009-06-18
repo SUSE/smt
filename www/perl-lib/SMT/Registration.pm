@@ -10,7 +10,7 @@ use Apache2::Filter ();
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR LOG_INFO LOG_MARK :log MODE_READBYTES);
+use Apache2::Const -compile => qw(OK SERVER_ERROR :log MODE_READBYTES);
 use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
 
 use constant IOBUFSIZE => 8192;
@@ -979,8 +979,7 @@ sub findColumnsForProducts
         $statement .= "ARCHLOWER=".$dbh->quote(lc($phash->{arch}))." OR " if(defined $phash->{arch} && $phash->{arch} ne "");
         $statement .= "ARCHLOWER IS NULL)";
         
-        $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
-                       APR::Const::SUCCESS, "STATEMENT: $statement");
+        $r->log->info( "STATEMENT: $statement");
         
         my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
         
