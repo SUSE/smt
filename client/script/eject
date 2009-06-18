@@ -13,16 +13,23 @@ sub jobhandler
   my ($jobtype, $jobid, $args, $verbose) =  @_;
 
   SMT::Agent::Utils::logger ("jobhandler for eject called", $jobid);
-  SMT::Agent::Utils::logger ("patchstatus runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::logger ("eject runs jobid \"$jobid\"", $jobid);
 
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"eject\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "eject" );
+
+  my $action = "open";
+  $action   = $args->[0]->{action}  if ( defined ( $args->[0]->{action} ) );
+
+  SMT::Agent::Utils::error( "argument invalid: action", $jobid ) if ( $action != "open" && $action != "close" && $action != "toggle");
+
 
   #==  run eject ==
 
   my $command = "/bin/eject";
   my @cmdArgs;
-  push (@cmdArgs, "-T");			
+  push (@cmdArgs, "-T") if $action = "toggle";			
+  push (@cmdArgs, "-t") if $action = "close";			
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
