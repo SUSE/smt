@@ -181,7 +181,18 @@ if ( defined $help and ( $help == 1 ) )
   print "   --verbosejob    :  --no-verbosejob"."\n";
   print "   --forceinstall  :  --no-forceinstall"."\n";
   print "   --agreelicense  :  --no-agreelicense"."\n";
-
+  print "\n";
+  print __("available job types")."\n";
+  print "   1 : patchstatus   : "."\n";
+  print "   2 : softwarepush  : "."\n";
+  print "   3 : update        : "."\n";
+  print "   4 : execute       : "."\n";
+  print "   5 : reboot        : "."\n";
+  print "   6 : -reserved-    : "."\n";
+  print "   7 : wait          : "."\n";
+  print "   8 : eject         : "."\n";
+  print "   0 : -invalid job- : "."\n";
+  print '  '.__("Jobs of type 0 will be cleaned up regularly.")."\n";
 
   exit 0;
 }
@@ -253,9 +264,9 @@ if (defined $finished)
     $query{'FINISHED-'} = 'NULL' if (not $finished);
 }
 
-$query{'VERBOSE'} = $verbosejob if (defined $verbosejob);
-$query{'PERSISTENT'} = $persistent if (defined $persistent);
-$query{'PARENT'} = $persistent if (defined $parent);
+$query{'VERBOSE'} =  $verbosejob ? 'true':'false';
+$query{'PERSISTENT'} = $persistent ? 'true':'false';
+$query{'PARENT'} = $parent if (defined $parent);
 
 my %para = ();
 $para{'PACKAGELIST'} = \@SWpackagelist if (@SWpackagelist);
@@ -362,7 +373,7 @@ if ( defined $create )
     elsif ( $typeID == 6 )
     {
         ## configure ##
-        print __("The configure job type is not supported. Its reserved for future use.")."\n";
+        print __("This job type is reserved for future use.")."\n";
         exit 1;
     }
     elsif ( $typeID == 7 )
