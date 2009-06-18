@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jun 18 15:35:05 CEST 2009 - tgoettlicher@suse.de
+
+- added jobtype execute
+- version 0.0.5
+
+-------------------------------------------------------------------
 Wed Jun 17 18:56:12 CEST 2009 - jkupec@suse.cz
 
 - fixed handling of force and agreelicenses, they can only appear

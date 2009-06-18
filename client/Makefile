@@ -1,5 +1,5 @@
 NAME          = smt-client
-VERSION       = 0.0.4
+VERSION       = 0.0.5
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -28,6 +28,7 @@ install:
 	install -m 755 script/processjob $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/softwarepush $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/patchstatus $(DESTDIR)/usr/lib/SMT/bin/job
+	install -m 755 script/execute $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/eject $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 644 logrotate/smt-client $(DESTDIR)/etc/logrotate.d/
 
