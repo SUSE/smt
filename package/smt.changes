@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Thu Jun 18 14:55:33 CEST 2009 - jkupec@suse.cz
+
+- fixed unknown LOG_MARK constant error (bnc #514354) (mc)
+- 1.1.12
+
+-------------------------------------------------------------------
+Wed Jun 17 20:35:41 CEST 2009 - jdsn@suse.de
+
+- fixing smt-job script
+- 1.1.11 
+
+-------------------------------------------------------------------
 Wed Jun 17 18:31:01 CEST 2009 - jkupec@suse.cz
 
 - checking for broken dependencies when manipulating filters
