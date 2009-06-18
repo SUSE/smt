@@ -119,7 +119,7 @@ sub error
   if ( defined ( $jobid ) )
   {
     SMT::Agent::Utils::logger ( "let's tell the server that $jobid failed" );
-    SMT::Agent::RestXML::updatejob ( $jobid, "false", $message );
+    SMT::Agent::RestXML::updatejob ( $jobid, 2, $message );
   }
   SMT::Agent::Utils::logger ("ERROR: $message", $jobid);
   die "Error: $message\n";
