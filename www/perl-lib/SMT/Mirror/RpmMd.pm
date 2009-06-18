@@ -687,6 +687,9 @@ sub mirror()
         my $out = new IO::File();
         $out->open("> $uifname");
 
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+            "Going to look for and parse new patch metadata.");
+
         # parse with filter and writer
         my $parsenew = SMT::Parser::RpmMdPatches->new(
             log => $self->{LOG}, vblevel => $self->vblevel(),
@@ -699,6 +702,9 @@ sub mirror()
         $newpatches = $parsenew->parse(
             ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
         $pkgstoremove = $parsenew->filteredpkgs();
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+            "Going to look for and parse old patch metadata.");
 
         # parse the original metadata with the filter
         my $parseorig = SMT::Parser::RpmMdPatches->new(
