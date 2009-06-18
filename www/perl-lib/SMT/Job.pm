@@ -276,7 +276,15 @@ sub save
   my @sqlvalues = ();
   my @updatesql = ();
  
-  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished timelag message success);
+ 
+  # VERBOSE
+  push ( @sqlkeys, "VERBOSE" );
+  push ( @sqlvalues,  ( defined $self->{verbose} && ( $self->{verbose} =~ /^1$/  || $self->{verbose} =~ /^true$/ ) ) ? '1':'0' );
+
+  # PERSISTENT
+  push ( @sqlkeys, "PERSISTENT" );
+  push ( @sqlvalues,  ( defined $self->{persistent} && ( $self->{persistent} =~ /^1$/  || $self->{persistent} =~ /^true$/ ) ) ? '1':'0' );
 
   # TYPE
   push ( @sqlkeys, "TYPE" );
@@ -288,7 +296,7 @@ sub save
 
   # arguments
   push ( @sqlkeys, "ARGUMENTS" );
-  push ( @sqlvalues, $self->{dbh}->quote( getArgumentsXML( $self ) ) ); # hash to xml
+  push ( @sqlvalues, $self->{dbh}->quote( $self->getArgumentsXML() ) ); # hash to xml
 
   foreach my $attrib (@attribs)
   {
@@ -327,8 +335,6 @@ sub asXML
       'type'      => $self->{type},
       'arguments' => $self->{arguments},
       'verbose'   => ( defined $self->{verbose} && $self->{verbose} eq "1" ) ? "true" : "false"
-
-    #TODO: add other attributes
 
     };
 
