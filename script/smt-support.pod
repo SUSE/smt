@@ -4,15 +4,15 @@
 
 =head1 NAME
 
-smt support
+smt-support
 
 =head1 SYNOPSIS
 
-smt support [OPTION [OPTION ...]]
+smt-support [OPTION [OPTION ...]]
 
 =head1 DESCRIPTION
 
-C<smt support> manages uploaded support data (comming from the supportconfig
+C<smt-support> manages uploaded support data (coming from the supportconfig
 tool or its equivalents), allows to forward them to Novell, either selectively
 or all.
 
@@ -22,63 +22,63 @@ or all.
 
 =over
 
-=item -h
+=item -h, --help
 
 Shows the help screen
 
-=item -i <directory>
+=item -i, --incoming <directory>
 
 Sets the incoming directory where supportconfig archives are uploaded.
 Also set with SMT_INCOMING environment variable.
 
-=item -s <SR number>
+=item -l, --list
 
-The Novell Service Request 11 digit number
+Lists the uploaded supportconfig archives (This is the default action)
 
-=item -n <Name>
-
-Contact's first and last name in quotes
-
-=item -c <Company>
-
-Company name
-
-=item -d <id>
-
-Enter the store ID if applicable
-
-=item -t <id>
-
-Enter the Terminal ID if applicable
-
-=item -p <Phone>
-
-The contact phone number
-
-=item -e <Email>
-
-Contact email address
-
-=item -l
-
-Lists the uploaded supportconfig archives
-
-=item -r <archive>
+=item -r, --remove <archive>
 
 Deletes the specified archive
 
-=item -R
+=item -R, --empty
 
 Deletes all archives in the incoming directory
 
-=item -u <archive>
+=item -u, --upload <archive>
 
 Uploads the specified archive to Novell, and repackages archive with
 contact information if options -sncpe are given
 
-=item -U
+=item -U, --uploadall
 
 Uploads all archives in the incoming directory to Novell
+
+=item -s, --srnum <SR number>
+
+The Novell Service Request 11 digit number
+
+=item -n, --name <Name>
+
+Contact's first and last name in quotes
+
+=item -c, --company <Company>
+
+Company name
+
+=item -d, --storeid <id>
+
+Enter the store ID if applicable
+
+=item -t, --terminalid <id>
+
+Enter the Terminal ID if applicable
+
+=item -p, --phone <Phone>
+
+The contact phone number
+
+=item -e, --email <Email>
+
+Contact email address
 
 =back
 

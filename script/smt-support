@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SVER=0.90.1
-SDATE="2009 05 06"
+SVER=0.95.1
+SDATE="2009 06 18"
 
 ##############################################################################
 #  smt-support - Maintains incoming SMT server archives to be uploaded
@@ -18,7 +18,7 @@ echo ${SMT_INCOMING:=/var/spool/smt-support} &> /dev/null
 UPLOAD_FILEPATH=""
 ARCH_FILE=""
 NEW_ARCH_FILE=""
-ACTION=0
+ACTION=1
 REPACKAGE=0
 RCODE=0
 unset SRNUM
@@ -28,12 +28,61 @@ unset SRNUM
 ##############################################################################
 
 title() {
-	echo "============================================================================="
-	echo "                      SMT Utilities - Archive Support"
-	echo "                           Script Version: $SVER"
-	echo "                          Script Date: $SDATE"
-	echo "============================================================================="
-	echo
+	clear
+	cat << EOTITLE >&2
+=============================================================================
+                      SMT Utilities - Archive Support
+                           Script Version: $SVER
+                          Script Date: $SDATE
+=============================================================================
+
+EOTITLE
+}
+
+show_help() {
+	test -n "$1" && { echo "$1"; echo; } >&2
+	cat << EOHELPT >&2
+  Usage: $CURRENT_SCRIPT <-l|-r|-R|-u|-U> [OPTION [OPTION ...]]
+
+  Maintains incoming SMT server archives to be uploaded to Novell.
+
+  -h, --help This screen
+  -i, --incoming <directory>
+     Sets the incoming directory where supportconfig archives are
+     uploaded. Also set with SMT_INCOMING environment variable.
+  -l, --list
+     Lists the uploaded supportconfig archives (This is the default action.)
+  -r, --remove <archive>
+     Deletes the specified archive
+  -R, --empty
+     Deletes all archives in the incoming directory
+  -u, --upload <archive>
+     Uploads the specified archive to Novell, and repackages archive with
+     contact information if options -sncpe are given
+  -U, --uploadall
+     Uploads all archives in the incoming directory to Novell
+  -s, --srnum <SR number>
+     The Novell Service Request 11 digit number
+  -n, --name <Name>
+     First and last name of contact in quotes
+  -c, --company <Company>
+     Company name
+  -d, --storeid <id>
+     Enter the store ID if applicable
+  -t, --terminalid <id>
+     Enter the Terminal ID if applicable
+  -p, --phone <Phone>
+     The contact phone number
+  -e, --email <Email>
+     Contact email address
+
+  Example: $CURRENT_SCRIPT --list
+  Example: $CURRENT_SCRIPT --upload nts_fs01_090617_1300.tbz --srnum 21212121212 --name "Joe Customer" --email "joe@company.com" --company "Company Foo"
+  Example: $CURRENT_SCRIPT --remove nts_fs02_090617_1400.tbz
+
+EOHELPT
+
+exit 1
 }
 
 checkIncoming() {
@@ -90,7 +139,6 @@ listIncoming() {
 	echo
 	cd $SMT_INCOMING
 	\ls -1 *t[b,g]z 2>> $SMT_LOG | tee -a $SMT_LOG
-	echo
 }
 
 validateSR() {
@@ -283,9 +331,9 @@ uploadIncoming() {
 		COMPLETED=0
 		for ARCH_FILE in *t[b,g]z
 		do
-			logEntry Uploading $ARCH_FILE
 			RPG_ERR=0
 			if (( REPACKAGE )); then
+				logEntry "Archive" $ARCH_FILE
 				repackageArchive
 				RPA=$?
 				if [ $RPA -gt 0 ]; then
@@ -295,6 +343,7 @@ uploadIncoming() {
 			fi
 			if [ $RPG_ERR -eq 0 ]; then			
 				UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
+				logEntry Uploading $ARCH_FILE
 				test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5
 				secureUpload ${UPLOAD_FILEPATH}
 				if [ $? -eq 0 ]; then
@@ -313,75 +362,39 @@ uploadIncoming() {
 	fi
 }
 
-show_help() {
-	echo " Usage: $CURRENT_SCRIPT [OPTION [OPTION ...]]"
-	echo
-	echo "  -h This screen"
-	echo "  -i <directory>"
-	echo "     Sets the incoming directory where supportconfig archives are"
-	echo "     uploaded. Also set with SMT_INCOMING environment variable."
-	echo "  -s <SR number>"
-	echo "     The Novell Service Request 11 digit number"
-	echo "  -n <Name>"
-	echo "     Contact's first and last name in quotes"
-	echo "  -c <Company>"
-	echo "     Company name"
-	echo "  -d <id>"
-	echo "     Enter the store ID if applicable"
-	echo "  -t <id>"
-	echo "     Enter the Terminal ID if applicable"
-	echo "  -p <Phone>"
-	echo "     The contact phone number"
-	echo "  -e <Email>"
-	echo "     Contact email address"
-	echo "  -l Lists the uploaded supportconfig archives"
-	echo "  -r <archive>"
-	echo "     Deletes the specified archive"
-	echo "  -R Deletes all archives in the incoming directory"
-	echo "  -u <archive>"
-	echo "     Uploads the specified archive to Novell, and repackages archive with"
-	echo "     contact information if options -sncpe are given"
-	echo "  -U Uploads all archives in the incoming directory to Novell"
-}
-
 ##############################################################################
 # Main
 ##############################################################################
 
-while getopts :hlr:Ru:Ui:s:n:c:p:e:d:t: TMPOPT
-do
-	case $TMPOPT in
-	\:)	clear; title
-			case $OPTARG in
-			*) echo "ERROR: Missing Argument -$OPTARG"
-				;;
-			esac
-			echo; show_help; echo; exit 0 ;;
-	\?)	clear; title
-			case $OPTARG in
-			*) echo "ERROR: Invalid Option -$OPTARG"
-				;;
-			esac
-			echo; show_help; echo; exit 0 ;;
-	i) SMT_INCOMING="$OPTARG" ;;
-	s) REPACKAGE=1; SRNUM="$OPTARG" ;;
-	n) REPACKAGE=1; CONTACT_NAME="$OPTARG" ;;
-	c) REPACKAGE=1; CONTACT_COMPANY="$OPTARG" ;;
-	d) REPACKAGE=1; CONTACT_STOREID="$OPTARG" ;;
-	t) REPACKAGE=1; CONTACT_TERMID="$OPTARG" ;;
-	p) REPACKAGE=1; CONTACT_PHONE="$OPTARG" ;;
-	e) REPACKAGE=1; CONTACT_EMAIL="$OPTARG" ;;
-
-	h) ACTION=0 ;;
-	l) ACTION=1 ;;
-	r) ACTION=2; ARCH_FILE="$OPTARG" ;;
-	R) ACTION=3 ;;
-	u) ACTION=4; ARCH_FILE="$OPTARG" ;;
-	U) ACTION=5 ;;
+OPTARG=""
+while true ; do
+	case $1 in
+	"") break ;;
+	-i|--incoming) OPTARG=SMT_INCOMING ;;
+	-s|--srnum) REPACKAGE=1; OPTARG=SRNUM ;;
+	-n|--name) REPACKAGE=1; OPTARG=CONTACT_NAME ;;
+	-c|--company) REPACKAGE=1; OPTARG=CONTACT_COMPANY ;;
+	-d|--storeid) REPACKAGE=1; OPTARG=CONTACT_STOREID ;;
+	-t|--terminalid) REPACKAGE=1; OPTARG=CONTACT_TERMID ;;
+	-p|--phone) REPACKAGE=1; OPTARG=CONTACT_PHONE ;;
+	-e|--email) REPACKAGE=1; OPTARG=CONTACT_EMAIL ;;
+	-h|-H|--help) ACTION=0 ;;
+	-l|--list) ACTION=1 ;;
+	-r|--remove) ACTION=2; OPTARG=ARCH_FILE ;;
+	-R|--empty) ACTION=3 ;;
+	-u|--upload) ACTION=4; OPTARG=ARCH_FILE ;;
+	-U|--uploadall) ACTION=5 ;;
+	*) title; show_help "ERROR: Invalid Option $1" ;;
 	esac
+	if [ -n "$OPTARG" ] ; then
+		test -z "$2" && { title; show_help "ERROR: Missing Argument, Option $1 Needs an Argument"; }
+		eval $OPTARG=\$2
+		shift
+		OPTARG=""
+	fi
+	shift
 done
 
-clear
 title
 validateSR
 case $ACTION in
