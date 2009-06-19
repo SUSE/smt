@@ -25,15 +25,17 @@ sub jobhandler
 
 
   $force   = $args->[0]->{force}  if ( defined ( $args->[0]->{force} ) );
-#  SMT::Agent::Utils::error( "argument missing: force", $jobid )		if ( ! defined( $force ) );
   $force = "false"	if ( ! defined( $force ) );
-  SMT::Agent::Utils::error( "argument invalid: force", $jobid )		if ( ! ( $force eq "true" || $force eq "false" ) );
+  SMT::Agent::Utils::error( "argument invalid: force", $jobid )	if ( ! ( $force eq "true" || $force eq "false" || $force eq "1" || $force eq "0" ) );
+  $force = "true" if ($force eq "1" );
+  $force = "false" if ($force eq "0" );
 
   $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
-#  SMT::Agent::Utils::error( "argument missing: agreelicenses", $jobid )	if ( ! defined( $agreelicenses ) );
   $agreelicenses = "false"	if ( ! defined( $agreelicenses ) );
-  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false" ) );
-
+  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false"  || 
+									  $agreelicenses eq "0" || $agreelicenses eq "1"  ) );
+  $agreelicenses = "true" if ($agreelicenses eq "1" );
+  $agreelicenses = "false" if ($agreelicenses eq "0" );
 
   $packages   = $args->[0]->{packages}->[0]->{package}	if ( defined ( $args->[0]->{packages}->[0]->{package}  ) );
   SMT::Agent::Utils::error( "argument missing: packages", $jobid ) 	if ( ! defined( $packages   ));
