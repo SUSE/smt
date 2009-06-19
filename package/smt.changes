@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Jun 19 11:32:46 CEST 2009 - mc@suse.de
+
+- do not ignore case of options (bnc#514637)
+
+-------------------------------------------------------------------
 Thu Jun 18 19:13:30 CEST 2009 - jkupec@suse.cz
 
 - avoiding downloading of (.rpm) files which would later be
