@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 19 15:28:12 CEST 2009 - jkupec@suse.cz
+
+- respect MirrorSRC smt.conf option when creating
+  testing/production snapshots (bnc #510927)
+
+-------------------------------------------------------------------
 Wed Jun 10 16:15:14 CEST 2009 - locilka@suse.cz
 
 - Better 'Enter passphrase' UI layout.
