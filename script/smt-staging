@@ -429,6 +429,12 @@ elsif ($command eq 'createrepo')
         SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
+    my $mirrorsrc = $cfg->val("LOCAL", "MirrorSRC");
+    if (defined $mirrorsrc && lc($mirrorsrc) eq "false")
+    { $mirrorsrc = 0; }
+    else
+    { $mirrorsrc = 1; }
+
     my $basepath = $cfg->val("LOCAL", "MirrorTo");
 
     # source
@@ -454,7 +460,8 @@ elsif ($command eq 'createrepo')
         log        => $log,
         vblevel    => $vblevel,
         filter     => $filter,
-        nohardlink => $nohardlink);
+        nohardlink => $nohardlink,
+        mirrorsrc  => $mirrorsrc);
 
     $mirror->uri($sourcerepourl);
     $mirror->localBasePath($basepath);
