@@ -23,26 +23,19 @@ sub jobhandler
   my $exitcode = "0";
   $exitcode   = $args->[0]->{exitcode}  if ( defined ( $args->[0]->{exitcode} ) );
 
-  SMT::Agent::Utils::error( "argument invalid: waittime", $jobid ) if ( $waittime  !~ /^\d$/ );
+  SMT::Agent::Utils::error( "argument invalid: waittime", $jobid ) if ( $waittime  !~ /^\d+$/ );
 
 
   #==  run sleep ==
 
-  SMT::Agent::Utils::logger ("sleeping ".$waititme." seconds....", $jobid);
+  SMT::Agent::Utils::logger ("sleeping ".$waittime." seconds....", $jobid);
   sleep ($waittime);
   my $retval = $exitcode;
   SMT::Agent::Utils::logger ("sleeping done.", $jobid);
 
-
-  if ( $verbose ne "true" )
-  {
-    $stdout="";
-    $stderr="";
-  }
-
   return (
-    stdout => defined ( $stdout )? $stdout : "",
-    stderr => defined ( $stderr )? $stderr : "",
+    stdout => "",
+    stderr => "",
     exitcode => $retval,
     success => ($retval == 0 ) ? "true" : "false",
     message => ($retval == 0 ) ? "wait successfully finished" : "wait failed"

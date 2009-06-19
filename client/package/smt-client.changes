@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 19 16:36:27 CEST 2009 - tgoettlicher@suse.de
+
+- added jobtype wait and reboot
+- version 0.0.6
+
+-------------------------------------------------------------------
 Thu Jun 18 15:35:05 CEST 2009 - tgoettlicher@suse.de
 
 - added jobtype execute
