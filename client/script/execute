@@ -7,7 +7,6 @@ use SMT::Agent::Utils;
 
 sub jobhandler
 {
-  my %retval;
   my ($jobtype, $jobid, $args, $verbose) =  @_;
 
   SMT::Agent::Utils::logger ("jobhandler for execute called", $jobid);

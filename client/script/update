@@ -9,12 +9,12 @@ sub jobhandler
 {
   my ($jobtype, $jobid, $args, $verbose) =  @_;
 
-  SMT::Agent::Utils::logger ("jobhandler for softwarepush called", $jobid);
-  SMT::Agent::Utils::logger ("softwarepush runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::logger ("jobhandler for update called", $jobid);
+  SMT::Agent::Utils::logger ("update runs jobid \"$jobid\"", $jobid);
 
 
   # check whether this handler can handle requested jobtype
-  SMT::Agent::Utils::error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
+  SMT::Agent::Utils::error ("wrong job handler: \"update\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "update" );
 
 
   # collect and verify arguments
@@ -23,12 +23,6 @@ sub jobhandler
   my $packages;
 
 
-  $force   = $args->[0]->{force}  if ( defined ( $args->[0]->{force} ) );
-  $force = "false"	if ( ! defined( $force ) );
-  SMT::Agent::Utils::error( "argument invalid: force", $jobid )	if ( ! ( $force eq "true" || $force eq "false" || $force eq "1" || $force eq "0" ) );
-  $force = "true" if ($force eq "1" );
-  $force = "false" if ($force eq "0" );
-
   $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
   $agreelicenses = "false"	if ( ! defined( $agreelicenses ) );
   SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false"  || 
@@ -36,9 +30,6 @@ sub jobhandler
   $agreelicenses = "true" if ($agreelicenses eq "1" );
   $agreelicenses = "false" if ($agreelicenses eq "0" );
 
-  $packages   = $args->[0]->{packages}->[0]->{package}	if ( defined ( $args->[0]->{packages}->[0]->{package}  ) );
-  SMT::Agent::Utils::error( "argument missing: packages", $jobid ) 	if ( ! defined( $packages   ));
-  SMT::Agent::Utils::error( "argument invalid: packages", $jobid )  	if ( ! isa($packages, 'ARRAY' ) );
 
 
   #==  run zypper ==
@@ -48,9 +39,8 @@ sub jobhandler
   push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
   push (@cmdArgs, "-x");					# xml output
   push (@cmdArgs, "--non-interactive");				# doesn't ask user
-  push (@cmdArgs, "in");					# install
+  push (@cmdArgs, "up");					# install
   push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
-  push (@cmdArgs, "-f") if ( $force eq "true" );		# reinstall
 
   foreach my $pack (@$packages)                                                             
   {                                                                                         
@@ -71,12 +61,12 @@ sub jobhandler
     stderr => defined ( $stderr )? $stderr : "",
     exitcode => $retval,
     success => ($retval == 0 ) ? "true" : "false",
-    message => ($retval == 0 ) ? "softwarepush successfully finished" : "softwarepush failed"
+    message => ($retval == 0 ) ? "update successfully finished" : "update failed"
   );
 
 }
 
-SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"softwarepush\"");
+SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"update\"");
 
 return 1;
 

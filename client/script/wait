@@ -1,0 +1,57 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use IPC::Open3;
+use SMT::Agent::Constants;
+use SMT::Agent::Utils;
+use XML::Simple;
+use UNIVERSAL 'isa';
+
+sub jobhandler
+{
+  my ($jobtype, $jobid, $args, $verbose) =  @_;
+
+  SMT::Agent::Utils::logger ("jobhandler for wait called", $jobid);
+  SMT::Agent::Utils::logger ("wait runs jobid \"$jobid\"", $jobid);
+
+  # check whether this handler can handle requested jobtype
+  SMT::Agent::Utils::error ("wrong job handler: \"wait\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "wait" );
+
+  my $waittime = "0";
+  $waittime   = $args->[0]->{waittime}  if ( defined ( $args->[0]->{waittime} ) );
+
+  my $exitcode = "0"
+  $exitcode   = $args->[0]->{exitcode}  if ( defined ( $args->[0]->{exitcode} ) );
+
+  SMT::Agent::Utils::error( "argument invalid: waittime", $jobid ) if ( $waittime  !~ /^\d$/ );
+
+
+  #==  run sleep ==
+
+  SMT::Agent::Utils::logger ("sleeping ".$waititme." seconds....", $jobid);
+  sleep ($waittime);
+  my $retval = $exitcode;
+  SMT::Agent::Utils::logger ("sleeping done.", $jobid);
+
+
+  if ( $verbose ne "true" )
+  {
+    $stdout="";
+    $stderr="";
+  }
+
+  return (
+    stdout => defined ( $stdout )? $stdout : "",
+    stderr => defined ( $stderr )? $stderr : "",
+    exitcode => $retval,
+    success => ($retval == 0 ) ? "true" : "false",
+    message => ($retval == 0 ) ? "wait successfully finished" : "wait failed"
+  );
+
+
+}
+
+SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"wait\"");
+
+1;
+
