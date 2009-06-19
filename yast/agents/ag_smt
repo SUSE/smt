@@ -350,9 +350,16 @@ sub CreateSnapshot ($) {
 	return YCP_FALSE;
     }
 
+    my $mirrorsrc = $cfg->val('LOCAL', 'MirrorSRC');
+    if (defined $mirrorsrc && lc($mirrorsrc) eq "false")
+    { $mirrorsrc = 0; }
+    else
+    { $mirrorsrc = 1; }
+
     my %mirror_args = (
 	log => $log,
-	vblevel => $vblevel
+	vblevel => $vblevel,
+        mirrorsrc => $mirrorsrc
     );
 
     my $staging_allowed = GetStagingAllowedInternal ({'repositoryid' => $repositoryid});
