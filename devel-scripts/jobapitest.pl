@@ -44,27 +44,32 @@ $job->persistent(1);
 $job->timelag("14:00:00");
 $job->id(44);
 
-if ( $c->addJob($job) )
-{
-  print "successfully added\n\n";
-}
+$job->readJobFromHash({'id'=>'11', 'guid'=>'Thomas'}  );
 
-print "Next id: ". $c->getNextJobID()."\n";
-
-print $c->getJob("guid11",$c->getNextJobID("guid11", 0),1);
+print $job->resolveJobStatus('1');
 
 
-if ( $c->finishJob("guid11", "<job id='44' message='a'><success>true</success></job>"))
-{
-  print "successfully finished\n\n";
-}
+#if ( $c->addJob($job) )
+#{
+#  print "successfully added\n\n";
+#}
+
+#print "Next id: ". $c->getNextJobID()."\n";
+#
+#print $c->getJob("guid11",$c->getNextJobID("guid11", 0),1);
+
+
+#if ( $c->finishJob("guid11", "<job id='44' message='a'><success>true</success></job>"))
+#{
+#  print "successfully finished\n\n";
+#}
 
 #print "pers: ".$c->isPersistent("guid11","44");
 
 
 
 
-#print $job->asXML();
+print $job->asXML();
 #print Dumper($job);
 
 

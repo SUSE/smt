@@ -24,11 +24,6 @@ sub jobhandler
   push (@cmdArgs, "-c");			
   push (@cmdArgs, "/sbin/shutdown -r +1 &");				
 
-  foreach my $pack (@$packages)                                                             
-  {                                                                                         
-    push (@cmdArgs, $pack);
-  }    
-
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
   if ( $verbose ne "true" )

@@ -44,7 +44,7 @@ else
 
 
   my $verbose = "false";
-  $verbose = true if (defined $jobdata{verbose} && ( jobdata{verbose} eq "1" || jobdata{verbose} eq "true"  );
+  $verbose = "true" if (defined $jobdata{verbose} && ( $jobdata{verbose} eq "1" || $jobdata{verbose} eq "true"  ) );
 
   my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args}, $verbose );
 

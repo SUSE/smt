@@ -32,6 +32,7 @@ install:
 	install -m 755 script/eject $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/update $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 755 script/reboot $(DESTDIR)/usr/lib/SMT/bin/job
+	install -m 755 script/wait $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 644 logrotate/smt-client $(DESTDIR)/etc/logrotate.d/
 
 #	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
