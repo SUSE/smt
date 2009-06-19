@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 19 15:30:10 CEST 2009 - jkupec@suse.cz
+
+- respect MirrorSRC smt.conf option when creating testing/production
+  snapshots using 'smt staging createrepo' (bnc #510927)
+
+-------------------------------------------------------------------
 Fri Jun 19 11:32:46 CEST 2009 - mc@suse.de
 
 - do not ignore case of options (bnc#514637)
