@@ -79,7 +79,7 @@ touch $RPM_BUILD_ROOT/%{_sysconfdir}/cron.d/novell.com-smt-client
 %post
 if [ ! -s /etc/cron.d/novell.com-smt-client ]; then
     minute=`expr $RANDOM % 60`
-    echo "$minute */3 * * * /usr/sbin/smt-agent" > %{_sysconfdir}/cron.d/novell.com-smt-client
+    echo "$minute */3 * * * root /usr/sbin/smt-agent" > %{_sysconfdir}/cron.d/novell.com-smt-client
 fi
 %{fillup_only}
 exit 0
