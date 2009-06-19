@@ -258,6 +258,9 @@ sub save
 
   return undef unless defined $self->{guid};
 
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  my $guidid = $client->getClientIDByGUID($self->{guid}) || return undef;
+
   # retrieve next job id from database if no id is known
   if (!defined $self->{id})
   {
@@ -265,11 +268,6 @@ sub save
     return undef unless defined $id and defined $cookie;
     $self->{id} = $id;
   }
-
-
-  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
-  my $guidid = $client->getClientIDByGUID($self->{guid}) || return undef;
-
 
   my $sql = "insert into JobQueue ";
   my @sqlkeys = ();
