@@ -19,26 +19,14 @@ sub jobhandler
 
   #==  run shutdown ==
 
-  my $command = "/bin/bash";
-  my @cmdArgs;
-  push (@cmdArgs, "-c");			
-  push (@cmdArgs, "/sbin/shutdown -r +1 &");				
-
-  (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
-
-  if ( $verbose ne "true" )
-  {
-    $stdout="";
-    $stderr="";
-  }
-
+  `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;				
 
   return (
-    stdout => defined ( $stdout )? $stdout : "",
-    stderr => defined ( $stderr )? $stderr : "",
-    exitcode => $retval,
-    success => ($retval == 0 ) ? "true" : "false",
-    message => ($retval == 0 ) ? "reboot successfully triggered" : "reboot failed"
+    stdout => "",
+    stderr => "",
+    exitcode => 0;
+    success => "true",
+    message => "reboot triggered"
   );
 
 }
