@@ -34,15 +34,17 @@ my $genprod = 0;
 my $nohardlink = 0;
 my $LocalBasePath = ""; # TODO what's this about
 
-my @patches = ();
+my @userpatches = ();
 my $category = undef;
+my $all = 0;
 
 my $optres = GetOptions("testing|t"    => \$gentest,
                         "production|p" => \$genprod,
                         "nohardlink"   => \$nohardlink,
                         "directory=s"  => \$LocalBasePath,
-                        "patch=s"      => \@patches,
+                        "patch=s"      => \@userpatches,
                         "category=s"   => \$category,
+                        "all|a"        => \$all,
                         
                         "fromdir=s"    => \$FromLocalBasePath,
                         "fromlocalsmt" => \$fromlocalsmt,
@@ -62,10 +64,10 @@ sub printhelp
     print "    [--patch <patch> ... | --category <category>]\n";
     print "\n";
     print $scriptname . " forbid <repository>\n";
-    print "    [--patch <patch> ... | --category <category>]\n";
+    print "    [--patch <patch> ... | --category <category> | --all]\n";
     print "\n";
     print $scriptname . " allow <repository>\n";
-    print "    [--patch <patch> ... | --category <category>]\n";
+    print "    [--patch <patch> ... | --category <category> | --all]\n";
     print "\n";
     print $scriptname . " createrepo <repository>\n";
     print "    --testing|--production [--nohardlink]\n";
@@ -314,7 +316,7 @@ if ($command eq 'listupdates')
     $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
     
-    if (@patches)
+    if (@userpatches)
     {
         if (defined $category)
         {
@@ -322,7 +324,7 @@ if ($command eq 'listupdates')
                 '--category', '--patch') . "\n";
         }
         
-        foreach (@patches)
+        foreach (@userpatches)
         {
             if (not defined $patches->{$_})
             {
@@ -349,11 +351,11 @@ if ($command eq 'listupdates')
                 {
                     print $ident;
                     if ($_->[0] == SMT::Filter::TYPE_NAME_VERSION)
-                    { print '- ' . sprintf (__('Patch ID \'%s\''), $_->[1]) }
+                    { print '- ' . sprintf (__('patch ID \'%s\''), $_->[1]) }
                     elsif ($_->[0] == SMT::Filter::TYPE_SECURITY_LEVEL)
-                    { print '- ' . sprintf (__('Patch category \'%s\''), $_->[1]) }
+                    { print '- ' . sprintf (__('patch category \'%s\''), $_->[1]) }
                     elsif ($_->[0] == SMT::Filter::TYPE_NAME_REGEX)
-                    { print '- ' . sprintf (__('Regular expression \'%s\''), $_->[1]) }
+                    { print '- ' . sprintf (__('regular expression \'%s\''), $_->[1]) }
 
                     print "\n";
                 }
@@ -404,27 +406,43 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
 
+    my $parser = SMT::Parser::RpmMdPatches->new(
+        log => $log,
+        vblevel => $vblevel);
+    $parser->resource($localfullrepopath);
+    my $patches = $parser->parse("repodata/updateinfo.xml.gz");
+
     my $allow = $command eq 'allow';
 
-    if (@patches)
+    if (@userpatches)
     {
         if (defined $category)
         {
             print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
                 '--category', '--patch') . "\n";
         }
+        if ($all)
+        {
+            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
+                '--all', '--patch') . "\n";
+        }
         if ($allow)
         {
-            $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+            $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @userpatches;
         }
         else
         {
             # TODO make sure user gave name-version, check if such patch exists, ...
-            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @patches;
+            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @userpatches;
         }
     }
     elsif (defined $category)
     {
+        if ($all)
+        {
+            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
+                '--all', '--category') . "\n";
+        }
         if ($exists_category{$category})
         {
             if ($allow)
@@ -444,6 +462,23 @@ elsif ($command eq 'allow' || $command eq 'forbid')
             SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
         }
     }
+    elsif (defined $all)
+    {
+        if ($allow)
+        {
+            $filter->clean();
+            SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+                __('All patches have been allowed.'));
+        }
+        else
+        {
+            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+                foreach (keys %$patches);
+            SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+                sprintf (__('All %d patches have been forbidden.'),
+                    scalar keys %$patches));
+        }
+    }
     else
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
@@ -453,30 +488,34 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     }
 
     # check consistency of the resulting repository before applying changes
-    my $checker = SMT::Parser::FilteredRepoChecker->new(log => $log, vblevel => $vblevel); 
-    $checker->repoPath($localfullrepopath);
-    $checker->filter($filter);
-    printLog ($log, $vblevel, LOG_DEBUG, 'checking dependencies', 0);
-    my ($result, $problems, $causes) = $checker->check();
-    printLog ($log, $vblevel, LOG_DEBUG, 'DONE checking dependencies', 0);
-
-    if (not $result)
+    if (not $all)
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-            __("Dependecy problems found."));
-
-        foreach my $pkg (keys %$problems)
+        my $checker = SMT::Parser::FilteredRepoChecker->new(
+            log => $log, vblevel => $vblevel); 
+        $checker->repoPath($localfullrepopath);
+        $checker->filter($filter);
+        printLog ($log, $vblevel, LOG_DEBUG, 'checking dependencies', 0);
+        my ($result, $problems, $causes) = $checker->check();
+        printLog ($log, $vblevel, LOG_DEBUG, 'DONE checking dependencies', 0);
+    
+        if (not $result)
         {
-            printLog ($log, $vblevel, LOG_ERROR, sprintf (
-                __("Cannot remove package '%s' required by forbidden patch '%s'.\n"),
-                $pkg, $causes->{$pkg}));
-
-            printLog ($log, $vblevel, LOG_ERROR, sprintf (
-                __("The package is needed by patch '%s', which is allowed.\n"),
-                $problems->{$pkg}));
+            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+                __("Dependecy problems found."));
+    
+            foreach my $pkg (keys %$problems)
+            {
+                printLog ($log, $vblevel, LOG_ERROR, sprintf (
+                    __("Cannot remove package '%s' required by forbidden patch '%s'.\n"),
+                    $pkg, $causes->{$pkg}));
+    
+                printLog ($log, $vblevel, LOG_ERROR, sprintf (
+                    __("The package is needed by patch '%s', which is allowed.\n"),
+                    $problems->{$pkg}));
+            }
+    
+            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
         }
-
-        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
     $filter->save($dbh, $repoid);
@@ -569,10 +608,10 @@ smt staging listupdates <repository> [general-options]
     [--patch <patch> ... | --category <category>]
 
 smt staging forbid <repository> [general-options]
-    [--patch <patch> ... | --category <category>]
+    [--patch <patch> ... | --category <category> | --all]
 
 smt staging allow <repository> [general-options]
-    [--patch <patch> ... | --category <category>]
+    [--patch <patch> ... | --category <category> | --all]
 
 smt staging createrepo <repository> [general-options]
     --testing|--production [--nohardlink]
@@ -662,7 +701,11 @@ Specify patch (update) category. The following categories are available:
  recommended
  optional
 
-This option is used in the B<allow>, B<forbid>, and B<listupdates> commands. 
+This option is used in the B<allow>, B<forbid>, and B<listupdates> commands.
+
+=item --all
+
+Allow or forbid all patches in the B<allow> or B<forbid> commands. 
 
 =item --testing
 
