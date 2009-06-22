@@ -297,7 +297,7 @@ my %exists_category = (
 
 if ($command eq 'listupdates')
 {
-    if (not $exists_category{$category})
+    if (defined $category && not $exists_category{$category})
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Invalid category '$category'.", 0);
         print sprintf (__("Invalid category '%s'."), $category) . "\n";
@@ -314,23 +314,83 @@ if ($command eq 'listupdates')
     $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
     
-    my $t = new Text::ASCIITable;
-    $t->setCols(__("Allowed"), __("Name"), __("Version"), __("Category"), __("Summary"));
-    foreach my $patch (values %$patches)
+    if (@patches)
     {
-        next if ($patch->{type} ne $category);
+        if (defined $category)
+        {
+            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
+                '--category', '--patch') . "\n";
+        }
         
-        my $allowed = not $filter->matches($patch);
-        $t->addRow(($allowed ? __("Yes") : __("No")),
-            $patch->{name}, $patch->{version}, $patch->{type}, $patch->{title}); 
-    }
-    if (%$patches)
-    {
-        print $t->draw();
+        foreach (@patches)
+        {
+            if (not defined $patches->{$_})
+            {
+                SMT::Utils::printLog($log, $vblevel, LOG_WARN,
+                    sprintf (__("Patch '%s' not found."), $_));
+                next;
+            }
+
+            my $patch = $patches->{$_};
+            my $allowed = not $filter->matches($patch);
+            print $_ . "\n";
+            print (('-' x length $_) . "\n");
+            my $ident = '    ';
+            print $ident . __('Name: ') . $patch->{name} . "\n";
+            print $ident . __('Version: ') . $patch->{version} . "\n";
+            print $ident . __('Category: ') . $patch->{type} . "\n";
+            print $ident . __('Summary: ') . $patch->{title} . "\n";
+            print $ident . __('Allowed: ') . ($allowed ? __("Yes") : __("No")) . "\n";
+            
+            if (not $allowed)
+            {
+                print $ident . __('Filtered by:') . "\n";
+                for (@{$filter->whatMatches($patch)})
+                {
+                    print $ident;
+                    if ($_->[0] == SMT::Filter::TYPE_NAME_VERSION)
+                    { print '- ' . sprintf (__('Patch ID \'%s\''), $_->[1]) }
+                    elsif ($_->[0] == SMT::Filter::TYPE_SECURITY_LEVEL)
+                    { print '- ' . sprintf (__('Patch category \'%s\''), $_->[1]) }
+                    elsif ($_->[0] == SMT::Filter::TYPE_NAME_REGEX)
+                    { print '- ' . sprintf (__('Regular expression \'%s\''), $_->[1]) }
+
+                    print "\n";
+                }
+            }
+            
+            print $ident . __('Description: ') . "\n" .
+                $patch->{description} . "\n\n";
+        }
     }
     else
     {
-        print __("This repository does not contain any patches.") . "\n";
+        my $t = new Text::ASCIITable;
+        $t->setCols(
+            __("Allowed"),
+            __("Name"), 
+            __("Version"),
+            __("Category"),
+            __("Summary"));
+        foreach my $patch (values %$patches)
+        {
+            next if ($category && $patch->{type} ne $category);
+            
+            my $allowed = not $filter->matches($patch);
+            $t->addRow(($allowed ? __("Yes") : __("No")),
+                $patch->{name},
+                $patch->{version},
+                $patch->{type},
+                $patch->{title}); 
+        }
+        if (%$patches)
+        {
+            print $t->draw();
+        }
+        else
+        {
+            print __("This repository does not contain any patches.") . "\n";
+        }
     }
 }
 
@@ -589,7 +649,10 @@ Specify a patch using its ID, that is 'I<patchname-version>'. To get a list
 of available patches, use the B<listupates> command. This option can be
 used multiple times.
 
-This option is used in the B<allow> and B<forbid> commands. 
+This option is used in the B<allow>, B<forbid>, and B<listupdates> commands.
+
+If used in B<listupdates>, the command will print detailed information about
+the specified patches. 
 
 =item --category
 
@@ -598,7 +661,7 @@ Specify patch (update) category. The following categories are available:
  recommended
  optional
 
-This option is used in the B<allow> and B<forbid> commands. 
+This option is used in the B<allow>, B<forbid>, and B<listupdates> commands. 
 
 =item --testing
 
