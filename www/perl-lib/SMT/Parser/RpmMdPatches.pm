@@ -187,11 +187,11 @@ sub parse
         if (!-e $path)
         {
             # we do not count errors here; we want to work also on broken metadata
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "File not found $path");
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "File not found $path", 0);
             next;
         }
 
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Found $path. Parsing...");
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Found $path. Parsing...", 0);
 
         # if we need these data sometimes later then we have to find
         # a new solution. But this save us 80% time.

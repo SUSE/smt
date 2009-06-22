@@ -124,7 +124,7 @@ sub check()
     else
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
-            'Using cached solv file ' . $self->{SOLV});    
+            'Using cached solv file ' . $self->{SOLV}, 0);    
     }
 
     # load the solv file
@@ -135,7 +135,7 @@ sub check()
 
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
         'FilteredRepoChecker: repo loaded. Pool size: ' . $pool->size() .
-        ', count: ' . $pool->count());    
+        ', count: ' . $pool->count(), 0);    
 
     # get the patches
     my $allowed = {};

@@ -7,7 +7,7 @@ use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
 use IO::File;
-use IPC::Open3;  # for exectuteCommand
+use IPC::Open3;  # for executeCommand
 
 use MIME::Lite;  # sending eMails
 use Net::SMTP;   # sending eMails via smtp relay
@@ -1004,7 +1004,7 @@ sub executeCommand
     $ENV{LANGUAGE} = "en_US" if(defined $language);
 
     printLog($log, $vblevel, LOG_DEBUG,
-        'Executing \'' . $command . ' ' . join(" ", @arguments) . '\'');
+        'Executing \'' . $command . ' ' . join(" ", @arguments) . '\'', 0);
 
     my $pid = open3(\*IN, \*OUT, \*ERR, $command, @arguments) or do
     {
@@ -1041,8 +1041,8 @@ sub executeCommand
     $exitcode = ($? >> 8);
 
     printLog($log, $vblevel, LOG_DEBUG,
-        'Command returned ' . $exitcode . ($err ? ': ' . $err : ''));
-    printLog($log, $vblevel, LOG_DEBUG2, "Command output:\n" . $out) if ($out);
+        'Command returned ' . $exitcode . ($err ? ': ' . $err : ''), 0);
+    printLog($log, $vblevel, LOG_DEBUG2, "Command output:\n" . $out, 0) if ($out);
 
     return ($exitcode, $err, $out);
 }
