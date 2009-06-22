@@ -416,6 +416,61 @@ sub matches
     return 0;
 }
 
+
+=item  whatMatches()
+
+Returns a list of subfilters that match given patch.
+
+Expects a hash argument with patch data:
+
+$patch =
+{
+    name => 'dbus-1',
+    version => '99',
+    type => 'security',          # patch category (aka patch level)
+    title => 'patch for dbus',   # not used in match() so far
+    description => 'loong one'   # not used in match() so far
+};
+
+my $mf = $filter->whatMatches($patch);
+
+Returns a reference to the list of matching filters or an empty list if no
+subfilter matches the patch data.
+
+=cut
+
+sub whatMatches()
+{
+    my ($self, $patch) = @_;
+    
+    my $mf = [];
+    foreach my $f (values %{$self->{FILTERS}})
+    {
+        if ($f->[0] == TYPE_NAME_VERSION
+            && $f->[1] eq "$patch->{name}-$patch->{version}")
+        {
+            push @$mf, $f;
+        }
+        elsif ($f->[0] == TYPE_SECURITY_LEVEL
+            && $f->[1] eq "$patch->{type}")
+        {
+            push @$mf, $f;
+        }
+        elsif ($f->[0] == TYPE_NAME_EXACT
+            && $f->[1] eq "$patch->{name}")
+        {
+            push @$mf, $f;
+        }
+        elsif ($f->[0] == TYPE_NAME_REGEX
+            && "$patch->{name}" =~ $f->[1])
+        {
+            push @$mf, $f;
+        }
+    }
+
+    return $mf;
+}
+
 =item vblevel()
 Get or set log verbosity level.
 =cut
