@@ -59,7 +59,7 @@ sub printhelp
     my $scriptname = shift;
 
     print $scriptname . " listupdates <repository>\n";
-    print "    [--category] [--patch <patch>]\n";
+    print "    [--patch <patch> ... | --category <category>]\n";
     print "\n";
     print $scriptname . " forbid <repository>\n";
     print "    [--patch <patch> ... | --category <category>]\n";
@@ -566,6 +566,7 @@ smt staging
 smt staging <command> <repository> [options]
 
 smt staging listupdates <repository> [general-options]
+    [--patch <patch> ... | --category <category>]
 
 smt staging forbid <repository> [general-options]
     [--patch <patch> ... | --category <category>]
