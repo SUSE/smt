@@ -20,15 +20,15 @@ sub jobhandler
   my $action = "open";
   $action   = $args->[0]->{action}  if ( defined ( $args->[0]->{action} ) );
 
-  SMT::Agent::Utils::error( "argument invalid: action", $jobid ) if ( $action != "open" && $action != "close" && $action != "toggle");
+  SMT::Agent::Utils::error( "argument invalid: action", $jobid ) if ( $action ne "open" && $action ne "close" && $action ne "toggle");
 
 
   #==  run eject ==
 
   my $command = "/bin/eject";
   my @cmdArgs;
-  push (@cmdArgs, "-T") if $action = "toggle";			
-  push (@cmdArgs, "-t") if $action = "close";			
+  push (@cmdArgs, "-T") if ( $action eq "toggle" );			
+  push (@cmdArgs, "-t") if ( $action eq "close" );			
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
