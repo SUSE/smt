@@ -136,8 +136,12 @@ function link_smt_plugins () {
 		    action="restart"
 		fi
 	    else
-		# Linked file doesn't exist
-		echo "Error: Not adding apache2 plugin ${smt_d}${filename} (missing)"
+		if [ ${filename} == "smt_support.conf" ] && ! rpm -q smt-support >/dev/null; then
+		    echo "smt-support module not installed, skipping"
+		else
+		    # Linked file doesn't exist
+		    echo "Error: Not adding apache2 plugin ${smt_d}${filename} (missing)"
+		fi
 	    fi
 	fi
     done
