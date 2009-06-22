@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jun 22 16:33:35 CEST 2009 - jkupec@suse.cz
+
+- smt-staging list-updates: --patch/--category options added
+- smt-staging allow/forbid: --all option added
+- SMT::Filter::whatMatches($patch) added
+
+-------------------------------------------------------------------
 Mon Jun 22 14:41:40 CEST 2009 - jsrain@suse.cz
 
 - display more reasonable warning if smt-support is not installed
