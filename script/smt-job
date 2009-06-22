@@ -85,7 +85,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus) = undef;
+my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev', 'no_ignore_case');
@@ -120,7 +120,8 @@ use Getopt::Long;
          'agreelicense|L!' => \$SWagree,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
-         'waitstatus=i' => \$WAITstatus
+         'waitstatus=i' => \$WAITstatus,
+         'action=s' => \$CDAction,
 );
 
 if ( defined $help and ( $help == 1 ) )
@@ -170,6 +171,8 @@ if ( defined $help and ( $help == 1 ) )
   print '  '.__("for wait jobs")."\n";
   print "   --waittime         <time> : " . __("time in seconds the job should take")."\n";
   print "   --waitstatus       <exit> : " . __("exit code for the job to return with")."\n";
+  print '  '.__("for eject jobs")."\n";
+  print "   --action         <action> : " . __("action of CD or DVD tray: 'open'|'close'|'toggle'")."\n";
   print "\n";
   print __("time format")."\n";
   print "   targeted/expires          : " . __("'YYYY-MM-DD[-HH:MM[:SS]]'")."\n";
@@ -232,6 +235,7 @@ $query{'TARGETED'} = $targeted if (defined $targeted);
 $query{'EXPIRES'} = $expires if (defined $expires);
 $query{'TIMELAG'} = $timelag if (defined $timelag);
 
+
 if ( exists $query{'TARGETED'} )
 {
     if ( $query{'TARGETED'} !~ /^\d{4}-\d{2}-\d{2}[-_+ ](\d{2}:\d{2}(:\d{2})?)?$/ )
@@ -274,6 +278,8 @@ $para{'SWFORCE'} = $SWforce if (defined $SWforce);
 $para{'EXECCOMMAND'} = $EXECcommand if (defined $EXECcommand);
 $para{'WAITTIME'} = $WAITtime if (defined $WAITtime);
 $para{'WAITSTATUS'} = $WAITstatus if (defined $WAITstatus);
+$para{'ACTION'} = $CDAction if (defined $CDAction);
+
 
 
 
@@ -392,6 +398,7 @@ if ( defined $create )
         ## eject ##
         $Job->{'name'}        = $query{'NAME'} || 'Eject job';
         $Job->{'description'} = $query{'DESCRIPTION'} || 'Job to eject the CD/DVD drawer';
+        $Job->{'arguments'}{'action'} = (exists $para{'ACTION'} && defined $para{'ACTION'}) ? $para{'ACTION'} : 'open' ;
     }
     else
     {
