@@ -4,7 +4,7 @@ BEGIN {
     push @INC, "../www/perl-lib";
 }
 
-use Test::Simple tests => 5;
+use Test::Simple tests => 6;
 
 use SMT::Filter;
 use Data::Dumper;
@@ -34,6 +34,8 @@ ok ($filter->matches($patch), "patch fa-12 should match the filter");
 ok ($filter->matches($patch2), "patch faraway-99 should not match the filter");
 
 my $wm = $filter->whatMatches($patch);
+ok (@$wm == 2, '2 subfilters match patch fa-12');
+
 my $found = 0;
 for (@$wm)
 {
@@ -45,6 +47,7 @@ for (@$wm)
     } 
 }
 ok ($found, 'regex filter \'^f\' should match patch fa-12' );
+
 $found = 0;
 for (@$wm)
 {
