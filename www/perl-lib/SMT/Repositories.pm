@@ -98,6 +98,8 @@ use constant {
     MIRRORING		=> 'DOMIRROR',
     MIRRORING_TRUE	=> 'Y',
     MIRRORING_FALSE	=> 'N',
+    
+    LAST_MIRROR         => 'LAST_MIRROR',
 
     # Repository has Staging feature enabled
     STAGING		=> 'STAGING',

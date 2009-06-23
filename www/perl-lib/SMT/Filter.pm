@@ -484,6 +484,12 @@ sub whatMatches()
     return $mf;
 }
 
+=item whatMatches2str($patch [, $indent])
+
+String representation of subfilters matching given $patch.
+
+=cut
+
 sub whatMatches2str
 {
     my ($self, $patch, $indent) = @_;

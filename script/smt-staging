@@ -58,6 +58,7 @@ sub printhelp
 {
     my $scriptname = shift;
 
+    print $scriptname . " status <repository>\n";
     print $scriptname . " listupdates <repository>\n";
     print "    [--patch <patch> ... | --category <category>]\n";
     print "\n";
@@ -113,10 +114,12 @@ if (@ARGV < 2)
 # the first non-option argument is the command
 
 my $command = undef;
-if (!($ARGV[0] eq 'createrepo' ||
-      $ARGV[0] eq 'listupdates' ||
-      $ARGV[0] eq 'forbid' ||
-      $ARGV[0] eq 'allow'))
+if (not
+    $ARGV[0] eq 'createrepo' ||
+    $ARGV[0] eq 'status' ||
+    $ARGV[0] eq 'listupdates' ||
+    $ARGV[0] eq 'forbid' ||
+    $ARGV[0] eq 'allow')
 {
     printf STDERR __("Unknown command '%s'\n"), $ARGV[0];
     print "\n";
@@ -253,6 +256,8 @@ else
     $repoid = $reponameid;
 }
 
+# $repo should always be defined at this point
+
 # check if we can do staging for this repo
 
 my $canstage = $rh->stagingAllowed($repoid, $cfg->val("LOCAL", "MirrorTo"));
@@ -283,16 +288,73 @@ my %exists_category = (
     'security'      => 1,
     'optional'      => 1);
 
-sub whatMatches2string
+
+###############################################################################
+# testing/production repository status
+###############################################################################
+
+if ($command eq 'status')
 {
-    
+    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
+    $filter->load($dbh, $repoid);
+
+    print __('Reading patches...') . "\n";
+
+    print "\n";
+    print __('Repository:          ') . $repo->{NAME} . "\n";
+    print __('Target:              ') . $repo->{TARGET} . "\n";
+
+    my $fstatus = SMT::Mirror::Utils::getStatus($localfullrepopath);
+    my $basepath = $cfg->val("LOCAL", "MirrorTo");
+    my $tstatus = SMT::Mirror::Utils::getStatus(
+        SMT::Utils::cleanPath($basepath, $rh->getTestingRepoPath($repoid)));
+    my $pstatus = SMT::Mirror::Utils::getStatus(
+        SMT::Utils::cleanPath($basepath, $rh->getProductionRepoPath($repoid)));
+
+    print __('Last mirrored:       ');
+    if (!$fstatus)
+    {
+        print __('never')
+    }
+    else
+    {
+        print $repo->{LAST_MIRROR}
+    }
+    print "\n";
+
+    print __('Testing snapshot:    ');
+    if (!$tstatus)
+    { print __('not created') }
+    elsif ($tstatus < $fstatus)
+    { print __('out of date') }
+    else
+    { print __('up to date') }
+    print "\n";
+
+    print __('Production snapshot: ');
+    if (!$pstatus)
+    { print __('not created') }
+    elsif ($pstatus < $fstatus)
+    { print __('out of date') }
+    else
+    { print __('up to date') }
+    print "\n";
+
+    my $parser = SMT::Parser::RpmMdPatches->new(
+        log => $log,
+        vblevel => $vblevel);
+    $parser->resource($localfullrepopath);
+    my $patches = $parser->parse("repodata/updateinfo.xml.gz");
+
+    print "\n";
+    printPatchCounts($patches, $filter);
 }
 
 ###############################################################################
 # list the udates
 ###############################################################################
 
-if ($command eq 'listupdates')
+elsif ($command eq 'listupdates')
 {
     if (defined $category && not $exists_category{$category})
     {
@@ -521,22 +583,8 @@ elsif ($command eq 'allow' || $command eq 'forbid')
 
     $filter->save($dbh, $repoid);
 
-    my $forbidden = 0;
-    my $allowed = 0;
-    foreach (values %$patches)
-    {
-        if ($filter->matches($_))
-        { $forbidden++ }
-        else
-        { $allowed++ }
-    }
     print "\n";
-    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-        sprintf (__("Total patches: %d"), $forbidden + $allowed));
-    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-        sprintf (__("Allowed:       %d"), $allowed));
-    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-        sprintf (__("Forbidden:     %d"), $forbidden));
+    printPatchCounts($patches, $filter);
 }
 
 ###############################################################################
@@ -610,6 +658,27 @@ elsif ($command eq 'createrepo')
 
 SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
 
+sub printPatchCounts
+{
+    my ($patches, $filter) = @_;
+    my $forbidden = 0;
+    my $allowed = 0;
+    foreach (values %$patches)
+    {
+        if ($filter->matches($_))
+        { $forbidden++ }
+        else
+        { $allowed++ }
+    }
+    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+        sprintf (__("Total patches: %d"), $forbidden + $allowed));
+    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+        sprintf (__("Allowed:       %d"), $allowed));
+    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+        sprintf (__("Forbidden:     %d"), $forbidden));
+}
+
+
 #
 # Manpage
 #
@@ -621,6 +690,8 @@ smt staging
 =head1 SYNOPSIS
 
 smt staging <command> <repository> [options]
+
+smt staging status <repository> [general-options]
 
 smt staging listupdates <repository> [general-options]
     [--patch <patch> ... | --category <category>]
@@ -645,7 +716,9 @@ environment.
 Use the B<listupdates> command to list available patches and their
 allowed/forbidden status, B<allow>/B<forbid> commands to allow or forbid
 specified patches, and, finally B<createrepo> to generate testing or production
-repository containing only allowed patches.
+repository containing only allowed patches. The B<status> command gives
+information about testing and production snapshots up-to-date status and patch
+counts.
 
 =head1 TERMINOLOGY
 
