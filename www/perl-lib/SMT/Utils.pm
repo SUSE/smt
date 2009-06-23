@@ -22,7 +22,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 use English;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(__ printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2);
+our @EXPORT = qw(__ __N printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2);
 
 use constant LOG_ERROR  => 0x0001;
 use constant LOG_WARN   => 0x0002;
@@ -122,6 +122,20 @@ sub __
     my $package = caller;
     my $domain = "smt";
     return Locale::gettext::dgettext ($domain, $msgid);
+}
+
+=item __N()
+
+Localization function for plural forms.
+
+=cut
+
+sub __N
+{
+    my ($msgid, $msgidpl, $n) = @_;
+    my $package = caller;
+    my $domain = "smt";
+    return Locale::gettext::dngettext ($domain, $msgid, $msgidpl, $n);
 }
 
 #
