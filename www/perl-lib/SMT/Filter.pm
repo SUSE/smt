@@ -263,7 +263,7 @@ sub save
     return 1;
 }
 
-=item add()
+=item contains()
 
 Whether a filter element of given $type and $value already exists in this filter
 object.
@@ -292,6 +292,19 @@ sub empty
     return 0 if (%{$self->{FILTERS}});
     return 1;
 }
+
+
+=item dirty()
+
+Retuns true if the filter has been changed since the last load() call. 
+
+=cut
+
+sub dirty
+{
+    return shift->{DIRTY};
+}
+
 
 =item add()
 

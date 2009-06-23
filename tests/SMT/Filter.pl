@@ -4,12 +4,15 @@ BEGIN {
     push @INC, "../www/perl-lib";
 }
 
-use Test::Simple tests => 6;
+use Test::Simple tests => 7;
 
 use SMT::Filter;
 use Data::Dumper;
 
 my $filter = SMT::Filter->new();
+
+ok ($filter->dirty(), 'filter should be dirty right after creation');
+
 $filter->add(SMT::Filter->TYPE_NAME_VERSION, 'ha-20');
 $filter->add(SMT::Filter->TYPE_NAME_VERSION, 'fa-12');
 $filter->add(SMT::Filter->TYPE_NAME_VERSION, 'fa-12');
