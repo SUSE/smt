@@ -61,6 +61,10 @@
 	"security"	: _("Security"),
     ];
 
+    // BNC #513169
+    // Selective mirroring in YaST should be logged to a default location
+    string default_mirrroring_log = "/var/log/smt/smt-mirror.log";
+
     term CredentialsDialogContent () {
 	return `HBox (
 		`HStretch(),
@@ -1879,7 +1883,11 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 
 	y2milestone ("Mirroring repository: %1", repository_id);
 
-	string cmd = sformat ("/usr/sbin/smt-mirror --repository '%1'", String::Quote (repository_id));
+	string cmd = sformat (
+	    "/usr/sbin/smt-mirror -L '%1' --repository '%2'",
+	    String::Quote (default_mirrroring_log),
+	    String::Quote (repository_id)
+	);
 
 	y2milestone ("Starting process: %1", cmd);
 	integer process_PID = (integer) SCR::Execute (.process.start_shell, cmd);

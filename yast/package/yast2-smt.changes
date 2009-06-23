@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jun 23 10:55:01 CEST 2009 - locilka@suse.cz
+
+- Selective mirroring via YaST is logged into the default location
+  /var/log/smt/smt-mirroring.log (bnc #513169).
+
+-------------------------------------------------------------------
 Fri Jun 19 15:28:12 CEST 2009 - jkupec@suse.cz
 
 - respect MirrorSRC smt.conf option when creating
