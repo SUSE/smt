@@ -26,6 +26,7 @@
     import "SuSEFirewall";
     import "FileUtils";
     import "GPG";
+    import "Hostname";
 
     integer sl = 100;
 
@@ -717,14 +718,17 @@ to be readable by %2 user."),
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
 	});
 
+	// BNC #514304
+	// Using fallback FQDN if no URL is set in configuration
 	if (SMTData::GetCredentials ("LOCAL", "url") == "") {
-	    map cmd_out = (map) SCR::Execute (.target.bash_output, "/bin/hostname --fqdn");
+	    string value = Hostname::CurrentFQ();
 
-	    if (cmd_out["exit"]:-1 == 0 && size (cmd_out["stdout"]:"") > 0) {
-		string value = splitstring (cmd_out["stdout"]:"", "\n")[0]:"";
+	    if (value != nil) {
+		if (regexpmatch (value, ".*[ \t\n]+.*")) value = regexpsub (value, "(.*)[ \t\n]+.*", "\\1");
 
 		if (size (value) > 0) {
 		    value = sformat ("http://%1/", value);
+		    y2milestone ("Using '%1'", value);
 		    UI::ChangeWidget (`id ("url"), `Value, value);
 		}
 	    }
