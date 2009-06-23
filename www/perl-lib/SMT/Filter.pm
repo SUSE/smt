@@ -484,6 +484,24 @@ sub whatMatches()
     return $mf;
 }
 
+sub whatMatches2str
+{
+    my ($self, $patch, $indent) = @_;
+    my $str = '';
+    for (@{$self->whatMatches($patch)})
+    {
+        $str .= ' ' x $indent if ($indent);
+
+        if ($_->[0] == SMT::Filter::TYPE_NAME_VERSION)
+        { $str .= '- ' . sprintf (__('patch ID \'%s\''), $_->[1]) }
+        elsif ($_->[0] == SMT::Filter::TYPE_SECURITY_LEVEL)
+        { $str .= '- ' . sprintf (__('patch category \'%s\''), $_->[1]) }
+        elsif ($_->[0] == SMT::Filter::TYPE_NAME_REGEX)
+        { $str .= '- ' . sprintf (__('regular expression \'%s\''), $_->[1]) }
+    }
+    return $str;
+}
+
 =item vblevel()
 Get or set log verbosity level.
 =cut

@@ -32,7 +32,6 @@ my $fromlocalsmt = 0;
 my $gentest = 0;
 my $genprod = 0;
 my $nohardlink = 0;
-my $LocalBasePath = ""; # TODO what's this about
 
 my @userpatches = ();
 my $category = undef;
@@ -41,7 +40,6 @@ my $all = 0;
 my $optres = GetOptions("testing|t"    => \$gentest,
                         "production|p" => \$genprod,
                         "nohardlink"   => \$nohardlink,
-                        "directory=s"  => \$LocalBasePath,
                         "patch=s"      => \@userpatches,
                         "category=s"   => \$category,
                         "all|a"        => \$all,
@@ -85,13 +83,6 @@ sub printhelp
     print "                        " . __("Choose one of: recommended, security, optional.\n");
     #print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     #print "                        " . __("for them\n");
-    #print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
-    #print "                        " . __("default value in smt.conf\n");
-    #print "--fromdir arg           " . __("Mirror from the directory give here, instead of mirroring from the remote sources.\n");
-    #print "                        " . __("The directory can e.g. be created by calling smt-mirror --directory\n");
-    #print "--fromlocalsmt          " . __("Mirror from the local running SMT server. This options requires the --directory\n");
-    #print "                        " . __("option being set. The resulting directory can  e.g later be imported to another server\n");
-    #print "                        " . __("using smt-mirror --fromdir\n");
     print "--nohardlink            " . __("If a file already exists on local filesystem, do not\n");
     print "                        " . __("link it into the mirrored repository. Copy it instead.\n");
     print "--debug            (-d) " . __("Enable debug mode.\n");
@@ -292,6 +283,10 @@ my %exists_category = (
     'security'      => 1,
     'optional'      => 1);
 
+sub whatMatches2string
+{
+    
+}
 
 ###############################################################################
 # list the udates
@@ -343,24 +338,13 @@ if ($command eq 'listupdates')
             print $ident . __('Category: ') . $patch->{type} . "\n";
             print $ident . __('Summary: ') . $patch->{title} . "\n";
             print $ident . __('Allowed: ') . ($allowed ? __("Yes") : __("No")) . "\n";
-            
+
             if (not $allowed)
             {
                 print $ident . __('Filtered by:') . "\n";
-                for (@{$filter->whatMatches($patch)})
-                {
-                    print $ident;
-                    if ($_->[0] == SMT::Filter::TYPE_NAME_VERSION)
-                    { print '- ' . sprintf (__('patch ID \'%s\''), $_->[1]) }
-                    elsif ($_->[0] == SMT::Filter::TYPE_SECURITY_LEVEL)
-                    { print '- ' . sprintf (__('patch category \'%s\''), $_->[1]) }
-                    elsif ($_->[0] == SMT::Filter::TYPE_NAME_REGEX)
-                    { print '- ' . sprintf (__('regular expression \'%s\''), $_->[1]) }
-
-                    print "\n";
-                }
+                print $filter->whatMatches2str($patch, 4) . "\n";
             }
-            
+
             print $ident . __('Description: ') . "\n" .
                 $patch->{description} . "\n\n";
         }
@@ -426,14 +410,31 @@ elsif ($command eq 'allow' || $command eq 'forbid')
             print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
                 '--all', '--patch') . "\n";
         }
-        if ($allow)
+        my $count = 0;
+        foreach (@userpatches)
         {
-            $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @userpatches;
-        }
-        else
-        {
-            # TODO make sure user gave name-version, check if such patch exists, ...
-            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_) foreach @userpatches;
+            # make sure user gave an existing patch
+            if (not defined $patches->{$_})
+            {
+                SMT::Utils::printLog($log, $vblevel, LOG_WARN,
+                    sprintf (__("Patch '%s' not found."), $_));
+                next;
+            }
+
+            if ($allow)
+            {
+                $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_);
+                if ($filter->matches($patches->{$_}))
+                {
+                    SMT::Utils::printLog($log, $vblevel, LOG_WARN,
+                        sprintf (__("Patch '%s' is still filtered by:\n%s"),
+                            $_, $filter->whatMatches2str($patches->{$_})));
+                }
+            }
+            else
+            {
+                $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+            }
         }
     }
     elsif (defined $category)
@@ -446,13 +447,9 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         if ($exists_category{$category})
         {
             if ($allow)
-            {
-                $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
-            }
+            { $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category); }
             else
-            {
-                $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
-            }
+            { $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category); }
         }
         else
         {
@@ -488,13 +485,13 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     }
 
     # check consistency of the resulting repository before applying changes
-    if (not $all)
+    if ($filter->dirty() && not $all)
     {
         my $checker = SMT::Parser::FilteredRepoChecker->new(
             log => $log, vblevel => $vblevel); 
         $checker->repoPath($localfullrepopath);
         $checker->filter($filter);
-        printLog ($log, $vblevel, LOG_DEBUG, 'checking dependencies', 0);
+        printLog ($log, $vblevel, LOG_INFO2, __('Checking repository consistency...'));
         my ($result, $problems, $causes) = $checker->check();
         printLog ($log, $vblevel, LOG_DEBUG, 'DONE checking dependencies', 0);
     
@@ -516,9 +513,30 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     
             SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
         }
+        else
+        {
+            SMT::Utils::printLog($log, $vblevel, LOG_INFO2, __("OK"));
+        }
     }
 
     $filter->save($dbh, $repoid);
+
+    my $forbidden = 0;
+    my $allowed = 0;
+    foreach (values %$patches)
+    {
+        if ($filter->matches($_))
+        { $forbidden++ }
+        else
+        { $allowed++ }
+    }
+    print "\n";
+    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+        sprintf (__("Total patches: %d"), $forbidden + $allowed));
+    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+        sprintf (__("Allowed:       %d"), $allowed));
+    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+        sprintf (__("Forbidden:     %d"), $forbidden));
 }
 
 ###############################################################################
