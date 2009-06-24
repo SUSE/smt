@@ -8,6 +8,8 @@ use DBI qw(:sql_types);
 use Text::ASCIITable;
 use Config::IniFiles;
 use File::Temp;
+use File::Path;
+use File::Copy;
 use IO::File;
 use SMT::Parser::NU;
 use SMT::Mirror::Job;
@@ -843,36 +845,91 @@ sub setCatalogDoMirror
 sub setCatalogStaging
 {
     my %opt = @_;
-    my ($cfg, $dbh) = init();
-    
+
     die __("enabled option missing") if (not defined $opt{enabled});
 
-    my $sql = "update Catalogs";
-    $sql .= sprintf(" set Staging=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
+    my ($cfg, $dbh) = init();
+
+    # only mirrorable repos can be staged
+    my $where = sprintf(' where MIRRORABLE=%s', $dbh->quote('Y'));
     
-    $sql .= " where 1";
-    
-    $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
-    
-    if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
+    # ignore the rows having the desired STAGING value
+    $where .= sprintf(' and STAGING!=%s',
+                $dbh->quote($opt{enabled} ? 'Y' : 'N' ));
+
+    # select desired repos
+    if(defined $opt{name} && $opt{name} ne "")
     {
-        $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
+        $where .= sprintf(' and NAME=%s', $dbh->quote($opt{name}));
     }
-    
-    if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
+    if(defined $opt{target} && $opt{target} ne "")
     {
-        $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
+        $where .= sprintf(' and TARGET=%s', $dbh->quote($opt{target}));
     }
-    
-    if(exists $opt{id} && defined $opt{id} )
+    if(defined $opt{id})
     {
-        $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
+        $where .= sprintf(' and CATALOGID=%s', $dbh->quote($opt{id}));
     }
-    
+
+    # get local paths from the to-be-updated repositories
+    my @toupdate = ();
+    eval
+    {
+        my $sql = 'select LOCALPATH from Catalogs' . $where;
+        my $array = $dbh->selectall_arrayref($sql, { Slice => {} });
+        push @toupdate, $_->{LOCALPATH} foreach (@$array);
+    };
+    if ($@)
+    {
+        die 'DBERROR: ' . $@;
+    }
+
+    my $sql = 'update Catalogs';
+    $sql .= sprintf(' set STAGING=%s', $dbh->quote(  $opt{enabled} ? 'Y' : 'N' ) ); 
+    $sql .= $where;
     #print $sql . "\n";
     my $rows = $dbh->do($sql);
+
     $rows = 0 if(!defined $rows || $rows < 0);
-    return $rows;
+    if ($rows && $rows == @toupdate)
+    {
+        # DB successfully updated, now shuffle the repo directories
+        # (bnc #509922)
+
+        my $basepath = $cfg->val('LOCAL', 'MirrorTo');
+        foreach my $repopath (@toupdate)
+        {
+            my $fullpath = SMT::Utils::cleanPath(
+                $basepath, 'repo/full', $repopath);
+            my $productionpath = SMT::Utils::cleanPath(
+                $basepath, 'repo', $repopath);
+
+            # when enabling staging:
+            # - remove repo/full/$foo
+            # - move repo/$foo to repo/full/$foo
+            if ($opt{enabled})
+            {
+                rmtree($fullpath, 0, 0) if (-d $fullpath);
+                move($productionpath, $fullpath) if (-d $productionpath);
+            }
+            # when disabling staging:
+            # - remove repo/testing/$foo
+            # - remove repo/$foo
+            # - move repo/full/$foo to repo/$foo
+            else
+            {
+                my $testingpath = SMT::Utils::cleanPath(
+                    $basepath, 'repo/testing', $repopath);
+                rmtree($testingpath, 0, 0) if (-d $testingpath);
+                rmtree($productionpath, 0, 0) if (-d $productionpath);
+                move($fullpath, $productionpath) if (-d $fullpath);
+            }
+        }
+
+        return $rows;
+    }
+
+    return 0;
 }
 
 sub catalogDoMirrorFlag
