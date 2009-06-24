@@ -22,7 +22,7 @@ install:
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Agent
 	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
 	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/job/
-	mkdir -p $(DESTDIR)$(DOCDIR)/smt
+	mkdir -p $(DESTDIR)$(DOCDIR)/$(NAME)/
 	install -m 755 script/smt-* $(DESTDIR)/usr/sbin/
 	install -m 644 perl-lib/SMT/Agent/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Agent/
 	install -m 755 script/processjob $(DESTDIR)/usr/lib/SMT/bin/
@@ -35,9 +35,8 @@ install:
 	install -m 755 script/wait $(DESTDIR)/usr/lib/SMT/bin/job
 	install -m 644 logrotate/smt-client $(DESTDIR)/etc/logrotate.d/
 
-#	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
-#	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/smt/
-#	make -C swig $@
+	install -m 644 README $(DESTDIR)$(DOCDIR)/$(NAME)/
+	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/$(NAME)/
 
 test: clean
 	cd tests; perl tests.pl && cd -
