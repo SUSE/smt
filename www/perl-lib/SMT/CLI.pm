@@ -845,40 +845,34 @@ sub setCatalogStaging
     my %opt = @_;
     my ($cfg, $dbh) = init();
     
-    if(exists $opt{enabled} && defined $opt{enabled} )
+    die __("enabled option missing") if (not defined $opt{enabled});
+
+    my $sql = "update Catalogs";
+    $sql .= sprintf(" set Staging=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
+    
+    $sql .= " where 1";
+    
+    $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+    
+    if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
     {
-        my $sql = "update Catalogs";
-        $sql .= sprintf(" set Staging=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
-        
-        $sql .= " where 1";
-        
-        $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
-        
-        if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
-        {
-            $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
-        }
-        
-        if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
-        {
-            $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
-        }
-        
-        if(exists $opt{id} && defined $opt{id} )
-        {
-            $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
-        }
-        
-        #print $sql . "\n";
-        my $rows = $dbh->do($sql);
-        $rows = 0 if(!defined $rows || $rows < 0);
-        return $rows;
+        $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
     }
-    else
+    
+    if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
     {
-        die __("enabled option missing");
+        $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
     }
-    return 0;
+    
+    if(exists $opt{id} && defined $opt{id} )
+    {
+        $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
+    }
+    
+    #print $sql . "\n";
+    my $rows = $dbh->do($sql);
+    $rows = 0 if(!defined $rows || $rows < 0);
+    return $rows;
 }
 
 sub catalogDoMirrorFlag
