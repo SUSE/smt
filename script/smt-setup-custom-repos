@@ -73,7 +73,13 @@ if(@delete > 0)
     my $statement = sprintf("SELECT CATALOGID, NAME, TARGET from Catalogs where CATALOGID IN ('%s')", join("','", @delete));
     my $arr = $dbh->selectall_arrayref($statement, {Slice=>{}});
 
-    print __("Realy delete the following repositories:\n");
+    if(@{$arr} == 0)
+    {
+        print __("No catalogs found.\n");
+        exit 1;
+    }
+
+    print __("Really delete the following repositories:\n");
     foreach my $entry (@$arr)
     {
         print " ".$entry->{CATALOGID}.":".$entry->{NAME};
@@ -88,6 +94,8 @@ if(@delete > 0)
 
     my $yn = <STDIN>;
     chomp($yn);
+    $yn =~ s/^\s*//;
+    $yn =~ s/\s*$//;
     
     if(lc($yn) eq __("y"))
     {
@@ -105,6 +113,10 @@ if(@delete > 0)
         {
             print __(sprintf("%d repositories removed.\n", $removed));
         }
+    }
+    else
+    {
+        print __("Nothing deleted.\n");
     }
     exit 0;
 }
