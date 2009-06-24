@@ -247,15 +247,43 @@ elsif ( $count == 1 )
     if ( $disable || $enable )
     {
         my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
-        # FIXME this should use gettext for variable mutliplicity
-        print sprintf(__("%d Repo(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
+        if ($bool)
+        {
+            print sprintf(__N(
+                    '%d repository enabled.',
+                    '%d repositories enabled.',
+                    $rows),
+                $rows) . "\n";
+        }
+        else
+        {
+            print sprintf(__N(
+                    '%d repository disabled.',
+                    '%d repositories disabled.',
+                    $rows),
+                $rows) . "\n";
+        }
         exit 0;
     }
     elsif( $disableStaging || $enableStaging)
     {
         my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[0]);
-        # FIXME this should use gettext for variable mutliplicity
-        print sprintf(__("%d Repo(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
+        if ($boolStaging)
+        {
+            print sprintf(__N(
+                    'Staging enabled for %d repository.',
+                    'Staging enabled for %d repositories.',
+                    $rows),
+                $rows) . "\n";
+        }
+        else
+        {
+            print sprintf(__N(
+                    'Staging disabled for %d repository.',
+                    'Staging disabled for %d repositories.',
+                    $rows),
+                $rows) . "\n";
+        }
         exit 0;
     }
 }
