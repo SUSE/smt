@@ -2,6 +2,7 @@
 Wed Jun 24 15:05:18 CEST 2009 - mc@suse.de
 
 - better messages for setup-custom-repo --delete (bnc#508505) 
+- fix output and logging of smt-delete-registration (bnc#515590)
 
 -------------------------------------------------------------------
 Tue Jun 23 16:25:43 CEST 2009 - jkupec@suse.cz
