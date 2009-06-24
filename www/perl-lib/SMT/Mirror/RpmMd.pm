@@ -1435,8 +1435,12 @@ sub removePackages($$$)
     my %mdtoupdate = (
         'repodata/other.xml.gz' =>
             {'new' => 'other.xml',     'orig' => '.repodata/other.xml.gz' },
-        'repodata/filelists.xml.gz' =>
-            {'new' => 'filelists.xml', 'orig' => '.repodata/filelists.xml.gz' },
+        # this takes too long and is not used in SUSE tools (bnc #510300),
+        # so we'll ignore it. Should we need it in the future, we'll need to
+        # optimize.
+        #
+        #'repodata/filelists.xml.gz' =>
+        #    {'new' => 'filelists.xml', 'orig' => '.repodata/filelists.xml.gz' },
         'repodata/susedata.xml.gz' =>
             {'new' => 'susedata.xml',  'orig' => '.repodata/susedata.xml.gz' }
         );
