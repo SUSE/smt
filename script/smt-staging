@@ -277,6 +277,16 @@ elsif (!$canstage)
     SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
 }
 
+if ($repo->{STAGING} ne 'Y')
+{
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+        sprintf __("Staging is not enabled for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
+    print sprintf (__('Use "%s" to enable staging for this repository.'),
+        'smt repos \'' . $repo->{NAME} . '\' \'' . $repo->{TARGET} . '\' -s');
+    print "\n";
+    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+}
+
 # now we're ready to do the real work
 
 my $localfullrepopath = SMT::Utils::cleanPath(
