@@ -46,16 +46,12 @@ sub executeCommand
 
   my $exec = "/usr/sbin/smt-$name";
   my $cmd = "$exec ";
+
+  # quote all the options, otherwise whithespace causes problems
   foreach (@options)
-  {
-    if($_ eq "")
-    {
-      $cmd .= "'' ";
-    }
-    else
-    {
-      $cmd .= "$_ ";
-    }
+  { 
+    $_ =~ s/\'/\\\'/; 
+    $cmd .= "'$_' ";
   }
 
   #print "execute '$cmd'\n";
