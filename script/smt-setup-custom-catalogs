@@ -56,11 +56,13 @@ if ( defined $help and ( $help == 1 ) )
 
 if($delete ne "")
 {
-    print __(sprintf("Realy delete the catalog with ID '%s' (y/n)?", $delete));
+    print __(sprintf("Really delete the catalog with ID '%s' (y/n)?", $delete));
 
     my $yn = <STDIN>;
     chomp($yn);
-    
+    $yn =~ s/^\s*//;
+    $yn =~ s/\s*$//;
+
     if(lc($yn) eq __("y"))
     {
         my $removed = SMT::CLI::removeCustomCatalog(catalogid => $delete);
@@ -73,6 +75,10 @@ if($delete ne "")
         {
             print __(sprintf("Catalog with ID '%s' removed.\n", $delete));
         }
+    }
+    else
+    {
+        print __("Nothing deleted.\n");
     }
     exit 0;
 }
