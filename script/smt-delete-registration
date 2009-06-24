@@ -25,6 +25,7 @@ if(!SMT::Utils::dropPrivileges())
     exit 1;
 }
 
+my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug = 0;
 my $help  = 0;
 my $logfile = "/dev/null";
@@ -50,6 +51,7 @@ if($help || !$optres)
     exit 0;
 }
 
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 if(@guids == 0)
 {
@@ -86,7 +88,7 @@ if(!$dbh)
 
 eval
 {
-    my $nccreg = SMT::NCCRegTools->new(log => $LOG, debug => $debug, useragent => $useragent, dbh => $dbh);
+    my $nccreg = SMT::NCCRegTools->new(log => $LOG, vblevel => $vblevel, useragent => $useragent, dbh => $dbh);
     my $err = $nccreg->NCCDeleteRegistration(@guids);
     if($err != 0)
     {
