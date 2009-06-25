@@ -402,12 +402,18 @@ foreach my $entry (@{$array})
                 }
                 # filter new patches -> admin needs to manually allow which patches
                 # s/he wants (maybe this should be configurable)
+                # Only add new filter for a new patch, if the current one does
+                # not match it, to avoid filling the DB unnecesarily.
                 if ($rh->stagingAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
                 {
                     my $newpatches = $zyppMirror->newpatches();
                     my $filter = SMT::Filter->new();
                     $filter->load($dbh, $entry->{CATALOGID});
-                    $filter->add(SMT::Filter->TYPE_NAME_VERSION, keys %$newpatches);
+                    for (keys %$newpatches)
+                    {
+                        $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+                            if (!$filter->matches($newpatches->{$_}));
+                    }
                     $filter->save($dbh, $entry->{CATALOGID});
                 }
             }
