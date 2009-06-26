@@ -612,7 +612,7 @@ sub sendMailToAdmins
     my $reportEmailFrom = $cfg->val('REPORT', 'reportEmailFrom');
 
     if (! defined $reportEmailFrom  || $reportEmailFrom eq '')
-    { $reportEmailFrom = "$ENV{'USER'}\@".`/bin/hostname --fqdn`; }
+    { $reportEmailFrom = "$ENV{'USER'}\@".getFQDN(); }
 
     # create the mail config
     my $mtype = 'sendmail';   # default to send eMail directly
@@ -697,6 +697,40 @@ sub sendMailToAdmins
 
     return;
 }
+
+=item getFQDN()
+
+Return the full qualified domain name (host.domain.top)
+
+=cut
+
+sub getFQDN
+{
+    my $hostname = `/bin/hostname --short 2>/dev/null`;
+    my $domain = `/bin/hostname --domain 2>/dev/null`;
+    my $fqdn = "";
+    chomp($hostname);
+    chomp($domain);
+    if(defined $hostname && $hostname ne "")
+    {
+        $fqdn = $hostname;
+    }
+    else
+    {
+        $fqdn = "linux";
+    }
+    if(defined $domain && $domain ne "")
+    {
+        $fqdn .= ".$domain";
+    }
+    else
+    {
+        $fqdn .= ".site";
+    }
+    return $fqdn;
+}
+
+
 
 =item getProxySettings()
 
