@@ -3,6 +3,8 @@ Fri Jun 26 10:20:00 CEST 2009 - mc@suse.de
 
 - rename option --nonccsync to --nosync in smt-report
   keep --nonccsync hidden for compatibility reason 
+- enable mail for registration via cron by default
+- put hostname in the subject of report mails
 
 -------------------------------------------------------------------
 Wed Jun 24 15:05:18 CEST 2009 - mc@suse.de
