@@ -7,10 +7,24 @@ Fri Jun 26 10:20:00 CEST 2009 - mc@suse.de
 - put hostname in the subject of report mails
 
 -------------------------------------------------------------------
+Wed Jun 24 15:44:45 CEST 2009 - jkupec@suse.cz
+
+- SMT::CLI::setCatalogStaging(): move the repository directories
+  to proper locations when enabling/disabling staging (bnc #509922)
+  YaST agent adjusted to use this function, too.
+- fixed arguments quoting ("smt repos 'My Test Repo' 'x86_64' -s"
+  now works)
+
+-------------------------------------------------------------------
 Wed Jun 24 15:05:18 CEST 2009 - mc@suse.de
 
 - better messages for setup-custom-repo --delete (bnc#508505) 
 - fix output and logging of smt-delete-registration (bnc#515590)
+
+-------------------------------------------------------------------
+Wed Jun 24 10:18:36 CEST 2009 - jkupec@suse.cz
+
+- avoid filtering filelists.xml.gz, it takes too long (bnc #510300)
 
 -------------------------------------------------------------------
 Tue Jun 23 16:25:43 CEST 2009 - jkupec@suse.cz
