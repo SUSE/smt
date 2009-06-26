@@ -169,15 +169,8 @@ if($mail)
             close MAIL;
         };
         my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-        my $subject = "SMT NCC register Report $datestring -- ";
-        if($exitcode > 0)
-        {
-            $subject .= "Registration failed";
-        }
-        else
-        {
-            $subject .= "Registration successful";
-        }
+        my $subject = sprintf("SMT Registration Report $datestring (%s) -- Registration %s",
+                              SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
         
         SMT::Utils::sendMailToAdmins($subject, $body);
     }

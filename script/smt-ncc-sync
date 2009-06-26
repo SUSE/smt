@@ -363,15 +363,8 @@ if($mail)
         close MAIL;
     };
     my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-    my $subject = "SMT ncc-sync Report $datestring -- Sync ";
-    if($exitcode > 0)
-    {
-        $subject .= "failed";
-    }
-    else
-    {
-        $subject .= "successful";
-    }
+    my $subject = sprintf("SMT Sync Report $datestring (%s) -- Sync %s",
+                          SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
 
     SMT::Utils::sendMailToAdmins($subject, $body);
 }

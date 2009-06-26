@@ -496,7 +496,7 @@ if(!$clean && !$hardlink)
             close MAIL;
         };
         my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-        my $subject = "SMT Mirror Report $datestring -- $errors Errors";
+        my $subject = sprintf("SMT Mirror Report $datestring (%s) -- $errors Errors", SMT::Utils::getFQDN());
         SMT::Utils::sendMailToAdmins($subject, $body);
     }
     
