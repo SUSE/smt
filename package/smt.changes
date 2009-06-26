@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 26 10:20:00 CEST 2009 - mc@suse.de
+
+- rename option --nonccsync to --nosync in smt-report
+  keep --nonccsync hidden for compatibility reason 
+
+-------------------------------------------------------------------
 Wed Jun 24 15:05:18 CEST 2009 - mc@suse.de
 
 - better messages for setup-custom-repo --delete (bnc#508505) 
