@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Jun 26 15:46:32 CEST 2009 - tgoettlicher@suse.de
+
+- added man page for smt-job
+
+-------------------------------------------------------------------
 Fri Jun 26 10:20:00 CEST 2009 - mc@suse.de
 
 - rename option --nonccsync to --nosync in smt-report
