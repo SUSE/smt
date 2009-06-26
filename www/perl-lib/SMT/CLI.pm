@@ -1,3 +1,7 @@
+# let's rename this module to SMT::Common (it's already used by YaST, too),
+# or even split it into several (it's ~3000 lines already) e.g. SMT::Common,
+# SMT::Common::Repos, SMT::Common::CLI, SMT::Command::Reports etc.  
+
 package SMT::CLI;
 use strict;
 use warnings;
@@ -11,8 +15,11 @@ use File::Temp;
 use File::Path;
 use File::Copy;
 use IO::File;
+
 use SMT::Parser::NU;
 use SMT::Mirror::Job;
+#use SMT::Repositories;
+
 use XML::Writer;
 use Data::Dumper;
 
@@ -25,6 +32,27 @@ use LIMAL::CaMgm;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
+
+
+=head1 NAME
+
+ SMT::CLI - SMT common actions for command line programs
+
+=head1 SYNOPSIS
+
+  SMT::listProducts();
+  SMT::listCatalogs();
+  SMT::setupCustomCatalogs();
+
+=head1 DESCRIPTION
+
+Common actions used in command line utilities that administer the
+SMT system.
+
+=head1 METHODS
+
+=over 4
+=cut
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -614,6 +642,14 @@ sub getProducts
 #
 # wrapper function to keep compatibility while changing the called function
 #
+=item listProducts
+
+Shows products. Pass mirrorable => 1 to get only mirrorable
+products. 0 for non-mirrorable products, or nothing to get all
+products.
+
+=cut
+
 sub listProducts
 {
     my %options = @_;
@@ -657,6 +693,12 @@ sub getRegistrations
 #
 # wrapper function to keep compatibility while changing the called function
 #
+=item listRegistrations
+
+Shows active registrations on the system.
+
+=cut
+
 sub listRegistrations
 {
     my %options = @_;
@@ -802,6 +844,21 @@ sub resetCatalogsStatus
   $sth->execute();
 }
 
+=item setCatalogDoMirror
+
+Set the catalog mirror flag to enabled or disabled.
+
+Pass id => foo to select the catalog.
+Pass enabled => 1 or enabled => 0;
+disabled => 1 or disabled => 0 are supported as well.
+
+Returns the number of rows changed.
+
+ TODO: move to SMT::Common::Repos
+ TODO: use SMT::Repositories::changeRepoStatus() (adjusted) to write to DB to
+       avoid code duplication. (BTW, it may be in SMT::DB::Repos in the future)
+=cut
+
 sub setCatalogDoMirror
 {
     my %opt = @_;
@@ -842,6 +899,29 @@ sub setCatalogDoMirror
     }
     return 0;
 }
+
+=item setCatalogStaging
+
+Enable staging for given catalog(s).
+
+Pass id => foo to select the catalog. Pass enabled => 1 or enabled => 0;
+disabled => 1 or disabled => 0 are supported as well.
+
+Returns the number of rows changed.
+
+Writes to Catalogs table and moves repository directories, as follows:
+ When enabling staging:
+ - remove repo/full/$foo
+ - move repo/$foo to repo/full/$foo
+ When disabling staging:
+ - remove repo/testing/$foo
+ - remove repo/$foo
+ - move repo/full/$foo to repo/$foo
+
+ TODO: move to SMT::Common::Repos
+ TODO: use SMT::Repositories::changeRepoStatus() (adjusted) to write to DB to
+       avoid code duplication. (BTW, it may be in SMT::DB::Repos in the future)
+=cut
 
 sub setCatalogStaging
 {
@@ -932,6 +1012,13 @@ sub setCatalogStaging
 
     return 0;
 }
+
+=item catalogDoMirrorFlag
+
+Pass id => foo to select the catalog.
+true if the catalog is set to be mirrored, false otherwise
+
+=cut
 
 sub catalogDoMirrorFlag
 {
@@ -1262,6 +1349,12 @@ sub removeCustomCatalog
 
     return $affected1;
 }
+
+=item setupCustomCatalogs
+
+modify the database to setup catalogs create by the customer
+
+=cut
 
 sub setupCustomCatalogs
 {
@@ -2804,55 +2897,6 @@ sub _sha1sum
 
 1;
 
-=head1 NAME
-
- SMT::CLI - SMT common actions for command line programs
-
-=head1 SYNOPSIS
-
-  SMT::listProducts();
-  SMT::listCatalogs();
-  SMT::setupCustomCatalogs();
-
-=head1 DESCRIPTION
-
-Common actions used in command line utilities that administer the
-SMT system.
-
-=head1 METHODS
-
-=over 4
-
-=item listProducts
-
-Shows products. Pass mirrorable => 1 to get only mirrorable
-products. 0 for non-mirrorable products, or nothing to get all
-products.
-
-=item listRegistrations
-
-Shows active registrations on the system.
-
-
-=item setupCustomCatalogs
-
-modify the database to setup catalogs create by the customer
-
-=item setCatalogDoMirror
-
-set the catalog mirror flag to enabled or disabled
-
-Pass id => foo to select the catalog.
-Pass enabled => 1 or enabled => 0
-disabled => 1 or disabled => 0 are supported as well
-
-=item catalogDoMirrorFlag
-
-Pass id => foo to select the catalog.
-true if the catalog is set to be mirrored, false otherwise
-
-=back
-
 =back
 
 =head1 AUTHOR
@@ -2864,4 +2908,3 @@ dmacvicar@suse.de
 Copyright 2007, 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 =cut
-

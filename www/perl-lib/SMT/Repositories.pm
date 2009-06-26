@@ -22,6 +22,9 @@ use SMT::Mirror::Job;        # for stagingAllowed()
 
 SMT::Repositories - reads SMT repositories and returns their states
 
+TODO: move to SMT::DB::Repos (Catalogs DB table accessor module), except the
+functions where written otherwise.
+
 =head1 SYNOPSIS
 
  # Constructor
@@ -343,6 +346,8 @@ sub getRepositoryUrl ($$) {
 
 Whether staging/filtering can be enabled for given repository.
 
+TODO: move to SMT::Common::Repos
+
 =cut
 sub stagingAllowed($$$)
 {
@@ -448,6 +453,8 @@ Returns absolute path to repository using specified $prefix.
 
 For internal use.
 
+TODO: move to SMT::Common::Repos
+
 =cut
 sub getStagingRepoPath($$$$)
 {
@@ -474,6 +481,8 @@ always starts with a slash.
  $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
  $thepath = $repohandler->getProductionRepoPath($repoid, $basepath);
 
+TODO: move to SMT::Common::Repos
+
 =cut
 
 sub getProductionRepoPath($$$)
@@ -497,6 +506,8 @@ always starts with a slash.
  $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
  $thepath = getFullRepoPath($repoid, $basepath); 
 
+TODO: move to SMT::Common::Repos
+
 =cut
 
 sub getFullRepoPath($$$)
@@ -519,6 +530,8 @@ always starts with a slash.
  $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
  $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
  $thepath = getTestingRepoPath($repoid, $basepath); 
+
+TODO: move to SMT::Common::Repos
 
 =cut
 
@@ -617,6 +630,8 @@ type
  Defines a subrepository type ('testing' or 'production')
 
 =back
+
+TODO: move to SMT::Common::Repos
 
 =cut
 
