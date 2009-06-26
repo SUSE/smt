@@ -165,7 +165,7 @@ sub printUsage
     print basename($0) . " : " . __("generate a report")."\n";
     print "  --local        : " . __("force to create a report based on a local calculation")."\n";
     print "  --ncc          : " . __("force to create a report based on NCC data")."\n";
-    print "  --nonccsync    : " . __("do not sync with NCC before creating the report")."\n";
+    print "  --nosync       : " . __("do not sync subscription information from the registration server before creating the report")."\n";
     print "  --mail    (-m) : " . __("enable mailing of report")."\n";
     print "  --attach  (-a) : " . __("attach CSV report files to mail (only together with --mail)")."\n";
     print "  --quiet   (-q) : " . __("suppress output")."\n";
@@ -457,7 +457,7 @@ Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = Getopt::Long::GetOptions(
                                       'local'      => \$localreport,
                                       'ncc'        => \$nccreport,
-                                      'nonccsync'  => \$nonccsync,
+                                      'nonccsync|nosync'  => \$nonccsync,
                                       'debug|d'    => \$debug,
                                       "verboselevel|v=i" => \$vblevel,
                                       'help|h'     => \$help,
@@ -792,7 +792,7 @@ smt [help|--help|-h] report
 
 smt report [--mail|-m] [--attach|-a] [--quiet|-q] [--csv|-c] [--file|-F [file]] [--logfile|-L file] [--debug|-d]
 
-smt report [--local] [--ncc] [--nonccsync]
+smt report [--local] [--ncc] [--nosync]
 
 =head1 DESCRIPTION
 
@@ -817,9 +817,9 @@ Enforces the creation of a report based on local data.
 
 Enforces the creation of a report based on NCC data.
 
-=item --nonccsync
+=item --nosync
 
-Prevents the report module from syncing the data with NCC when creating the report. This can be used in combination with B<--local> or B<--ncc>.
+Prevents the report module from syncing subscription information from the registration server before creating the report. This can be used in combination with B<--local> or B<--ncc>.
 
 =back
 
