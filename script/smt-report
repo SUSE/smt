@@ -170,6 +170,8 @@ sub printUsage
     print "  --attach  (-a) : " . __("attach CSV report files to mail (only together with --mail)")."\n";
     print "  --quiet   (-q) : " . __("suppress output")."\n";
     print "  --csv     (-c) : " . __("export data in CSV format")."\n";
+    print "  --pdf     (-p) : " . __("generate a PDF file")."\n";
+    print "  --xml     (-x) : " . __("export data in XML format")."\n";
     print "  --file    (-F) [<file>] : " . __("write report to a file")."\n";
     print "            " . __("in csv mode <file> expands to [<dir>/]<file-name>-reportname[.<file-extension>]\n");
     print "  --logfile (-L) <file>   : " . __("Path to logfile")."\n";
@@ -628,6 +630,11 @@ if (defined $file)
     my $fname = '';
     my ($Efile, $Edir, $Eext) = fileparse($file, qr/\.[^.]*/);
 
+    if($Edir eq "." || $Edir eq "./")
+    {
+        $Edir = $ENV{PWD}."/";
+    }
+    
     if ($Efile eq '')
     {
         $Efile = $defaultFilePrefix; 
@@ -664,6 +671,7 @@ if (defined $file)
             open(REPFILE, "> $fname ")  ||  die sprintf(__("Can not open target file %s"), $fname);
             print REPFILE $rdata;
             close REPFILE;
+            printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
         }
     }
     elsif( $pdf )
@@ -683,6 +691,7 @@ if (defined $file)
             my @cmdArgs = ("--webpage", "--quiet", "--size", "11x8.5in", "-f", "$fname", "$tname");
             open(OUT, "-|", '/usr/bin/htmldoc', @cmdArgs) or die "Cannot create PDF: $!";
             close OUT;
+            printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
         }
         else
         {
@@ -715,6 +724,7 @@ if (defined $file)
         print XML getMergedReport('xml');
         print XML '</report>';
         close XML;
+        printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
     }
     else
     {
@@ -723,6 +733,7 @@ if (defined $file)
         open(REPFILE, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
         print REPFILE getMergedReport('asciitable');
         close REPFILE;
+        printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
     }
 
     if ($certErrors ne '')
