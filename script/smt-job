@@ -613,26 +613,251 @@ exit 0;
 
 =head1 NAME
 
-smt job
+smt-job
 
 =head1 SYNOPSIS
 
-smt job [options]
+smt-job <operation mode> [OPTION [OPTION ...]]
 
 =head1 DESCRIPTION
 
-C<smt job> view, create, delete and edit jobs in the SMT job queue.
+C<smt-job> manages jobs for smt clients. It allows to list, create, edit and delete jobs like patchstatus or softwarepush.
 
 =head1 OPTIONS
 
-=item --help -h
+=head2 COMMANDLINE OPTIONS
 
-Show usage for the smt-job command. Lists all available parameters
-and time formats used for creating, deleting, editing jobs.
+=over
+
+=item -h, --help
+
+Shows the help screen.
+
+=item -v, --verbose <level>
+
+Shows detailed job information in list mode ( level supports values from 0 to 3 ).
+
+=item -q, --quiet
+
+Quiet mode, suppresses success messages.
+
+=back
+
+=head2 OPERATION MODES
+
+=over
+
+=item -l, --list
+
+Lists jobs. This mode is the default if the operation mode is omitted.
+
+=item -c, --create
+
+Creates a new job.
+
+=item -e, --edit
+
+Edits a job. 
+
+=item -d, --delete
+
+Deletes a job.
+
+=back
+
+=head2 MAIN PARAMETERS
+
+=over
+
+=item -g, --guid <guid>
+
+Specifies the client's guid. This paramater can be used multiple times when 
+creating a job in order to create a job for more than one client.
+
+=item -j, --jobid <id>
+
+Specifies the job ID. This will be ignored when creating a job.
+Note: Editing and deleting a job requires a job ID and client's guid, as the same job
+for multiple clients has the same job ID.
+
+=item -A, --deleteall <id>
+
+Allows to omit either the client's guid or the job ID parameter in delete operation, the missing parameter will 
+then match all clients resp. jobs.
+
+=back
+
+=head2 PARAMETERS FOR SEARCHING OR CHANGING
+
+=over
+
+=item -t, --type <type> 
+
+Specifies the job type (e.g.  C<patchstatus>, C<softwarepush>, C<update>, C<execute>, C<reboot>, C<wait>, C<eject>)
+Note: Only C<patchstatus> and C<softwarepush> are enabled by default on the client.
+
+=item -n --name <name>
+
+Specifies a job name
+
+=item --decription
+
+Specifies a job description
+
+=item --parent <id>
+
+Specifies the job id of the parent job. This is used in order to describe a dependency.
+A job won't be processed until its parent has successfully finished.
+
+=item -V, --verbosejob
+
+Specifies whether a job is verbose. Verbose jobs return stdout and stderr.
+
+=item --no-verbosejob
+
+Opposite of C<--verbosejob>.
+
+=item --persistent
+
+Specifies whether a job is persistent. Non-persistent jobs are procressed only once, while persistent 
+jobs are processed again and again. Please use C<--timelag> to define the time that elapses until the next run.
+
+=item --no-persistent
+
+Opposite of C<--persistent>.
+
+=item --finished
+
+Search option for finished jobs.
+
+=item --no-finished
+
+Opposite of C<--finished>.
+
+
+
+
+=back
+
+=head2 PARAMETERS FOR TIMING
+
+=over
+
+=item --targeted <time>  
+
+Specifies the earliest execution time of a job in the format C<'YYYY-MM-DD[-HH:MM[:SS]]>. Please note that 
+the job most likely won't run exactly at that point in time but probably some minutes/hours after, because
+the client polls in a fixed interval for jobs.
+
+=item --expires <time>
+
+Defines when the job will no longer be executed anymore. Use the time format C<'YYYY-MM-DD[-HH:MM[:SS]]>.
+
+=item --timelag <time>
+
+Defines the interval for persistent jobs in the format C<HH:MM[:SS]>.
+
+=back
+
+=head2 JOB SPECIFIC PARAMETERS (only for creating a job)
+
+=head3 softwarepush
+
+=over
+
+=item -P, --package <pack>
+
+Defines a package name to be installed or updated. This paramater can be used multiple times if you want to 
+specify more than one package.
+
+=item -F, --forceinstall
+
+Enforces installation of a packages, it is reinstalled even if the latest version is installed already.
+
+=item --no-forceinstall
+
+Opposite of C<--foreceinstall>
+
+
+=item --agreelicense
+
+By using this option, you choose to agree with licenses of all third-party software that will be installed.
+
+=item --no-agreelicense
+
+Opposite of C<--agreelicense>
+
+=back
+
+=head3 execute
+
+=over
+
+=item -X, -exec <command>
+
+This paramater defines the commandline to execute on the client.
+
+=back
+
+=head3 wait
+
+=over
+
+=item --waittime <time>
+
+Time in seconds the job should take.
+
+=item --waitstatus <exit>
+
+The exit code for the job to return with.
+
+=back
+
+=head3 eject
+
+=over
+
+=item --action
+
+The action of CD or DVD tray: C<open>, C<close> or C<toggle>.
+
+
+=back
+
+=head1 EXAMPLES
+
+=over
+
+=item List all finished jobs with a few details:
+
+# smt-job --list --finished -v 1
+
+=item Create a softwarepush job that updates C<xterm> and C<bash> on client C<12345> and C<67890>:
+
+# smt-job --create -t softwarepush -P xterm -P bash -g 12345 -g 67890
+
+=item Change the timing for a persistent job with job ID C<42> and guid C<12345>  to run every 6 hours:
+
+It is necessary to update the targeted time as well as persistent jobs always add their timelag to the current targeted time.
+
+# smt-job --edit -j 42 -g 12345 --targeted 0000-00-00 --timelag 06:00:00
+
+=item Delete all jobs with job ID C<42>
+
+# smt-job --delete -jobid 42 --deleteall 
+
+=item Show everything known about jobid C<42>:
+
+# smt-job --list -j 42 -v 3
+
+=back
 
 =head1 AUTHORS and CONTRIBUTORS
 
-Jens Daniel Schmidt
+Jens Daniel Schmidt, Thomas Goettlicher
+
+=cut
+
 
 =head1 LICENSE
 
