@@ -314,7 +314,7 @@ eval
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
         $exitcode = 1;
-    }    
+    }
     
     if ($todir ne "")
     {
