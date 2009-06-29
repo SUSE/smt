@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jun 29 13:33:50 CEST 2009 - mc@suse.de
+
+- special handling of HTTP status code 501 -- not implemented. 
+  For listregistrations and listsubscriptions print a warning but 
+  return with success. 
+
+-------------------------------------------------------------------
 Fri Jun 26 15:46:32 CEST 2009 - tgoettlicher@suse.de
 
 - added man page for smt-job
