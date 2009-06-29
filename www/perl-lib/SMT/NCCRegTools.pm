@@ -34,6 +34,8 @@ sub new
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
 
+    $self->{HTTPSTATUS} = 0;
+    
     if (! defined $opt{fromdir} ) {
         $self->{SMTGUID} = SMT::Utils::getSMTGuid();
     }
@@ -288,8 +290,16 @@ sub NCCListRegistrations
     
         if(!$ok || !-e $destfile)
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "List registrations request failed.");
-            return 1;
+            if($self->{HTTPSTATUS} == 501)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "List registrations not implemented.");
+                return 0;            
+            }
+            else
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "List registrations request failed.");
+                return 1;
+            }
         }
     }
     
@@ -386,8 +396,16 @@ sub NCCListSubscriptions
     
         if(!$ok || !-e $destfile)
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "List subscriptions request failed.");
-            return 1;
+            if($self->{HTTPSTATUS} == 501)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "List subscriptions not implemented.");
+                return 0;            
+            }
+            else
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "List subscriptions request failed.");
+                return 1;
+            }
         }
     }
     
@@ -1016,6 +1034,7 @@ sub _sendData
         }
     } while($response->is_redirect);
 
+    $self->{HTTPSTATUS} = $response->code();
 
     if($response->is_success && -e $destfile)
     {
@@ -1029,6 +1048,11 @@ sub _sendData
             };
         }
         return 1;
+    }
+    elsif($response->is_error && $response->code() == 501)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Not implemented.");
+        return 0;
     }
     else
     {
