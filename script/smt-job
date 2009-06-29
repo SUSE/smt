@@ -46,6 +46,22 @@ use constant JOB_TYPE    =>
     'eject'         =>      8,
   };
 
+use constant JOB_STATUS   =>
+  {
+    # map JOB_STATUS ID to JOB_STATUS string
+    0  => 'queued',
+    1  => 'successful',
+    2  => 'failed',
+    3  => 'denied',
+
+    # map JOB_STATUS string to JOB_STATUS ID
+    'queued'     => 0,
+    'successful' => 1,
+    'failed'     => 2,
+    'denied'     => 3,
+  };
+
+
 #### START LOCAL FUNCTIONS ####
 
 sub getJobTypeID($)
@@ -91,7 +107,7 @@ use Getopt::Long;
 &Getopt::Long::Configure( 'pass_through', 'no_autoabbrev', 'no_ignore_case');
 &Getopt::Long::GetOptions(
          'help|h' => \$help,
-         'verbose|v+' => \$verbose,
+         'verbose|v=i' => \$verbose,
          'quiet|q' => \$quiet,
          # the four basic modes of smt job
          'create|c' => \$create,
@@ -117,7 +133,7 @@ use Getopt::Long;
          # job specific arguments
          'package|P=s@' => \@SWpackagelist,
          'forceinstall|F!' => \$SWforce,
-         'agreelicense|L!' => \$SWagree,
+         'agreelicense!' => \$SWagree,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus,
@@ -126,13 +142,16 @@ use Getopt::Long;
 
 if ( defined $help and ( $help == 1 ) )
 {
-  print basename($0) . " : " . __("list jobs from SMT job queue")."\n";
-  print "   --help        (-h) : " . __("show this help")."\n";
-  print "   --verbose     (-v) : " . __("show detailed job information")."\n";
-  print __("                       up to 3 '-v's are possible for more verbosity (no bundling)")."\n";
-  print "   --quiet       (-q) : " . __("quiet mode, suppress success messages")."\n";
+  print basename($0) . " : " . __("list, create, edit and delete jobs from SMT job queue")."\n";
   print "\n";
-  print __("basic operation modes")."\n";
+  print __("Usage:"). ' ' . basename($0) . ' ' . __("<operation mode>  <parameters>")."\n";
+  print "\n";
+  print "   --help        (-h)        : " . __("show this help")."\n";
+  print "   --verbose     (-v) <level>: " . __("show detailed job information")."\n";
+  print "                               " . __("level can be a number from 1 to 3")."\n";
+  print "   --quiet       (-q)        : " . __("quiet mode, suppress success messages")."\n";
+  print "\n";
+  print __("operation modes")."\n";
   print "   --list        (-l) : " . __("list jobs (default)")."\n";
   print "   --create      (-c) : " . __("create job")."\n";
   print "   --edit        (-e) : " . __("edit job")."\n";
@@ -162,10 +181,10 @@ if ( defined $help and ( $help == 1 ) )
   print "\n";
   print __("job specific parameters (only for creating a job)")."\n";
   print '  '.__("for software push jobs")."\n";
-  print "   --package     (-P) <pack> : " . __("a package name")."\n";
+  print "   --package      (-P) <pack>: " . __("a package name")."\n";
   print __("                               can be used multiple times")."\n";
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
-  print "   --agreelicense (-L)       : " . __("auto-agree to licenses")."\n";
+  print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print '  '.__("for execute jobs")."\n";
   print "   --exec         (-X) <cmd> : " . __("the command to execute")."\n";
   print '  '.__("for wait jobs")."\n";
@@ -186,16 +205,16 @@ if ( defined $help and ( $help == 1 ) )
   print "   --agreelicense  :  --no-agreelicense"."\n";
   print "\n";
   print __("available job types")."\n";
-  print "   1 : patchstatus   : "."\n";
-  print "   2 : softwarepush  : "."\n";
-  print "   3 : update        : "."\n";
-  print "   4 : execute       : "."\n";
-  print "   5 : reboot        : "."\n";
-  print "   6 : -reserved-    : "."\n";
-  print "   7 : wait          : "."\n";
-  print "   8 : eject         : "."\n";
-  print "   0 : -invalid job- : "."\n";
-  print '  '.__("Jobs of type 0 will be cleaned up regularly.")."\n";
+  print "   1 : patchstatus   : " . __("Request patchstatus information from the client.") . "\n";
+  print "   2 : softwarepush  : " . __("Install software on the client.") . "\n";
+  print "   3 : update        : " . __("Install available updates.") . "\n";
+  print "   4 : execute       : " . __("Execute custom command on the client.") . "\n";
+  print "   5 : reboot        : " . __("Reboot the client.") . "\n";
+  print "   6 : -reserved-    : " . __("Reserved") . "\n";
+  print "   7 : wait          : " . __("Wait and return with specified status (for debugging).") . "\n";
+  print "   8 : eject         : " . __("Eject CD/DVD drive (for debugging).") . "\n";
+  print "   0 : -invalid job- : " . __("Invalid job type.") . "\n";
+  print '       '.__("Jobs of type 0 will be cleaned up regularly.")."\n";
 
   exit 0;
 }
@@ -268,8 +287,14 @@ if (defined $finished)
     $query{'FINISHED-'} = 'NULL' if (not $finished);
 }
 
-$query{'VERBOSE'} =  $verbosejob ? 'true':'false';
-$query{'PERSISTENT'} = $persistent ? 'true':'false';
+if (defined $verbosejob)
+{
+    $query{'VERBOSE'} =  $verbosejob ? 1:0;
+}
+if (defined $persistent)
+{
+    $query{'PERSISTENT'} = $persistent ? 1:0;
+}
 $query{'PARENT'} = $parent if (defined $parent);
 
 my %para = ();
@@ -523,13 +548,13 @@ else
     my $t = new Text::ASCIITable;
 
     # basic job list info - without a --verbose switch
-    my @DPROP = qw(ID NAME TYPE STATUS);
+    my @DPROP = qw(ID GUID NAME TYPE STATUS);
     $verbose = 0 if (not $verbose);
 
     # set the level of verbosity
     if ($verbose == 1)
     {
-        @DPROP = qw(ID GUID NAME TYPE PERSISTENT STATUS);
+        @DPROP = qw(ID GUID NAME TYPE PERSISTENT STATUS FINISHED);
     }
     elsif ($verbose == 2)
     {
@@ -545,8 +570,6 @@ else
     foreach my $prop (@DPROP)
     {
         $prop =~ s/PARENT_ID/PARENT/;
-        $prop =~ s/PERSISTENT/PERS./;
-        $prop =~ s/VERBOSE/VERB./;
         push( @cols, ucfirst(lc($prop)) );
     }    
     $t->setCols(@cols);
@@ -554,27 +577,30 @@ else
     my $p = '';
     my $h = undef;
     my $onerow = [];
-    foreach my $xcid ( keys %{$res} )
+
+    # process job data, sort by client id and job id (bnc#514678)
+    # rewrite JOB_TYPE and JOB_STATUS
+    foreach my $xcid ( sort keys %{$res} )
     {
-        foreach my $xjid ( keys %{${$res}{$xcid}} ) 
+        foreach my $xjid ( sort keys %{${$res}{$xcid}} ) 
         {
             $onerow = [];
             $h = ${$res}{$xcid}{$xjid};
 
             foreach $p (@DPROP)
             {
-                if ($p eq 'TYPE' && $verbose > 1) { ${$h}{$p} = JOB_TYPE->{${$h}{$p}}  }
+                if ($p eq 'TYPE')   { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? JOB_TYPE->{${$h}{$p}}   : ${$h}{$p}  }
+                if ($p eq 'STATUS') { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? JOB_STATUS->{${$h}{$p}} : ${$h}{$p} }
                 push(@{$onerow}, defined ${$h}{$p} ?  ${$h}{$p}:'');
-                #print "$p : ${$h}{$p}\n"
             }
             $t->addRow($onerow);
         }
     }
 
     # set the heading
-    $t->setOptions('headingText','Found jobs in SMT job queue');    
-    my $rendering = $t->draw();
-    print $rendering."\n";
+    $t->setOptions('headingText', __('Found jobs in SMT job queue'));    
+    print $t->draw();
+    print "\n";
 }
 
 
