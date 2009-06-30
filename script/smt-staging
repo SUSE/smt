@@ -26,8 +26,6 @@ my $help     = 0;
 
 my $dbreplfile = undef;
 my $dbreplacement = [];
-my $FromLocalBasePath = "";
-my $fromlocalsmt = 0;
 
 my $gentest = 0;
 my $genprod = 0;
@@ -37,17 +35,21 @@ my @userpatches = ();
 my $category = undef;
 my $all = 0;
 
+# these are for signing the testing/production snapshots, if changed
+my $keyid = undef;
+my $keypass = undef;
+
 my $optres = GetOptions("testing|t"    => \$gentest,
                         "production|p" => \$genprod,
                         "nohardlink"   => \$nohardlink,
                         "patch=s"      => \@userpatches,
                         "category=s"   => \$category,
                         "all|a"        => \$all,
-                        
-                        "fromdir=s"    => \$FromLocalBasePath,
-                        "fromlocalsmt" => \$fromlocalsmt,
+                        'keyid=s'      => \$keyid,
+                        'keypass=s'    => \$keypass,
+
                         "dbreplfile=s" => \$dbreplfile,
-                        
+
                         "debug|d"      => \$debug,
                         "verboselevel|v=i" => \$vblevel,
                         "logfile|L=s"  => \$logfile,
@@ -69,7 +71,7 @@ sub printhelp
     print "    [--patch <patch> ... | --category <category> | --all]\n";
     print "\n";
     print $scriptname . " createrepo <repository>\n";
-    print "    --testing|--production [--nohardlink]\n";
+    print "    --testing|--production [--nohardlink] [--keyid ID [--keypass password]] \n";
     print "\n";
     print $scriptname . " --help | -h\n";
     print "\n";
@@ -652,7 +654,17 @@ elsif ($command eq 'createrepo')
     $mirror->localBasePath($basepath);
     $mirror->localRepoPath($localtargetrepopath);
 
-    my $errcnt = $mirror->mirror(force => 1);
+    if (not defined $keypass)
+    {
+        print __('Signing key passphrase: ');
+        system("stty -echo");
+        $keypass = <STDIN>;
+        chomp $keypass;
+        print "\n";
+        system("stty echo");
+    }
+
+    my $errcnt = $mirror->mirror(force => 1, keyid => $keyid, keypass => $keypass);
     if ($errcnt)
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, 'Something went wrong');
