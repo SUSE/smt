@@ -104,7 +104,7 @@ my ($verbose, $help, $quiet) = undef;
 my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction) = undef;
 
 use Getopt::Long;
-&Getopt::Long::Configure( 'pass_through', 'no_autoabbrev', 'no_ignore_case');
+&Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
 &Getopt::Long::GetOptions(
          'help|h' => \$help,
          'verbose|v=i' => \$verbose,
