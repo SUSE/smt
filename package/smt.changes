@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Jun 30 12:23:15 CEST 2009 - mc@suse.de
+
+- add a table to the report with registrations which are not 
+  assigned to subscriptions.
+  This happens if a subscription is not necessary (e.g. SDK, SMT)
+  or the subscriptions are not provided by the registration server.
+
+-------------------------------------------------------------------
 Mon Jun 29 13:33:50 CEST 2009 - mc@suse.de
 
 - special handling of HTTP status code 501 -- not implemented. 
