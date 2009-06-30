@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jun 30 17:03:44 CEST 2009 - jkupec@suse.cz
+
+- smt-staging: --keyid and --keypass added for createrepo
+
+-------------------------------------------------------------------
 Tue Jun 30 12:23:15 CEST 2009 - mc@suse.de
 
 - add a table to the report with registrations which are not 
