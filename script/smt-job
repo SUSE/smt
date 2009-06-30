@@ -257,7 +257,7 @@ $query{'TIMELAG'} = $timelag if (defined $timelag);
 
 if ( exists $query{'TARGETED'} )
 {
-    if ( $query{'TARGETED'} !~ /^\d{4}-\d{2}-\d{2}[-_+ ](\d{2}:\d{2}(:\d{2})?)?$/ )
+    if ( $query{'TARGETED'} !~ /^\d{4}-\d{2}-\d{2}([-_+ ]\d{2}:\d{2}(:\d{2})?)?$/ )
     {
 	print __("Invalid time format for 'targeted' time.")."\n";
 	exit 4;
@@ -265,7 +265,7 @@ if ( exists $query{'TARGETED'} )
 }
 if ( exists $query{'EXPIRES'} )
 {
-    if ( $query{'EXPIRES'} !~ /^\d{4}-\d{2}-\d{2}[-_+ ](\d{2}:\d{2}(:\d{2})?)?$/ )
+    if ( $query{'EXPIRES'} !~ /^\d{4}-\d{2}-\d{2}([-_+ ]\d{2}:\d{2}(:\d{2})?)?$/ )
     {
 	print __("Invalid time format for 'expires' time.")."\n";
 	exit 4;
