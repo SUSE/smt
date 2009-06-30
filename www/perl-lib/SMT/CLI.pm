@@ -2137,6 +2137,45 @@ sub productSubscriptionReport
     $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => \@EVALUES, 'opts' => \%EOPTIONS } : undef; 
 
     #
+    # registrations without subscriptions
+    #
+
+    my @RHEAD = ( {
+                   name  => __("Product"),
+                   align => "auto",
+                   id    => "sub"
+                  },
+                  {
+                   name  => __("Registrations"),
+                   align => "right",
+                   id    => "number"
+                  });
+    my @RVALUES = ();
+    my %ROPTIONS = ( 'headingText' => __("Registered Products without Subscriptions")." ($time)", drawRowLine => 1 );
+    
+    $statement  = "select p.PRODUCT_CLASS, p.PRODUCT, p.VERSION, p.ARCH, p.REL, count(r.GUID) as NUMBER ";
+    $statement .= "from Products p, Registration r where r.PRODUCTID = p.PRODUCTDATAID group by p.PRODUCT_CLASS;";
+    $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
+
+    foreach my $product_class (keys %{$subnamesByProductClass})
+    {
+        delete $res->{$product_class} if(exists $res->{$product_class});
+    }
+    
+    foreach my $product_class (keys %{$res})
+    {
+        my $pname = $res->{$product_class}->{PRODUCT}." ".$res->{$product_class}->{VERSION};
+        $pname .= " ".$res->{$product_class}->{ARCH} if(defined $res->{$product_class}->{ARCH} && $res->{$product_class}->{ARCH} ne "");
+        $pname .= " ".$res->{$product_class}->{REL} if(defined $res->{$product_class}->{REL} && $res->{$product_class}->{REL} ne "");
+        
+        push @RVALUES, [ $pname,
+                         $res->{$product_class}->{NUMBER}
+                       ];
+    }
+
+    $report{'wosub'} = (@RVALUES > 0) ? {'cols' => \@RHEAD, 'vals' => \@RVALUES, 'opts' => \%ROPTIONS } : undef; 
+
+    #
     # Summary
     #
     
@@ -2180,31 +2219,6 @@ sub productSubscriptionReport
 
     foreach my $product_class (keys %{$subhash})
     {
-        #
-        # not exists means no subscription dataset from NCC available
-        # this happens for "free" products like the SDK
-        # skip these in the summary
-        #
-        #if(! exists $subhash->{$product_class})
-        #{
-        #    my $foundpc = 0;
-        #
-        #    # additionally we need to to test for multi product class subscriptions
-        #    foreach my $pcs (keys %{$subhash})
-        #    {
-        #        my @pc = split(/,/, $pcs);
-        #        foreach my $pc (@pc)
-        #        {
-        #            if( $pc eq "$product_class")
-        #            {
-        #                $foundpc = 1;
-        #            }
-        #        }
-        #    }
-        #
-        #    next if(!$foundpc);
-        #}
-        
         push @SUMVALUES, [$subnamesByProductClass->{$product_class},
                           ($subhash->{$product_class}->{UNLIMITED_ACTIVE})?"unlimited":$subhash->{$product_class}->{NODECOUNT_ACTIVE},
                           ($subhash->{$product_class}->{UNLIMITED_EXPSOON})?"unlimited":$subhash->{$product_class}->{NODECOUNT_EXPSOON},
@@ -2686,6 +2700,42 @@ sub subscriptionReport
     printLog($options{log}, $vblevel, LOG_DEBUG, "EXPIRED skipped $skipped");
 
     $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @EVALUES], 'opts' => \%EOPTIONS } : undef; 
+
+
+    #
+    # registrations without subscriptions
+    #
+
+    my @RHEAD = ( {
+                   name  => __("Product"),
+                   align => "auto",
+                   id    => "sub"
+                  },
+                  {
+                   name  => __("Registrations"),
+                   align => "right",
+                   id    => "number"
+                  });
+    my @RVALUES = ();
+    my %ROPTIONS = ( 'headingText' => __("Registered Products not assigned to a Subscription")." ($time)", drawRowLine => 1 );
+    
+    $statement  = "select p.PRODUCT_CLASS, p.PRODUCT, p.VERSION, p.ARCH, p.REL, count(r.GUID) as NUMBER ";
+    $statement .= "from Products p, Registration r, ClientSubscriptions cs where cs.GUID != r.GUID and ";
+    $statement .= "r.PRODUCTID = p.PRODUCTDATAID group by p.PRODUCT_CLASS";
+    $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
+
+    foreach my $product_class (keys %{$res})
+    {
+        my $pname = $res->{$product_class}->{PRODUCT}." ".$res->{$product_class}->{VERSION};
+        $pname .= " ".$res->{$product_class}->{ARCH} if(defined $res->{$product_class}->{ARCH} && $res->{$product_class}->{ARCH} ne "");
+        $pname .= " ".$res->{$product_class}->{REL} if(defined $res->{$product_class}->{REL} && $res->{$product_class}->{REL} ne "");
+        
+        push @RVALUES, [ $pname,
+                         $res->{$product_class}->{NUMBER}
+                       ];
+    }
+
+    $report{'wosub'} = (@RVALUES > 0) ? {'cols' => \@RHEAD, 'vals' => \@RVALUES, 'opts' => \%ROPTIONS } : undef; 
 
 
     #

@@ -326,6 +326,7 @@ sub getMergedReport($)
         $res .= getReportRenderedAs($renderMode, 'localreport', 'active')."\n";
         $res .= getReportRenderedAs($renderMode, 'localreport', 'soon')."\n";
         $res .= getReportRenderedAs($renderMode, 'localreport', 'expired')."\n";
+        $res .= getReportRenderedAs($renderMode, 'localreport', 'wosub')."\n";
         $res .= "\n\n";
 
         if($renderMode eq 'html')
@@ -374,6 +375,7 @@ sub getMergedReport($)
         $res .= getReportRenderedAs($renderMode, 'nccreport', 'active')."\n";
         $res .= getReportRenderedAs($renderMode, 'nccreport', 'soon')."\n";
         $res .= getReportRenderedAs($renderMode, 'nccreport', 'expired')."\n";
+        $res .= getReportRenderedAs($renderMode, 'nccreport', 'wosub')."\n";
         $res .= "\n\n";
 
         if($renderMode eq 'html')
@@ -435,6 +437,7 @@ sub getSeparateReports($)
         $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'localreport', 'active');
         $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'localreport', 'soon');
         $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'localreport', 'expired');
+        $res{'product_subscription_wosub'}      = getReportRenderedAs($renderMode, 'localreport', 'wosub');
         $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'localreport', 'summary');
         $res{'product_subscription_alerts'}     = getReportRenderedAs($renderMode, 'localreport', 'alerts');
     }
@@ -444,6 +447,7 @@ sub getSeparateReports($)
         $res{'subscription_active'}     = getReportRenderedAs($renderMode, 'nccreport', 'active');
         $res{'subscription_expiresoon'} = getReportRenderedAs($renderMode, 'nccreport', 'soon');
         $res{'subscription_expired'}    = getReportRenderedAs($renderMode, 'nccreport', 'expired');
+        $res{'subscription_wosub'}      = getReportRenderedAs($renderMode, 'nccreport', 'wosub');
         $res{'subscription_summary'}    = getReportRenderedAs($renderMode, 'nccreport', 'summary');
         $res{'subscription_alerts'}     = getReportRenderedAs($renderMode, 'nccreport', 'alerts');
     }
