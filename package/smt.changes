@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jul  1 14:43:51 CEST 2009 - jkupec@suse.cz
+
+- smt-staging improvements
+  * --nodesc added to listupdates
+  * listupdates now shows Testing and Production repo status
+  * man page extended
+
+-------------------------------------------------------------------
 Tue Jun 30 17:03:44 CEST 2009 - jkupec@suse.cz
 
 - smt-staging: --keyid and --keypass added for createrepo
