@@ -232,25 +232,27 @@ if (not defined $repo)
             SMT::Repositories::TARGET => $target
         });
 
-        my $count = scalar keys %$repos; 
+        my $count = scalar keys %$repos;
         if ($count <= 0)
         {
             SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
                 sprintf __("Repository named '%s' with target '%s' not found."), $reponameid, $target);
             printf __("Use '%s' to list all available repositories.\n"), 'smt-repos';
-            SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
         }
         elsif ($count == 1)
         {
-            $repo = $repos;
+            my @k = keys %$repos;
+            $repo = $repos->{$k[0]};
+            $repoid = $k[0];
         }
         else
         {
             # select manually
             SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
                 sprintf __("Multiple repositories named '%s' with target '%s' found."), $reponameid, $target);
-            print "Selection from multiple not implemented. Use repository ID.\n";
-            SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+            print __('Selection from multiple repositories is not implemented. Use repository ID.') . "\n";
+            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
         }
     }
 }
@@ -261,7 +263,7 @@ else
     $repoid = $reponameid;
 }
 
-# $repo should always be defined at this point
+# $repo and $repoid should always be defined at this point
 
 if ($repo->{STAGING} ne 'Y')
 {
