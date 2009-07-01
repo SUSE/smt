@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jul  1 11:55:15 CEST 2009 - locilka@suse.cz
+
+- Added patch-status icons.
+
+-------------------------------------------------------------------
 Tue Jun 23 10:55:01 CEST 2009 - locilka@suse.cz
 
 - Selective mirroring via YaST is logged into the default location
