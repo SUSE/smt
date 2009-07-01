@@ -404,7 +404,7 @@ foreach my $entry (@{$array})
                 # s/he wants (maybe this should be configurable)
                 # Only add new filter for a new patch, if the current one does
                 # not match it, to avoid filling the DB unnecesarily.
-                if ($rh->stagingAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
+                if ($rh->filteringAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
                 {
                     my $newpatches = $zyppMirror->newpatches();
                     my $filter = SMT::Filter->new();

@@ -265,7 +265,7 @@ else
 
 # check if we can do staging for this repo
 
-my $canstage = $rh->stagingAllowed($repoid, $cfg->val("LOCAL", "MirrorTo"));
+my $canstage = $rh->filteringAllowed($repoid, $cfg->val("LOCAL", "MirrorTo"));
 if (not defined $canstage)
 {
     SMT::Utils::printLog($log, $vblevel, LOG_ERROR,

@@ -6,7 +6,7 @@ use warnings;
 
 use SMT::Utils;
 use SMT::Mirror::Utils;
-use SMT::Mirror::Job;        # for stagingAllowed()
+use SMT::Mirror::Job;        # for filteringAllowed()
 
 # TODO seems we have a mess in logging and error reporting:
 # we should use
@@ -342,14 +342,14 @@ sub getRepositoryUrl ($$) {
     return $repo_url;
 }
 
-=item stagingAllowed($repositoryid, $basepath)
+=item filteringAllowed($repositoryid, $basepath)
 
-Whether staging/filtering can be enabled for given repository.
+Whether filtering can be done on given repository.
 
 TODO: move to SMT::Common::Repos
 
 =cut
-sub stagingAllowed($$$)
+sub filteringAllowed($$$)
 {
     my ($self, $repository, $basepath) = @_;
 
@@ -391,7 +391,7 @@ sub stagingAllowed($$$)
         -e $absrepopath.'/repodata/updateinfo.xml.gz');
 
     printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
-        "stagingAllowed(): updateinfo.xml.gz not found in local" .
+        "filteringAllowed(): updateinfo.xml.gz not found in local" .
         " repo copies, will check remote URI...", 0);
 
     # if local repo dirs (production or full) do not exist or can't be
