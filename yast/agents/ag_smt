@@ -364,20 +364,23 @@ sub CreateSnapshot ($) {
 
     my $staging_allowed = GetStagingAllowedInternal ({'repositoryid' => $repositoryid});
 
-    # Use filters only if staging is allowed
-    if ($staging_allowed) {
+    # Use filters only if staging (filtering) is allowed and...
+    # Additionally, filters are used for 'full->testing' only
+    if ($staging_allowed && $type eq 'testing') {
 	y2milestone ('Filtering is allowed, using all defined filters');
 	$mirror_args{'filter'} = $fph->{$repositoryid}->{'fh'};
     } else {
-	y2milestone ('Filtering is not allowed, not using filters');
+	y2milestone ('Not using filters');
     }
 
     # The default source
-    my $staging_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
+    my $staging_source = '';
 
     # If there are no filters allowed, we create the production snapshot from the testing one
     # because the testing repository is actually the one we want to have in production snapshot
-    if (!$staging_allowed && $type eq 'production') {
+    if ($type eq 'testing') {
+	$staging_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
+    } elsif ($type eq 'production') {
 	my $check_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'};
 
 	# Testing snapshot exists and is not empty
@@ -385,10 +388,13 @@ sub CreateSnapshot ($) {
 	if (-e $check_source && -d $check_source && -s $check_source && SMT::Mirror::Utils::getStatus ($check_source)) {
 	    y2milestone ('Using \'testing\' repository as source for \'production\'');
 	    $staging_source = $check_source;
-	# Using fallback (default one)
 	} else {
-	    y2warning ('Cannot use \'testing\' repository as a source for \'production\', using \'full\'');
+	    y2error ('Cannot use \'testing\' repository as a source for \'production\'');
+	    # FIXME: return the error to UI
+	    return YCP_FALSE;
 	}
+    } else {
+	y2error ('Unknown type: \''.$type.'\'');
     }
 
     my $mirror = SMT::Mirror::RpmMd->new(%mirror_args);
@@ -430,7 +436,7 @@ sub CreateSnapshot ($) {
     my $ret = $mirror->mirror (%args);
     y2milestone ("mirror() returned: ".$ret);
 
-    if ($ret == 0) {
+    if (defined $ret && $ret == 0) {
 	SMT::Mirror::Utils::copyStatus($staging_source,
 	    SMT::Utils::cleanPath(
 		$fph->{$repositoryid}->{'paths'}->{'base'},
@@ -451,7 +457,7 @@ sub CreateSnapshot ($) {
     }
 
     # Contains number of errors
-    return ($ret == 0 ? YCP_TRUE:YCP_FALSE);
+    return (defined $ret && $ret == 0 ? YCP_TRUE:YCP_FALSE);
 }
 
 # Cache for 'stagingAllowed()' results
