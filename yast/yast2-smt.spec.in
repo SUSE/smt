@@ -107,3 +107,4 @@ done
 %dir /usr/share/icons/hicolor/16x16/status
 /usr/share/icons/hicolor/16x16/status/client-*.xpm
 /usr/share/icons/hicolor/16x16/status/repo-*.xpm
+/usr/share/icons/hicolor/16x16/status/patch-*.xpm
