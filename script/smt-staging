@@ -263,25 +263,6 @@ else
 
 # $repo should always be defined at this point
 
-# check if we can do staging for this repo
-
-my $canstage = $rh->filteringAllowed($repoid, $cfg->val("LOCAL", "MirrorTo"));
-if (not defined $canstage)
-{
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-        sprintf __("Cannot determine whether staging is allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
-    print __("See the log for more details.\n");
-    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
-}
-elsif (!$canstage)
-{
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-        sprintf __("Staging is not allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
-    print __("The repository either does not contain update metadata, or the metadata are in an unsupported format.\n");
-    print __("Only openSUSE 11.x, SLE-11, and Fedora/RedHat XX? repositories are supported.\n");
-    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
-}
-
 if ($repo->{STAGING} ne 'Y')
 {
     SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
@@ -518,6 +499,10 @@ elsif ($command eq 'listupdates')
 
 elsif ($command eq 'allow' || $command eq 'forbid')
 {
+    my $canfilter = canFilter($repoid, $basepath);
+    SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel )
+        if (defined $canfilter && not $canfilter);
+
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
 
@@ -767,6 +752,28 @@ sub printPatchCounts
         sprintf (__("Allowed:       %d"), $allowed));
     SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
         sprintf (__("Forbidden:     %d"), $forbidden));
+}
+
+# check if we can do filtering for this repo
+sub canFilter
+{
+    my ($repoid, $basepath) = @_;
+    my $canfilter = $rh->filteringAllowed($repoid, $basepath);
+    if (not defined $canfilter)
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_WARN,
+            sprintf __("Cannot determine whether filtering is allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
+        print __("See the log for more details.\n");
+        print __('Trying to proceed anyway.') . "\n";
+    }
+    elsif (!$canfilter)
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+            sprintf __("Filtering is not allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
+        print __("The repository either does not contain update metadata, or the metadata are in an unsupported format.\n");
+        print __("Only openSUSE 11.x, SLE-11, and Fedora/RedHat update repositories are supported.\n");
+    }
+    return $canfilter;
 }
 
 
