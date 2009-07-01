@@ -52,6 +52,16 @@
 	"repo-not-up-to-date"	: sformat ("%1/repo-%2.xpm", status_icons_dir, "not-up-to-date"),
     ];
 
+    map <string, string> smt_patch_icons = $[
+	// current status
+	"a"	: sformat ("%1/patch-%2.xpm", status_icons_dir, "used"),
+	"f"	: sformat ("%1/patch-%2.xpm", status_icons_dir, "not-used"),
+
+	// current action (to be removed, to be used)
+	"-"	: sformat ("%1/patch-%2.xpm", status_icons_dir, "remove"),
+	"+"	: sformat ("%1/patch-%2.xpm", status_icons_dir, "use"),
+    ];
+
     // patch categories translation map
     map <string, string> patch_categories = $[
 	// Patch category
@@ -236,7 +246,8 @@
 		    _("Patch Name"),
 		    _("Version"),
 		    _("Category"),
-		    _("In Snapshot"),
+		    _("Testing"),
+		    _("Production"),
 		    _("Summary")
 		),
 		[]
@@ -1192,6 +1203,14 @@ Enter your SMT server URL in the following format: http:://server.name/
 	}
     }
 
+    string GetPatchStatusIcon (map patch) {
+	return (patch["testing"]:false ?
+	    (patch["filtered"]:false ? "-":"a")
+	    :
+	    (patch["filtered"]:false ? "f":"+")
+	);
+    }
+
     /**
      * Redraws the whole table of patches from the current repository.
      *
@@ -1227,6 +1246,9 @@ Enter your SMT server URL in the following format: http:://server.name/
 	    if (patches == nil) {
 		y2error ("Cannot get patches for catalog: %1", selected_catalog);
 	    } else {
+		string testing_status = "";
+		string production_status = "";
+
 		items = maplist (map one_patch, patches, {
 		    // Filtering-out patches not matching the filter
 		    if (use_category_filter && category_filter != one_patch["type"]:"")
@@ -1238,13 +1260,16 @@ Enter your SMT server URL in the following format: http:://server.name/
 		    if (! ci_is_listed && one_patch["patchid"]:"" == current_item)
 			ci_is_listed = true;
 
+		    testing_status = GetPatchStatusIcon (one_patch);
+		    production_status = (one_patch["production"]:false ? "a":"f");
+
 		    return `item (
 			`id (one_patch["patchid"]:""),
 			one_patch["name"]:"",
 			tostring (one_patch["version"]:0),
 			GetTranslatedPatchCategory (one_patch["type"]:""),
-			// Filtered -> InSnapshot==no
-			(one_patch["filtered"]:false ? no:yes),
+			(text_mode ? testing_status : `cell (`icon (smt_patch_icons[testing_status]:""))),
+			(text_mode ? production_status : `cell (`icon (smt_patch_icons[production_status]:""))),
 			one_patch["title"]:""
 		    );
 		});
@@ -1530,7 +1555,8 @@ and thus its status cannot be changed in this dialog."));
 
 	// update the cache
 	current_patches[sel_patchid,"filtered"] = (current_status == false);
-	UI::ChangeWidget (`id(`patches_table), `Item (sel_patchid, 3), (current_status == true ? yes:no));
+	string status_icon = GetPatchStatusIcon (current_patches[sel_patchid]:$[]);
+	UI::ChangeWidget (`id(`patches_table), `Item (sel_patchid, 3), (text_mode ? status_icon : `icon (smt_patch_icons[status_icon]:"")));
 	// focus the table again
 	UI::SetFocus (`id (`patches_table));
     }
@@ -1678,7 +1704,9 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	// Do not log any passwords!
 	y2milestone ("Creating snapshot: %1", snapshot_settings);
 
-	if (AskForSnapshotSigningKey (snapshot_settings) != true)
+	// We allow to change the content just for the 'testing'
+	// snapshot, 'production' is just a copy of that
+	if (type == "testing" && AskForSnapshotSigningKey (snapshot_settings) != true)
 	    return false;
 
 	// a bussy message
@@ -1747,8 +1775,10 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	    RedrawPatchesTable (GetSelectedPatchFilter());
 	} else if (action == `create_snapshot_testing) {
 	    CreateSnapshot ("testing");
+	    RedrawPatchesTable (GetSelectedPatchFilter());
 	} else if (action == `create_snapshot_production) {
 	    CreateSnapshot ("production");
+	    RedrawPatchesTable (GetSelectedPatchFilter());
 	}
 
 	return nil;

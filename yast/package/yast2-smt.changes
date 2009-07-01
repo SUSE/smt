@@ -4,6 +4,9 @@ Wed Jul  1 11:55:15 CEST 2009 - locilka@suse.cz
 - Added patch-status icons.
 - For 'production' snapshot, 'testing' snapshot is always used as
   a source repository (with no additional filters in use).
+- Using new patch-status icons in UI: allowed, forbidded,
+  to-be-allowed, and to-be-forbidden.
+- 2.17.16
 
 -------------------------------------------------------------------
 Tue Jun 23 10:55:01 CEST 2009 - locilka@suse.cz

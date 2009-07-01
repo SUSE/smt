@@ -130,14 +130,35 @@ sub LoadRepositoryData ($) {
 	'production'	=> $repo_path_suffix,
     };
 
-    my $repository_path = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
-    y2milestone ("Parsing local repository: ".$repository_path);
+    y2milestone ("Parsing local repository: ".$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
 
-    # The following lines should go to a module in SMT package
-    # New Patches-Parser handler
     $fph->{$repositoryid}->{'ph'} = SMT::Parser::RpmMdPatches->new();
-    $fph->{$repositoryid}->{'ph'}->resource($repository_path);
+    $fph->{$repositoryid}->{'ph'}->resource($fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
     $fph->{$repositoryid}->{'ph'}->parse("repodata/updateinfo.xml.gz", "repodata/patches.xml");
+
+    # FIXME: load all this on-the-fly to speed it up
+
+    my $testing = SMT::Parser::RpmMdPatches->new();
+    $testing->resource($fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'});
+    $testing->parse("repodata/updateinfo.xml.gz", "repodata/patches.xml");
+    # $testing->{PATCHES}->{$patch_name-$patch_version}
+    $testing = $testing->{PATCHES};
+
+    my $production = SMT::Parser::RpmMdPatches->new();
+    $production->resource($fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'production'});
+    $production->parse("repodata/updateinfo.xml.gz", "repodata/patches.xml");
+    # $production->{PATCHES}->{$patch_name-$patch_version}
+    $production = $production->{PATCHES};
+
+    my @all_patches = keys (%{$fph->{$repositoryid}->{'ph'}->{PATCHES}});
+    my $patchname;
+
+    foreach $patchname (@all_patches) {
+	$fph->{$repositoryid}->{'ph'}->{PATCHES}->{$patchname}->{'testing'} =
+	    (defined $testing->{$patchname} ? YCP_TRUE:YCP_FALSE);
+	$fph->{$repositoryid}->{'ph'}->{PATCHES}->{$patchname}->{'production'} =
+	    (defined $production->{$patchname} ? YCP_TRUE:YCP_FALSE);
+    }
 
     return $ret;
 }
@@ -434,7 +455,7 @@ sub CreateSnapshot ($) {
     # And GO!
     y2milestone ("Running mirror()");
     my $ret = $mirror->mirror (%args);
-    y2milestone ("mirror() returned: ".$ret);
+    y2milestone ("mirror() returned: ".(defined $ret ? $ret:'nil'));
 
     if (defined $ret && $ret == 0) {
 	SMT::Mirror::Utils::copyStatus($staging_source,
@@ -455,6 +476,11 @@ sub CreateSnapshot ($) {
 	# Reset the changed passphrase if generating failed
 	$passphrase = undef if ($passphrase_cached);
     }
+
+    # FIXME: Invalidate/re-read only the piece of cache which has just been rewritten
+    # (testing / production)
+    $fph->{$repositoryid} = undef;
+    LoadRepositoryData($repositoryid);
 
     # Contains number of errors
     return (defined $ret && $ret == 0 ? YCP_TRUE:YCP_FALSE);
