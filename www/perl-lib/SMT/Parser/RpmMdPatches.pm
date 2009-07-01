@@ -158,13 +158,11 @@ sub parse
     if(!defined $self->{RESOURCE})
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid resource");
-        return $self->{PATCHES};
+        return {};
     }
 
-    if ($self->{SAVE_PACKAGES})
-    {
-        $self->{PACKAGES} = [];   
-    }
+    $self->{PACKAGES} = [];   
+    $self->{PATCHES} = {};
 
     foreach my $start (@repodata)
     {
