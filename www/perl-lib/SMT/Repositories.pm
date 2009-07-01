@@ -240,10 +240,14 @@ sub getAllRepositories ($$) {
     my $ret = {};
     my $row = {};
 
-    while ($row = $sth->fetchrow_hashref()) {
+    my $rownr = 1;
+    while ($row = $sth->fetchrow_hashref())
+    {
 	$row->{'TARGET'} = '' if (not defined $row->{'TARGET'});
 	$row->{'LAST_MIRROR'} = '' if (not defined $row->{'LAST_MIRROR'});
+	$row->{rownr} = $rownr;
 	$ret->{$row->{'CATALOGID'}} = $row;
+	$rownr++;
     }
 
     $self->{REPOS} = $ret;

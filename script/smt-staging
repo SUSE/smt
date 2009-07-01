@@ -78,7 +78,7 @@ sub printhelp
     print $scriptname . " --help | -h\n";
     print "\n";
     print __("Repository can be specified using its name and target or ID\n");
-    print __("from smt-repos output.\n");
+    print __("from 'smt-repos' output. See 'man smt-staging' for more deails.\n");
     print "\n";
     print __("Options:\n");
     print "--testing          (-t) " . __("Generate testing repository with selected updates.\n");
@@ -207,7 +207,7 @@ if (not defined $repo)
             my $id = 1;
             foreach my $r (keys %$repos)
             {
-                if ($id == int($reponameid))
+                if ($repos->{$r}->{rownr} == int($reponameid))
                 {
                     $repo = $repos->{$r};
                     $repoid = $r;
