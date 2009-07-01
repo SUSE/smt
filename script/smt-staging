@@ -338,18 +338,18 @@ if ($command eq 'status')
     if (!$tstatus)
     { print __('not created') }
     elsif ($tstatus < $fstatus)
-    { print __('out of date') }
+    { print __('out of date compared to the full mirror') }
     else
-    { print __('up to date') }
+    { print __('up to date with the full mirror') }
     print "\n";
 
     print __('Production snapshot: ');
     if (!$pstatus)
     { print __('not created') }
     elsif ($pstatus < $fstatus)
-    { print __('out of date') }
+    { print __('out of date compared to the full mirror') }
     else
-    { print __('up to date') }
+    { print __('up to date with the full mirror') }
     print "\n";
 
     my $parser = SMT::Parser::RpmMdPatches->new(
@@ -625,20 +625,33 @@ elsif ($command eq 'createrepo')
     my $basepath = $cfg->val("LOCAL", "MirrorTo");
 
     # source
+
     my $testingrepopath = $basepath.'/'.$rh->getTestingRepoPath($repoid); 
     my $sourcerepourl = 'file://';
-    # generate the production repo from the testing repo, not full
-    # TODO: check the testing repo status using the SMT::Mirror:Utils
-    if (! $gentest && -e $testingrepopath . '/repodata/repomd.xml')
-    { $sourcerepourl .= $testingrepopath; }
+    if ($gentest)
+    {
+        $sourcerepourl .= $localfullrepopath;
+    }
     else
-    { $sourcerepourl .= $localfullrepopath; }
+    {
+        if (not -e $testingrepopath . '/repodata/repomd.xml' &&
+            SMT::Mirror::Utils::getStatus($testingrepopath))
+        {
+            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+                __('Testing repository does not exist or is not generated properly, cannot generate production repository.'));
+            print __('Generate the testing repository first.') . "\n";
+            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+        }
+        # always generate the production repo from the testing repo
+        $sourcerepourl .= $testingrepopath;
+    }
 
     # target
+
     my $localtargetrepopath = ($gentest ?
         $rh->getTestingRepoPath($repoid) :
         $rh->getProductionRepoPath($repoid));
-    
+
 
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
@@ -646,7 +659,7 @@ elsif ($command eq 'createrepo')
     my $mirror = SMT::Mirror::RpmMd->new(
         log        => $log,
         vblevel    => $vblevel,
-        filter     => $filter,
+        filter     => $gentest ? $filter : undef,
         nohardlink => $nohardlink,
         mirrorsrc  => $mirrorsrc);
 
@@ -654,7 +667,7 @@ elsif ($command eq 'createrepo')
     $mirror->localBasePath($basepath);
     $mirror->localRepoPath($localtargetrepopath);
 
-    if (not defined $keypass)
+    if ($gentest && defined $keyid && not defined $keypass)
     {
         print __('Signing key passphrase: ');
         system("stty -echo");
@@ -791,6 +804,27 @@ Enable more detailed output.
 
 =back
 
+=head1 COMMANDS
+
+=over 4
+
+=item status
+
+Shows the date and time of the last mirroring of the full repository and status
+of the testing and production repository, plus some other information.
+
+The testing and production repository status is always compared with the
+full mirror and can be as follows:
+ 'not created'
+    the repository has not ever been (successfully) created
+ 'up to date with the full mirror'
+    meaning the repository has been successfully created from the current
+    full mirror
+ 'out of date compared to the full mirror'
+    meaning the repository has been successfully created but the full mirror
+    has been updated since then
+
+=back
 
 =head1 COMMAND-SPECIFIC OPTIONS
 
