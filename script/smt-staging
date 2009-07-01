@@ -34,6 +34,7 @@ my $nohardlink = 0;
 my @userpatches = ();
 my $category = undef;
 my $all = 0;
+my $nodesc = 0;
 
 # these are for signing the testing/production snapshots, if changed
 my $keyid = undef;
@@ -45,6 +46,7 @@ my $optres = GetOptions("testing|t"    => \$gentest,
                         "patch=s"      => \@userpatches,
                         "category=s"   => \$category,
                         "all|a"        => \$all,
+                        'nodesc'       => \$nodesc,
                         'keyid=s'      => \$keyid,
                         'keypass=s'    => \$keypass,
 
@@ -62,7 +64,7 @@ sub printhelp
 
     print $scriptname . " status <repository>\n";
     print $scriptname . " listupdates <repository>\n";
-    print "    [--patch <patch> ... | --category <category>]\n";
+    print "    [--patch <patch> ... | --category <category>] [--nodesc]\n";
     print "\n";
     print $scriptname . " forbid <repository>\n";
     print "    [--patch <patch> ... | --category <category> | --all]\n";
@@ -84,6 +86,7 @@ sub printhelp
     print "--patch <name-ver>      " . __("Specify patch to forbid or allow using name and version.\n");
     print "--category <category>   " . __("Specify patch category to forbid or allow.\n");
     print "                        " . __("Choose one of: recommended, security, optional.\n");
+    print "--nodesc                " . __("Do not print summaries and descriptions of udpates.\n");
     #print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     #print "                        " . __("for them\n");
     print "--nohardlink            " . __("If a file already exists on local filesystem, do not\n");
@@ -291,8 +294,14 @@ if ($repo->{STAGING} ne 'Y')
 
 # now we're ready to do the real work
 
+my $basepath = $cfg->val("LOCAL", "MirrorTo");
 my $localfullrepopath = SMT::Utils::cleanPath(
-    $cfg->val("LOCAL", "MirrorTo"), "repo/full", $repo->{LOCALPATH});
+    $basepath, "repo/full", $repo->{LOCALPATH});
+my $localtestingrepopath = SMT::Utils::cleanPath(
+    $basepath, $rh->getTestingRepoPath($repoid)); 
+my $localproductionrepopath = SMT::Utils::cleanPath(
+    $basepath, $rh->getProductionRepoPath($repoid)); 
+
 
 # list of known patch categories
 my %exists_category = (
@@ -317,11 +326,8 @@ if ($command eq 'status')
     print __('Target:              ') . $repo->{TARGET} . "\n";
 
     my $fstatus = SMT::Mirror::Utils::getStatus($localfullrepopath);
-    my $basepath = $cfg->val("LOCAL", "MirrorTo");
-    my $tstatus = SMT::Mirror::Utils::getStatus(
-        SMT::Utils::cleanPath($basepath, $rh->getTestingRepoPath($repoid)));
-    my $pstatus = SMT::Mirror::Utils::getStatus(
-        SMT::Utils::cleanPath($basepath, $rh->getProductionRepoPath($repoid)));
+    my $tstatus = SMT::Mirror::Utils::getStatus($localtestingrepopath);
+    my $pstatus = SMT::Mirror::Utils::getStatus($localproductionrepopath);
 
     print __('Last mirrored:       ');
     if (!$fstatus)
@@ -376,15 +382,33 @@ elsif ($command eq 'listupdates')
         SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
+    # read filters
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
+
+    # read patches from all repos
 
     my $parser = SMT::Parser::RpmMdPatches->new(
         log => $log,
         vblevel => $vblevel);
     $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
-    
+
+    my $testpatches = {};
+    if (SMT::Mirror::Utils::getStatus($localtestingrepopath))
+    {
+        $parser->resource($localtestingrepopath);
+        $testpatches = $parser->parse("repodata/updateinfo.xml.gz");
+    }
+
+    my $prodpatches = {};
+    if (SMT::Mirror::Utils::getStatus($localproductionrepopath))
+    {
+        $parser->resource($localproductionrepopath);
+        $prodpatches = $parser->parse("repodata/updateinfo.xml.gz");
+    }
+
+
     if (@userpatches)
     {
         if (defined $category)
@@ -403,7 +427,23 @@ elsif ($command eq 'listupdates')
             }
 
             my $patch = $patches->{$_};
+
             my $allowed = not $filter->matches($patch);
+            my $testing = undef;
+            if (defined $testpatches->{$_})
+            {
+                $testing = __('Yes');
+                $testing .= ' (' . __('scheduled to be removed') . ')'
+                    if (not $allowed);
+            }
+            else
+            {
+                $testing =  __('No');
+                $testing .= ' (' . __('scheduled to be added') . ')'
+                    if ($allowed);
+            }
+            my $production = defined $prodpatches->{$_} ? __('Yes') : __('No');
+
             print $_ . "\n";
             print (('-' x length $_) . "\n");
             my $ident = '    ';
@@ -411,7 +451,8 @@ elsif ($command eq 'listupdates')
             print $ident . __('Version: ') . $patch->{version} . "\n";
             print $ident . __('Category: ') . $patch->{type} . "\n";
             print $ident . __('Summary: ') . $patch->{title} . "\n";
-            print $ident . __('Allowed: ') . ($allowed ? __("Yes") : __("No")) . "\n";
+            print $ident . __('Is In Testing: ') . $testing . "\n";
+            print $ident . __('Is In Production: ') . $production . "\n";
 
             if (not $allowed)
             {
@@ -420,28 +461,44 @@ elsif ($command eq 'listupdates')
             }
 
             print $ident . __('Description: ') . "\n" .
-                $patch->{description} . "\n\n";
+                $patch->{description} . "\n\n"
+                    if (not $nodesc);
         }
     }
     else
     {
-        my $t = new Text::ASCIITable;
-        $t->setCols(
-            __("Allowed"),
+        my @cols = (
+            __("T"),
+            __("P"),
             __("Name"), 
             __("Version"),
-            __("Category"),
-            __("Summary"));
-        foreach my $patch (values %$patches)
+            __("Category")
+        );
+        push @cols, __("Summary") if (not $nodesc);
+
+        my $t = new Text::ASCIITable;
+        $t->setCols(@cols);
+
+        foreach my $id (keys %$patches)
         {
-            next if ($category && $patch->{type} ne $category);
-            
-            my $allowed = not $filter->matches($patch);
-            $t->addRow(($allowed ? __("Yes") : __("No")),
-                $patch->{name},
-                $patch->{version},
-                $patch->{type},
-                $patch->{title}); 
+            next if ($category && $patches->{$id}->{type} ne $category);
+
+            # a/f/+/-
+            my $testing = undef;
+            if ($filter->matches($patches->{$id}))
+            { $testing = defined $testpatches->{$id} ? '-' : __('f') }
+            else
+            { $testing = defined $testpatches->{$id} ? __('a') : '+' }
+
+            my @row = (
+                $testing,
+                defined $prodpatches->{$id} ? __('a') : __('f'),
+                $patches->{$id}->{name},
+                $patches->{$id}->{version},
+                $patches->{$id}->{type}
+            );
+            push @row, $patches->{$id}->{title} if (not $nodesc);
+            $t->addRow(@row); 
         }
         if (%$patches)
         {
@@ -622,11 +679,8 @@ elsif ($command eq 'createrepo')
     else
     { $mirrorsrc = 1; }
 
-    my $basepath = $cfg->val("LOCAL", "MirrorTo");
-
     # source
 
-    my $testingrepopath = $basepath.'/'.$rh->getTestingRepoPath($repoid); 
     my $sourcerepourl = 'file://';
     if ($gentest)
     {
@@ -634,8 +688,8 @@ elsif ($command eq 'createrepo')
     }
     else
     {
-        if (not -e $testingrepopath . '/repodata/repomd.xml' &&
-            SMT::Mirror::Utils::getStatus($testingrepopath))
+        if (not -e $localtestingrepopath . '/repodata/repomd.xml' &&
+            SMT::Mirror::Utils::getStatus($localtestingrepopath))
         {
             SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
                 __('Testing repository does not exist or is not generated properly, cannot generate production repository.'));
@@ -643,7 +697,7 @@ elsif ($command eq 'createrepo')
             SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
         }
         # always generate the production repo from the testing repo
-        $sourcerepourl .= $testingrepopath;
+        $sourcerepourl .= $localtestingrepopath;
     }
 
     # target
@@ -685,9 +739,11 @@ elsif ($command eq 'createrepo')
     }
     else
     {
-        SMT::Mirror::Utils::copyStatus($localfullrepopath,
+        SMT::Mirror::Utils::copyStatus(
+            $genprod ? $localtestingrepopath : $localfullrepopath,
             SMT::Utils::cleanPath($basepath, $localtargetrepopath));
-        SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf __("Repository successfully generated at %s."), $localtargetrepopath);
+        SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+            sprintf __("Repository successfully generated at %s."), $localtargetrepopath);
     }
 }
 
@@ -729,7 +785,7 @@ smt staging <command> <repository> [options]
 smt staging status <repository> [general-options]
 
 smt staging listupdates <repository> [general-options]
-    [--patch <patch> ... | --category <category>]
+    [--patch <patch> ... | --category <category>] [--nodesc]
 
 smt staging forbid <repository> [general-options]
     [--patch <patch> ... | --category <category> | --all]
@@ -783,6 +839,27 @@ creates testing repository from repository number 1 from C<smt repos> table.
 
 =back
 
+=head1 RECOMMENDED WORKFLOW
+
+ 1) Enable staging for the desired repository
+    $ smt repos -s
+ 2) Mirror the remote repository (you can get the ID from C<smt repos -v>)
+    $ smt mirror [--repository Repostiory_ID]
+ 3) See available patches
+    $ smt staging listupdates [--patch <patchid>]
+ 4) Allow/forbid the desired patches by their ID or Category
+    $ smt staging allow --patch foo-312
+ 5) Recheck which patches are allowed/forbidden
+    $ smt staging listupdates --nodesc
+ 6) Create the testing repository
+    $ smt staging createrepo Repository_ID --testing [--keyid <keyid>]
+ 7) Test installation and functionality of the patches in testing clients
+ 8) If no problems were discovered during the testing, create the production
+    repository
+    $ smt staging createrepo Repository_ID --production [--keyid <keyid>]
+ 9) Update your production clients or monitor them as they update automatically
+
+
 =head1 GENERAL OPTIONS
 
 The following options apply to any command.
@@ -823,6 +900,32 @@ full mirror and can be as follows:
  'out of date compared to the full mirror'
     meaning the repository has been successfully created but the full mirror
     has been updated since then
+
+=item listupdates
+
+Lists all available patches and marks their presence in the testing
+and production repositories. When specific patches are specified via the
+I<--patch> options, detailed information is shown for these patches.
+
+The output table contains the follwing columns:
+ T - whether the patch is or is scheduled to be in the testing repository.
+     The following values can be found in this column:
+     a - (allowed) the patch is in the testing repository
+     f - (forbidden) the patch is not in the testing repository
+     + - the patch is scheduled to be added to the testing repository
+     - - the patch is scheduled to be removed from the testing repository
+ P - whether the patch is in the production repository. Possible values:
+     a - (allowed) the patch is in the production repository
+     f - (forbidden) the patch is not in the production repository
+ Name     - patch name
+ Version  - patch version
+ Category - patch category (security, recommended, or optional)
+ Summary  - brief summary of the issues the patch fixes. This column can be
+            hidden from view using the I<--nodesc> option.
+
+The detailed output (shown when I<--patch> is specified) contains additional
+information like which properties are used to filter (forbid) the patch,
+full description, etc.
 
 =back
 
@@ -879,6 +982,13 @@ Avoid creating of hard links instead of copying files when creating
 the testing or production repositories using B<createrepo> command.
 If not specified, hard links are created instead of copying wherever possible
 to save space and time.
+
+=item --nodesc
+
+Do not print patch descriptions and summaries to save some screen space and make
+the output more readable.
+
+Can be used with the B<listupdates> command.
 
 =back
 
