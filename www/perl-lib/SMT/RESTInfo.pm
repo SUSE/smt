@@ -23,22 +23,23 @@ sub handler {
     my $writer = new XML::Writer(NEWLINES => 0);
     $writer->xmlDecl("UTF-8");
 
-    # just some dummy XML for a quick test ...
     $writer->startTag('html');
     $writer->startTag('head');
     $writer->startTag('title');
-    $writer->characters('SMT REST service Information');
+    $writer->characters('SMT REST Service');
     $writer->endTag('title');
     $writer->endTag('head');
 
     $writer->startTag('body');
     $writer->startTag('h2');
-    $writer->characters('SMT REST service Information');
+    $writer->characters('SMT REST Service');
     $writer->endTag('h2');
     $writer->startTag('p');
-    $writer->characters('Find here some information about the REST service for the SMT JobQueue');
+    $writer->characters('This is the REST service of SMT. It provides access to the SMT JobQueue for registered client machines.');
     $writer->endTag('p');
-# TODO  : Write some documentation here
+    $writer->startTag('p');
+    $writer->characters('To enable administrative access to the JobQueue and SMT Client information please enable it on the SMT server.');
+    $writer->endTag('p');
     $writer->endTag('body');
     $writer->endTag('html');
     $writer->end();

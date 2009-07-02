@@ -40,8 +40,23 @@ sub GEThandler($$)
     # username already checked in handler
     my $username = $r->user;
 
-    #my $RR = $username eq 'RESTroot' ? 1:0;
-    my $RR = $username eq 'guid11' ? 1:0;
+    # read smt.conf to get info about RESTAdminUser
+    my $cfg = undef;
+    eval {  $cfg = SMT::Utils::getSMTConfig();  };
+    if ( $@ || ! defined $cfg )
+    {
+        $r->log_error("Cannot read the SMT configuration file: ".$@);
+        return undef;
+    }
+    my $RR = 0;
+    my $restEnable = $cfg->val('REST', 'enableRESTAdminAccess');
+    if ( defined $restEnable && $restEnable =~ /^1$/ )
+    {
+        my $RAU = $cfg->val('REST', 'RESTAdminUser');
+        $RR = ( defined $RAU  &&  $RAU eq $username ) ? 1:0;
+        # password checked already in Auth handler
+    }
+
     my $client = SMT::Client->new({ 'dbh' => $dbh });
 
     my $path = $r->path_info();
@@ -68,26 +83,55 @@ sub GEThandler($$)
     my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
 
     # get a job request object
-    my $job = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
+    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
 
     # jobs
-    if    ( $path =~ $reJobs )          { return $job->getJobList( $username, 1 );   }
-    elsif ( $path =~ $reJobsNext )      { return $job->retrieveJob( $username, $job->getNextJobID($username, 0), 1)   }
-    elsif ( $path =~ $reJobsId)         { return $job->getJob( $username, $1, 1 ) }
-    elsif ( $path =~ $reClients )       { return $RR ? $client->getAllClientsInfoAsXML() : undef; }
-    #elsif ( $path =~ $reClientsId )     { return "want info about one client"; }
+    if    ( $path =~ $reJobs )      { return $jobq->getJobList( $username, 1 );   }
+    elsif ( $path =~ $reJobsNext )  { return $jobq->getJob( $username, $jobq->getNextJobID($username, 0), 1)   }
+    elsif ( $path =~ $reJobsId )    { return $jobq->retrieveJob( $username, $1, 1 ) }
+    # clients
+    elsif ( $path =~ $reClients )
+    {
+        return undef unless ($RR);
+        return $client->getAllClientsInfoAsXML(); 
+    }
     elsif ( $path =~ $reClientsId )
     {
         return undef unless ($RR);
-        return undef unless ( $username eq $1 );
         return $client->getClientsInfo({'GUID' => $1, 'asXML' => 'one', 'selectAll' => '' });
     }
-    elsif ( $path =~ $reClientsAllJobs )        { return "wanna list of all jobs of all clients"; }
-    elsif ( $path =~ $reClientsIdJobs )         { return "wanna all jobs of one client with id $1"; }
-    elsif ( $path =~ $reClientsIdJobsNext )     { return "wanna next job for one client with id $1"; }
-    elsif ( $path =~ $reClientsIdJobsId )       { return "wanna job info of one job with id $2 for one client with id $1"; }
-    elsif ( $path =~ $reClientsIdPatchstatus )  { return "wanna have patchstatus information for for one client with id $1"; }
-    elsif ( $path =~ $reClientsAllPatchstatus ) { return "wanna have patchstatus information for all clients"; }
+    elsif ( $path =~ $reClientsAllJobs )
+    {
+        return undef unless ($RR);
+        return $jobq->getAllJobsInfoAsXML();
+    }
+    elsif ( $path =~ $reClientsIdJobs )
+    {
+        return undef unless ($RR);
+        return $jobq->getJobList( $1, 1 );
+    }
+    elsif ( $path =~ $reClientsIdJobsNext )
+    {
+        return undef unless ($RR);
+        return $jobq->getJob( $1, $jobq->getNextJobID($1, 0), 1);
+    }
+    elsif ( $path =~ $reClientsIdJobsId )
+    {
+        return undef unless ($RR);
+        return $jobq->getJob( $1, $2, 1);
+    }
+    elsif ( $path =~ $reClientsIdPatchstatus )
+    {
+        return undef unless ($RR);
+        return $client->getClientsInfo( { 'GUID' => $1, 'ID' => '',
+                                          'PATCHSTATUS' => '', 'asXML' => '' } );
+    }
+    elsif ( $path =~ $reClientsAllPatchstatus )
+    {
+        return undef unless ($RR);
+        return $client->getClientsInfo( { 'GUID' => '', 'ID' => '',
+                                          'PATCHSTATUS' => '', 'asXML' => '' } );
+    }
     else
     {
         $r->log->error("Request to undefined REST handler ($path) with method GET");
@@ -100,12 +144,12 @@ sub POSThandler($$)
 {
     # DISABLE REQUEST TYPE
     return undef;
-    # needs to be enabled for full REST support (eg. create jobs via REST)
 
-    my $r = shift;
-    return undef unless defined $r;
+    # will be enabled when full REST support is implemented
+    # then creating jobs via REST will work
 
-    return "this is the POST handler"; 
+    #my $r = shift;
+    #return undef unless defined $r;
 }
 
 
@@ -126,13 +170,12 @@ sub PUThandler($$)
     # currently only supports job update via PUT:/job/<id>
     my $reJobsId   = qr{^jobs/([\d]+)$};
 
-    my $job = SMT::JobQueue->new({ 'dbh' => $dbh });
+    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh });
 
     if ( $path =~ $reJobsId )
     {
-        # TODO: check content type
         my $c = read_post($r);
-        return $job->finishJob($username, $c);
+        return $jobq->finishJob($username, $c);
     }
     else
     {
@@ -146,11 +189,11 @@ sub DELETEhandler($$)
 {
      # DISABLE REQUEST TYPE
     return undef;
-    # needs to be enabled for full REST support (eg. create jobs via REST)
+    # will be enabled when full REST support is implemented
+    # then deleting jobs via REST will work 
 
-    my $r = shift;
-    return undef unless defined $r;
-    return "this is the DELETE handler";
+    #my $r = shift;
+    #return undef unless defined $r;
 }
 
 

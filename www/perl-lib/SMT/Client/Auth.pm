@@ -17,6 +17,11 @@ sub handler {
 
     my $cfg = undef;
     eval  {  $cfg = SMT::Utils::getSMTConfig();  };
+    if ( $@ || ! defined $cfg )
+    {
+        $r->log_error("Cannot read the SMT configuration file: ".$@);
+        return Apache2::Const::SERVER_ERROR;
+    }
 
     my ($status, $password) = $r->get_basic_auth_pw;
     return $status unless $status == Apache2::Const::OK;
@@ -49,6 +54,18 @@ sub handler {
 
         if( !exists $existuser->[0] || !defined $existuser->[0] || $existuser->[0] ne $r->user() )
         {
+            # last chance of authentication: RESTAdmin - administrative access to all REST ressources
+            my $restEnable = $cfg->val('REST', 'enableRESTAdminAccess');
+            if ( defined $restEnable && $restEnable =~ /^1$/ )
+            {
+                my $RAU = $cfg->val('REST', 'RESTAdminUser');
+                my $RAP = $cfg->val('REST', 'RESTAdminPassword');
+                if ( defined $RAU  &&  defined $RAP  &&  $RAU eq $r->user()  &&  $RAP  eq  $password  &&  $RAP ne '' )
+                {
+                   return Apache2::Const::OK;
+                }
+            }
+
             $r->log->error( "Invalid user: ".$r->user() );
             $r->note_basic_auth_failure;
             return Apache2::Const::AUTH_REQUIRED;
