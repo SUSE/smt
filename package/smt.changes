@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jul  2 15:24:13 CEST 2009 - mc@suse.de
+
+- drop privileges in smt-mirror-sl9 and print a warning, 
+  if .wgetrc does not exist in the home diretcory of the
+  smt user
+
+-------------------------------------------------------------------
 Thu Jul  2 12:58:46 CEST 2009 - jkupec@suse.cz
 
 - smt-staging: use signingKeyID from smt.conf if not given on
