@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jul  2 12:58:46 CEST 2009 - jkupec@suse.cz
+
+- smt-staging: use signingKeyID from smt.conf if not given on
+  command line
+- mirroring files even if the local version is newer
+
+-------------------------------------------------------------------
 Wed Jul  1 16:21:07 CEST 2009 - jkupec@suse.cz
 
 - smt-staging: allow staging for all repos, only filtering is only
