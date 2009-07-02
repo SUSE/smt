@@ -311,6 +311,9 @@ sub deleteJob($)
   my $jobid = shift || return undef;
   my $guid = shift || return undef;
 
+  # do not allow to delete all jobs of all clients
+  return undef if ($jobid eq 'ALL'  &&  $guid eq 'ALL');
+
   my $guidid = undef;
   if ($guid ne 'ALL')
   {
@@ -318,10 +321,20 @@ sub deleteJob($)
       $guidid = $client->getClientIDByGUID($guid) || return undef;
   }
 
-  my $sql = 'delete from JobQueue where ID = '.$self->{dbh}->quote($jobid);
+  my $sql = 'delete from JobQueue where ';
+  if ($jobid ne 'ALL')
+  {
+      $sql .= ' ID = '.$self->{dbh}->quote($jobid);
+      # 'and' must be added inside this block
+      if ($guid ne 'ALL')
+      {   
+          $sql .= ' and ';
+      }
+  }
+
   if ($guid ne 'ALL')
   {
-      $sql .= ' and GUID_ID  = '.$self->{dbh}->quote($guidid);
+      $sql .= ' GUID_ID  = '.$self->{dbh}->quote($guidid);
   }
 
   my $result = $self->{dbh}->do($sql);
