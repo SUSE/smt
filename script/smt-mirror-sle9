@@ -23,16 +23,11 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-#
-# FIXME:
-# not sure if this would work here. If we are not root, we
-# cannot read .wgetrc
-#
-#if(!SMT::Utils::dropPrivileges())
-#{
-#    print STDERR "Unable to drop privileges. Abort!\n";
-#    exit 1;
-#}
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR "Unable to drop privileges. Abort!\n";
+    exit 1;
+}
 
 my $debug  = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
@@ -78,6 +73,14 @@ $log = SMT::Utils::openLog($logfile);
 # to english
 $ENV{LANG}     = "en_US.UTF-8";
 $ENV{LANGUAGE} = "en_US.UTF-8";
+
+#
+# does .wgetrc exist? If not print a warning
+#
+if( ! -e "$ENV{HOME}/.wgetrc" )
+{
+    SMT::Utils::printLog($log, $vblevel, LOG_WARN, "WARNING: $ENV{HOME}/.wgetrc does not exist.");
+}
 
 my $cfg;
 eval {
