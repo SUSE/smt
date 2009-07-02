@@ -706,21 +706,25 @@ sub modified
 
 Returns 1 (true) if a newer version is available, otherwise 0 (false).
 
+FIXME: maybe this method should be call modified() instead (and the current
+   modified() method should be called modifiedTime(); 'modified' suggests
+   that it returns a bool value saying whether the resource has been modified)
+
 =cut
 
 sub outdated
 {
     my $self = shift;
-    
-    if ( ! -e $self->fullLocalPath() )
-    {
-        return 1;
-    }
-    
+
+    return 1 if ( ! -e $self->fullLocalPath() );
+
     my $date = (stat $self->fullLocalPath())[9];
     $self->{modifiedAt} = $self->modified();
-    
-    return (!defined $self->{modifiedAt} || $date < $self->{modifiedAt});
+
+    # this was: return ... $date < $self->{modifiedAt});
+    # but we want to download (mirror) even if the local timestamp is newer
+    # (that is, if we or someone modifies the metadata, e.g. when filtering)
+    return (!defined $self->{modifiedAt} || $date != $self->{modifiedAt});
 }
 
 =item copyFromLocalIfAvailable()
