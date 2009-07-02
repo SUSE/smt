@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jul  2 13:00:34 CEST 2009 - locilka@suse.cz
+
+- Fixed SCR agent to be able to switch repository staging again.
+- 2.17.17
+
+-------------------------------------------------------------------
 Wed Jul  1 11:55:15 CEST 2009 - locilka@suse.cz
 
 - Added patch-status icons.

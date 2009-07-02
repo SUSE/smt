@@ -547,19 +547,21 @@ sub AdjustRepository ($) {
 
     LoadRepositoryData ($repositoryid);
 
-    my $result = 0;
+    my $result1 = 1;
+    my $result2 = 1;
+
     if (defined $arg->{'mirroring'}) {
         # returns number of rows changed
-        $result = SMT::CLI::setCatalogDoMirror(
+        $result1 = SMT::CLI::setCatalogDoMirror(
             enabled => $arg->{'mirroring'}, id => $arg->{'repositoryid'});
     }
-    if ($result && defined $arg->{'staging'}) {
+    if (defined $arg->{'staging'}) {
         # returns number of rows changed
-        $result = SMT::CLI::setCatalogStaging(
+        $result2 = SMT::CLI::setCatalogStaging(
             enabled => $arg->{'staging'}, id => $arg->{'repositoryid'});
     }
 
-    return ($result ? YCP_TRUE : YCP_FALSE);
+    return ($result1 && $result2 ? YCP_TRUE : YCP_FALSE);
 }
 
 sub IsSubrepositoryUpToDate ($) {
