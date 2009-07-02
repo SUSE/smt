@@ -1,14 +1,24 @@
 
 * new value "requiredAuthType" in /etc/smt.conf
+
 * /etc/apache2/conf.d/nu_server.conf got an update
   and replaces the installed version on update.
-* (repo2db script)
-* new smt user
+
+* new smt user (all scripts are running as an unprivileged user)
+  Which user, can be defined in smt.conf
+
 * inform the user about how to change permissions on
   some files and directories after update SMT10 => SMT11
-  (do automatically via init script or postinstall?)
-* changed novell.com-smt cron script (we need a way to preserve 
-  the random time start values)
+  (most things should be done by the yast module)
+  note changeSMTUserPermissions.sh 
+
 * new value "[NU] NURegUrl" in /etc/smt.conf
   If this key is not available, fallback to /etc/suseRegister.conf
+
+* SMT11 and defining proxy user. yast2-proxy write this information
+  into /root/.curlrc. In SMT11 the scripts are running not as root.
+  .curlrc in the home directory of the used user must be edited
+  or use smt.conf to define the proxy settings.
+
+
 
