@@ -57,6 +57,24 @@ smtUser=smt
 signingKeyID=
 
 
+[REST]
+# Enable administrative access to the SMT RESTService by setting enableRESTAdminAccess=1
+# default: 0
+enableRESTAdminAccess=0
+# Define the username the REST-Admin uses for login
+# default: RESTroot
+RESTAdminUser=RESTroot
+# Define the password for the REST-Admin (note: empty password is invalid)
+# default: <empty>
+RESTAdminPassword=
+
+
+[JOBQUEUE]
+# maximum age of finished (non-persistent) jobs in days
+# default: 8
+maxFinishedJobAge=8
+
+
 [REPORT]
 # comma separated list of eMail addresses where the status reports will be sent to
 reportEmail=
