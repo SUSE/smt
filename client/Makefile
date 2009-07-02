@@ -1,5 +1,5 @@
 NAME          = smt-client
-VERSION       = 0.0.6
+VERSION       = 0.0.7
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -59,6 +59,8 @@ dist: clean
 #	@cp config/rc.smt $(NAME)-$(VERSION)/config/
 #	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
 #	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
+	@cp README $(NAME)-$(VERSION)/
+	@cp COPYING $(NAME)-$(VERSION)/
 	@cp script/* $(NAME)-$(VERSION)/script/
 	@cp logrotate/smt-client $(NAME)-$(VERSION)/logrotate/
 	find perl-lib -name ".svn" -prune -o \
