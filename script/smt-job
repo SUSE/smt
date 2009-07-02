@@ -105,7 +105,7 @@ my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $de
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
-&Getopt::Long::GetOptions(
+if (! &Getopt::Long::GetOptions(
          'help|h' => \$help,
          'verbose|v=i' => \$verbose,
          'quiet|q' => \$quiet,
@@ -138,7 +138,13 @@ use Getopt::Long;
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus,
          'action=s' => \$CDAction,
-);
+) )
+{
+  print __("Invalid arguments.")."\n";
+  exit 4;
+};
+
+
 
 if ( defined $help and ( $help == 1 ) )
 {
@@ -352,7 +358,7 @@ if ( defined $create )
     $Job->{'description'} = $query{'DESCRIPTION'} if ( exists $query{'DESCRIPTION'} && defined $query{'DESCRIPTION'} );
     $Job->{'verbose'}     = $query{'VERBOSE'}     if ( exists $query{'VERBOSE'}     && defined $query{'VERBOSE'} );
     $Job->{'persistent'}  = $query{'PERSISTENT'}  if ( exists $query{'PERSISTENT'}  && defined $query{'PERSISTENT'} );
-    $Job->{'parent'}      = $query{'PARENT'}      if ( exists $query{'PARENT'}      && defined $query{'PARENT'} );
+    $Job->{'parent_id'}   = $query{'PARENT'}      if ( exists $query{'PARENT'}      && defined $query{'PARENT'} );
     $Job->{'targeted'}    = $query{'TARGETED'}    if ( exists $query{'TARGETED'}    && defined $query{'TARGETED'} );
     $Job->{'expires'}     = $query{'EXPIRES'}     if ( exists $query{'EXPIRES'}     && defined $query{'EXPIRES'} );
     $Job->{'timelag'}     = $query{'TIMELAG'}     if ( exists $query{'TIMELAG'}     && defined $query{'TIMELAG'} );

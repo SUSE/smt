@@ -249,6 +249,25 @@ sub readJobFromXML
 }
 
 #
+# test whether a specific parent job exists
+#
+sub checkparentisvalid
+{
+  my $self = shift;
+  my $parentid = shift;
+  my $guidid = shift;
+
+  my $sql = 'select * from JobQueue '
+    . ' where ID      = ' . $self->{'dbh'}->quote($parentid)
+    . ' and   GUID_ID = ' . $self->{'dbh'}->quote($guidid)
+    . ' and   STATUS  =  0 ' ;
+
+  my $result = $self->{'dbh'}->selectall_hashref($sql, 'ID')->{$parentid};
+
+  return ( defined $result->{ID} ) ? 1 : 0;
+}
+
+#
 # writes job to database
 #
 sub save
@@ -260,6 +279,11 @@ sub save
 
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
   my $guidid = $client->getClientIDByGUID($self->{guid}) || return undef;
+
+  if ( defined $self->{parent_id} )
+  {
+    $self->checkparentisvalid($self->{parent_id}, $guidid ) || return undef;
+  }
 
   # retrieve next job id from database if no id is known
   if (!defined $self->{id})
