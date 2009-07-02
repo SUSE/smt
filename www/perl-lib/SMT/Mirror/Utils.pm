@@ -64,8 +64,8 @@ sub copyStatus($$)
     my ($from, $to) = @_;
 
     # check for .mirror file in full repo
-    return 0 if (not defined $from || not $from || not -e $from.'/'.TIMESTAMP_FILE);
-    return 0 if (not defined $to || not $to || not -d $to);
+    return 0 if (! defined $from || not $from || not -e $from.'/'.TIMESTAMP_FILE);
+    return 0 if (! defined $to || not $to || not -d $to);
 
     return 1 if File::Copy::copy($from.'/'.TIMESTAMP_FILE, $to.'/'.TIMESTAMP_FILE);
     return 0;
@@ -87,7 +87,7 @@ sub getStatus($)
     my $read_timestamp =  $from.'/'.TIMESTAMP_FILE;
     return 0 if (! -e $read_timestamp || ! -r $read_timestamp);
 
-    open TIMESTAMP, $read_timestamp || return 0;
+    open (TIMESTAMP, $read_timestamp) || do { return 0; };
     my $ret = <TIMESTAMP>;
     close TIMESTAMP;
 

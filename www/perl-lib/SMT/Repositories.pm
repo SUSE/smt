@@ -467,6 +467,7 @@ sub getStagingRepoPath($$$$)
     $basepath = '' if (not defined $basepath);
 
     my $repopath = $self->getRepositoryPath($repoid);
+    return '' if (! defined $repopath || $repopath eq '');
 
     return SMT::Utils::cleanPath($basepath, 'repo', $prefix, $repopath);
 }
@@ -721,6 +722,9 @@ Returns hash of details about snapshots for a repository:
  'testing' - Timestamp of last snapshot creation
  'production' - Timestamp of last snapshot creation
 
+For each key an 'undef' is returned in case a particular snapshot
+does not exist.
+
 =over
 
 =item Required parameters:
@@ -739,8 +743,6 @@ sub getRepositoryDetails ($)
 {
     my $self = shift;
     my $arg = shift || {};
-
-    my @snapshots = ['full', 'testing', 'production'];
 
     # Checking all the parameters
     if (! defined $arg->{'repositoryid'})
