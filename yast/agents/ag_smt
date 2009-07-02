@@ -583,6 +583,15 @@ sub IsSubrepositoryUpToDate ($) {
     return ($repositories->isSnapshotUpToDate($repo_args) ? YCP_TRUE:YCP_FALSE);
 }
 
+sub GetDateFromTimestamp ($) {
+    my $timestamp = shift || do { return undef; };
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime ($timestamp);
+
+    return ($year + 1900).'-'.sprintf('%02d', $mon).'-'.sprintf('%02d', $mday).' '.
+	sprintf('%02d', $hour).':'.sprintf('%02d', $min).':'.sprintf('%02d', $sec);
+}
+
 sub GetRepositoryDetails ($) {
     my $arg = shift || {};
 
@@ -598,7 +607,15 @@ sub GetRepositoryDetails ($) {
 	'basepath'	=> $base_path,
     };
 
-    return $repositories->getRepositoryDetails($repo_args);
+    my $ret = $repositories->getRepositoryDetails($repo_args);
+
+    foreach my $key (keys %{$ret}) {
+	if (defined $ret->{$key}) {
+	    $ret->{$key} = GetDateFromTimestamp ($ret->{$key});
+	}
+    }
+
+    return $ret;
 }
 
 sub GetAllClientsStatus ($) {

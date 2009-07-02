@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Jul  2 18:26:17 CEST 2009 - locilka@suse.cz
+
+- Showing the last date of snapshot creation.
+
+-------------------------------------------------------------------
 Thu Jul  2 13:00:34 CEST 2009 - locilka@suse.cz
 
 - Fixed SCR agent to be able to switch repository staging again.

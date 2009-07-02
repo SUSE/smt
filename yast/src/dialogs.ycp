@@ -1183,17 +1183,22 @@ Enter your SMT server URL in the following format: http:://server.name/
 	if (selected_catalog == nil || selected_catalog == "") {
 	    additional_info = add (additional_info, _("There are no repositories with staging enabled"));
 	} else {
-	    if ((boolean) SCR::Read(.smt.staging.repository.uptodate,
-		$["repositoryid":selected_catalog, "type":"testing"]
-	    ) != true) {
-		additional_info = add (additional_info, _("Testing snapshot is not up-to-date"));
-	    }
+	    map details = (map) SCR::Read(.smt.staging.repository.details, $["repositoryid":selected_catalog]);
 
-	    if ((boolean) SCR::Read(.smt.staging.repository.uptodate,
-		$["repositoryid":selected_catalog, "type":"production"]
-	    ) != true) {
-		additional_info = add (additional_info, _("Production snapshot is not up-to-date"));
-	    }
+	    additional_info = add (additional_info, sformat (_("Mirror timestamp: %1"),
+		((details["full"]:"" != nil && size (details["full"]:"") > 0) ?
+		    details["full"]:"" : _("Never mirrored")
+		)));
+
+	    additional_info = add (additional_info, sformat (_("Testing snapshot timestamp: %1"),
+		((details["testing"]:"" != nil && size (details["testing"]:"") > 0) ?
+		    details["testing"]:"" : _("Never created")
+		)));
+
+	    additional_info = add (additional_info, sformat (_("Production snapshot timestamp: %1"),
+		((details["production"]:"" != nil && size (details["production"]:"") > 0) ?
+		    details["production"]:"" : _("Never created")
+		)));
 	}
 
 	if (size (additional_info) > 0) {
