@@ -635,8 +635,6 @@ type
 
 =back
 
-TODO: move to SMT::Common::Repos
-
 =cut
 
 sub isSnapshotUpToDate ($)
@@ -714,6 +712,62 @@ sub isSnapshotUpToDate ($)
     # $timestamp_full = $timestamp_subrepo -> the same age
     return ($timestamp_subrepo == $timestamp_full);
 }
+
+=item getRepositoryDetails($args)
+
+Returns hash of details about snapshots for a repository:
+
+ 'full' - Timestamp of last mirroring
+ 'testing' - Timestamp of last snapshot creation
+ 'production' - Timestamp of last snapshot creation
+
+=over
+
+=item Required parameters:
+
+repositoryid
+ Identifies a repository
+
+basepath
+ Defines the the base SMT path
+
+=back
+
+=cut
+
+sub getRepositoryDetails ($)
+{
+    my $self = shift;
+    my $arg = shift || {};
+
+    my @snapshots = ['full', 'testing', 'production'];
+
+    # Checking all the parameters
+    if (! defined $arg->{'repositoryid'})
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"));
+	return undef;
+    }
+
+    if (! defined $arg->{'basepath'})
+    {
+	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'basepath' is required"));
+	return undef;
+    }
+
+    my $full_rp		= $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+    my $testing_rp	= $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+    my $production_rp	= $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+
+    my $ret = {
+	'full'		=> SMT::Mirror::Utils::getStatus($full_rp),
+	'testing'	=> SMT::Mirror::Utils::getStatus($testing_rp),
+	'production'	=> SMT::Mirror::Utils::getStatus($production_rp),
+    };
+
+    return $ret;
+}
+
 
 =back
 

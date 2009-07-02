@@ -583,6 +583,24 @@ sub IsSubrepositoryUpToDate ($) {
     return ($repositories->isSnapshotUpToDate($repo_args) ? YCP_TRUE:YCP_FALSE);
 }
 
+sub GetRepositoryDetails ($) {
+    my $arg = shift || {};
+
+    my $repositoryid = $arg->{'repositoryid'} || do {
+	y2error ('Parameter repositoryid must be defined');
+	return undef;
+    };
+
+    LoadRepositoryData ($repositoryid);
+
+    my $repo_args = {
+	'repositoryid'	=> $arg->{'repositoryid'},
+	'basepath'	=> $base_path,
+    };
+
+    return $repositories->getRepositoryDetails($repo_args);
+}
+
 sub GetAllClientsStatus ($) {
     my $args = shift || {};
 
@@ -620,6 +638,8 @@ while (<STDIN>) {
 	    ycp::Return (SecurityLevelFilterExists ($arg));
 	} elsif ($path eq '.staging.repository.uptodate') {
 	    ycp::Return (IsSubrepositoryUpToDate ($arg));
+	} elsif ($path eq '.staging.repository.details') {
+	    ycp::Return (GetRepositoryDetails ($arg));
 	} elsif ($path eq '.repositories.all') {
 	    ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER));
 	} elsif ($path eq '.repository.staging_allowed') {

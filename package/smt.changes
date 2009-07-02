@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jul  2 17:52:49 CEST 2009 - locilka@suse.cz
+
+- Added functionality that returns details about repository
+  snapshots states.
+
+-------------------------------------------------------------------
 Thu Jul  2 15:24:13 CEST 2009 - mc@suse.de
 
 - drop privileges in smt-mirror-sl9 and print a warning, 
