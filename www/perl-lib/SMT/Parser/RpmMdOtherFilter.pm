@@ -82,6 +82,9 @@ sub new
 
     $self->{RESOURCE}    = undef;
 
+    $self->{CURRENT}     = {};
+    $self->{DROP}        = 0;
+
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
@@ -146,7 +149,9 @@ sub parse($$$$)
         $self->{WRITE_OUT} = 1;
     }
 
-    $self->{CURRENT} = undef;
+    #$self->{CURRENT} = undef;
+    $self->{CURRENT}->{MAINELEMENT} = undef;
+    $self->{CURRENT}->{PKGID} = undef;
     $self->{REMOVED} = {};
 
     my $path = SMT::Utils::cleanPath($self->{RESOURCE}, $file);
@@ -164,7 +169,6 @@ sub parse($$$$)
     my $parser;
     $parser = XML::Parser->new( Handlers => {
                                     Start   => sub { handle_start_tag($self, @_) },
-                                    Char    => sub { handle_char_tag ($self, @_) },
                                     End     => sub { handle_end_tag  ($self, @_) },
                                     Default => sub { handle_the_rest ($self, @_) },
                                     Final   => sub { handle_the_end  ($self, @_) }
@@ -198,54 +202,33 @@ sub parse($$$$)
 sub handle_start_tag
 {
     my $self = shift;
-    my( $expat, $element, %attrs ) = @_;
 
-    if(! exists $self->{CURRENT}->{MAINELEMENT})
-    {
-        $self->{CURRENT}->{MAINELEMENT} = undef;
-        $self->{CURRENT}->{PKGID} = undef;
-    }
+    return if($self->{DROP});
+
+    my( $expat, $element, %attrs ) = @_;
 
     # <package>
 
     if (lc($element) eq 'package')
     {
-        # write out the original XML string read until now (the first
-        # <package>), the rest will be writen package by package
-        if ($self->{WRITE_OUT} &&
-            not
-            exists $self->{CURRENT}->{MAINELEMENT} && 
-            defined $self->{CURRENT}->{MAINELEMENT} &&
-            $self->{CURRENT}->{MAINELEMENT})
-        {
-            print {$self->{OUT}} $self->{CURRENT}->{ORIGXML};
-            $self->{CURRENT}->{ORIGXML} = "";
-        }
-
-        $self->{CURRENT} = {};
         $self->{CURRENT}->{PKGID} = $attrs{pkgid};
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
+        
+        if(exists $self->{TOREMOVE}->{$attrs{pkgid}})
+        {
+            $self->{DROP} = 1;
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "DROP package name=".$attrs{name}." pkgid=".$attrs{pkgid});
+            return;
+        }
+        else
+        {
+            $self->{DROP} = 0;
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "USE package name=".$attrs{name}." pkgid=".$attrs{pkgid});
+        }
     }
-
     # store the original XML
-    $self->{CURRENT}->{ORIGXML} .= $expat->original_string
-        if ($self->{WRITE_OUT});
+    print {$self->{OUT}} $expat->original_string  if ($self->{WRITE_OUT});
 }
-
-
-sub handle_char_tag
-{
-    my $self = shift;
-    my( $expat, $string ) = @_;
-
-     # store the original XML
-    my $line = $expat->original_string;
-    if ($self->{WRITE_OUT})
-    {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
-    }
-}
-
 
 sub handle_end_tag
 {
@@ -253,36 +236,26 @@ sub handle_end_tag
     my( $expat, $element ) = @_;
 
     # store the original XML
-    my $line = $expat->original_string;
-    if ($self->{WRITE_OUT})
+    if ($self->{WRITE_OUT} && ! $self->{DROP})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        print {$self->{OUT}} $expat->original_string  if ($self->{WRITE_OUT});
     }
-
+    
     if (exists $self->{CURRENT}->{MAINELEMENT} &&
         defined $self->{CURRENT}->{MAINELEMENT} &&
-        lc($element) eq $self->{CURRENT}->{MAINELEMENT})
+        $self->{CURRENT}->{MAINELEMENT} eq lc($element) &&
+        $self->{CURRENT}->{MAINELEMENT} eq "package")
     {
-        
         # </package>
         
-        if ($self->{CURRENT}->{MAINELEMENT} eq 'package')
+        my $pkgid = $self->{CURRENT}->{PKGID};
+        if (exists $self->{TOREMOVE}->{$pkgid})
         {
-            my $pkgid = $self->{CURRENT}->{PKGID};
-            if (exists $self->{TOREMOVE}->{$pkgid})
-            {
-                $self->{REMOVED}->{$pkgid} = $self->{TOREMOVE}->{$pkgid};
-            }
-            # write out the original XML string of current (wanted) package
-            elsif ($self->{WRITE_OUT})
-            {
-                print {$self->{OUT}} $self->{CURRENT}->{ORIGXML};
-                print {$self->{OUT}} "\n";
-            }
-
-            $self->{CURRENT}->{PKGID} = undef;
-            $self->{CURRENT}->{ORIGXML} = '';
+            $self->{REMOVED}->{$pkgid} = $self->{TOREMOVE}->{$pkgid};
+            $self->{DROP} = 0;
         }
+        $self->{CURRENT}->{PKGID} = undef;
+        $self->{CURRENT}->{ORIGXML} = '';
     }
 }
 
@@ -290,14 +263,13 @@ sub handle_end_tag
 sub handle_the_rest
 {
     my $self = shift;
-    my( $expat, $str ) = @_;
+ 
+    return if($self->{DROP});
+
+    my $expat = shift;
 
     # store the original XML
-    my $line = $expat->original_string;
-    if ($self->{WRITE_OUT})
-    {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
-    }
+    print {$self->{OUT}} $expat->original_string  if ($self->{WRITE_OUT});
 }
 
 # called at the end of parsing
@@ -305,13 +277,11 @@ sub handle_the_end
 {
     my $self = shift;
     my $expat = shift;
-
+    
     # print the original XML read from last <package> to the end
-    my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        print {$self->{OUT}} $self->{CURRENT}->{ORIGXML} . $line;
-        $self->{CURRENT}->{ORIGXML} = ""
+        print {$self->{OUT}} $expat->original_string ;
     }
 }
 
