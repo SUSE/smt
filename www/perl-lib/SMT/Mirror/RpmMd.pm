@@ -431,6 +431,7 @@ and exported key will be deleted.
 Passphrase to the GPG key for signing the metadata.
 
 =back
+
 =cut
 
 sub mirror()
@@ -1457,7 +1458,8 @@ sub removePackages($$$)
         $mdfh->open('>' . $mdnew);
 
         # update the *.xml
-        my $parser = SMT::Parser::RpmMdOtherFilter->new();
+        my $parser = SMT::Parser::RpmMdOtherFilter->new(log => $self->{LOG}, 
+                                                        vblevel => $self->{VBLEVEL});
         $parser->resource($tgtrepopath);
         $errc = $parser->parse($mdtoupdate{$mdfile}->{'orig'}, $pkgsfound, out => $mdfh);
         $mdfh->close;
