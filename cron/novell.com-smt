@@ -6,4 +6,5 @@
 
 */15  *  *  *  *    root    /usr/lib/SMT/bin/smt-repeated-register
 0     1  *  *  *    root    /usr/lib/SMT/bin/smt-daily
+0     2  *  *  *    root    /usr/lib/SMT/bin/smt-jobqueue-cleanup
 0     5  *  *  1    root    /usr/lib/SMT/bin/smt-gen-report
