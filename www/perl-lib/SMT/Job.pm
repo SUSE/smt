@@ -277,6 +277,14 @@ sub save
 
   return undef unless defined $self->{guid};
 
+
+  if ( defined $self->{parent_id} && defined $self->{id} && 
+   $self->{parent_id}  =~ /^\d+$/ &&  $self->{id} =~ /^\d+$/ && 
+   $self->{parent_id}  == $self->{id} )
+  {
+    return undef;
+  }
+  
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
   my $guidid = $client->getClientIDByGUID($self->{guid}) || return undef;
 
