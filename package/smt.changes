@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jul  3 16:29:20 CEST 2009 - mc@suse.de
+
+- improve parsing of other.xml
+- provide log and loglevel to RpmMdOtherFilter
+
+-------------------------------------------------------------------
 Thu Jul  2 17:52:49 CEST 2009 - locilka@suse.cz
 
 - Added functionality that returns details about repository
