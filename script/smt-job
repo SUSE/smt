@@ -301,7 +301,7 @@ if (defined $persistent)
 {
     $query{'PERSISTENT'} = $persistent ? 1:0;
 }
-$query{'PARENT'} = $parent if (defined $parent);
+$query{'PARENT_ID'} = $parent if (defined $parent);
 
 my %para = ();
 $para{'PACKAGELIST'} = \@SWpackagelist if (@SWpackagelist);
@@ -358,7 +358,7 @@ if ( defined $create )
     $Job->{'description'} = $query{'DESCRIPTION'} if ( exists $query{'DESCRIPTION'} && defined $query{'DESCRIPTION'} );
     $Job->{'verbose'}     = $query{'VERBOSE'}     if ( exists $query{'VERBOSE'}     && defined $query{'VERBOSE'} );
     $Job->{'persistent'}  = $query{'PERSISTENT'}  if ( exists $query{'PERSISTENT'}  && defined $query{'PERSISTENT'} );
-    $Job->{'parent_id'}   = $query{'PARENT'}      if ( exists $query{'PARENT'}      && defined $query{'PARENT'} );
+    $Job->{'parent_id'}   = $query{'PARENT_ID'}   if ( exists $query{'PARENT_ID'}   && defined $query{'PARENT_ID'} );
     $Job->{'targeted'}    = $query{'TARGETED'}    if ( exists $query{'TARGETED'}    && defined $query{'TARGETED'} );
     $Job->{'expires'}     = $query{'EXPIRES'}     if ( exists $query{'EXPIRES'}     && defined $query{'EXPIRES'} );
     $Job->{'timelag'}     = $query{'TIMELAG'}     if ( exists $query{'TIMELAG'}     && defined $query{'TIMELAG'} );
@@ -474,7 +474,7 @@ elsif ( defined $edit )
     $Job->readJobFromDatabase($jobid, $GUID);
 
     # overwrite with new values
-    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT TARGETED EXPIRES TIMELAG);
+    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG);
     foreach my $eprop (@EditProps)
     {
         $Job->{lc($eprop)} = $query{uc($eprop)} if ( exists $query{uc($eprop)}  && defined $query{uc($eprop)} );
@@ -494,33 +494,49 @@ elsif ( defined $edit )
 elsif ( defined $delete )
 {
     ##  DELETE  ##
+    my $DELguid = undef;
+    my $DELjobid = undef;
 
-    if ( not defined $jobid )
+    if ( not defined $jobid  &&  not defined $GUID )
     {
-        print __("The job id is invalid.")."\n";
+        print __("To delete a job please define a job ID and the GUID of the client or either of these together with --deleteall.");
         exit 3;
     }
-    if ( not defined $GUID )
+    elsif ( defined $jobid  &&  defined $GUID )
     {
-        if ( not $deleteall )
-        {
-            print __("The guid is invalid.")."\n";
-            exit 3;
-        }
-    }
-
-    if ($deleteall)
-    {
-        print sprintf(__("Deleting job %s for all guids."), $jobid, $GUID )."\n" unless $quiet;
+        print sprintf(__("Deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
+        $DELguid=$GUID;
+        $DELjobid=$jobid;
     }
     else
     {
-        print sprintf(__("Deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
+        if ( not defined $jobid )
+        {
+            if ( not $deleteall )
+            {
+                print __("The job id is invalid.")."\n";
+                exit 3;
+            }
+            print sprintf(__("Deleting all jobs for guid %s."), $GUID )."\n" unless $quiet;
+            $DELguid=$GUID;
+            $DELjobid='ALL';
+        }
+        if ( not defined $GUID )
+        {
+            if ( not $deleteall )
+            {
+                print __("The guid is invalid.")."\n";
+                exit 3;
+            }
+            print sprintf(__("Deleting all jobs with id  %s for all guids."), $jobid )."\n" unless $quiet;
+            $DELguid='ALL';
+            $DELjobid=$jobid;
+        }
     }
 
     my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
 
-    if ( not $JobQ->deleteJob($jobid, $deleteall ? 'ALL':$GUID) )
+    if ( not $JobQ->deleteJob($DELjobid, $DELguid) )
     {
         if ($deleteall)
         {
@@ -575,8 +591,9 @@ else
     my @cols = ();
     foreach my $prop (@DPROP)
     {
-        $prop =~ s/PARENT_ID/PARENT/;
-        push( @cols, ucfirst(lc($prop)) );
+        my $copyprop = $prop; 
+        $copyprop =~ s/PARENT_ID/PARENT/;
+        push( @cols, ucfirst(lc($copyprop)) );
     }    
     $t->setCols(@cols);
 
