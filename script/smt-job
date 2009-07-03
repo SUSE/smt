@@ -621,7 +621,8 @@ else
     }
 
     # set the heading
-    $t->setOptions('headingText', __('Found jobs in SMT job queue'));    
+    # disable heading, as rendering takes too long then
+    # $t->setOptions('headingText', __('Found jobs in SMT job queue'));    
     print $t->draw();
     print "\n";
 }
