@@ -99,6 +99,7 @@ if ($command eq '' || $command eq 'status')
 
 	if ($showdetails) {
 	    $t->setCols(
+		__("GUID"),
 		__("Hostname"),
 		__("Status"),
 		__("Last Contact"),
@@ -125,6 +126,7 @@ if ($command eq '' || $command eq 'status')
 
 	    if ($showdetails) {
 		$t->addRow(
+		    $client_info->{$key}->{GUID},
 		    $client_info->{$key}->{HOSTNAME},
 		    $status_label,
 		    $client_info->{$key}->{LASTCONTACT},
