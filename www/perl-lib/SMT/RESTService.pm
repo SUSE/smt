@@ -124,7 +124,7 @@ sub GEThandler($$)
     {
         return undef unless ($RR);
         return $client->getClientsInfo( { 'GUID' => $1, 'ID' => '',
-                                          'PATCHSTATUS' => '', 'asXML' => '' } );
+                                          'PATCHSTATUS' => '', 'asXML' => 'one' } );
     }
     elsif ( $path =~ $reClientsAllPatchstatus )
     {
