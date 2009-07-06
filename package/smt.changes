@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jul  6 15:24:54 CEST 2009 - mc@suse.de
+
+- try to get the hostname for list-registration; 
+  fallback to IP address (bnc#508291)
+
+-------------------------------------------------------------------
 Fri Jul  3 16:29:20 CEST 2009 - mc@suse.de
 
 - improve parsing of other.xml
