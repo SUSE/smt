@@ -53,7 +53,9 @@ sub jobhandler
 
 
   # run zypper again if needed because of pkgmgr patches
-  my $stdout2, $stderr2;
+  my $stdout2;
+  my $stderr2;
+
   if ( $retval == 103 )
   {                                                                                         
     ($retval, $stdout2, $stderr2) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
