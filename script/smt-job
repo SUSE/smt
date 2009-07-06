@@ -101,7 +101,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction) = undef;
+my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -138,6 +138,7 @@ if (! &Getopt::Long::GetOptions(
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus,
          'action=s' => \$CDAction,
+         'autopatchstatus!' => \$autoPatchstatus,
 ) )
 {
   print __("Invalid arguments.")."\n";
@@ -191,6 +192,7 @@ if ( defined $help and ( $help == 1 ) )
   print __("                               can be used multiple times")."\n";
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
+  print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
   print '  '.__("for execute jobs")."\n";
   print "   --exec         (-X) <cmd> : " . __("the command to execute")."\n";
   print '  '.__("for wait jobs")."\n";
@@ -204,11 +206,12 @@ if ( defined $help and ( $help == 1 ) )
   print "   timelag                   : " . __("'HH:MM[:SS]'")."\n";
   print "\n";
   print __("negatable parameters")."\n";
-  print "   --finished      :  --no-finished"."\n";
-  print "   --persistent    :  --no-persistent"."\n";
-  print "   --verbosejob    :  --no-verbosejob"."\n";
-  print "   --forceinstall  :  --no-forceinstall"."\n";
-  print "   --agreelicense  :  --no-agreelicense"."\n";
+  print "   --finished        :  --no-finished"."\n";
+  print "   --persistent      :  --no-persistent"."\n";
+  print "   --verbosejob      :  --no-verbosejob"."\n";
+  print "   --forceinstall    :  --no-forceinstall"."\n";
+  print "   --agreelicense    :  --no-agreelicense"."\n";
+  print "   --autopatchstatus :  --no-autopatchstatus"."\n";
   print "\n";
   print __("available job types")."\n";
   print "   1 : patchstatus   : " . __("Request patchstatus information from the client.") . "\n";
@@ -229,6 +232,8 @@ if ( defined $help and ( $help == 1 ) )
 #
 # get and check all passed parameters
 #
+
+$autoPatchstatus = defined $autoPatchstatus ? $autoPatchstatus:1;
 
 my %query = ();
 
@@ -452,6 +457,38 @@ if ( defined $create )
     if ( $newjobid )
     {
         print sprintf(__("Successfully created new job. The job id is: %s"), $newjobid )."\n" unless $quiet;
+ 
+        # for new softwarepush and update jobs automatcally add a patchstatus job to refresh the patchstatus immediately
+        # can be disabled by --no-autopatchstatus / it is enabled by default
+        if ( ( $typeID == 2  ||  $typeID == 3 )  &&  $autoPatchstatus )
+        {
+            my $PSjob = SMT::Job->new({ 'dbh' => $dbh });
+            $PSjob->newJob( @guid > 0 ? undef:$GUID, undef, 1, undef );
+
+            $PSjob->{'name'}        =  'Automatic Patchstatus Job';
+            $PSjob->{'description'} =  sprintf("Automatic Patchstatus Job after job ID %s", $newjobid);
+            $PSjob->{'parent_id'}  = $newjobid;
+ 
+            my $newPSjobid = undef;
+            if (@guid > 0)
+            {
+                $newPSjobid = $JobQ->addJobForMultipleGUIDs($PSjob, @guid);
+            }
+            else
+            {
+                $newPSjobid = $PSjob->save();
+            }
+
+            if ( $newPSjobid ) 
+            {
+                print sprintf(__("Successfully created an automatic patchstatus job. The job id is: %s"), $newPSjobid )."\n" unless $quiet;
+            }
+            else
+            {
+                print  __("An error occurred when creating an automatic patchstatus job.")."\n";
+            }
+        }
+
     }
     else
     {
@@ -649,7 +686,7 @@ C<smt-job> manages jobs for smt clients. It allows to list, create, edit and del
 
 =head1 OPTIONS
 
-=head2 COMMANDLINE OPTIONS
+=head2 BASIC OPTIONS
 
 =over
 
@@ -704,7 +741,7 @@ Specifies the job ID. This will be ignored when creating a job.
 Note: Editing and deleting a job requires a job ID and client's guid, as the same job
 for multiple clients has the same job ID.
 
-=item -A, --deleteall <id>
+=item -A, --deleteall
 
 Allows to omit either the client's guid or the job ID parameter in delete operation, the missing parameter will 
 then match all clients resp. jobs.
@@ -717,8 +754,8 @@ then match all clients resp. jobs.
 
 =item -t, --type <type> 
 
-Specifies the job type (e.g.  C<patchstatus>, C<softwarepush>, C<update>, C<execute>, C<reboot>, C<wait>, C<eject>)
-Note: Only C<patchstatus> and C<softwarepush> are enabled by default on the client.
+Specifies the job type (e.g.  C<patchstatus>, C<softwarepush>, C<update>, C<execute>, C<reboot>, C<wait>, C<eject>).
+B<Note:> Only C<patchstatus> and C<softwarepush> are enabled by default on the client.
 
 =item -n --name <name>
 
@@ -810,6 +847,17 @@ By using this option, you choose to agree with licenses of all third-party softw
 =item --no-agreelicense
 
 Opposite of C<--agreelicense>
+
+
+=item --autopatchstatus
+
+Enables to automatically add a B<patchstatus> job after a B<softwarepush> or B<update> job. This will update the patchstatus information immediately after a software installation on the client.
+Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:> This is enabled by default.
+
+=item --no-autopatchstatus
+
+Opposite of C<--autopatchstatus>
+
 
 =back
 
