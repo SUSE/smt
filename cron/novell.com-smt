@@ -2,9 +2,10 @@
 #     default:
 #     run smt-register every 15 minutes
 #     run smt-daily once a night at 01:00 +
+#     run smt-run-jobqueue-cleanup once a night at 02:00 +
 #     run smt-gen-report once a week Monday at 05:00
 
 */15  *  *  *  *    root    /usr/lib/SMT/bin/smt-repeated-register
 0     1  *  *  *    root    /usr/lib/SMT/bin/smt-daily
-0     2  *  *  *    root    /usr/lib/SMT/bin/smt-jobqueue-cleanup
+0     2  *  *  *    root    /usr/lib/SMT/bin/smt-run-jobqueue-cleanup
 0     5  *  *  1    root    /usr/lib/SMT/bin/smt-gen-report
