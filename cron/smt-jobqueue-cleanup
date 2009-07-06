@@ -167,7 +167,7 @@ else
 ### CHECK PERSISTENT JOBS FOR PROPER TIMELAG [> 1 minute] (last) ###
 
 my $getTooPersistentJobs = " SELECT j.ID, c.GUID, j.TIMELAG from JobQueue j LEFT JOIN Clients c ON (j.GUID_ID = c.ID) where j.PERSISTENT = 1 AND j.TIMELAG < '00:01:00'  ";
-my $persData = $dbh->selectall_hashref($getTooPersistentJobs, "ID" );
+my $persData = $dbh->selectall_hashref($getTooPersistentJobs, ["ID", "GUID"] );
 
 my $numPersData = keys %{$persData} || 0;
 if ( $numPersData > 0 )
@@ -176,7 +176,10 @@ if ( $numPersData > 0 )
 
     foreach my $jid ( keys %{$persData} )
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "Job ID ($jid) for GUID (${$persData}{$jid}{GUID}) has a timelag of (${$persData}{$jid}{TIMELAG})." , $quiet? 0:1 ,1);
+        foreach my $gid (keys %{${$persData}{$jid}} )
+        {
+            SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "Job ID ($jid) for GUID (${$persData}{$jid}{$gid}{GUID}) has a timelag of (${$persData}{$jid}{$gid}{TIMELAG})." , $quiet? 0:1 ,1);
+        }
     }
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "This is just a warning. If the timelag for these jobs is not intended to be so small please change the jobs using the smt-job command." , $quiet? 0:1 ,1);
 }
