@@ -37,11 +37,11 @@ fi
 unset PROXY_ENABLED
 
 
-if [ -x ${SMTCMD}-jobqueue-cleanup ]
+if [ -x /usr/lib/SMT/bin/smt-jobqueue-cleanup ]
 then
-    ${SMTCMD}-jobqueue-cleanup ${JOBQUEUECLEANUP_PARAMS}
+    /usr/lib/SMT/bin/smt-jobqueue-cleanup ${JOBQUEUECLEANUP_PARAMS}
 else
-    echo "WARNING: Could not find the SMT binary ${SMTCMD}-jobqueue-cleanup"
+    echo "WARNING: Could not find the SMT binary smt-jobqueue-cleanup"
     echo "         Please make sure SMT is properly installed."
 fi
 
