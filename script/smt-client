@@ -101,7 +101,7 @@ if ($command eq '' || $command eq 'status')
 	    $t->setCols(
 		__("GUID"),
 		__("Hostname"),
-		__("Status"),
+		__("Patch Status"),
 		__("Last Contact"),
 		__("Security\nPatches"),
 		__("Patches for\nPackage Manager"),
@@ -111,7 +111,7 @@ if ($command eq '' || $command eq 'status')
 	} else {
 	    $t->setCols(
 		__("Hostname"),
-		__("Status"),
+		__("Patch Status"),
 		__("Last Contact")
 	    );
 	}
