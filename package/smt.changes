@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Jul  7 23:30:17 CEST 2009 - jdsn@suse.de
+
+- add timestamp for patchstatus information (bnc#519552)
+- fix handling of failing patchstatus jobs
+- perform refresh prior to a patchstatus job
+- update lastcontact on every REST request
+- adaptions for new timestamp and filter for smt-client script
+
+-------------------------------------------------------------------
 Tue Jul  7 16:28:00 CEST 2009 - locilka@suse.cz
 
 - Extended setupClient4SMT.sh to adapt supportconfig.conf entry for

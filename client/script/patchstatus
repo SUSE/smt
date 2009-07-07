@@ -30,6 +30,24 @@ sub jobhandler
   push (@cmdArgs, "-t");			
   push (@cmdArgs, "patch");			
 
+  ## perform a refresh of repos and services prior to a patchstatus job
+  my @REFcmdArgs = ();
+  push (@REFcmdArgs, 'ref');
+  push (@REFcmdArgs, '--service');
+
+  (my $REFret, my $REFstdout, my $REFstderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @REFcmdArgs );
+  $REFstdout='' if ( $verbose ne "true" );
+  $REFstderr='' if ( $verbose ne "true" );
+
+  return (
+    stdout => defined ( $REFstdout ) ? $REFstdout : '',
+    stderr => defined ( $REFstderr ) ? $REFstderr : '',
+    exitcode => $REFret,
+    success => 'false',
+    message => 'Refreshing the repositories and services failed. Patch status can not be computed.'
+  ) if ( $REFret != 0 );
+
+  # only if refresh succeeds: run zypper with list-updates and parse the output
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
   SMT::Agent::Utils::error ("zypper failed", $jobid) if ( $retval != 0 );
