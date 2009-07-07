@@ -2,6 +2,7 @@
 Tue Jul  7 13:34:29 CEST 2009 - locilka@suse.cz
 
 - Cleaning-up repository cache after mirroring (bnc #519216).
+- Help text for staging adjusted to the current UI state.
 
 -------------------------------------------------------------------
 Thu Jul  2 18:26:17 CEST 2009 - locilka@suse.cz

@@ -86,6 +86,8 @@ select a patch in the table and click <b>Toggle Patch Status</b>.</p>") +
 snapshot, use <b>Change Status-&gt;Exclude from Snapshot...</b>.
 Such patch cannot be enabled unless you remove the filter again.</p>") +
 	    _("<p>To create <tt>testing</tt> or <tt>production</tt> snapshots
-click <b>Create Snapshot...-&gt;Testing/Production Snapshot</b>.</p>"),
+click <b>Create Snapshot...-&gt;Full Mirror to Testing/Testing to Production</b>.</p>") +
+	    _("<p><b>Testing</b> snapshot is always created from the mirrored repository,
+<b>production</b> is always created as a copy of the <b>testing</b> one.</p>"),
     ];
 }
