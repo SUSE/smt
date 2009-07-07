@@ -33,7 +33,9 @@ my $help	= 0;
 # No command defined, use fallback
 my $command	= $ARGV[0] || '';
 my $hostname	= undef;
-my $showdetails	= 0;
+my $verbose = 0;
+my $guid = undef;
+my $severity = undef;
 
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = Getopt::Long::GetOptions
@@ -42,7 +44,9 @@ my $optres = Getopt::Long::GetOptions
  'debug|d'		=> \$debug,
  'logfile|L=s'	=> \$logfile,
  'hostname|n=s'	=> \$hostname,
- 'show-details|s'	=> \$showdetails,
+ 'verbose|v'	=> \$verbose,
+ 'guid|g=s' => \$guid,
+ 'severity|s=s' => \$severity
 );
 
 # No command defined, but some arguments are, using fallback
@@ -53,23 +57,26 @@ if (defined $command && $command =~ /^-/)
 
 if($help || !$optres)
 {
-    print basename($0). " status [--hostname hostname]\n";
+    print basename($0). " status [--hostname <hostname>]\n";
     print "\n";
-    print __("Options:\n");
-    print "--help         -h    ".__("This help.\n");
-    print "--debug        -d    ".__("Enable debug mode.\n");
-    print "--hostname     -n    ".__("Operate on a specified hostname (name starting with...).\n");
-    print "--show-details -s    ".__("Show details on patches.\n");
-    print "--logfile      -L    ".__("Log to a specified file.\n");
+    print __("Options:")."\n";
+    print "--help         -h         ".__("This help.")."\n";
+    print "--debug        -d         ".__("Enable debug mode.")."\n";
+    print "--hostname     -n <name>  ".__("Operate on a specified hostname (name starting with...).")."\n";
+    print "--guid         -g <guid>  ".__("Only show information for GUID")."\n";
+    print "--severity     -s <level> ".__("Only show information if patches for <level> are available.")."\n";
+    print "                          ".__("<level> may be a value of: 'packagemanager', 'security', 'recommended' or 'optional'")."\n";
+    print "--verbose      -v         ".__("Show details on patches.")."\n";
+    print "--logfile      -L         ".__("Log to a specified file.")."\n";
     exit 0;
 }
 
 # get a lock
-if(!SMT::Utils::openLock("smt-client"))
-{
-    print __("Other smt-client process is still running.\n");
-    exit 2;
-}
+#if(!SMT::Utils::openLock("smt-client"))
+#{
+#    print __("Other smt-client process is still running.\n");
+#    exit 2;
+#}
 
 # open the logfile
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
@@ -92,27 +99,47 @@ sub doesHostnameMatch ($) {
 
 if ($command eq '' || $command eq 'status')
 {
-    my $client_info = $clients->getAllClientsInfo();
+    my $serverityFilter = undef;
+    if ( defined $severity )
+    {
+        $serverityFilter = '>0:::' if ( $severity eq 'packagemanager');
+        $serverityFilter = ':>0::' if ( $severity eq 'security');
+        $serverityFilter = '::>0:' if ( $severity eq 'recommended');
+        $serverityFilter = ':::>0' if ( $severity eq 'optional');
+        if ( ! defined $serverityFilter )
+        {
+            print __("Unknown severity level.")."\n";
+            exit 2;
+        }
+    }
+
+    my $filter = { 'selectAll' => '' };
+    ${$filter}{'GUID'} = $guid if ( defined $guid && $guid ne '' ); 
+    ${$filter}{'PATCHSTATUS'} = $serverityFilter if ( defined $serverityFilter );
+
+    my $client_info = $clients->getClientsInfo($filter);
     if ($client_info)
     {
 	my $t = new Text::ASCIITable;
 
-	if ($showdetails) {
+	if ($verbose) {
 	    $t->setCols(
 		__("GUID"),
 		__("Hostname"),
 		__("Patch Status"),
-		__("Last Contact"),
 		__("Security\nPatches"),
-		__("Patches for\nPackage Manager"),
+		__("Package Manager\nPatches"),
 		__("Recommended\nPatches"),
-		__("Optional\nPatches")
+		__("Optional\nPatches"),
+		__("Patch Status Date"),
+		__("Last Contact")
 	    );
 	} else {
 	    $t->setCols(
+		__("GUID"),
 		__("Hostname"),
 		__("Patch Status"),
-		__("Last Contact")
+		__("Patch Status Date")
 	    );
 	}
 
@@ -124,22 +151,24 @@ if ($command eq '' || $command eq 'status')
 	    # Function returns two values
 	    ($status_label) = SMT::Client::getPatchStatusLabel($client_info->{$key});
 
-	    if ($showdetails) {
+	    if ($verbose) {
 		$t->addRow(
 		    $client_info->{$key}->{GUID},
 		    $client_info->{$key}->{HOSTNAME},
 		    $status_label,
-		    $client_info->{$key}->{LASTCONTACT},
 		    (defined $client_info->{$key}->{PATCHSTATUS_S} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown")),
 		    (defined $client_info->{$key}->{PATCHSTATUS_P} ? $client_info->{$key}->{PATCHSTATUS_P}:__("Unknown")),
 		    (defined $client_info->{$key}->{PATCHSTATUS_R} ? $client_info->{$key}->{PATCHSTATUS_R}:__("Unknown")),
-		    (defined $client_info->{$key}->{PATCHSTATUS_O} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown"))
+		    (defined $client_info->{$key}->{PATCHSTATUS_O} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown")),
+                    $client_info->{$key}->{PATCHSTATUS_DATE},
+		    $client_info->{$key}->{LASTCONTACT}
 		);
 	    } else {
 		$t->addRow(
+		    $client_info->{$key}->{GUID},
 		    $client_info->{$key}->{HOSTNAME},
 		    $status_label,
-		    $client_info->{$key}->{LASTCONTACT}
+                    $client_info->{$key}->{PATCHSTATUS_DATE}
 		);
 	    }
 	}
@@ -153,6 +182,6 @@ else
 }
 
 # release the lock
-SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+#SMT::Utils::unLockAndExit( "smt-client", 0, $log, $vblevel );
 
 exit 0;
