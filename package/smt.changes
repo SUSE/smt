@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jul  7 16:28:00 CEST 2009 - locilka@suse.cz
+
+- Extended setupClient4SMT.sh to adapt supportconfig.conf entry for
+  uploading generated support configs to the same server as the one
+  for registration (bnc #516495).
+
+-------------------------------------------------------------------
 Tue Jul  7 16:13:59 CEST 2009 - mc@suse.de
 
 - fix some quoting issues in SQL statements. (bnc#489645) 

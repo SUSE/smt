@@ -15,6 +15,10 @@ GPG=/usr/bin/gpg
 SSLDIR=/etc/ssl/certs/
 CAFILE=("/etc/pki/tls/cert.pem" "/usr/share/ssl/cert.pem")
 ZMDSSLDIR=/etc/zmd/trusted-certs/
+SUPPORTCONFIG=/etc/supportconfig.conf
+SUPPORTCONFIGENTRY=VAR_OPTION_UPLOAD_TARGET
+SED=/usr/bin/sed
+
 
 function usage()
 {
@@ -74,6 +78,15 @@ fi
 if ! echo $REGURL | grep "^https" > /dev/null ; then
     echo "The registration URL must be a HTTPS URL. Abort."
     exit 1
+fi
+
+# BNC #516495: Changing supportconfig URL for uploading tarbals
+if [ "${S_HOSTNAME}" != "" ]; then
+    if [ -e "${SUPPORTCONFIG}" ]; then
+	S_ENTRY="http://${S_HOSTNAME}/upload?appname=supportconfig\&file={tarball}"
+
+	${SED} --in-place "s|${SUPPORTCONFIGENTRY}[ \t]*=.*$|${SUPPORTCONFIGENTRY}='${S_ENTRY}'|" ${SUPPORTCONFIG}
+    fi
 fi
 
 if [ -z "$REGCERT" ]; then
