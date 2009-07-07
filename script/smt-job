@@ -13,10 +13,11 @@ use SMT::Client;
 use SMT::JobQueue;
 use SMT::Job;
 
+use XML::Simple;
 use Text::ASCIITable;
 use File::Basename;
 use Locale::gettext ();
-#use UNIVERSAL 'isa';
+use UNIVERSAL 'isa';
 use POSIX ();     # Needed for setlocale()
 
 use Data::Dumper;
@@ -617,21 +618,21 @@ else
     my $t = new Text::ASCIITable;
 
     # basic job list info - without a --verbose switch
-    my @DPROP = qw(ID GUID NAME TYPE STATUS);
+    my @DPROP = qw(ID GUID TYPE NAME STATUS);
     $verbose = 0 if (not $verbose);
 
     # set the level of verbosity
     if ($verbose == 1)
     {
-        @DPROP = qw(ID GUID NAME TYPE PERSISTENT STATUS FINISHED);
+        @DPROP = qw(ID GUID TYPE NAME PERSISTENT STATUS FINISHED);
     }
     elsif ($verbose == 2)
     {
-        @DPROP = qw(ID PARENT_ID GUID NAME TYPE VERBOSE PERSISTENT STATUS FINISHED DESCRIPTION);
+        @DPROP = qw(ID PARENT_ID GUID TYPE NAME PERSISTENT TIMELAG STATUS FINISHED DESCRIPTION);
     }
     elsif ($verbose == 3)
     {
-        @DPROP = qw(ID PARENT_ID GUID NAME TYPE VERBOSE PERSISTENT STATUS FINISHED TARGETED EXPIRES TIMELAG DESCRIPTION);
+        @DPROP = qw(ID PARENT_ID GUID TYPE NAME DESCRIPTION PERSISTENT STATUS CREATED TARGETED EXPIRES RETRIEVED FINISHED TIMELAG ARGUMENTS VERBOSE STDOUT STDERR EXITCODE MESSAGE);
     }
 
     # create the column titles
@@ -661,16 +662,44 @@ else
             {
                 if ($p eq 'TYPE')   { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? JOB_TYPE->{${$h}{$p}}   : ${$h}{$p}  }
                 if ($p eq 'STATUS') { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? JOB_STATUS->{${$h}{$p}} : ${$h}{$p} }
-                push(@{$onerow}, defined ${$h}{$p} ?  ${$h}{$p}:'');
+                # transform hash to xml
+                if ($p eq 'ARGUMENTS' &&  isa(${$h}{$p}, 'HASH') )
+                {
+                    # fromat the arguments hash nicely, as XML, and indent all by 4 spaces
+                    eval { ${$h}{$p}  =   XMLout( ${$h}{$p}, 'rootname' => 'arguments' ) }; 
+                    chomp( ${$h}{$p} );
+                    ${$h}{$p} =~ s/\n/\n    /g;
+                }
+
+                # collect the information or just print it 
+                if ($verbose == 3)
+                {
+                    print  $p eq 'PARENT_ID' ? 'Parent':ucfirst(lc($p));
+                    print "\n    ".(defined ${$h}{$p} ?  ${$h}{$p}:'')."\n";
+                }
+                else
+                {
+                    push(@{$onerow}, defined ${$h}{$p} ?  ${$h}{$p}:'');
+                }
             }
-            $t->addRow($onerow);
+
+            # add one row to the table or print a separator
+            if ($verbose == 3)
+            {
+                print '-' x 80 . "\n\n";
+            }
+            else
+            {
+                $t->addRow($onerow);
+            }
+            
         }
     }
 
     # set the heading
     # disable heading, as rendering takes too long then
     # $t->setOptions('headingText', __('Found jobs in SMT job queue'));    
-    print $t->draw();
+    print $t->draw() if ($verbose != 3);
     print "\n";
 }
 
@@ -707,6 +736,10 @@ Shows the help screen.
 =item -v, --verbose <level>
 
 Shows detailed job information in list mode ( level supports values from 0 to 3 ).
+Verbose level 0 shows minimal information. Level 1 and 2 each show some more details.
+The result will be rendered as a table for levels 0, 1 and 2.
+Level 3 lists all available information about a job as a block instead of a table.
+Default verbosity level is 0.
 
 =item -q, --quiet
 
