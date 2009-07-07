@@ -368,6 +368,16 @@ if ( defined $create )
     $Job->{'expires'}     = $query{'EXPIRES'}     if ( exists $query{'EXPIRES'}     && defined $query{'EXPIRES'} );
     $Job->{'timelag'}     = $query{'TIMELAG'}     if ( exists $query{'TIMELAG'}     && defined $query{'TIMELAG'} );
 
+    if ( defined $Job->{'persistent'}  &&  $Job->{'persistent'} == 1 )
+    {
+        if ( ! defined $Job->{'timelag'}  ||  $Job->{'timelag'} =~ /^00:00/ )
+        {
+            print __("Creating a persistent job with a timelag smaller than one minute is prohibited.")."\n";
+            print __("If you really need a small interval first create the job with one minute and then edit its timelag.")."\n";
+            exit 3;
+        }
+    }
+
     if ( $typeID == 1 )
     {
         ## PATCHSTATUS ##
