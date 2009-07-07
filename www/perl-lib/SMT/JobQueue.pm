@@ -282,7 +282,10 @@ sub finishJob($)
   if ( $job->type() eq "patchstatus" )
   {
       my $client = SMT::Client->new( {'dbh' => $self->{'dbh'} });
-      $client->updatePatchstatus( $guid, $xmljob->message() );
+      my $msg = $xmljob->message();
+      $msg = 'failed' if ( $xmljob->status() =~ /^2$/ );
+      $msg = 'denied' if ( $xmljob->status() =~ /^3$/ );
+      $client->updatePatchstatus( $guid, $msg )
   }
 
 
@@ -296,6 +299,8 @@ sub finishJob($)
   if ( $job->persistent() )
   {
     $job->targeted( calcNextTargeted($self, $guid, $job->{id}) );
+    $job->message( sprintf("Last run failed # %s", $xmljob->message() ) )           if ( $xmljob->status() =~ /^2$/ );
+    $job->message( sprintf("Last run denied by client # %s", $xmljob->message() ) ) if ( $xmljob->status() =~ /^3$/ );
     $job->status( 0 );
   }
 

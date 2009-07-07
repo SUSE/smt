@@ -30,6 +30,20 @@ use DBI qw(:sql_types);
 use Data::Dumper;
 
 
+
+#
+# updateLastContact
+#
+sub updateLastContact($$)
+{
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
+
+    my $client = SMT::Client->new({ 'dbh' => $dbh });
+    return $client->updateLastContact($r->user);
+}
+
+
 #
 # handle all GET requests
 #
@@ -219,7 +233,16 @@ sub handler {
 
     my ($status, $password) = $r->get_basic_auth_pw;
     return $status unless $status == Apache2::Const::OK;
-  
+ 
+    my $updateLastContact = updateLastContact($r, $dbh);
+    if ( $updateLastContact )
+    {
+        $r->log->info(sprintf("Request from client (%s). Updated its last contact timestamp.", $r->user) );
+    }
+    else
+    {
+        $r->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.", $r->user) );
+    }
 
     switch( $r->method() )
     {

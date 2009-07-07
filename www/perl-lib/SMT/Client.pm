@@ -55,8 +55,9 @@ Possible query keys are:
 The return value for all functions is a hash of hashes. The key is always the client ID 
 (not GUID) and the value-hash is a hash similar to the filter hash. This is also valid for
 the functions that only select information about one client. Only the patchstatus information
-is split into 4 separate keys: PATCHSTATUS_P for packagemanager, PATCHSTATUS_S for security
-updates, PATCHSTATUS_R for recommended updates and PATCHSTATUS_O for optional patches.
+is split into 5 separate keys: PATCHSTATUS_P for packagemanager, PATCHSTATUS_S for security
+updates, PATCHSTATUS_R for recommended updates, PATCHSTATUS_O for optional patches and 
+PATCHSTATUS_DATE for the date of the current patchstatus information.
 
 The return value is empty for empty search results and it is undef for invaild 
 search queries.
@@ -241,7 +242,8 @@ sub createSQLStatement($$)
     my %PSmap = ( 'PKGMGR' => 'PATCHSTATUS_P',
                   'SECURITY' => 'PATCHSTATUS_S',
                   'RECOMMENDED' => 'PATCHSTATUS_R',
-                  'OPTIONAL' => 'PATCHSTATUS_O'   );
+                  'OPTIONAL' => 'PATCHSTATUS_O',
+                  'PATCHSTATUS_DATE' => 'PATCHSTATUS_DATE' );
 
     my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
     my @ALLPROPS = @PROPS;
@@ -589,9 +591,10 @@ sub updatePatchstatus($$)
     # crop spaces and comment information
     $pInfo =~ s/^\s+//;
     $pInfo =~ s/\s*#.*$//;
+    ## $pInfo may be 'failed' or 'denied', in that case the status info will be set to NULL
 
     # check if exists PS
-    my $sql = ' INSERT INTO Patchstatus (CLIENT_ID, PKGMGR, SECURITY, RECOMMENDED, OPTIONAL) VALUES ';
+    my $sql = ' INSERT INTO Patchstatus (CLIENT_ID, PKGMGR, SECURITY, RECOMMENDED, OPTIONAL, PATCHSTATUS_DATE) VALUES ';
     if ( $pInfo =~ /^(\d+):(\d+):(\d+):(\d+)$/  )
     {
         my $PSp = $self->{'dbh'}->quote($1) || 'NULL';
@@ -599,13 +602,15 @@ sub updatePatchstatus($$)
         my $PSr = $self->{'dbh'}->quote($3) || 'NULL';
         my $PSo = $self->{'dbh'}->quote($4) || 'NULL';
  
-        $sql .= " ( $cid, $PSp, $PSs, $PSr, $PSo ) ";     
+        $sql .= " ( $cid, $PSp, $PSs, $PSr, $PSo, CURRENT_TIMESTAMP ) ";     
         $sql .= ' ON DUPLICATE KEY UPDATE ';
-        $sql .= " PKGMGR = $PSp , SECURITY = $PSs , RECOMMENDED = $PSr , OPTIONAL = $PSo ";
+        $sql .= " PKGMGR = $PSp , SECURITY = $PSs , RECOMMENDED = $PSr , OPTIONAL = $PSo, PATCHSTATUS_DATE = CURRENT_TIMESTAMP ";
     }
     else
     {
-        return undef;
+        $sql .= " ( $cid, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP ) ";
+        $sql .= ' ON DUPLICATE KEY UPDATE ';
+        $sql .= " PKGMGR = NULL , SECURITY = NULL , RECOMMENDED = NULL , OPTIONAL = NULL, PATCHSTATUS_DATE = CURRENT_TIMESTAMP ";
     }
 
     return $self->{'dbh'}->do($sql);
@@ -633,6 +638,24 @@ sub insertPatchstatusJob($)
     }
     return 1;
 }
+
+
+#
+# updateLastContact
+#   update the LASTCONTACT field in Clients
+#
+sub updateLastContact($)
+{
+    my $self = shift;
+    my $guid = shift || return undef;
+
+    my $sql = sprintf( " UPDATE Clients SET LASTCONTACT = CURRENT_TIMESTAMP where GUID = %s ", $self->{'dbh'}->quote($guid) );
+    my $res = $self->{'dbh'}->do($sql);
+
+    return 0 if ( defined $res  &&  $res =~ /^0E0$/ );
+    return  $res ? 1:0;
+}
+
 
 # 
 # Counts the number of patches of particular patch level 
