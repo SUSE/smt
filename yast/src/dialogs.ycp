@@ -552,6 +552,44 @@ to be readable by %2 user."),
 	y2milestone ("Writing patches returned: %1", success);
     }
 
+    boolean CheckRobotsTXT () {
+	string mirror_to = SMTData::GetCredentials ("LOCAL", "MirrorTo");
+
+	if (mirror_to == nil || mirror_to == "") {
+	    y2error ("Wrong LOCAL->MirrorTo");
+	    return nil;
+	}
+
+	mirror_to = mirror_to + "/robots.txt";
+
+	if (! FileUtils::Exists (mirror_to)) {
+	    return true;
+	}
+
+	// Checking for
+	string cmd = sformat ("grep '^Allow:[ \\t]\\+/\\?repo/keys/\\?' '%1'", mirror_to);
+	integer cmd_ret = (integer) SCR::Execute (.target.bash, cmd);
+
+	// 0 -> some lines found
+	// 1 -> nothing found
+	// 2 -> error
+	if (cmd_ret == 2) {
+	    y2warning ("Cannot check robots.txt");
+	    return false;
+	} else if (cmd_ret == 0) {
+	    y2milestone ("File robots.txt seem to allow /repo/keys");
+	    return true;
+	}
+
+	y2warning ("File robots.txt found! (cmd ret: %1)", cmd_ret);
+	Report::Warning (sformat(_("File %1 has been found in your document root.
+
+Please, make sure, that '/repo/keys' is listed as an allowed directory
+or remove the file. Otherwise SMT server might not work properly."), mirror_to));
+
+	return false;
+    }
+
     symbol WriteDialog() {
 	Progress::New (
 	    // TRANSLATORS: Dialog caption
@@ -622,6 +660,8 @@ to be readable by %2 user."),
 	sleep (sl);
 
 	SMTData::CheckAndAdjustApacheConfiguration();
+
+	CheckRobotsTXT();
 
 	Progress::NextStage();
 	sleep (sl);
