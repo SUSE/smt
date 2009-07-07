@@ -118,7 +118,8 @@ if ($command eq '' || $command eq 'status')
     ${$filter}{'PATCHSTATUS'} = $serverityFilter if ( defined $serverityFilter );
 
     my $client_info = $clients->getClientsInfo($filter);
-    if ($client_info)
+    # skip rendering if an empty hash is detected
+    if ( keys %{$client_info})
     {
 	my $t = new Text::ASCIITable;
 
