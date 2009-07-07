@@ -270,8 +270,8 @@
 			]),
 		    ]),
 		    `MenuButton (`id (`create_snapshot), _("Create Snapshot..."), [
-			`item (`id (`create_snapshot_testing),		_("Full Mirror to &Testing")),
-			`item (`id (`create_snapshot_production),	_("Testing to &Production")),
+			`item (`id (`create_snapshot_testing),		_("From Full Mirror to &Testing")),
+			`item (`id (`create_snapshot_production),	_("From Testing to &Production")),
 		    ])
 		)
 	    )
