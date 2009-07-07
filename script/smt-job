@@ -395,9 +395,9 @@ if ( defined $create )
     elsif ( $typeID == 3 )
     {
         ## update ##
-        $Job->{'name'}        = $query{'NAME'} || 'Software Push';
-        $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
-        $Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ]  };
+        $Job->{'name'}        = $query{'NAME'} || 'Update Job';
+        $Job->{'description'} = $query{'DESCRIPTION'} || 'Update Job';
+        $Job->{'arguments'}{'agreelicenses'} = $SWagree if (defined $SWagree);
     }
     elsif ( $typeID == 4 )
     {
@@ -533,8 +533,8 @@ elsif ( defined $delete )
     ##  DELETE  ##
     my $DELguid = undef;
     my $DELjobid = undef;
-
-    if ( not defined $jobid  &&  not defined $GUID )
+    
+    if ( (not defined $jobid)  &&  (not defined $GUID) )
     {
         print __("To delete a job please define a job ID and the GUID of the client or either of these together with --deleteall.");
         exit 3;
@@ -837,7 +837,7 @@ Enforces installation of a packages, it is reinstalled even if the latest versio
 
 =item --no-forceinstall
 
-Opposite of C<--foreceinstall>
+Opposite of C<--foreceinstall>. Default is not to enforce the installation.
 
 
 =item --agreelicense
@@ -846,18 +846,40 @@ By using this option, you choose to agree with licenses of all third-party softw
 
 =item --no-agreelicense
 
-Opposite of C<--agreelicense>
+Opposite of C<--agreelicense>. Default is not to agree to licenses.
 
 
 =item --autopatchstatus
 
 Enables to automatically add a B<patchstatus> job after a B<softwarepush> or B<update> job. This will update the patchstatus information immediately after a software installation on the client.
-Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:> This is enabled by default.
+Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:> Default is to automatically add a patchstatus job.
 
 =item --no-autopatchstatus
 
 Opposite of C<--autopatchstatus>
 
+=back
+
+=head3 update
+
+=over
+
+=item --agreelicenses
+
+By using this option, you choose to agree with licenses of all third-party software that will be installed.
+
+=item --no-agreelicense
+
+Opposite of C<--agreelicense>. Default is not to agree to licenses.
+
+=item --autopatchstatus
+
+Enables to automatically add a B<patchstatus> job after a B<softwarepush> or B<update> job. This will update the patchstatus information immediately after a software installation on the client.
+Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:> Default is to automatically add a patchstatus job.
+
+=item --no-autopatchstatus
+
+Opposite of C<--autopatchstatus>
 
 =back
 
