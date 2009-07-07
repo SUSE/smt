@@ -94,6 +94,7 @@ sub LoadRepositoryData ($) {
 
     # Already loaded
     if (defined $fph->{$repositoryid}) {
+	y2debug ('Repository '.$repositoryid.' already loaded');
 	return 1;
     }
 
@@ -633,6 +634,16 @@ sub GetAllClientsStatus ($) {
     return $info;
 }
 
+sub PurgeRepositoryCache ($) {
+    my $repositoryid = shift || do {
+	y2error ('Repository ID must be defined');
+	return YCP_FALSE;
+    };
+
+    $fph->{$repositoryid} = undef if (defined $fph->{$repositoryid});
+    $st_allowed_cache->{$repositoryid} = undef if (defined $st_allowed_cache->{$repositoryid});
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -681,8 +692,12 @@ while (<STDIN>) {
 	    UnsupportedPath (\$command, \$path);
 	}
     } elsif ($command eq 'Execute') {
+	if ($path eq '.repository.purge_cache') {
+	    ycp::Return (PurgeRepositoryCache ($arg));
+	} else {
 	    UnsupportedPath (\$command, \$path);
 	    ycp::Return (undef);
+	}
     # destructor
     } elsif ($command eq 'result') {
 	y2milestone ('Bye bye...');

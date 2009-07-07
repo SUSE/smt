@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jul  7 13:34:29 CEST 2009 - locilka@suse.cz
+
+- Cleaning-up repository cache after mirroring (bnc #519216).
+
+-------------------------------------------------------------------
 Thu Jul  2 18:26:17 CEST 2009 - locilka@suse.cz
 
 - Showing the last date of snapshot creation.

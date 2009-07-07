@@ -1992,7 +1992,14 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 
 	if (! aborted) {
 	    // Flush the internal cache after mirroring
-	    SCR::Read (.smt.repository.staging_allowed, $["repositoryid":repository_id, "force_check":true]);
+	    y2milestone (
+		"Staging allowed: %1: %2",
+		repository_id,
+		SCR::Read (.smt.repository.staging_allowed, $["repositoryid":repository_id, "force_check":true])
+	    );
+
+	    // BNC #519216: Purge cache right after mirroring
+	    SCR::Execute (.smt.repository.purge_cache, repository_id);
 
 	    UI::ChangeWidget (`id (`log), `LastLine, _("Finished\n"));
 	    UI::ReplaceWidget (`id (`button), `PushButton (`id (`ok), Label::OKButton()));
