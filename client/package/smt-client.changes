@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jul  7 15:17:12 CEST 2009 - tgoettlicher@suse.de
+
+- added "update" to list of allowed agents
+- version 0.0.8
+
+--------------------------------------------------------------------
 Thu Jul  2 11:02:54 CEST 2009 - tgoettlicher@suse.de
 
 - fixed makefile
