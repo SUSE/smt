@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jul  7 16:13:59 CEST 2009 - mc@suse.de
+
+- fix some quoting issues in SQL statements. (bnc#489645) 
+
+-------------------------------------------------------------------
 Mon Jul  6 15:24:54 CEST 2009 - mc@suse.de
 
 - try to get the hostname for list-registration; 
