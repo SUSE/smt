@@ -789,11 +789,11 @@ sub _bulkop_handler
             $statement = "UPDATE Registration SET NCCREGDATE=?, NCCREGERROR=0 WHERE GUID=%s and ";
             if(@productids > 1)
             {
-                $statement .= "PRODUCTID IN (".join(",", @productids).")";
+                $statement .= "PRODUCTID IN ('".join("','", @productids)."')";
             }
             elsif(@productids == 1)
             {
-                $statement .= "PRODUCTID = ".$productids[0];
+                $statement .= "PRODUCTID = ".$self->{DBH}->quote($productids[0]);
             }
             else
             {
@@ -813,11 +813,11 @@ sub _bulkop_handler
             $statement = "UPDATE Registration SET NCCREGERROR=1 WHERE GUID=%s and ";
             if(@productids > 1)
             {
-                $statement .= "PRODUCTID IN (".join(",", @productids).")";
+                $statement .= "PRODUCTID IN ('".join("','", @productids)."')";
             }
             elsif(@productids == 1)
             {
-                $statement .= "PRODUCTID = ".$productids[0];
+                $statement .= "PRODUCTID = ".self->{DBH}->quote($productids[0]);
             }
             else
             {

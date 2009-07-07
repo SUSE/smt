@@ -87,7 +87,7 @@ sub getStatus($)
     my $read_timestamp =  $from.'/'.TIMESTAMP_FILE;
     return 0 if (! -e $read_timestamp || ! -r $read_timestamp);
 
-    open (TIMESTAMP, $read_timestamp) || do { return 0; };
+    open (TIMESTAMP, "< $read_timestamp") || do { return 0; };
     my $ret = <TIMESTAMP>;
     close TIMESTAMP;
 
