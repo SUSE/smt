@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jul  8 15:25:03 CEST 2009 - mc@suse.de
+
+- more quoting changes (bnc#489645)
+- fix typo in ncc-sync (bnc#520177) 
+
+-------------------------------------------------------------------
 Wed Jul  8 13:21:23 CEST 2009 - jkupec@suse.cz
 
 - fixed one more bug when enabling staging (bnc #509922)
