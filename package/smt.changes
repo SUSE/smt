@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Jul  8 18:29:34 CEST 2009 - jkupec@suse.cz
+
+- smt-staging: allowing filtering of patches by category also
+  individually with --individually option
+- smt-staging: sorting the listupdates table by name, allowing
+  --sort-by-version and --sort-by-category
+- 1.1.15
+
+-------------------------------------------------------------------
 Wed Jul  8 15:25:03 CEST 2009 - mc@suse.de
 
 - more quoting changes (bnc#489645)
