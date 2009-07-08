@@ -174,7 +174,10 @@ sub WritePatchFilters () {
     # Runs through all already loaded repositories
     foreach $repositoryid (keys %{$fph}) {
 	y2milestone ("Calling save() on Catalog:".$repositoryid);
-	if (! $fph->{$repositoryid}->{'fh'}->save($dbh, $repositoryid)) {
+
+	if (! defined $fph->{$repositoryid}->{'fh'}) {
+	    y2warning ("FilterHandle not defined for repo: ".$repositoryid);
+	} elsif (! $fph->{$repositoryid}->{'fh'}->save($dbh, $repositoryid)) {
 	    y2error ("Error saving catalog ".$repositoryid);
 	    $ret = 0;
 	}
