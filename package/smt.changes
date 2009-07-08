@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jul  8 13:21:23 CEST 2009 - jkupec@suse.cz
+
+- fixed one more bug when enabling staging (bnc #509922)
+- smt-staging: show last creation date of testing/production repo
+  in the 'status' command.
+- SMT::Mirror::RpmMd: handling file open() exceptions (bnc #520094)
+
+-------------------------------------------------------------------
 Tue Jul  7 23:30:17 CEST 2009 - jdsn@suse.de
 
 - add timestamp for patchstatus information (bnc#519552)
