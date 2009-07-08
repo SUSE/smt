@@ -865,9 +865,9 @@ creates testing repository from repository number 1 from C<smt repos> table.
  2) Mirror the remote repository (you can get the ID from C<smt repos -v>)
     $ smt mirror [--repository Repostiory_ID]
  3) See available patches
-    $ smt staging listupdates [--patch <patchid>]
+    $ smt staging listupdates <Repository_ID> [--patch <patchid>]
  4) Allow/forbid the desired patches by their ID or Category
-    $ smt staging allow --patch foo-312
+    $ smt staging allow <Repository_ID> --patch foo-312
  5) Recheck which patches are allowed/forbidden
     $ smt staging listupdates --nodesc
  6) Create the testing repository
