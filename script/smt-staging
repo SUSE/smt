@@ -10,6 +10,7 @@ use warnings;
 use Getopt::Long;
 use File::Basename;
 use Text::ASCIITable;
+use Date::Format;
 
 use SMT::Utils;
 use SMT::Repositories;
@@ -325,20 +326,26 @@ if ($command eq 'status')
 
     print __('Testing snapshot:    ');
     if (!$tstatus)
-    { print __('not created') }
-    elsif ($tstatus < $fstatus)
-    { print __('out of date compared to the full mirror') }
+    {
+        print __('not created')
+    }
     else
-    { print __('up to date with the full mirror') }
+    {
+        print sprintf __('created (corresponding mirror date: %s)'),
+                        time2str('%Y-%m-%d %T', $tstatus)
+    }
     print "\n";
 
     print __('Production snapshot: ');
     if (!$pstatus)
-    { print __('not created') }
-    elsif ($pstatus < $fstatus)
-    { print __('out of date compared to the full mirror') }
+    {
+        print __('not created')
+    }
     else
-    { print __('up to date with the full mirror') }
+    {
+        print sprintf __('created (corresponding mirror date: %s)'),
+                        time2str('%Y-%m-%d %T', $pstatus)
+    }
     print "\n";
 
     my $parser = SMT::Parser::RpmMdPatches->new(
