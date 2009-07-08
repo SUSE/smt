@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jul  8 17:52:09 CEST 2009 - locilka@suse.cz
+
+- Checking and adjusting owner and permissions on directory where
+  repositories are mirrored (bnc #520245).
+
+-------------------------------------------------------------------
 Wed Jul  8 13:53:43 CEST 2009 - locilka@suse.cz
 
 - Checking for http:// or https:// in SMT Server URL (bnc #518222).

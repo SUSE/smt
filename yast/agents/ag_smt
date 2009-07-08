@@ -647,6 +647,55 @@ sub PurgeRepositoryCache ($) {
     $st_allowed_cache->{$repositoryid} = undef if (defined $st_allowed_cache->{$repositoryid});
 }
 
+sub CheckThatDirectoryIsWritable ($) {
+    my $directory = shift || do {
+	y2error ('Directory not defined!');
+	return 0;
+    };
+
+    if (! -e $directory) {
+	y2error ($directory." does not exist");
+	return 0;
+    }
+
+    if (! -w $directory) {
+	return 0;
+    }
+
+    # Directory is writable
+    return 1;
+}
+
+sub CheckRepository ($) {
+    my $arg = shift || {};
+
+    my $directory = $arg->{'directory'} || do {
+	y2error ('Parameter directory must be defined');
+	return undef;
+    };
+
+    return YCP_FALSE if (! CheckThatDirectoryIsWritable ($directory));
+
+    opendir (DIR, $directory) || do {
+	y2warning ("Cannot open directory: %1", $directory);
+    };
+    my @files = grep (!/^\.{1,2}/, readdir DIR);
+    closedir (DIR);
+
+    my $one_file;
+    my $ret = 1;
+
+    foreach $one_file (@files) {
+	$one_file = $directory.'/'.$one_file;
+	if (! CheckThatDirectoryIsWritable ($one_file)) {
+	    $ret = 0;
+	    last;
+	}
+    }
+
+    return ($ret ? YCP_TRUE:YCP_FALSE);
+}
+
 # the main() loop
 while (<STDIN>) {
     my ($command, $path, $arg) = ycp::ParseCommand ($_);
@@ -677,6 +726,8 @@ while (<STDIN>) {
 	    ycp::Return (GetStagingAllowed ($arg));
 	} elsif ($path eq '.clients.status') {
 	    ycp::Return (GetAllClientsStatus ($arg));
+	} elsif ($path eq '.check_directory') {
+	    ycp::Return (CheckRepository ($arg));
 	} else {
 	    UnsupportedPath (\$command, \$path);
 	}

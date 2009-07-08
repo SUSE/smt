@@ -157,6 +157,50 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
     }
 
     /**
+     * Returns directory where the remote repositories are mirrored to.
+     *
+     * @return string directory
+     */
+    global string GetMirroredReposDirectory () {
+	string directory = SMTData::GetCredentials ("LOCAL", "MirrorTo");
+	if (directory == nil) directory = "/srv/www/htdocs";
+
+	return sformat ("%1/repo/", directory);
+    }
+
+    /**
+     * Returns whether the directory for mirroring repositories is writable
+     * by the SMT user (or whether it was possible to make it so).
+     *
+     * @return boolean (see above)
+     */
+    global boolean CheckAndAdjustMirroredReposAccess () {
+	string user = SMTData::GetCredentials ("DB", "user");
+	if (user == nil) user = "smt";
+
+	string directory = GetMirroredReposDirectory();
+
+	if ((boolean) SCR::Read (.smt.check_directory, $["directory":directory]) == true) {
+	    return true;
+	}
+
+	string cmd = sformat (
+	    "/bin/chown -R '%1:www' '%2' && /bin/chmod -R u+w '%2'",
+	    String::Quote (user),
+	    String::Quote (directory)
+	);
+	y2milestone ("Changing directory owner and permissions: %1", cmd);
+	map cmd_ret = (map) SCR::Execute (.target.bash_output, cmd);
+
+	if (cmd_ret["exit"]:-1 == 0) {
+	    y2milestone ("Successful: %1", cmd_ret);
+	    return true;
+	}
+
+	y2error ("Cannot change directory (%1) owner (%2) and permissions: %3", user, directory, cmd_ret);
+    }
+
+    /**
      * Checks (and adjusts) the NCCcredentials file permissions the be readable
      * by SMT user defined in LOCAL->smtUser. Returns if accessible and/or permissions
      * successfuly set. If the file does not exist, nil is returned.
