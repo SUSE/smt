@@ -2181,10 +2181,24 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	return ret;
     }
 
+    boolean smt_support_checked = nil;
+
     /**
      * Redraws the table of currently scheduled NU mirrorings.
      */
     void RedrawScheduledMirroringTable () {
+	// Offer adding the script only if exists
+	if (smt_support_checked != true) {
+	    smt_support_checked = true;
+
+	    if (FileUtils::Exists("/usr/sbin/smt-support")) {
+		y2milestone ("SMT support script exists");
+		smt_cron_scripts["/usr/sbin/smt-support -U"] = _("Uploading Support Configs");
+	    } else {
+		y2milestone ("SMT support script does not exist");
+	    }
+	}
+
 	list <term> items = [];
 
 	integer counter = -1;
@@ -2372,8 +2386,6 @@ you need to restart the YaST SMT Configuration module."));
 	return true;
     }
 
-    boolean smt_support_checked = nil;
-
     /**
      * Opens up dialog for adding or editing a cron-job entry.
      *
@@ -2381,16 +2393,6 @@ you need to restart the YaST SMT Configuration module."));
      *        -1 for adding a new entry
      */
     boolean AddEditScheduledMirroring (integer schd_id) {
-	// Offer adding the script only if exists
-	if (smt_support_checked != true) {
-	    smt_support_checked = true;
-
-	    if (FileUtils::Exists("/usr/sbin/smt-support")) {
-		y2milestone ("SMT support script exists");
-		smt_cron_scripts["/usr/sbin/smt-support -U"] = _("Uploading Support Configs");
-	    }
-	}
-
 	map settings = $[];
 	boolean editing = false;
 	boolean dialog_ret = false;

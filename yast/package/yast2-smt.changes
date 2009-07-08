@@ -3,6 +3,9 @@ Wed Jul  8 17:52:09 CEST 2009 - locilka@suse.cz
 
 - Checking and adjusting owner and permissions on directory where
   repositories are mirrored (bnc #520245).
+- Fixed checking for smt-support being installed in order to offer
+  to configure and list it in UI (bnc #520289).
+- 2.17.19
 
 -------------------------------------------------------------------
 Wed Jul  8 13:53:43 CEST 2009 - locilka@suse.cz
