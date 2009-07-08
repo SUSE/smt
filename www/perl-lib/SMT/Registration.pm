@@ -483,7 +483,7 @@ sub insertRegistration
         if(exists $existingpids->{$pnum})
         {
             # reg exists, do update
-            push @update, $pnum;
+            push @update, $dbh->quote($pnum);
             delete $existingpids->{$pnum};
         }
         else
@@ -493,18 +493,22 @@ sub insertRegistration
         }
     }
     
-    my @delete = keys %{$existingpids};
+    my @delete = ();
+    foreach my $d (keys %{$existingpids})
+    {
+        $dbh->quote($d);
+    }
     
     if(@delete > 0)
     {
         $statement = sprintf("DELETE from Registration where GUID=%s AND PRODUCTID ", $dbh->quote($regdata->{register}->{guid}));
         if(@delete > 1)
         {
-            $statement .= "IN ('".join("','", @delete)."')";
+            $statement .= "IN (".join(",", @delete).")";
         }
         else
         {
-            $statement .= "= ".$dbh->quote($delete[0]);
+            $statement .= "= ".$delete[0];
         }
         
         eval {
@@ -540,11 +544,11 @@ sub insertRegistration
 
         if(@update > 1)
         {
-            $statement .= "IN ('".join("','", @update)."')";
+            $statement .= "IN (".join(",", @update).")";
         }
         else
         {
-            $statement .= "= ".$dbh->quote($update[0]);
+            $statement .= "= ".$update[0];
         }
         
         eval {
@@ -772,6 +776,13 @@ sub findCatalogs
     my $result = {};
     my $statement ="";
 
+    my @q_pids = ();
+    foreach my $id (@{$productids})
+    {
+        push @q_pids, $dbh->quote($id);
+    }
+    
+
     # get catalog values (only for the once we DOMIRROR)
 
     $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc WHERE ";
@@ -785,11 +796,11 @@ sub findCatalogs
 
     if(@{$productids} > 1)
     {
-        $statement .= "pc.PRODUCTDATAID IN ('".join("','", @{$productids})."') ";
+        $statement .= "pc.PRODUCTDATAID IN (".join(",", @q_pids).") ";
     }
     elsif(@{$productids} == 1)
     {
-        $statement .= "pc.PRODUCTDATAID = ".$dbh->quote($productids->[0])." ";
+        $statement .= "pc.PRODUCTDATAID = ".$q_pids[0]." ";
     }
     else
     {
@@ -966,7 +977,7 @@ sub findColumnsForProducts
 
     foreach my $phash (@{$parray})
     {
-        my $statement = "SELECT `$column`, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
+        my $statement = sprintf("SELECT %s, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ", $dbh->quote_identifier($column));
         
         $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($phash->{name}));
         

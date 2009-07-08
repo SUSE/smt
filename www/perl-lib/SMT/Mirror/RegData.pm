@@ -457,8 +457,14 @@ sub _updateDB
         return 1;
     }
 
+    my @q_key = ();
+    foreach my $k (@$key)
+    {
+        push @q_key, $dbh->quote_identifier($k);
+    }
+    
     # get all datasets which are from NCC
-    my $stm = sprintf("SELECT `%s` FROM `%s` WHERE SRC='N'", join('`,`', @$key), $table);
+    my $stm = sprintf("SELECT %s FROM %s WHERE SRC='N'", join(',', @q_key),  $dbh->quote_identifier($table));
     
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $stm") ;
     
@@ -486,7 +492,7 @@ sub _updateDB
         my $j=0;
         foreach (@$key) 
         {
-            push @primkeys_where, "`$_`=".$dbh->quote($row->{$_});
+            push @primkeys_where, $dbh->quote_identifier($_)."=".$dbh->quote($row->{$_});
             $str .= "-" if($j > 0);
             $str .= $row->{$_};
             $j++;
@@ -494,8 +500,8 @@ sub _updateDB
         delete $allhash->{$str} if(exists $allhash->{$str});
 
         # does the key exists in the db?
-        my $st = sprintf("SELECT `%s` FROM `%s` WHERE %s", 
-                         join('`,`', @$key), $table, join(' AND ', @primkeys_where));
+        my $st = sprintf("SELECT %s FROM %s WHERE %s", 
+                         join(',', @q_key), $dbh->quote_identifier($table), join(' AND ', @primkeys_where));
         
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st") ;
                     
@@ -532,7 +538,7 @@ sub _updateDB
         # PRIMARY KEY exists in DB, do update
         if(@$all == 1)
         {
-            my $statement = "UPDATE `$table` SET ";
+            my $statement = sprintf("UPDATE %s SET ", $dbh->quote_identifier($table));
             my @pairs = ();
             foreach my $cn (keys %$row)
             {
@@ -540,11 +546,11 @@ sub _updateDB
 
                 if(!defined $row->{$cn} || lc($row->{$cn}) eq "null")
                 {
-                    push @pairs, "`$cn` = NULL";
+                    push @pairs, $dbh->quote_identifier($cn)." = NULL";
                 }
                 else
                 {
-                    push @pairs, "`$cn` = ".$dbh->quote($row->{$cn});
+                    push @pairs, $dbh->quote_identifier($cn)." = ".$dbh->quote($row->{$cn});
                 }
             }
             
@@ -571,12 +577,12 @@ sub _updateDB
         # PRIMARY KEY does not exists in DB, do insert
         elsif(@$all == 0)
         {
-            my $statement = "INSERT INTO `$table` (";
+            my $statement = sprintf("INSERT INTO %s (", $dbh->quote_identifier($table));
             my @k = ();
             my @v = ();
             foreach my $cn (keys %$row)
             {
-                push @k, $cn;
+                push @k, $dbh->quote_identifier($cn);
                 if(!defined $row->{$cn} || lc($row->{$cn}) eq "null")
                 {
                     push @v, "NULL";
@@ -587,7 +593,7 @@ sub _updateDB
                 }
             }
 
-            $statement .= "`".join('`,`', @k)."`";
+            $statement .= join(',', @k);
             $statement .= ") VALUES (";
             $statement .= join(',', @v);
             $statement .= ")";
@@ -622,16 +628,16 @@ sub _updateDB
             
             for(my $j=0; $j < @vals; $j++)
             {
-                push @primkeys_where, $key->[$j]." = ".$dbh->quote($vals[$j]);
+                push @primkeys_where, $dbh->quote_identifier($key->[$j])." = ".$dbh->quote($vals[$j]);
             }
         }
         elsif(@$key == 1)
         {
-            push @primkeys_where, $key->[0]." = ".$dbh->quote($set);
+            push @primkeys_where, $dbh->quote_identifier($key->[0])." = ".$dbh->quote($set);
         }
         
-        my $delstr = sprintf("DELETE from `%s` where %s", $table, join(' AND ', @primkeys_where));
-                    
+        my $delstr = sprintf("DELETE from %s where %s", $dbh->quote_identifier($table), join(' AND ', @primkeys_where));
+        
         my $res = $dbh->do($delstr);
 
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $delstr Result: $res") ;

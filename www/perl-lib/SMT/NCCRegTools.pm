@@ -627,7 +627,12 @@ sub _deleteRegistrationLocal
     }
     else
     {
-        $where = sprintf("GUID IN ('%s')", join("','", @guids));
+        my @q_guids = ();
+        foreach my $id (@guids)
+        {
+            push @q_guids, $self->{DBH}->quote($id);
+        }
+        $where = sprintf("GUID IN (%s)", join(",", @q_guids));
     }
 
     foreach (@guids)
@@ -774,12 +779,12 @@ sub _bulkop_handler
  
     if(exists $data->{OPERATION} && defined $data->{OPERATION} && $data->{OPERATION} eq "register")
     {
-        my @productids = ();
+        my @q_productids = ();
         foreach my $prod (@{$guidHash->{$guid}})
         {
             if( exists $prod->{PRODUCTDATAID} && defined $prod->{PRODUCTDATAID} )
             {
-                push @productids, $prod->{PRODUCTDATAID};
+                push @q_productids, $self->{DBH}->quote($prod->{PRODUCTDATAID});
             }
         }
 
@@ -787,13 +792,13 @@ sub _bulkop_handler
         if($data->{RESULT} ne "error")
         {
             $statement = "UPDATE Registration SET NCCREGDATE=?, NCCREGERROR=0 WHERE GUID=%s and ";
-            if(@productids > 1)
+            if(@q_productids > 1)
             {
-                $statement .= "PRODUCTID IN ('".join("','", @productids)."')";
+                $statement .= "PRODUCTID IN (".join(",", @q_productids).")";
             }
-            elsif(@productids == 1)
+            elsif(@q_productids == 1)
             {
-                $statement .= "PRODUCTID = ".$self->{DBH}->quote($productids[0]);
+                $statement .= "PRODUCTID = ".$q_productids[0];
             }
             else
             {
@@ -811,13 +816,13 @@ sub _bulkop_handler
         {
             # on error we set NCCREGERROR to 1
             $statement = "UPDATE Registration SET NCCREGERROR=1 WHERE GUID=%s and ";
-            if(@productids > 1)
+            if(@q_productids > 1)
             {
-                $statement .= "PRODUCTID IN ('".join("','", @productids)."')";
+                $statement .= "PRODUCTID IN (".join(",", @q_productids).")";
             }
-            elsif(@productids == 1)
+            elsif(@q_productids == 1)
             {
-                $statement .= "PRODUCTID = ".self->{DBH}->quote($productids[0]);
+                $statement .= "PRODUCTID = ".$q_productids[0];
             }
             else
             {
@@ -865,7 +870,7 @@ sub _listsub_handler
         $statement  = "INSERT INTO Subscriptions(SUBID, REGCODE, SUBNAME, SUBTYPE, SUBSTATUS, SUBSTARTDATE, SUBENDDATE, ";
         $statement .= "SUBDURATION, SERVERCLASS, PRODUCT_CLASS, NODECOUNT, CONSUMED, CONSUMEDVIRT)";
         # bind_param with SQL_INTEGER seems not to support negative integers. So we need to workaround NODECOUNT
-        $statement .= sprintf(" VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, %d, ?, ?)", int($data->{NODECOUNT}));
+        $statement .= sprintf(" VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, %d, ?, ?)", $self->{DBH}->quote(int($data->{NODECOUNT})));
         
         my $sth = $self->{DBH}->prepare($statement);
         $sth->bind_param(1, $data->{SUBID});
