@@ -34,8 +34,12 @@ my $nohardlink = 0;
 
 my @userpatches = ();
 my $category = undef;
+my $individually = 0;
+
 my $all = 0;
 my $nodesc = 0;
+my $sortbyversion = 0;
+my $sortbycategory = 0;
 
 # these are for signing the testing/production snapshots, if changed
 my $keyid = undef;
@@ -46,8 +50,11 @@ my $optres = GetOptions("testing|t"    => \$gentest,
                         "nohardlink"   => \$nohardlink,
                         "patch=s"      => \@userpatches,
                         "category=s"   => \$category,
+                        "individually|i" => \$individually,
                         "all|a"        => \$all,
                         'nodesc'       => \$nodesc,
+                        'sort-by-version' => \$sortbyversion,
+                        'sort-by-category' => \$sortbycategory,
                         'keyid=s'      => \$keyid,
                         'keypass=s'    => \$keypass,
 
@@ -66,12 +73,15 @@ sub printhelp
     print $scriptname . " status <repository>\n";
     print $scriptname . " listupdates <repository>\n";
     print "    [--patch <patch> ... | --category <category>] [--nodesc]\n";
+    print "    [--sort-by-version | --sort-by-category]\n";
     print "\n";
     print $scriptname . " forbid <repository>\n";
     print "    [--patch <patch> ... | --category <category> | --all]\n";
+    print "    [--individually]\n";
     print "\n";
     print $scriptname . " allow <repository>\n";
     print "    [--patch <patch> ... | --category <category> | --all]\n";
+    print "    [--individually]\n";
     print "\n";
     print $scriptname . " createrepo <repository>\n";
     print "    --testing|--production [--nohardlink] [--keyid ID [--keypass password]] \n";
@@ -88,6 +98,8 @@ sub printhelp
     print "--category <category>   " . __("Specify patch category to forbid or allow.\n");
     print "                        " . __("Choose one of: recommended, security, optional.\n");
     print "--nodesc                " . __("Do not print summaries and descriptions of udpates.\n");
+    print "--sort-by-version       " . __("Sort patch list by patch version.\n");
+    print "--sort-by-category      " . __("Sort patch list by patch category.\n");
     #print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     #print "                        " . __("for them\n");
     print "--nohardlink            " . __("If a file already exists on local filesystem, do not\n");
@@ -469,7 +481,25 @@ elsif ($command eq 'listupdates')
         my $t = new Text::ASCIITable;
         $t->setCols(@cols);
 
-        foreach my $id (keys %$patches)
+        my @sorted = ();
+        if ($sortbyversion)
+        {
+            @sorted =
+                sort { $patches->{$a}->{version} <=> $patches->{$b}->{version} }
+                keys %$patches;
+        }
+        elsif ($sortbycategory)
+        {
+            @sorted =
+                sort { $patches->{$a}->{type} cmp $patches->{$b}->{type} }
+                keys %$patches;
+        }
+        else # sort by name
+        {
+            @sorted = sort { $a cmp $b } keys %$patches;
+        }
+
+        foreach my $id (@sorted)
         {
             next if ($category && $patches->{$id}->{type} ne $category);
 
@@ -523,6 +553,8 @@ elsif ($command eq 'allow' || $command eq 'forbid')
 
     my $allow = $command eq 'allow';
 
+    printPatchCounts($patches, $filter);
+
     if (@userpatches)
     {
         if (defined $category)
@@ -572,9 +604,64 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         if ($exists_category{$category})
         {
             if ($allow)
-            { $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category); }
+            {
+                print sprintf (
+                    __('Removing filter by category \'%s\'.'), $category) . "\n";
+
+                $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+                if ($individually)
+                {
+                    print sprintf (
+                        __('Allowing all \'%s\' patches individally.'), $category) . "\n";
+                    for (keys %$patches)
+                    {
+                        $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_)
+                            if ($patches->{$_}->{type} eq $category);
+                    }
+                }
+                else
+                {
+                    my @stillfiltered = ();
+                    for (keys %$patches)
+                    {
+                        push @stillfiltered, $_
+                            if ($filter->matches($patches->{$_}))
+                    }
+    
+                    if (@stillfiltered)
+                    {
+                        print __('The following patches are still filtered by other means than category:') . "\n";
+                        print $_ . "\n" for (@stillfiltered);
+                        print sprintf (__('Use "%s" to see details.'),
+                                'smt staging listupdates ' . $repoid .
+                                ' --patch <patchname-version>') . "\n";
+                        print sprintf (
+                            __('Use "%s" to alow all these patches individually.'),
+                            'smt staging allow ' . $repoid .
+                            ' --category ' . $category . ' --individually');
+                        print "\n";
+                    }
+                }
+            }
             else
-            { $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category); }
+            {
+                if ($individually)
+                {
+                    print sprintf (
+                        __('Forbidding all \'%s\' patches individally.'), $category) . "\n";
+                    for (keys %$patches)
+                    {
+                        $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+                            if ($patches->{$_}->{type} eq $category);
+                    }
+                }
+                else
+                {
+                    print sprintf (
+                        __('Adding filter by category \'%s\'.'), $category) . "\n";
+                    $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+                }
+            }
         }
         else
         {
@@ -594,6 +681,8 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         }
         else
         {
+            # remove all filters first, then forbid all, individually
+            $filter->clean(); 
             $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
                 foreach (keys %$patches);
             SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
@@ -812,12 +901,15 @@ smt staging status <repository> [general-options]
 
 smt staging listupdates <repository> [general-options]
     [--patch <patch> ... | --category <category>] [--nodesc]
+    [--sort-by-version | --sort-by-category]
 
 smt staging forbid <repository> [general-options]
     [--patch <patch> ... | --category <category> | --all]
+    [--individually]
 
 smt staging allow <repository> [general-options]
-    [--patch <patch> ... | --category <category> | --all]
+    [--patch <patch> ... | --category <category> | --all] [--individually]
+    [--individually]
 
 smt staging createrepo <repository> [general-options]
     --testing|--production [--nohardlink]
@@ -916,16 +1008,14 @@ Enable more detailed output.
 Shows the date and time of the last mirroring of the full repository and status
 of the testing and production repository, plus some other information.
 
-The testing and production repository status is always compared with the
-full mirror and can be as follows:
+The testing and production repository status is determined by the date of the
+full mirror from which the testing (and then production) repository was created.
+The output is as follows:
  'not created'
     the repository has not ever been (successfully) created
- 'up to date with the full mirror'
-    meaning the repository has been successfully created from the current
-    full mirror
- 'out of date compared to the full mirror'
-    meaning the repository has been successfully created but the full mirror
-    has been updated since then
+ 'created (corresponding mirror date: YYYY-MM-DD hh:mm:ss)'
+    meaning the repository has been successfully created from the full mirror
+    which was mirrored on the shown date. 
 
 =item listupdates
 
@@ -949,9 +1039,39 @@ The output table contains the follwing columns:
  Summary  - brief summary of the issues the patch fixes. This column can be
             hidden from view using the I<--nodesc> option.
 
+Use the I<--sort-by-*> options to sort the table by version or category. Default
+sorting is by patch name.
+
 The detailed output (shown when I<--patch> is specified) contains additional
 information like which properties are used to filter (forbid) the patch,
 full description, etc.
+
+=item allow/forbid
+
+Forbidding a patch means adding a filter that will remove the patch from the
+repository when creating the testing or production snapshot, thus make it
+invisible for the clients.
+
+Patches can be
+forbidden in two ways: individually, using their ID (patchname-version), or by
+category (security, optional, etc.). The C<allow> and C<forbid> command together
+with I<--patch>, I<--category>, I<--all>, and I<--individually> options allows
+to do this.
+
+After making chnages with C<allow> or C<forbid>, make sure to use the
+C<listupdates> command to re-check which patches are scheduled to appear in or
+be removed from the testing snapshot.
+
+Note that a patch can be forbidden in multiple ways (currently the above two)
+at the same time. For example, if you have forbidden all optional patches using
+C<forbid RepoID --category optional> and then try to allow one of the optional
+patches using C<allow RepoID --patch foo-3>, the program will issue a warning
+that the foo-3 patch is still forbidden by category 'optional'. You have to do
+the following in this case (if that is what you really want):
+
+ $ smt staging allow RepoID --category optional
+ $ smt staging forbid RepoID --category optional --individually
+ $ smt staging allow RepoID --patch foo-3
 
 =back
 
@@ -981,7 +1101,12 @@ This option is used in the B<allow>, B<forbid>, and B<listupdates> commands.
 
 =item --all
 
-Allow or forbid all patches in the B<allow> or B<forbid> commands. 
+Allow or forbid all patches in the B<allow> or B<forbid> commands.
+
+=item --individually
+
+Allow or forbid multiple patches (e.g. by category) one by one, that is,
+as if the I<--patch> option had been used on each of the patches. 
 
 =item --testing
 
@@ -1015,6 +1140,15 @@ Do not print patch descriptions and summaries to save some screen space and make
 the output more readable.
 
 Can be used with the B<listupdates> command.
+
+=item --sort-by-version
+
+Sort the C<listupdates> table by patch version. The higher the version, the
+newer the patch should be.
+
+=item --sort-by-category
+
+Sort the C<listupdates> table by patch category.
 
 =back
 
