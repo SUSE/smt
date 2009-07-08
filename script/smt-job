@@ -665,17 +665,23 @@ else
                 # transform hash to xml
                 if ($p eq 'ARGUMENTS' &&  isa(${$h}{$p}, 'HASH') )
                 {
-                    # fromat the arguments hash nicely, as XML, and indent all by 4 spaces
+                    # fromat the arguments hash nicely as XML
                     eval { ${$h}{$p}  =   XMLout( ${$h}{$p}, 'rootname' => 'arguments' ) }; 
-                    chomp( ${$h}{$p} );
-                    ${$h}{$p} =~ s/\n/\n    /g;
                 }
 
                 # collect the information or just print it 
                 if ($verbose == 3)
                 {
-                    print  $p eq 'PARENT_ID' ? 'Parent':ucfirst(lc($p));
-                    print "\n    ".(defined ${$h}{$p} ?  ${$h}{$p}:'')."\n";
+                    print  $p eq 'PARENT_ID' ? 'Parent:   ':ucfirst(lc($p)).":";
+                    print ' ' x (15 - length($p));
+                    if ( defined ${$h}{$p}  &&  ${$h}{$p} =~ /\n/ )
+                    {
+                        # start multiline values in new line and indent them by 4 spaces and remove trailing newlines
+                        chomp( ${$h}{$p} );
+                        ${$h}{$p} =~ s/\n/\n    /g; 
+                        print "\n    ";
+                    }
+                    print ''.(defined ${$h}{$p} ?  ${$h}{$p}:'')."\n";
                 }
                 else
                 {
