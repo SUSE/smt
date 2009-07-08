@@ -1037,10 +1037,10 @@ sub executeCommand
 
     my $lang     = $ENV{LANG};
     my $language = $ENV{LANGUAGE};
-    
-    $lang = undef if($lang =~ /^en_/);
-    $language = undef if($language =~ /^en_/);
-    
+
+    $lang = undef if($lang && $lang =~ /^en_/);
+    $language = undef if($language && $language =~ /^en_/);
+
     if(!defined $command || !-x $command)
     {
         printLog($log, $vblevel, LOG_ERROR, "Invalid command '$command'");
