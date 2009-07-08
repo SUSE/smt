@@ -670,8 +670,11 @@ sub mirror()
 
         # open file to write the new updateinfo.xml
         my $out = new IO::File();
-        $out->open("> $uifname");
-
+        $out->open("> $uifname") or do {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                "Cannot open $olduifname for reading.");
+            return $self->{STATISTIC}->{ERROR}++;
+        };
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
             "Going to look for and parse new patch metadata.");
 
@@ -713,18 +716,23 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("new checksum %s", $digest ), 1);
 
         # unzip the old file
-        open(FILE, "> $uifname.old");
-        my $fh = IO::Zlib->new($olduifname, "rb");
-        print FILE while <$fh>;
-        $fh->close;
-        close FILE;
+        my $olddigest = 0;
+        if (defined open(FILE, "> $uifname.old"))
+        {
+            my $fh = IO::Zlib->new($olduifname, "rb");
+            print FILE while <$fh>;
+            $fh->close;
+            close FILE;
 
-        # old checksum
-        open(FILE, "< $uifname.old");
-        $sha1 = Digest::SHA1->new;
-        $sha1->addfile(*FILE);
-        my $olddigest = $sha1->hexdigest();
-        close FILE;
+            # old checksum
+            if (defined open(FILE, "< $uifname.old"))
+            {
+                $sha1 = Digest::SHA1->new;
+                $sha1->addfile(*FILE);
+                $olddigest = $sha1->hexdigest();
+                close FILE;
+            }
+        }
 
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("old checksum %s", $olddigest ), 1);
 
