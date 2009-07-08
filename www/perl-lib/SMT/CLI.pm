@@ -991,6 +991,7 @@ sub setCatalogStaging
             if ($opt{enabled})
             {
                 rmtree($fullpath, 0, 0) if (-d $fullpath);
+                mkpath($fullpath);
                 move($productionpath, $fullpath) if (-d $productionpath);
             }
             # when disabling staging:
