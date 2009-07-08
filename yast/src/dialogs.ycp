@@ -849,6 +849,7 @@ Would you like to continue nevertheless?")))
 
     boolean ValidateCredentialsDialog (string id, map event) {
 	string url = (string) UI::QueryWidget (`id ("url"), `Value);
+
 	if (url == nil || url == "") {
 	    UI::SetFocus (`id ("url"));
 	    // Pop-up error message
@@ -856,6 +857,13 @@ Would you like to continue nevertheless?")))
 
 Enter your SMT server URL in the following format: http:://server.name/
 "));
+	    return false;
+	// BNC #518222: Check for 'http://.+' or 'https://.+' in URL
+	} else if (! regexpmatch (url, "^\[ \t\]*http://.\+") && ! regexpmatch (url, "^\[ \t\]*https://.\+")) {
+	    UI::SetFocus (`id ("url"));
+	    Report::Error (_("Invalid SMT Server URL.
+
+URL should start with 'http://' or 'https://'."));
 	    return false;
 	}
 

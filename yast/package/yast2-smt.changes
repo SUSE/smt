@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jul  8 13:53:43 CEST 2009 - locilka@suse.cz
+
+- Checking for http:// or https:// in SMT Server URL (bnc #518222).
+- 2.17.18
+
+-------------------------------------------------------------------
 Tue Jul  7 13:34:29 CEST 2009 - locilka@suse.cz
 
 - Cleaning-up repository cache after mirroring (bnc #519216).
