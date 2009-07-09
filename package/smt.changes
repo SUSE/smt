@@ -3,6 +3,7 @@ Thu Jul  9 18:33:19 CEST 2009 - jdsn@suse.de
 
 - only activate client jobs if parent was successful (bnc#520700)
 - only cleanup client jobs with broken parent id (bnc#520701)
+- added man page for smt-client script
 
 -------------------------------------------------------------------
 Wed Jul  8 18:29:34 CEST 2009 - jkupec@suse.cz
