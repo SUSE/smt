@@ -10,7 +10,7 @@ use Getopt::Long;
 use SMT::Utils;
 use File::Basename;
 use File::Temp;
-
+use SMT::JobQueue;
 
 use Data::Dumper;
 
@@ -129,19 +129,26 @@ SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted unsu
 
 ### CHECK PARENTS (fourth) ###
 
+# get all dependent jobs older than one day
 my $getParentDataSQL = " SELECT ID, GUID_ID, PARENT_ID from JobQueue where PARENT_ID IS NOT NULL AND DATE_ADD(CREATED, INTERVAL 1 DAY) < NOW() ";
-my $pData = $dbh->selectall_hashref($getParentDataSQL, ["ID", "GUID_ID"] );
+my $pData = $dbh->selectall_hashref($getParentDataSQL, ["GUID_ID", "ID"] );
+
+# get reference data from JobQueue to compare the filtered data with (bnc#520701)
+my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh});
+my $refData = $JobQ->getJobsInfo({ 'ID' => '', 'GUID' => '', 'PARENT_ID' => '' });
+
 my @delBrokenParentsWhere = ();
 
-foreach my $jid ( keys %{$pData} )
+foreach my $gid ( keys %{$pData} )
 {
-     foreach my $gid ( keys %{${$pData}{$jid}} )
+     foreach my $jid ( keys %{${$pData}{$gid}} )
      {
-         if ( defined ${$pData}{$jid}{$gid}{PARENT_ID} )
+         if ( defined ${$pData}{$gid}{$jid}{PARENT_ID} )
          {
-             if ( not exists ${$pData}{ ${$pData}{$jid}{$gid}{PARENT_ID} }{$gid} )
+             # compare the found parent job with the reference data (bnc#520701)
+             if ( not exists ${$refData}{$gid}{ ${$pData}{$gid}{$jid}{PARENT_ID} } )
              {
-                 push(@delBrokenParentsWhere, " ( ID = $jid AND GUID_ID = ${$pData}{$jid}{$gid}{GUID_ID} ) ");
+                 push(@delBrokenParentsWhere, " ( ID = $jid AND GUID_ID = ${$pData}{$gid}{$jid}{GUID_ID} ) ");
              }
          }
     }
@@ -166,19 +173,20 @@ else
 
 ### CHECK PERSISTENT JOBS FOR PROPER TIMELAG [> 1 minute] (last) ###
 
-my $getTooPersistentJobs = " SELECT j.ID, c.GUID, j.TIMELAG from JobQueue j LEFT JOIN Clients c ON (j.GUID_ID = c.ID) where j.PERSISTENT = 1 AND ( j.TIMELAG < '00:01:00'  OR  j.TIMELAG IS NULL ) ";
-my $persData = $dbh->selectall_hashref($getTooPersistentJobs, ["ID", "GUID"] );
+# make all job info hashes look consistent (like JobQueue would return them) to prevent bugs like (bnc#520701)
+my $getTooPersistentJobs = " SELECT  j.GUID_ID, c.GUID, j.ID, j.TIMELAG from JobQueue j LEFT JOIN Clients c ON (j.GUID_ID = c.ID) where j.PERSISTENT = 1 AND ( j.TIMELAG < '00:01:00'  OR  j.TIMELAG IS NULL ) ";
+my $persData = $dbh->selectall_hashref($getTooPersistentJobs, ["GUID_ID", "ID"] );
 
 my $numPersData = keys %{$persData} || 0;
 if ( $numPersData > 0 )
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number persistent jobs with a timelag smaller than 1 minute: %s", $numPersData ) , $quiet? 0:1,1 );
 
-    foreach my $jid ( keys %{$persData} )
+    foreach my $gid ( keys %{$persData} )
     {
-        foreach my $gid (keys %{${$persData}{$jid}} )
+        foreach my $jid (keys %{${$persData}{$gid}} )
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Job ID (%s) for GUID (%s) has a timelag of (%s).", $jid, ${$persData}{$jid}{$gid}{GUID}, ${$persData}{$jid}{$gid}{TIMELAG} || 0 ) , $quiet? 0:1 ,1);
+            SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Job ID (%s) for GUID (%s) has a timelag of (%s).", $jid, ${$persData}{$gid}{$jid}{GUID}, ${$persData}{$gid}{$jid}{TIMELAG} || 0 ) , $quiet? 0:1 ,1);
         }
     }
     SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "This is just a warning. If the timelag for these jobs is not intended to be so small please change the jobs using the smt-job command." , $quiet? 0:1 ,1);

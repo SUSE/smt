@@ -649,6 +649,8 @@ else
     my $h = undef;
     my $onerow = [];
 
+    # do not render an empty table if the result is empty
+    exit 0 unless keys %{$res};
     # process job data, sort by client id and job id (bnc#514678)
     # rewrite JOB_TYPE and JOB_STATUS
     foreach my $xcid ( sort keys %{$res} )

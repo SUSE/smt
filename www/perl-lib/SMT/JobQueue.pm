@@ -304,7 +304,8 @@ sub finishJob($)
     $job->status( 0 );
   }
 
-  $self->parentFinished($guid, $job->{id} );
+  # only activate the client jobs if this job was successful (bnc#520700)
+  $self->parentFinished($guid, $job->{id} ) if ( $xmljob->status() =~ /^1$/ );
 
   return $job->save();
 
