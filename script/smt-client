@@ -62,8 +62,8 @@ if($help || !$optres)
     print __("Options:")."\n";
     print "--help         -h         ".__("This help.")."\n";
     print "--debug        -d         ".__("Enable debug mode.")."\n";
-    print "--hostname     -n <name>  ".__("Operate on a specified hostname (name starting with...).")."\n";
-    print "--guid         -g <guid>  ".__("Only show information for GUID")."\n";
+    print "--hostname     -n <name>  ".__("Filter the result by the hostname (hostname starting with <name>).")."\n";
+    print "--guid         -g <guid>  ".__("Only show information for GUID <guid>.")."\n";
     print "--severity     -s <level> ".__("Only show information if patches for <level> are available.")."\n";
     print "                          ".__("<level> may be a value of: 'packagemanager', 'security', 'recommended' or 'optional'")."\n";
     print "--verbose      -v         ".__("Show details on patches.")."\n";
@@ -186,3 +186,96 @@ else
 #SMT::Utils::unLockAndExit( "smt-client", 0, $log, $vblevel );
 
 exit 0;
+
+########################################################################################
+#
+# Manpage
+#
+
+=head1 NAME
+
+smt-client
+
+=head1 SYNOPSIS
+
+smt-client [COMMAND] [OPTION [OPTION ...]]
+
+=head1 DESCRIPTION
+
+C<smt-client> shows information about registered clients. The information includes the GUID, hostname, patch status and the timestamps of the patch status and the last contact of the client with the SMT server.
+
+=head1 COMMAND
+
+Currently only the command B<status> is supported. It is the default and can be omitted.
+
+=head1 OPTIONS
+
+=head2 BASIC OPTIONS
+
+=over
+
+=item -h, --help
+
+Shows the help screen.
+
+=item -v, --verbose
+
+Shows detailed client information. 
+The patch status is explained in detail and shows the number of patches for the package manager, security, recommended and optional patches. The last contact date is also shown in verbose mode.
+ 
+=item -d, --debug
+
+Enables debug mode.
+
+=item -L, --logfile <file>
+
+Logs will be written to <file>.
+
+=back
+
+=head2 FILTER OPTIONS
+
+=over
+
+=item -h, --hostname <name>
+
+Filters the result by the hostname. Only entries with a hostname beginning with <name> will be listed.
+
+=item -g, --guid <guid>
+
+Filters the result by the GUID. Only the entry with the GUID <guid> will be listed.
+
+=item -s, --severity <level>
+
+Filters the result by the patch status information. The value <level> may be one of B<packagemanager>, B<security>, B<recommended> or B<optional>.
+Only entries are listed that have patches for the respective level.
+
+=back
+
+=cut
+
+=head1 AUTHORS and CONTRIBUTORS
+
+Lukas Ocilka, Jens Daniel Schmidt
+
+=cut
+
+
+=head1 LICENSE
+
+Copyright (c) 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 675 Mass
+Ave, Cambridge, MA 02139, USA.
+
+=cut
