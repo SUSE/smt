@@ -36,6 +36,7 @@
 	"/usr/lib/SMT/bin/smt-repeated-register"	: _("NCC Registration"),
 	"/usr/lib/SMT/bin/smt-daily"			: _("Synchronization of Updates"),
 	"/usr/lib/SMT/bin/smt-gen-report"		: _("Generation of Reports"),
+	"/usr/lib/SMT/bin/smt-run-jobqueue-cleanup"	: _("Job Queue Cleanup"),
     ];
 
     string status_icons_dir = "/usr/share/icons/hicolor/16x16/status";
@@ -2156,7 +2157,7 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
     }
 
     string FindJobName (string command) {
-	string ret = _("Unknown");
+	string ret = nil;
 
 	foreach (string script_command, string script_name, smt_cron_scripts, {
 	    if (regexpmatch (command, script_command)) {
@@ -2164,6 +2165,12 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 		break;
 	    }
 	});
+
+	// BNC #520557: Manual or additional cron commands
+	if (ret == nil) {
+	    y2error ("Unknown cron command: %1", command);
+	    ret = sformat (_("Command: %1"), command);
+	}
 
 	return ret;
     }
@@ -2440,6 +2447,8 @@ you need to restart the YaST SMT Configuration module."));
 	    return `item (`id (script_command), script_name);
 	});
 
+	scripts = sort (term x, term y, scripts, ``(x[1]:"A" < y[1]:"A"));
+
 	UI::OpenDialog (
 	    `VBox (
 		`HSpacing (35),
@@ -2496,11 +2505,20 @@ you need to restart the YaST SMT Configuration module."));
 	if (editing) {
 	    string script = FindJobScript (settings["command"]:"");
 
+	    // BNC #520557: Handling unknown script
 	    if (script == "" || script == nil) {
 		y2error ("Unable to determine script name %1", settings);
-	    } else {
-		UI::ChangeWidget (`id (`job_to_run), `Value, script);
+
+		scripts = add (
+		    scripts,
+		    `item (`id (settings["command"]:""), sformat (_("Command: %1"), settings["command"]:""))
+		);
+		UI::ChangeWidget (`id (`job_to_run), `Items, scripts);
+
+		script = settings["command"]:"";
 	    }
+
+	    UI::ChangeWidget (`id (`job_to_run), `Value, script);
 	}
 
 	any ret = nil;
