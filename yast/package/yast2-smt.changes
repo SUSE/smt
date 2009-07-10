@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Jul 10 14:31:41 CEST 2009 - locilka@suse.cz
+
+- Checking for permissions for mirrored repositories has been moved
+  to the end of writing the configuration (database is already
+  running) (bnc #521013).
+- 2.17.21
+
+-------------------------------------------------------------------
 Thu Jul  9 14:39:02 CEST 2009 - locilka@suse.cz
 
 - Added support for Job Queue Cleanup script and additional support

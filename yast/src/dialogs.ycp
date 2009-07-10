@@ -543,6 +543,10 @@ to be readable by %2 user."),
 	    ));
 	}
 
+	return dialog_ret;
+    }
+
+    void CheckAlreadyMirroredRepositories () {
 	if (SMTData::CheckAndAdjustMirroredReposAccess() != true) {
 	    Report::Error (sformat (
 		// Pop-up error message, %1 is replaced with directory name, %2 with username
@@ -552,8 +556,6 @@ to be recursively writable by %2 user."),
 		SMTData::GetCredentials ("DB", "user")
 	    ));
 	}
-
-	return dialog_ret;
     }
 
     void WritePatches () {
@@ -606,7 +608,7 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 	    // TRANSLATORS: Dialog caption
 	    _("Writing SMT Configuration"),
 	    " ",
-	    8,
+	    9,
 	    [
 		// TRANSLATORS: Progress stage
 		_("Adjust SMT configuration"),
@@ -622,6 +624,8 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 		_("Write firewall settings"),
 		// TRANSLATORS: Progress stage
 		_("Write cron settings"),
+		// TRANSLATORS: Progress stage
+		_("Check mirrored repositories"),
 		// TRANSLATORS: Progress stage
 		_("Run synchronization check"),
 	    ],
@@ -640,6 +644,8 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 		_("Writing firewall settings..."),
 		// TRANSLATORS: Bussy message /progress/
 		_("Writing cron settings..."),
+		// TRANSLATORS: Bussy message /progress/
+		_("Checking mirrored repositories..."),
 		// TRANSLATORS: Bussy message /progress/
 		_("Running synchronization check..."),
 		Message::Finished(),
@@ -696,6 +702,12 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 
 	SMTData::WriteFirstRunStatus();
 	sleep (sl);
+
+	Progress::NextStage();
+
+	// BNC #521013: Checking uses smt agent that connects to database
+	// Database has to be already running
+	CheckAlreadyMirroredRepositories();
 
 	Progress::NextStage();
 
