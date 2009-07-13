@@ -806,13 +806,13 @@ then match all clients resp. jobs.
 =item -t, --type <type> 
 
 Specifies the job type (e.g.  C<patchstatus>, C<softwarepush>, C<update>, C<execute>, C<reboot>, C<wait>, C<eject>).
-B<Note:> Only C<patchstatus> and C<softwarepush> are enabled by default on the client.
+B<Note:> Only C<patchstatus>, C<softwarepush> and C<update> are enabled by default on the client.
 
 =item -n --name <name>
 
 Specifies a job name
 
-=item --decription
+=item --decription <description>
 
 Specifies a job description
 
@@ -977,7 +977,7 @@ The action of CD or DVD tray: C<open>, C<close> or C<toggle>.
 
 # smt-job --list --finished -v 1
 
-=item Create a softwarepush job that updates C<xterm> and C<bash> on client C<12345> and C<67890>:
+=item Create a softwarepush job that installes C<xterm> and C<bash> on client C<12345> and C<67890>:
 
 # smt-job --create -t softwarepush -P xterm -P bash -g 12345 -g 67890
 
