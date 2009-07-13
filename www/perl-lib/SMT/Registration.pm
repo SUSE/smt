@@ -496,7 +496,7 @@ sub insertRegistration
     my @delete = ();
     foreach my $d (keys %{$existingpids})
     {
-        $dbh->quote($d);
+        push @delete, $dbh->quote($d);
     }
     
     if(@delete > 0)
