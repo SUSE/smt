@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jul 14 15:18:36 CEST 2009 - jdsn@suse.de
+
+- return stdout and stderr if job is set verbose (bnc#521952)
+- version 0.0.9
+
+-------------------------------------------------------------------
 Thu Jul  7 15:17:12 CEST 2009 - tgoettlicher@suse.de
 
 - added "update" to list of allowed agents

@@ -117,6 +117,8 @@ sub parsejob
   my $jobid;
   my $jobtype;
   my $jobargs;
+  # need to parse verbose flag as well (bnc#521952)
+  my $verbose = 'false';
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
@@ -127,6 +129,7 @@ sub parsejob
   $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
   $jobtype = $job->{type}      if ( defined ( $job->{type} )    && ( $job->{type} =~ /^[0-9a-zA-Z.]+$/ ));
   $jobargs = $job->{arguments} if ( defined ( $job->{arguments} ));
+  $verbose = 'true'            if ( defined $job->{verbose}  &&  ( $job->{verbose} =~ /^1$/  ||  $job->{verbose} =~ /^true$/   ));
 
   # check variables
   SMT::Agent::Utils::error ( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
@@ -135,7 +138,7 @@ sub parsejob
 
   SMT::Agent::Utils::logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
 
-  return ( id=>$jobid, type=>$jobtype, args=>$jobargs );
+  return ( id=>$jobid, type=>$jobtype, args=>$jobargs, verbose=>$verbose );
 };
 
 ###############################################################################
