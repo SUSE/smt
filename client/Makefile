@@ -50,7 +50,7 @@ clean:
 
 dist: clean
 	rm -rf $(NAME)-$(VERSION)/
-	@mkdir -p $(NAME)-$(VERSION)/config
+#	@mkdir -p $(NAME)-$(VERSION)/config
 	@mkdir -p $(NAME)-$(VERSION)/cron
 	@mkdir -p $(NAME)-$(VERSION)/script
 	@mkdir -p $(NAME)-$(VERSION)/logrotate
