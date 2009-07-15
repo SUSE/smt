@@ -19,7 +19,7 @@
 
 
 Name:           smt-client
-Version:        0.0.9
+Version:        0.0.10
 Release:        0.1
 Requires:       perl = %{perl_version}
 Requires:       perl-XML-Simple
@@ -31,7 +31,7 @@ Requires:	cron
 PreReq:         %fillup_prereq 
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
-License:        GPL v2 or later
+License:        GPLv2
 Summary:        Client for Subscription Management Tool
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.smt-client

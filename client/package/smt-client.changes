@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jul 15 15:01:13 CEST 2009 - jdsn@suse.de
+
+- change license to GPLv2 (only)
+- version 0.0.10
+
+-------------------------------------------------------------------
 Tue Jul 14 15:18:36 CEST 2009 - jdsn@suse.de
 
 - return stdout and stderr if job is set verbose (bnc#521952)
