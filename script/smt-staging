@@ -947,13 +947,19 @@ be followed by I<repository>. Repository can be specified using the I<ID> or
 I<Name and Target> from the table returned by C<smt repos>. The third alternative
 is to use the hexadecimal I<Repository ID> found in C<smt repos -v> output.
 
-Example:
+Examples:
 
 =over 4
 
 =item $ smt staging createrepo 1 --testing
 
 creates testing repository from repository number 1 from C<smt repos> table.
+
+=item $ smt staging listupdates SLED10-SP1-Updates sled-10-i586
+
+lists patches from SLED10-SP1-Updates repository for sled-10-i586. Use
+C<smt repos> to get a list of all repository names and targets.
+
 
 =back
 
