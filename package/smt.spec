@@ -42,7 +42,7 @@ Requires:       suseRegister
 Requires:       htmldoc
 Requires:       createrepo
 Requires:       gpg2
-Requires:       satsolver-tools
+Requires:       satsolver-tools perl-satsolver
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
