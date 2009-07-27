@@ -612,7 +612,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                 if ($individually)
                 {
                     print sprintf (
-                        __('Allowing all \'%s\' patches individally.'), $category) . "\n";
+                        __('Allowing all \'%s\' patches individually.'), $category) . "\n";
                     for (keys %$patches)
                     {
                         $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_)
@@ -648,7 +648,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                 if ($individually)
                 {
                     print sprintf (
-                        __('Forbidding all \'%s\' patches individally.'), $category) . "\n";
+                        __('Forbidding all \'%s\' patches individually.'), $category) . "\n";
                     for (keys %$patches)
                     {
                         $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
