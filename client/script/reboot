@@ -24,7 +24,7 @@ sub jobhandler
   return (
     stdout => "",
     stderr => "",
-    exitcode => 0;
+    exitcode => 0,
     success => "true",
     message => "reboot triggered"
   );

@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Sep  7 10:31:51 CEST 2009 - tgoettlicher@suse.de
+
+- fixed bnc#537097: smt-agent is unable to execute reboot jobs
+
+-------------------------------------------------------------------
 Wed Jul 15 15:01:13 CEST 2009 - jdsn@suse.de
 
 - change license to GPLv2 (only)
