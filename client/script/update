@@ -20,7 +20,6 @@ sub jobhandler
   # collect and verify arguments
   my $force;
   my $agreelicenses;
-  my $packages;
 
 
   $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
@@ -38,16 +37,10 @@ sub jobhandler
   my @cmdArgs;
   push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
   push (@cmdArgs, "-x");					# xml output
-  push (@cmdArgs, "--non-interactive");				# doesn't ask user
-  push (@cmdArgs, "up");					# update
-  push (@cmdArgs, "-t");					# type
   push (@cmdArgs, "patch");					# patch
+  push (@cmdArgs, "--with-interactive");			# doesn't ask user
   push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
 
-  foreach my $pack (@$packages)                                                             
-  {                                                                                         
-    push (@cmdArgs, $pack);
-  }    
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 

@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Sep 11 10:59:17 CEST 2009 - tgoettlicher@suse.de
+
+- fixed bnc#537399: update jobs do not install kernel updates
+
+-------------------------------------------------------------------
 Mon Sep  7 10:31:51 CEST 2009 - tgoettlicher@suse.de
 
 - fixed bnc#537097: smt-agent is unable to execute reboot jobs
