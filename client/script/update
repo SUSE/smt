@@ -36,7 +36,7 @@ sub jobhandler
   my $command = "/usr/bin/zypper";
   my @cmdArgs;
   push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
-  push (@cmdArgs, "-x");					# xml output
+  push (@cmdArgs, "-xn");					# xml output
   push (@cmdArgs, "patch");					# patch
   push (@cmdArgs, "--with-interactive");			# doesn't ask user
   push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
