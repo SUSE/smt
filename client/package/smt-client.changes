@@ -1,7 +1,14 @@
 -------------------------------------------------------------------
+Tue Sep 22 17:17:47 CEST 2009 - tgoettlicher@suse.de
+
+- fixed zypper's commandline for update jobs
+- version 0.0.12
+
+-------------------------------------------------------------------
 Fri Sep 11 10:59:17 CEST 2009 - tgoettlicher@suse.de
 
 - fixed bnc#537399: update jobs do not install kernel updates
+- version 0.0.11
 
 -------------------------------------------------------------------
 Mon Sep  7 10:31:51 CEST 2009 - tgoettlicher@suse.de
