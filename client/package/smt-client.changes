@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Sep 25 12:06:40 CEST 2009 - tgoettlicher@suse.de
+
+- improved message for update jobs that need a reboot
+- version 0.0.13
+
+-------------------------------------------------------------------
 Tue Sep 22 17:17:47 CEST 2009 - tgoettlicher@suse.de
 
 - fixed zypper's commandline for update jobs

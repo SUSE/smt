@@ -64,13 +64,16 @@ sub jobhandler
     $stderr="";
   }
 
+  my $mesg = "update failed";
+  $mesg = "update successfully finished" if $retval == 0 ;
+  $mesg = "update successfully finished and reboot needed" if $retval == 102;
 
   return (
     stdout => defined ( $stdout )? $stdout : "",
     stderr => defined ( $stderr )? $stderr : "",
     exitcode => $retval,
     success => ($retval == 0 ) ? "true" : "false",
-    message => ($retval == 0 ) ? "update successfully finished" : "update failed"
+    message => $mesg
   );
 
 }
