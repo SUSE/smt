@@ -37,6 +37,12 @@ Nice-To-Have but not so important
 - provide --config <configfile> options for the smt commands to
   use a different configfile then /etc/smt.conf 
 
+- JobQueue: an update job with non-interactive flag might install a kernel and thus require a reboot.
+  This information is written to the status of the job (and it is marked as failed).
+  Just like the hook to interpret the message from a patchstatus job we could add another hook to interpret
+  the result of an update job and trigger an eMail or anything else.
+  It might be interesting to offer a general hook concept to make it configurable what actions should follow 
+  on a certain job status, might as well be useful for custom job types.
 
 
 DONE:
