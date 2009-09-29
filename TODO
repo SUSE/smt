@@ -42,7 +42,7 @@ Nice-To-Have but not so important
   Just like the hook to interpret the message from a patchstatus job we could add another hook to interpret
   the result of an update job and trigger an eMail or anything else.
   It might be interesting to offer a general hook concept to make it configurable what actions should follow 
-  on a certain job status, might as well be useful for custom job types.
+  on a certain job status; this might as well be useful for custom job types.
 
 
 DONE:
