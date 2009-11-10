@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Nov 10 16:20:39 CET 2009 - mc@suse.de
+
+- print error if wrong guid is used in delete-registration
+  (bnc#515590) 
+
+-------------------------------------------------------------------
 Fri Jul 24 15:04:18 CEST 2009 - jkupec@suse.cz
 
 - require perl-satsolver (bnc #524972)

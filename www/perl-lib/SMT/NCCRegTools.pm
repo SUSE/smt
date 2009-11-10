@@ -621,44 +621,44 @@ sub _deleteRegistrationLocal
     {
         return 1;
     }
-    elsif(@guids == 1)
+
+    foreach my $guid (@guids)
     {
-        $where = sprintf("GUID = %s", $self->{DBH}->quote( $guids[0] ) );
-    }
-    else
-    {
-        my @q_guids = ();
-        foreach my $id (@guids)
+        my $found = 0;
+        
+        $where = sprintf("GUID = %s", $self->{DBH}->quote( $guid ) );
+        
+        my $statement = "DELETE FROM Registration where ".$where;
+        
+        my $res = $self->{DBH}->do($statement);
+        
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+        
+        $found = 1 if( $res > 0 );
+
+        $statement = "DELETE FROM Clients where ".$where;
+        
+        $res = $self->{DBH}->do($statement);
+        
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+        
+        $statement = "DELETE FROM MachineData where ".$where;
+        
+        $res = $self->{DBH}->do($statement);
+        
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+        
+        #FIXME: does it make sense to remove this GUID from ClientSubscriptions ?
+
+        if($found)
         {
-            push @q_guids, $self->{DBH}->quote($id);
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Successfully delete registration locally : %s", $guid));
         }
-        $where = sprintf("GUID IN (%s)", join(",", @q_guids));
-    }
-
-    foreach (@guids)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Delete registration: %s", $_));
-    }
-            
-    my $statement = "DELETE FROM Registration where ".$where;
-    
-    my $res = $self->{DBH}->do($statement);
-    
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
-
-    $statement = "DELETE FROM Clients where ".$where;
-
-    $res = $self->{DBH}->do($statement);
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
-    
-    $statement = "DELETE FROM MachineData where ".$where;
-    
-    $res = $self->{DBH}->do($statement);
-    
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
-
-    #FIXME: does it make sense to remove this GUID from ClientSubscriptions ?
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf("Delete registration locally failed: %s", $guid));
+        }        
+    }            
 
     return 1;
 }
@@ -837,7 +837,7 @@ sub _bulkop_handler
     }
     elsif(exists $data->{OPERATION} && defined $data->{OPERATION} && $data->{OPERATION} eq "de-register")
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Delete registration success: '%s'."), $guid));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Successfully delete registration on registration server: '%s'"), $guid));
     }
 }
 
