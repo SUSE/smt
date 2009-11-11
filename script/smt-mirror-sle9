@@ -99,7 +99,7 @@ my @sections = $cfg->Sections();
 
 
 # search for proxy settings
-my ($httpProxy, $httpsProxy, $proxyUser) = SMT::Utils::getProxySettings();
+my ($httpProxy, $httpsProxy, $noProxy, $proxyUser) = SMT::Utils::getProxySettings();
 
 if(defined $httpProxy)
 {
@@ -109,6 +109,11 @@ if(defined $httpsProxy)
 {
     $ENV{https_proxy} = $httpsProxy;
 }
+if(defined $noProxy)
+{
+    $ENV{no_proxy} = $noProxy;
+}
+
 #
 # we do not set proxyUser! If you need this, write this into your .wgetrc
 #

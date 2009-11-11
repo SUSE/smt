@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Nov 11 16:10:59 CET 2009 - mc@suse.de
+
+- honor no_proxy variable (bnc#543327) 
+
+-------------------------------------------------------------------
 Tue Nov 10 16:20:39 CET 2009 - mc@suse.de
 
 - print error if wrong guid is used in delete-registration
