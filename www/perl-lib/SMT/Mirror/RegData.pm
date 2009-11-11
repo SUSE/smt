@@ -446,8 +446,8 @@ sub _updateDB
     if(! exists $self->{XML}->{DATA}->{$self->{ELEMENT}})
     {
         # data not available; no need to update the database
-        printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "WARNING: No content for $self->{ELEMENT}");
-        return 1;
+        printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "No $self->{ELEMENT} returned.");
+        return 0;
     }
     
     my $dbh = SMT::Utils::db_connect();
