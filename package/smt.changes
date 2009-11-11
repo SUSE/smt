@@ -4,6 +4,8 @@ Wed Nov 11 16:10:59 CET 2009 - mc@suse.de
 - honor no_proxy variable (bnc#543327) 
 - print only a warning if registration server returns no
   data during ncc-sync. (bnc#547653)
+- do not search for an repoindex file if no service is
+  configured (bnc#547654)
 
 -------------------------------------------------------------------
 Tue Nov 10 16:20:39 CET 2009 - mc@suse.de
