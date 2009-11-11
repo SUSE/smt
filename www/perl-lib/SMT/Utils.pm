@@ -3,6 +3,8 @@ package SMT::Utils;
 use strict;
 use warnings;
 
+use Crypt::SSLeay;
+use LWP::UserAgent;
 use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
@@ -734,7 +736,7 @@ sub getFQDN
 
 =item getProxySettings()
 
-Return ($httpProxy, $httpsProxy, $proxyUser)
+Return ($httpProxy, $httpsProxy, $noProxy, $proxyUser)
 
 If no values are found these values are undef
 
@@ -746,10 +748,12 @@ sub getProxySettings
     my $httpProxy  = $cfg->val('LOCAL', 'HTTPProxy');
     my $httpsProxy = $cfg->val('LOCAL', 'HTTPSProxy');
     my $proxyUser  = $cfg->val('LOCAL', 'ProxyUser');
+    my $noProxy    = $cfg->val('LOCAL', 'NoProxy');
     
     $httpProxy  = undef if(defined $httpProxy  && $httpProxy =~ /^\s*$/);
     $httpsProxy = undef if(defined $httpsProxy && $httpsProxy =~ /^\s*$/);
     $proxyUser  = undef if(defined $proxyUser  && $proxyUser =~ /^\s*$/);
+    $noProxy    = undef if(defined $noProxy    && $noProxy =~ /^\s*$/);
     
     if(! defined $httpProxy)
     {
@@ -765,6 +769,18 @@ sub getProxySettings
         {
             # required for Crypt::SSLeay HTTPS Proxy support
             $httpsProxy = $ENV{https_proxy};
+        }
+    }
+
+    if(! defined $noProxy)
+    {
+        if(exists $ENV{no_proxy} && defined $ENV{no_proxy} && $ENV{no_proxy} !~ /^\s*$/)
+        {
+            $noProxy = $ENV{no_proxy};
+        }
+        elsif(exists $ENV{NO_PROXY} && defined $ENV{NO_PROXY} && $ENV{NO_PROXY} !~ /^\s*$/)
+        {
+            $noProxy = $ENV{NO_PROXY};
         }
     }
 
@@ -823,7 +839,7 @@ sub getProxySettings
         }
     }
 
-    return ($httpProxy, $httpsProxy, $proxyUser);
+    return ($httpProxy, $httpsProxy, $noProxy, $proxyUser);
 }
 
 
@@ -840,7 +856,7 @@ sub createUserAgent
     my $user = undef;
     my $pass = undef;
 
-    my ($httpProxy, $httpsProxy, $proxyUser) = getProxySettings();
+    my ($httpProxy, $httpsProxy, $noProxy, $proxyUser) = getProxySettings();
     
     if(defined $proxyUser)
     {
@@ -906,10 +922,20 @@ sub createUserAgent
     #$ua->protocols_allowed( [ 'https' ] );
     #$ua->default_headers->push_header('Content-Type' => 'text/xml');
 
-
-    # required to workaround a bug in LWP::UserAgent
-    $ua->no_proxy();
-
+    
+    if( defined $noProxy )
+    {
+        $ua->no_proxy(split(/\s*,\s*/, $noProxy));
+        $ENV{'no_proxy'} = $noProxy;
+    }
+    else
+    {
+        # required to workaround a bug in LWP::UserAgent
+        $ua->no_proxy();
+        delete $ENV{'no_proxy'} if exists $ENV{'no_proxy'}; 
+        delete $ENV{'NO_PROXY'} if exists $ENV{'NO_PROXY'}; 
+    }
+    
     if(defined $httpProxy)
     {
         $ua->proxy("http", $httpProxy);
