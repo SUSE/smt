@@ -2,7 +2,7 @@
 Thu Nov 12 10:21:34 CET 2009 - mc@suse.de
 
 - fix smt-mirror-sle9 (bnc#546132) 
-- send a user agent string in http requests (bnc#523645)
+- send a user agent string in http requests (bnc#554856)
 
 -------------------------------------------------------------------
 Wed Nov 11 16:09:33 CET 2009 - mc@suse.de
