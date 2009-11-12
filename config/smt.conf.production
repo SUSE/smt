@@ -56,6 +56,12 @@ smtUser=smt
 #
 signingKeyID=
 
+#
+# This string is send in HTTP requests as UserAgent.
+# If it is empty, a default is used.
+#
+UserAgent=
+
 
 [REST]
 # Enable administrative access to the SMT RESTService by setting enableRESTAdminAccess=1
