@@ -471,11 +471,11 @@ sub insertRegistration
         $statement = sprintf("DELETE from Registration where GUID=%s AND PRODUCTID ", $dbh->quote($regdata->{register}->{guid}));
         if(@delete > 1)
         {
-            $statement .= "IN (".join(",", @delete).")";
+            $statement .= "IN ('".join("','", @delete)."')";
         }
         else
         {
-            $statement .= "= ".$delete[0];
+            $statement .= "= ".$dbh->quote($delete[0]);
         }
         
         eval {
@@ -511,11 +511,11 @@ sub insertRegistration
 
         if(@update > 1)
         {
-            $statement .= "IN (".join(",", @update).")";
+            $statement .= "IN ('".join("','", @update)."')";
         }
         else
         {
-            $statement .= "= ".$update[0];
+            $statement .= "= ".$dbh->quote($update[0]);
         }
         
         eval {
@@ -768,7 +768,6 @@ sub findCatalogs
     # get catalog values (only for the once we DOMIRROR)
 
     $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE from Catalogs c, ProductCatalogs pc WHERE ";
-
     $statement .= "pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID ";
     $statement .= "AND (c.TARGET IS NULL ";
     if(defined $target && $target ne "")
@@ -779,11 +778,11 @@ sub findCatalogs
 
     if(@{$productids} > 1)
     {
-        $statement .= "pc.PRODUCTDATAID IN (".join(",", @{$productids}).") ";
+        $statement .= "pc.PRODUCTDATAID IN ('".join("','", @{$productids})."') ";
     }
     elsif(@{$productids} == 1)
     {
-        $statement .= "pc.PRODUCTDATAID = ".$productids->[0]." ";
+        $statement .= "pc.PRODUCTDATAID = ".$dbh->quote($productids->[0])." ";
     }
     else
     {
@@ -955,7 +954,7 @@ sub findColumnsForProducts
 
     foreach my $phash (@{$parray})
     {
-        my $statement = "SELECT $column, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
+        my $statement = "SELECT `$column`, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
         
         $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($phash->{name}));
         

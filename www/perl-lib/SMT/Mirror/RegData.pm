@@ -365,7 +365,7 @@ sub _updateDB
     }
 
     # get all datasets which are from NCC
-    my $stm = sprintf("SELECT %s FROM %s WHERE SRC='N'", join(',', @$key), $table);
+    my $stm = sprintf("SELECT `%s` FROM `%s` WHERE SRC='N'", join('`,`', @$key), $table);
     
     printLog($self->{LOG}, "debug", "STATEMENT: $stm") if($self->{DEBUG});
     
@@ -393,7 +393,7 @@ sub _updateDB
         my $j=0;
         foreach (@$key) 
         {
-            push @primkeys_where, "$_=".$dbh->quote($row->{$_});
+            push @primkeys_where, "`$_`=".$dbh->quote($row->{$_});
             $str .= "-" if($j > 0);
             $str .= $row->{$_};
             $j++;
@@ -401,8 +401,8 @@ sub _updateDB
         delete $allhash->{$str} if(exists $allhash->{$str});
 
         # does the key exists in the db?
-        my $st = sprintf("SELECT %s FROM %s WHERE %s", 
-                         join(',', @$key), $table, join(' AND ', @primkeys_where));
+        my $st = sprintf("SELECT `%s` FROM `%s` WHERE %s", 
+                         join('`,`', @$key), $table, join(' AND ', @primkeys_where));
         
         printLog($self->{LOG}, "debug", "STATEMENT: $st") if($self->{DEBUG});
                     
@@ -439,7 +439,7 @@ sub _updateDB
         # PRIMARY KEY exists in DB, do update
         if(@$all == 1)
         {
-            my $statement = "UPDATE $table SET ";
+            my $statement = "UPDATE `$table` SET ";
             my @pairs = ();
             foreach my $cn (keys %$row)
             {
@@ -447,11 +447,11 @@ sub _updateDB
 
                 if(!defined $row->{$cn} || lc($row->{$cn}) eq "null")
                 {
-                    push @pairs, "$cn = NULL";
+                    push @pairs, "`$cn` = NULL";
                 }
                 else
                 {
-                    push @pairs, "$cn = ".$dbh->quote($row->{$cn});
+                    push @pairs, "`$cn` = ".$dbh->quote($row->{$cn});
                 }
             }
             
@@ -478,7 +478,7 @@ sub _updateDB
         # PRIMARY KEY does not exists in DB, do insert
         elsif(@$all == 0)
         {
-            my $statement = "INSERT INTO $table (";
+            my $statement = "INSERT INTO `$table` (";
             my @k = ();
             my @v = ();
             foreach my $cn (keys %$row)
@@ -494,7 +494,7 @@ sub _updateDB
                 }
             }
 
-            $statement .= join(',', @k);
+            $statement .= "`".join('`,`', @k)."`";
             $statement .= ") VALUES (";
             $statement .= join(',', @v);
             $statement .= ")";
@@ -537,7 +537,7 @@ sub _updateDB
             push @primkeys_where, $key->[0]." = ".$dbh->quote($set);
         }
         
-        my $delstr = sprintf("DELETE from %s where %s", $table, join(' AND ', @primkeys_where));
+        my $delstr = sprintf("DELETE from `%s` where %s", $table, join(' AND ', @primkeys_where));
                     
         my $res = $dbh->do($delstr);
 
