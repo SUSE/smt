@@ -32,6 +32,11 @@ HTTPSProxy=
 # in the form username:password
 ProxyUser=
 
+#
+# This string is send in HTTP requests as UserAgent.
+# If it is empty, a default is used.
+#
+UserAgent=
 
 [REPORT]
 # comma separated list of eMail addresses where the status reports will be sent to

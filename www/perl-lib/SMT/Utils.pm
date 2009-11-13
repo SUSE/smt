@@ -3,6 +3,8 @@ package SMT::Utils;
 use strict;
 use warnings;
 
+use LWP;
+use LWP::UserAgent;
 use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
@@ -608,6 +610,11 @@ sub createUserAgent
 
     # set timeout to the same value as the iChain timeout
     $ua->timeout(130);
+
+    my $cfg = getSMTConfig;
+    my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', "LWP::UserAgent/$LWP::VERSION");
+    $userAgentString  = "LWP::UserAgent/$LWP::VERSION" if( $userAgentString eq "");
+    $ua->agent($userAgentString);
 
     return $ua;
 }
