@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Nov 16 10:46:02 CET 2009 - mc@suse.de
+
+- fix misleading output of smt-repos command (bnc#522033) 
+
+-------------------------------------------------------------------
 Thu Nov 12 10:22:35 CET 2009 - mc@suse.de
 
 - fix smt-mirror-sle9 (bnc#546132)
