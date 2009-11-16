@@ -124,6 +124,8 @@ my @idnumbers;
 my $sth = $dbh->prepare($sql);
 $sth->execute();
 
+my $output = "";
+
 my $t = new Text::ASCIITable;
 $t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"));
 
@@ -137,26 +139,29 @@ while ( my $v = $sth->fetchrow_hashref() )
   my $catType = $v->{CATALOGTYPE};
   my $catDesc = $v->{DESCRIPTION};
   my $catMA   = $v->{MIRRORABLE};
-  $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
-              $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")));
   
   if (defined($verbose))
   {
-      print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
-      print "          (" . $v->{DESCRIPTION} .")\n";
-      print "          " . $v->{EXTURL} ."\n";
-      print "          " . $v->{LOCALPATH} ."\n";
-      print "          CatalogID: " . $v->{CATALOGID} ."\n";
+      $output .= "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
+      $output .= "          (" . $v->{DESCRIPTION} .")\n";
+      $output .= "          " . $v->{EXTURL} ."\n";
+      $output .= "          " . $v->{LOCALPATH} ."\n";
+      $output .= "          CatalogID: " . $v->{CATALOGID} ."\n";
   }
-
+  else
+  {
+      $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
+                  $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")));
+  }
 }
 
-print $t->draw() if not defined($verbose);
+$output .= $t->draw() if not defined($verbose);
 
 if ( (not defined $disable) && (not defined $enable) )
 {
-  # not do any action, display was enough
-  exit 0;
+    print $output;
+    # not do any action, display was enough
+    exit 0;
 }
 
 if ( $count == 0 )
@@ -167,10 +172,19 @@ elsif ( $count == 1 )
 {
   # we are lucky, only one
   SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
+  if ($bool)
+  {
+      print __("Catalog enabled.\n");
+  }
+  else
+  {
+      print __("Catalog disabled.\n");
+  }
   exit 0;
 }
 else
 {
+  print $output;
   print __(sprintf("Select catalog number (or all) to change,  (1-". $count.",a) :") );
 
   my $answer = <STDIN>;
@@ -179,12 +193,28 @@ else
   if(lc($answer) eq __("a"))
   {
     SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+    if ($bool)
+    {
+        print __("Catalogs enabled.\n");
+    }
+    else 
+    {
+        print __("Catalogs disabled.\n");
+    }
     exit 0;
   }
   elsif ( $answer =~ /^[0-9]+$/ && int($answer) <= $count && int($answer) > 0 )
   {
     my $number = int($answer);
     SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
+    if ($bool)
+    {
+        print __("Catalogs enabled.\n");
+    }
+    else 
+    {
+        print __("Catalogs disabled.\n");
+    }
     exit 0;
   }
   else
