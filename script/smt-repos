@@ -170,11 +170,12 @@ my @idnumbers;
 my $sth = $dbh->prepare($sql);
 $sth->execute();
 
+my $output = "";
+
 my $t = new Text::ASCIITable;
 $t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"), __("Staging"));
 
-while ( my $v = $sth->fetchrow_hashref() )
-{
+while ( my $v = $sth->fetchrow_hashref() ) {
     $count++;
     my $catId = $v->{CATALOGID};
     push(@idnumbers, $catId);
@@ -184,30 +185,29 @@ while ( my $v = $sth->fetchrow_hashref() )
     my $catDesc = $v->{DESCRIPTION};
     my $catMA   = $v->{MIRRORABLE};
     my $catStaging = $v->{STAGING};
-    $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
-                $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")), (( $catStaging eq "Y" ) ? __("Yes") : __("No")));
   
-    if (defined($verbose))
-    {
+    if (defined($verbose)) {
         my $st = sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.ARCH, p.REL, pc.OPTIONAL from Products p, ProductCatalogs pc where pc.CATALOGID=%s and p.PRODUCTDATAID = pc.PRODUCTDATAID order by p.PRODUCT, p.VERSION, p.ARCH, p.REL",
                          $dbh->quote($catId));
         my $products = $dbh->selectall_arrayref($st,{Slice=>{}} );
       
-        print "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
-        print "          (" . $v->{DESCRIPTION} .")\n";
-        print "          " . $v->{EXTURL} ."\n";
-        print "          " . $v->{LOCALPATH} ."\n";
-        print "          Repository ID: " . $v->{CATALOGID} ."\n";
-        print "          Staging  : " . $catStaging ."\n";
-        foreach my $h (@{$products})
-        {
+        $output .= "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
+        $output .= "          (" . $v->{DESCRIPTION} .")\n";
+        $output .= "          " . $v->{EXTURL} ."\n";
+        $output .= "          " . $v->{LOCALPATH} ."\n";
+        $output .= "          Repository ID: " . $v->{CATALOGID} ."\n";
+        $output .= "          Staging  : " . $catStaging ."\n";
+        foreach my $h (@{$products}) {
             my $product = (defined $h->{PRODUCT}?$h->{PRODUCT}:"");
             my $version = (defined $h->{VERSION}?$h->{VERSION}:"");
             my $arch    = (defined $h->{ARCH}?$h->{ARCH}:"");
             my $rel     = (defined $h->{REL}?$h->{REL}:"");
                            
-            print "          Assigned to product: $product $version $arch $rel\n";
+            $output .= "          Assigned to product: $product $version $arch $rel\n";
         }
+    } else {
+        $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
+                    $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")), (( $catStaging eq "Y" ) ? __("Yes") : __("No")));
     }
 }
 
@@ -215,24 +215,25 @@ while ( my $v = $sth->fetchrow_hashref() )
 if (not defined $verbose) {
     # easy-to-parse output
     if (defined $batchMode && $batchMode == 1) {
-	$t->setOptions('hide_HeadLine', 1);
-	$t->setOptions('hide_HeadRow', 1);
-	print $t->draw(
-	    ['', '', '', ''],
-	    ['|', '|', '|'],
-	    ['', '', '', ''],
-	    ['|', '|', '|'],
-	    ['', '', '', '']
-	);
-    # common human-readable output
+        $t->setOptions('hide_HeadLine', 1);
+        $t->setOptions('hide_HeadRow', 1);
+        $output .= $t->draw(
+                            ['', '', '', ''],
+                            ['|', '|', '|'],
+                            ['', '', '', ''],
+                            ['|', '|', '|'],
+                            ['', '', '', '']
+                           );
+        # common human-readable output
     } else {
-	print $t->draw();
+        $output .= $t->draw();
     }
 }
 
 if ( ! defined $disable && ! defined $enable &&
      ! $disableStaging && ! $enableStaging)
 {
+    print $output;
     # not do any action, display was enough
     exit 0;
 }
@@ -289,6 +290,7 @@ elsif ( $count == 1 )
 }
 else
 {
+    print $output;
     print __(sprintf("Select repository number (or all) to change,  (1-". $count.",a) :") );
 
     my $answer = <STDIN>;
