@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Nov 18 15:06:33 CET 2009 - locilka@suse.cz
+
+- Fixed 'timestamps are off by one month' (bnc #537087).
+- 2.17.22
+
+-------------------------------------------------------------------
 Fri Jul 10 14:31:41 CEST 2009 - locilka@suse.cz
 
 - Checking for permissions for mirrored repositories has been moved

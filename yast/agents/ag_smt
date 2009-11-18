@@ -592,7 +592,8 @@ sub GetDateFromTimestamp ($) {
 
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime ($timestamp);
 
-    return ($year + 1900).'-'.sprintf('%02d', $mon).'-'.sprintf('%02d', $mday).' '.
+    # BNC #537087: Months are zero-based
+    return ($year + 1900).'-'.sprintf('%02d', $mon + 1).'-'.sprintf('%02d', $mday).' '.
 	sprintf('%02d', $hour).':'.sprintf('%02d', $min).':'.sprintf('%02d', $sec);
 }
 
