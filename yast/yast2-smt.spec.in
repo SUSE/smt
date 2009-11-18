@@ -7,6 +7,8 @@ Requires:	/usr/bin/curl
 Requires:	/usr/bin/grep
 Requires:	/bin/hostname
 Requires:	smt
+# BNC #527046: package contains GetInstArgs module
+Requires:	yast2-installation
 
 # This YaST tool configures SMT (cron, apache2)
 Recommends:	mysql
