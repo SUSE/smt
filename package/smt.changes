@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Nov 23 21:09:55 CET 2009 - jkupec@suse.cz
+
+- Fixed error when creating testing snapshot of code 10 update
+  repositories (those without updateinfo.xml) (bnc #556867)
+
+-------------------------------------------------------------------
 Mon Nov 16 10:46:02 CET 2009 - mc@suse.de
 
 - fix misleading output of smt-repos command (bnc#522033) 
