@@ -663,7 +663,7 @@ sub mirror()
     my $olduifname = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
 
     # with filtering (will generate new metadata later)
-    if (defined $self->{FILTER} && not $self->{FILTER}->empty() && -e $olduifname)
+    if (defined $self->{FILTER} && !$self->{FILTER}->empty() && -e $olduifname)
     {
         # new updateinfo.xml file path
         my $uifname = "$tmpdir/updateinfo.xml";
@@ -672,7 +672,7 @@ sub mirror()
         my $out = new IO::File();
         $out->open("> $uifname") or do {
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                "Cannot open $olduifname for reading.");
+                "Cannot open $uifname for reading.");
             return $self->{STATISTIC}->{ERROR}++;
         };
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
