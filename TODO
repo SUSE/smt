@@ -44,6 +44,8 @@ Nice-To-Have but not so important
   It might be interesting to offer a general hook concept to make it configurable what actions should follow 
   on a certain job status; this might as well be useful for custom job types.
 
+- smt-client reports "no updates" if there are no update repos => report "unknown" instead.
+
 
 DONE:
 =====
