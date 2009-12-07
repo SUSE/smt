@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Dec  7 18:35:28 CET 2009 - jkupec@suse.cz
+
+- When generating testing repository with patch filterning, avoid
+  overriding of generated repo signature and key with the original
+  ones from the full mirror (bnc #560823).
+
+-------------------------------------------------------------------
 Mon Nov 23 21:09:55 CET 2009 - jkupec@suse.cz
 
 - Fixed error when creating testing snapshot of code 10 update
