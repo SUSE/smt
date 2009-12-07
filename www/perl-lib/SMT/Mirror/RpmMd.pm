@@ -817,6 +817,17 @@ sub mirror()
         # re-sign the repo
         $self->signrepo(
             $self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass);
+        
+        # remove the signature and key file (we've got our own)
+        # from download queue to avoid overwriting (bnc #560823)
+        my @toremove = ('.repodata/repomd.xml.asc', '.repodata/repomd.xml.key');
+        foreach my $file (@toremove)
+        {
+            next if (not exists $self->{JOBS}->{$file});
+            delete $self->{JOBS}->{$file};
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                "Removing download job $file");
+        }
     }
 
     #
