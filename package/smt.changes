@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Dec  7 18:41:05 CET 2009 - jkupec@suse.cz
+
+- When generating testing repository with patch filterning, avoid
+  overriding of generated repo signature and key with the original
+  ones from the full mirror (bnc #560823).
+- version 1.1.17
+
+-------------------------------------------------------------------
 Mon Nov 23 20:17:45 CET 2009 - jkupec@suse.cz
 
 - Fixed error when creating testing snapshot of code 10 update
@@ -7,7 +15,6 @@ Mon Nov 23 20:17:45 CET 2009 - jkupec@suse.cz
 -------------------------------------------------------------------
 Mon Nov 16 10:45:06 CET 2009 - mc@suse.de
 
-- version 1.1.17
 - fix misleading output of smt-repos command (bnc#522033)
 
 -------------------------------------------------------------------
