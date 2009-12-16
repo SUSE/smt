@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Dec 16 13:40:09 CET 2009 - mc@suse.de
+
+- fix report generation (bnc#564788) 
+
+-------------------------------------------------------------------
 Mon Dec  7 18:41:05 CET 2009 - jkupec@suse.cz
 
 - When generating testing repository with patch filterning, avoid
