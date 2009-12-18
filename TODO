@@ -46,6 +46,18 @@ Nice-To-Have but not so important
 
 - smt-client reports "no updates" if there are no update repos => report "unknown" instead.
 
+- Right now update jobs that need a reboot are a little bit confusing as their status is "failed" after
+  successful execution. Adding a new job status "partial successful" that is between "failed" and "successful" 
+  solves this issue. 
+
+  -> Partial successful jobs could be delivered again and again until they are successful. (This idea needs to be discussed)
+  -> Jobs that depend on a parent that was partial successful should be deliverd. (This idea needs to be discussed as well)
+
+
+- Add "do-reboot-if-required" option to update job
+
+- Add support for SLE10 to smt-client.
+
 
 DONE:
 =====
