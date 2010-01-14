@@ -2,6 +2,7 @@
 Wed Nov 18 12:36:06 CET 2009 - locilka@suse.cz
 
 - Fixed RPM dependencies (bnc #527046).
+- 2.13.21
 
 -------------------------------------------------------------------
 Tue Feb  3 15:42:04 CET 2009 - locilka@suse.cz
