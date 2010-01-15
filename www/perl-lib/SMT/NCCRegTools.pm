@@ -772,7 +772,7 @@ sub _bulkop_handler
             }
             elsif(@productids == 1)
             {
-                $statement .= "PRODUCTID = ".self->{DBH}->quote($productids[0]);
+                $statement .= "PRODUCTID = ".$self->{DBH}->quote($productids[0]);
             }
             else
             {
