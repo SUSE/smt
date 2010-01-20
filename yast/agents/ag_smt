@@ -383,6 +383,7 @@ sub CreateSnapshot ($) {
 
     my %mirror_args = (
 	log => $log,
+	dbh => $dbh,
 	vblevel => $vblevel,
         mirrorsrc => $mirrorsrc
     );
