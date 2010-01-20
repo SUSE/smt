@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jan 20 09:42:21 CET 2010 - mc@suse.de
+
+- use the database for staging (bnc#572170) 
+
+-------------------------------------------------------------------
 Wed Nov 18 15:06:33 CET 2009 - locilka@suse.cz
 
 - Fixed 'timestamps are off by one month' (bnc #537087).
