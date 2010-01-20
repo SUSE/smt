@@ -795,6 +795,7 @@ elsif ($command eq 'createrepo')
 
     my $mirror = SMT::Mirror::RpmMd->new(
         log        => $log,
+        dbh        => $dbh,
         vblevel    => $vblevel,
         filter     => $gentest ? $filter : undef,
         nohardlink => $nohardlink,

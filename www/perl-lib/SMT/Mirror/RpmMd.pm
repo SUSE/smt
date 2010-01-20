@@ -890,12 +890,13 @@ sub mirror()
             else
             {
                 # Now store the repodata jobs into the database. We know, that they are now at the 
-                # correct/final place
+                # correct/final place and all modification happens
                 foreach my $key (keys %{$self->{REPODATAJOBS}})
                 {
                     my $rjob = $self->{REPODATAJOBS}->{$key};
                     # change .repodata => repodata
                     $rjob->localFileLocation( $rjob->remoteFileLocation() );
+                    $rjob->checksum( $rjob->realchecksum() );
                     $rjob->updateDB();
                 }
             }
