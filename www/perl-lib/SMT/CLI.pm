@@ -1283,7 +1283,7 @@ sub isZyppMirrorable
     my $url = URI->new( $opt{catalogurl} );
     if($url->host eq "nu.novell.com")
     {
-        my $uuri = URL->new($opt{NUUri});
+        my $uuri = URI->new($opt{NUUri});
         my $userinfo = $uuri->userinfo;
         $url->userinfo($userinfo);
     }
