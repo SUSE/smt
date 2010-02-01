@@ -3,22 +3,16 @@ TODO (SMT11):
 
 - use new installation.xml and test it according to bnc #377154
 
-- STAGING:
-  If staging is enabled for a catalogs, find out all products for which this 
-  catalog is used. Find all catalogs for these products and create symlinks 
-  in full/ and testing/ for all catalogs where staging is not enabled.
-  This is required to successfully register clients against the testing 
-  or full namespace if only one of X catalogs are enabled for staging.
-
-  If staging is enabled for an already existing (mirrored) catalog, 
-  hardlink or copy the current content to full and testing.
-
-
 - enhance setup-custom-catalogs to allow configuration of repositories
   of type NU .
 
 - fix smt-db: add "cpw" to help() and check chown of smt.conf (may make trouble with
               smt user). 
+
+- smt-mirror --cleanup 
+  clean also staged repositories testing and ""
+
+- smt-mirror --repository parameter as array to allow multiple selection
  
 
 Nice-To-Have but not so important
