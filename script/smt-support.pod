@@ -80,6 +80,10 @@ The contact phone number
 
 Contact email address
 
+=item --keep-after-upload
+
+Preserve archive(s) on SMT server after upload even if uploaded successfully
+
 =back
 
 =head1 AUTHORS and CONTRIBUTORS

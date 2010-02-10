@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Feb 10 15:58:22 CET 2010 - jsrain@suse.cz
+
+- smt-support deletes uploaded tarballs after successful upload
+  by default now (bnc#574297)
+
+-------------------------------------------------------------------
 Wed Jan 20 09:48:26 CET 2010 - mc@suse.de
 
 - use the database for staging (bnc#572170) 
