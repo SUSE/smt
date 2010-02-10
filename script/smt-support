@@ -21,6 +21,7 @@ NEW_ARCH_FILE=""
 ACTION=1
 REPACKAGE=0
 RCODE=0
+KEEP_AFTER_UPLOAD=0;
 unset SRNUM
 
 ##############################################################################
@@ -75,6 +76,8 @@ show_help() {
      The contact phone number
   -e, --email <Email>
      Contact email address
+  --keep-after-upload
+     Preserve archive(s) on SMT server after upload even if uploaded successfully
 
   Example: $CURRENT_SCRIPT --list
   Example: $CURRENT_SCRIPT --upload nts_fs01_090617_1300.tbz --srnum 21212121212 --name "Joe Customer" --email "joe@company.com" --company "Company Foo"
@@ -312,6 +315,11 @@ uploadArchive() {
 		fi
 		if [ $COMPLETED -gt 0 ]; then
 			showStatus "$ARCH_FILE - Success"
+			if ! (( KEEP_AFTER_UPLOAD )) ; then
+			    logEntry Removing $ARCH_FILE
+			    test -s ${UPLOAD_FILEPATH}.md5 && logFileCmd "rm \"${UPLOAD_FILEPATH}.md5\""
+			    logFileCmd "rm \"${UPLOAD_FILEPATH}\""
+			fi
 		else
 			showStatus "$ARCH_FILE - FAILED secureUpload"
 		fi
@@ -349,6 +357,11 @@ uploadIncoming() {
 				if [ $? -eq 0 ]; then
 					showStatus "$ARCH_FILE - Success"
 					((COMPLETED++))
+					if ! (( KEEP_AFTER_UPLOAD )) ; then
+					    logEntry Removing $ARCH_FILE
+					    test -s ${UPLOAD_FILEPATH}.md5 && logFileCmd "rm \"${UPLOAD_FILEPATH}.md5\""
+					    logFileCmd "rm \"${UPLOAD_FILEPATH}\""
+					fi
 				else
 					showStatus "$ARCH_FILE - FAILED secureUpload"
 				fi
@@ -384,6 +397,7 @@ while true ; do
 	-R|--empty) ACTION=3 ;;
 	-u|--upload) ACTION=4; OPTARG=ARCH_FILE ;;
 	-U|--uploadall) ACTION=5 ;;
+	--keep-after-upload) KEEP_AFTER_UPLOAD=1;;
 	*) title; show_help "ERROR: Invalid Option $1" ;;
 	esac
 	if [ -n "$OPTARG" ] ; then
