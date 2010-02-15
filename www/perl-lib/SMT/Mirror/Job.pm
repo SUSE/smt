@@ -50,11 +50,11 @@ Arguments are an anonymous hash array of parameters:
 
 =item vblevel <level>
 
-Set the verbose level. 
+Set the verbose level.
 
 =item UserAgent
 
-LWP::UserAgent object to use for this job. Usefull for keep_alive. 
+LWP::UserAgent object to use for this job. Usefull for keep_alive.
 
 =item dbh
 
@@ -76,7 +76,7 @@ sub new
 {
     my $pkgname = shift;
     my %opt   = @_;
-    
+
     my $self  = {};
     $self->{URI}        = undef;
 
@@ -96,7 +96,7 @@ sub new
 
     $self->{CHECKSUM}   = undef;
     $self->{NO_CHECKSUM_CHECK}   = 0;
-    
+
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
 
@@ -108,9 +108,9 @@ sub new
 
     # outdated() will set this to the last modification date of the remote file
     $self->{modifiedAt} = undef;
-    
+
     $self->{DOWNLOAD_SIZE} = 0;
-    
+
     #
     # 0 unknown
     # 1 error
@@ -120,7 +120,7 @@ sub new
     # 5 copy
     #
     $self->{DOWNLOAD_TYPE} = 0;
-    
+
     $self->{NOHARDLINK} = 0;
 
     $self->{DRYRUN} = 0;
@@ -168,7 +168,7 @@ sub uri
 {
     my $self = shift;
     if (@_) { $self->{URI} = shift }
-    
+
     return $self->{URI};
 }
 
@@ -188,7 +188,7 @@ sub localBasePath
 
 =item localRepoPath([path])
 
-Set and get the repository path on the local system. 
+Set and get the repository path on the local system.
 E.g. $RCE/SLES11-Updates/sle-11-i586/
 
 =cut
@@ -227,7 +227,7 @@ sub remoteFileLocation
 {
     my $self = shift;
     if (@_) { $self->{REMOTEFILELOCATION} = shift }
-    
+
     # if REMOTEFILELOCATION is not available return LOCALFILELOCATION
     if(defined $self->{REMOTEFILELOCATION}  &&
        $self->{REMOTEFILELOCATION} ne "" )
@@ -278,7 +278,7 @@ sub dbh
 {
     my $self = shift;
     if (@_) { $self->{DBH} = shift }
-    
+
     return $self->{DBH};
 }
 
@@ -306,9 +306,9 @@ The path is constructed out of fullRemoteURI().
 sub fullUri2local
 {
     my $self = shift;
-    
+
     return undef if ($self->uri() !~ /^file\:\/\//);
-    
+
     my $uri = $self->fullRemoteURI();
     $uri =~ s/^file\:\/\///;
     return $uri;
@@ -337,9 +337,9 @@ Returns the current state.
 sub noChecksumCheck
 {
     my $self = shift;
-    if(@_) 
+    if(@_)
     {
-        $self->{NO_CHECKSUM_CHECK} = shift 
+        $self->{NO_CHECKSUM_CHECK} = shift
     }
     return $self->{NO_CHECKSUM_CHECK};
 }
@@ -421,7 +421,7 @@ expected checksum is available.
 sub verify
 {
     my $self = shift;
-    
+
     return 1 if($self->{NO_CHECKSUM_CHECK} || !defined $self->checksum());
 
     return 0 if ( $self->checksum() ne  $self->realchecksum() );
@@ -437,7 +437,7 @@ Calculate the real checksum of the file and return the value.
 sub realchecksum()
 {
     my $self = shift;
-    
+
     my $sha1;
     my $digest;
     my $filename = $self->fullLocalPath();
@@ -445,7 +445,7 @@ sub realchecksum()
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Cannot open '$filename': $!") ;
         return "";
     };
-    
+
     $sha1 = Digest::SHA1->new;
     $sha1->addfile(*FILE);
     $digest = $sha1->hexdigest();
@@ -469,15 +469,15 @@ sub updateDB
 
     return if( ! defined $self->{DBH} ); # don't try to update when running without a DB connection (e.g. --dbreplfile)
 
-    eval 
+    eval
     {
         if( defined $self->checksum() && $self->checksum() ne "")
         {
-            my $statement = sprintf("SELECT checksum from RepositoryContentData where localpath = %s", 
+            my $statement = sprintf("SELECT checksum from RepositoryContentData where localpath = %s",
                                     $self->{DBH}->quote( $self->fullLocalPath() ));
             my $existChecksum = $self->{DBH}->selectcol_arrayref($statement);
-            
-            
+
+
             if( !exists $existChecksum->[0] || !defined $existChecksum->[0] )
             {
                 #insert
@@ -509,9 +509,9 @@ sub updateDB
 =item mirror()
 
 Mirror the file.
-Returns 
- 0 on success, 
- 1 on error and 
+Returns
+ 0 on success,
+ 1 on error and
  2 if the file is up to date
 
 =cut
@@ -527,7 +527,7 @@ sub mirror
         $self->{DOWNLOAD_TYPE} = 2;
         return 2;
     }
-    
+
     # make sure the container destination exists
     &File::Path::mkpath( dirname($self->fullLocalPath()) );
 
@@ -547,10 +547,10 @@ sub mirror
     {
         return 0;
     }
-    
+
 
     my $tries  = 1;
-    
+
     my $errorcode = 1;
     my $errormsg  = "";
     do
@@ -581,7 +581,7 @@ sub mirror
             else
             {
                 my $newuri = $response->header("location");
-                
+
                 #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
                 $remote = URI->new($newuri);
             }
@@ -595,7 +595,7 @@ sub mirror
                     # make sure the file has the same last modification time
                     utime $lm, $lm, $self->fullLocalPath();
                 }
-                
+
                 if( !$self->{DRYRUN} )
                 {
                     printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("D %s", $self->fullLocalPath()));
@@ -604,9 +604,9 @@ sub mirror
                 {
                     printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, sprintf("N %s", $self->fullLocalPath()));
                 }
-                
+
                 $self->updateDB();
-                
+
                 $errorcode = 0;
                 $errormsg = "";
                 $tries = 4;
@@ -614,8 +614,8 @@ sub mirror
             else
             {
                 $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->fullLocalPath() );
-                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->vblevel() == LOG_DEBUG);
-                
+                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->vblevel() & LOG_DEBUG);
+
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)", 0, 1);
                 if($tries > 0)
                 {
@@ -638,14 +638,14 @@ sub mirror
         $self->{DOWNLOAD_TYPE} = 1;
         return $errorcode;
     }
-    
-    $self->{DOWNLOAD_TYPE} = 3;    
+
+    $self->{DOWNLOAD_TYPE} = 3;
     return 0;
 }
 
 =item modified([nolog])
 
-Return the remote modification timestamp or undef on error. 
+Return the remote modification timestamp or undef on error.
 
 If I<nolog> is 1, logging is disabled in this function.
 
@@ -656,10 +656,13 @@ sub modified
 {
     my $self = shift;
     my $doNotLog = shift || 0;
-    
+
     my $redirects = 0;
     my $response;
     my $remote = $self->fullRemoteURI();
+    my $errorcode = 1;
+    my $errormsg = "";
+    my $tries = 1;
     do
     {
         my $saveuri = SMT::Utils::getSaveUri($self->fullRemoteURI());
@@ -669,8 +672,10 @@ sub modified
         };
         if($@)
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "head request failed: $@") if(!$doNotLog);
-            return undef;
+            $errormsg = sprintf(__("head request failed '%s'"), $saveuri);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)", 0, 1);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@, 0, 1);
+            $tries++;
         }
 
         if ( $response->is_redirect )
@@ -678,27 +683,35 @@ sub modified
             $redirects++;
             if($redirects > $self->{MAX_REDIRECTS})
             {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("E '%s': Too many redirects", $saveuri) ));
-                return undef;
+                $tries = 4;
+                $errormsg = sprintf(__("E '%s': Too many redirects", $saveuri) );
             }
-            
+
             my $newuri = $response->header("location");
-            
+
             #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
             $remote = URI->new($newuri);
         }
         elsif( $response->is_success )
         {
-            return Date::Parse::str2time($response->header( "Last-Modified" ));
+            $errorcode = 0;
+            $errormsg = "";
+            $tries = 4;
         }
-        else 
+        else
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("E '%s': %s"), 
-                                                    $saveuri, $response->status_line))  if(!$doNotLog);
-            return undef;
+            $errormsg = sprintf(__("E '%s': %s"), $saveuri, $response->status_line);
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)" , 0, 1);
+            $tries++;
         }
-        
-    } while($response->is_redirect);
+
+    } while($tries < 4);
+
+    if($errorcode != 0)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg, 1, 0) if(!$doNotLog);
+        return undef;
+    }
     return Date::Parse::str2time($response->header( "Last-Modified" ));
 }
 
@@ -734,7 +747,7 @@ system and hardlink or copy the file (depends on the option I<nohardlink>
 in new()). If the file is not found in DB, and the source URI is 'file://',
 hardlink or copy it, too.
 
-If a file was found and hardlink or copy was successfull this function 
+If a file was found and hardlink or copy was successfull this function
 return 1 (true), otherwise 0 (false). Returns 0 also if checksum is not known.
 The return value of 0 is to advise the caller to download the file (it is
 not available on the local filesystem).
@@ -758,13 +771,13 @@ sub copyFromLocalIfAvailable
 
     if (defined $self->{DBH})
     {
-        my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and localpath not like %s", 
-                                $self->{DBH}->quote($name), 
-                                $self->{DBH}->quote($checksum), 
+        my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and localpath not like %s",
+                                $self->{DBH}->quote($name),
+                                $self->{DBH}->quote($checksum),
                                 $self->{DBH}->quote($self->fullLocalRepoPath()."%") );
-        
+
         my $existingpath = $self->{DBH}->selectcol_arrayref($statement);
-        
+
         if(exists $existingpath->[0] && defined $existingpath->[0] && $existingpath->[0] ne "" )
         {
             $otherpath = $existingpath->[0];
@@ -794,14 +807,14 @@ sub copyFromLocalIfAvailable
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "copy($otherpath, ".$self->fullLocalPath().") failed: $!") ;
             return 0;
         };
-    
+
         if(defined $self->{modifiedAt})
         {
             # make sure the file has the same last modification time
             utime $self->{modifiedAt}, $self->{modifiedAt}, $self->fullLocalPath();
         }
     }
-    
+
     if($self->verify())
     {
         if($success)
