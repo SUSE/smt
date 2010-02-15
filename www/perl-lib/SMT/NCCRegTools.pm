@@ -1043,7 +1043,7 @@ sub _sendData
 
     if($response->is_success && -e $destfile)
     {
-        if($self->vblevel() == LOG_DEBUG)
+        if($self->vblevel() & LOG_DEBUG)
         {
             open(CONT, "< $destfile") and do
             {

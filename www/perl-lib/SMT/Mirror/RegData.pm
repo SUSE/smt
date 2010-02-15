@@ -347,7 +347,7 @@ sub _requestData
     
     if( $response->is_success && -e $destdir."/".$self->{ELEMENT}.".xml")
     {
-        if($self->vblevel() == LOG_DEBUG)
+        if($self->vblevel() & LOG_DEBUG)
         {
             open(CONT, "< $destdir/".$self->{ELEMENT}.".xml") and do
             {

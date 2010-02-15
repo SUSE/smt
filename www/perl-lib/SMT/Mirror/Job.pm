@@ -614,7 +614,7 @@ sub mirror
             else
             {
                 $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->fullLocalPath() );
-                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->vblevel() == LOG_DEBUG);
+                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->vblevel() & LOG_DEBUG);
                 
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)", 0, 1);
                 if($tries > 0)
