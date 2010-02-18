@@ -873,7 +873,7 @@ sub setCatalogDoMirror
         
         $sql .= " where 1";
         
-        $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+        $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y")) if($opt{enabled});
         
         if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
         {
