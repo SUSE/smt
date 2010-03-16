@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Mar 16 15:59:40 CET 2010 - mc@suse.de
+
+- add staging support for Yum repositories
+  (bnc#587606) 
+
+-------------------------------------------------------------------
 Wed Feb 10 15:58:22 CET 2010 - jsrain@suse.cz
 
 - smt-support deletes uploaded tarballs after successful upload

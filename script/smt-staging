@@ -18,6 +18,7 @@ use SMT::Filter;
 use SMT::Mirror::Utils;
 use SMT::Mirror::RpmMd;
 use SMT::Parser::RpmMdPatches;
+use SMT::Mirror::Yum;
 use SMT::Parser::FilteredRepoChecker;
 
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
@@ -793,13 +794,29 @@ elsif ($command eq 'createrepo')
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
     $filter->load($dbh, $repoid);
 
-    my $mirror = SMT::Mirror::RpmMd->new(
-        log        => $log,
-        dbh        => $dbh,
-        vblevel    => $vblevel,
-        filter     => $gentest ? $filter : undef,
-        nohardlink => $nohardlink,
-        mirrorsrc  => $mirrorsrc);
+    my $mirror = undef;
+    if ( exists $repo->{CATALOGTYPE} && defined $repo->{CATALOGTYPE} &&
+         lc($repo->{CATALOGTYPE}) eq "yum")
+    {
+        $mirror = SMT::Mirror::Yum->new(
+            log        => $log,
+            dbh        => $dbh,
+            vblevel    => $vblevel,
+            filter     => $gentest ? $filter : undef,
+            nohardlink => $nohardlink,
+            mirrorsrc  => $mirrorsrc);
+    }
+    else
+    {
+        $mirror = SMT::Mirror::RpmMd->new(
+            log        => $log,
+            dbh        => $dbh,
+            vblevel    => $vblevel,
+            filter     => $gentest ? $filter : undef,
+            nohardlink => $nohardlink,
+            mirrorsrc  => $mirrorsrc);
+    }
+
 
     $mirror->uri($sourcerepourl);
     $mirror->localBasePath($basepath);
