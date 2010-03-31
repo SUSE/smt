@@ -59,10 +59,6 @@ if(@guids == 0)
     exit 1;
 }
 
-my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
-$useragent->protocols_allowed( [ 'https' ] );
-$useragent->default_headers->push_header('Content-Type' => 'text/xml');
-
 if(!SMT::Utils::openLock("smt-delete-registration"))
 {
     print __("Delete registration process is still running.\n");
@@ -72,6 +68,10 @@ if(!SMT::Utils::openLock("smt-delete-registration"))
 # open the logfile
 
 my $LOG = SMT::Utils::openLog($logfile);
+
+my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel);
+$useragent->protocols_allowed( [ 'https' ] );
+
 
 my $dbh = undef;
 

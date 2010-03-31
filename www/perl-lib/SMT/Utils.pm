@@ -3,9 +3,6 @@ package SMT::Utils;
 use strict;
 use warnings;
 
-use Crypt::SSLeay;
-use LWP;
-use LWP::UserAgent;
 use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
@@ -25,7 +22,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 use English;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(__ __N printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2);
+our @EXPORT = qw(__ __N printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2 LOG_DEBUG3);
 
 use constant LOG_ERROR  => 0x0001;
 use constant LOG_WARN   => 0x0002;
@@ -33,6 +30,7 @@ use constant LOG_INFO1  => 0x0004;
 use constant LOG_INFO2  => 0x0008;
 use constant LOG_DEBUG  => 0x0010;
 use constant LOG_DEBUG2 => 0x0020;
+use constant LOG_DEBUG3 => 0x0040;
 
 use constant TOK2STRING => {
                             1  => "error",
@@ -41,10 +39,11 @@ use constant TOK2STRING => {
                             8  => "info",
                             12 => "info", # info1 + info2
                             16 => "debug",
-                            32 => "debug"
+                            32 => "debug",
+                            64 => "debug"
                            };
 
-                            
+
 
 =head1 NAME
 
@@ -66,7 +65,7 @@ Utility library.
 
 Read SMT config file and return a Config::IniFiles object.
 This function will "die" on error
-If I<path> to the configfile is omitted, the default 
+If I<path> to the configfile is omitted, the default
 I</etc/smt.conf> is used.
 
 =cut
@@ -77,7 +76,7 @@ I</etc/smt.conf> is used.
 sub getSMTConfig
 {
     my $filename = shift || "/etc/smt.conf";
-    
+
     my $cfg = new Config::IniFiles( -file => $filename );
     if(!defined $cfg)
     {
@@ -99,7 +98,7 @@ If cfg is omitted, I<getSMTConfig> is called.
 sub db_connect
 {
     my $cfg = shift || getSMTConfig();
-    
+
     my $config = $cfg->val('DB', 'config');
     my $user   = $cfg->val('DB', 'user');
     my $pass   = $cfg->val('DB', 'pass');
@@ -155,10 +154,10 @@ sub openLock
 {
     my $progname = shift;
     my $pid = $$;
-    
+
     my $dir  = "/var/run/smt";
     my $path = "$dir/$progname.pid";
-    
+
     return 0 if( !-d $dir || !-w $dir );
 
     if( -e $path )
@@ -166,14 +165,14 @@ sub openLock
         # check if the process is still running
 
         my $oldpid = "";
-        
+
         open(LOCK, "< $path") and do {
             $oldpid = <LOCK>;
             close LOCK;
         };
-        
+
         chomp($oldpid);
-        
+
         if( ! -e "/proc/$oldpid/cmdline")
         {
             # pid does not exists; remove lock
@@ -186,7 +185,7 @@ sub openLock
                 $cmdline = <CMDLINE>;
                 close CMDLINE;
             };
-            
+
             if($cmdline !~ /$progname/)
             {
                 # this pid is a different process; remove the lock
@@ -199,7 +198,7 @@ sub openLock
             }
         }
     }
-    
+
     sysopen(LOCK, $path, O_WRONLY | O_EXCL | O_CREAT, 0640) or return 0;
     print LOCK "$pid";
     close LOCK;
@@ -217,33 +216,33 @@ sub unLock
 {
     my $progname = shift;
     my $pid = $$;
-    
+
     my $path = "/var/run/smt/$progname.pid";
-    
+
     if(! -e $path )
     {
         return 1;
     }
-    
+
     open(LOCK, "< $path") or return 0;
     my $dp = <LOCK>;
     close LOCK;
-    
+
     if($dp ne "$pid")
     {
         return 0;
     }
-    
+
     my $cnt = unlink($path);
     return 1 if($cnt == 1);
-    
+
     return 0;
 }
 
 =item unLockAndExit($progname, $exitcode, $log, $loglevel)
 
 Try to remove the lockfile, log to $log on failure.
-Exit program with $exitCode (regardless of success or 
+Exit program with $exitCode (regardless of success or
 failure of the unlock)
 
 =cut
@@ -273,12 +272,12 @@ Return an array with ($NCCurl, $NUUser, $NUPassword)
 sub getLocalRegInfos
 {
     my $uri    = "";
-    
+
     my $cfg = getSMTConfig;
 
     my $user   = $cfg->val('NU', 'NUUser');
     my $pass   = $cfg->val('NU', 'NUPass');
-    if(!defined $user || $user eq "" || 
+    if(!defined $user || $user eq "" ||
        !defined $pass || $pass eq "")
     {
         # FIXME: is die correct here?
@@ -298,13 +297,13 @@ sub getLocalRegInfos
             }
         }
         close FH;
-        
+
         if(!defined $uri || $uri eq "")
         {
             die __("Cannot read URL from /etc/suseRegister.conf");
         }
     }
-    return ($uri, $user, $pass);  
+    return ($uri, $user, $pass);
 }
 
 =item getSMTGuid()
@@ -328,7 +327,7 @@ sub getSMTGuid
     {
         die "Credential file does not exist. You need to register the SMT server first.";
     }
-    
+
     #
     # read credentials from NCCcredentials file
     #
@@ -343,7 +342,7 @@ sub getSMTGuid
 	    last;
         }
     }
-    close CRED;   
+    close CRED;
     return $guid;
 }
 
@@ -359,7 +358,7 @@ Returns the timestamp in database format "YYY-MM-DD hh:mm:ss"
 sub getDBTimestamp
 {
     my $time = shift || time;
-    
+
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($time);
     $year += 1900;
     $mon +=1;
@@ -380,19 +379,19 @@ sub timeFormat
     $time = 1 if($time < 1);
 
     my $sec = $time % 60;
-    
+
     $time = int($time / 60);
-    
+
     my $min = $time % 60;
-    
+
     $time = int($time / 60);
-    
+
     my $hour = $time % 24;
-    
+
     $time = int($time /24);
-    
+
     my $str = "";
-    
+
     $str .= "$time ".__("Day(s)")." " if ($time > 0);
 
     $str .= sprintf("%02d:%02d:%02d", $hour, $min, $sec);
@@ -413,15 +412,15 @@ sub byteFormat
 {
     my $size = shift;
     my $div = 1024;
-    
+
     return "$size Bytes" if($size < $div);
-    
+
     $size = $size / $div;
     return sprintf("%.2f KB", $size) if($size < $div);
 
     $size = $size / $div;
     return sprintf("%.2f MB", $size) if($size < $div);
-    
+
     $size = $size / $div;
     return sprintf("%.2f GB", $size) if($size < $div);
 
@@ -439,7 +438,7 @@ Returns a log handle.
 sub openLog
 {
     my $logfile = shift || "/dev/null";
-    
+
     my $LOG;
     sysopen($LOG, "$logfile", O_CREAT|O_APPEND|O_WRONLY, 0600) or die "Cannot open logfile '$logfile': $!";
     if($logfile ne "/dev/null")
@@ -495,7 +494,7 @@ sub setLogBehavior ($) {
 =item printlog($loghandle, $vblevel, $category, $message [, $doprint [, $dolog]])
 
 Print a log message. If $doprint is true the message is printed on stderr or stdout.
-If $dolog is true the message is printed into the given $loghandle. 
+If $dolog is true the message is printed into the given $loghandle.
 
 $category describe the category of this message. $vblevel is the verbose level the user
 choose to output. The following constants exists:
@@ -514,7 +513,7 @@ Warning message ( 2 )
 
 Informational message 1. ( 4 )
 
-=item LOG_INFO2  ( 0x0008 ) 
+=item LOG_INFO2  ( 0x0008 )
 
 Informational message 2. ( 8 )
 
@@ -590,7 +589,7 @@ sub sendMailToAdmins
     my $attachments = shift;
     if (! defined $subject)  { return; }
     if (! defined $message)  { return; }
-    
+
     my $cfg = getSMTConfig;
 
     my $getReportEmail = $cfg->val('REPORT', 'reportEmail');
@@ -645,7 +644,7 @@ sub sendMailToAdmins
                 $relay{'password'} = '';
             }
         }
-        else 
+        else
         {
             # if no authentication is needed - set user to undef
             $relay{'user'} = undef;
@@ -750,12 +749,12 @@ sub getProxySettings
     my $httpsProxy = $cfg->val('LOCAL', 'HTTPSProxy');
     my $proxyUser  = $cfg->val('LOCAL', 'ProxyUser');
     my $noProxy    = $cfg->val('LOCAL', 'NoProxy');
-    
+
     $httpProxy  = undef if(defined $httpProxy  && $httpProxy =~ /^\s*$/);
     $httpsProxy = undef if(defined $httpsProxy && $httpsProxy =~ /^\s*$/);
     $proxyUser  = undef if(defined $proxyUser  && $proxyUser =~ /^\s*$/);
     $noProxy    = undef if(defined $noProxy    && $noProxy =~ /^\s*$/);
-    
+
     if(! defined $httpProxy)
     {
         if(exists $ENV{http_proxy} && defined $ENV{http_proxy} && $ENV{http_proxy} =~ /^http/)
@@ -763,7 +762,7 @@ sub getProxySettings
             $httpProxy = $ENV{http_proxy};
         }
     }
-    
+
     if(! defined $httpsProxy)
     {
         if(exists $ENV{https_proxy} && defined $ENV{https_proxy} && $ENV{https_proxy} =~ /^http/)
@@ -823,7 +822,7 @@ sub getProxySettings
                 elsif($_ =~ /^\s*--proxy-user\s+"(.+)"\s*$/ && defined $1 && $1 ne "")
                 {
                     $proxyUser = $1;
-	        }
+                }
             }
             close RC;
         }
@@ -834,7 +833,7 @@ sub getProxySettings
         {
             $proxyUser = $1;
         }
-        else 
+        else
         {
             $proxyUser = undef;
         }
@@ -846,106 +845,17 @@ sub getProxySettings
 
 =item createUserAgent([%options])
 
-Return a LWP::UserAgent object using some defaults. %options are passed to
-the UserAgent constructor. 
+Return a UserAgent object using some defaults. %options are passed to
+the UserAgent constructor.
 
 =cut
 sub createUserAgent
 {
     my %opts = @_;
-    
-    my $user = undef;
-    my $pass = undef;
 
-    my ($httpProxy, $httpsProxy, $noProxy, $proxyUser) = getProxySettings();
-    
-    if(defined $proxyUser)
-    {
-        ($user, $pass) = split(":", $proxyUser, 2);
-    }
-    
-    if(defined $httpsProxy)
-    {
-        # required for Crypt::SSLeay HTTPS Proxy support
-        $ENV{HTTPS_PROXY} = $httpsProxy;
-        
-        if(defined $user && defined $pass)
-        {
-            $ENV{HTTPS_PROXY_USERNAME} = $user;
-            $ENV{HTTPS_PROXY_PASSWORD} = $pass;
-        }
-        elsif(exists $ENV{HTTPS_PROXY_USERNAME} && exists $ENV{HTTPS_PROXY_PASSWORD})
-        {
-            delete $ENV{HTTPS_PROXY_USERNAME};
-            delete $ENV{HTTPS_PROXY_PASSWORD};
-        }
-    }
+    require SMT::Curl;
 
-    $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
-    
-    # uncomment, if you want SSL debuging
-    #$ENV{HTTPS_DEBUG} = 1;
-
-    {
-        package RequestAgent;
-        @RequestAgent::ISA = qw(LWP::UserAgent);
-        
-        sub new
-        {
-            my($class, $puser, $ppass, %cnf) = @_;
-            
-            my $self = $class->SUPER::new(%cnf);
-            
-            bless {
-                   puser => $puser,
-                   ppass => $ppass
-                  }, $class;
-        }
-
-        sub get_basic_credentials
-        {
-            my($self, $realm, $uri, $proxy) = @_;
-            
-            if($proxy)
-            {
-                if(defined $self->{puser} && defined $self->{ppass})
-                {
-                    return ($self->{puser}, $self->{ppass});
-                }
-            }
-            return (undef, undef);
-        }
-    }
-
-    my $ua = RequestAgent->new($user, $pass, %opts);
-
-    # mirroring ATI/NVidia repos requires HTTP; so we do not forbid it here
-    #$ua->protocols_allowed( [ 'https' ] );
-    #$ua->default_headers->push_header('Content-Type' => 'text/xml');
-
-    
-    if( defined $noProxy )
-    {
-        $ua->no_proxy(split(/\s*,\s*/, $noProxy));
-        $ENV{'no_proxy'} = $noProxy;
-    }
-    else
-    {
-        # required to workaround a bug in LWP::UserAgent
-        $ua->no_proxy();
-        delete $ENV{'no_proxy'} if exists $ENV{'no_proxy'}; 
-        delete $ENV{'NO_PROXY'} if exists $ENV{'NO_PROXY'}; 
-    }
-    
-    if(defined $httpProxy)
-    {
-        $ua->proxy("http", $httpProxy);
-    }
-    
-    $ua->max_redirect(2);
-
-    # set timeout to the same value as the iChain timeout
-    $ua->timeout(130);
+    my $ua = SMT::Curl->new(%opts);
 
     my $cfg = getSMTConfig;
     my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', "LWP::UserAgent/$LWP::VERSION");
@@ -971,7 +881,7 @@ sub dropPrivileges
 
     # if we do not run as root, we do not need to drop privileges
     return 1 if( $euid != 0 );
-    
+
     my $user = 'smt';
     eval
     {
@@ -986,7 +896,7 @@ sub dropPrivileges
     # if the customer want to run smt commands under root permissions
     # we let him do this
     return 1 if("$user" eq "root");
-    
+
     my $pw = getpwnam($user) || return 0;
 
     $GID  = $pw->gid(); # $GID only accepts a single number according to perlvar
@@ -1005,7 +915,7 @@ sub dropPrivileges
     {
         $ENV{'PWD'} = $pw->dir();
     }
-    
+
     return 1;
 }
 
@@ -1019,7 +929,7 @@ sub getSaveUri
 {
     my $uri = shift;
     my $saveuri = URI->new($uri);
-    if ( $saveuri->scheme ne "file" ) 
+    if ( $saveuri->scheme ne "file" )
     {
         $saveuri->userinfo(undef);
     }
@@ -1058,7 +968,7 @@ Optional input to pass on to the command.
 sub executeCommand
 {
     my ($opt, $command, @arguments) = @_;
-    
+
     my $log = $opt->{log};
     my $vblevel = LOG_ERROR;
     $vblevel = $opt->{vblevel} if (defined $opt->{vblevel});

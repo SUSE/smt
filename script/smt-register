@@ -78,10 +78,6 @@ if($mail)
     select MAILTEMPFILE; $| = 1;        # make unbuffered
 }
 
-my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
-$useragent->protocols_allowed( [ 'https' ] );
-$useragent->default_headers->push_header('Content-Type' => 'text/xml');
-
 if(!SMT::Utils::openLock("smt-register"))
 {
     print __("Registration process is still running.\n");
@@ -91,6 +87,10 @@ if(!SMT::Utils::openLock("smt-register"))
 # open the logfile
 
 my $LOG = SMT::Utils::openLog($logfile);
+
+my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel);
+$useragent->protocols_allowed( [ 'https' ] );
+
 
 # check if we are allowed to register clients at NCC
 

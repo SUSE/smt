@@ -97,9 +97,6 @@ sub new
     $self->{CHECKSUM}   = undef;
     $self->{NO_CHECKSUM_CHECK}   = 0;
 
-    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
-
     $self->{MAX_REDIRECTS} = 2;
     $self->{VBLEVEL}       = 0;
     $self->{LOG}           = undef;
@@ -152,6 +149,15 @@ sub new
     if(exists $opt{dryrun} && defined $opt{dryrun})
     {
         $self->{DRYRUN} = $opt{dryrun};
+    }
+
+    if(defined $opt{useragent} && $opt{useragent})
+    {
+        $self->{USERAGENT} = $opt{useragent};
+    }
+    else
+    {
+        $self->{USERAGENT} = SMT::Utils::createUserAgent(log => $self->{LOG}, vblevel => $self->{VBLEVEL});
     }
 
     bless($self);
@@ -559,7 +565,7 @@ sub mirror
         eval
         {
             $response = $self->{USERAGENT}->get( $remote, ':content_file' => $self->fullLocalPath() );
-	    $self->{DOWNLOAD_SIZE} = 0 if (! defined $self->{DOWNLOAD_SIZE});
+            $self->{DOWNLOAD_SIZE} = 0 if (! defined $self->{DOWNLOAD_SIZE});
             $self->{DOWNLOAD_SIZE} += int($response->header("Content-Length"))
                 if (defined $response->header("Content-Length"));
         };

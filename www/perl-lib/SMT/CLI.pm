@@ -1211,11 +1211,11 @@ sub setMirrorableCatalogs
         }
     }
 
-    my $useragent = SMT::Utils::createUserAgent(keep_alive => 1);
+    my $useragent = SMT::Utils::createUserAgent(log => $opt{log}, vblevel => $opt{vblevel});
     my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
     my $values = $dbh->selectall_arrayref($sql);
     foreach my $v (@{$values})
-    { 
+    {
         my $catId = $v->[0];
         my $catName = $v->[1];
         my $catLocal = $v->[2];
@@ -1260,12 +1260,12 @@ sub setMirrorableCatalogs
             if(defined $catTarget && $catTarget ne "")
             {
                 $statement .= sprintf("AND TARGET=%s", $dbh->quote($catTarget) );
-            }        
-            
+            }
+
             my $sth = $dbh->do( $statement );
         }
     }
-    
+
     my $mirrorAll = $cfg->val("LOCAL", "MirrorAll");
     if(defined $mirrorAll && lc($mirrorAll) eq "true")
     {

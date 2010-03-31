@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.1.16)
+# spec file for package smt (Version 1.2.0)
 #
 # Copyright (c) 2008,2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -20,7 +20,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.1.16
+Version:        1.2.0
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       perl-DBI
@@ -29,6 +29,7 @@ Requires:       perl-Config-IniFiles
 Requires:       perl-XML-Parser
 Requires:       perl-XML-Writer
 Requires:       perl-libwww-perl
+Requires:       perl-WWW-Curl
 Requires:       perl-URI
 Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
