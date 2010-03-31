@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Mar 31 14:16:30 CEST 2010 - mc@suse.de
+
+- copy headers directoy while staging of YUM repositories
+  (bnc#587606)
+
+-------------------------------------------------------------------
 Wed Feb 10 15:58:22 CET 2010 - jsrain@suse.cz
 
 - smt-support deletes uploaded tarballs after successful upload
