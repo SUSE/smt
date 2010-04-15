@@ -485,36 +485,34 @@ sub getCatalogs
     my %options = @_;
 
     my ($cfg, $dbh) = init();
-    my $sql = "select * from Catalogs";
-
-    $sql = $sql . " where 1";
+    my $sql = "select * from Catalogs where 1";
 
     if ( exists $options{ mirrorable } && defined $options{mirrorable} )
     {
-          if (  $options{ mirrorable } == 1 )
+          if ( $options{ mirrorable } == 1 )
           {
-            $sql = $sql . " and MIRRORABLE='Y'";
+            $sql .= " and MIRRORABLE='Y'";
           }
           else
           {
-            $sql = $sql . " and MIRRORABLE='N'";
+            $sql .= " and MIRRORABLE='N'";
           }
     }
 
     if ( exists $options{ name } && defined $options{name} )
     {
-          $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($options{name}));
+          $sql .= sprintf(" and NAME=%s", $dbh->quote($options{name}));
     }
-    
+
     if ( exists $options{ domirror } && defined  $options{ domirror } )
     {
           if (  $options{ domirror } == 1 )
           {
-            $sql = $sql . " and DOMIRROR='Y'";
+            $sql .= " and DOMIRROR='Y'";
           }
           else
           {
-            $sql = $sql . " and DOMIRROR='N'";
+            $sql .= " and DOMIRROR='N'";
           }
     }
 
@@ -524,26 +522,19 @@ sub getCatalogs
     my @HEAD = ();
     my @VALUES = ();
 
-    #push( @HEAD, "ID" );
     push( @HEAD, "Name" );
     push( @HEAD, "Description" );
 
     push( @HEAD, "Mirrorable" );
     push( @HEAD, "Mirror?" );
 
-
-    my $counter = 1;
-    while (my $values = $sth->fetchrow_hashref())  
+    while (my $values = $sth->fetchrow_hashref())
     {
         my @row;
-        #push( @row, $values->{CATALOGID} );
-        #push( @row, $counter );
         push( @row, $values->{NAME} );
         push( @row, $values->{DESCRIPTION} );
         push( @row, $values->{MIRRORABLE} );
         push( @row, $values->{DOMIRROR} );
-        #print $values->{CATALOGID} . " => [" . $values->{NAME} . "] " . $values->{DESCRIPTION} . "\n";
-        
         push( @VALUES, @row );
 
         if ( exists $options{ used } && defined $options{used} )
@@ -552,8 +543,6 @@ sub getCatalogs
           push( @VALUES, ("", $values->{LOCALPATH},   "", "") );
           push( @VALUES, ("", $values->{CATALOGTYPE}, "", "") );
         }
-        
-        $counter++;
     }
     $sth->finish();
     return {'cols' => \@HEAD, 'vals' => \@VALUES };
@@ -578,7 +567,6 @@ sub getProducts
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
-
     my @HEAD = ( __('ID'), __('Name'), __('Version'), __('Architecture'), __('Release'), __('Usage') );
     my @VALUES = ();
 
@@ -586,19 +574,19 @@ sub getProducts
     {
         push @HEAD,  __('Repos mirrored?');
     }
-    
+
     while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
-                                                   # there's nothing left
+                                                  # there's nothing left
     {
         next if ( exists($options{ used }) && defined($options{used}) && (int($value->{registered_machines}) < 1) );
-     
+
         if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
         {
             my $statement = sprintf("select distinct c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTDATAID=%s and pc.CATALOGID = c.CATALOGID",
                                     $dbh->quote($value->{PRODUCTDATAID}));
             my $arr = $dbh->selectall_arrayref($statement);
             my $cm = __("No");
-            
+
             if( @{$arr} == 0 )
             {
                 # no catalogs required for this product => all catalogs available
@@ -614,8 +602,8 @@ sub getProducts
                 # else default is NO
             }
             # else some are available, some not => not all catalogs available
-            
-            
+
+
             push @VALUES, [ $value->{PRODUCTDATAID}, 
                             $value->{PRODUCT}, 
                             $value->{VERSION} || "-", 
@@ -634,7 +622,7 @@ sub getProducts
                             $value->{registered_machines} ];
         }
     }
-   
+
     $sth->finish();
     return {'cols' => \@HEAD, 'vals' => \@VALUES };
 }
@@ -665,7 +653,8 @@ sub getRegistrations
 {
     my ($cfg, $dbh) = init();
 
-    my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", {Slice => {}});
+    my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", 
+                                           {Slice => {}});
 
     my @HEAD = ( __('Unique ID'), __('Hostname'), __('Last Contact'), __('Namespace'), __('Product') );
     my @VALUES = ();
@@ -673,9 +662,9 @@ sub getRegistrations
 
     foreach my $clnt (@{$clients})
     {
-        my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", 
+        my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID",
                                                         $dbh->quote($clnt->{GUID})), {Slice => {}});
-        
+
         my $prdstr = "";
         foreach my $product (@{$products})
         {
@@ -710,13 +699,14 @@ sub listRegistrations
     {
         my ($cfg, $dbh) = init();
 
-        my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", {Slice => {}});
+        my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", 
+                                               {Slice => {}});
 
         foreach my $clnt (@{$clients})
         {
             my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH, r.REGDATE, r.NCCREGDATE, r.NCCREGERROR from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", 
                                                             $dbh->quote($clnt->{GUID})), {Slice => {}});
-        
+
             print __('Unique ID')." : $clnt->{GUID}\n";
             print __('Hostname')." : $clnt->{HOSTNAME}\n";
             print __('Last Contact')." : $clnt->{LASTCONTACT}\n";
@@ -741,10 +731,10 @@ sub listRegistrations
                     print "        ".__('NCC Registration Errors')." : YES\n";
                 }
             }
-            
+
             my $subscr = $dbh->selectall_arrayref(sprintf("select s.SUBNAME , s.REGCODE, s.SUBSTATUS, s.SUBENDDATE, s.NODECOUNT, s.CONSUMED, s.SERVERCLASS  from ClientSubscriptions cs, Subscriptions s where cs.GUID = %s and cs.SUBID = s.SUBID order by SERVERCLASS DESC;", 
                                                           $dbh->quote($clnt->{GUID})), {Slice => {}});
-            
+
             foreach my $sub (@{$subscr})
             {
                 print  __("Subscription")." : ".$sub->{SUBNAME}."\n";
@@ -758,7 +748,7 @@ sub listRegistrations
     }
     else
     {
-	print renderReport(getRegistrations(), $options{format}, '');
+      print renderReport(getRegistrations(), $options{format}, '');
     }
 
     return 1;
@@ -768,12 +758,12 @@ sub listRegistrations
 sub setCatalogsByProduct
 {
     my %opts = @_;
-    
+
     my ($cfg, $dbh) = init();
     my $enable = 0;
-    
+
     #( verbose => $verbose, prodStr => $enableByProduct, enable => [1,0])
-    
+
     if(! exists $opts{prodStr} || ! defined $opts{prodStr} || $opts{prodStr} eq "")
     {
         print __("Invalid product string.\n");
@@ -783,11 +773,11 @@ sub setCatalogsByProduct
     {
         $enable = $opts{enable};
     }
-    
+
     my ($product, $version, $arch, $release) = split(/\s*,\s*/, $opts{prodStr}, 4);
-    
+
     my $st1 = sprintf("select PRODUCTDATAID from Products where PRODUCT=%s ", $dbh->quote($product));
-    
+
     if(defined $version && $version ne "")
     {
         $st1 .= sprintf(" and VERSION=%s ", $dbh->quote($version));
@@ -807,18 +797,18 @@ sub setCatalogsByProduct
         print sprintf(__("Error: Product (%s) not found.\n"),$opts{prodStr});
         return 1;
     }
-        
+
     my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where PRODUCTDATAID IN ($st1) and pc.CATALOGID = c.CATALOGID order by NAME,TARGET;";
-    
+
     #print "$statement \n";
 
     $arr = $dbh->selectall_arrayref($statement, {Slice => {}});
-    
+
     foreach my $row (@{$arr})
     {
         next if($enable && uc($row->{DOMIRROR}) eq "Y");
         next if(!$enable && uc($row->{DOMIRROR}) eq "N");
-        
+
         if($enable && uc($row->{MIRRORABLE}) ne "Y")
         {
             print sprintf(__("Repository [%s %s] cannot be enabled. Access on the server denied.\n"), 
@@ -841,8 +831,7 @@ sub resetCatalogsStatus
 {
   my ($cfg, $dbh) = init();
 
-  my $sth = $dbh->prepare(qq{UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'});
-  $sth->execute();
+  $dbh->do("UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'");
 }
 
 =item setCatalogDoMirror
@@ -865,31 +854,32 @@ sub setCatalogDoMirror
 {
     my %opt = @_;
     my ($cfg, $dbh) = init();
-    
+
     if(exists $opt{enabled} && defined $opt{enabled} )
     {
-        my $sql = "update Catalogs";
-        $sql .= sprintf(" set Domirror=%s", $dbh->quote(  $opt{enabled} ? "Y" : "N" ) ); 
-        
-        $sql .= " where 1";
-        
-        $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y")) if($opt{enabled});
-        
+        my $sql .= sprintf("update Catalogs set Domirror=%s where 1",
+                           $dbh->quote(  $opt{enabled} ? "Y" : "N" ) );
+
+        if($opt{enabled})
+        {
+          $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+        }
+
         if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
         {
             $sql .= sprintf(" and NAME=%s", $dbh->quote($opt{name}));
         }
-        
+
         if(exists $opt{target} && defined $opt{target} && $opt{target} ne "")
         {
             $sql .= sprintf(" and TARGET=%s", $dbh->quote($opt{target}));
         }
-        
+
         if(exists $opt{id} && defined $opt{id} )
         {
             $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
         }
-        
+
         #print $sql . "\n";
         my $rows = $dbh->do($sql);
         $rows = 0 if(!defined $rows || $rows < 0);
@@ -936,7 +926,7 @@ sub setCatalogStaging
 
     # only mirrorable repos can be staged
     my $where = sprintf(' where MIRRORABLE=%s', $dbh->quote('Y'));
-    
+
     # ignore the rows having the desired STAGING value
     $where .= sprintf(' and STAGING!=%s',
                 $dbh->quote($opt{enabled} ? 'Y' : 'N' ));
@@ -968,8 +958,7 @@ sub setCatalogStaging
         die 'DBERROR: ' . $@;
     }
 
-    my $sql = 'update Catalogs';
-    $sql .= sprintf(' set STAGING=%s', $dbh->quote(  $opt{enabled} ? 'Y' : 'N' ) ); 
+    my $sql .= sprintf('update Catalogs set STAGING=%s', $dbh->quote(  $opt{enabled} ? 'Y' : 'N' ) );
     $sql .= $where;
     #print $sql . "\n";
     my $rows = $dbh->do($sql);
@@ -1017,20 +1006,6 @@ sub setCatalogStaging
     return 0;
 }
 
-=item catalogDoMirrorFlag
-
-Pass id => foo to select the catalog.
-true if the catalog is set to be mirrored, false otherwise
-
-=cut
-
-sub catalogDoMirrorFlag
-{
-  my %options = @_;
-  my ($cfg, $dbh) = init();
-  return 1;
-}
-
 sub setDoMirrorFromXml
 {
     my %opt = @_;
@@ -1039,7 +1014,7 @@ sub setDoMirrorFromXml
     {
         my $enabledCatalogIds = {};
         my $enabledCatalogs_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
-        $enabledCatalogs_parser->parse($opt{xml}, 
+        $enabledCatalogs_parser->parse($opt{xml},
             sub {
                 my $data = shift;
                 $enabledCatalogIds->{$data->{CATALOGID}} = 1;
@@ -1047,10 +1022,9 @@ sub setDoMirrorFromXml
         );
 
         # Delete mirror flag from catalogs that are not present in the mirrorinfo file
-        my $sql = "select CATALOGID from Catalogs where DOMIRROR = 'Y'"; 
-        my $sth = $dbh->prepare($sql);
+        my $sth = $dbh->prepare("select CATALOGID from Catalogs where DOMIRROR = 'Y'");
         $sth->execute();
-        while (my $values = $sth->fetchrow_hashref())  
+        while (my $values = $sth->fetchrow_hashref())
         {
             my $catalogid = $values->{CATALOGID};
             if ( exists $enabledCatalogIds->{$catalogid} && $enabledCatalogIds->{$catalogid} == 1 )
@@ -1061,13 +1035,13 @@ sub setDoMirrorFromXml
             else
             {
                 # Catalog no longer mirrorred remove from db
-                my $sth = $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='N' WHERE CATALOGID=%s", $dbh->quote($catalogid)));
+                $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='N' WHERE CATALOGID=%s", $dbh->quote($catalogid)));
             }
         }
         # Enable the remaining catalogids for mirroring
         foreach my $id ( keys (%{$enabledCatalogIds}) )
         {
-            my $sth = $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='Y' WHERE CATALOGID=%s", $dbh->quote($id)));
+            $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='Y' WHERE CATALOGID=%s", $dbh->quote($id)));
         }
     }
     else
@@ -1081,11 +1055,11 @@ sub setMirrorableCatalogs
     my %opt = @_;
     my ($cfg, $dbh) = ();
     my $nuri = undef;
-    
+
     if(defined $opt{todir} && $opt{todir} ne "")
     {
         $cfg = SMT::Utils::getSMTConfig();
-        
+
         my $NUUrl = $cfg->val("NU", "NUUrl");
         if(!defined $NUUrl || $NUUrl eq "")
         {
@@ -1128,42 +1102,43 @@ sub setMirrorableCatalogs
             die __("Cannot read the Mirror Credentials");
         }
         $nuri->userinfo("$nuUser:$nuPass");
-        
-        
+
+
         # create a tmpdir to store repoindex.xml
         my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
         if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
         {
             $destdir = $opt{todir};
         }
-        
+
         # get the file
         my $job = SMT::Mirror::Job->new(vblevel => $opt{vblevel}, log => $opt{log});
         $job->uri($nuri);
         $job->localBasePath( "/" );
         $job->localRepoPath( $destdir );
         $job->localFileLocation("/repo/repoindex.xml");
-        
+
         $job->mirror();
         $indexfile = $job->fullLocalPath();
-    }    
-     
+    }
+
     if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
     {
         # with todir we only want to mirror repoindex to todir
         return;
     }
-    
+
     if ( -s $indexfile )
     {
-        my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'", ['Name', 'Target']);
-    
+        my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
+                                             ['Name', 'Target']);
+
         my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
         $parser->parse($indexfile, 
-                       sub 
+                       sub
                        {
                            my $repodata = shift;
-                           
+
                            if(exists $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable} )
                            {
                                if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
@@ -1177,7 +1152,7 @@ sub setMirrorableCatalogs
                            }
                        }
                       );
-        
+
         foreach my $cname ( keys %{$sqlres})
         {
             foreach my $target ( keys %{$sqlres->{$cname}})
@@ -1192,7 +1167,7 @@ sub setMirrorableCatalogs
             }
         }
     }
-    
+
     my $mirrorable_idx = undef;
     if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
     {
@@ -1212,8 +1187,7 @@ sub setMirrorableCatalogs
     }
 
     my $useragent = SMT::Utils::createUserAgent(log => $opt{log}, vblevel => $opt{vblevel});
-    my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
-    my $values = $dbh->selectall_arrayref($sql);
+    my $values = $dbh->selectall_arrayref("select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'");
     foreach my $v (@{$values})
     {
         my $catId = $v->[0];
@@ -1262,7 +1236,7 @@ sub setMirrorableCatalogs
                 $statement .= sprintf("AND TARGET=%s", $dbh->quote($catTarget) );
             }
 
-            my $sth = $dbh->do( $statement );
+            $dbh->do( $statement );
         }
     }
 
@@ -1312,7 +1286,7 @@ sub isZyppMirrorable
             $ret = 0;
             last;
         }
-        
+
         if ( $response->is_redirect )
         {
             $redirects++;
@@ -1321,9 +1295,9 @@ sub isZyppMirrorable
                 $ret = 0;
                 last
             }
-            
+
             my $newuri = $response->header("location");
-            
+
             #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
             $remote = URI->new($newuri);
         }
@@ -1362,20 +1336,24 @@ sub setupCustomCatalogs
     my ($cfg, $dbh) = init();
 
     # delete existing catalogs with this id
-    
+
     removeCustomCatalog(%options);
-    
+
     # now insert it again.
     my $exthost = $options{exturl};
     if($exthost =~ /^(https?:\/\/[^\/]+\/)/)
     {
         $exthost = $1;
     }
+    elsif($exthost =~ /^(ftp:\/\/[^\/]+\/)/)
+    {
+      $exthost = $1;
+    }
     elsif($exthost =~ /^file:/)
     {
         $exthost = "file://localhost";
     }
-    
+
     my $affected = $dbh->do(sprintf("INSERT INTO Catalogs (CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR,MIRRORABLE,SRC ) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'C')",
                                     $dbh->quote($options{catalogid}),
                                     $dbh->quote($options{name}),
@@ -1394,7 +1372,7 @@ sub setupCustomCatalogs
                                       $dbh->quote($options{catalogid}),
                                       $dbh->quote("N")));
     }
-    
+
     return (($affected>0)?1:0);
 }
 
@@ -1407,7 +1385,7 @@ sub createDBReplacementFile
     {
         die "No filename given.";
     }
-    
+
     my $dbout = $dbh->selectall_arrayref("SELECT CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE, STAGING from Catalogs where DOMIRROR = 'Y' order by CATALOGTYPE, NAME", 
                                         { Slice => {} });
 
@@ -1416,7 +1394,7 @@ sub createDBReplacementFile
     {
         die "Cannot open file '$xmlfile':$!";
     }
-    
+
     my $writer = new XML::Writer(OUTPUT => $output);
 
     $writer->xmlDecl("UTF-8");
@@ -1444,7 +1422,7 @@ sub db2Xml
 {
     my %opts = @_;
     my ($cfg, $dbh) = init();
-    
+
     if(!defined $opts{table} || $opts{table} eq "")
     {
         die "No Table given.";
@@ -1461,7 +1439,7 @@ sub db2Xml
     {
         die "Cannot open file '.".$opts{outfile}."':$!";
     }
-    
+
     my $writer = new XML::Writer(OUTPUT => $output);
 
     $writer->xmlDecl("UTF-8");
@@ -1492,6 +1470,9 @@ sub db2Xml
     return ;
 }
 
+#
+# FIXME: Drop this function and feature?
+#
 sub hardlink
 {
     my %options = @_;
@@ -1503,7 +1484,7 @@ sub hardlink
     {
         $vblevel = $options{vblevel};
     }
-    
+
     my $dir = "";
     if(! exists $options{basepath} || ! defined $options{basepath} || ! -d $options{basepath})
     {
@@ -1518,14 +1499,14 @@ sub hardlink
     {
         $dir = $options{basepath};
     }
-    
+
     my $cmd = "find $dir -xdev -iname '*.rpm' -type f -size +$options{size}k ";
     printLog($options{log}, $vblevel, LOG_DEBUG, "$cmd");
-    
+
     my $filelist = `$cmd`;
     my @files = sort split(/\n/, $filelist);
     my @f2 = @files;
-    
+
     foreach my $MM (@files)
     {
         foreach my $NN (@f2)
@@ -1568,18 +1549,21 @@ sub hardlink
     printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
 }
 
+#
+# FIXME: drop this function. It is not used anymore
+#
 sub productClassReport
 {
     my %options = @_;
     my ($cfg, $dbh) = init();
     my %conf;
-    
+
     my $vblevel = 0;
     if(exists $options{vblevel} && defined $options{vblevel})
     {
         $vblevel = $options{vblevel};
-    }    
-    
+    }
+
     if(exists $options{conf} && defined $options{conf} && ref($options{conf}) eq "HASH")
     {
         %conf = %{$options{conf}};
@@ -2890,9 +2874,9 @@ sub certificateExpireCheck
 
     my $apacheVhostConf = "/etc/apache2/vhosts.d/vhost-ssl.conf";
     my $certfile = undef;
-    
+
     open(VHOST, "< $apacheVhostConf") or return undef;
-    
+
     while(<VHOST>)
     {
         my $line = $_;
@@ -2903,18 +2887,18 @@ sub certificateExpireCheck
         }
     }
     close VHOST;
-    
+
     return undef if(! defined $certfile);
-    
+
     my $certData = LIMAL::CaMgm::LocalManagement::getCertificate($certfile, $LIMAL::CaMgm::E_PEM);
 
     my $endtime = $certData->getEndDate();
     my $currentTime = time();
-   
+
     my $days = int( ($endtime-$currentTime) / ( 60*60*24) );
 
     printLog($options{log}, $options{vblevel}, LOG_DEBUG, "Check $certfile: Valid for $days days");
-    
+
     return $days;
 }
 
