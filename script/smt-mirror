@@ -73,6 +73,8 @@ my $errors = 0;
 my $size = 0;
 my $secpatches = 0;
 my $recpatches = 0;
+my %secpatchtitles = ();
+my %recpatchtitles = ();
 my $fromlocalsmt = 0;
 
 my $nohardlink = 0;
@@ -382,6 +384,28 @@ foreach my $entry (@{$array})
             $size       += $s->{DOWNLOAD_SIZE};
             $secpatches += $s->{NEWSECPATCHES};
             $recpatches += $s->{NEWRECPATCHES};
+            foreach my $title (@{$s->{NEWSECTITLES}})
+            {
+              if( exists $secpatchtitles{$title} )
+              {
+                $secpatchtitles{$title} += 1;
+              }
+              else
+              {
+                $secpatchtitles{$title} = 1;
+              }
+            }
+            foreach my $title (@{$s->{NEWRECTITLES}})
+            {
+              if( exists $recpatchtitles{$title} )
+              {
+                $recpatchtitles{$title} += 1;
+              }
+              else
+              {
+                $recpatchtitles{$title} = 1;
+              }
+            }
 
             # parse and save patch data
             if (!($dbreplfile || $dryrun || $errors))
@@ -561,7 +585,15 @@ if(!$clean && !$hardlink)
     push @summary, sprintf(__("Total linked files        : %s"), $link);
     push @summary, sprintf(__("Total copied files        : %s"), $copy);
     push @summary, sprintf(__("New security updates      : %s"), $secpatches);
+    foreach my $title (keys %secpatchtitles)
+    {
+      push @summary, sprintf(__("   * %s (%d)"), $title, $secpatchtitles{$title} );
+    }
     push @summary, sprintf(__("New recommended updates   : %s"), $recpatches);
+    foreach my $title (keys %recpatchtitles)
+    {
+      push @summary, sprintf(__("   * %s (%d)"), $title, $recpatchtitles{$title} );
+    }
     push @summary, sprintf(__("Errors:                   : %d"), $errors);
     push @summary, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime)));
     
