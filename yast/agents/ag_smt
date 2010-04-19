@@ -25,6 +25,7 @@ use SMT::Client;
 use SMT::Repositories;
 use SMT::Parser::RpmMdPatches;
 use SMT::Mirror::RpmMd;
+use SMT::Mirror::Yum;
 use SMT::Mirror::Utils;
 
 # For debugging only
@@ -424,6 +425,11 @@ sub CreateSnapshot ($) {
     }
 
     my $mirror = SMT::Mirror::RpmMd->new(%mirror_args);
+
+    if(-d "$staging_source/headers")
+    {
+        $mirror = SMT::Mirror::Yum->new(%mirror_args);
+    }
 
     # The source of data
     y2milestone ('Source: '.$staging_source);
