@@ -6,14 +6,17 @@
 
 use strict;
 use warnings;
-use SMT::Mirror::RpmMd;
+
+use SMT;
 use SMT::Mirror::Yum;
 use SMT::Mirror::Utils;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Parser::RegData;
 use SMT::Repositories;
-use SMT::Filter;
+
+use RPMMD::Tools::Mirror;
+use RPMMD::Filter;
 use Config::IniFiles;
 use File::Path;
 use URI;
@@ -166,6 +169,8 @@ if(!SMT::Utils::openLock("smt-mirror"))
 # open the logfile
 
 my $LOG = SMT::Utils::openLog($logfile);
+SMT::Utils::setupLogger($logfile, $debug); # Log4perl logger for RPMMD
+
 
 my $cfg = undef;
 
@@ -300,7 +305,7 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $array = $dbh->selectall_arrayref( "select CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
+    $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
 	"from Catalogs ".
 	"where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
 	"order by CATALOGTYPE, NAME",
@@ -353,14 +358,22 @@ foreach my $entry (@{$array})
         my $zyppMirror = undef;
         if( lc($entry->{CATALOGTYPE}) eq "yum")
         {
-            $zyppMirror = SMT::Mirror::Yum->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
-                                                mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
+            $zyppMirror = SMT::Mirror::Yum->new(
+                vblevel => $vblevel,
+                log => $LOG,
+                dbh => $dbh,
+                cfg => $SMT::MIRROR_CFG,
+                mirrorsrc => $mirrorsrc,
+                nohardlink => $nohardlink);
         }
         else
         {
-            $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
-                                                  mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
-        }        
+            $zyppMirror = RPMMD::Tools::Mirror->new(
+                dbh => $dbh,
+                cfg => $SMT::MIRROR_CFG,
+                mirrorsrc => $mirrorsrc,
+                nohardlink => $nohardlink);
+        }
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $entry->{LOCALPATH} );
         
@@ -431,14 +444,14 @@ foreach my $entry (@{$array})
                 if ($rh->filteringAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
                 {
                     my $newpatches = $zyppMirror->newpatches();
-                    my $filter = SMT::Filter->new();
-                    $filter->load($dbh, $entry->{CATALOGID});
+                    my $filter = RPMMD::Filter->new();
+                    $filter->dbload($dbh, $SMT::FILTER_DBATTRS, $entry->{ID});
                     for (keys %$newpatches)
                     {
-                        $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+                        $filter->add(RPMMD::Filter->TYPE_NAME_VERSION, $_)
                             if (!$filter->matches($newpatches->{$_}));
                     }
-                    $filter->save($dbh, $entry->{CATALOGID});
+                    $filter->dbsave($dbh, $SMT::FILTER_DBATTRS, $entry->{ID});
                 }
             }
         }

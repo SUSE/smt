@@ -11,15 +11,16 @@ use Getopt::Long;
 use File::Basename;
 use Text::ASCIITable;
 use Date::Format;
+use RPMMD::Tools::Mirror;
+use RPMMD::Tools::DepChecker;
+use RPMMD::Filter;
+use RPMMD::Parser::Updates;
 
+use SMT;
 use SMT::Utils;
 use SMT::Repositories;
-use SMT::Filter;
 use SMT::Mirror::Utils;
-use SMT::Mirror::RpmMd;
-use SMT::Parser::RpmMdPatches;
 use SMT::Mirror::Yum;
-use SMT::Parser::FilteredRepoChecker;
 
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug    = 0;
@@ -168,6 +169,7 @@ if(!SMT::Utils::openLock("smt-staging"))
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 my $log = SMT::Utils::openLog($logfile);
+SMT::Utils::setupLogger($logfile, $debug); # Log4perl logger for RPMMD
 
 # get the config
 
@@ -306,15 +308,14 @@ my %exists_category = (
     'security'      => 1,
     'optional'      => 1);
 
-
 ###############################################################################
 # testing/production repository status
 ###############################################################################
 
 if ($command eq 'status')
 {
-    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    my $filter = RPMMD::Filter->new();
+    $filter->dbload($dbh, $SMT::FILTER_DBATTRS, $repo->{ID});
 
     print __('Reading patches...') . "\n";
 
@@ -361,9 +362,7 @@ if ($command eq 'status')
     }
     print "\n";
 
-    my $parser = SMT::Parser::RpmMdPatches->new(
-        log => $log,
-        vblevel => $vblevel);
+    my $parser = RPMMD::Parser::Updates->new();
     $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
 
@@ -386,14 +385,12 @@ elsif ($command eq 'listupdates')
     }
 
     # read filters
-    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    my $filter = RPMMD::Filter->new();
+    $filter->dbload($dbh, $SMT::FILTER_DBATTRS, $repo->{ID});
 
     # read patches from all repos
 
-    my $parser = SMT::Parser::RpmMdPatches->new(
-        log => $log,
-        vblevel => $vblevel);
+    my $parser = RPMMD::Parser::Updates->new(log => $log, vblevel => $vblevel);
     $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
 
@@ -543,12 +540,10 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel )
         if (defined $canfilter && not $canfilter);
 
-    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    my $filter = RPMMD::Filter->new();
+    $filter->dbload($dbh, $SMT::FILTER_DBATTRS, $repo->{ID});
 
-    my $parser = SMT::Parser::RpmMdPatches->new(
-        log => $log,
-        vblevel => $vblevel);
+    my $parser = RPMMD::Parser::Updates->new();
     $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
 
@@ -581,7 +576,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
 
             if ($allow)
             {
-                $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_);
+                $filter->remove(RPMMD::Filter->TYPE_NAME_VERSION, $_);
                 if ($filter->matches($patches->{$_}))
                 {
                     SMT::Utils::printLog($log, $vblevel, LOG_WARN,
@@ -591,7 +586,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
             }
             else
             {
-                $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+                $filter->add(RPMMD::Filter->TYPE_NAME_VERSION, $_)
             }
         }
     }
@@ -609,14 +604,14 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                 print sprintf (
                     __('Removing filter by category \'%s\'.'), $category) . "\n";
 
-                $filter->remove(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+                $filter->remove(RPMMD::Filter->TYPE_PATCH_CATEGORY, $category);
                 if ($individually)
                 {
                     print sprintf (
                         __('Allowing all \'%s\' patches individually.'), $category) . "\n";
                     for (keys %$patches)
                     {
-                        $filter->remove(SMT::Filter->TYPE_NAME_VERSION, $_)
+                        $filter->remove(RPMMD::Filter->TYPE_NAME_VERSION, $_)
                             if ($patches->{$_}->{type} eq $category);
                     }
                 }
@@ -652,7 +647,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                         __('Forbidding all \'%s\' patches individually.'), $category) . "\n";
                     for (keys %$patches)
                     {
-                        $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+                        $filter->add(RPMMD::Filter->TYPE_NAME_VERSION, $_)
                             if ($patches->{$_}->{type} eq $category);
                     }
                 }
@@ -660,7 +655,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                 {
                     print sprintf (
                         __('Adding filter by category \'%s\'.'), $category) . "\n";
-                    $filter->add(SMT::Filter->TYPE_SECURITY_LEVEL, $category);
+                    $filter->add(RPMMD::Filter->TYPE_PATCH_CATEGORY, $category);
                 }
             }
         }
@@ -684,7 +679,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         {
             # remove all filters first, then forbid all, individually
             $filter->clean(); 
-            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+            $filter->add(RPMMD::Filter->TYPE_NAME_VERSION, $_)
                 foreach (keys %$patches);
             SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
                 sprintf (__('All %d patches have been forbidden.'),
@@ -702,7 +697,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     # check consistency of the resulting repository before applying changes
     if ($filter->dirty() && not $all)
     {
-        my $checker = SMT::Parser::FilteredRepoChecker->new(
+        my $checker = RPMMD::Tools::DepChecker->new(
             log => $log, vblevel => $vblevel); 
         $checker->repoPath($localfullrepopath);
         $checker->filter($filter);
@@ -734,7 +729,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         }
     }
 
-    $filter->save($dbh, $repoid);
+    $filter->dbsave($dbh, $SMT::FILTER_DBATTRS, $repo->{ID});
 
     print "\n";
     printPatchCounts($patches, $filter);
@@ -791,8 +786,8 @@ elsif ($command eq 'createrepo')
         $rh->getProductionRepoPath($repoid));
 
 
-    my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    my $filter = RPMMD::Filter->new();
+    $filter->dbload($dbh, $SMT::FILTER_DBATTRS, $repo->{ID});
 
     my $mirror = undef;
     if ( exists $repo->{CATALOGTYPE} && defined $repo->{CATALOGTYPE} &&
@@ -801,6 +796,7 @@ elsif ($command eq 'createrepo')
         $mirror = SMT::Mirror::Yum->new(
             log        => $log,
             dbh        => $dbh,
+            cfg        => $SMT::MIRROR_CFG,
             vblevel    => $vblevel,
             filter     => $gentest ? $filter : undef,
             nohardlink => $nohardlink,
@@ -808,10 +804,9 @@ elsif ($command eq 'createrepo')
     }
     else
     {
-        $mirror = SMT::Mirror::RpmMd->new(
-            log        => $log,
+        $mirror = RPMMD::Tools::Mirror->new(
             dbh        => $dbh,
-            vblevel    => $vblevel,
+            cfg        => $SMT::MIRROR_CFG,
             filter     => $gentest ? $filter : undef,
             nohardlink => $nohardlink,
             mirrorsrc  => $mirrorsrc);

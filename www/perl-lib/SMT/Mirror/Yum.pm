@@ -1,19 +1,22 @@
 package SMT::Mirror::Yum;
+
 use strict;
 
 use URI;
 use File::Path;
 use File::Find;
 use Time::HiRes qw(gettimeofday tv_interval);
+use RPMMD::impl::Downloader;
 
 use SMT::Utils;
-use SMT::Mirror::Job;
 
-use base 'SMT::Mirror::RpmMd'; # sets @SMT::Mirror::Yum::ISA = ('SMT::Mirror::RpmMd')
+use base 'RPMMD::Tools::Mirror'; # sets @SMT::Mirror::Yum::ISA = ('RPMMD::Tools::Mirror')
+
+# TODO: replace the old logger with log4perl
 
 =head1 NAME
 
-SMT::Mirror::Yum - mirroring of a yum metadata repository
+SMT::Mirror::Yum - mirroring of a old-style REHL4 yum metadata repository
 
 =head1 SYNOPSIS
 
@@ -31,7 +34,7 @@ SMT::Mirror::Yum - mirroring of a yum metadata repository
 =head1 DESCRIPTION
 
 Mirroring of a yum metadata repository.
-All functions and options are the same as in SMT::Mirror::RpmMd.
+All functions and options are the same as in RPMMD::Tools::Mirror.
 
 =cut
 # constructor
@@ -72,7 +75,7 @@ sub mirror()
     
     # find out if we have old style yum repo with headers directoy
 
-    my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH}, dryrun => $dryrun );
+    my $job = RPMMD::impl::Downloader->new(UserAgent => $self->{USERAGENT}, dbh => $self->{DBH}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
@@ -113,7 +116,7 @@ sub mirror()
                         
                         my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
                         
-                        my $hjob = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH}, dryrun => $dryrun );
+                        my $hjob = RPMMD::impl::Downloader->new(UserAgent => $self->{USERAGENT}, dbh => $self->{DBH}, dryrun => $dryrun );
                         $hjob->uri( $self->uri() );
                         $hjob->localBasePath( $self->localBasePath() );
                         $hjob->localRepoPath( $self->localRepoPath() );
@@ -248,7 +251,7 @@ sub clean
 
 =head1 SEE ALSO
 
-SMT::Mirror::RpmMd
+RPMMD::Tools::Mirror
 
 =head1 AUTHOR
 

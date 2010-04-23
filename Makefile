@@ -105,7 +105,6 @@ install:
 	install -m 644 www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Curl.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
-	install -m 644 www/perl-lib/SMT/Filter.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Repositories.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/JobQueue.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Job.pm $(DESTDIR)$(PERLMODDIR)/SMT/
