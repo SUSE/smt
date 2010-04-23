@@ -7,6 +7,7 @@ use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
 use IO::File;
+use File::Basename;
 use IPC::Open3;  # for executeCommand
 
 use MIME::Lite;  # sending eMails
@@ -865,6 +866,110 @@ sub createUserAgent
     $ua->agent($userAgentString);
 
     return $ua;
+}
+
+=item getFile($userAgent, $srcUrl, $target)
+
+Simple file getter which uses $userAgent to get file from $srcUrl to local
+file with path $target.
+
+Returns true on success, false if something goes wrong.
+
+=cut
+
+sub getFile
+{
+    my ($userAgent, $srcUrl, $target) = @_;
+
+    # make sure the target dir exists
+    &File::Path::mkpath(dirname($target));
+
+    my $redirects = 0;
+    my $ret = 0;
+    my $response;
+
+    do
+    {
+        eval
+        {
+            $response = $userAgent->get( $srcUrl, ':content_file' => $target );
+        };
+        if($@)
+        {
+            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG2, $@);
+            $ret = 0;
+            last;
+        }
+
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > 15)
+            {
+                $ret = 0;
+                last
+            }
+
+            my $srcUrl = $response->header("location");
+            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG2, "Redirected to $srcUrl");
+        }
+        elsif($response->is_success)
+        {
+            $ret = 1;
+        }
+    } while($response->is_redirect);
+
+    return $ret;
+}
+
+
+=item doesFileExist($userAgent, $srcUrl)
+
+Issue a head request to find out whether remote file $srcUrl exitst.
+
+Returns true on success, false if something goes wrong.
+
+=cut
+
+sub doesFileExist
+{
+    my ($userAgent, $srcUrl) = @_;
+
+    my $redirects = 0;
+    my $tries = 0;
+    my $ret = 0;
+    my $response;
+
+    do
+    {
+        eval
+        {
+            $response = $userAgent->head($srcUrl);
+        };
+        if($@)
+        {
+            $ret = 0;
+            $tries++;
+        }
+
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            $tries = 4 if ($redirects > 15);
+            $srcUrl = $response->header("location");
+        }
+        elsif ( $response->is_success )
+        {
+            $ret = 1;
+            $tries = 4;
+        }
+        else
+        {
+            $tries++;
+        }
+    } while ($tries < 4);
+
+    return $ret;
 }
 
 =item dropPrivileges

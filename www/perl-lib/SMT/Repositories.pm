@@ -9,7 +9,6 @@ use Date::Parse;
 
 use SMT::Utils;
 use SMT::Mirror::Utils;
-use SMT::Mirror::Job;        # for filteringAllowed()
 
 # TODO seems we have a mess in logging and error reporting:
 # we should use
@@ -407,15 +406,9 @@ sub filteringAllowed($$$)
     my $url = $repo->{'EXTURL'};
     if (defined $url && $url)
     {
-        my $tempdir = File::Temp::tempdir(CLEANUP => 1);
-
-        my $job = SMT::Mirror::Job->new();
-        $job->uri($url);
-        $job->localBasePath("$tempdir");
-        $job->localRepoPath('');
-        $job->localFileLocation('repodata/updateinfo.xml.gz');
-
-        return 1 if (defined $job->modified());
+        my $useragent = SMT::Utils::createUserAgent(
+                            log => $self->{LOG}, vblevel => VBLEVEL);
+        return SMT::Utils::doesFileExist($useragent, $url . '/repodata/updateinfo.xml.gz');
     }
     else
     {
