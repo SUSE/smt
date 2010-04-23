@@ -13,11 +13,9 @@ use Text::ASCIITable;
 use Config::IniFiles;
 use File::Temp;
 use File::Path;
-use File::Copy;
 use IO::File;
 
 use SMT::Parser::NU;
-use SMT::Mirror::Job;
 #use SMT::Repositories;
 
 use XML::Writer;
@@ -1112,14 +1110,10 @@ sub setMirrorableCatalogs
         }
 
         # get the file
-        my $job = SMT::Mirror::Job->new(vblevel => $opt{vblevel}, log => $opt{log});
-        $job->uri($nuri);
-        $job->localBasePath( "/" );
-        $job->localRepoPath( $destdir );
-        $job->localFileLocation("/repo/repoindex.xml");
-
-        $job->mirror();
-        $indexfile = $job->fullLocalPath();
+        my $useragent = SMT::Utils::createUserAgent(
+                            log => $opt{log}, vblevel => $opt{vblevel});
+        $indexfile = $destdir . '/repo/repoindex.xml';
+        SMT::Utils::getFile($useragent, $nuri . '/repo/repoindex.xml', $indexfile);
     }
 
     if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
@@ -1186,7 +1180,6 @@ sub setMirrorableCatalogs
         }
     }
 
-    my $useragent = SMT::Utils::createUserAgent(log => $opt{log}, vblevel => $opt{vblevel});
     my $values = $dbh->selectall_arrayref("select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'");
     foreach my $v (@{$values})
     {
@@ -1224,8 +1217,7 @@ sub setMirrorableCatalogs
                 $ret = isZyppMirrorable( log        => $opt{log},
                                          vblevel    => $opt{vblevel},
                                          NUUri      => $nuri,
-                                         catalogurl => $catUrl,
-                                         useragent  => $useragent );
+                                         catalogurl => $catUrl);
             }
             printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 1) ? '' : ' not' )));
             my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
@@ -1248,6 +1240,7 @@ sub setMirrorableCatalogs
     }
 }
 
+# returns true if the repository is an RPMMD repo
 sub isZyppMirrorable
 {
     my %opt = @_;
@@ -1262,51 +1255,11 @@ sub isZyppMirrorable
         $url->userinfo($userinfo);
     }
 
-    my $useragent = $opt{useragent};
+    my $useragent = SMT::Utils::createUserAgent(
+                        log => $opt{log}, vblevel => $opt{vblevel});
+    my $remote = $url->as_string() . "/repodata/repomd.xml";
 
-    my $tempdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-    my $remote = $url->as_string()."/repodata/repomd.xml";
-    my $local = $tempdir."/repodata/repomd.xml";
-    # make sure the container destination exists
-    &File::Path::mkpath( dirname($local) );
-
-    my $redirects = 0;
-    my $ret = 0;
-    my $response;
-
-    do
-    {
-        eval
-        {
-            $response = $useragent->get( $remote, ':content_file' => $local );
-        };
-        if($@)
-        {
-            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $@);
-            $ret = 0;
-            last;
-        }
-
-        if ( $response->is_redirect )
-        {
-            $redirects++;
-            if($redirects > 2)
-            {
-                $ret = 0;
-                last
-            }
-
-            my $newuri = $response->header("location");
-
-            #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
-            $remote = URI->new($newuri);
-        }
-        elsif($response->is_success)
-        {
-            $ret = 1;
-        }
-    } while($response->is_redirect);
-    return $ret;
+    return SMT::Utils::doesFileExist($useragent, $remote);
 }
 
 sub removeCustomCatalog

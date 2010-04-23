@@ -3,10 +3,12 @@ package SMT::Utils;
 use strict;
 use warnings;
 
+use Log::Log4perl qw(get_logger :levels);
 use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
 use IO::File;
+use File::Basename;
 use IPC::Open3;  # for executeCommand
 
 use MIME::Lite;  # sending eMails
@@ -448,6 +450,35 @@ sub openLog
     return $LOG;
 }
 
+sub setupLogger
+{
+    my $logfile = shift;
+    my $debug   = shift;
+
+    # set up logger
+    #
+    # localized messages for user  -> $out
+    # log messages (non-localized) -> $log
+
+    # file log layout
+    my $layout = Log::Log4perl::Layout::PatternLayout->new(
+        "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2}] %m%n");
+
+    # file appender to log to file
+    my $appender = Log::Log4perl::Appender->new(
+        "Log::Dispatch::File",
+        filename => $logfile,
+        mode     => "append",
+    );
+    $appender->layout($layout);
+
+    # set up the root logger, so that any libs using Log4perl inherit these settings
+    my $rootlog = get_logger('');  # the empty string arg is essential!
+    $rootlog->add_appender($appender);
+    if ($debug) { $rootlog->level($TRACE) }
+    else        { $rootlog->level($INFO)  }
+}
+
 =item cleanPath(@pathlist)
 
 Concatenate all parts of the pathlist, remove double slashes and return
@@ -863,6 +894,114 @@ sub createUserAgent
     $ua->agent($userAgentString);
 
     return $ua;
+}
+
+=item getFile($userAgent, $srcUrl, $target)
+
+Simple file getter which uses $userAgent to get file from $srcUrl to local
+file with path $target.
+
+Returns true on success, false if something goes wrong.
+
+=cut
+
+# TODO make a simple Downloader with getFile & doesFileExist functions, with logging, etc. Detto in perl-rpmmd
+
+sub getFile
+{
+    my ($userAgent, $srcUrl, $target) = @_;
+
+    # make sure the target dir exists
+    &File::Path::mkpath(dirname($target));
+
+    my $redirects = 0;
+    my $ret = 0;
+    my $response;
+
+    do
+    {
+        eval
+        {
+            $response = $userAgent->get( $srcUrl, ':content_file' => $target );
+        };
+        if($@)
+        {
+            # printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $@);
+            $ret = 0;
+            last;
+        }
+
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > 15)
+            {
+                $ret = 0;
+                last
+            }
+
+            my $newuri = $response->header("location");
+
+            #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
+            $srcUrl = URI->new($newuri);
+        }
+        elsif($response->is_success)
+        {
+            $ret = 1;
+        }
+    } while($response->is_redirect);
+
+    return $ret;
+}
+
+
+=item doesFileExist($userAgent, $srcUrl)
+
+Issue a head request to find out whether remote file $srcUrl exitst.
+
+Returns true on success, false if something goes wrong.
+
+=cut
+
+sub doesFileExist
+{
+    my ($userAgent, $srcUrl) = @_;
+
+    my $redirects = 0;
+    my $tries = 0;
+    my $ret = 0;
+    my $response;
+
+    do
+    {
+        eval
+        {
+            $response = $userAgent->head($srcUrl);
+        };
+        if($@)
+        {
+            $ret = 0;
+            $tries++;
+        }
+    
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            $tries = 4 if ($redirects > 15);
+            $srcUrl = URI->new($response->header("location"));
+        }
+        elsif ( $response->is_success )
+        {
+            $ret = 1;
+            $tries = 4;
+        }
+        else 
+        {
+            $tries++;
+        }
+    } while ($tries < 4);
+
+    return $ret;
 }
 
 =item dropPrivileges
