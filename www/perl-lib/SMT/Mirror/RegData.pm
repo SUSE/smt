@@ -4,6 +4,7 @@ use strict;
 use LWP::UserAgent;
 use URI;
 use SMT::Parser::RegData;
+use SMT::Parser::Needinfo;
 use XML::Writer;
 use Crypt::SSLeay;
 use SMT::Utils;
@@ -532,7 +533,16 @@ sub _updateDB
                 $row->{LOCALPATH} = 'RPMMD/'.$row->{NAME};
             }
         }
-
+        elsif(lc($table) eq "products")
+        {
+          if( $row->{NEEDINFO} ne "" )
+          {
+            my $needinfo = SMT::Parser::Needinfo->new( dbh => $dbh, log => $self->{LOG},
+                                                       vblevel => $self->vblevel(),
+                                                       pid => $row->{PRODUCTDATAID} );
+            $needinfo->parse( $row->{NEEDINFO} );
+          }
+        }
 
         # PRIMARY KEY exists in DB, do update
         if(@$all == 1)

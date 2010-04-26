@@ -1,5 +1,5 @@
 NAME          = smt
-VERSION       = 1.3.0
+VERSION       = 1.2.1
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -111,6 +111,8 @@ install:
 	install -m 644 www/perl-lib/SMT/Client.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/RESTService.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/RESTInfo.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	install -m 644 www/perl-lib/SMT/RegSession.pm $(DESTDIR)$(PERLMODDIR)/SMT/
+	install -m 644 www/perl-lib/SMT/RegParams.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	cd db/schemas; \
 	find mysql/ -name ".svn" -prune -o \
                 \( \

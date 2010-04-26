@@ -5,7 +5,7 @@ use warnings;
 
 use vars qw($SCHEMA_VERSION $FILTER_DBATTRS $MIRROR_CFG);
 
-$SCHEMA_VERSION = 0.14;
+$SCHEMA_VERSION = 0.15;
 
 # Filters table name and attribute names for RPMMD::Filter::dbsave/dbload
 $FILTER_DBATTRS = {

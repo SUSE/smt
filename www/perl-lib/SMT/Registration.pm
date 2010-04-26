@@ -17,6 +17,8 @@ use constant IOBUFSIZE => 8192;
 
 use SMT::Utils;
 use SMT::Client;
+use SMT::RegParams;
+use SMT::RegSession;
 use DBI qw(:sql_types);
 
 use Data::Dumper;
@@ -37,7 +39,7 @@ sub handler {
         $r->log_error("Registration called without args.");
         return Apache2::Const::SERVER_ERROR;
     }
-
+    
     foreach my $a (split(/\&/, $args))
     {
         chomp($a);
@@ -45,7 +47,7 @@ sub handler {
         $hargs->{$key} = $value;
     }
     $r->log->info("Registration called with command: ".$hargs->{command});
-    
+
     if(exists $hargs->{command} && defined $hargs->{command})
     {
         if($hargs->{command} eq "register")
@@ -59,6 +61,14 @@ sub handler {
         elsif($hargs->{command} eq "listparams")
         {
             SMT::Registration::listparams($r, $hargs);
+        }
+        elsif($hargs->{command} eq "interactive")
+        {
+          SMT::Registration::interactive($r, $hargs);
+        }
+        elsif($hargs->{command} eq "apply")
+        {
+          SMT::Registration::applyInteractive($r, $hargs);
         }
         else
         {
@@ -96,7 +106,7 @@ sub register
     if(exists $hargs->{namespace} && defined $hargs->{namespace} && $hargs->{namespace} ne "")
     {
         $namespace = $hargs->{namespace};
-    }    
+    }
 
     if( $namespace ne "" ) 
     {
@@ -119,7 +129,7 @@ sub register
             $namespace = "";
         }
     }
-        
+
     my $data = read_post($r);
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
@@ -127,75 +137,38 @@ sub register
         $r->log_error("Cannot open Database");
         die "Please contact your administrator.";
     }
-    
-    my $regroot = { ACCEPTOPT => 1, CURRENTELEMENT => "", PRODUCTATTR => {}, register => {}};
-    my $regparser = XML::Parser->new( Handlers =>
-                                      { Start => sub { reg_handle_start_tag($regroot, @_) },
-                                        Char  => sub { reg_handle_char_tag($regroot, @_) },
-                                        End   => sub { reg_handle_end_tag($regroot, @_) }
-                                      });
 
-    eval {
-        $regparser->parse( $data );
-    };
-    if($@) {
-        # ignore the errors, but print them
-        chomp($@);
-        $r->log_error("SMT::Registration::register Invalid XML: $@");
-    }
+    my $regparam = SMT::RegParams->new( log => $r );
+    $regparam->parse( $data );
 
-
-    my $needinfo = SMT::Registration::parseFromProducts($r, $dbh, $regroot->{register}->{product}, "NEEDINFO");
-
-    #$r->log_error("REGROOT:".Data::Dumper->Dump([$regroot]));
-
-    my $output = "";
-    my $writer = XML::Writer->new(NEWLINES => 0, OUTPUT => \$output);
-    $writer->xmlDecl("UTF-8");
-    
-    my $dat = { CACHE => [],
-                WRITECACHE => 0,
-                INFOCOUNT => 0, 
-                REGISTER => $regroot,
-                PARAMDEPTH => 0,
-                PARAMISMAND => 0,
-                R => $r,
-                WRITER => $writer
-               };
-    
-    my $parser = XML::Parser->new( Handlers =>
-                                   { Start=> sub { nif_handle_start_tag($dat, @_) },
-                                     End=>   sub { nif_handle_end_tag($dat, @_) }
-                                   });
-    eval {
-        $parser->parse( $needinfo );
-    };
-    if($@) {
-        # ignore the errors, but print them
-        chomp($@);
-        $r->log_error("SMT::Registration::register Invalid XML: $@");
-    }
-
-    #$r->log_error("INFOCOUNT: ".$dat->{INFOCOUNT});
-
-    if($dat->{INFOCOUNT} > 0)
+    my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $regparam->guid(), log => $r );
+    if( $regsession->loadSession() )
     {
-        $r->log->info("Return NEEDINFO: $output");
-
-        # we need to send the <needinfo>
-        print $output;
+      $regparam->joinSession( $regsession->yaml() );
     }
-    else
-    {
+    $regsession->updateSession( $regparam->yaml() );
+
+    
+    my $xml = SMT::Registration::paramsForProducts("needinfo", $r, $dbh, $regparam->products(), $regparam);
+    
+  if($xml ne "")
+  {
+    $r->log->info("Return NEEDINFO: $xml");
+
+    # we need to send the <needinfo>
+    print $xml;
+  }
+  else
+  {
         # we have all data; store it and send <zmdconfig>
 
         # get the os-target
 
-        my $target = SMT::Registration::findTarget($r, $dbh, $regroot);
+        my $target = SMT::Registration::findTarget($r, $dbh, $regparam);
 
         # insert new registration data
 
-        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot, $namespace, $target);
+        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regparam, $namespace, $target);
 
         # get the catalogs
 
@@ -203,10 +176,11 @@ sub register
 
         # send new <zmdconfig>
 
-        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $namespace);
+        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regparam->guid(), $catalogs, $namespace);
+
+        $regsession->cleanSession();
 
         $r->log->info("Return ZMDCONFIG: $zmdconfig");
-        
         print $zmdconfig;
     }
     $dbh->disconnect();
@@ -289,8 +263,8 @@ sub listparams
         $r->log_error("SMT::Registration::parseFromProducts Invalid XML: $@");
     }
     
-    my $xml = SMT::Registration::parseFromProducts($r, $dbh, $data->{PRODUCTS}, "PARAMLIST");
-    
+    #my $xml = SMT::Registration::parseFromProducts($r, $dbh, $data->{PRODUCTS}, "PARAMLIST");
+    my $xml = SMT::Registration::paramsForProducts("paramlist", $r, $dbh, $data->{PRODUCTS});
     $r->log->info("Return PARAMLIST: $xml");
     
     print $xml;
@@ -300,157 +274,409 @@ sub listparams
     return;
 }
 
+sub applyInteractive
+{
+  my $r     = shift;
+  my $hargs = shift;
+  my $pargs = {};
+  
+  $r->content_type('text/html');
+  
+  $r->log->info("applyInteractive called");
+
+  my $lpreq = read_post($r);
+
+  foreach my $a (split(/\&/, $lpreq))
+  {
+    chomp($a);
+    my ($key, $value) = split(/=/, $a, 2);
+    next if(!defined $value || $value eq "");
+    next if(!defined $key || $key eq "");
+    $pargs->{$key} = $value;
+  }
+
+  my $dbh = SMT::Utils::db_connect();
+  if(!$dbh)
+  {
+    $r->log_error("Cannot connect to database");
+    die "Please contact your administrator";
+  }
+  my $guid = undef;
+  $guid = $pargs->{guid} if(exists $pargs->{guid} && defined $pargs->{guid} && $pargs->{guid} ne "");
+  
+  my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid, log => $r );
+  if( !$regsession->loadSession() )
+  {
+    $r->log_error("Session could not be loaded");
+    die "Not Found";
+  }
+  my $regparam = SMT::RegParams->new( log => $r );
+  $regparam->guid($guid);
+  if(!$regparam->joinSession( $regsession->yaml() ))
+  {
+    $r->log_error("RegParams object could not be created");
+    die "Internal Server Error";
+  }
+  
+  # check if the session is in the correct status
+  
+  if(!defined $regparam->param("secret") || $regparam->param("secret") eq "")
+  {
+    $r->log_error("No secret found in interactive session.");
+    die "Internal Server Error";
+  }
+
+  my @list = findColumnsForProducts($r, $dbh, $regparam->products(), "PRODUCTDATAID");
+  my $pids = $dbh->quote(shift @list);
+  foreach my $item (@list)
+  {
+    $pids .= ", ".$dbh->quote($item);
+  }
+  
+  my $statement = sprintf("SELECT distinct param_name FROM needinfo_params WHERE product_id IN (%s) AND command = '' ORDER BY id",
+                          $pids);
+  $r->log->info("STATEMENT: $statement");
+  my $arrayref = $dbh->selectall_arrayref( $statement, {Slice => {}} );
+
+  foreach my $value (@{$arrayref})
+  {
+    next if($value->{param_name} eq "guid" || $value->{param_name} eq "host");
+    next if($value->{param_name} eq "product" || $value->{param_name} eq "privacy");
+    if(exists $pargs->{$value->{param_name}} && defined $pargs->{$value->{param_name}} &&
+      $pargs->{$value->{param_name}} ne "")
+    {
+      $regparam->param($value->{param_name}, $pargs->{$value->{param_name}});
+    }
+  }
+  $regparam->wasInteractive(1);
+  $regsession->updateSession( $regparam->yaml() );
+
+  my $html =<<EOF
+  <html>
+  <head>
+  <title>Subscription Management Tool - System Registration</title>
+  <meta name="Robots" content="INDEX, FOLLOW"/>
+  <meta http-equiv="Content-Language" content="en-US"/>
+  <meta http-equiv="Content-Type" content="text/html; CHARSET=UTF-8"/>
+  <script type="text/javascript" language="JavaScript"></script>
+  <style type="text/css">
+  a { color:#383A3B; }
+  a:hover { color:#A6A9A9; text-decoration:underline; }
+  h1 { font-size:150%; color:#565858; margin:0; padding:20px 0 28px 0;}
+  h2 { font-size:100%; font-weight:normal; margin:-28px 0 15px 0; padding:0; }
+  p.flyspec { font-size:80%; font-style:italic; }
+  p.summary { font-style:italic; text-align:center; }
+  .first, .notop { margin-top:0; padding-top:0; }
+  
+  #content { padding-left:154px; }
+  #contenthead { font-size:75%; width:598px; }
+  #mainbody { font-size:70%; min-height:320px; height:auto !important; height:100%; width:598px; }
+  
+  .dLeft { font-weight:bold; padding-right:10px; text-align:right; width:200px; }
+  .dLeft, .dRight { float:left; }
+  
+  .fullw { clear:both; width:598px; }
+  
+  h1 { padding-top:0; padding-bottom:14px; }
+  h2 { margin:-14px 0 14px 0; }
+  #pageEnd { text-align:right; width:462px; padding:0; }
+  #pageEnd p.imagebutton, #pageEnd p.imagebutton-arrowleft, #pageEnd p.imagebutton-arrowgray { float:right; margin-left:10px; }
+  #pageEnd .dLeft p.imagebutton, #pageEnd .dLeft p.imagebutton-arrowgray { float:left; font-weight:normal; margin-left:0px; margin-right:10px; }
+  
+  </style>
+  </head>
+  
+  <body>
+  <div id="content">
+  <div id="contenthead">
+  <h1>Subscription Management Tool - System Registration</h1>
+  </div>
+  
+  <div id="mainbody">
+  
+  <p>
+  To complete the process of registering this system and getting access to online updates,
+  you need to finish the registration process. Close the web browser and continue the registration.
+  </p>
+  </div>
+  </div>
+  </body>
+  </html>
+EOF
+;
+
+  print $html;
+  return;
+}
+
+sub interactive
+{
+  my $r     = shift;
+  my $hargs = shift;
+  
+  $r->content_type('text/html');
+  
+  $r->log->info("interactive called");
+
+  my $dbh = SMT::Utils::db_connect();
+  if(!$dbh)
+  {
+    $r->log_error("Cannot connect to database");
+    die "Please contact your administrator";
+  }
+  
+  
+  my $guid = undef;
+  $guid = $hargs->{guid} if(exists $hargs->{guid} && defined $hargs->{guid} && $hargs->{guid} ne "");
+  
+  my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid, log => $r );
+  if( !$regsession->loadSession() )
+  {
+    $r->log_error("Session could not be loaded");
+    die "Not Found";
+  }
+  my $regparam = SMT::RegParams->new( log => $r );
+  $regparam->guid($guid);
+  if(!$regparam->joinSession( $regsession->yaml() ))
+  {
+    $r->log_error("RegParams object could not be created");
+    die "Internal Server Error";
+  }
+  
+  # check if the session is in the correct status
+  
+  if(!defined $regparam->param("secret") || $regparam->param("secret") eq "")
+  {
+    $r->log_error("No secret found in interactive session.");
+    die "Internal Server Error";
+  }
+  # FIXME: maybe we should introduce and check something like a sessionid
+  
+  my @list = findColumnsForProducts($r, $dbh, $regparam->products(), "FRIENDLY");
+  my $productsFriendly = join('<br/>', @list);
+  @list = findColumnsForProducts($r, $dbh, $regparam->products(), "PRODUCTDATAID");
+  my $pids = $dbh->quote(shift @list);
+  foreach my $item (@list)
+  {
+    $pids .= ", ".$dbh->quote($item);
+  }
+  
+  my $statement = sprintf("SELECT distinct param_name, description, mandatory FROM needinfo_params WHERE product_id IN (%s) AND command = '' ORDER BY id",
+                          $pids);
+  $r->log->info("STATEMENT: $statement");
+  my $hashref = $dbh->selectall_hashref( $statement, "param_name" );
+  
+  
+  my $html =<<EOF
+  <html>
+  <head>
+  <title>Subscription Management Tool - System Registration</title>
+  <meta name="Robots" content="INDEX, FOLLOW"/>
+  <meta http-equiv="Content-Language" content="en-US"/>
+  <meta http-equiv="Content-Type" content="text/html; CHARSET=UTF-8"/>
+  <style type="text/css">
+  a { color:#383A3B; }
+  a:hover { color:#A6A9A9; text-decoration:underline; }
+  h1 { font-size:150%; color:#565858; margin:0; padding:20px 0 28px 0;}
+  h2 { font-size:100%; font-weight:normal; margin:-28px 0 15px 0; padding:0; }
+  p.flyspec { font-size:80%; font-style:italic; }
+  p.summary { font-style:italic; text-align:center; }
+  .first, .notop { margin-top:0; padding-top:0; }
+  
+  #content { padding-left:154px; }
+  #contenthead { font-size:75%; width:598px; }
+  #mainbody { font-size:70%; min-height:320px; height:auto !important; height:100%; width:598px; }
+  
+  .dLeft { font-weight:bold; padding-right:10px; text-align:right; width:200px; }
+  .dLeft, .dRight { float:left; }
+  
+  .fullw { clear:both; width:598px; }
+  
+  h1 { padding-top:0; padding-bottom:14px; }
+  h2 { margin:-14px 0 14px 0; }
+  #pageEnd { text-align:right; width:462px; padding:0; }
+  #pageEnd p.imagebutton, #pageEnd p.imagebutton-arrowleft, #pageEnd p.imagebutton-arrowgray { float:right; margin-left:10px; }
+  #pageEnd .dLeft p.imagebutton, #pageEnd .dLeft p.imagebutton-arrowgray { float:left; font-weight:normal; margin-left:0px; margin-right:10px; }
+  
+  </style>
+  </head>
+  
+  <body>
+  <div id="content">
+  <div id="contenthead">
+    <h1>Subscription Management Tool - System Registration</h1>
+    <h2>
+      $productsFriendly
+    </h2>
+  </div>
+  
+  <div id="mainbody">
+  
+  <p>
+  Please enter the following information to register your product. By completing this simple registration, you will gain immediate access to online updates.
+  </p>
+  
+  <form name="Form" method="POST" action="regsvc?command=apply">
+    <input type="hidden" name="guid" value="$guid"/>
+    <input type="hidden" name="lang" value="en-US"/>
+    <input type="hidden" name="from" value="interactive"/>
+    <div class="fullw">
+EOF
+;
+  
+  delete $hashref->{'guid'} if(exists $hashref->{'guid'});
+  delete $hashref->{'host'} if(exists $hashref->{'host'});
+  delete $hashref->{'product'} if(exists $hashref->{'product'});
+  delete $hashref->{'privacy'} if(exists $hashref->{'privacy'});
+  
+  # first we display the email question
+  if(exists $hashref->{'email'})
+  {
+    $html .= '    <div class="dLeft">'."\n";
+    $html .= $hashref->{'email'}->{description};
+    $html .= '    </div><div class="dRight">'."\n";
+    $html .= '    <input type="text" name="email" value="" size="40" maxlength="100"/>'."\n";
+    $html .= '  </div>'."\n";
+    $html .= '<div style="clear:both">&nbsp;</div>'."\n";
+    delete $hashref->{'email'};
+  }
+
+  # next: all registration code questions
+  foreach my $key (keys %{$hashref})
+  {
+    next if($key !~ /^regcode/);
+
+    $html .= '    <div class="dLeft">'."\n";
+    $html .= $hashref->{$key}->{description};
+    $html .= '    </div><div class="dRight">'."\n";
+    $html .= '    <input type="text" name="'.$key.'" value="" size="40" maxlength="100"/>'."\n";
+    $html .= '  </div>'."\n";
+    $html .= '<div style="clear:both">&nbsp;</div>'."\n";
+    delete $hashref->{$key};
+  }
+  
+  # last: everything which is left
+  foreach my $key (keys %{$hashref})
+  {
+    $html .= '    <div class="dLeft">'."\n";
+    $html .= $hashref->{$key}->{description};
+    $html .= '    </div><div class="dRight">'."\n";
+    $html .= '    <input type="text" name="'.$key.'" value="" size="40" maxlength="100"/>'."\n";
+    $html .= '  </div>'."\n";
+    $html .= '<div style="clear:both">&nbsp;</div>'."\n";
+    delete $hashref->{$key};
+  }
+  
+  $html .= '</div><div id="pageEnd"> <div class="dRight">'."\n";
+  $html .= '<input type="submit" name="submit" value="Submit"/>'."\n";
+  $html .= '</div></div></form>'."\n";
+  $html .= '</div></div></body> </html>'."\n";
+
+  print $html;
+  return;
+}
+
 ###############################################################################
 
-sub parseFromProducts
+sub paramsForProducts
 {
-    my $r      = shift;
-    my $dbh    = shift;
-    my $productarray = shift;
-    my $column = shift;
-    
-    my @list = findColumnsForProducts($r, $dbh, $productarray, $column);
+  my $what = shift;
+  my $r = shift;
+  my $dbh = shift;
+  my $productarray = shift;
+  my $regparam = shift || undef;
+  my $count = 0;
+  
+  my $array = getParamsForProducts($r, $dbh, $productarray);
 
-    if(uc($column) eq "PARAMLIST" || uc($column) eq "NEEDINFO")
+  my $output = "";
+  my $writer = XML::Writer->new(NEWLINES => 0, OUTPUT => \$output);
+  $writer->xmlDecl("UTF-8");
+  if($what eq "needinfo" && defined $regparam)
+  {
+    $writer->startTag("needinfo", "xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                      "href" => " https://".$r->server()->server_hostname()."".$r->uri()."?command=interactive&guid=".$regparam->guid(),
+                      "lang" => "en");
+  }
+  elsif($what eq "paramlist")
+  {
+    $writer->startTag("paramlist", "xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+                      "lang" => "en");
+  }
+
+  foreach my $p (@{$array})
+  {
+    if($what eq "needinfo" && defined $regparam)
     {
-        return SMT::Registration::mergeDocuments($r, \@list);
-    }
-    
-    return "";
-}
-
-
-sub writeXML
-{
-    my $node = shift;
-    my $writer = shift;
-
-    my $element = ref($node);
-    return if($element !~ /^smt::/);
-
-    $element =~ s/^smt:://;
-    
-    return if($element eq "Characters");
-    
-    my %attr = %{$node};
-    delete $attr{Kids};
-    
-    $writer->startTag($element, %attr);
-    
-    foreach my $child (@{$node->{Kids}})
-    {
-        writeXML($child, $writer);
-    }
-    
-    $writer->endTag($element);
-}
-
-
-sub mergeXML
-{
-    my $node1 = shift;
-    my $node2 = shift;
-    
-    foreach my $child2 (@{$node2->{Kids}})
-    {
-        my $found = 0;
-        
-        foreach my $child1 (@{$node1->{Kids}})
-        {
-            
-            if(ref($child2) eq ref($child1))
-            {
-                if(ref($child2) eq "smt::param")
-                {
-                    # we have to match the id
-                    if($child2->{id} eq $child1->{id})
-                    {
-                        $found = 1;
-                        mergeXML($child1, $child2);
-                    }
-                }
-                else
-                {
-                    $found = 1;
-                    mergeXML($child1, $child2);
-                }
-            }
-        }
-        if(!$found)
-        {
-            # found something new in child2 - put it in child 1
-            push @{$node1->{Kids}}, $child2;
-        }
-    }
-}
-
-sub mergeDocuments
-{
-    my $r    = shift;
-    my $list = shift;
-    
-    my $basedoc = "";
-
-    my $root1;
-    my $node1;
-    
-
-    foreach my $other (@$list)
-    {
-        next if(!defined $other || $other eq "");
-        if($basedoc eq "")
-        {
-            $basedoc = $other;
-            my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
-            eval {
-                $root1 = $p1->parse( $basedoc );
-                $node1 = $root1->[0];
-            };
-            if($@) {
-                # ignore the errors, but print them
-                chomp($@);
-                $r->log_error("SMT::Registration::mergeDocuments Invalid XML: $@");
-            }
-            
-            next;
-        }
-        next if($basedoc eq $other);
-        
-        my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
-        eval {
-            my $root2 = $p2->parse( $other );
-            my $node2;
+      next if($p->{param_name} eq "guid" && defined $regparam->guid());
+      next if($p->{param_name} eq "host" && defined $regparam->param("host"));
+      next if($p->{param_name} eq "product" && @{$regparam->products()} > 0 );
+      next if($p->{param_name} eq "privacy" && $regparam->privacy());
+      next if(defined $regparam->param($p->{param_name}));
       
-            if(ref($root1->[0]) eq ref($root2->[0]))
-            {
-                $node1 = $root1->[0];
-                $node2 = $root2->[0];
-                
-                mergeXML($node1, $node2);
-            }
-        };
-        if($@) {
-            # ignore the errors, but print them
-            chomp($@);
-            $r->log_error("SMT::Registration::register Invalid XML: $@");
-        }
+      next if($p->{command} eq "" && ($regparam->wasInteractive() || $regparam->force() ne "registration"));
+      next if($regparam->acceptMandatory() && !$p->{mandatory});
     }
-    
-    my $output = "";
-    my $w = XML::Writer->new(NEWLINES => 0, OUTPUT => \$output);
-    $w->xmlDecl("UTF-8");
-    
-    writeXML($node1, $w);
 
-    return $output;
+    if($p->{param_name} eq "guid" || $p->{param_name} eq "host"||
+      $p->{param_name} eq "product" || $p->{param_name} eq "privacy")
+    {
+      my %attrs = ();
+      $attrs{description} = $p->{description};
+      $attrs{class} = "mandatory" if($p->{mandatory});
+      $attrs{command} = $p->{command} if($p->{command} ne "");
+      $writer->emptyTag($p->{param_name}, %attrs);
+    }
+    else
+    {
+      my %attrs = ();
+      $attrs{id} = $p->{param_name};
+      $attrs{description} = $p->{description};
+      $attrs{class} = "mandatory" if($p->{mandatory});
+      $attrs{command} = $p->{command} if($p->{command} ne "");
+      $writer->emptyTag("param", %attrs);
+      $count++;
+    }
+  }
+  if($what eq "needinfo")
+  {
+    $writer->endTag("needinfo");
+  }
+  elsif($what eq "paramlist")
+  {
+    $writer->endTag("paramlist");
+  }
+  
+  return $output if($count > 0);
+  return "";
 }
 
+sub getParamsForProducts
+{
+  my $r = shift;
+  my $dbh = shift;
+  my $productarray = shift;
+  
+  my @list = findColumnsForProducts($r, $dbh, $productarray, "PRODUCTDATAID");
+  if( @list > 0 )
+  {
+    my $pids = $dbh->quote(shift @list);
+    foreach my $item (@list)
+    {
+      $pids .= ", ".$dbh->quote($item);
+    }
+    my $statement = sprintf("SELECT distinct param_name, description, command, mandatory FROM needinfo_params WHERE product_id IN (%s) order by id",
+                            $pids);
+    $r->log->info("STATEMENT: $statement");
+    return $dbh->selectall_arrayref( $statement, {Slice => {}} );
+  }
+}
 
 sub insertRegistration
 {
     my $r         = shift;
     my $dbh       = shift;
-    my $regdata   = shift;
+    my $regparam  = shift;
     my $namespace = shift || '';
     my $target    = shift || '';
 
@@ -459,9 +685,9 @@ sub insertRegistration
     my $regtimestring = "";
     my $hostname = "";
     
-    my @list = findColumnsForProducts($r, $dbh, $regdata->{register}->{product}, "PRODUCTDATAID");
+    my @list = findColumnsForProducts($r, $dbh, $regparam->products(), "PRODUCTDATAID");
 
-    my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
+    my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regparam->guid()));
     $r->log->info("STATEMENT: $statement");
     eval 
     {
@@ -501,7 +727,7 @@ sub insertRegistration
     
     if(@delete > 0)
     {
-        $statement = sprintf("DELETE from Registration where GUID=%s AND PRODUCTID ", $dbh->quote($regdata->{register}->{guid}));
+      $statement = sprintf("DELETE from Registration where GUID=%s AND PRODUCTID ", $dbh->quote($regparam->guid()));
         if(@delete > 1)
         {
             $statement .= "IN (".join(",", @delete).")";
@@ -525,7 +751,7 @@ sub insertRegistration
     {
         eval {
             my $sth = $dbh->prepare("INSERT into Registration (GUID, PRODUCTID, REGDATE) VALUES (?, ?, ?)");
-            $sth->bind_param(1, $regdata->{register}->{guid});
+            $sth->bind_param(1, $regparam->guid());
             $sth->bind_param(2, $id, SQL_INTEGER);
             $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
             $cnt = $sth->execute;
@@ -554,7 +780,7 @@ sub insertRegistration
         eval {
             my $sth = $dbh->prepare($statement);
             $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
-            $sth->bind_param(2, $regdata->{register}->{guid});
+            $sth->bind_param(2, $regparam->guid());
             $cnt = $sth->execute;
             $r->log->info("STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
         };
@@ -569,7 +795,7 @@ sub insertRegistration
     # clean old machinedata
     #
     $cnt = 0;
-    $statement = sprintf("DELETE from MachineData where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
+    $statement = sprintf("DELETE from MachineData where GUID=%s", $dbh->quote($regparam->guid()));
     eval {
         $cnt = $dbh->do($statement);
         $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
@@ -582,18 +808,18 @@ sub insertRegistration
     #
     # insert new machinedata
     #
-    foreach my $key (keys %{$regdata->{register}})
+    foreach my $key (keys %{$regparam->params()})
     {
         next if($key eq "guid" || $key eq "product" || $key eq "mirrors");
         if($key eq "hostname")
         {
-            $hostname = $regdata->{register}->{$key};
+            $hostname = $regparam->param($key);
         }
         
         my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                                $dbh->quote($regdata->{register}->{guid}), 
+                                $dbh->quote($regparam->guid()),
                                 $dbh->quote($key),
-                                $dbh->quote($regdata->{register}->{$key}));
+                                $dbh->quote($regparam->param($key)));
         $r->log->info("STATEMENT: $statement");
         eval {
             $dbh->do($statement);
@@ -604,12 +830,12 @@ sub insertRegistration
         }
     }
 
-    for(my $i = 0; $i < @{$regdata->{register}->{product}}; $i++)
+    for(my $i = 0; $i < @{$regparam->products()}; $i++)
     {
-        my $ph = @{$regdata->{register}->{product}}[$i];
+      my $ph = @{$regparam->products()}[$i];
 
         my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                                $dbh->quote($regdata->{register}->{guid}), 
+                                $dbh->quote($regparam->guid()),
                                 $dbh->quote("product-name-".$list[$i]),
                                 $dbh->quote($ph->{name}));
         $r->log->info("STATEMENT: $statement");
@@ -621,7 +847,7 @@ sub insertRegistration
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
         $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                             $dbh->quote($regdata->{register}->{guid}), 
+                             $dbh->quote($regparam->guid()),
                              $dbh->quote("product-version-".$list[$i]),
                              $dbh->quote($ph->{version}));
         $r->log->info("STATEMENT: $statement");
@@ -633,7 +859,7 @@ sub insertRegistration
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
         $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                             $dbh->quote($regdata->{register}->{guid}), 
+                             $dbh->quote($regparam->guid()),
                              $dbh->quote("product-arch-".$list[$i]),
                              $dbh->quote($ph->{arch}));
         $r->log->info("STATEMENT: $statement");
@@ -645,7 +871,7 @@ sub insertRegistration
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
         $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                             $dbh->quote($regdata->{register}->{guid}), 
+                             $dbh->quote($regparam->guid()),
                              $dbh->quote("product-rel-".$list[$i]),
                              $dbh->quote($ph->{release}));
         $r->log->info("STATEMENT: $statement");
@@ -657,7 +883,6 @@ sub insertRegistration
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
     }
-    
     #
     # if we do not have the hostname, try to get the IP address
     #
@@ -681,10 +906,10 @@ sub insertRegistration
         $sth->bind_param(2, $target);
         $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
         $sth->bind_param(4, $namespace );
-        $sth->bind_param(5, $regdata->{register}->{secret});
-        $sth->bind_param(6, $regdata->{register}->{guid});
+        $sth->bind_param(5, $regparam->param("secret"));
+        $sth->bind_param(6, $regparam->guid());
         $aff = $sth->execute;
-            
+
         $r->log->info("STATEMENT: ".$sth->{Statement});
     };
     if ($@)
@@ -695,12 +920,12 @@ sub insertRegistration
     if ($aff == 0)
     {
         # New registration; we need an insert
-        $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET) VALUES (%s, %s, %s, %s, %s)", 
-                             $dbh->quote($regdata->{register}->{guid}),
+        $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET) VALUES (%s, %s, %s, %s, %s)",
+                             $dbh->quote($regparam->guid()),
                              $dbh->quote($hostname),
                              $dbh->quote($target),
                              $dbh->quote($namespace),
-                             $dbh->quote($regdata->{register}->{guid}));
+                             $dbh->quote($regparam->param("secret")));
         $r->log->info("STATEMENT: $statement");
         eval
         {
@@ -715,10 +940,10 @@ sub insertRegistration
 
     my $client = SMT::Client->new({ 'dbh' => $dbh });
     
-    if ( !  $client->insertPatchstatusJob( $regdata->{register}->{guid} ) )
+    if ( !  $client->insertPatchstatusJob( $regparam->guid() ) )
     {
         $r->log_error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
-                              $regdata->{register}->{guid} )  );
+                              $regparam->guid() )  );
     }
     
     return \@list;
@@ -726,37 +951,27 @@ sub insertRegistration
 
 sub findTarget
 {
-    my $r       = shift;
-    my $dbh     = shift;
-    my $regroot = shift;
+    my $r        = shift;
+    my $dbh      = shift;
+    my $regparam = shift;
 
     my $result  = undef;
     
-    if(exists $regroot->{register}->{ostarget} && defined $regroot->{register}->{ostarget} &&
-       $regroot->{register}->{ostarget} ne "")
+    my $rtarget = $regparam->param("ostarget");
+    if(!defined $rtarget || $rtarget ne "")
     {
-        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($regroot->{register}->{ostarget})) ;
-        $r->log->info("STATEMENT: $statement");
-
-        my $target = $dbh->selectcol_arrayref($statement);
-        
-        if(exists $target->[0])
-        {
-            $result = $target->[0];
-        }
+      $rtarget = $regparam->param("ostarget-bak");
+      $rtarget =~ s/^\s*"//;
+      $rtarget =~ s/"\s*$//;
     }
-    elsif(exists $regroot->{register}->{"ostarget-bak"} && defined $regroot->{register}->{"ostarget-bak"} &&
-          $regroot->{register}->{"ostarget-bak"} ne "")
+    
+    if(defined $rtarget && $rtarget ne "")
     {
-        my $targetString = $regroot->{register}->{"ostarget-bak"};
-        $targetString =~ s/^\s*"//;
-        $targetString =~ s/"\s*$//;
-
-        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($targetString)) ;
+        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($rtarget)) ;
         $r->log->info("STATEMENT: $statement");
 
         my $target = $dbh->selectcol_arrayref($statement);
-        
+
         if(exists $target->[0])
         {
             $result = $target->[0];
@@ -1125,317 +1340,6 @@ sub prod_handle_end_tag
         push @{$data->{PRODUCTS}}, $data->{CURRENT};
         $data->{CURRENT} = undef;
         $data->{STATE} = 0;
-    }
-}
-
-sub reg_handle_start_tag
-{
-    my $data = shift;
-    my( $expat, $element, %attrs ) = @_;
-
-    if(lc($element) eq "param")
-    {
-        if(exists $attrs{id} && defined $attrs{id} && $attrs{id} ne "")
-        {
-            $data->{CURRENTELEMENT} = $attrs{id};
-            # empty params are allowed, so we create the node here
-            $data->{register}->{$data->{CURRENTELEMENT}} = "";
-        }
-    }
-    elsif(lc($element) eq "product")
-    {
-        $data->{CURRENTELEMENT} = lc($element);
-        $data->{PRODUCTATTR} = \%attrs;
-    }
-    elsif(lc($element) eq "register")
-    {
-        if(exists $attrs{accept} && defined $attrs{accept} && lc($attrs{accept}) eq "mandatory")
-        {
-            $data->{ACCEPTOPT} = 0;
-        }        
-    }
-    elsif(lc($element) eq "host")
-    {
-        $data->{CURRENTELEMENT} = lc($element);
-        # empty host is allowed, so we create the node here
-        $data->{register}->{$data->{CURRENTELEMENT}} = "";
-        if(exists $attrs{type} && defined $attrs{type} && $attrs{type} ne "")
-        {
-            $data->{register}->{virttype} = $attrs{type};
-        }
-    }
-    else
-    {
-        $data->{CURRENTELEMENT} = lc($element);
-    }
-}
-
-sub reg_handle_char_tag
-{
-    my $data = shift;
-    my( $expat, $string) = @_;
-
-    if($data->{CURRENTELEMENT} ne "" && $data->{CURRENTELEMENT} ne "product")
-    {
-        if(exists $data->{register}->{$data->{CURRENTELEMENT}} &&
-           defined $data->{register}->{$data->{CURRENTELEMENT}} &&
-           $data->{register}->{$data->{CURRENTELEMENT}} ne "")
-        {
-            $data->{register}->{$data->{CURRENTELEMENT}} .= $string;
-        }
-        else
-        {
-            $data->{register}->{$data->{CURRENTELEMENT}} = $string;
-        }
-    }
-    elsif($data->{CURRENTELEMENT} eq "product")
-    {
-        if(exists $data->{PRODUCTATTR}->{name} &&
-           defined $data->{PRODUCTATTR}->{name} &&
-           $data->{PRODUCTATTR}->{name} ne "")
-        {
-            $data->{PRODUCTATTR}->{name} .= $string;
-        }
-        else
-        {
-            $data->{PRODUCTATTR}->{name} = $string;
-        }
-    }
-}
-
-sub reg_handle_end_tag
-{
-    my $data = shift;
-    my( $expat, $element) = @_;
-
-    if(lc($element) eq "product")
-    {
-        if(!exists $data->{register}->{product})
-        {
-            $data->{register}->{product} = [];
-        }
-        push @{$data->{register}->{product}}, $data->{PRODUCTATTR};
-    }
-}
-
-sub nif_handle_start_tag
-{
-    my $data = shift;
-    my( $expat, $element, %attrs ) = @_;
-    
-    if(lc($element) eq "needinfo")
-    {
-        $data->{WRITER}->startTag(lc($element), %attrs);
-    }
-    elsif(lc($element) eq "guid")
-    {
-        if(!exists $data->{REGISTER}->{register}->{lc($element)})
-        {
-            $data->{WRITER}->emptyTag(lc($element), %attrs);
-            $data->{INFOCOUNT} += 1;
-        }           
-    }
-    elsif(lc($element) eq "host")
-    {
-        if(!exists $data->{REGISTER}->{register}->{lc($element)})
-        {
-            $data->{WRITER}->emptyTag(lc($element), %attrs);
-            $data->{INFOCOUNT} += 1;
-        }              
-    }
-    elsif(lc($element) eq "product")
-    {
-        if(!exists $data->{REGISTER}->{register}->{lc($element)})
-        {
-            $data->{WRITER}->emptyTag(lc($element), %attrs);
-            $data->{INFOCOUNT} += 1;
-        }
-    }
-    elsif(lc($element) eq "privacy")
-    {
-        if(!exists $data->{REGISTER}->{register}->{lc($element)})
-        {
-            $data->{WRITER}->emptyTag(lc($element), %attrs);
-        }
-    }
-    elsif(lc($element) eq "param")
-    {
-        my $resetmandhere = 0;
-        
-        $data->{PARAMDEPTH} += 1;
-
-        if($#{$data->{CACHE}} >= 0)
-        {
-            $data->{CACHE}->[$#{$data->{CACHE}}]->{SKIP} = 0;
-        }
-        
-
-        if(exists $attrs{class} && defined $attrs{class} && lc($attrs{class}) eq "mandatory")
-        {
-            $data->{PARAMISMAND} = 1;
-            $resetmandhere = 1;
-        }
-        
-        if(exists $attrs{id} && defined $attrs{id})
-        {
-            if(exists $data->{REGISTER}->{register}->{$attrs{id}})
-            {
-                # skip this, it is already there
-            }
-            elsif(exists $attrs{command} && defined $attrs{command})
-            {
-                if($data->{REGISTER}->{ACCEPTOPT} || (!$data->{REGISTER}->{ACCEPTOPT} && $data->{PARAMISMAND}))
-                {
-                    # we do not have a value for this command
-                    # if we accept optional => write it
-                    #   OR
-                    # if the param is mandatory
-
-       
-                    push @{$data->{CACHE}}, { SKIP      => 0, 
-                                              MUST      => 1,
-                                              ELEMENT   => lc($element),
-                                              ATTRS     => \%attrs,
-                                              WRITTEN   => 0,
-                                              RESETMAND => $resetmandhere
-                                            };
-                    $data->{WRITECACHE} = 1;
-                    $data->{INFOCOUNT} += 1;
-                    return;
-                }
-            }
-            else
-            {
-                # Hmmm, maybe we need this later. We need to switch SKIP to 0 if the next
-                # element is a start element
-                push @{$data->{CACHE}}, { SKIP      => 1,
-                                          MUST      => 0,
-                                          ELEMENT   => lc($element),
-                                          ATTRS     => \%attrs,
-                                          WRITTEN   => 0,
-                                          RESETMAND => $resetmandhere
-                                        };
-                return;
-            }
-        }
-        push @{$data->{CACHE}}, { SKIP      => 1, 
-                                  MUST      => 0,
-                                  ELEMENT   => lc($element),
-                                  ATTRS     => \%attrs,
-                                  WRITTEN   => 0,
-                                  RESETMAND => $resetmandhere
-                                };
-    }
-    elsif(lc($element) eq "select")
-    {
-        my $resetmandhere = 0;
-        
-        $data->{PARAMDEPTH} += 1;
-        
-        if(exists $attrs{class} && defined $attrs{class} && lc($attrs{class}) eq "mandatory")
-        {
-            $data->{PARAMISMAND} = 1;
-            $resetmandhere = 1;
-        }
-        push @{$data->{CACHE}}, { SKIP      => 0, 
-                                  MUST      => 0,
-                                  ELEMENT   => lc($element),
-                                  ATTRS     => \%attrs,
-                                  WRITTEN   => 0,
-                                  RESETMAND => $resetmandhere
-                                };
-    }
-    
-}
-
-sub nif_handle_end_tag
-{
-    my $data = shift;
-    my( $expat, $element) = @_;
-
-    if(lc($element) eq "param" || lc($element) eq "select")
-    {
-        $data->{PARAMDEPTH} -= 1;
-        
-        if($data->{CACHE}->[(@{$data->{CACHE}}-1)]->{SKIP})
-        {
-            my $msg = "SKIP CACHE element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ELEMENT};
-            if(exists $data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id})
-            {
-                $msg .= " id=".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id}
-            }
-            $data->{R}->log->info($msg);
-            my $entry = pop @{$data->{CACHE}};
-            if($entry->{RESETMAND})
-            {
-                $data->{PARAMISMAND} = 0;
-            }
-            return;
-        }
-
-        my $mustwrite = 0;
-        for(my $i = 0; $i < @{$data->{CACHE}}; $i++)
-        {
-            $mustwrite = 1 if($data->{CACHE}->[$i]->{MUST});
-        }
-        
-        if(!$mustwrite)
-        {
-            # skip last 
-            my $msg = "SKIP CACHE (No MUST) element:".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ELEMENT};
-            if(exists $data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id})
-            {
-                $msg .= " id=".$data->{CACHE}->[(@{$data->{CACHE}}-1)]->{ATTRS}->{id}
-            }
-            $data->{R}->log->info($msg);
-            my $entry = pop @{$data->{CACHE}};
-            if($entry->{RESETMAND})
-            {
-                $data->{PARAMISMAND} = 0;
-            }
-            return;
-        }
-        
-        for(my $i = 0; $i < @{$data->{CACHE}}; $i++)
-        {
-            if(!$data->{CACHE}->[$i]->{WRITTEN})
-            {
-                my $msg = "Write CACHE START element:".$data->{CACHE}->[$i]->{ELEMENT};
-                if(exists $data->{CACHE}->[$i]->{ATTRS}->{id})
-                {
-                    $msg .= " id=".$data->{CACHE}->[$i]->{ATTRS}->{id}
-                }
-                                
-                $data->{R}->log->info($msg);
-                $data->{WRITER}->startTag($data->{CACHE}->[$i]->{ELEMENT}, %{$data->{CACHE}->[$i]->{ATTRS}});
-                $data->{CACHE}->[$i]->{WRITTEN} = 1;
-                $data->{CACHE}->[$i]->{MUST} = 1;
-            }
-        }
-        
-        # write the last end element
-        my $d = pop @{$data->{CACHE}};
-        
-        if($d->{WRITTEN})
-        {
-            $data->{R}->log->info("Write CACHE END element:".$d->{ELEMENT});
-            $data->{WRITER}->endTag($d->{ELEMENT});
-        }
-        if($d->{RESETMAND})
-        {
-            $data->{PARAMISMAND} = 0;
-        }
-        
-        if($data->{PARAMDEPTH} <= 0)
-        {
-            $data->{PARAMDEPTH}  = 0;
-            $data->{CACHE} = [];
-        }
-        
-    }
-    elsif(lc($element) eq "needinfo")
-    {
-        $data->{WRITER}->endTag(lc($element));
     }
 }
 

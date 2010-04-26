@@ -20,7 +20,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.3.0
+Version:        1.2.1
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       perl-DBI
@@ -44,6 +44,7 @@ Requires:       htmldoc
 Requires:       createrepo
 Requires:       gpg2
 Requires:       satsolver-tools perl-satsolver
+Requires:       perl-YAML
 Requires:       perl-rpmmd >= 0.1.1
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
