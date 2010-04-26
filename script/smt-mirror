@@ -105,13 +105,13 @@ my $optres = GetOptions ("debug|d"      => \$debug,
 if($help || !$optres)
 {
     print basename($0) . " [--directory path] [--deepverify] [--testrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]\n";
-    print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
+    print basename($0) . " --cleanup [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
     print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
     print __("Options:\n");
     print "--debug -d              " . __("enable debug mode\n");
     print "--verboselevel -v level " . __("set the verbose level\n");
-    print "--clean -c              " . __("cleanup all mirrored repositories.\n");
+    print "--cleanup -c            " . __("cleanup all mirrored repositories.\n");
     print "                        " . __("Remove all files no longer mentioned in the metadata.\n");
     print "                        " . __("It does not mirror new files.\n");
     print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
@@ -461,10 +461,10 @@ foreach my $entry (@{$array})
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
 if(!defined $dbreplfile)
 {
-    my $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE ".
-	"from Catalogs ".
-	"where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
-	"CATALOGID" );
+  my $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE ".
+                                      "from Catalogs ".
+                                      "where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
+                                      "CATALOGID" );
     
     if(keys %{$hash} > 0)
     {
@@ -584,7 +584,7 @@ smt [help|--help|-h] mirror
 
 smt mirror [--directory path] [--deepverify] [--testrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]
 
-smt mirror --clean [--directory path] [--dbreplfile file] [-L file] [--debug] [--verboselevel level]
+smt mirror --cleanup [--directory path] [--dbreplfile file] [-L file] [--debug] [--verboselevel level]
 
 smt mirror --hardlink size [--directory path] [-L file] [--debug] [--verboselevel level]
 
@@ -592,7 +592,7 @@ smt mirror --hardlink size [--directory path] [-L file] [--debug] [--verboseleve
 
 C<smt mirror> performs the mirroring procedure and downloads repositories which are set to be mirrored.
 
-If it is called with the B<--clean> parameter it searches inside of the mirrored repositories for
+If it is called with the B<--cleanup> parameter it searches inside of the mirrored repositories for
 obsolete files and remove them.
 
 The B<--hardlink> paramter cause C<smt mirror> to search for files greater then I<size>. If it finds 
@@ -723,7 +723,7 @@ The output on stdout and stderr will be suppressed in this mode.
 
 =over
 
-=item --clean
+=item --cleanup
 
 Enable clean mode. With this parameter C<smt mirror> searches inside of
 the mirrored repositories for
@@ -799,7 +799,7 @@ run mirror with verifing all checksums and debug mode
 
 clean the repositories from files, which are no longer mentioned in the metadata
 
- smt mirror --clean 
+ smt mirror --cleanup 
 
 create hardlinks for all duplicate files greater then 20000 kb
 
