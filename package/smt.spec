@@ -45,7 +45,7 @@ Requires:       createrepo
 Requires:       gpg2
 Requires:       satsolver-tools perl-satsolver
 Requires:       perl-YAML
-Requires:       perl-rpmmd >= 0.1.1
+Requires:       perl-rpmmd >= 0.2.0
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
