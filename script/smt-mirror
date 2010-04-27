@@ -177,6 +177,8 @@ my $cfg = undef;
 eval
 {
     $cfg = SMT::Utils::getSMTConfig();
+    # pass config to RPMMD
+    SMT::Utils::smt2RpmmdConfig($cfg);
 };
 if($@ || !defined $cfg)
 {

@@ -18,6 +18,7 @@ use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 use User::pwent;
 use Sys::GRP;
+use RPMMD::Config;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -86,6 +87,28 @@ sub getSMTConfig
         die sprintf(__("Cannot read the SMT configuration file: %s"), @Config::IniFiles::errors);
     }
     return $cfg;
+}
+
+=item smt2RpmmdConfig([cfg])
+
+Sets RPMMD::Config options to corresponding values form smt.conf.
+Call this function whenever you use RPMMD modules.
+
+See also getSMTConfig.
+
+=cut
+
+sub smt2RpmmdConfig
+{
+    my $smtcfg = shift or getSMTConfig();
+    my $rcfg = RPMMD::Config->instance();
+    
+    $rcfg->set('NET', 'userAgent',  $smtcfg->val('LOCAL', 'UserAgent'))   if ($smtcfg->val('LOCAL', 'UserAgent'));
+    $rcfg->set('NET', 'httpProxy',  $smtcfg->val('LOCAL', 'HTTPProxy'))   if ($smtcfg->val('LOCAL', 'HTTPProxy'));
+    $rcfg->set('NET', 'httpsProxy', $smtcfg->val('LOCAL', 'HTTPSProxy'))  if ($smtcfg->val('LOCAL', 'HTTPSProxy'));
+    $rcfg->set('NET', 'ftpProxy',   $smtcfg->val('LOCAL', 'FTPProxy'))    if ($smtcfg->val('LOCAL', 'FTPProxy'));
+    $rcfg->set('NET', 'proxyUser',  $smtcfg->val('LOCAL', 'ProxyUser'))   if ($smtcfg->val('LOCAL', 'ProxyUser'));
+    $rcfg->set('NET', 'noProxy',    $smtcfg->val('LOCAL', 'NoProxy'))     if ($smtcfg->val('LOCAL', 'NoProxy'));
 }
 
 

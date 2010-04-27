@@ -170,6 +170,7 @@ if(!SMT::Utils::openLock("smt-staging"))
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 my $log = SMT::Utils::openLog($logfile);
+SMT::Utils::setupLogger($logfile, $debug); # Log4perl logger for RPMMD
 
 # get the config
 
@@ -177,6 +178,8 @@ my $cfg = undef;
 eval
 {
     $cfg = SMT::Utils::getSMTConfig();
+    # pass config to RPMMD
+    SMT::Utils::smt2RpmmdConfig($cfg);
 };
 if($@ || !defined $cfg)
 {

@@ -45,6 +45,9 @@ if(! SMT::Utils::dropPrivileges()) {
 
 # Initialize SMT
 my ($cfg, $dbh, $nuri) = SMT::CLI::init();
+# pass config to RPMMD
+SMT::Utils::smt2RpmmdConfig($cfg);
+
 my $base_path = $cfg->val('LOCAL', 'MirrorTo') || '/srv/www/htdocs';
 
 # Used for re-signing repositories (during staging)
@@ -70,8 +73,10 @@ use constant {
     },
 };
 
-my $log = SMT::Utils::openLog ('/var/log/smt/smt-staging.log');
+my $logfile = '/var/log/smt/smt-staging.log';
+my $log = SMT::Utils::openLog ($logfile);
 my $vblevel = LOG_DEBUG|LOG_DEBUG2|LOG_WARN|LOG_ERROR|LOG_INFO1|LOG_INFO2;
+SMT::Utils::setupLogger ($logfile, 1); # Log4perl logger for RPMMD
 
 # Reports that the agent has been called using an unsupported path
 sub UnsupportedPath ($$) {
