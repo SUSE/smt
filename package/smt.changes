@@ -4,6 +4,7 @@ Fri Apr 30 13:16:01 CEST 2010 - mc@suse.de
 - require Log4perl 
 - let libcurl calculate the Content-Length of a post request
   (bnc#597264)
+- add optimize command to smt-db
 
 -------------------------------------------------------------------
 Tue Apr 27 16:03:06 CEST 2010 - jkupec@suse.cz
