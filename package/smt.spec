@@ -35,6 +35,7 @@ Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
 Requires:       perl-MIME-Lite
 Requires:       perl-Digest-SHA1
+Requires:       perl-Log-Log4perl
 Requires:       limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
