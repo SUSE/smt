@@ -241,7 +241,8 @@ sub request
     {
         $self->setopt(CURLOPT_POST, 1);
         $self->setopt(CURLOPT_POSTFIELDS, $request->content);
-        $self->setopt(CURLOPT_POSTFIELDSIZE, length($request->content) );
+	# let libcurl calculate the Content-Length of a post request (bnc#597264)
+        $self->setopt(CURLOPT_POSTFIELDSIZE, -1 );
     }
     elsif ($request->method eq 'GET')
     {
