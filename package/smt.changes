@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue May  4 13:05:45 CEST 2010 - jkupec@suse.cz
+
+- Exit gracefully on SIGINT & SIGTERM (bnc #515968).
+
+-------------------------------------------------------------------
 Fri Apr 30 13:16:01 CEST 2010 - mc@suse.de
 
 - require Log4perl 
