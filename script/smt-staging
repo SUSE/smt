@@ -123,6 +123,9 @@ if(!SMT::Utils::dropPrivileges())
     exit 1;
 }
 
+$SIG{INT}  = \&signal_handler;
+$SIG{TERM} = \&signal_handler;
+
 if (@ARGV < 2)
 {
     print STDERR __("Too few arguments. At least a command and repository ID are required.\n");
@@ -897,6 +900,12 @@ sub canFilter
         print __("Only openSUSE 11.x, SLE-11, and Fedora/RedHat update repositories are supported.\n");
     }
     return $canfilter;
+}
+
+sub signal_handler
+{
+  SMT::Utils::printLog($log, $vblevel, LOG_INFO1, "Interrupted by signal. Exiting.");
+  SMT::Utils::unLockAndExit("smt-mirror", 1, $log, $vblevel);
 }
 
 
