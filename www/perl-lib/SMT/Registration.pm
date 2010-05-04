@@ -25,6 +25,7 @@ use Data::Dumper;
 use DBI;
 use XML::Writer;
 use XML::Parser;
+use CGI;
 
 sub handler {
     my $r = shift;
@@ -286,13 +287,16 @@ sub applyInteractive
 
   my $lpreq = read_post($r);
 
-  foreach my $a (split(/\&/, $lpreq))
+  my $query = new CGI( $lpreq );
+  foreach my $key ( $query->param )
   {
-    chomp($a);
-    my ($key, $value) = split(/=/, $a, 2);
-    next if(!defined $value || $value eq "");
-    next if(!defined $key || $key eq "");
+    my $value = $query->param($key);
+    $value =~ s{&}{&amp;}gso;
+    $value =~ s{"}{&quot;}gso;
+    $value =~ s{<}{&lt;}gso;
+    $value =~ s{>}{&gt;}gso;
     $pargs->{$key} = $value;
+    $r->log->info("Param: $key = ".$query->param($key));
   }
 
   my $dbh = SMT::Utils::db_connect();
@@ -302,8 +306,16 @@ sub applyInteractive
     die "Please contact your administrator";
   }
   my $guid = undef;
+  my $sessionID = undef;
   $guid = $pargs->{guid} if(exists $pargs->{guid} && defined $pargs->{guid} && $pargs->{guid} ne "");
-  
+  $sessionID = $pargs->{sessionid} if(exists $pargs->{sessionid} && defined $pargs->{sessionid} && $pargs->{sessionid} ne "");
+
+  if(!defined $sessionID)
+  {
+    $r->log_error("No sessionID found.");
+    die "Forbidden";
+  }
+
   my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid, log => $r );
   if( !$regsession->loadSession() )
   {
@@ -312,10 +324,10 @@ sub applyInteractive
   }
   my $regparam = SMT::RegParams->new( log => $r );
   $regparam->guid($guid);
-  if(!$regparam->joinSession( $regsession->yaml() ))
+  if(!$regparam->joinSession( $regsession->yaml(), $sessionID ))
   {
     $r->log_error("RegParams object could not be created");
-    die "Internal Server Error";
+    die "Forbidden";
   }
   
   # check if the session is in the correct status
@@ -427,7 +439,15 @@ sub interactive
   
   
   my $guid = undef;
+  my $sessionID = undef;
   $guid = $hargs->{guid} if(exists $hargs->{guid} && defined $hargs->{guid} && $hargs->{guid} ne "");
+  $sessionID = $hargs->{sessionid} if(exists $hargs->{sessionid} && defined $hargs->{sessionid} && $hargs->{sessionid} ne "");
+  
+  if(!defined $sessionID)
+  {
+    $r->log_error("No sessionID found.");
+    die "Forbidden";
+  }
   
   my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid, log => $r );
   if( !$regsession->loadSession() )
@@ -435,12 +455,13 @@ sub interactive
     $r->log_error("Session could not be loaded");
     die "Not Found";
   }
+
   my $regparam = SMT::RegParams->new( log => $r );
   $regparam->guid($guid);
-  if(!$regparam->joinSession( $regsession->yaml() ))
+  if(!$regparam->joinSession( $regsession->yaml(), $sessionID ))
   {
     $r->log_error("RegParams object could not be created");
-    die "Internal Server Error";
+    die "Forbidden";
   }
   
   # check if the session is in the correct status
@@ -450,7 +471,6 @@ sub interactive
     $r->log_error("No secret found in interactive session.");
     die "Internal Server Error";
   }
-  # FIXME: maybe we should introduce and check something like a sessionid
   
   my @list = findColumnsForProducts($r, $dbh, $regparam->products(), "FRIENDLY");
   my $productsFriendly = join('<br/>', @list);
@@ -466,7 +486,16 @@ sub interactive
   $r->log->info("STATEMENT: $statement");
   my $hashref = $dbh->selectall_hashref( $statement, "param_name" );
   
-  
+  my @pnames = ();
+  foreach my $param_name (keys %{$hashref})
+  {
+     push @pnames, $dbh->quote($param_name);
+  }
+  $statement = sprintf("SELECT KEYNAME, VALUE FROM MachineData WHERE GUID = %s and KEYNAME IN (%s)",
+                       $dbh->quote($regparam->guid()), join(',', @pnames));
+  $r->log->info("STATEMENT: $statement");
+  my $oldata = $dbh->selectall_hashref( $statement, "KEYNAME" );
+  $r->log->info("DATA: ".Data::Dumper->Dump([$oldata]));
   my $html =<<EOF
   <html>
   <head>
@@ -518,6 +547,7 @@ sub interactive
   
   <form name="Form" method="POST" action="regsvc?command=apply">
     <input type="hidden" name="guid" value="$guid"/>
+    <input type="hidden" name="sessionid" value="$sessionID"/>
     <input type="hidden" name="lang" value="en-US"/>
     <input type="hidden" name="from" value="interactive"/>
     <div class="fullw">
@@ -535,7 +565,15 @@ EOF
     $html .= '    <div class="dLeft">'."\n";
     $html .= $hashref->{'email'}->{description};
     $html .= '    </div><div class="dRight">'."\n";
-    $html .= '    <input type="text" name="email" value="" size="40" maxlength="100"/>'."\n";
+    $html .= '    <input type="text" name="email" size="40" maxlength="100" ';
+    if(exists $oldata->{'email'} && defined $oldata->{'email'})
+    {
+      $html .= 'value="'.$oldata->{'email'}->{VALUE}.'"/>'."\n";
+    }
+    else
+    {
+      $html .= 'value=""/>'."\n";
+    }
     $html .= '  </div>'."\n";
     $html .= '<div style="clear:both">&nbsp;</div>'."\n";
     delete $hashref->{'email'};
@@ -549,7 +587,15 @@ EOF
     $html .= '    <div class="dLeft">'."\n";
     $html .= $hashref->{$key}->{description};
     $html .= '    </div><div class="dRight">'."\n";
-    $html .= '    <input type="text" name="'.$key.'" value="" size="40" maxlength="100"/>'."\n";
+    $html .= '    <input type="text" name="'.$key.'" size="40" maxlength="100" ';
+    if(exists $oldata->{$key} && defined $oldata->{$key})
+    {
+      $html .= 'value="'.$oldata->{$key}->{VALUE}.'"/>'."\n";
+    }
+    else
+    {
+      $html .= 'value=""/>'."\n";
+    }
     $html .= '  </div>'."\n";
     $html .= '<div style="clear:both">&nbsp;</div>'."\n";
     delete $hashref->{$key};
@@ -561,7 +607,15 @@ EOF
     $html .= '    <div class="dLeft">'."\n";
     $html .= $hashref->{$key}->{description};
     $html .= '    </div><div class="dRight">'."\n";
-    $html .= '    <input type="text" name="'.$key.'" value="" size="40" maxlength="100"/>'."\n";
+    $html .= '    <input type="text" name="'.$key.'" size="40" maxlength="100" ';
+    if(exists $oldata->{$key} && defined $oldata->{$key})
+    {
+      $html .= 'value="'.$oldata->{$key}->{VALUE}.'"/>'."\n";
+    }
+    else
+    {
+      $html .= 'value=""/>'."\n";
+    }
     $html .= '  </div>'."\n";
     $html .= '<div style="clear:both">&nbsp;</div>'."\n";
     delete $hashref->{$key};
@@ -595,7 +649,7 @@ sub paramsForProducts
   if($what eq "needinfo" && defined $regparam)
   {
     $writer->startTag("needinfo", "xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-                      "href" => " https://".$r->server()->server_hostname()."".$r->uri()."?command=interactive&guid=".$regparam->guid(),
+                      "href" => " https://".$r->server()->server_hostname()."".$r->uri()."?command=interactive&guid=".$regparam->guid()."&sessionid=".$regparam->sessionID(),
                       "lang" => "en");
   }
   elsif($what eq "paramlist")
@@ -1342,6 +1396,18 @@ sub prod_handle_end_tag
         $data->{STATE} = 0;
     }
 }
+
+# sub unescapeParams
+# {
+#   my $data = shift;
+#   return "" if(!defined $data || $data eq "");
+#   
+#   $data =~ s{&amp;}{&}gso;
+#   $data =~ s{&quot;}{"}gso;
+#   $data =~ s{&lt;}{<}gso;
+#   $data =~ s{&gt;}{>}gso;
+#   return $data;
+# }
 
 1;
 

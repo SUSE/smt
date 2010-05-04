@@ -26,6 +26,9 @@ sub new
   $self->{LOG}      = $opt{log} || undef;
 
   $self->{wasInteractive} = 0;
+  my $id = `/usr/bin/uuidgen 2>/dev/null`;
+  chomp($id);
+  $self->{websessionid} = $id;
   
   bless($self);
 
@@ -69,6 +72,7 @@ sub joinSession
 {
   my $self = shift;
   my $yaml = shift;
+  my $expectedSessionID = shift || undef;
 
   return 1 if(! defined $yaml || $yaml eq "");
 
@@ -77,7 +81,24 @@ sub joinSession
   # GUID should be the same; if not => error
   if($session->{params}->{guid} ne $self->guid())
   {
+    $self->{LOG}->log_error("Guids do not match");
     return 0;
+  }
+  
+  # if expectedSessionID is given, but they do not match the one
+  # in the session => abort
+  if(defined $expectedSessionID &&
+     $session->{websessionid} ne $expectedSessionID)
+  {
+    $self->{LOG}->log_error("Session IDs do not match");
+    return 0;
+  }
+
+  # if the session has already a uuid, overwrite the new one
+  if( exists $session->{websessionid} && defined $session->{websessionid} &&
+      $session->{websessionid} ne "")
+  {
+    $self->{websessionid} = $session->{websessionid};
   }
 
   if( $self->acceptOptional() )
@@ -106,6 +127,12 @@ sub joinSession
   $self->{wasInteractive} = $session->{wasInteractive};
   
   return 1;
+}
+
+sub sessionID
+{
+  my $self = shift;
+  return $self->{websessionid};
 }
 
 sub wasInteractive

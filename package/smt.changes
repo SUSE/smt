@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue May  4 14:10:21 CEST 2010 - mc@suse.de
+
+- introduce a sessionid for the interactive webpage
+- read data existing data from DB and display them in the 
+  interactive webpage
+- add a screen logger
+
+-------------------------------------------------------------------
 Tue May  4 13:05:45 CEST 2010 - jkupec@suse.cz
 
 - Exit gracefully on SIGINT & SIGTERM (bnc #515968).

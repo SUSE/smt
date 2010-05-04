@@ -486,6 +486,7 @@ sub setupLogger
     # file log layout
     my $layout = Log::Log4perl::Layout::PatternLayout->new(
         "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2}] %m%n");
+    my $screenlayout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
 
     # file appender to log to file
     my $appender = Log::Log4perl::Appender->new(
@@ -493,11 +494,18 @@ sub setupLogger
         filename => $logfile,
         mode     => "append",
     );
+    my $screen = Log::Log4perl::Appender->new(
+        "Log::Log4perl::Appender::Screen",
+        "name"      => "screenlog",
+        "stderr"    => 0);
+
     $appender->layout($layout);
+    $screen->layout($screenlayout);
 
     # set up the root logger, so that any libs using Log4perl inherit these settings
     my $rootlog = get_logger('');  # the empty string arg is essential!
     $rootlog->add_appender($appender);
+    $rootlog->add_appender($screen);
     if ($debug) { $rootlog->level($TRACE) }
     else        { $rootlog->level($INFO)  }
 }
