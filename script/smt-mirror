@@ -45,6 +45,9 @@ if(!SMT::Utils::dropPrivileges())
     exit 1;
 }
 
+$SIG{INT}  = \&signal_handler;
+$SIG{TERM} = \&signal_handler;
+
 my $stagingDir = "full";
 
 my $debug    = 0;
@@ -654,6 +657,12 @@ sub catalog_handler
     {
         push @{$data}, $node;
     }
+}
+
+sub signal_handler
+{
+  SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, "Interrupted by signal. Exitting.");
+  SMT::Utils::unLockAndExit("smt-mirror", 1, $LOG, $vblevel);
 }
 
 #
