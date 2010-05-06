@@ -3,6 +3,7 @@ package SMT::RegSession;
 use strict;
 use DBI;
 use SMT::Utils;
+use Log::Log4perl qw(get_logger :levels);
 
 # constructor
 sub new
@@ -15,7 +16,7 @@ sub new
   $self->{DBH}      = $opt{dbh}  || undef;
   $self->{YAML}     = $opt{yaml} || "";
   $self->{INDB}     = 0;
-  $self->{LOG}      = $opt{log} || undef;
+  $self->{LOG}      = get_logger('apache.smt.regsession');
   bless($self);
 
   return $self;
@@ -30,11 +31,11 @@ sub loadSession
 
   my $timestamp = SMT::Utils::getDBTimestamp(time()-300);
   my $statement = sprintf("DELETE from reg_sessions where updated_at < %s", $self->{DBH}->quote( $timestamp ) );
-  $self->{LOG}->log->info("STATEMENT: $statement");
+  $self->{LOG}->debug("STATEMENT: $statement");
   $self->{DBH}->do( $statement );
 
   $statement = sprintf("SELECT yaml from reg_sessions WHERE guid = %s", $self->{DBH}->quote($self->{GUID}));
-  $self->{LOG}->log->info("STATEMENT: $statement");
+  $self->{LOG}->debug("STATEMENT: $statement");
   my $arr = $self->{DBH}->selectall_arrayref($statement, { Slice => {} } );
   if( @{$arr} == 1 )
   {
@@ -63,7 +64,7 @@ sub updateSession
     $statement = sprintf("UPDATE reg_sessions set yaml = %s WHERE guid = %s",
                          $self->{DBH}->quote($yaml),
                          $self->{DBH}->quote($self->{GUID}));
-    $self->{LOG}->log->info("STATEMENT: $statement");
+    $self->{LOG}->debug("STATEMENT: $statement");
     $self->{DBH}->do( $statement );
   }
   else
@@ -71,7 +72,7 @@ sub updateSession
     $statement = sprintf("INSERT INTO reg_sessions (guid, yaml) VALUES (%s, %s)",
                          $self->{DBH}->quote($self->{GUID}),
                          $self->{DBH}->quote($yaml));
-    $self->{LOG}->log->info("STATEMENT: $statement");
+    $self->{LOG}->debug("STATEMENT: $statement");
 
     $self->{DBH}->do( $statement );
   }
@@ -88,7 +89,7 @@ sub cleanSession
   if( $self->{INDB} )
   {
     my $statement = sprintf("DELETE from reg_sessions where guid = %s", $self->{DBH}->quote($self->{GUID}));
-    $self->{LOG}->log->info("STATEMENT: $statement");
+    $self->{LOG}->debug("STATEMENT: $statement");
     $self->{DBH}->do( $statement );
   }
   $self->{YAML} = "";

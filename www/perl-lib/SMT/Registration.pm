@@ -15,6 +15,8 @@ use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
 
 use constant IOBUFSIZE => 8192;
 
+use Log::Log4perl qw(get_logger :levels);
+
 use SMT::Utils;
 use SMT::Client;
 use SMT::RegParams;
@@ -29,6 +31,8 @@ use CGI;
 
 sub handler {
     my $r = shift;
+    Log::Log4perl::init('/etc/smt.d/log4perl.conf');
+    my $log = get_logger('apache.smt.registration');
     
     $r->content_type('text/xml');
 
@@ -37,7 +41,7 @@ sub handler {
     
     if(! defined $args)
     {
-        $r->log_error("Registration called without args.");
+        $log->error("Registration called without args.");
         return Apache2::Const::SERVER_ERROR;
     }
     
@@ -47,7 +51,7 @@ sub handler {
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
     }
-    $r->log->info("Registration called with command: ".$hargs->{command});
+    $log->info("Registration called with command: ".$hargs->{command});
 
     if(exists $hargs->{command} && defined $hargs->{command})
     {
@@ -73,13 +77,13 @@ sub handler {
         }
         else
         {
-            $r->log_error("Unknown command: ".$hargs->{command});
+            $log->error("Unknown command: ".$hargs->{command});
             return Apache2::Const::SERVER_ERROR;
         }
     }
     else
     {
-        $r->log_error("Missing command");
+        $log->error("Missing command");
         return Apache2::Const::SERVER_ERROR;
     }
     
@@ -94,10 +98,11 @@ sub register
 {
     my $r          = shift;
     my $hargs      = shift;
-
+    my $log = get_logger('apache.smt.registration.smt.registration');
+    
     my $namespace  = "";
     
-    $r->log->info("register called");
+    $log->debug("register called");
 
     # to be compatible with SMT10
     if(exists $hargs->{testenv} && $hargs->{testenv})
@@ -119,14 +124,14 @@ sub register
         };
         if($@ || !defined $cfg)
         {
-            $r->log_error("Cannot read the SMT configuration file: ".$@);
+            $log->error("Cannot read the SMT configuration file: ".$@);
             die "SMT server is missconfigured. Please contact your administrator.";
         }
 
         my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
         if(! -d  "$LocalBasePath/repo/$namespace" )
         {
-            $r->log_error("Invalid namespace requested: $LocalBasePath/repo/$namespace/ does not exists.");
+            $log->error("Invalid namespace requested: $LocalBasePath/repo/$namespace/ does not exists.");
             $namespace = "";
         }
     }
@@ -135,14 +140,14 @@ sub register
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
-        $r->log_error("Cannot open Database");
+        $log->error("Cannot open Database");
         die "Please contact your administrator.";
     }
 
-    my $regparam = SMT::RegParams->new( log => $r );
+    my $regparam = SMT::RegParams->new( );
     $regparam->parse( $data );
 
-    my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $regparam->guid(), log => $r );
+    my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $regparam->guid() );
     if( $regsession->loadSession() )
     {
       $regparam->joinSession( $regsession->yaml() );
@@ -154,7 +159,7 @@ sub register
     
   if($xml ne "")
   {
-    $r->log->info("Return NEEDINFO: $xml");
+    $log->debug("Return NEEDINFO: $xml");
 
     # we need to send the <needinfo>
     print $xml;
@@ -181,7 +186,7 @@ sub register
 
         $regsession->cleanSession();
 
-        $r->log->info("Return ZMDCONFIG: $zmdconfig");
+        $log->debug("Return ZMDCONFIG: $zmdconfig");
         print $zmdconfig;
     }
     $dbh->disconnect();
@@ -197,13 +202,14 @@ sub listproducts
 {
     my $r     = shift;
     my $hargs = shift;
-
-    $r->log->info("listproducts called");
+    my $log = get_logger('apache.smt.registration.smt.registration');
+    
+    $log->debug("listproducts called");
 
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
-        $r->log_error("Cannot connect to database");
+        $log->error("Cannot connect to database");
         die "Please contact your administrator";
     }
     
@@ -211,7 +217,7 @@ sub listproducts
     $sth->execute();
 
     my $output = "";
-    my $writer = new XML::Writer(NEWLINES => 1, OUTPUT => \$output);
+    my $writer = new XML::Writer(NEWLINES => 0, OUTPUT => \$output);
     $writer->xmlDecl('UTF-8');
 
     $writer->startTag("productlist",
@@ -226,7 +232,7 @@ sub listproducts
     }
     $writer->endTag("productlist");
     
-    $r->log->info("Return PRODUCTLIST: $output");
+    $log->debug("Return PRODUCTLIST: $output");
     
     print $output;
 
@@ -243,8 +249,9 @@ sub listparams
 {
     my $r     = shift;
     my $hargs = shift;
-
-    $r->log->info("listparams called");
+    my $log = get_logger('apache.smt.registration.smt.registration');
+    
+    $log->debug("listparams called");
 
     my $lpreq = read_post($r);
     my $dbh = SMT::Utils::db_connect();
@@ -261,12 +268,11 @@ sub listparams
     if($@) {
         # ignore the errors, but print them
         chomp($@);
-        $r->log_error("SMT::Registration::parseFromProducts Invalid XML: $@");
+        $log->error("SMT::Registration::parseFromProducts Invalid XML: $@");
     }
     
-    #my $xml = SMT::Registration::parseFromProducts($r, $dbh, $data->{PRODUCTS}, "PARAMLIST");
     my $xml = SMT::Registration::paramsForProducts("paramlist", $r, $dbh, $data->{PRODUCTS});
-    $r->log->info("Return PARAMLIST: $xml");
+    $log->debug("Return PARAMLIST: $xml");
     
     print $xml;
     
@@ -280,10 +286,11 @@ sub applyInteractive
   my $r     = shift;
   my $hargs = shift;
   my $pargs = {};
+  my $log = get_logger('apache.smt.registration');
   
   $r->content_type('text/html');
   
-  $r->log->info("applyInteractive called");
+  $log->debug("applyInteractive called");
 
   my $lpreq = read_post($r);
 
@@ -296,13 +303,13 @@ sub applyInteractive
     $value =~ s{<}{&lt;}gso;
     $value =~ s{>}{&gt;}gso;
     $pargs->{$key} = $value;
-    $r->log->info("Param: $key = ".$query->param($key));
+    $log->debug("Param: $key = ".$query->param($key));
   }
 
   my $dbh = SMT::Utils::db_connect();
   if(!$dbh)
   {
-    $r->log_error("Cannot connect to database");
+    $log->error("Cannot connect to database");
     die "Please contact your administrator";
   }
   my $guid = undef;
@@ -312,21 +319,21 @@ sub applyInteractive
 
   if(!defined $sessionID)
   {
-    $r->log_error("No sessionID found.");
+    $log->error("No sessionID found.");
     die "Forbidden";
   }
 
-  my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid, log => $r );
+  my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid );
   if( !$regsession->loadSession() )
   {
-    $r->log_error("Session could not be loaded");
+    $log->error("Session could not be loaded");
     die "Not Found";
   }
-  my $regparam = SMT::RegParams->new( log => $r );
+  my $regparam = SMT::RegParams->new( );
   $regparam->guid($guid);
   if(!$regparam->joinSession( $regsession->yaml(), $sessionID ))
   {
-    $r->log_error("RegParams object could not be created");
+    $log->error("RegParams object could not be created");
     die "Forbidden";
   }
   
@@ -334,7 +341,7 @@ sub applyInteractive
   
   if(!defined $regparam->param("secret") || $regparam->param("secret") eq "")
   {
-    $r->log_error("No secret found in interactive session.");
+    $log->error("No secret found in interactive session.");
     die "Internal Server Error";
   }
 
@@ -347,7 +354,7 @@ sub applyInteractive
   
   my $statement = sprintf("SELECT distinct param_name FROM needinfo_params WHERE product_id IN (%s) AND command = '' ORDER BY id",
                           $pids);
-  $r->log->info("STATEMENT: $statement");
+  $log->debug("STATEMENT: $statement");
   my $arrayref = $dbh->selectall_arrayref( $statement, {Slice => {}} );
 
   foreach my $value (@{$arrayref})
@@ -425,15 +432,16 @@ sub interactive
 {
   my $r     = shift;
   my $hargs = shift;
+  my $log = get_logger('apache.smt.registration');
   
   $r->content_type('text/html');
   
-  $r->log->info("interactive called");
+  $log->debug("interactive called");
 
   my $dbh = SMT::Utils::db_connect();
   if(!$dbh)
   {
-    $r->log_error("Cannot connect to database");
+    $log->error("Cannot connect to database");
     die "Please contact your administrator";
   }
   
@@ -445,22 +453,22 @@ sub interactive
   
   if(!defined $sessionID)
   {
-    $r->log_error("No sessionID found.");
+    $log->error("No sessionID found.");
     die "Forbidden";
   }
   
-  my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid, log => $r );
+  my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid );
   if( !$regsession->loadSession() )
   {
-    $r->log_error("Session could not be loaded");
+    $log->error("Session could not be loaded");
     die "Not Found";
   }
 
-  my $regparam = SMT::RegParams->new( log => $r );
+  my $regparam = SMT::RegParams->new( );
   $regparam->guid($guid);
   if(!$regparam->joinSession( $regsession->yaml(), $sessionID ))
   {
-    $r->log_error("RegParams object could not be created");
+    $log->error("RegParams object could not be created");
     die "Forbidden";
   }
   
@@ -468,7 +476,7 @@ sub interactive
   
   if(!defined $regparam->param("secret") || $regparam->param("secret") eq "")
   {
-    $r->log_error("No secret found in interactive session.");
+    $log->error("No secret found in interactive session.");
     die "Internal Server Error";
   }
   
@@ -483,7 +491,7 @@ sub interactive
   
   my $statement = sprintf("SELECT distinct param_name, description, mandatory FROM needinfo_params WHERE product_id IN (%s) AND command = '' ORDER BY id",
                           $pids);
-  $r->log->info("STATEMENT: $statement");
+  $log->debug("STATEMENT: $statement");
   my $hashref = $dbh->selectall_hashref( $statement, "param_name" );
   
   my @pnames = ();
@@ -493,9 +501,9 @@ sub interactive
   }
   $statement = sprintf("SELECT KEYNAME, VALUE FROM MachineData WHERE GUID = %s and KEYNAME IN (%s)",
                        $dbh->quote($regparam->guid()), join(',', @pnames));
-  $r->log->info("STATEMENT: $statement");
+  $log->debug("STATEMENT: $statement");
   my $oldata = $dbh->selectall_hashref( $statement, "KEYNAME" );
-  $r->log->info("DATA: ".Data::Dumper->Dump([$oldata]));
+  $log->debug("DATA: ".Data::Dumper->Dump([$oldata]));
   my $html =<<EOF
   <html>
   <head>
@@ -710,6 +718,7 @@ sub getParamsForProducts
   my $r = shift;
   my $dbh = shift;
   my $productarray = shift;
+  my $log = get_logger('apache.smt.registration');
   
   my @list = findColumnsForProducts($r, $dbh, $productarray, "PRODUCTDATAID");
   if( @list > 0 )
@@ -721,7 +730,7 @@ sub getParamsForProducts
     }
     my $statement = sprintf("SELECT distinct param_name, description, command, mandatory FROM needinfo_params WHERE product_id IN (%s) order by id",
                             $pids);
-    $r->log->info("STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
     return $dbh->selectall_arrayref( $statement, {Slice => {}} );
   }
 }
@@ -733,7 +742,8 @@ sub insertRegistration
     my $regparam  = shift;
     my $namespace = shift || '';
     my $target    = shift || '';
-
+    my $log = get_logger('apache.smt.registration');
+    
     my $cnt     = 0;
     my $existingpids = {};
     my $regtimestring = "";
@@ -742,14 +752,14 @@ sub insertRegistration
     my @list = findColumnsForProducts($r, $dbh, $regparam->products(), "PRODUCTDATAID");
 
     my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regparam->guid()));
-    $r->log->info("STATEMENT: $statement");
-    eval 
+    $log->debug("STATEMENT: $statement");
+    eval
     {
         $existingpids = $dbh->selectall_hashref($statement, "PRODUCTID");
     };
     if($@)
     {
-        $r->log_error("DBERROR: ".$dbh->errstr);
+        $log->error("DBERROR: ".$dbh->errstr);
     }
 
     # store the regtime
@@ -793,11 +803,11 @@ sub insertRegistration
         
         eval {
             $cnt = $dbh->do($statement);
-            $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
+            $log->debug("STATEMENT: $statement  Affected rows: $cnt");
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
     }
 
@@ -810,11 +820,11 @@ sub insertRegistration
             $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
             $cnt = $sth->execute;
             
-            $r->log->info("STATEMENT: ".$sth->{Statement}." Affected rows: $cnt");
+            $log->debug("STATEMENT: ".$sth->{Statement}." Affected rows: $cnt");
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
     }
 
@@ -836,11 +846,11 @@ sub insertRegistration
             $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
             $sth->bind_param(2, $regparam->guid());
             $cnt = $sth->execute;
-            $r->log->info("STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
+            $log->debug("STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
     }
     
@@ -852,11 +862,11 @@ sub insertRegistration
     $statement = sprintf("DELETE from MachineData where GUID=%s", $dbh->quote($regparam->guid()));
     eval {
         $cnt = $dbh->do($statement);
-        $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
+        $log->debug("STATEMENT: $statement  Affected rows: $cnt");
     };
     if($@)
     {
-        $r->log_error("DBERROR: ".$dbh->errstr);
+        $log->error("DBERROR: ".$dbh->errstr);
     }
     
     #
@@ -874,13 +884,13 @@ sub insertRegistration
                                 $dbh->quote($regparam->guid()),
                                 $dbh->quote($key),
                                 $dbh->quote($regparam->param($key)));
-        $r->log->info("STATEMENT: $statement");
+        $log->debug("STATEMENT: $statement");
         eval {
             $dbh->do($statement);
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
     }
 
@@ -892,49 +902,49 @@ sub insertRegistration
                                 $dbh->quote($regparam->guid()),
                                 $dbh->quote("product-name-".$list[$i]),
                                 $dbh->quote($ph->{name}));
-        $r->log->info("STATEMENT: $statement");
+        $log->debug("STATEMENT: $statement");
         eval {
             $dbh->do($statement);
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
         $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                              $dbh->quote($regparam->guid()),
                              $dbh->quote("product-version-".$list[$i]),
                              $dbh->quote($ph->{version}));
-        $r->log->info("STATEMENT: $statement");
+        $log->debug("STATEMENT: $statement");
         eval {
             $dbh->do($statement);
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
         $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                              $dbh->quote($regparam->guid()),
                              $dbh->quote("product-arch-".$list[$i]),
                              $dbh->quote($ph->{arch}));
-        $r->log->info("STATEMENT: $statement");
+        $log->debug("STATEMENT: $statement");
         eval {
             $dbh->do($statement);
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
         $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                              $dbh->quote($regparam->guid()),
                              $dbh->quote("product-rel-".$list[$i]),
                              $dbh->quote($ph->{release}));
-        $r->log->info("STATEMENT: $statement");
+        $log->debug("STATEMENT: $statement");
         eval {
             $dbh->do($statement);
         };
         if($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
         }
     }
     #
@@ -964,11 +974,11 @@ sub insertRegistration
         $sth->bind_param(6, $regparam->guid());
         $aff = $sth->execute;
 
-        $r->log->info("STATEMENT: ".$sth->{Statement});
+        $log->debug("STATEMENT: ".$sth->{Statement});
     };
     if ($@)
     {
-        $r->log_error("DBERROR: ".$dbh->errstr);
+        $log->error("DBERROR: ".$dbh->errstr);
         $aff = 0;
     }
     if ($aff == 0)
@@ -980,14 +990,14 @@ sub insertRegistration
                              $dbh->quote($target),
                              $dbh->quote($namespace),
                              $dbh->quote($regparam->param("secret")));
-        $r->log->info("STATEMENT: $statement");
+        $log->debug("STATEMENT: $statement");
         eval
         {
             $aff = $dbh->do($statement);
         };
         if ($@)
         {
-            $r->log_error("DBERROR: ".$dbh->errstr);
+            $log->error("DBERROR: ".$dbh->errstr);
             $aff = 0;
         }
     }
@@ -996,8 +1006,8 @@ sub insertRegistration
     
     if ( !  $client->insertPatchstatusJob( $regparam->guid() ) )
     {
-        $r->log_error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
-                              $regparam->guid() )  );
+        $log->error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
+                            $regparam->guid() )  );
     }
     
     return \@list;
@@ -1008,7 +1018,8 @@ sub findTarget
     my $r        = shift;
     my $dbh      = shift;
     my $regparam = shift;
-
+    my $log = get_logger('apache.smt.registration');
+    
     my $result  = undef;
     
     my $rtarget = $regparam->param("ostarget");
@@ -1022,7 +1033,7 @@ sub findTarget
     if(defined $rtarget && $rtarget ne "")
     {
         my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($rtarget)) ;
-        $r->log->info("STATEMENT: $statement");
+        $log->debug("STATEMENT: $statement");
 
         my $target = $dbh->selectcol_arrayref($statement);
 
@@ -1040,6 +1051,7 @@ sub findCatalogs
     my $dbh    = shift;
     my $target = shift;
     my $productids = shift;
+    my $log = get_logger('apache.smt.registration');
     
 
     my $result = {};
@@ -1074,15 +1086,15 @@ sub findCatalogs
     else
     {
         # This should not happen
-        $r->log_error("No productids found");
+        $log->error("No productids found");
         return $result;
     }
     
-    $r->log->info("STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
 
     $result = $dbh->selectall_hashref($statement, "CATALOGID");
 
-    $r->log->info("RESULT: ".Data::Dumper->Dump([$result]));
+    $log->debug("RESULT: ".Data::Dumper->Dump([$result]));
 
     return $result;
 }
@@ -1093,6 +1105,7 @@ sub buildZmdConfig
     my $guid       = shift;
     my $catalogs   = shift;
     my $namespace  = shift || '';
+    my $log = get_logger('apache.smt.registration');
     
     my $cfg = undef;
 
@@ -1102,7 +1115,7 @@ sub buildZmdConfig
     };
     if($@ || !defined $cfg)
     {
-        $r->log_error("Cannot read the SMT configuration file: ".$@);
+        $log->error("Cannot read the SMT configuration file: ".$@);
         die "SMT server is missconfigured. Please contact your administrator.";
     }
     
@@ -1120,7 +1133,7 @@ sub buildZmdConfig
     $LocalNUUrl =~ s/\s*$//;
     if(!defined $LocalNUUrl || $LocalNUUrl !~ /^http/)
     {
-        $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
+        $log->error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
         die "SMT server is missconfigured. Please contact your administrator.";
     }
     my $localID = "SMT-".$LocalNUUrl;
@@ -1163,7 +1176,7 @@ sub buildZmdConfig
             if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
                $catalogs->{$cat}->{LOCALPATH} eq "")
             {
-                $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
+                $log->error("Path for repository '$cat' does not exists. Skipping the repository.");
                 next;
             }
 
@@ -1197,7 +1210,7 @@ sub buildZmdConfig
         if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
            $catalogs->{$cat}->{LOCALPATH} eq "")
         {
-            $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
+            $log->error("Path for repository '$cat' does not exists. Skipping the repository.");
             next;
         }
 
@@ -1241,6 +1254,7 @@ sub findColumnsForProducts
     my $dbh    = shift;
     my $parray = shift;
     my $column = shift;
+    my $log = get_logger('apache.smt.registration');
     
     my @list = ();
 
@@ -1262,13 +1276,13 @@ sub findColumnsForProducts
         $statement .= "ARCHLOWER=".$dbh->quote(lc($phash->{arch}))." OR " if(defined $phash->{arch} && $phash->{arch} ne "");
         $statement .= "ARCHLOWER IS NULL)";
         
-        $r->log->info( "STATEMENT: $statement");
+        $log->debug( "STATEMENT: $statement");
         
         my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
         
-        #$r->log_error("RESULT: ".Data::Dumper->Dump([$pl]));
-        #$r->log_error("RESULT: not defined ") if(!defined $pl);
-        #$r->log_error("RESULT: empty ") if(@$pl == 0);
+        $log->trace("RESULT: ".Data::Dumper->Dump([$pl]));
+        $log->trace("RESULT: not defined ") if(!defined $pl);
+        $log->trace("RESULT: empty ") if(@$pl == 0);
         
         if(@$pl == 1)
         {
@@ -1293,13 +1307,13 @@ sub findColumnsForProducts
             }
             if(!$found)
             {
-                $r->log_error("No exact match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}." Choose the first one.");
+                $log->warn("No exact match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}." Choose the first one.");
                 push @list, $pl->[0]->{$column};
             }
         }
         else
         {
-            $r->log_error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
+            $log->error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
             die "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found in the database.";
         }
     }
@@ -1312,6 +1326,7 @@ sub findColumnsForProducts
 #
 sub read_post {
     my $r = shift;
+    my $log = get_logger('apache.smt.registration');
     
     my $bb = APR::Brigade->new($r->pool,
                                $r->connection->bucket_alloc);
@@ -1339,7 +1354,7 @@ sub read_post {
     
     $bb->destroy;
     
-    $r->log->info("Got content: $data");
+    $log->debug("Got content: $data");
 
     return $data;
 }

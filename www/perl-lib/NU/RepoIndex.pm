@@ -8,8 +8,8 @@ use Apache2::RequestIO ();
 
 use Apache2::Const -compile => qw(OK SERVER_ERROR :log);
 use Apache2::RequestUtil;
+use Log::Log4perl qw(get_logger :levels);
 use XML::Writer;
-
 use SMT::Utils;
 use DBI qw(:sql_types);
 
@@ -21,9 +21,11 @@ sub getCatalogsByGUID($$)
     my $dbh  = shift;
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
-
+    my $log = get_logger('apache.nu.repoindex');
+    
     # see if the client has a target architecture
     my $targetselect = sprintf("select TARGET from Clients c where c.GUID=%s", $dbh->quote($guid));
+    $log->debug("STATEMENT: $targetselect");
     my $target = $dbh->selectcol_arrayref($targetselect);
 
     my $catalogselect = " select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
@@ -34,7 +36,7 @@ sub getCatalogsByGUID($$)
     {
         $catalogselect .= sprintf(" and c.TARGET=%s", $dbh->quote( ${$target}[0] ));
     }
-
+    $log->debug("STATEMENT: $catalogselect");
     return $dbh->selectall_hashref($catalogselect, "CATALOGID" );
 }
 
@@ -55,17 +57,20 @@ sub getUsernameFromRequest($)
 sub handler {
     my $r = shift;
     my $dbh = undef;
+    Log::Log4perl::init('/etc/smt.d/log4perl.conf');
+    my $log = get_logger('apache.nu.repoindex');
     
     my $regtimestring = SMT::Utils::getDBTimestamp();
 
     my $LocalBasePath = "";
 
-    $r->log->info("repoindex.xml requested");
+    $log->debug("repoindex.xml requested");
 
     # try to connect to the database - else report server error
     if ( ! ($dbh=SMT::Utils::db_connect()) ) 
-    {  
-        return Apache2::Const::SERVER_ERROR; 
+    {
+      $log->error("Cannot access the database");
+      return Apache2::Const::SERVER_ERROR;
     }
 
     my $aliasChange = 0;
@@ -92,7 +97,7 @@ sub handler {
     {
         # for whatever reason we cannot read this
         # log the error and continue
-        $r->log->error("Cannot read config file: $@");
+        $log->error("Cannot read config file: $@");
         $LocalBasePath = "";
     }
     
@@ -128,8 +133,8 @@ sub handler {
     };
     if($@)
     {
-        # we log an error, but nothing else
-        $r->log_error("Update Clients table failed: ".$@);
+        # we log a warning, but nothing else
+        $log->warn("Update Clients table failed: ".$@);
     }
 
     my $writer = new XML::Writer(NEWLINES => 0);
@@ -152,7 +157,7 @@ sub handler {
             $catalogName = "$catalogName:$namespace" if($aliasChange);
         }
         
-        $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
+        $log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
         if(defined $LocalBasePath && $LocalBasePath ne "")
         {
@@ -160,8 +165,8 @@ sub handler {
             {
                 # catalog does not exists on this server. Log it, that the admin has a chance 
                 # to find the error.
-                $r->log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
-                $r->log->warn("Run smt-mirror to create this catalog.");
+                $log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
+                $log->warn("Run smt-mirror to create this catalog.");
             }
         }
         
@@ -183,4 +188,5 @@ sub handler {
 
     return Apache2::Const::OK;
 }
+
 1;

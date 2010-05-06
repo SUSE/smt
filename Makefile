@@ -128,6 +128,7 @@ install:
                   \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
                 \)
 	install -m 755 config/rc.smt $(DESTDIR)/etc/init.d/smt
+	install -m 644 config/log4perl.conf $(DESTDIR)/etc/smt.d/
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
@@ -188,6 +189,7 @@ dist: clean
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
 	@cp config/rc.smt $(NAME)-$(VERSION)/config/
+	@cp config/log4perl.conf $(NAME)-$(VERSION)/config/
 	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
 	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
 	find db -name ".svn" -prune -o \

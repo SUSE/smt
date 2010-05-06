@@ -187,7 +187,7 @@ fi
 %dir %{_datadir}/schemas/smt
 %dir %{_docdir}/smt/
 %dir %attr(755, smt, www)/var/run/smt
-%dir %attr(755, smt, www)/var/log/smt
+%dir %attr(775, smt, www)/var/log/smt
 %dir %attr(755, smt, www)/var/lib/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl

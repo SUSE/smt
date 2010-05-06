@@ -2,6 +2,7 @@ package SMT::RegParams;
 use strict;
 use XML::Parser;
 use YAML;
+use Log::Log4perl qw(get_logger :levels);
 
 use Data::Dumper;
 
@@ -23,12 +24,13 @@ sub new
   $self->{params}   = $opt{params}   || {};
 
   $self->{privacy}  = 0;
-  $self->{LOG}      = $opt{log} || undef;
 
   $self->{wasInteractive} = 0;
   my $id = `/usr/bin/uuidgen 2>/dev/null`;
   chomp($id);
   $self->{websessionid} = $id;
+  
+  $self->{LOG} = get_logger('apache.smt.regparams');
   
   bless($self);
 
@@ -39,7 +41,8 @@ sub parse
 {
   my $self        = shift;
   my $registerxml = shift;
-
+  
+  
   return 0 if(!defined $registerxml || $registerxml eq "");
 
   my $regparser = XML::Parser->new(
@@ -56,9 +59,9 @@ sub parse
   {
     # ignore the errors, but print them
     chomp($@);
-    $self->{LOG}->log_error("SMT::Registration::register Invalid XML: $@");
+    $self->{LOG}->error("SMT::Registration::register Invalid XML: $@");
   }
-
+  $self->{LOG}->debug("finished parsing");
   return 1;
 }
 
@@ -81,7 +84,7 @@ sub joinSession
   # GUID should be the same; if not => error
   if($session->{params}->{guid} ne $self->guid())
   {
-    $self->{LOG}->log_error("Guids do not match");
+    $self->{LOG}->error("Guids do not match");
     return 0;
   }
   
@@ -90,7 +93,7 @@ sub joinSession
   if(defined $expectedSessionID &&
      $session->{websessionid} ne $expectedSessionID)
   {
-    $self->{LOG}->log_error("Session IDs do not match");
+    $self->{LOG}->error("Session IDs do not match");
     return 0;
   }
 

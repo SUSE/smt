@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu May  6 12:13:21 CEST 2010 - mc@suse.de
+
+- use Log4perl for Registration service
+- use Log4perl for NU service
+
+-------------------------------------------------------------------
 Tue May  4 14:10:21 CEST 2010 - mc@suse.de
 
 - introduce a sessionid for the interactive webpage
