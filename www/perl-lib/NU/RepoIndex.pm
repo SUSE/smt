@@ -57,7 +57,6 @@ sub getUsernameFromRequest($)
 sub handler {
     my $r = shift;
     my $dbh = undef;
-    Log::Log4perl::init('/etc/smt.d/log4perl.conf');
     my $log = get_logger('apache.nu.repoindex');
     
     my $regtimestring = SMT::Utils::getDBTimestamp();

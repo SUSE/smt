@@ -1,0 +1,13 @@
+/var/log/smt/apache-smt.log {
+    compress
+    dateext
+    maxage 365
+    rotate 8
+    size=+4096k
+    notifempty
+    missingok
+    create 600 smt www
+    postrotate
+     /etc/init.d/apache2 reload
+    endscript
+}

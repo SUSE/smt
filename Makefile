@@ -143,6 +143,7 @@ install:
 	install -m 755 cron/smt-gen-report $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-repeated-register $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 644 logrotate/smt $(DESTDIR)/etc/logrotate.d/
+	install -m 644 logrotate/apache-smt $(DESTDIR)/etc/logrotate.d/
 
 	install -m 644 README $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 COPYING $(DESTDIR)$(DOCDIR)/smt/
@@ -210,6 +211,7 @@ dist: clean
 	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
 	@cp script/* $(NAME)-$(VERSION)/script/
 	@cp logrotate/smt $(NAME)-$(VERSION)/logrotate/
+	@cp logrotate/apache-smt $(NAME)-$(VERSION)/logrotate/
 	find www -name ".svn" -prune -o \
                 \( \
                   \( -type d -exec install -m755 -d $(NAME)-$(VERSION)/\{\} \; \) \

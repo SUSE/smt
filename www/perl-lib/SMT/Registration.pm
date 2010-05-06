@@ -31,7 +31,6 @@ use CGI;
 
 sub handler {
     my $r = shift;
-    Log::Log4perl::init('/etc/smt.d/log4perl.conf');
     my $log = get_logger('apache.smt.registration');
     
     $r->content_type('text/xml');

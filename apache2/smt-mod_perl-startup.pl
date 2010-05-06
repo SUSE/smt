@@ -18,4 +18,7 @@
   use ModPerl::Registry ();
   use Apache2::Const -compile => ':common';
   use APR::Const -compile => ':common';
+  use Log::Log4perl;
+  # init Log4perl only here
+  Log::Log4perl::init('/etc/smt.d/log4perl.conf');
   1;

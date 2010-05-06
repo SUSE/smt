@@ -187,14 +187,16 @@ fi
 %dir %{_datadir}/schemas/smt
 %dir %{_docdir}/smt/
 %dir %attr(755, smt, www)/var/run/smt
-%dir %attr(775, smt, www)/var/log/smt
+%dir %attr(755, smt, www)/var/log/smt
 %dir %attr(755, smt, www)/var/lib/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
 %exclude /etc/smt.d/smt_support.conf
 %config /etc/smt.d/novell.com-smt
+%config /etc/smt.d/log4perl.conf
 %config /etc/logrotate.d/smt
+%config /etc/logrotate.d/apache-smt
 /etc/init.d/smt
 /usr/sbin/rcsmt
 %{perl_vendorlib}/SMT.pm
