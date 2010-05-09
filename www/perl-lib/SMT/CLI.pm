@@ -6,6 +6,7 @@ package SMT::CLI;
 use strict;
 use warnings;
 
+use Log::Log4perl qw(get_logger :levels);
 use URI;
 use SMT::Utils;
 use DBI qw(:sql_types);
@@ -1610,12 +1611,7 @@ sub productSubscriptionReport
     my %options = @_;
     my ($cfg, $dbh) = init();
     my %report = ();
-    
-    my $vblevel = 0;
-    if(exists $options{vblevel} && defined $options{vblevel})
-    {
-        $vblevel = $options{vblevel};
-    }
+    my $log = get_logger();
     
     my $statement = "";
     my $time = SMT::Utils::getDBTimestamp();
@@ -1631,7 +1627,7 @@ sub productSubscriptionReport
     
     $statement = "select distinct PRODUCT_CLASS, SUBNAME from Subscriptions;";
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
 
     my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
     
@@ -1665,7 +1661,7 @@ sub productSubscriptionReport
     $sth->execute;
     $res = $sth->fetchall_arrayref({});
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
 
     foreach my $node (@{$res})
     {
@@ -1683,7 +1679,7 @@ sub productSubscriptionReport
     $sth->execute;
     $res = $sth->fetchall_arrayref({});
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
 
     foreach my $node (@{$res})
     {
@@ -1694,7 +1690,7 @@ sub productSubscriptionReport
     
     $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID";
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
 
     $res = $dbh->selectall_arrayref($statement, {Slice => {}});
     my $dhash = {};
@@ -1743,10 +1739,10 @@ sub productSubscriptionReport
         $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINES}   += 1;
     }
     
-    printLog($options{log}, $vblevel, LOG_DEBUG, "SUBSCRIPTION HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$subhash]));
-    printLog($options{log}, $vblevel, LOG_DEBUG, "CALC HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$calchash]));
+    $log->debug("SUBSCRIPTION HASH");
+    $log->debug(Data::Dumper->Dump([$subhash]));
+    $log->debug("CALC HASH");
+    $log->debug(Data::Dumper->Dump([$calchash]));
 
     foreach my $subprodclass (keys %{$subhash})
     {
@@ -1782,10 +1778,10 @@ sub productSubscriptionReport
         }
     }
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "SUBSCRIPTION HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$subhash]));
-    printLog($options{log}, $vblevel, LOG_DEBUG, "CALC HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$calchash]));
+    $log->debug("SUBSCRIPTION HASH");
+    $log->debug(Data::Dumper->Dump([$subhash]));
+    $log->debug("CALC HASH");
+    $log->debug(Data::Dumper->Dump([$calchash]));
 
     foreach my $subprodclass (keys %{$subhash})
     {
@@ -1827,10 +1823,10 @@ sub productSubscriptionReport
         }
     }
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "SUBSCRIPTION HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$subhash]));
-    printLog($options{log}, $vblevel, LOG_DEBUG, "CALC HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$calchash]));
+    $log->debug("SUBSCRIPTION HASH");
+    $log->debug(Data::Dumper->Dump([$subhash]));
+    $log->debug("CALC HASH");
+    $log->debug(Data::Dumper->Dump([$calchash]));
 
     # search now for left registrations and virtual machines
 
@@ -1891,10 +1887,10 @@ sub productSubscriptionReport
         }
     }
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "SUBSCRIPTION HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$subhash]));
-    printLog($options{log}, $vblevel, LOG_DEBUG, "CALC HASH");
-    printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$calchash]));
+    $log->debug("SUBSCRIPTION HASH");
+    $log->debug(Data::Dumper->Dump([$subhash]));
+    $log->debug("CALC HASH");
+    $log->debug(Data::Dumper->Dump([$calchash]));
 
     #
     # Active Subscriptions
@@ -2036,7 +2032,7 @@ sub productSubscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("PRODUCT_CLASS");
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement});
+    $log->debug("STATEMENT: ".$sth->{Statement});
     
     my @EHEAD = ( {
                    name  => __("Subscriptions"),
@@ -2201,7 +2197,7 @@ sub productSubscriptionReport
     {
         $report{'alerts'} .= "\n".__("Warnings:\n").$warning ;
     }
-        
+    
     return \%report;
 }
 
@@ -2214,13 +2210,8 @@ sub subscriptionReport
     my %options = @_;
     my ($cfg, $dbh) = init();
     my %report = ();
-    
-    my $vblevel = 0;
-    if(exists $options{vblevel} && defined $options{vblevel})
-    {
-        $vblevel = $options{vblevel};
-    }
-    
+    my $log = get_logger();
+
     my $statement = "";
     my $time = SMT::Utils::getDBTimestamp();
     my $calchash = {};
@@ -2232,7 +2223,7 @@ sub subscriptionReport
     
     $statement = "select distinct PRODUCT_CLASS, SUBNAME from Subscriptions;";
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
 
     my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
     
@@ -2253,7 +2244,7 @@ sub subscriptionReport
 
     $statement = "select PRODUCT_CLASS, SUM(CONSUMED) AS SUM_TOTALCONSUMED, SUM(CONSUMEDVIRT) AS SUM_TOTALCONSUMEDVIRT from Subscriptions group by PRODUCT_CLASS;";
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
+    $log->debug("STATEMENT: $statement");
 
     $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
 
@@ -2280,14 +2271,14 @@ sub subscriptionReport
     $statement .= "group by SUBID order by SUBENDDATE";
     my $assigned = $dbh->selectall_hashref($statement, "SUBID");
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement DATE: $nowP30day");
+    $log->debug("STATEMENT: $statement DATE: $nowP30day");
 
     $statement  = "select s.SUBID, COUNT(cs.GUID) as MACHINES from Subscriptions s, ClientSubscriptions cs, MachineData m ";
     $statement .= "where s.SUBID = cs.SUBID and cs.GUID = m.GUID and m.KEYNAME= 'host' and m.VALUE != '' ";
     $statement .= "group by SUBID order by SUBENDDATE";
     my $assignedVirt = $dbh->selectall_hashref($statement, "SUBID");
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement DATE: $nowP30day");
+    $log->debug("STATEMENT: $statement DATE: $nowP30day");
 
     #
     # Active Subscriptions
@@ -2300,7 +2291,7 @@ sub subscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("SUBID");
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
+    $log->debug("STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
     foreach my $subid (keys %{$assigned})
     {
@@ -2365,7 +2356,7 @@ sub subscriptionReport
     my @AVALUES = ();
     my %AOPTIONS = ( 'headingText' => __("Active Subscriptions")." ($time)" );
     
-    printLog($options{log}, $vblevel, LOG_DEBUG, "Assigned status: ".Data::Dumper->Dump([$res]));
+    $log->debug("Assigned status: ".Data::Dumper->Dump([$res]));
     
     my $skipped = 0;
     
@@ -2407,7 +2398,7 @@ sub subscriptionReport
     }
     $report{'active'} = {'cols' => \@AHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @AVALUES], 'opts' => \%AOPTIONS };
 
-    printLog($options{log}, $vblevel, LOG_DEBUG,  "ACTIVE skipped $skipped");
+    $log->debug("ACTIVE skipped $skipped");
 
     #
     # Expire soon
@@ -2421,7 +2412,7 @@ sub subscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("SUBID");
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
+    $log->debug("STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
 
     foreach my $subid (keys %{$assigned})
     {
@@ -2524,7 +2515,7 @@ sub subscriptionReport
     }
     $report{'soon'} = (@SVALUES > 0)?{'cols' => \@SHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @SVALUES], 'opts' => \%SOPTIONS }:undef;
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "EXPIRE SOON skipped $skipped");
+    $log->debug("EXPIRE SOON skipped $skipped");
 
     #
     # Expired Subscriptions
@@ -2537,7 +2528,7 @@ sub subscriptionReport
     $sth->execute;
     $res = $sth->fetchall_hashref("SUBID");
     
-    printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
+    $log->debug("STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
     
     foreach my $subid (keys %{$assigned})
     {
@@ -2631,7 +2622,7 @@ sub subscriptionReport
                          $res->{$subid}->{SUBENDDATE}
                        ];
     }
-    printLog($options{log}, $vblevel, LOG_DEBUG, "EXPIRED skipped $skipped");
+    $log->debug("EXPIRED skipped $skipped");
 
     $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @EVALUES], 'opts' => \%EOPTIONS } : undef; 
 
@@ -2794,7 +2785,7 @@ sub subscriptionReport
         }
     }
 
-    printLog($options{log}, $vblevel, LOG_DEBUG, "SUMMARY skipped $skipped");
+    $log->debug("SUMMARY skipped $skipped");
 
     # search for failed NCC registrations and add them to the alerts
     $statement = "SELECT COUNT(DISTINCT GUID) from Registration WHERE NCCREGERROR != 0";
@@ -2850,7 +2841,9 @@ sub certificateExpireCheck
 
     my $days = int( ($endtime-$currentTime) / ( 60*60*24) );
 
-    printLog($options{log}, $options{vblevel}, LOG_DEBUG, "Check $certfile: Valid for $days days");
+    #printLog($options{log}, $options{vblevel}, LOG_DEBUG, "Check $certfile: Valid for $days days");
+    my $log = get_logger();
+    $log->debug("Check $certfile: Valid for $days days");
 
     return $days;
 }

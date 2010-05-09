@@ -1,6 +1,7 @@
 package SMT::Curl;
 
 use strict;
+use Log::Log4perl qw(get_logger :levels);
 use SMT::Utils;
 use URI;
 use URI::QueryParam;
@@ -20,23 +21,24 @@ sub new
     my $self  = {};
 
     $self->{curlobj}   = WWW::Curl::Easy->new();
-    $self->{LOG}       = undef;
-    $self->{VBLEVEL}   = 0;
+    $self->{LOG}       = get_logger();
+    $self->{OUT}       = get_logger('userlogger');
+    #$self->{VBLEVEL}   = 0;
     $self->{PROXYUSER} = _getProxySettings();
 
-    if(exists $opt{vblevel} && defined $opt{vblevel})
-    {
-        $self->{VBLEVEL} = $opt{vblevel};
-    }
-
-    if(exists $opt{log} && defined $opt{log} && $opt{log})
-    {
-        $self->{LOG} = $opt{log};
-    }
-    else
-    {
-        $self->{LOG} = SMT::Utils::openLog();
-    }
+#     if(exists $opt{vblevel} && defined $opt{vblevel})
+#     {
+#         $self->{VBLEVEL} = $opt{vblevel};
+#     }
+# 
+#     if(exists $opt{log} && defined $opt{log} && $opt{log})
+#     {
+#         $self->{LOG} = $opt{log};
+#     }
+#     else
+#     {
+#         $self->{LOG} = SMT::Utils::openLog();
+#     }
 
     bless($self);
 
@@ -64,7 +66,8 @@ sub new
     $self->max_redirect(5);
     $self->connecttimeout(300);
 
-    if($self->{VBLEVEL} & LOG_DEBUG3)
+    #if($self->{VBLEVEL} & LOG_DEBUG3)
+    if($self->{LOG}->is_trace())
     {
       $self->verbose(1)
     }
@@ -118,13 +121,13 @@ sub verbose
                                 if($type == 0)
                                 {
                                     chomp($text);
-                                    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, "* $text" );
+                                    $self->{LOG}->trace("* $text" );
                                 }
                                 elsif($type == 1 || $type == 2)
                                 {
                                     my $pfx = (($type == 1)?"<":">");
                                     chomp($text);
-                                    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, "$pfx $text" );
+                                    $self->{LOG}->trace("$pfx $text" );
                                 }
                                 return 0;
                             });
@@ -241,7 +244,7 @@ sub request
     {
         $self->setopt(CURLOPT_POST, 1);
         $self->setopt(CURLOPT_POSTFIELDS, $request->content);
-	# let libcurl calculate the Content-Length of a post request (bnc#597264)
+        # let libcurl calculate the Content-Length of a post request (bnc#597264)
         $self->setopt(CURLOPT_POSTFIELDSIZE, -1 );
     }
     elsif ($request->method eq 'GET')
@@ -310,7 +313,9 @@ sub request
     }
     else
     {
-      printLog( $self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "$curlcode ".$self->{curlobj}->strerror($curlcode) );
+      #printLog( $self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "$curlcode ".$self->{curlobj}->strerror($curlcode) );
+      $self->{LOG}->error("$curlcode ".$self->{curlobj}->strerror($curlcode));
+      $self->{OUT}->error("$curlcode ".$self->{curlobj}->strerror($curlcode));
       my $response = HTTP::Response->new(&HTTP::Status::RC_INTERNAL_SERVER_ERROR, 
                                          "CURL ERROR($curlcode) ".$self->{curlobj}->strerror($curlcode));
       $response->request($request);

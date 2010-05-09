@@ -1,5 +1,6 @@
 package SMT::Parser::ListReg;
 use strict;
+use Log::Log4perl qw(get_logger :levels);
 use URI;
 use XML::Parser;
 use SMT::Utils;
@@ -28,23 +29,24 @@ sub new
     $self->{HANDLER}   = undef;
     $self->{ELEMENT}   = undef;
     $self->{REGCODE}   = "";
-    $self->{LOG}       = undef;
-    $self->{VBLEVEL}   = 0;
+    $self->{LOG}       = get_logger();
+    $self->{OUT}       = get_logger('userlogger');
+    #     $self->{VBLEVEL}   = 0;
     $self->{ERRORS}    = 0;
     
-    if(exists $opt{log} && defined $opt{log} && $opt{log})
-    {
-        $self->{LOG} = $opt{log};
-    }
-    else
-    {
-        $self->{LOG} = SMT::Utils::openLog();
-    }
-
-    if(exists $opt{vblevel} && defined $opt{vblevel})
-    {
-        $self->{VBLEVEL} = $opt{vblevel};
-    }
+#     if(exists $opt{log} && defined $opt{log} && $opt{log})
+#     {
+#         $self->{LOG} = $opt{log};
+#     }
+#     else
+#     {
+#         $self->{LOG} = SMT::Utils::openLog();
+#     }
+# 
+#     if(exists $opt{vblevel} && defined $opt{vblevel})
+#     {
+#         $self->{VBLEVEL} = $opt{vblevel};
+#     }
 
     bless($self);
     return $self;
@@ -68,7 +70,9 @@ sub parse()
     
     if (!defined $file)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid filename");
+        #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid filename");
+        $self->{LOG}->error("Invalid filename");
+        $self->{OUT}->error(__("Invalid filename"));
         $self->{ERRORS} += 1;
         return $self->{ERRORS};
     }
@@ -78,7 +82,9 @@ sub parse()
     $file =~ s/\|//g;
     if (!-e $file)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File '$file' does not exist.");
+        #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File '$file' does not exist.");
+        $self->{LOG}->error("File '$file' does not exist.");
+        $self->{OUT}->error(sprintf(__("File '%s' does not exist.", $file)));
         $self->{ERRORS} += 1;
         return $self->{ERRORS};
     }
@@ -96,11 +102,15 @@ sub parse()
         eval {
             $parser->parse( $fh );
         };
-        if ($@) {
-            # ignore the errors, but print them
-            chomp($@);
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::ListReg Invalid XML in '$file': $@");
-            $self->{ERRORS} += 1;
+        if ($@)
+        {
+          my $e = $@;
+          # ignore the errors, but print them
+          chomp($e);
+          #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::ListReg Invalid XML in '$file': $@");
+          $self->{LOG}->error(sprintf("SMT::Parser::ListReg Invalid XML in '%s': %s",$file, $e));
+          $self->{OUT}->error(sprintf(__("SMT::Parser::ListReg Invalid XML in '%s': %s"),$file, $e));
+          $self->{ERRORS} += 1;
         }
         $fh->close;
         undef $fh;
@@ -110,11 +120,15 @@ sub parse()
         eval {
             $parser->parsefile( $file );
         };
-        if ($@) {
-            # ignore the errors, but print them
-            chomp($@);
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::ListReg Invalid XML in '$file': $@");
-            $self->{ERRORS} += 1;
+        if ($@) 
+        {
+          my $e = $@;
+          # ignore the errors, but print them
+          chomp($e);
+          #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::ListReg Invalid XML in '$file': $@");
+          $self->{LOG}->error(sprintf("SMT::Parser::ListReg Invalid XML in '%s': %s",$file, $e));
+          $self->{OUT}->error(sprintf(__("SMT::Parser::ListReg Invalid XML in '%s': %s"),$file, $e));
+          $self->{ERRORS} += 1;
         }
     }
     return $self->{ERRORS};
@@ -176,9 +190,8 @@ sub handle_end_tag
     {
         chomp($self->{REGCODE});
         push @{$self->{CURRENT}->{SUBREF}}, $self->{REGCODE};
-        $self->{REGCODE} = "";        
+        $self->{REGCODE} = "";
     }
-    
 }
 
 1;

@@ -453,6 +453,27 @@ sub byteFormat
     return sprintf("%.2f TB", $size);
 }
 
+# translate vblevel for screen messages
+sub vblevel2log4perl4Screen
+{
+  my $vblevel = shift;
+  
+  return $DEBUG if($vblevel & (LOG_INFO2|LOG_DEBUG|LOG_DEBUG2|LOG_DEBUG3));
+  return $INFO if($vblevel & (LOG_INFO1));
+  return $WARN if($vblevel & (LOG_WARN));
+  return $ERROR;
+}
+
+# translate vblevel for file messages
+sub vblevel2log4perl4File
+{
+  my $vblevel = shift;
+  
+  return $DEBUG if($vblevel & (LOG_DEBUG|LOG_DEBUG2|LOG_DEBUG3));
+  return $INFO if($vblevel & (LOG_INFO1|LOG_INFO2));
+  return $WARN if($vblevel & (LOG_WARN));
+  return $ERROR;
+}
 
 =item openLog($file)
 
@@ -503,12 +524,13 @@ sub setupLogger
     $screen->layout($screenlayout);
 
     # set up the root logger, so that any libs using Log4perl inherit these settings
-    my $rootlog = get_logger('');  # the empty string arg is essential!
+    my $rootlog = get_logger();  # the empty string arg is essential!
     $rootlog->add_appender($appender);
     $rootlog->add_appender($screen);
     if ($debug) { $rootlog->level($TRACE) }
     else        { $rootlog->level($INFO)  }
 }
+
 
 =item cleanPath(@pathlist)
 

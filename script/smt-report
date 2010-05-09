@@ -6,6 +6,7 @@
 
 use strict;
 use warnings;
+use Log::Log4perl qw(get_logger :levels);
 use SMT::CLI;
 use SMT::Utils;
 use SMT::NCCRegTools;
@@ -32,7 +33,7 @@ my $csv;     # export data as csv
 my $pdf;     # export data as pdf
 my $xml;     # export data as xml
 my $file;    # write output to file
-my $logfile;
+my $logfile  = "/var/log/smt/smt-report.log";
 my $nonccsync = 0;
 
 # which reports
@@ -48,7 +49,9 @@ my $sendReport = 0;
 
 use Getopt::Long;
 
-my $LOG = undef;
+#my $LOG = undef;
+my $log = undef;
+my $out = undef;
 
 # configuration
 
@@ -193,25 +196,21 @@ sub certificateCheck($$)
     my $messageBlock = '';
 
     my @msg = ();
-    my $days = SMT::CLI::certificateExpireCheck(log => $LOG, vblevel => $vblevel);
+    my $days = SMT::CLI::certificateExpireCheck(); #log => $LOG, vblevel => $vblevel);
     if(defined $days && $days > 0 && $days <= 10)
     {
-        push @msg, { LOG_WARN => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) };
+        #push @msg, { LOG_WARN => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) };
+        $log->warn(sprintf("WARNING: SMT server certificate expired in %s days. Please re-new it soon!", $days )) if($logIt);
+        $out->warn(sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days )) if($printIt);
+        $messageBlock .= sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days );
     }
     elsif(defined $days && $days <= 0)
     {
-        push @msg, { LOG_ERROR =>  __("ERROR: SMT server certificate is expired!") };
+        #push @msg, { LOG_ERROR =>  __("ERROR: SMT server certificate is expired!") };
+        $log->error("ERROR: SMT server certificate is expired!") if($logIt);
+        $out->error(__("ERROR: SMT server certificate is expired!")) if($printIt);
+        $messageBlock .= __("ERROR: SMT server certificate is expired!");
     }
-
-    foreach my $message (@msg)
-    {
-        while (my ($type, $message) = each(%{$message}) )
-        {
-            printLog($LOG, $vblevel, $type, $message, $printIt, $logIt);
-            $messageBlock .= $message."\n";
-        }
-    }
-
     return $messageBlock;
 }
 
@@ -455,7 +454,14 @@ sub getSeparateReports($)
     return %res;
 }
 
-
+sub logfile
+{
+  if(defined $logfile && $logfile ne "")
+  {
+    return $logfile;
+  }
+  return "/var/log/smt/smt-report.log";
+}
 
 ### MAIN #####################################################################
 
@@ -484,11 +490,17 @@ if ( (defined $help && $help == 1 ) || !$optres )
     exit 0;
 }
 
+
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 # open the logfile
-$LOG = SMT::Utils::openLog($logfile);
+#$LOG = SMT::Utils::openLog($logfile);
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
 
+$log = get_logger();
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+$out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
 
 # sync current data from NCC
 if(!$nonccsync)
@@ -503,26 +515,35 @@ if(!$nonccsync)
 
     if($maxwait > 60)
     {
-        printLog($LOG, $vblevel, LOG_ERROR, __("Cannot create lockfile. Skip syncing current data from NCC"));
+        #printLog($LOG, $vblevel, LOG_ERROR, __("Cannot create lockfile. Skip syncing current data from NCC"));
+        $log->error("Cannot create lockfile. Skip syncing current data from NCC");
+        $out->error(__("Cannot create lockfile. Skip syncing current data from NCC"));
     }
     elsif($maxwait == 0)
     {
         # start sync
-        my $lr= SMT::NCCRegTools->new(vblevel => $vblevel,
-                                      log     => $LOG);
+        my $lr= SMT::NCCRegTools->new(); #vblevel => $vblevel, log     => $LOG);
         
-        printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
+        #printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
+        $log->info("Downloading Subscription information");
+        $out->info(__("Downloading Subscription information"));
         my $res = $lr->NCCListSubscriptions();
         if ($res)
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
+            #SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
+            $log->error("Error while fetching Subscription data.");
+            $out->error(__("Error while fetching Subscription data."));
         }
         
-        printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
+        #printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
+        $log->info("Downloading Registration information");
+        $out->info(__("Downloading Registration information"));
         $res = $lr->NCCListRegistrations();
         if ($res)
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
+            #SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
+            $log->info("Error while fetching Registration data.");
+            $out->info(__("Error while fetching Registration data."));
         }
 
     }
@@ -563,7 +584,7 @@ SMT ID:       $smtguid
 
 if($localreport)
 {
-    $DATA {'localreport'} = SMT::CLI::productSubscriptionReport(log => $LOG, vblevel => $vblevel);
+    $DATA {'localreport'} = SMT::CLI::productSubscriptionReport(); #log => $LOG, vblevel => $vblevel);
     if( $DATA{'localreport'}{'alerts'} ne "" )
     {
         $haveAlerts = 1;
@@ -572,7 +593,7 @@ if($localreport)
 
 if( $nccreport )
 {
-    $DATA {'nccreport'}     = SMT::CLI::subscriptionReport(log => $LOG, vblevel => $vblevel);
+    $DATA {'nccreport'}     = SMT::CLI::subscriptionReport(); #log => $LOG, vblevel => $vblevel);
     if( $DATA{'nccreport'}{'alerts'} ne "" )
     {
         $haveAlerts = 1;
@@ -622,7 +643,9 @@ if (defined $quiet && $quiet == 1)
 }
 
 # print and log the ascii report if wanted
-printLog($LOG, $vblevel, LOG_INFO1, getMergedReport('asciitable'), $doPrint, $doLog);
+#printLog($LOG, $vblevel, LOG_INFO1, getMergedReport('asciitable'), $doPrint, $doLog);
+$log->info(getMergedReport('asciitable')) if($doLog);
+$out->info(getMergedReport('asciitable')) if($doPrint);
 
 # print, log and get the certificate check results
 $certErrors = certificateCheck($doPrint, $doLog);
@@ -675,7 +698,9 @@ if (defined $file)
             open(REPFILE, "> $fname ")  ||  die sprintf(__("Can not open target file %s"), $fname);
             print REPFILE $rdata;
             close REPFILE;
-            printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+            #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+            $log->info("Report generated at '$fname'");
+            $out->info(__("Report generated at '$fname'"));
         }
     }
     elsif( $pdf )
@@ -695,7 +720,9 @@ if (defined $file)
             my @cmdArgs = ("--webpage", "--quiet", "--size", "11x8.5in", "-f", "$fname", "$tname");
             open(OUT, "-|", '/usr/bin/htmldoc', @cmdArgs) or die "Cannot create PDF: $!";
             close OUT;
-            printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+            #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+            $log->info("Report generated at '$fname'");
+            $out->info(__("Report generated at '$fname'"));
         }
         else
         {
@@ -716,7 +743,9 @@ if (defined $file)
 #             print $tfh $docbook."\n";
 #             close $tfh;
 #             printLog($LOG, $vblevel, LOG_ERROR, "Created : $tname");
-            printLog($LOG, $vblevel, LOG_ERROR, "Cannot create PDF: /usr/bin/htmldoc not found.");
+            #printLog($LOG, $vblevel, LOG_ERROR, "Cannot create PDF: /usr/bin/htmldoc not found.");
+            $log->info("Cannot create PDF: /usr/bin/htmldoc not found.");
+            $out->info(__("Cannot create PDF: /usr/bin/htmldoc not found."));
         }
     }
     elsif( $xml )
@@ -728,7 +757,9 @@ if (defined $file)
         print XML getMergedReport('xml');
         print XML '</report>';
         close XML;
-        printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+        #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+        $log->info("Report generated at '$fname'");
+        $out->info(__("Report generated at '$fname'"));
     }
     else
     {
@@ -737,7 +768,9 @@ if (defined $file)
         open(REPFILE, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
         print REPFILE getMergedReport('asciitable');
         close REPFILE;
-        printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+        #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
+        $log->info("Report generated at '$fname'");
+        $out->info(__("Report generated at '$fname'"));
     }
 
     if ($certErrors ne '')
