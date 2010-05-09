@@ -195,6 +195,7 @@ fi
 %exclude /etc/smt.d/smt_support.conf
 %config /etc/smt.d/novell.com-smt
 %config /etc/smt.d/log4perl.conf
+%config /etc/smt.d/log4perlApache.conf
 %config /etc/logrotate.d/smt
 %config /etc/logrotate.d/apache-smt
 /etc/init.d/smt

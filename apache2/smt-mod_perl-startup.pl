@@ -20,5 +20,5 @@
   use APR::Const -compile => ':common';
   use Log::Log4perl;
   # init Log4perl only here
-  Log::Log4perl::init('/etc/smt.d/log4perl.conf');
+  Log::Log4perl::init('/etc/smt.d/log4perlApache.conf');
   1;
