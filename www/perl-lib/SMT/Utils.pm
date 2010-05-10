@@ -459,8 +459,8 @@ sub vblevel2log4perl4Screen
   my $vblevel = shift;
   
   return $DEBUG if($vblevel & (LOG_INFO2|LOG_DEBUG|LOG_DEBUG2|LOG_DEBUG3));
-  return $INFO if($vblevel & (LOG_INFO1));
-  return $WARN if($vblevel & (LOG_WARN));
+  return $INFO  if($vblevel & (LOG_INFO1));
+  return $WARN  if($vblevel & (LOG_WARN));
   return $ERROR;
 }
 
@@ -469,9 +469,9 @@ sub vblevel2log4perl4File
 {
   my $vblevel = shift;
   
-  return $DEBUG if($vblevel & (LOG_DEBUG|LOG_DEBUG2|LOG_DEBUG3));
-  return $INFO if($vblevel & (LOG_INFO1|LOG_INFO2));
-  return $WARN if($vblevel & (LOG_WARN));
+  return $TRACE if($vblevel & (LOG_DEBUG|LOG_DEBUG2|LOG_DEBUG3));
+  return $INFO  if($vblevel & (LOG_INFO1|LOG_INFO2));
+  return $WARN  if($vblevel & (LOG_WARN));
   return $ERROR;
 }
 
