@@ -1432,12 +1432,7 @@ sub hardlink
     my %options = @_;
     my ($cfg, $dbh) = init();
     my $t0 = [gettimeofday] ;
-
-    my $vblevel = 0;
-    if(exists $options{debug} && defined $options{debug})
-    {
-        $vblevel = $options{vblevel};
-    }
+    my $log = get_logger();
 
     my $dir = "";
     if(! exists $options{basepath} || ! defined $options{basepath} || ! -d $options{basepath})
@@ -1445,7 +1440,7 @@ sub hardlink
         $dir = $cfg->val("LOCAL", "MirrorTo");
         if(!defined $dir || $dir eq "" || ! -d $dir)
         {
-            printLog($options{log}, $vblevel, LOG_ERROR, sprintf("Wrong mirror directory: %s", $dir));
+            $log->error(sprintf("Wrong mirror directory: %s", $dir));
             return 1;
         }
     }
@@ -1455,7 +1450,7 @@ sub hardlink
     }
 
     my $cmd = "find $dir -xdev -iname '*.rpm' -type f -size +$options{size}k ";
-    printLog($options{log}, $vblevel, LOG_DEBUG, "$cmd");
+    $log->debug($cmd);
 
     my $filelist = `$cmd`;
     my @files = sort split(/\n/, $filelist);
@@ -1469,15 +1464,15 @@ sub hardlink
 
             if( $NN ne $MM  &&  basename($MM) eq basename($NN) )
             {
-                printLog($options{log}, $vblevel, LOG_INFO1, "$MM ");
-                printLog($options{log}, $vblevel, LOG_INFO1, "$NN ");
+                $log->info("$MM ");
+                $log->info("$NN ");
                 if( (stat($MM))[1] != (stat($NN))[1] )
                 {
                     my $sha1MM = _sha1sum($MM);
                     my $sha1NN = _sha1sum($NN);
                     if(defined $sha1MM && defined $sha1NN && $sha1MM eq $sha1NN)
                     {
-                        printLog($options{log}, $vblevel, LOG_INFO2, "Hardlink $NN");
+                        $log->info("Hardlink $NN");
                         #my $ret = link $MM, $NN;
                         #print "RET: $ret\n";
                         link( $MM, $NN );
@@ -1485,12 +1480,12 @@ sub hardlink
                     }
                     else
                     {
-                        printLog($options{log}, $vblevel, LOG_DEBUG, "Checksums does not match $sha1MM != $sha1NN.");
+                        $log->debug("Checksums do not match $sha1MM != $sha1NN.");
                     }
                 }
                 else
                 {
-                    printLog($options{log}, $vblevel, LOG_DEBUG, "Files are hard linked. Nothing to do.");
+                    $log->debug("Files are hard linked. Nothing to do.");
                     $NN = undef;
                 }
             }
@@ -1500,7 +1495,8 @@ sub hardlink
             }
         }
     }
-    printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+    $log->info('Hardlink Time: ' . SMT::Utils::timeFormat(tv_interval($t0)));
+    #printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
 }
 
 #

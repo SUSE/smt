@@ -15,6 +15,7 @@ use SMT::CLI;
 use SMT::Parser::RegData;
 use SMT::Repositories;
 
+use RPMMD::Callbacks;
 use RPMMD::Tools::Mirror;
 use RPMMD::Filter;
 use Config::IniFiles;
@@ -25,6 +26,7 @@ use Getopt::Long;
 use File::Basename;
 use File::Temp;
 use Time::HiRes qw(gettimeofday tv_interval);
+use Log::Log4perl qw(get_logger :levels);
 
 #use Data::Dumper;
 
@@ -170,10 +172,18 @@ if(!SMT::Utils::openLock("smt-mirror"))
 }
 
 # open the logfile
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
 
-my $LOG = SMT::Utils::openLog($logfile);
-SMT::Utils::setupLogger($logfile, $debug); # Log4perl logger for RPMMD
+# to change the loglevel we need the root logger,
+# not the derived main logger
+my $log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+my $out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
 
+# register RPMMD callback handlers
+RPMMD::Callbacks::instance()->setMirrorReporter(\& mirrorReportHandler);
+RPMMD::Callbacks::instance()->setMirrorJobReporter(\& mirrorJobReportHandler);
 
 my $cfg = undef;
 
@@ -185,8 +195,10 @@ eval
 };
 if($@ || !defined $cfg)
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
-    SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+    my $msg = sprintf(__("Cannot read the SMT configuration file: %s"), $@);
+    $log->error($msg);
+    $out->error($msg);
+    SMT::Utils::unLockAndExit( "smt-mirror", 1 );
 }
 
 if(!defined $LocalBasePath || $LocalBasePath eq "" )
@@ -194,8 +206,8 @@ if(!defined $LocalBasePath || $LocalBasePath eq "" )
     $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
     if(!defined $LocalBasePath || $LocalBasePath eq "" || !-d $LocalBasePath)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the local base path"));
-        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+        $out->error(__("Cannot read the local base path"));
+        SMT::Utils::unLockAndExit( "smt-mirror", 1 );
     }
 }
 else
@@ -208,8 +220,9 @@ else
         };
         if ($@) 
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $LocalBasePath, $@));
-            SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+            $log->fatal(sprintf("Cannot create %s: %s", $LocalBasePath, $@));
+            $out->fatal(sprintf(__("Cannot create %s: %s"), $LocalBasePath, $@));
+            SMT::Utils::unLockAndExit( "smt-mirror", 1 );
         }
     }
 }
@@ -224,8 +237,9 @@ if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
     {
         if (! -d $FromLocalBasePath )
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("The directory %s does not exist"), $FromLocalBasePath));
-            SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+            $log->fatal(sprintf("The directory %s does not exist", $FromLocalBasePath));
+            $out->fatal(sprintf(__("The directory %s does not exist"), $FromLocalBasePath));
+            SMT::Utils::unLockAndExit( "smt-mirror", 1 );
         }
     }
 }
@@ -233,22 +247,22 @@ if ( $fromlocalsmt )
 {
     if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
-                sprintf( __("Using '--fromlocalsmt' requires the '--directory' argument.")));
-        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+        $log->fatal('--fromlocalhost given, but no --directory');
+        $out->fatal(sprintf(__("Using '--fromlocalsmt' requires the '--directory' argument.")));
+        SMT::Utils::unLockAndExit( "smt-mirror", 1 );
     }
     if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
-                sprintf( __("The options '--fromlocalsmt' and '--fromdir' cannot be used at the same time")));
-        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+        $log->fatal('can\'t use both --fromlocalsmt and --fromdir');
+        $out->fatal(sprintf( __("The options '--fromlocalsmt' and '--fromdir' cannot be used at the same time")));
+        SMT::Utils::unLockAndExit( "smt-mirror", 1 );
     }
 }
 
 if($hardlink > 0)
 {
-    SMT::CLI::hardlink(log => $LOG, size => $hardlink, vblevel => $vblevel, basepath => $LocalBasePath);
-    SMT::Utils::unLockAndExit( "smt-mirror", 0, $LOG, $vblevel );
+    SMT::CLI::hardlink(size => $hardlink, basepath => $LocalBasePath);
+    SMT::Utils::unLockAndExit("smt-mirror", 0);
 }
 
 
@@ -260,8 +274,9 @@ if(!defined $dbreplfile)
     
     if(!$dbh)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot connect to database"));
-        SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+        $log->fatal("Cannot connect to database");
+        $out->fatal(__("Cannot connect to database"));
+        SMT::Utils::unLockAndExit("smt-mirror", 1);
     }
 }
 else
@@ -282,8 +297,9 @@ my $nuPass = $cfg->val("NU", "NUPass");
 if(!defined $nuUser || $nuUser eq "" ||
    !defined $nuPass || $nuPass eq "")
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot read the Mirror Credentials"));
-    SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
+    $log->fatal("Cannot read the Mirror Credentials");
+    $out->fatal(__("Cannot read the Mirror Credentials"));
+    SMT::Utils::unLockAndExit("smt-mirror", 1);
 }
 
 
@@ -364,8 +380,6 @@ foreach my $entry (@{$array})
         if( lc($entry->{CATALOGTYPE}) eq "yum")
         {
             $zyppMirror = SMT::Mirror::Yum->new(
-                vblevel => $vblevel,
-                log => $LOG,
                 dbh => $dbh,
                 cfg => $SMT::MIRROR_CFG,
                 mirrorsrc => $mirrorsrc,
@@ -427,8 +441,8 @@ foreach my $entry (@{$array})
             # to a custom directory
             if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
             {
-                my $rh = SMT::Repositories::new($dbh, $LOG);
-                if ( !$dryrun ) 
+                my $rh = SMT::Repositories::new($dbh);
+                if ( !$dryrun )
                 {
                     $rh->updateLastMirror ($entry->{CATALOGID});
                     # Something new has been downloaded, update the mirroring timestamp
@@ -437,11 +451,12 @@ foreach my $entry (@{$array})
                     {
                         if (!SMT::Mirror::Utils::saveStatus($zyppMirror->fullLocalRepoPath()))
                         {
-                            SMT::Utils::printLog($LOG, $vblevel, LOG_WARN,
-                                sprintf(__("Failed to save the mirror status at '%s'"), $zyppMirror->fullLocalRepoPath()));
+                            $log->warn('Failed to save the mirror status at ' . $zyppMirror->fullLocalRepoPath());
+                            $out->warn(sprintf(__("Failed to save the mirror status at '%s'"), $zyppMirror->fullLocalRepoPath()));
                         }
                     }
                 }
+                
                 # filter new patches -> admin needs to manually allow which patches
                 # s/he wants (maybe this should be configurable)
                 # Only add new filter for a new patch, if the current one does
@@ -463,6 +478,7 @@ foreach my $entry (@{$array})
     }
 }
 
+
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
 if(!defined $dbreplfile)
 {
@@ -477,18 +493,23 @@ if(!defined $dbreplfile)
         my $warning = __("WARNING: The following repositories cannot be mirrored.\n");
         $warning   .= __("         Maybe you have not enough permissions to download these repositories?\n\n");
         
+        my $repos = '';
         foreach my $id (keys %{$hash})
         {
-            $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
+            $repos .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
         }
 
-        SMT::Utils::printLog($LOG, $vblevel, LOG_WARN, $warning);
+        $log->warn('cannot mirror the following of selected repos: ' . $repos);
+        $out->warn($warning . $repos);
     }
 }
 
-if(!SMT::Utils::unLock("smt-mirror"))
+
+# release lock, not needed anymore
+if (!SMT::Utils::unLock("smt-mirror"))
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+    $log->error('cannot remove lock');
+    $out->error(__("Cannot remove lockfile."));
     exit 1;
 }
 
@@ -520,7 +541,8 @@ if(!$clean && !$hardlink)
     {
         foreach my $str (@summary)
         {
-            SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), $str);
+            $log->info($str);
+            $out->info($str);
         }
     }
     else
@@ -528,7 +550,7 @@ if(!$clean && !$hardlink)
         my $body = "";
         foreach my $str (@summary)
         {
-            SMT::Utils::printLog($LOG, $vblevel, (LOG_INFO1|LOG_INFO2), $str, 0, 1);
+            $log->info($str);
             $body .= $str."\n";
         }
         $body .= "\n";
@@ -549,12 +571,11 @@ if(!$clean && !$hardlink)
         my $subject = sprintf("SMT Mirror Report $datestring (%s) -- $errors Errors", SMT::Utils::getFQDN());
         SMT::Utils::sendMailToAdmins($subject, $body);
     }
-    
+
     #
     # does not make sense here. If a complete repo is up-to-date we do not have the number of files
     #
     #SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Files up to date          : %s"), $uptodate));
-
 }
 
 
@@ -577,9 +598,32 @@ sub catalog_handler
 
 sub signal_handler
 {
-  SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, "Interrupted by signal. Exitting.");
-  SMT::Utils::unLockAndExit("smt-mirror", 1, $LOG, $vblevel);
+  $log->info('Interrupted by signal. Exiting.');
+  $out->info(__('Interrupted by signal. Exiting.'));
+  SMT::Utils::unLockAndExit("smt-mirror", 1);
 }
+
+# RPMMD::Tools::Mirror callback handler
+sub mirrorReportHandler
+{
+  my ($rtype, $level, $msg, $pg) = @_;
+  $out->log($level, $msg) if ($msg);
+}
+
+# RPMMD::Tools::MirrorJob callback handler
+sub mirrorJobReportHandler
+{
+  my ($rtype, $level, $msg, $pg) = @_;
+  $out->log($level, $msg) if ($msg);
+}
+
+# need for Log4perl::init()
+sub logfile
+{
+  return $logfile if ($logfile);
+  return "/var/log/smt/smt-report.log";
+}
+
 
 #
 # Manpage

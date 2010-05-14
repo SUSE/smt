@@ -121,19 +121,17 @@ use constant {
 
 =over 4
 
-=item new ($dbh[, $log])
+=item new ($dbh)
 
 Constructor. Log object parameter is optional.
 
- my $log = SMT::Utils::openLog ($logfile);
- my $repo = SMT::Repositories ($dbh, $log);
+ my $repo = SMT::Repositories ($dbh);
 
 =cut
 
 sub new
 {
     my $dbh = shift;
-    my $log = shift;
 
     my $new =
     {

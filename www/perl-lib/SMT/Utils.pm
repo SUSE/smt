@@ -273,18 +273,14 @@ failure of the unlock)
 =cut
 sub unLockAndExit
 {
-    my ($progname, $exitcode, $log, $level) = @_;
+    my ($progname, $exitcode) = @_;
+    my $log = undef;
+    eval { $log = get_logger(); }; # we may not have Log4perl initialized here
 
     if (!SMT::Utils::unLock($progname))
     {
-        if ( $log )
-        {
-            SMT::Utils::printLog($log, $level, LOG_ERROR, __("Cannot remove lockfile."));
-        }
-        else
-        {
-            print STDERR  __("Cannot remove lockfile.")."\n";
-        }
+        $log->fatal("Cannot remove lockfile.") if ($log);
+        print STDERR  __("Cannot remove lockfile.")."\n";
     }
     exit $exitcode;
 }
