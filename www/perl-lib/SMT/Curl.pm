@@ -1,6 +1,8 @@
 package SMT::Curl;
 
 use strict;
+use warnings;
+
 use Log::Log4perl qw(get_logger :levels);
 use SMT::Utils;
 use URI;
@@ -86,7 +88,7 @@ sub _getProxySettings
     $ENV{https_proxy} = $httpsProxy if(defined $httpsProxy && $httpsProxy !~ /^\s*$/);
     $ENV{no_proxy}    = $noProxy if(defined $noProxy    && $noProxy !~ /^\s*$/);
 
-    return "$proxyUser";
+    return $proxyUser;
 }
 
 
@@ -113,6 +115,16 @@ sub verbose
 
     if ( $value )
     {
+        # If the logger gets passed to CURLOPT_DEBUGFUNCTION in $self->{LOG}
+        # it might happen that Log4perl gets destroyed before this function
+        # is called (happend to me on global cleanup - curl still wanted to
+        # report something, but log4perl was gone).
+        #
+        # Why this works when the logger is created here?
+        # Perhaps perl keeps the $log reference once used in the curl debug
+        # function until the curl object (and the function) is destroyed
+        my $log = get_logger();
+
         $self->setopt(CURLOPT_DEBUGFUNCTION, sub {
                                 my $text = shift;
                                 my $unknown = shift;
@@ -121,18 +133,20 @@ sub verbose
                                 if($type == 0)
                                 {
                                     chomp($text);
-                                    $self->{LOG}->trace("* $text" );
+                                    $log->trace("* $text" );
                                 }
                                 elsif($type == 1 || $type == 2)
                                 {
                                     my $pfx = (($type == 1)?"<":">");
                                     chomp($text);
-                                    $self->{LOG}->trace("$pfx $text" );
+                                    $log->trace("$pfx $text" );
                                 }
                                 return 0;
                             });
         return $self->setopt( CURLOPT_VERBOSE, 1 );
     }
+
+    $self->setopt(CURLOPT_DEBUGFUNCTION, sub {});
     return $self->setopt( CURLOPT_VERBOSE, 0 );
 }
 
