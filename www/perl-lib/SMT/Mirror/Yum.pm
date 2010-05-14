@@ -6,7 +6,7 @@ use URI;
 use File::Path;
 use File::Find;
 use Time::HiRes qw(gettimeofday tv_interval);
-use RPMMD::impl::Downloader;
+use RPMMD::Tools::MirrorJob;
 
 use SMT::Utils;
 
@@ -75,7 +75,7 @@ sub mirror()
     
     # find out if we have old style yum repo with headers directoy
 
-    my $job = RPMMD::impl::Downloader->new(UserAgent => $self->{USERAGENT}, dbh => $self->{DBH}, dryrun => $dryrun );
+    my $job = RPMMD::Tools::MirrorJob->new(UserAgent => $self->{USERAGENT}, dbh => $self->{DBH}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
@@ -116,7 +116,7 @@ sub mirror()
                         
                         my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
                         
-                        my $hjob = RPMMD::impl::Downloader->new(UserAgent => $self->{USERAGENT}, dbh => $self->{DBH}, dryrun => $dryrun );
+                        my $hjob = RPMMD::Tools::MirrorJob->new(UserAgent => $self->{USERAGENT}, dbh => $self->{DBH}, dryrun => $dryrun );
                         $hjob->uri( $self->uri() );
                         $hjob->localBasePath( $self->localBasePath() );
                         $hjob->localRepoPath( $self->localRepoPath() );
