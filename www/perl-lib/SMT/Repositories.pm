@@ -4,6 +4,8 @@ package SMT::Repositories;
 use strict;
 use warnings;
 
+use Log::Log4perl qw(get_logger :levels);
+
 use SMT::Utils;
 use SMT::Mirror::Utils;
 
@@ -113,8 +115,6 @@ use constant {
 
     REPOSITORYID	=> 'CATALOGID',
     REPOSITORIES	=> 'Catalogs',
-
-    VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2,
 };
 
 =head1 METHODS 
@@ -143,15 +143,10 @@ sub new
         GOTALLREPOS => 0
     };
 
-    if (defined $log)
-    {
-	$new->{LOG} = $log;
-    }
-
     # Checking the params
-    if (! defined $new->{dbh} && defined $log)
+    if (! defined $new->{dbh})
     {
-	SMT::Utils::printLog($new->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'dbh' is required"))
+        get_logger()->error(__("Parameter 'dbh' is required"));
     }
 
     bless $new;
@@ -355,29 +350,28 @@ TODO: move to SMT::Common::Repos
 sub filteringAllowed($$$)
 {
     my ($self, $repository, $basepath) = @_;
+    my $log = get_logger();
 
     if (not
         defined $repository && $repository && defined $basepath && $basepath)
     {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-            "Repository ID or local base path parameter is not defined.", 0);
+        $log->error('Repository ID or local base path parameter is not defined.');
         return undef;
     }
 
     my $repo = $self->getRepository($repository);
     if (not defined $repo)
     {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-            'Cannot get repository data for repository ' . $repository, 0);
+        $log->error('Cannot get repository data for repository ' . $repository);
 	return undef;
     }
 
     my $relrepopath = $repo->{'LOCALPATH'};
     if (not defined $relrepopath && $relrepopath)
     {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+        $log->error(
             'LOCALPATH is not defined for repository '. $repo->{'NAME'} .
-            ' ID ' . $repository, 0);
+            ' ID ' . $repository);
         return undef;
     }
 
@@ -393,9 +387,9 @@ sub filteringAllowed($$$)
         -d $absrepopath &&
         -e $absrepopath.'/repodata/updateinfo.xml.gz');
 
-    printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
-        "filteringAllowed(): updateinfo.xml.gz not found in local" .
-        " repo copies, will check remote URI...", 0);
+    $log->debug(
+        'updateinfo.xml.gz not found in local' .
+        ' repo copies, will check remote URI...');
 
     # if local repo dirs (production or full) do not exist or can't be
     # determined, check the remote repo URL
@@ -403,15 +397,14 @@ sub filteringAllowed($$$)
     my $url = $repo->{'EXTURL'};
     if (defined $url && $url)
     {
-        my $useragent = SMT::Utils::createUserAgent(
-                            log => $self->{LOG}, vblevel => VBLEVEL);
+        my $useragent = SMT::Utils::createUserAgent();
         return SMT::Utils::doesFileExist($useragent, $url . '/repodata/updateinfo.xml.gz');
     }
     else
     {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
+        $log->error(
             'EXTURL is not defined for repository '. $repo->{'NAME'} .
-            ' ID ' . $repository, 0);
+            ' ID ' . $repository);
         return undef;
     }
 
@@ -434,8 +427,7 @@ sub updateLastMirror ($$)
 
     if (not defined $repositoryid || !$repositoryid)
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"))
-	    if (defined $self->{LOG});
+        get_logger()->error('Parameter \'repositoryid\' is required');
 	return 0;
     };
 
@@ -569,18 +561,17 @@ sub changeRepoStatus ($$)
 {
     my $self = shift;
     my $arg = shift || {};
+    my $log = get_logger();
 
     if (! defined $arg->{'repositoryid'})
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-	    __("Parameter 'repositoryid' is required"));
+	$log->error('Parameter \'repositoryid\' is required');
 	return 0;
     }
 
     if (! defined $arg->{'mirroring'} && ! defined $arg->{'staging'})
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_WARN,
-	    __("Neither 'mirroring' nor 'staging' parameter is defined"));
+	$log->error('Neither \'mirroring\' nor \'staging\' parameter is defined');
 	return 1;
     }
 
@@ -635,23 +626,24 @@ sub isSnapshotUpToDate ($)
 {
     my $self = shift;
     my $arg = shift || {};
+    my $log = get_logger();
 
     # Checking all the parameters
     if (! defined $arg->{'repositoryid'})
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"));
+	$log->error('Parameter \'repositoryid\' is required.');
 	return undef;
     }
 
     if (! defined $arg->{'basepath'})
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'basepath' is required"));
+	$log->error('Parameter \'basepath\' is required');
 	return undef;
     }
 
     if (! defined $arg->{'type'})
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'type' is required"));
+	$log->error('Parameter \'type\' is required');
 	return undef;
     }
 
@@ -682,7 +674,7 @@ sub isSnapshotUpToDate ($)
     }
     else
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, sprintf (__("Unknown type %s"), $arg->{'type'}));
+	$log->error('Unknown type ' . $arg->{'type'});
 	return undef;
     }
 
@@ -691,13 +683,13 @@ sub isSnapshotUpToDate ($)
 
     if (! defined $timestamp_full || $timestamp_full eq '')
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_WARN, sprintf (__("Cannot get repository status %s"), $full_repopath));
+	$log->warn(sprintf('Cannot get repository status for %s', $full_repopath));
 	return undef;
     }
 
     if (! defined $timestamp_subrepo || $timestamp_subrepo eq '')
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, sprintf (__("Cannot get repository status %s"), $subrepo_path));
+        $log->error(sprintf('Cannot get repository status for %s', $subrepo_path));
 	return undef;
     }
 
@@ -740,13 +732,13 @@ sub getRepositoryDetails ($)
     # Checking all the parameters
     if (! defined $arg->{'repositoryid'})
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"));
+	get_logger()->error('Parameter \'repositoryid\' is required');
 	return undef;
     }
 
     if (! defined $arg->{'basepath'})
     {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'basepath' is required"));
+	get_logger()->error('Parameter \'basepath\' is required');
 	return undef;
     }
 
