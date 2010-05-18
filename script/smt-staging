@@ -948,7 +948,7 @@ sub mirrorJobReportHandler
 sub logfile
 {
   return $logfile if ($logfile);
-  return "/var/log/smt/smt-report.log";
+  return "/var/log/smt/smt-staging.log";
 }
 
 
