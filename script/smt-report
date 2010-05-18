@@ -456,10 +456,7 @@ sub getSeparateReports($)
 
 sub logfile
 {
-  if(defined $logfile && $logfile ne "")
-  {
-    return $logfile;
-  }
+  return $logfile if($logfile);
   return "/var/log/smt/smt-report.log";
 }
 
