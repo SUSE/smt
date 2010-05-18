@@ -15,6 +15,7 @@ use RPMMD::Tools::Mirror;
 use RPMMD::Tools::DepChecker;
 use RPMMD::Filter;
 use RPMMD::Parser::Updates;
+use Log::Log4perl qw(get_logger :levels);
 
 use SMT;
 use SMT::Utils;
@@ -24,7 +25,7 @@ use SMT::Mirror::Yum;
 
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug    = 0;
-my $logfile = "/dev/null";
+my $logfile = undef;
 my $help     = 0;
 
 my $dbreplfile = undef;
@@ -168,11 +169,21 @@ if(!SMT::Utils::openLock("smt-staging"))
     exit 0;
 }
 
-# open the logfile
-
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
-my $log = SMT::Utils::openLog($logfile);
-SMT::Utils::setupLogger($logfile, $debug); # Log4perl logger for RPMMD
+
+# open the logfile
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
+
+# to change the loglevel we need the root logger,
+# not the derived main logger
+my $log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+my $out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
+
+# register RPMMD callback handlers
+RPMMD::Callbacks::instance()->setMirrorReporter(\& mirrorReportHandler);
+RPMMD::Callbacks::instance()->setMirrorJobReporter(\& mirrorJobReportHandler);
 
 # get the config
 
@@ -185,8 +196,9 @@ eval
 };
 if($@ || !defined $cfg)
 {
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
-    SMT::Utils::unLockAndExit( "smt-mirror", 1, $log, $vblevel );
+    $log->fatal("Cannot read the SMT configuration file: $@");
+    $out->fatal(sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    SMT::Utils::unLockAndExit('smt-mirror', 1);
 }
 
 # connect to database (all commands need it)
@@ -194,12 +206,9 @@ if($@ || !defined $cfg)
 my $dbh = SMT::Utils::db_connect();
 if(!$dbh)
 {
-    if(!SMT::Utils::unLock("smt-staging"))
-    {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
-    }
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot connect to database."));
-    exit 1;
+    $log->fatal('Cannot connect to database.');
+    $out->fatal(__("Cannot connect to database."));
+    SMT::Utils::unLockAndExit('smt-mirror', 1);
 }
 
 # get the repository from DB (all commands need it)
@@ -219,8 +228,7 @@ if (not defined $repo)
         my $err = $rh->getAndClearErrorMessage();
         my $count = scalar keys %$repos;
 
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, 'DB error: ' . $err)
-            if ($err);
+        $log->error('DB error: ' . $err) if ($err);
 
         if ( $reponameid =~ /^[0-9]+$/ &&
             int($reponameid) > 0 && int($reponameid) <= $count)
@@ -239,10 +247,10 @@ if (not defined $repo)
         }
         else
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-                sprintf __("Repository ID '%s' not found."), $reponameid);
-            printf __("Use '%s' to list all available repositories.\n"), 'smt-repos';
-            SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+            $log->error(sprintf("Repository ID '%s' not found.", $reponameid));
+            $out->error(sprintf(__("Repository ID '%s' not found."), $reponameid));
+            $out->info(sprintf(__("Use '%s' to list all available repositories.\n"), 'smt-repos'));
+            SMT::Utils::unLockAndExit( "smt-staging", 1);
         }
     }
     # try to find by name & target
@@ -256,10 +264,10 @@ if (not defined $repo)
         my $count = scalar keys %$repos;
         if ($count <= 0)
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-                sprintf __("Repository named '%s' with target '%s' not found."), $reponameid, $target);
-            printf __("Use '%s' to list all available repositories.\n"), 'smt-repos';
-            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+            $out->error(sprintf("Repository named '%s' with target '%s' not found.", $reponameid, $target));
+            $out->error(sprintf(__("Repository named '%s' with target '%s' not found."), $reponameid, $target));
+            $out->info(printf(__("Use '%s' to list all available repositories.\n"), 'smt-repos'));
+            SMT::Utils::unLockAndExit('smt-staging', 1);
         }
         elsif ($count == 1)
         {
@@ -270,17 +278,16 @@ if (not defined $repo)
         else
         {
             # select manually
-            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-                sprintf __("Multiple repositories named '%s' with target '%s' found."), $reponameid, $target);
-            print __('Selection from multiple repositories is not implemented. Use repository ID.') . "\n";
-            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+            $log->error(sprintf("Multiple repositories named '%s' with target '%s' found.", $reponameid, $target));
+            $out->error(sprintf(__("Multiple repositories named '%s' with target '%s' found."), $reponameid, $target));
+            $out->info(__('Selection from multiple repositories is not implemented. Use repository ID.'));
+            SMT::Utils::unLockAndExit('smt-staging', 1);
         }
     }
 }
 else
 {
-    SMT::Utils::printLog($log, $vblevel, LOG_DEBUG,
-        sprintf "Found repository by CATALOGID '%s'.", $reponameid);
+    $log->debug(sprintf("Found repository by CATALOGID '%s'.", $reponameid));
     $repoid = $reponameid;
 }
 
@@ -288,12 +295,16 @@ else
 
 if ($repo->{STAGING} ne 'Y')
 {
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-        sprintf __("Staging is not enabled for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
-    print sprintf (__('Use "%s" to enable staging for this repository.'),
-        'smt repos \'' . $repo->{NAME} . '\' \'' . $repo->{TARGET} . '\' -s');
-    print "\n";
-    SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+    $log->fatal(
+        sprintf("Staging is not enabled for repository '%s', target '%s'.",
+            $repo->{NAME}, $repo->{TARGET}));
+    $out->fatal(
+        sprintf(__("Staging is not enabled for repository '%s', target '%s'."),
+            $repo->{NAME}, $repo->{TARGET}));
+    $out->info(
+        sprintf(__('Use "%s" to enable staging for this repository.'),
+            'smt repos \'' . $repo->{NAME} . '\' \'' . $repo->{TARGET} . '\' -s'));
+    SMT::Utils::unLockAndExit('smt-staging', 1);
 }
 
 # now we're ready to do the real work
@@ -383,9 +394,9 @@ elsif ($command eq 'listupdates')
 {
     if (defined $category && not $exists_category{$category})
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Invalid category '$category'.", 0);
-        print sprintf (__("Invalid category '%s'."), $category) . "\n";
-        print sprintf (__("See '%s' for the list of known categories."), 'man smt-staging') . "\n";
+        $log->fatal("Invalid category '$category'.");
+        $out->fatal(sprintf(__("Invalid category '%s'."), $category));
+        $out->fatal(sprintf(__("See '%s' for the list of known categories."), 'man smt-staging'));
         SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
     }
 
@@ -426,8 +437,8 @@ elsif ($command eq 'listupdates')
         {
             if (not defined $patches->{$_})
             {
-                SMT::Utils::printLog($log, $vblevel, LOG_WARN,
-                    sprintf (__("Patch '%s' not found."), $_));
+                $log->warn("Patch '$_' not found.");
+                $out->warn(sprintf(__("Patch '%s' not found."), $_));
                 next;
             }
 
@@ -574,8 +585,8 @@ elsif ($command eq 'allow' || $command eq 'forbid')
             # make sure user gave an existing patch
             if (not defined $patches->{$_})
             {
-                SMT::Utils::printLog($log, $vblevel, LOG_WARN,
-                    sprintf (__("Patch '%s' not found."), $_));
+                $log->warn("Patch '$_' not found.");
+                $out->warn(sprintf(__("Patch '%s' not found."), $_));
                 next;
             }
 
@@ -584,9 +595,11 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                 $filter->remove(RPMMD::Filter->TYPE_NAME_VERSION, $_);
                 if ($filter->matches($patches->{$_}))
                 {
-                    SMT::Utils::printLog($log, $vblevel, LOG_WARN,
+                    my $matches = $filter->whatMatches2str($patches->{$_});
+                    $log->warn("Patch '$_' is still filtered by:\n$matches");
+                    $out->warn(
                         sprintf (__("Patch '%s' is still filtered by:\n%s"),
-                            $_, $filter->whatMatches2str($patches->{$_})));
+                            $_, $matches));
                 }
             }
             else
@@ -666,10 +679,10 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         }
         else
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Invalid category '$category'.", 0);
-            print sprintf (__("Invalid category '%s'."), $category) . "\n";
-            print sprintf (__("See '%s' for the list of known categories."), 'man smt-staging') . "\n";
-            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+            $log->fatal("Invalid category '$category'.");
+            $out->(sprintf(__("Invalid category '%s'."), $category));
+            $out->(sprintf(__("See '%s' for the list of known categories."), 'man smt-staging'));
+            SMT::Utils::unLockAndExit('smt-staging', 1);
         }
     }
     elsif (defined $all)
@@ -677,8 +690,8 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         if ($allow)
         {
             $filter->clean();
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-                __('All patches have been allowed.'));
+            $log->info('All patches have been allowed.');
+            $out->info(__('All patches have been allowed.'));
         }
         else
         {
@@ -686,17 +699,19 @@ elsif ($command eq 'allow' || $command eq 'forbid')
             $filter->clean(); 
             $filter->add(RPMMD::Filter->TYPE_NAME_VERSION, $_)
                 foreach (keys %$patches);
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-                sprintf (__('All %d patches have been forbidden.'),
-                    scalar keys %$patches));
+            
+            my $pcount = scalar keys %$patches;
+            $log->info("All $pcount patches have been forbidden.");
+            $out->info(
+                sprintf (__('All %d patches have been forbidden.'), $pcount));
         }
     }
     else
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "No patches specified.");
-        print __("Specify at least one '--patch name-version'.") . "\n";
-        print __("Use 'smt-staging listupdates' to see the list of available patches.") . "\n";
-        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+        $log->fatal('No patches specified.');
+        $out->info(__('Specify at least one \'--patch name-version\'.'));
+        $out->info(__('Use \'smt-staging listupdates\' to see the list of available patches.'));
+        SMT::Utils::unLockAndExit('smt-staging', 1);
     }
 
     # check consistency of the resulting repository before applying changes
@@ -706,31 +721,33 @@ elsif ($command eq 'allow' || $command eq 'forbid')
             log => $log, vblevel => $vblevel); 
         $checker->repoPath($localfullrepopath);
         $checker->filter($filter);
-        printLog ($log, $vblevel, LOG_INFO2, __('Checking repository consistency...'));
+        $out->info(__('Checking repository consistency...'));
         my ($result, $problems, $causes) = $checker->check();
-        printLog ($log, $vblevel, LOG_DEBUG, 'DONE checking dependencies', 0);
-    
+        $log->info('DONE checking dependencies');
+
         if (not $result)
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-                __("Dependecy problems found."));
-    
+            $out->error(__("Dependecy problems found."));
+
             foreach my $pkg (keys %$problems)
             {
-                printLog ($log, $vblevel, LOG_ERROR, sprintf (
-                    __("Cannot remove package '%s' required by forbidden patch '%s'.\n"),
+                $log->error("Cannot remove '$pkg' required by forbidden patch " . $causes->{$pkg});
+                $out->error(sprintf(
+                    __("Cannot remove package '%s' required by forbidden patch '%s'."),
                     $pkg, $causes->{$pkg}));
     
-                printLog ($log, $vblevel, LOG_ERROR, sprintf (
-                    __("The package is needed by patch '%s', which is allowed.\n"),
+                $log->error(
+                    'The package is needed by allowed patch '.$causes->{$pkg});
+                $out->error(sprintf(
+                    __("The package is needed by patch '%s', which is allowed."),
                     $problems->{$pkg}));
             }
     
-            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+            SMT::Utils::unLockAndExit('smt-staging', 1);
         }
         else
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO2, __("OK"));
+            $out->info(__("OK"));
         }
     }
 
@@ -748,13 +765,15 @@ elsif ($command eq 'createrepo')
 {
     if ($gentest && $genprod)
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf __("Options %s and %s cannot be used together."), '--testing', '--production');
-        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+        $log->fatal('--testing and --production used together');
+        $out->fatal(sprintf(__("Options %s and %s cannot be used together."), '--testing', '--production'));
+        SMT::Utils::unLockAndExit('smt-staging', 1);
     }
     elsif (!($gentest || $genprod))
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf __("%s or %s?"), '--testing', '--production');
-        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+        $log->fatal('neither --testing nor --production given');
+        $out->fatal(sprintf(__("%s or %s?"), '--testing', '--production'));
+        SMT::Utils::unLockAndExit('smt-staging', 1);
     }
 
     my $mirrorsrc = $cfg->val("LOCAL", "MirrorSRC");
@@ -775,10 +794,11 @@ elsif ($command eq 'createrepo')
         if (not -e $localtestingrepopath . '/repodata/repomd.xml' &&
             SMT::Mirror::Utils::getStatus($localtestingrepopath))
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+            $log->fatal('No testing repo, cannot generate production');
+            $out->fatal(
                 __('Testing repository does not exist or is not generated properly, cannot generate production repository.'));
-            print __('Generate the testing repository first.') . "\n";
-            SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+            $out->info(__('Generate the testing repository first.'));
+            SMT::Utils::unLockAndExit('smt-staging', 1);
         }
         # always generate the production repo from the testing repo
         $sourcerepourl .= $localtestingrepopath;
@@ -799,10 +819,8 @@ elsif ($command eq 'createrepo')
          lc($repo->{CATALOGTYPE}) eq "yum")
     {
         $mirror = SMT::Mirror::Yum->new(
-            log        => $log,
             dbh        => $dbh,
             cfg        => $SMT::MIRROR_CFG,
-            vblevel    => $vblevel,
             filter     => $gentest ? $filter : undef,
             nohardlink => $nohardlink,
             mirrorsrc  => $mirrorsrc);
@@ -827,8 +845,7 @@ elsif ($command eq 'createrepo')
         $keyid = $cfg->val('LOCAL', 'signingKeyID');
         if ($keyid)
         {
-            SMT::Utils::printLog($log, $vblevel, LOG_DEBUG,
-                'Using key ID ' . $keyid . ' from smt.conf\'s signingKeyID')
+            $log->debug('Using key ID ' . $keyid . ' from smt.conf\'s signingKeyID');
         }
     }
 
@@ -845,16 +862,17 @@ elsif ($command eq 'createrepo')
     my $errcnt = $mirror->mirror(force => 1, keyid => $keyid, keypass => $keypass);
     if ($errcnt)
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, 'Something went wrong');
-        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+        $out->fatal(_('Repository generatino failed.'));
+        SMT::Utils::unLockAndExit('smt-staging', 1);
     }
     else
     {
         SMT::Mirror::Utils::copyStatus(
             $genprod ? $localtestingrepopath : $localfullrepopath,
             SMT::Utils::cleanPath($basepath, $localtargetrepopath));
-        SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-            sprintf __("Repository successfully generated at %s."), $localtargetrepopath);
+        $out->info(sprintf(
+            __("Repository successfully generated at %s."), $localtargetrepopath));
+        $log->info('repo generated ok');
     }
 }
 
@@ -872,12 +890,11 @@ sub printPatchCounts
         else
         { $allowed++ }
     }
-    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-        sprintf (__("Total patches: %d"), $forbidden + $allowed));
-    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-        sprintf (__("Allowed:       %d"), $allowed));
-    SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-        sprintf (__("Forbidden:     %d"), $forbidden));
+    $log->info("patches allowed: $allowed, forbidden: $forbidden, total: "
+        . $forbidden + $allowed);
+    $out->info(sprintf (__("Total patches: %d"), $forbidden + $allowed));
+    $out->info(sprintf (__("Allowed:       %d"), $allowed));
+    $out->info(sprintf (__("Forbidden:     %d"), $forbidden));
 }
 
 # check if we can do filtering for this repo
@@ -887,25 +904,51 @@ sub canFilter
     my $canfilter = $rh->filteringAllowed($repoid, $basepath);
     if (not defined $canfilter)
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_WARN,
-            sprintf __("Cannot determine whether filtering is allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
-        print __("See the log for more details.\n");
-        print __('Trying to proceed anyway.') . "\n";
+        $out->warn(sprintf(
+            __("Cannot determine whether filtering is allowed for repository '%s', target '%s'."),
+                $repo->{NAME}, $repo->{TARGET}));
+        $out->info(__('See the log for more details.'));
+        $out->info(__('Trying to proceed anyway.'));
+        $log->info('can filter: uknown, continuing anyway');
     }
     elsif (!$canfilter)
     {
-        SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-            sprintf __("Filtering is not allowed for repository '%s', target '%s'."), $repo->{NAME}, $repo->{TARGET});
-        print __("The repository either does not contain update metadata, or the metadata are in an unsupported format.\n");
-        print __("Only openSUSE 11.x, SLE-11, and Fedora/RedHat update repositories are supported.\n");
+        $log->info('can filter: ' . $canfilter);
+        $out->info(sprintf(
+            __("Filtering is not allowed for repository '%s', target '%s'."),
+            $repo->{NAME}, $repo->{TARGET}));
+        $out->info(__('The repository either does not contain update metadata, or the metadata are in an unsupported format.'));
+        $out->info(__('Only openSUSE 11.x, SLE-11, and Fedora/RedHat update repositories are supported.'));
     }
     return $canfilter;
 }
 
 sub signal_handler
 {
-  SMT::Utils::printLog($log, $vblevel, LOG_INFO1, "Interrupted by signal. Exiting.");
-  SMT::Utils::unLockAndExit("smt-mirror", 1, $log, $vblevel);
+  $log->info('Interrupted by signal. Exiting.');
+  $out->info(__('Interrupted by signal. Exiting.'));
+  SMT::Utils::unLockAndExit('smt-mirror', 1);
+}
+
+# RPMMD::Tools::Mirror callback handler
+sub mirrorReportHandler
+{
+  my ($rtype, $level, $msg, $pg) = @_;
+  $out->log($level, $msg) if ($msg);
+}
+
+# RPMMD::Tools::MirrorJob callback handler
+sub mirrorJobReportHandler
+{
+  my ($rtype, $level, $msg, $pg) = @_;
+  $out->log($level, $msg) if ($msg);
+}
+
+# need for Log4perl::init()
+sub logfile
+{
+  return $logfile if ($logfile);
+  return "/var/log/smt/smt-report.log";
 }
 
 
