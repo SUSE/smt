@@ -6,6 +6,7 @@
 
 use strict;
 use warnings;
+use Log::Log4perl qw(get_logger :levels);
 use SMT::Utils;
 use SMT::NCCRegTools;
 use Getopt::Long;
@@ -20,23 +21,26 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-#
-# FIXME: what about /root/.curlrc for proxy settings?
-#
-if(!SMT::Utils::dropPrivileges())
-{
-    print STDERR __("Unable to drop privileges. Abort!\n");
-    exit 1;
-}
-
 my $debug   = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $help    = 0;
 my $random  = 0;
 my $reseterror = 0;
-my $logfile = "/dev/null";
+my $logfile = "/var/log/smt/smt-register.log";
 my $mail     = 0;
 my $mailtempfile = undef;
+
+sub logfile
+{
+  return $logfile if($logfile);
+  return "/var/log/smt/smt-register.log";
+}
+
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR __("Unable to drop privileges. Abort!\n");
+    exit 1;
+}
 
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = GetOptions ("debug|d"     => \$debug,
@@ -66,18 +70,6 @@ if($help || !$optres)
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
-if($mail)
-{
-    my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-    $mailtempfile = "$dir/mail";
-    open(MAILTEMPFILE, "> $mailtempfile") or die "Cannot open file:$!";
-    open(STDOUT, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-    open(STDERR, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-    select STDERR; $| = 1;      # make unbuffered
-    select STDOUT; $| = 1;      # make unbuffered
-    select MAILTEMPFILE; $| = 1;        # make unbuffered
-}
-
 if(!SMT::Utils::openLock("smt-register"))
 {
     print __("Registration process is still running.\n");
@@ -86,11 +78,34 @@ if(!SMT::Utils::openLock("smt-register"))
 
 # open the logfile
 
-my $LOG = SMT::Utils::openLog($logfile);
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
 
-my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel);
+# to change the loglevel we need the root logger,
+# not the derived main logger
+my $log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+my $out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
+my $emailapp = undef;
+if($mail)
+{
+  use Log::Dispatch::Email::SMT;
+  
+  my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+  my $subject = sprintf("SMT Registration Report $datestring (%s) -- ",
+                        SMT::Utils::getFQDN());
+  
+  $emailapp =  Log::Log4perl::Appender->new("Log::Dispatch::Email::SMT",
+                                            name => 'email',
+                                            min_level => SMT::Utils::vblevel2log4perl4Email($vblevel),
+                                            subject => $subject );
+  my $layout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
+  $emailapp->layout($layout);
+  $out->add_appender($emailapp);
+}
+
+my $useragent = SMT::Utils::createUserAgent();
 $useragent->protocols_allowed( [ 'https' ] );
-
 
 # check if we are allowed to register clients at NCC
 
@@ -102,14 +117,17 @@ eval
 };
 if($@ || !defined $cfg)
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
-    SMT::Utils::unLockAndExit( "smt-register", 1, $LOG, $vblevel );
+    my $err = $@;
+    chomp($err);
+    $log->error(sprintf("Cannot read the SMT configuration file: %s", $err));
+    $out->error(sprintf(__("Cannot read the SMT configuration file: %s"), $err));
+    SMT::Utils::unLockAndExit( "smt-register", 1);
 }
 
 my $allowRegister = $cfg->val("LOCAL", "forwardRegistration");
 if(!(defined $allowRegister && $allowRegister eq "true"))
 {
-    SMT::Utils::unLockAndExit( "smt-register", 0, $LOG, $vblevel );
+    SMT::Utils::unLockAndExit( "smt-register", 0);
 }
 my $nccEmail = $cfg->val("LOCAL", "nccEmail");
 
@@ -123,8 +141,9 @@ $dbh = SMT::Utils::db_connect();
 
 if(!$dbh)
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot connect to database"));
-    SMT::Utils::unLockAndExit( "smt-register", 1, $LOG, $vblevel );
+    $log->error("Cannot connect to database");
+    $out->error(__("Cannot connect to database"));
+    SMT::Utils::unLockAndExit( "smt-register", 1);
 }
 
 my $exitcode = 0;
@@ -133,11 +152,11 @@ eval
     if($reseterror)
     {
         my $res = $dbh->do("Update Registration SET NCCREGERROR=0");
-        SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Reset NCC Registration Errors. Result: $res");
+        $log->debug("Reset NCC Registration Errors. Result: $res");
     }
     
-    my $nccreg = SMT::NCCRegTools->new(vblevel => $vblevel, useragent => $useragent, dbh => $dbh, 
-                                       log => $LOG, nccemail => $nccEmail);
+    my $nccreg = SMT::NCCRegTools->new(useragent => $useragent, dbh => $dbh,
+                                       nccemail => $nccEmail);
     my $err = $nccreg->NCCRegister($sleeptime);
     if($err != 0)
     {
@@ -150,34 +169,16 @@ if($@)
     $exitcode = 1;
 }
 
-if($mail)
+if($mail && $emailapp)
 {
-    close (STDERR);
-    close (STDOUT);
-    close (MAILTEMPFILE);
-    my $body = "";
-
-    # we want to send only a mail, if there is something to send.
-    if( -s $mailtempfile )
-    {
-        open(MAIL, "< $mailtempfile") and do
-        {
-            while(<MAIL>)
-            {
-                $body .= $_;
-            }
-            close MAIL;
-        };
-        my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-        my $subject = sprintf("SMT Registration Report $datestring (%s) -- Registration %s",
-                              SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
-        
-        SMT::Utils::sendMailToAdmins($subject, $body);
-    }
+  my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+  my $subject = sprintf("SMT Registration Report $datestring (%s) -- Registration %s",
+                        SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
+  
+  $emailapp->subject($subject);
 }
 
-SMT::Utils::unLockAndExit( "smt-register", $exitcode, $LOG, $vblevel );
-
+SMT::Utils::unLockAndExit( "smt-register", $exitcode );
 
 #
 # Manpage

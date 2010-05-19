@@ -166,6 +166,7 @@ fi
 
 %files
 %defattr(-,root,root)
+%dir %{perl_vendorlib}/Log/Dispatch/Email
 %dir %{perl_vendorlib}/SMT/
 %dir %{perl_vendorlib}/SMT/Mirror
 %dir %{perl_vendorlib}/SMT/Parser
@@ -200,6 +201,7 @@ fi
 %config /etc/logrotate.d/apache-smt
 /etc/init.d/smt
 /usr/sbin/rcsmt
+%{perl_vendorlib}/Log/Dispatch/Email/SMT.pm
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm
