@@ -1,15 +1,15 @@
 package SMT::Job;
 
-use SMT::Utils;
 use strict;
 use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
+use Log::Log4perl qw(get_logger :levels);
+
+use SMT::Utils;
 
 use constant
 {
-  VBLEVEL     => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
-
   JOB_STATUS =>
   {
       0  =>  'not yet worked on',
@@ -66,11 +66,6 @@ sub new ($$)
 	$self->{dbh} = $params->{dbh};
     }
 
-    if (defined $params->{LOG})
-    {
-	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
-    }
-
     bless $self, $class;
     return $self;
 }
@@ -83,6 +78,7 @@ sub newJob
 {
     my $self = shift;
     my @params = @_;
+    my $log = get_logger();
 
     my $guid;
     my $id;
@@ -118,15 +114,26 @@ sub newJob
     {
 	my $xmldata = $params[1];
 
-	return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-	return error( $self, "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+        unless ( defined ( $xmldata ) || length( $xmldata ) > 0)
+        { 
+            $log->error('unable to create job. xml does not contain a job description');
+            return undef;
+        }
 
 	my $j;
 
 	# parse xml
 	eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-	return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
-	return error( $self, "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
+	if ( $@ )
+	{
+            $log->error("unable to create job. unable to parse xml: $@");
+            return undef;
+	}
+	unless ( isa ($j, 'HASH' ) )
+	{
+	    $log->error('job description contains invalid xml');
+            return undef;
+	}
 
 	# retrieve variables
 	$id   	     = $j->{id}           if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
@@ -225,16 +232,28 @@ sub readJobFromXML
   my $self = shift || return undef;
   my $guid = shift || return undef;
   my $xmldata = shift || return undef;
+  my $log = get_logger();
 
-  return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-  return error( $self, "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+  unless ( defined ( $xmldata ) || length( $xmldata ) > 0)
+  {
+      $log->error('unable to create job. xml does not contain a job description');
+      return undef; 
+  }
 
   my $j;
 
   # parse xml
   eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-  return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
-  return error( $self, "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
+  if ( $@ )
+  {
+      $log->error("unable to create job. unable to parse xml: $@");
+      return undef;
+  }
+  unless ( isa ($j, 'HASH' ) )
+  {
+      $log->error('job description contains invalid xml');
+      return undef;
+  }
 
   my @attribs = qw(id guid parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
 
@@ -243,7 +262,11 @@ sub readJobFromXML
     $self->{$attrib} = $j->{$attrib}  if ( defined $j->{$attrib} );
   }
 
-  return error ( $self, "guid from xml does not match client's guid.") if ( defined $self->{guid} && $self->{guid} ne $guid );
+  if ( defined $self->{guid} && $self->{guid} ne $guid )
+  {
+    $log->error('guid from xml does not match client\'s guid.');
+    return undef;
+  } 
 
   $self->{guid} = $guid;
 }
@@ -390,7 +413,12 @@ sub arguments
     if ( ! ( isa ($self->{arguments}, 'HASH' )))
     {
 	eval { $self->{arguments} = XMLin( $self->{arguments}, forcearray => 1 ) };
-	return error( $self, "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
+	if ( $@ )
+	{
+	    get_logger()->error(
+	        "unable to set arguments. unable to parse xml argument list: $@");
+            return undef;
+	}
     }
 
     return $self->{arguments};
@@ -545,26 +573,6 @@ sub success
       return $self->{success};
 }
 
-
-
-
-
-
-
-
-
-###############################################################################
-# writes error line to log
-# returns undef because that is passed to the caller
-sub error
-{
-    my $self = shift;
-    my $message = shift;
-
-    printLog( $self->{LOG}, VBLEVEL, LOG_ERROR, $message );
-
-    return undef;
-}
 
 
 sub getNextAvailableJobID()
