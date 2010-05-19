@@ -63,7 +63,6 @@ sub parse()
     $file =~ s/\|//g;
     if (!-e $file)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, );
         $self->{LOG}->error("File '$file' does not exist.");
         $self->{OUT}->error(sprintf(__("File '%s' does not exist."), $file));
         $self->{ERRORS} += 1;
