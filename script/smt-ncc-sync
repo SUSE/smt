@@ -12,6 +12,7 @@ use SMT::Mirror::RegData;
 use SMT::NCCRegTools;
 use File::Basename;
 use File::Temp;
+use Log::Log4perl qw(get_logger :levels);
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -32,7 +33,7 @@ my $domirror;
 
 my $debug   = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
-my $logfile = "/dev/null";
+my $logfile = undef;
 my $help    = 0;
 my $fromdir = "";
 my $todir   = "";
@@ -112,8 +113,14 @@ if(!SMT::Utils::openLock("smt-ncc-sync"))
 }
 
 # open the logfile
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
 
-my $LOG = SMT::Utils::openLog($logfile);
+# to change the loglevel we need the root logger,
+# not the derived main logger
+my $log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+my $out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
 
 if($fromdir ne "" && $fromdir !~ /^\//)
 {
@@ -132,17 +139,20 @@ if($exportdir ne "" && $exportdir !~ /^\//)
 
 if($fromdir ne "" && ! -d $fromdir)
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Directory '%s' does not exist."), $fromdir));
-    SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+    $log->fatal("dir '$fromdir' does not exist");
+    $out->fatal(sprintf(__("Directory '%s' does not exist."), $fromdir));
+    SMT::Utils::unLockAndExit('smt-ncc-sync', 1);
 }
 
 if( $exportdir ne "" )
 {
     if ( $todir ne "" || $fromdir ne "" )
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
-                __("--exportdir and --todir or --fromdir cannot be used at the same time."));
-        SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+        $log->fatal('--exportdir used together with --todir or --fromdir');
+        $out->fatal(sprintf(
+            __("Option '%s' cannot be used together with '%s' or '%s'."),
+            '--exportdir', '--todir', '--fromdir'));
+        SMT::Utils::unLockAndExit('smt-ncc-sync', 1);
     }
     if ( ! -d $exportdir )
     {
@@ -151,8 +161,9 @@ if( $exportdir ne "" )
         };
         if ($@) 
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
-            SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+            $log->fatal('Cannot create $exportdir: $@');
+            $out->fatal(sprintf(__("Cannot create %s: %s"), $exportdir, $@));
+            SMT::Utils::unLockAndExit('smt-ncc-sync', 1);
         }
     }
 }
@@ -165,24 +176,27 @@ if($todir ne "" && ! -d $todir)
     };
     if ($@) 
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
-        SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+        $log->fatal('Cannot create $todir: $@');
+        $out->fatal(sprintf(__("Cannot create %s: %s"), $todir, $@));
+        SMT::Utils::unLockAndExit('smt-ncc-sync', 1);
     }
 }
 
-if($fromdir ne "")
+if ($fromdir)
 {
-    printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Read from directory: %s"), $fromdir));
+    $log->info('Reading from $fromdir');
+    $out->info(sprintf(__("Reading from directory: %s"), $fromdir));
 }
-if($todir ne "")
+if ($todir)
 {
-    printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Write to directory: %s"), $todir));
+    $log->info("Writing to $todir");
+    $out->info(sprintf(__("Writing to directory: %s"), $todir));
 }
 
-if ( $exportdir ne "" )
+if ($exportdir)
 {
-    
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting repository information"));
+    $log->info('Exporting repository information');
+    $out->info(__('Exporting repository information'));
     SMT::CLI::db2Xml(outfile => "$exportdir/catalogs.xml",
                      type => "catalogs",
                      table => "Catalogs", 
@@ -191,7 +205,8 @@ if ( $exportdir ne "" )
                      row_handler => \&catalog_handler
                     );
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Product information"));
+    $log->info('Exporting product information');
+    $out->info(__('Exporting product information'));
     SMT::CLI::db2Xml(outfile => "$exportdir/productdata.xml", 
                      type => "productdata",
                      table => "Products", 
@@ -199,21 +214,24 @@ if ( $exportdir ne "" )
                                   'PARAMLIST', 'NEEDINFO', 'SERVICE', 'PRODUCT_LIST', 'PRODUCT_CLASS' ]
                     );
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting product/repository relations"));
+    $log->info('Exporting product/repository relations');
+    $out->info(__('Exporting product/repository relations'));
     SMT::CLI::db2Xml(outfile => "$exportdir/productcatalogs.xml", 
                      type => "productcatalogs",
                      table => "ProductCatalogs", 
                      columns => [ 'PRODUCTDATAID', 'CATALOGID', 'OPTIONAL' ]
                     );
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Target information"));
+    $log->info('Exporting target information');
+    $out->info(__('Exporting target information'));
     SMT::CLI::db2Xml(outfile => "$exportdir/targets.xml", 
                      type => "targets",
                      table => "Targets", 
                      columns => [ 'OS', 'TARGET' ]
                     );
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Subscription information"));
+    $log->info('Exporting subscription information');
+    $out->info(__('Exporting subscription information'));
     SMT::CLI::db2Xml(outfile => "$exportdir/listsubscriptions.xml", 
                      type => "subscriptionlist",
                      table => "Subscriptions", 
@@ -236,106 +254,113 @@ if ( $exportdir ne "" )
     $writer->end();
     $output->close();
 
-    SMT::Utils::unLockAndExit( "smt-ncc-sync", 0, $LOG, $vblevel);
+    SMT::Utils::unLockAndExit('smt-ncc-sync', 0);
 }
 
 eval
 {
-    my $rd= SMT::Mirror::RegData->new(vblevel => $vblevel,
-                                      log     => $LOG,
-                                      element => "productdata",
+    my $rd= SMT::Mirror::RegData->new(element => "productdata",
                                       table   => "Products",
                                       key     => "PRODUCTDATAID",
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product information"));
-    
+    $out->info('Downloading product information');
+    $out->info(__('Downloading product information'));
+
     my $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Products data."));
+        $out->error('Error while fetching product data');
+        $out->error(__('Error while fetching product data'));
         $exitcode = 1;
     }
-    
-    
+
+
     $rd->element("targets");
     $rd->table("Targets");
     $rd->key("OS");
-    
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Target information"));
+
+    $log->info('Downloading target information');
+    $out->info(__('Downloading target information'));
     $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Targets data."));
+        $out->error('Error while fetching target data');
+        $out->error(__('Error while fetching target data'));
         $exitcode = 1;
     }
-    
+
     $rd->element("catalogs");
     $rd->table("Catalogs");
     $rd->key("CATALOGID");
-    
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading repository information"));
+
+    $log->info('Downloading repository information');
+    $out->info(__('Downloading repository information'));
     $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching repository data."));
+        $out->error('Error while fetching repository data');
+        $out->error(__('Error while fetching repository data'));
         $exitcode = 1;
     }
-    
+
     $rd->element("productcatalogs");
     $rd->table("ProductCatalogs");
     $rd->key(['PRODUCTDATAID', 'CATALOGID']);
     
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product/Repository relations"));
+    $log->info('Downloading product/repository relations');
+    $out->info(__('Downloading product/repository relations'));
     $res = $rd->sync();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching ProductCatalogs data."));
+        $out->error('Error while fetching ProductCatalogs data');
+        $out->error(__('Error while fetching ProductCatalogs data'));
         $exitcode = 1;
     }
     
     
-    my $lr= SMT::NCCRegTools->new(vblevel => $vblevel,
-                                  log     => $LOG,
+    my $lr= SMT::NCCRegTools->new(
                                   fromdir => (($fromdir ne "")?$fromdir:undef),
                                   todir   => (($todir ne "")?$todir:undef));
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
+    $log->info('Downloading subscription information');
+    $out->info(__('Downloading subscription information'));
     $res = $lr->NCCListSubscriptions();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
+        $out->error('Error while fetching subscription data');
+        $out->error(__('Error while fetching subscription data'));
         $exitcode = 1;
     }
     
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
+    $log->info('Downloading registration information');
+    $out->info(__('Downloading registration information'));
     $res = $lr->NCCListRegistrations();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
+        $out->error('Error while fetching registration data');
+        $out->error(__('Error while fetching registration data'));
         $exitcode = 1;
     }
     
     if ($todir ne "")
     {
-        SMT::CLI::setMirrorableCatalogs(todir   => $todir,
-                                        log     => $LOG,
-                                        vblevel => $vblevel);
+        SMT::CLI::setMirrorableCatalogs(todir   => $todir);
         # if todir parameter is set, we can stop here. Everything is done.
-        SMT::Utils::unLockAndExit("smt-ncc-sync", 0);
+        SMT::Utils::unLockAndExit('smt-ncc-sync', 0);
     }
     
-    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
+    $log->info('Flagged repositories which can be mirrored');
+    $out->info(__('Flagged repositories which can be mirrored'));
     SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
-                                    todir   => ($todir ne "")?$todir:undef,
-                                    log     => $LOG,
-                                    vblevel => $vblevel);
-    if( $fromdir ne "" && -d $fromdir )
+                                    todir   => ($todir ne "")?$todir:undef);
+    if( $fromdir && -d $fromdir )
     {
         my $mirrorinfofile = $fromdir."/mirrorinfo.xml";
         if ( -f $mirrorinfofile && (stat($fromdir."/catalogs.xml"))[9] <= (stat($mirrorinfofile))[9] )
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Updating mirror flags from $mirrorinfofile."));
+            $out->info("Updating mirror flags from $mirrorinfofile.");
+            $out->info(sprintf(__("Updating mirror flags from '%s'."), $mirrorinfofile));
             SMT::CLI::setDoMirrorFromXml( xml => $mirrorinfofile );
         }
     }
@@ -343,7 +368,8 @@ eval
 };
 if ($@)
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, $@);
+    $log->error($@);
+    $out->error($@);
     $exitcode = 1;
 }
 
@@ -369,8 +395,7 @@ if($mail)
     SMT::Utils::sendMailToAdmins($subject, $body);
 }
 
-SMT::Utils::unLockAndExit("smt-ncc-sync", $exitcode, $LOG, $vblevel);
-
+SMT::Utils::unLockAndExit('smt-ncc-sync', $exitcode);
 
 sub subscriptions_handler
 {
@@ -413,6 +438,15 @@ sub catalog_handler
     }
     $writer->endTag("row");
 }
+
+
+# need for Log4perl::init()
+sub logfile
+{
+  return $logfile if ($logfile);
+  return "/var/log/smt/smt-ncc-sync.log";
+}
+
 
 #
 # Manpage

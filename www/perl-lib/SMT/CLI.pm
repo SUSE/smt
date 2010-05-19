@@ -1054,6 +1054,8 @@ sub setMirrorableCatalogs
     my %opt = @_;
     my ($cfg, $dbh) = ();
     my $nuri = undef;
+    my $log = get_logger();
+    my $out = get_logger('userlogger');
 
     if(defined $opt{todir} && $opt{todir} ne "")
     {
@@ -1111,8 +1113,7 @@ sub setMirrorableCatalogs
         }
 
         # get the file
-        my $useragent = SMT::Utils::createUserAgent(
-                            log => $opt{log}, vblevel => $opt{vblevel});
+        my $useragent = SMT::Utils::createUserAgent();
         $indexfile = $destdir . '/repo/repoindex.xml';
         SMT::Utils::getFile($useragent, $nuri . '/repo/repoindex.xml', $indexfile);
     }
@@ -1128,7 +1129,7 @@ sub setMirrorableCatalogs
         my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
                                              ['Name', 'Target']);
 
-        my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
+        my $parser = SMT::Parser::NU->new();
         $parser->parse($indexfile, 
                        sub
                        {
@@ -1138,8 +1139,12 @@ sub setMirrorableCatalogs
                            {
                                if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
                                {
-                                   printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
-                                            sprintf(__("* New mirrorable repository '%s %s' ."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                                   $out->info(sprintf(
+                                       __("* New mirrorable repository '%s %s'."),
+                                       $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                                   $log->info(sprintf(
+                                       "* New mirrorable repository '%s %s'.",
+                                       $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
                                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
                                                                $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                                }
@@ -1154,8 +1159,9 @@ sub setMirrorableCatalogs
             {
                 if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
                 {
-                    printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
-                             sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
+                    $out->info(sprintf(
+                        __("* repository not longer mirrorable '%s %s' ."),
+                        $cname, $target));
                     my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s", 
                                                 $dbh->quote($cname), $dbh->quote($target) ));
                 }
@@ -1169,9 +1175,9 @@ sub setMirrorableCatalogs
         my $mirrorablefile = $opt{fromdir}."/mirrorable.xml";
         if ( -f $mirrorablefile && (stat($indexfile))[9] <= (stat($mirrorablefile))[9] )
         {
-            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Parsing $mirrorablefile" );
+            $log->debug("Parsing $mirrorablefile");
             $mirrorable_idx = {};
-            my $mirrorable_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
+            my $mirrorable_parser = SMT::Parser::RegData->new();
             $mirrorable_parser->parse($mirrorablefile, 
                 sub {
                     my $data = shift;
@@ -1215,12 +1221,11 @@ sub setMirrorableCatalogs
             }
             else
             {
-                $ret = isZyppMirrorable( log        => $opt{log},
-                                         vblevel    => $opt{vblevel},
-                                         NUUri      => $nuri,
+                $ret = isZyppMirrorable( NUUri      => $nuri,
                                          catalogurl => $catUrl);
             }
-            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 1) ? '' : ' not' )));
+            $out->debug("* set [$catName] as " . ($ret == 1 ? '' : 'not-') . 'mirrorable.');
+            $log->debug(sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 1) ? '' : ' not' )));
             my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
                                     ( ($ret == 1) ? $dbh->quote('Y') : $dbh->quote('N') ), 
                                     $dbh->quote($catName)); 
@@ -1256,8 +1261,7 @@ sub isZyppMirrorable
         $url->userinfo($userinfo);
     }
 
-    my $useragent = SMT::Utils::createUserAgent(
-                        log => $opt{log}, vblevel => $opt{vblevel});
+    my $useragent = SMT::Utils::createUserAgent();
     my $remote = $url->as_string() . "/repodata/repomd.xml";
 
     return SMT::Utils::doesFileExist($useragent, $remote);
@@ -1497,106 +1501,6 @@ sub hardlink
     }
     $log->info('Hardlink Time: ' . SMT::Utils::timeFormat(tv_interval($t0)));
     #printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-}
-
-#
-# FIXME: drop this function. It is not used anymore
-#
-sub productClassReport
-{
-    my %options = @_;
-    my ($cfg, $dbh) = init();
-    my %conf;
-
-    my $vblevel = 0;
-    if(exists $options{vblevel} && defined $options{vblevel})
-    {
-        $vblevel = $options{vblevel};
-    }
-
-    if(exists $options{conf} && defined $options{conf} && ref($options{conf}) eq "HASH")
-    {
-        %conf = %{$options{conf}};
-    }
-    else
-    {
-        printLog($options{log}, $vblevel, LOG_ERROR, "Invalid configuration provided.");
-        return undef;
-    }
-   
-    my @HEAD = ( __("Product Class"), __("Architecture"), __("Installed Clients") ); 
-    my @VALUES = ();   
-    
-    my $classes = $dbh->selectcol_arrayref("SELECT DISTINCT PRODUCT_CLASS from Products where PRODUCT_CLASS is not NULL");
-    
-    foreach my $class (@{$classes})
-    {
-        my $found = 0;
-        
-        my $cn = $class;
-        $cn = $conf{$class}->{NAME} if(exists $conf{$class}->{NAME} && defined $conf{$class}->{NAME});
-        
-        my %groups = %{$conf{SMT_DEFAULT}->{ARCHGROUPS}};
-        %groups = %{$conf{$class}->{ARCHGROUPS}} if(exists $conf{$class}->{ARCHGROUPS} && defined $conf{$class}->{ARCHGROUPS});
-        
-        foreach my $archgroup (keys %groups)
-        {
-            my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
-            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s AND ", 
-                                  $dbh->quote($class));
-            
-            if(@{$groups{$archgroup}} == 1)
-            {
-                if(defined @{$groups{$archgroup}}[0])
-                {
-                    $statement .= sprintf(" ARCHLOWER = %s", $dbh->quote(@{$groups{$archgroup}}[0]));
-                }
-                else
-                {
-                    $statement .= " ARCHLOWER IS NULL";
-                }
-            }
-            elsif(@{$groups{$archgroup}} > 1)
-            {
-                $statement .= sprintf(" ARCHLOWER IN('%s')", join("','", @{$groups{$archgroup}}));
-            }
-            else
-            {
-                die "This should not happen";
-            }
-            
-            $statement .= ")";
-            
-            printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
-            
-            my $count = $dbh->selectcol_arrayref($statement);
-            
-            if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
-            {
-                push @VALUES, [ "$cn", $archgroup, $count->[0] ];
-                $found = 1;
-            }
-        }
-        
-        if(!$found)
-        {
-            # this select is for products which do not have an architecture set (ARCHLOWER is NULL) 
-            my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
-            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s)", 
-                                  $dbh->quote($class));
-            
-            printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
-            
-            my $count = $dbh->selectcol_arrayref($statement);
-            
-            if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
-            {
-                push @VALUES, [ "$cn", "", $count->[0] ];
-                $found = 1;
-            }
-        }
-    }
-    return {'cols' => \@HEAD, 'vals' => \@VALUES };
 }
 
 #
