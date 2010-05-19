@@ -15,7 +15,7 @@ my ($start, $end);
 $start=shift or $start=0;
 $end=shift or $end=10000;
 
-my $opts = shift || "";
+my $opts = join(' ', @_ )|| "";
 
 if(! -x "./suse_register")
 {
