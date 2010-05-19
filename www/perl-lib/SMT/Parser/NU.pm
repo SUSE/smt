@@ -1,9 +1,10 @@
 package SMT::Parser::NU;
+
 use strict;
 use URI;
 use XML::Parser;
-use SMT::Utils;
 use IO::Zlib;
+use Log::Log4perl qw(get_logger :levels);
 
 =head1 NAME
 
@@ -64,33 +65,10 @@ sub new
 
     $self->{CURRENT}   = undef;
     $self->{HANDLER}   = undef;
-    $self->{LOG}    = 0;
-    $self->{VBLEVEL}   = 0;
     $self->{ERRORS} = 0;
-
-    if(exists $opt{log} && defined $opt{log} && $opt{log})
-    {
-        $self->{LOG} = $opt{log};
-    }
-    else
-    {
-        $self->{LOG} = SMT::Utils::openLog();
-    }
-
-    if(exists $opt{vblevel} && defined $opt{vblevel})
-    {
-        $self->{VBLEVEL} = $opt{vblevel};
-    }
 
     bless($self);
     return $self;
-}
-
-sub vblevel
-{
-    my $self = shift;
-    if (@_) { $self->{VBLEVEL} = shift }
-    return $self->{VBLEVEL};
 }
 
 # parses a xml resource
@@ -99,7 +77,8 @@ sub parse()
     my $self     = shift;
     my $path     = shift;
     my $handler  = shift;
-    
+    my $log = get_logger();
+
     $self->{HANDLER} = $handler;
 
     # for security reason strip all | characters.
@@ -107,7 +86,7 @@ sub parse()
     $path =~ s/\|//g;
     if (!-e $path)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File not found $path");
+        $log->error("File not found $path");
         $self->{ERRORS} += 1;
         return $self->{ERRORS};
     }
@@ -129,7 +108,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::NU Invalid XML in '$path': $@");
+            $log->error("SMT::Parser::NU Invalid XML in '$path': $@");
             $self->{ERRORS} += 1;
         }
         $fh->close;
@@ -143,7 +122,7 @@ sub parse()
         if ($@) {
             # ignore the errors, but print them
             chomp($@);
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::NU Invalid XML in '$path': $@");
+            $log->error("SMT::Parser::NU Invalid XML in '$path': $@");
             $self->{ERRORS} += 1;
         }
     }
