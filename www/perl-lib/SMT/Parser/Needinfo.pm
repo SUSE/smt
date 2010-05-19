@@ -3,7 +3,7 @@ package SMT::Parser::Needinfo;
 use strict;
 use XML::Parser;
 use DBI;
-use SMT::Utils;
+use Log::Log4perl qw(get_logger :levels);
 
 # constructor
 sub new
@@ -13,8 +13,6 @@ sub new
   my $self  = {};
   
   $self->{DBH}  = $opt{dbh} || undef;
-  $self->{LOG}  = $opt{log} || undef;
-  $self->{VBLEVEL} = $opt{vblevel} || 0;
   $self->{PID}  = $opt{pid} || undef;
   
   $self->{ELEMENT} = "";
@@ -88,7 +86,7 @@ sub parse()
   my $xml      = shift;
 
   my $statement = sprintf("DELETE from needinfo_params where product_id = %s", $self->{DBH}->quote($self->{PID}));
-  printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, "STATEMENT: $statement") ;
+  get_logger()->debug("STATEMENT: $statement");
   $self->{DBH}->do( $statement );
   
   
@@ -104,7 +102,6 @@ sub parse()
   if ($@) {
     # ignore the errors, but print them
     chomp($@);
-    #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "SMT::Parser::ListReg Invalid XML in '$file': $@");
   }
   
   return 1;
@@ -127,7 +124,7 @@ sub handle_start_tag()
         $self->{MANDATORY} )
     {
       $self->{MANDATORY} += 1;
-      printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, "mandatory + 1 ".$self->{MANDATORY}. " ($element $attrs{id})");
+      get_logger()->debug('mandatory + 1 '. $self->{MANDATORY} . " ($element $attrs{id})");
     }
     
     $self->{ELEMENT} = lc($element);
@@ -151,7 +148,7 @@ sub handle_end_tag
     if($self->{MANDATORY} > 0)
     {
       $self->{MANDATORY} -= 1;
-      printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, "mandatory - 1 ".$self->{MANDATORY});
+      get_logger()->debug('mandatory - 1 '. $self->{MANDATORY});
     }
     $self->{ELEMENT} = $self->{ATTR}->{id};
     
@@ -169,7 +166,7 @@ sub handle_end_tag
                             $self->{DBH}->quote( $descr ),
                             $self->{DBH}->quote( $command ),
                             $self->{DBH}->quote( $mand ));
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, "STATEMENT: $statement") ;
+    get_logger()->debug("STATEMENT: $statement");
     $self->{DBH}->do( $statement );
   }
   $self->{ELEMENT} = "";
