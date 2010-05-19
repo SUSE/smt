@@ -11,9 +11,9 @@ use Getopt::Long;
 use File::Basename;
 use Text::ASCIITable;
 use Date::Format;
+use RPMMD::Filter;
 use RPMMD::Tools::Mirror;
 use RPMMD::Tools::DepChecker;
-use RPMMD::Filter;
 use RPMMD::Parser::Updates;
 use Log::Log4perl qw(get_logger :levels);
 
@@ -198,7 +198,7 @@ if($@ || !defined $cfg)
 {
     $log->fatal("Cannot read the SMT configuration file: $@");
     $out->fatal(sprintf(__("Cannot read the SMT configuration file: %s"), $@));
-    SMT::Utils::unLockAndExit('smt-mirror', 1);
+    SMT::Utils::unLockAndExit('smt-staging', 1);
 }
 
 # connect to database (all commands need it)
@@ -208,7 +208,7 @@ if(!$dbh)
 {
     $log->fatal('Cannot connect to database.');
     $out->fatal(__("Cannot connect to database."));
-    SMT::Utils::unLockAndExit('smt-mirror', 1);
+    SMT::Utils::unLockAndExit('smt-staging', 1);
 }
 
 # get the repository from DB (all commands need it)
@@ -397,7 +397,7 @@ elsif ($command eq 'listupdates')
         $log->fatal("Invalid category '$category'.");
         $out->fatal(sprintf(__("Invalid category '%s'."), $category));
         $out->fatal(sprintf(__("See '%s' for the list of known categories."), 'man smt-staging'));
-        SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
+        SMT::Utils::unLockAndExit('smt-staging', 1);
     }
 
     # read filters
@@ -406,7 +406,7 @@ elsif ($command eq 'listupdates')
 
     # read patches from all repos
 
-    my $parser = RPMMD::Parser::Updates->new(log => $log, vblevel => $vblevel);
+    my $parser = RPMMD::Parser::Updates->new();
     $parser->resource($localfullrepopath);
     my $patches = $parser->parse("repodata/updateinfo.xml.gz");
 
@@ -717,8 +717,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     # check consistency of the resulting repository before applying changes
     if ($filter->dirty() && not $all)
     {
-        my $checker = RPMMD::Tools::DepChecker->new(
-            log => $log, vblevel => $vblevel); 
+        my $checker = RPMMD::Tools::DepChecker->new(); 
         $checker->repoPath($localfullrepopath);
         $checker->filter($filter);
         $out->info(__('Checking repository consistency...'));
@@ -862,7 +861,7 @@ elsif ($command eq 'createrepo')
     my $errcnt = $mirror->mirror(force => 1, keyid => $keyid, keypass => $keypass);
     if ($errcnt)
     {
-        $out->fatal(_('Repository generatino failed.'));
+        $out->fatal(_('Repository generation failed.'));
         SMT::Utils::unLockAndExit('smt-staging', 1);
     }
     else
@@ -876,7 +875,7 @@ elsif ($command eq 'createrepo')
     }
 }
 
-SMT::Utils::unLockAndExit( "smt-staging", 0, $log, $vblevel );
+SMT::Utils::unLockAndExit('smt-staging', 0);
 
 sub printPatchCounts
 {
@@ -927,7 +926,7 @@ sub signal_handler
 {
   $log->info('Interrupted by signal. Exiting.');
   $out->info(__('Interrupted by signal. Exiting.'));
-  SMT::Utils::unLockAndExit('smt-mirror', 1);
+  SMT::Utils::unLockAndExit('smt-staging', 1);
 }
 
 # RPMMD::Tools::Mirror callback handler
