@@ -334,50 +334,53 @@ if ($command eq 'status')
     my $filter = RPMMD::Filter->new();
     $filter->dbload($dbh, $SMT::FILTER_DBATTRS, $repo->{ID});
 
-    print __('Reading patches...') . "\n";
+    $out->info(__('Reading patches...'));
 
-    print "\n";
-    print __('Repository:          ') . $repo->{NAME} . "\n";
-    print __('Target:              ') . $repo->{TARGET} . "\n";
+    my $msg = "\n";
+    $msg .= __('Repository:          ') . $repo->{NAME} . "\n";
+    $msg .= __('Target:              ') . $repo->{TARGET} . "\n";
 
     my $fstatus = SMT::Mirror::Utils::getStatus($localfullrepopath);
     my $tstatus = SMT::Mirror::Utils::getStatus($localtestingrepopath);
     my $pstatus = SMT::Mirror::Utils::getStatus($localproductionrepopath);
 
-    print __('Last mirrored:       ');
+    $msg .= __('Last mirrored:       ');
     if (!$fstatus)
     {
-        print __('never')
+        $msg .= __('never')
     }
     else
     {
-        print $repo->{LAST_MIRROR}
+        $msg .= $repo->{LAST_MIRROR}
     }
-    print "\n";
+    $msg .= "\n";
 
-    print __('Testing snapshot:    ');
+    $msg .= __('Testing snapshot:    ');
     if (!$tstatus)
     {
-        print __('not created')
+        $msg .= __('not created')
     }
     else
     {
-        print sprintf __('created (corresponding mirror date: %s)'),
+        $msg .= sprintf __('created (corresponding mirror date: %s)'),
                         time2str('%Y-%m-%d %T', $tstatus)
     }
-    print "\n";
+    $msg .= "\n";
 
-    print __('Production snapshot: ');
+    $msg .= __('Production snapshot: ');
     if (!$pstatus)
     {
-        print __('not created')
+        $msg .= __('not created')
     }
     else
     {
-        print sprintf __('created (corresponding mirror date: %s)'),
+        $msg .= sprintf __('created (corresponding mirror date: %s)'),
                         time2str('%Y-%m-%d %T', $pstatus)
     }
-    print "\n";
+    $msg .= "\n";
+    
+    print $msg;
+    $log->info('going to read patches');
 
     my $parser = RPMMD::Parser::Updates->new();
     $parser->resource($localfullrepopath);
@@ -430,8 +433,9 @@ elsif ($command eq 'listupdates')
     {
         if (defined $category)
         {
-            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
-                '--category', '--patch') . "\n";
+            $out->warn(sprintf(
+                __("Cannot use %s when %s is specified. Ignoring."),
+                '--category', '--patch'));
         }
         
         foreach (@userpatches)
@@ -541,7 +545,7 @@ elsif ($command eq 'listupdates')
         }
         else
         {
-            print __("This repository does not contain any patches.") . "\n";
+            $out->info(__("This repository does not contain any patches."));
         }
     }
 }
@@ -572,13 +576,15 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     {
         if (defined $category)
         {
-            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
-                '--category', '--patch') . "\n";
+            $out->warn(sprintf(
+                __("Cannot use %s when %s is specified. Ignoring."),
+                '--category', '--patch'));
         }
         if ($all)
         {
-            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
-                '--all', '--patch') . "\n";
+            $out->warn(sprintf(
+                __("Cannot use %s when %s is specified. Ignoring."),
+                '--all', '--patch'));
         }
         my $count = 0;
         foreach (@userpatches)
@@ -613,21 +619,22 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     {
         if ($all)
         {
-            print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
-                '--all', '--category') . "\n";
+            $out->warn(sprintf(
+                __("Cannot use %s when %s is specified. Ignoring."),
+                '--all', '--category'));
         }
         if ($exists_category{$category})
         {
             if ($allow)
             {
-                print sprintf (
-                    __('Removing filter by category \'%s\'.'), $category) . "\n";
+                $out->info(sprintf(
+                    __('Removing filter by category \'%s\'.'), $category));
 
                 $filter->remove(RPMMD::Filter->TYPE_PATCH_CATEGORY, $category);
                 if ($individually)
                 {
-                    print sprintf (
-                        __('Allowing all \'%s\' patches individually.'), $category) . "\n";
+                    $out->info(sprintf(
+                        __('Allowing all \'%s\' patches individually.'), $category));
                     for (keys %$patches)
                     {
                         $filter->remove(RPMMD::Filter->TYPE_NAME_VERSION, $_)
@@ -645,16 +652,17 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     
                     if (@stillfiltered)
                     {
-                        print __('The following patches are still filtered by other means than category:') . "\n";
-                        print $_ . "\n" for (@stillfiltered);
-                        print sprintf (__('Use "%s" to see details.'),
+                        my $msg = '';
+                        $msg .= __('The following patches are still filtered by other means than category:');
+                        $msg .= $_ . "\n" for (@stillfiltered);
+                        $out->warn($msg);
+                        $out->info(sprintf(__('Use "%s" to see details.'),
                                 'smt staging listupdates ' . $repoid .
-                                ' --patch <patchname-version>') . "\n";
-                        print sprintf (
+                                ' --patch <patchname-version>'));
+                        $out->info(sprintf (
                             __('Use "%s" to alow all these patches individually.'),
                             'smt staging allow ' . $repoid .
-                            ' --category ' . $category . ' --individually');
-                        print "\n";
+                            ' --category ' . $category . ' --individually'));
                     }
                 }
             }
@@ -662,8 +670,8 @@ elsif ($command eq 'allow' || $command eq 'forbid')
             {
                 if ($individually)
                 {
-                    print sprintf (
-                        __('Forbidding all \'%s\' patches individually.'), $category) . "\n";
+                    $out->info(sprintf(
+                        __('Forbidding all \'%s\' patches individually.'), $category));
                     for (keys %$patches)
                     {
                         $filter->add(RPMMD::Filter->TYPE_NAME_VERSION, $_)
@@ -672,8 +680,8 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                 }
                 else
                 {
-                    print sprintf (
-                        __('Adding filter by category \'%s\'.'), $category) . "\n";
+                    $out->info(sprintf(
+                        __('Adding filter by category \'%s\'.'), $category));
                     $filter->add(RPMMD::Filter->TYPE_PATCH_CATEGORY, $category);
                 }
             }
@@ -753,7 +761,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
 
     $filter->dbsave($dbh, $SMT::FILTER_DBATTRS, $repo->{ID});
 
-    print "\n";
+    $out->info(' ');
     printPatchCounts($patches, $filter);
 }
 
