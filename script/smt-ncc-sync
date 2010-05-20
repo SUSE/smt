@@ -264,7 +264,7 @@ eval
                                       key     => "PRODUCTDATAID",
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
-    $out->info('Downloading product information');
+    $log->info('Downloading product information');
     $out->info(__('Downloading product information'));
 
     my $res = $rd->sync();
