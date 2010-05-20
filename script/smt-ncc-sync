@@ -81,18 +81,6 @@ if ( (defined $help && $help == 1 ) || !$optres )
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
-if($mail)
-{
-    my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-    $mailtempfile = "$dir/mail";
-    open(MAILTEMPFILE, "> $mailtempfile") or die "Cannot open file:$!";
-    open(STDOUT, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-    open(STDERR, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-    select STDERR; $| = 1;      # make unbuffered
-    select STDOUT; $| = 1;      # make unbuffered
-    select MAILTEMPFILE; $| = 1;        # make unbuffered
-}
-
 if($createdbreplfile ne "")
 {
     SMT::CLI::createDBReplacementFile($createdbreplfile);
@@ -121,6 +109,22 @@ my $log = get_logger('');
 $log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
 my $out = get_logger('userlogger');
 $out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
+my $emailapp = undef;
+if($mail)
+{
+  use Log::Dispatch::Email::SMT;
+  
+  my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+  my $subject = sprintf("SMT Sync Report $datestring (%s) ", SMT::Utils::getFQDN());
+  
+  $emailapp =  Log::Log4perl::Appender->new("Log::Dispatch::Email::SMT",
+                                            name => 'email',
+                                            min_level => SMT::Utils::vblevel2log4perl4Email($vblevel),
+                                            subject => $subject );
+  my $layout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
+  $emailapp->layout($layout);
+  $out->add_appender($emailapp);
+}
 
 if($fromdir ne "" && $fromdir !~ /^\//)
 {
@@ -159,7 +163,7 @@ if( $exportdir ne "" )
         eval {
                 &File::Path::mkpath($exportdir);
         };
-        if ($@) 
+        if ($@)
         {
             $log->fatal('Cannot create $exportdir: $@');
             $out->fatal(sprintf(__("Cannot create %s: %s"), $exportdir, $@));
@@ -245,7 +249,11 @@ if ($exportdir)
     my $output = new IO::File("> $exportdir/listregistrations.xml");
     if(!defined $output)
     {
-        die "Cannot open file '$exportdir/listregistrations.xml':$!";
+      my $err = $!;
+      chomp($err);
+      $log->fatal("Cannot open file '$exportdir/listregistrations.xml':$err");
+      $out->fatal(sprintf(__("Cannot open file '%s': %s"), "$exportdir/listregistrations.xml", $err));
+      SMT::Utils::unLockAndExit('smt-ncc-sync', 1);
     }
     my $writer = new XML::Writer(OUTPUT => $output);
     $writer->xmlDecl("UTF-8");
@@ -364,7 +372,6 @@ eval
             SMT::CLI::setDoMirrorFromXml( xml => $mirrorinfofile );
         }
     }
-    
 };
 if ($@)
 {
@@ -373,26 +380,12 @@ if ($@)
     $exitcode = 1;
 }
 
-if($mail)
+if($mail && $emailapp)
 {
-    close (STDERR);
-    close (STDOUT);
-    close (MAILTEMPFILE);
-    my $body = "";
-    
-    open(MAIL, "< $mailtempfile") and do
-    {
-        while(<MAIL>)
-        {
-            $body .= $_;
-        }
-        close MAIL;
-    };
     my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
     my $subject = sprintf("SMT Sync Report $datestring (%s) -- Sync %s",
                           SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
-
-    SMT::Utils::sendMailToAdmins($subject, $body);
+    $emailapp->subject($subject);
 }
 
 SMT::Utils::unLockAndExit('smt-ncc-sync', $exitcode);
