@@ -39,9 +39,6 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 # the output ASAP and to display that to a user
 $| = 1;
 
-#
-# FIXME: what about /root/.curlrc for proxy settings?
-#
 if(!SMT::Utils::dropPrivileges())
 {
     print STDERR __("Unable to drop privileges. Abort!\n");
@@ -149,20 +146,6 @@ my $mirrorStartTime = [gettimeofday] ;
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
-
-if($mail)
-{
-    my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-    $mailtempfile = "$dir/mail";
-    open(MAILTEMPFILE, "> $mailtempfile") or die "Cannot open file:$!";
-    open(STDOUT, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-    open(STDERR, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-    select STDERR; $| = 1;      # make unbuffered
-    select STDOUT; $| = 1;      # make unbuffered
-    select MAILTEMPFILE; $| = 1;        # make unbuffered
-}
-
-
 # get a lock
 
 if(!SMT::Utils::openLock("smt-mirror"))
@@ -180,6 +163,14 @@ my $log = get_logger('');
 $log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
 my $out = get_logger('userlogger');
 $out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
+my $emailapp = undef;
+if($mail)
+{
+  $emailapp =  Log::Log4perl::Appender->new("Log::Log4perl::Appender::String", name => 'email');
+  my $layout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
+  $emailapp->layout($layout);
+  $out->add_appender($emailapp);
+}
 
 # register RPMMD callback handlers
 RPMMD::Callbacks::instance()->setMirrorReporter(\& mirrorReportHandler);
@@ -327,10 +318,10 @@ if(!defined $dbreplfile)
     # search for all zypp repositories we need to mirror and start the mirror process
     #
     $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
-	"from Catalogs ".
-	"where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
-	"order by CATALOGTYPE, NAME",
-	{ Slice => {} } );
+                                       "from Catalogs ".
+                                       "where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
+                                       "order by CATALOGTYPE, NAME",
+                                       { Slice => {} } );
 }
 else
 {
@@ -537,40 +528,21 @@ if(!$clean && !$hardlink)
     push @summary, sprintf(__("Errors:                   : %d"), $errors);
     push @summary, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime)));
     
-    if(!$mail)
+    if($mail && $emailapp)
     {
-        foreach my $str (@summary)
-        {
-            $log->info($str);
-            $out->info($str);
-        }
+      my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+      my $subject = sprintf("SMT Mirror Report $datestring (%s) -- $errors Errors", SMT::Utils::getFQDN());
+      SMT::Utils::sendMailToAdmins( $subject,
+                                    join("\n", @summary)."\n\n".$emailapp->string());
+      $emailapp->string('');
     }
-    else
+    
+    foreach my $str (@summary)
     {
-        my $body = "";
-        foreach my $str (@summary)
-        {
-            $log->info($str);
-            $body .= $str."\n";
-        }
-        $body .= "\n";
-        
-        close (STDOUT);
-        close (STDERR);
-        close (MAILTEMPFILE);
-        
-        open(MAIL, "< $mailtempfile") and do
-        {
-            while(<MAIL>)
-            {
-                $body .= $_;
-            }
-            close MAIL;
-        };
-        my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-        my $subject = sprintf("SMT Mirror Report $datestring (%s) -- $errors Errors", SMT::Utils::getFQDN());
-        SMT::Utils::sendMailToAdmins($subject, $body);
+      $log->info($str);
+      $out->info($str);
     }
+    
 
     #
     # does not make sense here. If a complete repo is up-to-date we do not have the number of files
@@ -621,7 +593,7 @@ sub mirrorJobReportHandler
 sub logfile
 {
   return $logfile if ($logfile);
-  return "/var/log/smt/smt-report.log";
+  return "/var/log/smt/smt-mirror.log";
 }
 
 
