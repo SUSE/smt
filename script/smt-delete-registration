@@ -13,6 +13,7 @@ use LWP::UserAgent;
 use Crypt::SSLeay;
 use File::Basename;
 use Data::Dumper;
+use Log::Log4perl qw(get_logger :levels);
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -31,6 +32,12 @@ my $help  = 0;
 my $logfile = "/dev/null";
 
 my @guids = ();
+
+sub logfile
+{
+  return $logfile if($logfile);
+  return "/dev/null";
+}
 
 my $optres = GetOptions ("guid|g=s"    => \@guids,
                          "logfile|L=s" => \$logfile,
@@ -53,25 +60,33 @@ if($help || !$optres)
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
-if(@guids == 0)
-{
-    print STDERR __("No Unique ID provided.\n");
-    exit 1;
-}
-
 if(!SMT::Utils::openLock("smt-delete-registration"))
 {
-    print __("Delete registration process is still running.\n");
+    print STDERR __("Delete registration process is still running.\n");
     exit 0;
 }
 
 # open the logfile
 
-my $LOG = SMT::Utils::openLog($logfile);
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
 
-my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel);
+# to change the loglevel we need the root logger,
+# not the derived main logger
+my $log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+my $out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
+
+
+if(@guids == 0)
+{
+   $log->error("No Unique ID provided.");
+   $out->error(__("No Unique ID provided."));
+   SMT::Utils::unLockAndExit( "smt-delete-registration", 1 );
+}
+
+my $useragent = SMT::Utils::createUserAgent();
 $useragent->protocols_allowed( [ 'https' ] );
-
 
 my $dbh = undef;
 
@@ -79,16 +94,14 @@ $dbh = SMT::Utils::db_connect();
 
 if(!$dbh)
 {
-    if(!SMT::Utils::unLock("smt-delete-registration"))
-    {
-        print STDERR __("Cannot remove lockfile.\n");
-    }
-    die __("Cannot connect to database");
+  $log->error("Cannot connect to database");
+  $out->error(__("Cannot connect to database"));
+  SMT::Utils::unLockAndExit( "smt-delete-registration", 1 );
 }
 
 eval
 {
-    my $nccreg = SMT::NCCRegTools->new(log => $LOG, vblevel => $vblevel, useragent => $useragent, dbh => $dbh);
+    my $nccreg = SMT::NCCRegTools->new(useragent => $useragent, dbh => $dbh);
     my $err = $nccreg->NCCDeleteRegistration(@guids);
     if($err != 0)
     {
