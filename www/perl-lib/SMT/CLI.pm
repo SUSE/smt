@@ -1500,7 +1500,6 @@ sub hardlink
         }
     }
     $log->info('Hardlink Time: ' . SMT::Utils::timeFormat(tv_interval($t0)));
-    #printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
 }
 
 #
@@ -2741,9 +2740,7 @@ sub certificateExpireCheck
 
     my $days = int( ($endtime-$currentTime) / ( 60*60*24) );
 
-    #printLog($options{log}, $options{vblevel}, LOG_DEBUG, "Check $certfile: Valid for $days days");
-    my $log = get_logger();
-    $log->debug("Check $certfile: Valid for $days days");
+    get_logger()->debug("Check $certfile: Valid for $days days");
 
     return $days;
 }
