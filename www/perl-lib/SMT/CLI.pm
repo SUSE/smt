@@ -1012,7 +1012,7 @@ sub setDoMirrorFromXml
     if(exists $opt{xml} && defined $opt{xml} )
     {
         my $enabledCatalogIds = {};
-        my $enabledCatalogs_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
+        my $enabledCatalogs_parser = SMT::Parser::RegData->new();
         $enabledCatalogs_parser->parse($opt{xml},
             sub {
                 my $data = shift;
