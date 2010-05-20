@@ -25,22 +25,7 @@ sub new
     $self->{curlobj}   = WWW::Curl::Easy->new();
     $self->{LOG}       = get_logger();
     $self->{OUT}       = get_logger('userlogger');
-    #$self->{VBLEVEL}   = 0;
     $self->{PROXYUSER} = _getProxySettings();
-
-#     if(exists $opt{vblevel} && defined $opt{vblevel})
-#     {
-#         $self->{VBLEVEL} = $opt{vblevel};
-#     }
-# 
-#     if(exists $opt{log} && defined $opt{log} && $opt{log})
-#     {
-#         $self->{LOG} = $opt{log};
-#     }
-#     else
-#     {
-#         $self->{LOG} = SMT::Utils::openLog();
-#     }
 
     bless($self);
 
@@ -327,7 +312,6 @@ sub request
     }
     else
     {
-      #printLog( $self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "$curlcode ".$self->{curlobj}->strerror($curlcode) );
       $self->{LOG}->error("$curlcode ".$self->{curlobj}->strerror($curlcode));
       $self->{OUT}->error("$curlcode ".$self->{curlobj}->strerror($curlcode));
       my $response = HTTP::Response->new(&HTTP::Status::RC_INTERNAL_SERVER_ERROR, 
