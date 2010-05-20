@@ -25,7 +25,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 use English;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(__ __N printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2 LOG_DEBUG3);
+our @EXPORT = qw(__ __N LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2 LOG_DEBUG3);
 
 use constant LOG_ERROR  => 0x0001;
 use constant LOG_WARN   => 0x0002;
@@ -623,47 +623,47 @@ These constants can be bitwise-or'd to use as verbose level to control the outpu
  printLog( $log, $vblevel, LOG_INFO1, "This is a information message");
 
 =cut
-sub printLog
-{
-    my $LOG      = shift;
-    my $vblevel  = shift;
-    my $category = shift || 0;
-    my $message  = shift || '';
-    my $doprint  = shift;
-    $doprint = 1 if (not defined $doprint);
-    my $dolog    = shift;
-    $dolog = 1 if (not defined $dolog);
-
-    return if( !($vblevel & $category) );
-    $category = ($vblevel & $category);
-
-    # Forcing the defualt behavior
-    $doprint = $log_behavior->{'doprint'}
-	if (defined $log_behavior->{'doprint'});
-
-    if($doprint)
-    {
-        if(TOK2STRING->{$category} eq "error")
-        {
-            print STDERR $message."\n";
-        }
-        else
-        {
-            print $message."\n";
-        }
-    }
-
-    if($dolog && defined $LOG)
-    {
-        my ($package, $line) = caller;
-
-        foreach $line (split(/\n/, $message))
-        {
-            print $LOG getDBTimestamp().' '.$package.' - ['.TOK2STRING->{$category}.']  '.$line."\n";
-        }
-    }
-    return;
-}
+# sub printLog
+# {
+#     my $LOG      = shift;
+#     my $vblevel  = shift;
+#     my $category = shift || 0;
+#     my $message  = shift || '';
+#     my $doprint  = shift;
+#     $doprint = 1 if (not defined $doprint);
+#     my $dolog    = shift;
+#     $dolog = 1 if (not defined $dolog);
+# 
+#     return if( !($vblevel & $category) );
+#     $category = ($vblevel & $category);
+# 
+#     # Forcing the defualt behavior
+#     $doprint = $log_behavior->{'doprint'}
+# 	if (defined $log_behavior->{'doprint'});
+# 
+#     if($doprint)
+#     {
+#         if(TOK2STRING->{$category} eq "error")
+#         {
+#             print STDERR $message."\n";
+#         }
+#         else
+#         {
+#             print $message."\n";
+#         }
+#     }
+# 
+#     if($dolog && defined $LOG)
+#     {
+#         my ($package, $line) = caller;
+# 
+#         foreach $line (split(/\n/, $message))
+#         {
+#             print $LOG getDBTimestamp().' '.$package.' - ['.TOK2STRING->{$category}.']  '.$line."\n";
+#         }
+#     }
+#     return;
+# }
 
 
 =item sendMailToAdmins($subject, $message [, $attachements])
@@ -1167,12 +1167,17 @@ sub executeCommand
 {
     my ($opt, $command, @arguments) = @_;
 
-    my $log = $opt->{log};
-    my $vblevel = LOG_ERROR;
-    $vblevel = $opt->{vblevel} if (defined $opt->{vblevel});
-
-    my $out = "";
-    my $err = "";
+    my $log = undef;
+    my $out = undef;
+    eval 
+    {
+      # we may not have Log4perl initialized here
+      $log = get_logger();
+      $out = get_logger('userlogger');
+    };
+    
+    my $output = "";
+    my $error = "";
     my $exitcode = 0;
 
     my $lang     = $ENV{LANG};
@@ -1183,7 +1188,8 @@ sub executeCommand
 
     if(!defined $command || !-x $command)
     {
-        printLog($log, $vblevel, LOG_ERROR, "Invalid command '$command'");
+        $log->error(sprintf("Invalid command '%s'",$command)) if($log);
+        $out->error(sprintf("Invalid command '%s'",$command)) if($out);
         return -1;
     }
 
@@ -1191,16 +1197,15 @@ sub executeCommand
     $ENV{LANG}     = "en_US" if(defined $lang);
     $ENV{LANGUAGE} = "en_US" if(defined $language);
 
-    printLog($log, $vblevel, LOG_DEBUG,
-        'Executing \'' . $command . ' ' . join(" ", @arguments) . '\'', 0);
+    $log->debug("Executing '$command ".join(" ", @arguments)."'") if($log);
 
     my $pid = open3(\*IN, \*OUT, \*ERR, $command, @arguments) or do
     {
         $ENV{LANG}     = $lang if(defined $lang);
         $ENV{LANGUAGE} = $language  if(defined $language);
-        printLog($log, $vblevel, LOG_ERROR,
-            'Could not execute command \'' . $command . ' ' .
-            join(" ", @arguments) . '\': ' . $!);
+        my $err = $!;
+        $log->error(sprintf("Could not execute command %s %s: %s", $command, join(" ", @arguments), $err)) if($log);
+        $out->error(sprintf("Executeing command '%s' failed: %s", $command, $err)) if($out);
         return -1;
     };
 
@@ -1209,30 +1214,29 @@ sub executeCommand
 
     while (<OUT>)
     {
-        $out .= "$_";
+        $output .= "$_";
     }
     while (<ERR>)
     {
-        $err .= "$_";
+        $error .= "$_";
     }
     close OUT;
     close ERR;
 
     waitpid $pid, 0;
 
-    chomp($out);
-    chomp($err);
+    chomp($output);
+    chomp($error);
 
     $ENV{LANG}     = $lang if(defined $lang);
     $ENV{LANGUAGE} = $language if(defined $language);
 
     $exitcode = ($? >> 8);
 
-    printLog($log, $vblevel, LOG_DEBUG,
-        'Command returned ' . $exitcode . ($err ? ': ' . $err : ''), 0);
-    printLog($log, $vblevel, LOG_DEBUG2, "Command output:\n" . $out, 0) if ($out);
+    $log->debug(sprintf("Command returned %d %s", $exitcode, ($error ? ": $error" : ''))) if($log);
+    $log->trace("Command output:\n$output") if ($log);
 
-    return ($exitcode, $err, $out);
+    return ($exitcode, $error, $output);
 }
 
 
