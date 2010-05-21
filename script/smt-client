@@ -26,14 +26,11 @@ if(!SMT::Utils::dropPrivileges())
     exit 1;
 }
 
-my $vblevel	= LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
-my $debug	= 0;
-my $logfile	= "/dev/null";
 my $help	= 0;
 # No command defined, use fallback
+my $verbose = 0;
 my $command	= $ARGV[0] || '';
 my $hostname	= undef;
-my $verbose = 0;
 my $guid = undef;
 my $severity = undef;
 
@@ -41,12 +38,10 @@ Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = Getopt::Long::GetOptions
 (
  'help|h'		=> \$help,
- 'debug|d'		=> \$debug,
- 'logfile|L=s'	=> \$logfile,
  'hostname|n=s'	=> \$hostname,
- 'verbose|v'	=> \$verbose,
  'guid|g=s' => \$guid,
- 'severity|s=s' => \$severity
+ 'severity|s=s' => \$severity,
+ 'verbose|v'    => \$verbose
 );
 
 # No command defined, but some arguments are, using fallback
@@ -61,13 +56,11 @@ if($help || !$optres)
     print "\n";
     print __("Options:")."\n";
     print "--help         -h         ".__("This help.")."\n";
-    print "--debug        -d         ".__("Enable debug mode.")."\n";
     print "--hostname     -n <name>  ".__("Filter the result by the hostname (hostname starting with <name>).")."\n";
     print "--guid         -g <guid>  ".__("Only show information for GUID <guid>.")."\n";
     print "--severity     -s <level> ".__("Only show information if patches for <level> are available.")."\n";
     print "                          ".__("<level> may be a value of: 'packagemanager', 'security', 'recommended' or 'optional'")."\n";
     print "--verbose      -v         ".__("Show details on patches.")."\n";
-    print "--logfile      -L         ".__("Log to a specified file.")."\n";
     exit 0;
 }
 
@@ -78,14 +71,11 @@ if($help || !$optres)
 #    exit 2;
 #}
 
-# open the logfile
-$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
-my $log = SMT::Utils::openLog($logfile);
 
 # connect to database
 my ($cfg, $dbh) = SMT::CLI::init();
 if (! defined $dbh) {
-    print __("Cannot connect to database");
+    print STDERR __("Cannot connect to database");
     exit 3;
 }
 
@@ -108,7 +98,7 @@ if ($command eq '' || $command eq 'status')
         $serverityFilter = ':::>0' if ( $severity eq 'optional');
         if ( ! defined $serverityFilter )
         {
-            print __("Unknown severity level.")."\n";
+            print STDERR __("Unknown severity level.");
             exit 2;
         }
     }
@@ -174,16 +164,16 @@ if ($command eq '' || $command eq 'status')
 	    }
 	}
 
-	print $t->draw();
+    print $t->draw();
     }
 }
 else
 {
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf(__("Unknown command: %s"), $command));
+    print STDERR sprintf(__("Unknown command: %s"), $command);
 }
 
 # release the lock
-#SMT::Utils::unLockAndExit( "smt-client", 0, $log, $vblevel );
+#SMT::Utils::unLockAndExit( "smt-client", 0);
 
 exit 0;
 
@@ -222,14 +212,6 @@ Shows the help screen.
 
 Shows detailed client information. 
 The patch status is explained in detail and shows the number of patches for the package manager, security, recommended and optional patches. The last contact date is also shown in verbose mode.
- 
-=item -d, --debug
-
-Enables debug mode.
-
-=item -L, --logfile <file>
-
-Logs will be written to <file>.
 
 =back
 

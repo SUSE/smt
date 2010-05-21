@@ -11,6 +11,7 @@ use SMT::Utils;
 use File::Basename;
 use File::Temp;
 use SMT::JobQueue;
+use Log::Log4perl qw(get_logger :levels);
 
 use Data::Dumper;
 
@@ -33,7 +34,7 @@ my $mailtempfile = undef;
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = GetOptions ("debug|d"     => \$debug,
                          "verboselevel|v=i" => \$vblevel,
-			 "logfile|L=s" => \$logfile,
+                         "logfile|L=s" => \$logfile,
                          "mail|m"      => \$mail,
                          "help|h"      => \$help,
                          "quiet|q"      => \$quiet
@@ -57,18 +58,42 @@ if($help || !$optres)
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
-
-
 # open the logfile
-my $LOG = SMT::Utils::openLog($logfile);
+
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
+
+# to change the loglevel we need the root logger,
+# not the derived main logger
+my $log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+my $out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
+my $emailapp = undef;
+if($mail)
+{
+  $emailapp =  Log::Log4perl::Appender->new("Log::Log4perl::Appender::TmpFileBuffer",
+                                            name => 'email');
+                                            my $layout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
+  $emailapp->layout($layout);
+  $out->add_appender($emailapp);
+}
 
 # read smt config
 my $cfg = undef;
 eval {  $cfg = SMT::Utils::getSMTConfig();  };
 if( $@ || ! defined $cfg )
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
-    die( __("Cannot read the SMT configuration file: %s"));
+  my $err = $@;
+  chomp($err);
+  $log->error(sprintf("Cannot read the SMT configuration file: %s", $err));
+  $out->error(sprintf(__("Cannot read the SMT configuration file: %s"), $err));
+  if ($mail && $emailapp)
+  {
+    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+    my $subject = sprintf("SMT JobQueue Cleanup $datestring (%s)", SMT::Utils::getFQDN());
+    SMT::Utils::sendMailToAdmins($subject, $emailapp->get_buffer());
+  }
+  exit 1;
 }
 
 # connect to database
@@ -76,30 +101,24 @@ my $dbh = undef;
 $dbh = SMT::Utils::db_connect();
 if( ! $dbh )
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot connect to database"));
-    die( __("Cannot connect to database"));
+  $log->error("Cannot connect to database");
+  $out->error(__("Cannot connect to database"));
+  if ($mail && $emailapp)
+  {
+    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+    my $subject = sprintf("SMT JobQueue Cleanup $datestring (%s)", SMT::Utils::getFQDN());
+    SMT::Utils::sendMailToAdmins($subject, $emailapp->get_buffer());
+  }
+  exit 1;
 }
 my $res = undef;
-
-
-if($mail)
-{
-  my $dir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
-  $mailtempfile = "$dir/mail";
-  open(MAILTEMPFILE, "> $mailtempfile") or die "Cannot open file:$!";
-  open(STDOUT, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-  open(STDERR, ">& MAILTEMPFILE") or die "Cannot dup:$!";
-  select STDERR; $| = 1;      # make unbuffered
-  select STDOUT; $| = 1;      # make unbuffered
-  select MAILTEMPFILE; $| = 1;        # make unbuffered
-}
-
 
 
 ###############################################################################
 # Cleanup JobQueue
 
-SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "Starting daily SMT JobQueue cleanup" , 0, 1 );
+$log->info("Starting daily SMT JobQueue cleanup");
+$out->info(__("Starting daily SMT JobQueue cleanup"));
 my $maxDays = $cfg->val('JOBQUEUE', 'maxFinishedJobAge') || 8;
 
 
@@ -108,7 +127,8 @@ my $maxDays = $cfg->val('JOBQUEUE', 'maxFinishedJobAge') || 8;
 
 my $delOldJobsSQL = " DELETE FROM JobQueue where DATE_ADD(FINISHED, INTERVAL $maxDays DAY) < NOW() AND PERSISTENT = 0 ";
 $res = $dbh->do($delOldJobsSQL);
-SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted finished jobs: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
+$log->info(sprintf("Number of deleted finished jobs: %s", ($res =~ /^0E0$/) ? "0":$res));
+$out->info(sprintf(__("Number of deleted finished jobs: %s"), ($res =~ /^0E0$/) ? "0":$res)) if(!quiet);
 
 
 
@@ -116,15 +136,16 @@ SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted fini
 
 my $delOldJobCookiesSQL = " DELETE FROM JobQueue where TYPE = 0 and DATE_ADD(CREATED, INTERVAL 1 DAY) < NOW() ";
 $res = $dbh->do($delOldJobCookiesSQL);
-SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted job cookies: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
-
+$log->info(sprintf("Number of deleted job cookies: %s", ($res =~ /^0E0$/) ? "0":$res));
+$out->info(sprintf(__("Number of deleted job cookies: %s"), ($res =~ /^0E0$/) ? "0":$res)) if(!$quiet);
 
 
 ### CHECK FOR UNSUPPORTED JOB TYPES (third) ###
 
 my $delUnsupportedJobsSQL = " DELETE FROM JobQueue where TYPE >= 9 ";
 $res = $dbh->do($delUnsupportedJobsSQL);
-SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted unsupported jobs: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
+$log->info(sprintf("Number of deleted unsupported jobs: %s", ($res =~ /^0E0$/) ? "0":$res));
+$out->info(sprintf(__("Number of deleted unsupported jobs: %s"), ($res =~ /^0E0$/) ? "0":$res)) if(!$quiet);
 
 
 ### CHECK PARENTS (fourth) ###
@@ -161,11 +182,13 @@ if ( defined $whereStr && $whereStr ne '' )
 {
     my $delBrokenParentsSQL = " DELETE FROM JobQueue where $whereStr" ;
     $res = $dbh->do($delBrokenParentsSQL);
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted jobs with broken parent IDs: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
+    $log->info(sprintf("Number of deleted jobs with broken parent IDs: %s", ($res =~ /^0E0$/) ? "0":$res));
+    $out->info(sprintf(__("Number of deleted jobs with broken parent IDs: %s"), ($res =~ /^0E0$/) ? "0":$res)) if(!$quiet);
 }
 else
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "Number of deleted jobs with broken parent IDs is: 0" , $quiet? 0:1 , 1 );
+    $log->info("Number of deleted jobs with broken parent IDs is: 0");
+    $out->info(__("Number of deleted jobs with broken parent IDs is: 0")) if(!$quiet);
 }
 
 
@@ -180,46 +203,36 @@ my $persData = $dbh->selectall_hashref($getTooPersistentJobs, ["GUID_ID", "ID"] 
 my $numPersData = keys %{$persData} || 0;
 if ( $numPersData > 0 )
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number persistent jobs with a timelag smaller than 1 minute: %s", $numPersData ) , $quiet? 0:1,1 );
-
+    $log->info(sprintf("Number persistent jobs with a timelag smaller than 1 minute: %s", $numPersData ));
+    $out->info(sprintf(__("Number persistent jobs with a timelag smaller than 1 minute: %s"),
+                       $numPersData )) if(!$quiet);
+    
     foreach my $gid ( keys %{$persData} )
     {
         foreach my $jid (keys %{${$persData}{$gid}} )
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Job ID (%s) for GUID (%s) has a timelag of (%s).", $jid, ${$persData}{$gid}{$jid}{GUID}, ${$persData}{$gid}{$jid}{TIMELAG} || 0 ) , $quiet? 0:1 ,1);
+            $log->info(sprintf("Job ID (%s) for GUID (%s) has a timelag of (%s).", 
+                               $jid, ${$persData}{$gid}{$jid}{GUID}, ${$persData}{$gid}{$jid}{TIMELAG} || 0 ));
+            $out->info(sprintf("Job ID (%s) for GUID (%s) has a timelag of (%s).", 
+                               $jid, ${$persData}{$gid}{$jid}{GUID}, ${$persData}{$gid}{$jid}{TIMELAG} || 0 )) if(!$quiet);
         }
     }
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "This is just a warning. If the timelag for these jobs is not intended to be so small please change the jobs using the smt-job command." , $quiet? 0:1 ,1);
+    $log->info("This is just a warning. If the timelag for these jobs is not intended to be so small please change the jobs using the smt-job command.");
+    $out->info(__("This is just a warning. If the timelag for these jobs is not intended to be so small please change the jobs using the smt-job command.")) if(!$quiet);
 }
 else
 {
-    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "No persistent jobs with a timelag smaller than 1 minute found. Good." , $quiet? 0:1,1 );
+    $log->info("No persistent jobs with a timelag smaller than 1 minute found. Good.");
+    $out->info(__("No persistent jobs with a timelag smaller than 1 minute found. Good.")) if(!$quiet);
 }
 
 
 ### SEND MAIL ###
 
-if ($mail)
+if ($mail && $emailapp)
 {
-  close (STDERR);
-  close (STDOUT);
-  close (MAILTEMPFILE);
-  my $body = "";
-
-  # we want to send only a mail, if there is something to send.
-  if( -s $mailtempfile )
-  {
-    open(MAIL, "< $mailtempfile") and do
-    {
-      while(<MAIL>)
-      {
-        $body .= $_;
-      }
-      close MAIL;
-    };
-    my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-    my $subject = sprintf("SMT JobQueue Cleanup $datestring (%s)", SMT::Utils::getFQDN());
-    SMT::Utils::sendMailToAdmins($subject, $body);
-  }
+  my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
+  my $subject = sprintf("SMT JobQueue Cleanup $datestring (%s)", SMT::Utils::getFQDN());
+  SMT::Utils::sendMailToAdmins($subject, $emailapp->get_buffer());
 }
 

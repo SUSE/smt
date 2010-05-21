@@ -545,9 +545,8 @@ if(!$clean && !$hardlink)
     
 
     #
-    # does not make sense here. If a complete repo is up-to-date we do not have the number of files
+    # If a complete repo is up-to-date we do not have the number of all files. No need to log up-to-date
     #
-    #SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Files up to date          : %s"), $uptodate));
 }
 
 

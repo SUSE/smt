@@ -49,7 +49,6 @@ my $sendReport = 0;
 
 use Getopt::Long;
 
-#my $LOG = undef;
 my $log = undef;
 my $out = undef;
 
@@ -491,7 +490,6 @@ if ( (defined $help && $help == 1 ) || !$optres )
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 # open the logfile
-#$LOG = SMT::Utils::openLog($logfile);
 Log::Log4perl::init("/etc/smt.d/log4perl.conf");
 
 # to change the loglevel we need the root logger,
@@ -514,7 +512,6 @@ if(!$nonccsync)
 
     if($maxwait > 60)
     {
-        #printLog($LOG, $vblevel, LOG_ERROR, __("Cannot create lockfile. Skip syncing current data from NCC"));
         $log->error("Cannot create lockfile. Skip syncing current data from NCC");
         $out->error(__("Cannot create lockfile. Skip syncing current data from NCC"));
     }
@@ -523,24 +520,20 @@ if(!$nonccsync)
         # start sync
         my $lr= SMT::NCCRegTools->new(); #vblevel => $vblevel, log     => $LOG);
         
-        #printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
         $log->info("Downloading Subscription information");
         $out->info(__("Downloading Subscription information"));
         my $res = $lr->NCCListSubscriptions();
         if ($res)
         {
-            #SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
             $log->error("Error while fetching Subscription data.");
             $out->error(__("Error while fetching Subscription data."));
         }
         
-        #printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
         $log->info("Downloading Registration information");
         $out->info(__("Downloading Registration information"));
         $res = $lr->NCCListRegistrations();
         if ($res)
         {
-            #SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
             $log->info("Error while fetching Registration data.");
             $out->info(__("Error while fetching Registration data."));
         }
@@ -642,7 +635,6 @@ if (defined $quiet && $quiet == 1)
 }
 
 # print and log the ascii report if wanted
-#printLog($LOG, $vblevel, LOG_INFO1, getMergedReport('asciitable'), $doPrint, $doLog);
 $log->info(getMergedReport('asciitable')) if($doLog);
 $out->info(getMergedReport('asciitable')) if($doPrint);
 
@@ -697,7 +689,6 @@ if (defined $file)
             open(REPFILE, "> $fname ")  ||  die sprintf(__("Can not open target file %s"), $fname);
             print REPFILE $rdata;
             close REPFILE;
-            #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
             $log->info("Report generated at '$fname'");
             $out->info(__("Report generated at '$fname'"));
         }
@@ -719,7 +710,6 @@ if (defined $file)
             my @cmdArgs = ("--webpage", "--quiet", "--size", "11x8.5in", "-f", "$fname", "$tname");
             open(OUT, "-|", '/usr/bin/htmldoc', @cmdArgs) or die "Cannot create PDF: $!";
             close OUT;
-            #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
             $log->info("Report generated at '$fname'");
             $out->info(__("Report generated at '$fname'"));
         }
@@ -741,8 +731,6 @@ if (defined $file)
 #             my $tname = $tfh->filename();
 #             print $tfh $docbook."\n";
 #             close $tfh;
-#             printLog($LOG, $vblevel, LOG_ERROR, "Created : $tname");
-            #printLog($LOG, $vblevel, LOG_ERROR, "Cannot create PDF: /usr/bin/htmldoc not found.");
             $log->info("Cannot create PDF: /usr/bin/htmldoc not found.");
             $out->info(__("Cannot create PDF: /usr/bin/htmldoc not found."));
         }
@@ -756,7 +744,6 @@ if (defined $file)
         print XML getMergedReport('xml');
         print XML '</report>';
         close XML;
-        #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
         $log->info("Report generated at '$fname'");
         $out->info(__("Report generated at '$fname'"));
     }
@@ -767,7 +754,6 @@ if (defined $file)
         open(REPFILE, "> $fname")  ||  die sprintf(__("Can not open target file %s"), $fname);
         print REPFILE getMergedReport('asciitable');
         close REPFILE;
-        #printLog($LOG, $vblevel, LOG_INFO1, "Report generated at '$fname'");
         $log->info("Report generated at '$fname'");
         $out->info(__("Report generated at '$fname'"));
     }

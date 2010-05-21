@@ -14,6 +14,7 @@ use Text::ASCIITable;
 use Config::IniFiles;
 use File::Temp;
 use File::Path;
+use File::Copy;
 use IO::File;
 
 use SMT::Parser::NU;

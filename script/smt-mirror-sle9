@@ -12,6 +12,7 @@ use URI;
 use File::Path;
 use IPC::Open3;
 use Fcntl qw(:DEFAULT);
+use Log::Log4perl qw(get_logger :levels);
 
 use Getopt::Long;
 use File::Basename;
@@ -34,7 +35,7 @@ my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $log    = undef;
 my $errors = 0;
 my $help     = 0;
-my $logfile = "/dev/null";
+my $logfile = "/var/log/smt/smt-mirror-sle9.log";
 
 
 Getopt::Long::Configure( 'no_auto_abbrev');
@@ -66,8 +67,14 @@ if(!SMT::Utils::openLock("smt-mirror-sle9"))
 
 # open the logfile
 
-$log = SMT::Utils::openLog($logfile);
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
 
+# to change the loglevel we need the root logger,
+# not the derived main logger
+$log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+my $out = get_logger('userlogger');
+$out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
 
 # to be able to parse the output of wget correctly set language
 # to english
@@ -79,7 +86,8 @@ $ENV{LANGUAGE} = "en_US.UTF-8";
 #
 if( ! -e "$ENV{HOME}/.wgetrc" )
 {
-    SMT::Utils::printLog($log, $vblevel, LOG_WARN, "WARNING: $ENV{HOME}/.wgetrc does not exist.");
+    $log->warn("WARNING: $ENV{HOME}/.wgetrc does not exist.");
+    $out->warn("WARNING: $ENV{HOME}/.wgetrc does not exist.");
 }
 
 my $cfg;
@@ -88,8 +96,11 @@ eval {
 };
 if($@)
 {
-    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "$@");
-    SMT::Utils::unLockAndExit( "smt-mirror-sle9", 1, $log, $vblevel );
+  my $err = $@;
+  chomp($err);
+  $log->error("$err");
+  $out->error("$err");
+  SMT::Utils::unLockAndExit( "smt-mirror-sle9", 1);
 }
 
 my $mirrorTo = $cfg->val("LOCAL", "MirrorTo");
@@ -161,14 +172,16 @@ foreach my $sname (@sections)
             push @cmdargs, "--cut-dirs", "5"; #, "-nv";
             push @cmdargs, "-i", "-";
             
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string));
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("Target:    %s"), $destdir));
-
-            #printLog($log, $vblevel, LOG_DEBUG, "Execute $cmd ".join(" ", @cmdargs));
+            $log->info(sprintf("Mirroring: %s", $saveuri->as_string));
+            $log->info(sprintf("Target:    %s", $destdir));
+            
+            $out->info(sprintf(__("Mirroring: %s"), $saveuri->as_string));
+            $out->info(sprintf(__("Target:    %s"), $destdir));
             
             my $pid = open3(\*IN, \*ERR, \*ERR, $cmd, @cmdargs) or do
             {
-                SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Cannot execute $cmd ".join(" ", @cmdargs).": $!");
+                $log->error("Cannot execute $cmd ".join(" ", @cmdargs).": $!");
+                $out->error(sprintf(__("Cannot execute %s %s : %s"), $cmd, join(" ", @cmdargs), $!));
                 return 1;
             };
             print IN $uri->as_string."\n";
@@ -187,12 +200,13 @@ foreach my $sname (@sections)
                 
                 if($err =~ /not\s+retrieving/i)
                 {
-                    SMT::Utils::printLog($log, $vblevel, LOG_DEBUG, sprintf("----> %s is up to date", $currentfile));
+                    $log->debug(sprintf("----> %s is up to date", $currentfile));
                     $currentfile = "";
                 }
                 elsif($err =~ /saved/i)
                 {
-                    SMT::Utils::printLog($log, $vblevel, LOG_DEBUG, sprintf("Fetch [%s]", $currentfile));
+                    $log->info(sprintf("Fetch [%s]", $currentfile));
+                    $out->info(sprintf("Fetch [%s]", $currentfile));
                     $currentfile = "";
                 }
                 
@@ -219,18 +233,21 @@ foreach my $sname (@sections)
                         # do not show errors if currentfile is not set or we cannot fetch robots.txt
                         next if($currentfile eq "" || $currentfile =~ /robots\.txt/);
 
-                        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, sprintf(__("Failed to download '%s': %s"), $currentfile, "$code: $msg"));
+                        $log->error(sprintf("Failed to download '%s': %s", $currentfile, "$code: $msg"));
+                        $out->error(sprintf(__("Failed to download '%s': %s"), $currentfile, "$code: $msg"));
                         $errors += 1;
                     }
                     elsif(int($code) >= 300)
                     {
-                        SMT::Utils::printLog($log, $vblevel, LOG_INFO1, "$currentfile - HTTP Status $code: $msg");
+                        $log->info("$currentfile - HTTP Status $code: $msg");
+                        $out->info("$currentfile - HTTP Status $code: $msg");
                     }
                 }
                 elsif($err =~ /failed/i)
                 {
                     $currentfile = "";
-                    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, $err);
+                    $log->error( $err );
+                    $out->error( $err );
                     $errors += 1;
                 }
             }
@@ -241,16 +258,26 @@ foreach my $sname (@sections)
                 $errors += 1;
             }
 
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("=> Errors           : %s"), $errors));
-            SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("=> Mirror Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
-            print "\n";
+            $log->info(sprintf("=> Finished mirroring '%s'", $saveuri->as_string));
+            $log->info(sprintf("=> Errors           : %s", $errors));
+            $log->info(sprintf("=> Mirror Time      : %s", SMT::Utils::timeFormat(tv_interval($t0))));
+            
+            $out->info(sprintf(__("=> Finished mirroring '%s'"), $saveuri->as_string));
+            $out->info(sprintf(__("=> Errors           : %s"), $errors));
+            $out->info(sprintf(__("=> Mirror Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+            $out->info(" ");
         }
     }
 }
 
 
-SMT::Utils::unLockAndExit( "smt-mirror-sle9", 0, $log, $vblevel );
+SMT::Utils::unLockAndExit( "smt-mirror-sle9", 0);
+
+sub logfile
+{
+  return $logfile if($logfile);
+  return "/var/log/smt/smt-mirror-sle9.log";
+}
 
 #
 # Manpage

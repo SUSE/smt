@@ -166,7 +166,9 @@ if($mail && $emailapp)
   my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
   my $subject = sprintf("SMT Registration Report $datestring (%s) -- Registration %s",
                         SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
-  SMT::Utils::sendMailToAdmins( $subject, $emailapp->get_buffer());
+  my $body = $emailapp->get_buffer();
+  
+  SMT::Utils::sendMailToAdmins( $subject, $body) if($body);
 }
 
 SMT::Utils::unLockAndExit( "smt-register", $exitcode );

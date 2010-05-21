@@ -18,6 +18,8 @@ use lib "/usr/lib/YaST2/agents_non_y2";
 use ycp;
 use strict;
 
+use Log::Log4perl qw(get_logger :levels);
+
 use RPMMD::Filter;
 use RPMMD::Tools::Mirror;
 use RPMMD::Parser::Updates;
@@ -32,10 +34,6 @@ use SMT::Mirror::Utils;
 
 # For debugging only
 # use Data::Dumper;
-
-# Suppress printing logs to STDOUT, to nemaji kralicci radi
-# (SCR uses stdin/stdout for communication with agents)
-SMT::Utils::setLogBehavior ({'doprint' => 0});
 
 if(! SMT::Utils::dropPrivileges()) {
     y2error ('Unable to drop privileges. Aborting...');
@@ -73,10 +71,20 @@ use constant {
     },
 };
 
+my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $logfile = '/var/log/smt/smt-staging.log';
-my $log = SMT::Utils::openLog ($logfile);
-my $vblevel = LOG_DEBUG|LOG_DEBUG2|LOG_WARN|LOG_ERROR|LOG_INFO1|LOG_INFO2;
-SMT::Utils::setupLogger ($logfile, 1); # Log4perl logger for RPMMD
+
+# open the logfile
+Log::Log4perl::init("/etc/smt.d/log4perl.conf");
+# to change the loglevel we need the root logger,
+# not the derived main logger
+my $log = get_logger('');
+$log->level(SMT::Utils::vblevel2log4perl4File($vblevel));
+
+sub logfile
+{
+  return $logfile;
+}
 
 # Reports that the agent has been called using an unsupported path
 sub UnsupportedPath ($$) {
@@ -397,11 +405,9 @@ sub CreateSnapshot ($) {
     { $mirrorsrc = 1; }
 
     my %mirror_args = (
-	log => $log,
 	dbh => $dbh,
 	cfg => $SMT::MIRROR_CFG,
-	vblevel => $vblevel,
-        mirrorsrc => $mirrorsrc
+    mirrorsrc => $mirrorsrc
     );
 
     my $staging_allowed = GetStagingAllowedInternal ({'repositoryid' => $repositoryid});
@@ -490,13 +496,11 @@ sub CreateSnapshot ($) {
 		$fph->{$repositoryid}->{'paths'}->{$type}
 	    )
 	);
-	SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-	    sprintf __("Repository successfully generated at %s."),
+	$log->info(sprintf __("Repository successfully generated at %s."),
 		$fph->{$repositoryid}->{'paths'}->{$type}
 	);
     } else {
-	SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-	    sprintf __("Unable to generated repository %s."),
+	$log->error(sprintf __("Unable to generated repository %s."),
 		$fph->{$repositoryid}->{'paths'}->{$type}
 	);
 	# Reset the changed passphrase if generating failed

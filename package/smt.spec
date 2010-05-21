@@ -36,7 +36,6 @@ Requires:       perl-Text-ASCIITable
 Requires:       perl-MIME-Lite
 Requires:       perl-Digest-SHA1
 Requires:       perl-Log-Log4perl
-Requires:       perl-Log-Dispatch
 Requires:       limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
@@ -166,7 +165,7 @@ fi
 
 %files
 %defattr(-,root,root)
-%dir %{perl_vendorlib}/Log/Dispatch/Email
+%dir %{perl_vendorlib}/Log/Log4perl/Appender/
 %dir %{perl_vendorlib}/SMT/
 %dir %{perl_vendorlib}/SMT/Mirror
 %dir %{perl_vendorlib}/SMT/Parser
@@ -201,7 +200,7 @@ fi
 %config /etc/logrotate.d/apache-smt
 /etc/init.d/smt
 /usr/sbin/rcsmt
-%{perl_vendorlib}/Log/Dispatch/Email/SMT.pm
+%{perl_vendorlib}/Log/Log4perl/Appender/TmpFileBuffer.pm
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm

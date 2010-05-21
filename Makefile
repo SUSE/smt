@@ -79,7 +79,7 @@ install:
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT/Client
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Parser
-	mkdir -p $(DESTDIR)$(PERLMODDIR)/Log/Dispatch/Email
+	mkdir -p $(DESTDIR)$(PERLMODDIR)/Log/Log4perl/Appender
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
@@ -114,7 +114,7 @@ install:
 	install -m 644 www/perl-lib/SMT/RESTInfo.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/RegSession.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/RegParams.pm $(DESTDIR)$(PERLMODDIR)/SMT/
-	install -m 644 www/perl-lib/Log/Dispatch/Email/SMT.pm $(DESTDIR)$(PERLMODDIR)/Log/Dispatch/Email
+	install -m 644 www/perl-lib/Log/Log4perl/Appender/TmpFileBuffer.pm $(DESTDIR)$(PERLMODDIR)/Log/Log4perl/Appender/
 	cd db/schemas; \
 	find mysql/ -name ".svn" -prune -o \
                 \( \

@@ -72,7 +72,8 @@ sub _getProxySettings
     $ENV{http_proxy}  = $httpProxy if(defined $httpProxy  && $httpProxy !~ /^\s*$/);
     $ENV{https_proxy} = $httpsProxy if(defined $httpsProxy && $httpsProxy !~ /^\s*$/);
     $ENV{no_proxy}    = $noProxy if(defined $noProxy    && $noProxy !~ /^\s*$/);
-
+    $proxyUser = "" if(!defined $proxyUser);
+    
     return $proxyUser;
 }
 

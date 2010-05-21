@@ -38,7 +38,7 @@ unset PROXY_ENABLED
 
 if [ -x ${SMTCMD}-register ]
 then
-    ${SMTCMD}-register ${REGISTER_PARAMS}
+    ${SMTCMD}-register ${REGISTER_PARAMS} 1>/dev/null
 else
     echo "WARNING: Could not find the SMT binary ${SMTCMD}-register"
     echo "         Please make sure SMT is properly installed."

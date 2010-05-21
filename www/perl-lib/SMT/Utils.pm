@@ -471,63 +471,6 @@ sub vblevel2log4perl4File
   return $ERROR;
 }
 
-=item openLog($file)
-
-Open logfile. If $file is omitted we log to /dev/null .
-Returns a log handle.
-
-=cut
-sub openLog
-{
-    my $logfile = shift || "/dev/null";
-
-    my $LOG;
-    sysopen($LOG, "$logfile", O_CREAT|O_APPEND|O_WRONLY, 0600) or die "Cannot open logfile '$logfile': $!";
-    if($logfile ne "/dev/null")
-    {
-        $LOG->autoflush(1);
-    }
-    return $LOG;
-}
-
-sub setupLogger
-{
-    my $logfile = shift;
-    my $debug   = shift;
-
-    # set up logger
-    #
-    # localized messages for user  -> $out
-    # log messages (non-localized) -> $log
-
-    # file log layout
-    my $layout = Log::Log4perl::Layout::PatternLayout->new(
-        "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2}] %m%n");
-    my $screenlayout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
-
-    # file appender to log to file
-    my $appender = Log::Log4perl::Appender->new(
-        "Log::Dispatch::File",
-        filename => $logfile,
-        mode     => "append",
-    );
-    my $screen = Log::Log4perl::Appender->new(
-        "Log::Log4perl::Appender::Screen",
-        "name"      => "screenlog",
-        "stderr"    => 0);
-
-    $appender->layout($layout);
-    $screen->layout($screenlayout);
-
-    # set up the root logger, so that any libs using Log4perl inherit these settings
-    my $rootlog = get_logger();  # the empty string arg is essential!
-    $rootlog->add_appender($appender);
-    $rootlog->add_appender($screen);
-    if ($debug) { $rootlog->level($TRACE) }
-    else        { $rootlog->level($INFO)  }
-}
-
-
 =item cleanPath(@pathlist)
 
 Concatenate all parts of the pathlist, remove double slashes and return
@@ -570,90 +513,6 @@ sub setLogBehavior ($) {
 	$log_behavior->{'doprint'} = $new_behavior->{'doprint'};
     }
 }
-
-=item printlog($loghandle, $vblevel, $category, $message [, $doprint [, $dolog]])
-
-Print a log message. If $doprint is true the message is printed on stderr or stdout.
-If $dolog is true the message is printed into the given $loghandle.
-
-$category describe the category of this message. $vblevel is the verbose level the user
-choose to output. The following constants exists:
-
-=over 4
-
-=item LOG_ERROR  ( 0x0001 )
-
-Error messages. ( 1 )
-
-=item LOG_WARN   ( 0x0002 )
-
-Warning message ( 2 )
-
-=item LOG_INFO1  ( 0x0004 )
-
-Informational message 1. ( 4 )
-
-=item LOG_INFO2  ( 0x0008 )
-
-Informational message 2. ( 8 )
-
-=item LOG_DEBUG  ( 0x0010 )
-
-Debug message. ( 16 )
-
-=item LOG_DEBUG2 ( 0x0020 )
-
-Debug message 2. ( 32 )
-
-=back
-
-These constants can be bitwise-or'd to use as verbose level to control the output.
-
- my $vblevel = LOG_ERROR | LOG_WARN | LOG_INFO1;
- printLog( $log, $vblevel, LOG_INFO1, "This is a information message");
-
-=cut
-# sub printLog
-# {
-#     my $LOG      = shift;
-#     my $vblevel  = shift;
-#     my $category = shift || 0;
-#     my $message  = shift || '';
-#     my $doprint  = shift;
-#     $doprint = 1 if (not defined $doprint);
-#     my $dolog    = shift;
-#     $dolog = 1 if (not defined $dolog);
-# 
-#     return if( !($vblevel & $category) );
-#     $category = ($vblevel & $category);
-# 
-#     # Forcing the defualt behavior
-#     $doprint = $log_behavior->{'doprint'}
-# 	if (defined $log_behavior->{'doprint'});
-# 
-#     if($doprint)
-#     {
-#         if(TOK2STRING->{$category} eq "error")
-#         {
-#             print STDERR $message."\n";
-#         }
-#         else
-#         {
-#             print $message."\n";
-#         }
-#     }
-# 
-#     if($dolog && defined $LOG)
-#     {
-#         my ($package, $line) = caller;
-# 
-#         foreach $line (split(/\n/, $message))
-#         {
-#             print $LOG getDBTimestamp().' '.$package.' - ['.TOK2STRING->{$category}.']  '.$line."\n";
-#         }
-#     }
-#     return;
-# }
 
 
 =item sendMailToAdmins($subject, $message [, $attachements])
@@ -975,7 +834,6 @@ sub getFile
         };
         if($@)
         {
-            # printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $@);
             $ret = 0;
             last;
         }
@@ -991,7 +849,6 @@ sub getFile
 
             my $newuri = $response->header("location");
 
-            #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
             $srcUrl = URI->new($newuri);
         }
         elsif($response->is_success)
@@ -1137,14 +994,6 @@ Options:
 
 =over 4
 
-=item log
-
-Logger object returned by openLog()
-
-=item vblevel
-
-Log/output verbosity level. If not given, only execution errors will be logged.
-
 =item input
 
 Optional input to pass on to the command.
@@ -1159,7 +1008,7 @@ sub executeCommand
 
     my $log = undef;
     my $out = undef;
-    eval 
+    eval
     {
       # we may not have Log4perl initialized here
       $log = get_logger();
