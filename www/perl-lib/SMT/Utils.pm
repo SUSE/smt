@@ -459,16 +459,6 @@ sub vblevel2log4perl4Screen
   return $WARN  if($vblevel & (LOG_WARN));
   return $ERROR;
 }
-# translate vblevel for email messages
-sub vblevel2log4perl4Email
-{
-  my $vblevel = shift;
-  
-  return 'debug' if($vblevel & (LOG_INFO2|LOG_DEBUG|LOG_DEBUG2|LOG_DEBUG3));
-  return 'info'  if($vblevel & (LOG_INFO1));
-  return 'warn'  if($vblevel & (LOG_WARN));
-  return 'error';
-}
 
 # translate vblevel for file messages
 sub vblevel2log4perl4File

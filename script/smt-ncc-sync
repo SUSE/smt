@@ -112,15 +112,8 @@ $out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
 my $emailapp = undef;
 if($mail)
 {
-  use Log::Dispatch::Email::SMT;
-  
-  my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-  my $subject = sprintf("SMT Sync Report $datestring (%s) ", SMT::Utils::getFQDN());
-  
-  $emailapp =  Log::Log4perl::Appender->new("Log::Dispatch::Email::SMT",
-                                            name => 'email',
-                                            min_level => SMT::Utils::vblevel2log4perl4Email($vblevel),
-                                            subject => $subject );
+  $emailapp =  Log::Log4perl::Appender->new("Log::Log4perl::Appender::TmpFileBuffer",
+                                            name => 'email');
   my $layout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
   $emailapp->layout($layout);
   $out->add_appender($emailapp);
@@ -278,7 +271,7 @@ eval
     my $res = $rd->sync();
     if ($res)
     {
-        $out->error('Error while fetching product data');
+        $log->error('Error while fetching product data');
         $out->error(__('Error while fetching product data'));
         $exitcode = 1;
     }
@@ -293,7 +286,7 @@ eval
     $res = $rd->sync();
     if ($res)
     {
-        $out->error('Error while fetching target data');
+        $log->error('Error while fetching target data');
         $out->error(__('Error while fetching target data'));
         $exitcode = 1;
     }
@@ -321,7 +314,7 @@ eval
     $res = $rd->sync();
     if ($res)
     {
-        $out->error('Error while fetching ProductCatalogs data');
+        $log->error('Error while fetching ProductCatalogs data');
         $out->error(__('Error while fetching ProductCatalogs data'));
         $exitcode = 1;
     }
@@ -336,7 +329,7 @@ eval
     $res = $lr->NCCListSubscriptions();
     if ($res)
     {
-        $out->error('Error while fetching subscription data');
+        $log->error('Error while fetching subscription data');
         $out->error(__('Error while fetching subscription data'));
         $exitcode = 1;
     }
@@ -346,7 +339,7 @@ eval
     $res = $lr->NCCListRegistrations();
     if ($res)
     {
-        $out->error('Error while fetching registration data');
+        $log->error('Error while fetching registration data');
         $out->error(__('Error while fetching registration data'));
         $exitcode = 1;
     }
@@ -367,7 +360,7 @@ eval
         my $mirrorinfofile = $fromdir."/mirrorinfo.xml";
         if ( -f $mirrorinfofile && (stat($fromdir."/catalogs.xml"))[9] <= (stat($mirrorinfofile))[9] )
         {
-            $out->info("Updating mirror flags from $mirrorinfofile.");
+            $log->info("Updating mirror flags from $mirrorinfofile.");
             $out->info(sprintf(__("Updating mirror flags from '%s'."), $mirrorinfofile));
             SMT::CLI::setDoMirrorFromXml( xml => $mirrorinfofile );
         }
@@ -385,7 +378,7 @@ if($mail && $emailapp)
     my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
     my $subject = sprintf("SMT Sync Report $datestring (%s) -- Sync %s",
                           SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
-    $emailapp->subject($subject);
+    SMT::Utils::sendMailToAdmins( $subject, $emailapp->get_buffer());
 }
 
 SMT::Utils::unLockAndExit('smt-ncc-sync', $exitcode);

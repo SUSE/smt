@@ -89,16 +89,8 @@ $out->level(SMT::Utils::vblevel2log4perl4Screen($vblevel));
 my $emailapp = undef;
 if($mail)
 {
-  use Log::Dispatch::Email::SMT;
-  
-  my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
-  my $subject = sprintf("SMT Registration Report $datestring (%s) -- ",
-                        SMT::Utils::getFQDN());
-  
-  $emailapp =  Log::Log4perl::Appender->new("Log::Dispatch::Email::SMT",
-                                            name => 'email',
-                                            min_level => SMT::Utils::vblevel2log4perl4Email($vblevel),
-                                            subject => $subject );
+  $emailapp =  Log::Log4perl::Appender->new("Log::Log4perl::Appender::TmpFileBuffer",
+                                            name => 'email');
   my $layout = Log::Log4perl::Layout::PatternLayout->new("%m%n");
   $emailapp->layout($layout);
   $out->add_appender($emailapp);
@@ -174,8 +166,7 @@ if($mail && $emailapp)
   my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
   my $subject = sprintf("SMT Registration Report $datestring (%s) -- Registration %s",
                         SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
-  
-  $emailapp->subject($subject);
+  SMT::Utils::sendMailToAdmins( $subject, $emailapp->get_buffer());
 }
 
 SMT::Utils::unLockAndExit( "smt-register", $exitcode );
