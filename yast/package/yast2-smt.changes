@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue May 25 15:16:26 CEST 2010 - mc@suse.de
+
+- fix patch handling in the agent 
+
+-------------------------------------------------------------------
 Wed Jan 20 09:49:01 CET 2010 - mc@suse.de
 
 - use the database for staging (bnc#572170) 

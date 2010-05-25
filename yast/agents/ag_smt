@@ -226,8 +226,8 @@ sub GetAllPatches ($) {
     my $patchname = "";
     my $tmppatch = {};
 
-    foreach my $patchid (keys %{$fph->{$repositoryid}->{'ph'}->{'PATCHES'}}) {
-	$tmppatch = $fph->{$repositoryid}->{'ph'}->{'PATCHES'}->{$patchid};
+    foreach my $patchid (keys %{$fph->{$repositoryid}->{'ph'}->{'UPDATES'}}) {
+	$tmppatch = $fph->{$repositoryid}->{'ph'}->{'UPDATES'}->{$patchid};
 	$tmppatch->{'patchid'} = $patchid;
 	$tmppatch->{'filtered'} = ($fph->{$repositoryid}->{'fh'}->matches($tmppatch) ? YCP_TRUE:YCP_FALSE);
 	push @ret, $tmppatch;
@@ -320,7 +320,7 @@ sub GetPatchStatus ($) {
 
     LoadRepositoryData($repositoryid);
 
-    my $this_patch = $fph->{$repositoryid}->{'ph'}->{'PATCHES'}->{$patchid};
+    my $this_patch = $fph->{$repositoryid}->{'ph'}->{'UPDATES'}->{$patchid};
     # The current patch status -> ! matching (filters)
     return ($fph->{$repositoryid}->{'fh'}->matches($this_patch) ? YCP_FALSE:YCP_TRUE);
 }
