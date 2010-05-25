@@ -9,7 +9,7 @@ use warnings;
 use SMT::CLI;
 use File::Basename;
 use SMT::Utils;
-use Digest::SHA1  qw(sha1 sha1_hex);
+use Digest::SHA qw(sha1_hex);
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()

@@ -24,7 +24,7 @@ use XML::Writer;
 use Data::Dumper;
 
 use File::Basename;
-use Digest::SHA1  qw(sha1 sha1_hex);
+use Digest::SHA;
 use Time::HiRes qw(gettimeofday tv_interval);
 
 use LIMAL;
@@ -2757,7 +2757,7 @@ sub _sha1sum
         return undef;
   };
 
-  my $sha1 = Digest::SHA1->new;
+  my $sha1 = Digest::SHA->new(1);
   eval
   {
       $sha1->addfile(*FILE);
@@ -2766,6 +2766,7 @@ sub _sha1sum
   {
       return undef;
   }
+  close FILE;
   my $digest = $sha1->hexdigest();
   return $digest;
 }

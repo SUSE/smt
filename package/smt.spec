@@ -20,7 +20,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.2.2
+Version:        1.2.3
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       perl-DBI
@@ -34,7 +34,6 @@ Requires:       perl-URI
 Requires:       perl-TimeDate
 Requires:       perl-Text-ASCIITable
 Requires:       perl-MIME-Lite
-Requires:       perl-Digest-SHA1
 Requires:       perl-Log-Log4perl
 Requires:       limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
@@ -165,6 +164,8 @@ fi
 
 %files
 %defattr(-,root,root)
+%dir %{perl_vendorlib}/Log
+%dir %{perl_vendorlib}/Log/Log4perl
 %dir %{perl_vendorlib}/Log/Log4perl/Appender/
 %dir %{perl_vendorlib}/SMT/
 %dir %{perl_vendorlib}/SMT/Mirror
