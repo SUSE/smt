@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue May 25 10:20:34 CEST 2010 - jkupec@suse.cz
+
+- checksum_type column added to RepositoryContentData db table
+  to support multiple checksum types supported by perl-rpmmd-0.4.0
+  (fate #309446)
+
+-------------------------------------------------------------------
 Fri May 14 20:23:07 CEST 2010 - jkupec@suse.cz
 
 - use Log4perl in smt-mirror
