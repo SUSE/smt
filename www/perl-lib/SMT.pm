@@ -19,9 +19,10 @@ $FILTER_DBATTRS = {
 # TODO could follow $FILTER_DBATTRS structure as $CONTENT_DATA_DBATTRS
 $MIRROR_CFG = {
     'content_cache' => {
-        'table_name'   => 'RepositoryContentData',
-        'col_fullpath' => 'localpath',
-        'col_filename' => 'name',
-        'col_checksum' => 'checksum'}};
+        'table_name'        => 'RepositoryContentData',
+        'col_fullpath'      => 'localpath',
+        'col_filename'      => 'name',
+        'col_checksum'      => 'checksum',
+        'col_checksum_type' => 'checksum_type'}};
 
 1;
