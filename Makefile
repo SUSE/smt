@@ -172,6 +172,18 @@ clean:
 	rm -f package/$(NAME)-$(VERSION).tar.bz2
 	make -C swig $@
 
+maintainer-clean: clean
+	make -C yast maintainer-clean
+	rm -f yast/*.ami
+	rm -f yast/configure yast/configure.in
+	find yast/ -name "Makefile.in" -print0 | xargs -0 rm -f
+	rm -f yast/config.guess
+	rm -f yast/config.sub
+	rm -f yast/Makefile.am*
+	rm -f yast/missing
+	rm -f yast/aclocal.m4
+	rm -f yast/install-sh
+
 dist: clean
 	rm -rf $(NAME)-$(VERSION)/
 	@mkdir -p $(NAME)-$(VERSION)/apache2/conf.d/
