@@ -140,6 +140,36 @@ sub migrate
     return 0;
 }
 
+sub migrate_to
+{
+    my $version = shift;
+    my $dbh;
+    if ( not $dbh=db_connect() )
+    {
+        print STDERR __("ERROR: Could not connect to the database.\n");
+        return 20;
+    }
+
+
+    my $m = DBIx::Migration::Directories->new(
+        base                    => '/usr/share/schemas',
+        schema                  => 'smt',
+        desired_version_from    => 'SMT',
+        dbh                     => $dbh
+        );
+
+    eval
+    {
+        $m->migrate_to($version);
+    };
+    if($@)
+    {
+        print STDERR "Migration to version $version failed! $@\n";
+        return 21;
+    }
+    return 0;
+}
+
 sub cpw
 {
     my $opt      = shift;
@@ -404,6 +434,22 @@ if (defined $ARGV[0] )
     if($ret != 0)
     {
       exit $ret;
+    }
+  }
+  elsif ( $cmd eq "migrate_to" )
+  {
+    if (defined $ARGV[0] )
+    {
+      my $ret = migrate_to($ARGV[0]);
+      if($ret != 0)
+      {
+        exit $ret;
+      }
+    }
+    else
+    {
+      print STDERR "Missing version.\n";
+      exit 21;
     }
   }
 }
