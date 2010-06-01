@@ -1,8 +1,14 @@
 -------------------------------------------------------------------
+Tue Jun  1 13:55:09 CEST 2010 - mc@suse.de
+
+- check protocol version in registration handler
+- improve error messages in registration handler 
+
+-------------------------------------------------------------------
 Tue May 25 12:28:41 CEST 2010 - mc@suse.de
 
 - version 1.2.3
-- use perl Digest base module  
+- use perl Digest base module(bnc#607870) 
 
 -------------------------------------------------------------------
 Tue May 25 10:20:34 CEST 2010 - jkupec@suse.cz
