@@ -22,13 +22,14 @@ drop table if exists needinfo_params;
 create table Groups(ID     INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     NAME   VARCHAR(255) NOT NULL
                    );
+insert into Groups (ID, NAME) values (1, 'Default Group');
 
 -- integer id for "Clients" for faster joins compared to GUID with CHAR(50)
 --    GUID remains primary key until all code that deals with GUIDs gets adapted
 --    all new tables refering to a Client should use Clients.ID from now on
 create table Clients(ID          INT UNSIGNED AUTO_INCREMENT UNIQUE KEY,
                      GUID        CHAR(50) PRIMARY KEY,
-                     GROUPID     INT UNSIGNED,
+                     GROUPID     INT UNSIGNED NOT NULL DEFAULT 1,
                      HOSTNAME    VARCHAR(100) DEFAULT '',
                      TARGET      VARCHAR(100),
                      DESCRIPTION VARCHAR(500) DEFAULT '',
@@ -151,7 +152,7 @@ create table Products (
 
 create table ProductCatalogs(PRODUCTDATAID integer NOT NULL,
                              CATALOGID     CHAR(50) NOT NULL,
-                             GROUPID       INT UNSIGNED,
+                             GROUPID       INT UNSIGNED NOT NULL DEFAULT 1,
                              OPTIONAL      CHAR(1) DEFAULT 'N',
                              SRC         CHAR(1) DEFAULT 'N',    -- N NCC   C Custom
                              PRIMARY KEY(PRODUCTDATAID, CATALOGID, GROUPID)
