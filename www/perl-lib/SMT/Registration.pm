@@ -40,8 +40,8 @@ sub handler {
     
     if(! defined $args)
     {
-        $log->error("Registration called without args.");
-        return Apache2::Const::SERVER_ERROR;
+      $log->error("Registration called without args.");
+      return http_fail($r, 400, "Bad Request");
     }
     
     foreach my $a (split(/\&/, $args))
@@ -50,21 +50,29 @@ sub handler {
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
     }
+    
+    # check protocol version
+    if(exists $hargs->{'version'} && defined $hargs->{'version'} &&
+      $hargs->{'version'} ne "1.0")
+    {
+      $log->error("protocol version '".$hargs->{'version'}."' not implemented");
+      return http_fail($r, 400, "Invalid protocol version.");
+    }
     $log->info("Registration called with command: ".$hargs->{command});
 
     if(exists $hargs->{command} && defined $hargs->{command})
     {
         if($hargs->{command} eq "register")
         {
-            SMT::Registration::register($r, $hargs);
+          SMT::Registration::register($r, $hargs);
         }
         elsif($hargs->{command} eq "listproducts")
         {
-            SMT::Registration::listproducts($r, $hargs);
+          SMT::Registration::listproducts($r, $hargs);
         }
         elsif($hargs->{command} eq "listparams")
         {
-            SMT::Registration::listparams($r, $hargs);
+          SMT::Registration::listparams($r, $hargs);
         }
         elsif($hargs->{command} eq "interactive")
         {
@@ -76,14 +84,14 @@ sub handler {
         }
         else
         {
-            $log->error("Unknown command: ".$hargs->{command});
-            return Apache2::Const::SERVER_ERROR;
+          $log->error("Unknown command: ".$hargs->{command});
+          return http_fail($r, 400, "Bad Request");
         }
     }
     else
     {
-        $log->error("Missing command");
-        return Apache2::Const::SERVER_ERROR;
+      $log->error("Missing command");
+      return http_fail($r, 400, "Bad Request");
     }
     
     return Apache2::Const::OK;
@@ -97,7 +105,7 @@ sub register
 {
     my $r          = shift;
     my $hargs      = shift;
-    my $log = get_logger('apache.smt.registration.smt.registration');
+    my $log = get_logger('apache.smt.registration');
     
     my $namespace  = "";
     
@@ -113,7 +121,7 @@ sub register
         $namespace = $hargs->{namespace};
     }
 
-    if( $namespace ne "" ) 
+    if( $namespace ne "" )
     {
         my $cfg = undef;
         
@@ -123,8 +131,9 @@ sub register
         };
         if($@ || !defined $cfg)
         {
-            $log->error("Cannot read the SMT configuration file: ".$@);
-            die "SMT server is missconfigured. Please contact your administrator.";
+          $log->error("Cannot read the SMT configuration file: ".$@);
+          return http_fail($r, 500,
+                           "SMT server is missconfigured. Please contact your administrator.");
         }
 
         my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
@@ -139,8 +148,8 @@ sub register
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
-        $log->error("Cannot open Database");
-        die "Please contact your administrator.";
+      $log->error("Cannot open Database");
+      return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
     }
 
     my $regparam = SMT::RegParams->new( );
@@ -184,7 +193,11 @@ sub register
         my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regparam->guid(), $catalogs, $namespace);
 
         $regsession->cleanSession();
-
+        if( ! defined $zmdconfig )
+        {
+          # error already printed, so we only need to return
+          return;
+        }
         $log->debug("Return ZMDCONFIG: $zmdconfig");
         print $zmdconfig;
     }
@@ -201,7 +214,7 @@ sub listproducts
 {
     my $r     = shift;
     my $hargs = shift;
-    my $log = get_logger('apache.smt.registration.smt.registration');
+    my $log = get_logger('apache.smt.registration');
     
     $log->debug("listproducts called");
 
@@ -209,7 +222,7 @@ sub listproducts
     if(!$dbh)
     {
         $log->error("Cannot connect to database");
-        die "Please contact your administrator";
+        return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
     }
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
@@ -248,7 +261,7 @@ sub listparams
 {
     my $r     = shift;
     my $hargs = shift;
-    my $log = get_logger('apache.smt.registration.smt.registration');
+    my $log = get_logger('apache.smt.registration');
     
     $log->debug("listparams called");
 
@@ -309,7 +322,7 @@ sub applyInteractive
   if(!$dbh)
   {
     $log->error("Cannot connect to database");
-    die "Please contact your administrator";
+    return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
   }
   my $guid = undef;
   my $sessionID = undef;
@@ -319,21 +332,21 @@ sub applyInteractive
   if(!defined $sessionID)
   {
     $log->error("No sessionID found.");
-    die "Forbidden";
+    return http_fail($r, 400, "Bad Request");
   }
 
   my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid );
   if( !$regsession->loadSession() )
   {
     $log->error("Session could not be loaded");
-    die "Not Found";
+    return http_fail($r, 400);
   }
   my $regparam = SMT::RegParams->new( );
   $regparam->guid($guid);
   if(!$regparam->joinSession( $regsession->yaml(), $sessionID ))
   {
     $log->error("RegParams object could not be created");
-    die "Forbidden";
+    return http_fail($r, 400);
   }
   
   # check if the session is in the correct status
@@ -341,7 +354,7 @@ sub applyInteractive
   if(!defined $regparam->param("secret") || $regparam->param("secret") eq "")
   {
     $log->error("No secret found in interactive session.");
-    die "Internal Server Error";
+    return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
   }
 
   my @list = findColumnsForProducts($r, $dbh, $regparam->products(), "PRODUCTDATAID");
@@ -441,9 +454,8 @@ sub interactive
   if(!$dbh)
   {
     $log->error("Cannot connect to database");
-    die "Please contact your administrator";
+    return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
   }
-  
   
   my $guid = undef;
   my $sessionID = undef;
@@ -453,14 +465,14 @@ sub interactive
   if(!defined $sessionID)
   {
     $log->error("No sessionID found.");
-    die "Forbidden";
+    return http_fail($r, 400);
   }
   
   my $regsession = SMT::RegSession->new( dbh => $dbh, guid => $guid );
   if( !$regsession->loadSession() )
   {
     $log->error("Session could not be loaded");
-    die "Not Found";
+    return http_fail($r, 400);
   }
 
   my $regparam = SMT::RegParams->new( );
@@ -468,7 +480,7 @@ sub interactive
   if(!$regparam->joinSession( $regsession->yaml(), $sessionID ))
   {
     $log->error("RegParams object could not be created");
-    die "Forbidden";
+    return http_fail($r, 400);
   }
   
   # check if the session is in the correct status
@@ -476,7 +488,7 @@ sub interactive
   if(!defined $regparam->param("secret") || $regparam->param("secret") eq "")
   {
     $log->error("No secret found in interactive session.");
-    die "Internal Server Error";
+    return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
   }
   
   my @list = findColumnsForProducts($r, $dbh, $regparam->products(), "FRIENDLY");
@@ -732,6 +744,7 @@ sub getParamsForProducts
     $log->debug("STATEMENT: $statement");
     return $dbh->selectall_arrayref( $statement, {Slice => {}} );
   }
+  return undef;
 }
 
 sub insertRegistration
@@ -1025,6 +1038,7 @@ sub findTarget
     if(!defined $rtarget || $rtarget ne "")
     {
       $rtarget = $regparam->param("ostarget-bak");
+      return undef if( ! defined $rtarget );
       $rtarget =~ s/^\s*"//;
       $rtarget =~ s/"\s*$//;
     }
@@ -1115,7 +1129,8 @@ sub buildZmdConfig
     if($@ || !defined $cfg)
     {
         $log->error("Cannot read the SMT configuration file: ".$@);
-        die "SMT server is missconfigured. Please contact your administrator.";
+        http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
+        return undef;
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
@@ -1133,7 +1148,8 @@ sub buildZmdConfig
     if(!defined $LocalNUUrl || $LocalNUUrl !~ /^http/)
     {
         $log->error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
-        die "SMT server is missconfigured. Please contact your administrator.";
+        http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
+        return undef;
     }
     my $localID = "SMT-".$LocalNUUrl;
     $localID =~ s/:*\/+/_/g;
@@ -1313,7 +1329,8 @@ sub findColumnsForProducts
         else
         {
             $log->error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
-            die "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found in the database.";
+            http_fail($r, 400, "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found on Server.");
+            exit 0;
         }
     }
     return @list;
@@ -1358,6 +1375,18 @@ sub read_post {
     return $data;
 }
 
+
+sub http_fail
+{
+  my $r   = shift;
+  my $status = shift || 400;
+  my $message = shift || "Bad Request";
+  
+  $r->status(int($status));
+  $r->content_type('text/plain');
+  $r->print($message);
+  return Apache2::Const::OK; # don't laugh.
+}
 
 ###############################################################################
 ### XML::Parser Handler
