@@ -13,6 +13,7 @@ use XML::Writer;
 use SMT::Utils;
 use DBI qw(:sql_types);
 
+use Data::Dumper;
 
 sub getCatalogsByGUID($$)
 {
@@ -28,16 +29,15 @@ sub getCatalogsByGUID($$)
     $log->debug("STATEMENT: $targetselect");
     my $target = $dbh->selectcol_arrayref($targetselect);
 
-    my $catalogselect = " select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
-    $catalogselect   .= sprintf(" where r.GUID=%s ", $dbh->quote($guid));
-    $catalogselect   .= " and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.CATALOGTYPE='nu' and c.DOMIRROR like 'Y' ";
-    # add a filter by target architecture if it is defined
-    if (defined $target && defined ${$target}[0] )
-    {
-        $catalogselect .= sprintf(" and c.TARGET=%s", $dbh->quote( ${$target}[0] ));
-    }
-    $log->debug("STATEMENT: $catalogselect");
-    return $dbh->selectall_hashref($catalogselect, "CATALOGID" );
+    $target = $target->[0] if($target->[0]);
+    
+    my $statement = sprintf("SELECT PRODUCTID from Registration WHERE GUID=%s",$dbh->quote($guid));
+    $log->debug("STATEMENT: $statement");
+    my $pidarr = $dbh->selectcol_arrayref($statement);
+    
+    my $catalogs = SMT::Utils::findCatalogs( $dbh, $target, $pidarr,
+                                             SMT::Utils::getGroupIDforGUID($dbh, $guid));
+    return $catalogs;
 }
 
 sub getUsernameFromRequest($)
@@ -76,11 +76,7 @@ sub handler {
     eval
     {
         my $cfg = SMT::Utils::getSMTConfig();
-        $LocalBasePath = $cfg->val("LOCAL", "MirrorTo");
-        if(!defined $LocalBasePath || $LocalBasePath eq "")
-        {
-            $LocalBasePath = "";
-        }
+        $LocalBasePath = $cfg->val("LOCAL", "MirrorTo", "/srv/www/htdocs");
         
         $aliasChange = $cfg->val('NU', 'changeAlias');
         if(defined $aliasChange && $aliasChange eq "true")
@@ -97,7 +93,7 @@ sub handler {
         # for whatever reason we cannot read this
         # log the error and continue
         $log->error("Cannot read config file: $@");
-        $LocalBasePath = "";
+        $LocalBasePath = "/srv/www/htdocs";
     }
     
     $r->content_type('text/xml');
@@ -127,8 +123,6 @@ sub handler {
         $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
         $sth->bind_param(2, $username);
         $sth->execute;
-
-        #$dbh->do(sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", $dbh->quote($regtimestring), $dbh->quote($username)));
     };
     if($@)
     {
@@ -156,18 +150,20 @@ sub handler {
             $catalogName = "$catalogName:$namespace" if($aliasChange);
         }
         
-        $log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
-        if(defined $LocalBasePath && $LocalBasePath ne "")
+        if(!-e "$LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml")
         {
-            if(!-e "$LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml")
-            {
-                # catalog does not exists on this server. Log it, that the admin has a chance 
-                # to find the error.
-                $log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
-                $log->warn("Run smt-mirror to create this catalog.");
-            }
+          if( ${$val}{'DOMIRROR'} eq "Y" )
+          {
+            # catalog does not exists on this server. Log it, that the admin has a chance 
+            # to find the error.
+            $log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
+            $log->warn("Run smt-mirror to create this catalog.");
+          }
+          # We do not return catalogs which do not exist on the harddisk
+          next;
         }
+        $log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
         
         $writer->emptyTag('repo',
                           'name' => $catalogName,

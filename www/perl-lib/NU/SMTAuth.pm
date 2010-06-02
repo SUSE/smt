@@ -33,7 +33,7 @@ sub handler {
 
     if($requiredAuth eq "none" && substr($requestedPath, -13) ne 'repoindex.xml')
     {
-        $log->info("No auth required");
+        $log->debug("No auth required");
         return Apache2::Const::OK;
     }
 
@@ -91,7 +91,7 @@ sub handler {
     
     if($requiredAuth eq "lazy" )
     {
-        $log->info("Access granted");
+        $log->debug("Access granted");
         return Apache2::Const::OK;
     }
     
@@ -104,16 +104,19 @@ sub handler {
     $log->debug("STATEMENT: $statement");
     my $cdata = $dbh->selectall_hashref($statement, "GUID");
 
-    $statement  = " select c.LOCALPATH, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
-    $statement .= sprintf(" where r.GUID=%s ", $dbh->quote($r->user()) );
-    $statement .= " and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y' ";
-    # add a filter by target architecture if it is defined
-    if (exists $cdata->{$r->user()}->{TARGET} && defined $cdata->{$r->user()}->{TARGET} &&
-        $cdata->{$r->user()}->{TARGET} ne "" )
+    my $target = $cdata->{$r->user()}->{'TARGET'} if ($cdata->{$r->user()}->{'TARGET'});
+    my $namespace = "";
+    if(exists $cdata->{$r->user()}->{NAMESPACE} && defined $cdata->{$r->user()}->{NAMESPACE})
     {
-        $statement .= sprintf(" and (c.TARGET=%s or c.TARGET IS NULL)", $dbh->quote( $cdata->{$r->user()}->{TARGET} ));
+      $namespace = $cdata->{$r->user()}->{NAMESPACE};
     }
+    
+    $statement = sprintf("SELECT PRODUCTID from Registration WHERE GUID=%s",$dbh->quote($r->user()));
     $log->debug("STATEMENT: $statement");
+    my $pidarr = $dbh->selectcol_arrayref($statement);
+    
+    my $catalogs = SMT::Utils::findCatalogs( $dbh, $target, $pidarr,
+                                             SMT::Utils::getGroupIDforGUID($dbh, $r->user()));
     
     # evil things like "dir/../../otherdir" are solved by apache.
     # we get here the resulting path
@@ -121,35 +124,28 @@ sub handler {
     $requestedPath = SMT::Utils::cleanPath("/", $requestedPath);
 
     $log->debug($r->user()." requests path '$requestedPath'");
-
-    my $namespace = "";
     
-    if(exists $cdata->{$r->user()}->{NAMESPACE} && defined $cdata->{$r->user()}->{NAMESPACE})
+    foreach my $cid ( keys %{$catalogs} )
     {
-        $namespace = $cdata->{$r->user()}->{NAMESPACE};
+      my $path = $catalogs->{$cid}->{'LOCALPATH'};
+      if($namespace ne "" && uc($catalogs->{$cid}->{STAGING}) eq "Y")
+      {
+        $path = SMT::Utils::cleanPath("/repo", $namespace, $path);
+      }
+      else
+      {
+        $path = SMT::Utils::cleanPath("/repo", $path);
+      }
+      
+      $log->debug($r->user()." has access to '$path'");
+      
+      if( index($requestedPath, $path) == 0 )
+      {
+        $log->debug("Access granted");
+        return Apache2::Const::OK;
+      }
     }
     
-    my $localRepoPath = $dbh->selectall_hashref($statement, 'LOCALPATH');
-    foreach my $path ( keys %{$localRepoPath} )
-    {
-        if($namespace ne "" && uc($localRepoPath->{$path}->{STAGING}) eq "Y")
-        {
-            $path = SMT::Utils::cleanPath("/repo", $namespace, $path);
-        }
-        else
-        {
-            $path = SMT::Utils::cleanPath("/repo", $path);
-        }
-        
-        $log->debug($r->user()." has access to '$path'");
-        
-        if( index($requestedPath, $path) == 0 )
-        {
-            $log->info("Access granted");
-            return Apache2::Const::OK;
-        }
-    }
-
     $log->error("FORBIDDEN: User: ".$r->user()." tried to access: $requestedPath");
     $r->note_basic_auth_failure;
     return Apache2::Const::FORBIDDEN;

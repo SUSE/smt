@@ -1079,6 +1079,177 @@ sub executeCommand
 }
 
 
+=item findCatalogs($dbh, $target, \@product_ids, $groupid)
+
+Return a hash reference with all repositories belong to the
+provided products in the specified group and target.
+
+Options:
+
+=over 4
+
+=item $dbh
+
+A database handle
+
+=item $target
+
+A string with the target (e.g. sle-11-x86_64)
+
+=item \@product_ids
+
+A array reference with the product ids.
+
+=item $groupid
+
+The id of the used group. Default is "1", the default group.
+
+=back
+
+Returns:
+
+Return a hash reference with all repositories belong to the
+provided products in the specified group and target.
+
+=over 4
+
+=back
+
+=cut
+
+sub findCatalogs
+{
+  my $dbh        = shift;
+  my $target     = shift;
+  my $productids = shift;
+  my $groupid    = shift || 1;
+  my $log = get_logger('apache.smt.registration');
+  
+  my $result = {};
+  my $statement ="";
+  
+  if(!$dbh)
+  {
+    $log->error("No database handle");
+    return $result;
+  }
+  if( !$productids || @{$productids} == 0)
+  {
+    # This should not happen
+    $log->error("No productids found");
+    return $result;
+  }
+  
+  $log->debug("TARGET: $target");
+  
+  foreach my $id (@{$productids})
+  {
+    # check if this product should not return any catalog (CATALOGID == NULL)
+    $statement = sprintf("SELECT PRODUCTDATAID from ProductCatalogs WHERE PRODUCTDATAID = %s AND GROUPID = %s AND CATALOGID IS NULL",
+                         $dbh->quote($id), $dbh->quote($groupid));
+    $log->debug("STATEMENT: $statement");
+    my $res = $dbh->selectcol_arrayref($statement);
+    
+    next if( @{$res} > 0); #skip this product
+    
+    $statement = sprintf("SELECT PRODUCTDATAID, CATALOGID, OPTIONAL from ProductCatalogs WHERE PRODUCTDATAID = %s AND GROUPID = %s",
+                         $dbh->quote($id), $dbh->quote($groupid));
+    $log->debug("STATEMENT: $statement");
+    $res = $dbh->selectall_hashref($statement, "CATALOGID");
+    
+    if( $groupid > 1 && {keys %{$res}} == 0)
+    {
+      # not found; fallback to default group 1
+      $statement = sprintf("SELECT PRODUCTDATAID, CATALOGID, OPTIONAL from ProductCatalogs WHERE PRODUCTDATAID = %s AND GROUPID = %s",
+                           $dbh->quote($id), $dbh->quote(1));
+      $log->debug("STATEMENT: $statement");
+      $res = $dbh->selectall_hashref($statement, "CATALOGID");
+    }
+    my @quoted_cids = ();
+    foreach my $cid (keys %{$res})
+    {
+      push @quoted_cids, $dbh->quote($cid);
+    }
+    
+    $statement =  "SELECT CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, CATALOGTYPE, STAGING, DOMIRROR from Catalogs ";
+    $statement .= "WHERE CATALOGID IN (".join(',', @quoted_cids).") and (TARGET IS NULL ";
+    if($target)
+    {
+      $statement .= sprintf("OR TARGET=%s", $dbh->quote($target));
+    }
+    $statement .= ")";
+    
+    $log->debug("STATEMENT: $statement");
+
+    my $res2 = $dbh->selectall_hashref($statement, "CATALOGID");
+    foreach my $cid (keys %{$res2})
+    {
+      foreach my $key (keys %{$res2->{$cid}})
+      {
+        $result->{$cid}->{$key} = $res2->{$cid}->{$key};
+      }
+      $result->{$cid}->{'OPTIONAL'} = $res->{$cid}->{'OPTIONAL'};
+    }
+  }
+  
+  $log->debug("RESULT: ".Data::Dumper->Dump([$result]));
+  
+  return $result;
+}
+
+sub getGroupIDforGUID
+{
+  my $dbh  = shift;
+  my $guid = shift;
+  my $log = get_logger();
+  my $groupid = 1;
+  
+  my $statement = sprintf("SELECT GROUPID from Clients where GUID = %s",
+                          $dbh->quote($guid));
+  $log->debug("STATEMENT: $statement");
+  eval
+  {
+    my $sqlres = $dbh->selectcol_arrayref($statement);
+    if(exists $sqlres->[0] && defined $sqlres->[0])
+    {
+      $groupid = int($sqlres->[0]);
+    }
+  };
+  if($@)
+  {
+    $log->error("DBERROR: ".$dbh->errstr);
+  }
+  return $groupid;
+}
+
+sub groupnameToID
+{
+  my $dbh       = shift;
+  my $groupname = shift;
+  my $log       = get_logger();
+  my $groupid   = 1;
+  
+  return $groupid if(!$groupname);
+  
+  my $statement = sprintf("SELECT ID from Groups where NAME = %s LIMIT 1",
+                          $dbh->quote($groupname));
+  $log->debug("STATEMENT: $statement");
+  eval
+  {
+    my $sqlres = $dbh->selectcol_arrayref($statement);
+    if(exists $sqlres->[0] && defined $sqlres->[0])
+    {
+      $groupid = int($sqlres->[0]);
+    }
+  };
+  if($@)
+  {
+    $log->error("DBERROR: ".$dbh->errstr);
+  }
+  return $groupid;
+}
+
+
 =back
 
 =head1 AUTHOR

@@ -186,7 +186,8 @@ sub register
     
     # get the catalogs
     
-    my $catalogs = SMT::Registration::findCatalogs($r, $dbh, $target, $pidarr);
+    my $catalogs = SMT::Utils::findCatalogs($dbh, $target, $pidarr,
+                                            SMT::Utils::getGroupIDforGUID($dbh, $regparam->guid()));
     
     # send new <zmdconfig>
     
@@ -891,10 +892,10 @@ sub insertRegistration
       $hostname = $regparam->param($key);
     }
     
-    my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                            $dbh->quote($regparam->guid()),
-                            $dbh->quote($key),
-                            $dbh->quote($regparam->param($key)));
+    $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($regparam->guid()),
+                         $dbh->quote($key),
+                         $dbh->quote($regparam->param($key)));
     $log->debug("STATEMENT: $statement");
     eval {
       $dbh->do($statement);
@@ -909,10 +910,10 @@ sub insertRegistration
   {
     my $ph = @{$regparam->products()}[$i];
     
-    my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                            $dbh->quote($regparam->guid()),
-                            $dbh->quote("product-name-".$list[$i]),
-                            $dbh->quote($ph->{name}));
+    $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($regparam->guid()),
+                         $dbh->quote("product-name-".$list[$i]),
+                         $dbh->quote($ph->{name}));
     $log->debug("STATEMENT: $statement");
     eval {
       $dbh->do($statement);
@@ -969,20 +970,30 @@ sub insertRegistration
       $hostname = $r->connection()->remote_ip();
     }
   }
+  #
+  # find the groupid where this client belong to
+  #
+  my $groupid = 1; # Default Group
   
+  if(defined $regparam->param("smtgroup"))
+  {
+    $groupid = SMT::Utils::groupnameToID($dbh, $regparam->param("smtgroup"));
+  }
   #
   # update Clients table
   #
   my $aff = 0;
   eval
   {
-    my $sth = $dbh->prepare("UPDATE Clients SET HOSTNAME=?, TARGET=?, LASTCONTACT=?, NAMESPACE=?, SECRET=? WHERE GUID=?");
+    # First try an update
+    my $sth = $dbh->prepare("UPDATE Clients SET HOSTNAME=?, TARGET=?, LASTCONTACT=?, NAMESPACE=?, SECRET=?, GROUPID=? WHERE GUID=?");
     $sth->bind_param(1, $hostname);
     $sth->bind_param(2, $target);
     $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
     $sth->bind_param(4, $namespace );
     $sth->bind_param(5, $regparam->param("secret"));
-    $sth->bind_param(6, $regparam->guid());
+    $sth->bind_param(6, $groupid);
+    $sth->bind_param(7, $regparam->guid());
     $aff = $sth->execute;
     
     $log->debug("STATEMENT: ".$sth->{Statement});
@@ -994,13 +1005,15 @@ sub insertRegistration
   }
   if ($aff == 0)
   {
-    # New registration; we need an insert
-    $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET) VALUES (%s, %s, %s, %s, %s)",
+    # Update failed (aff == affected rows == 0)
+    # It seems to be a new registration; we need an insert
+    $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET, GROUPID) VALUES (%s, %s, %s, %s, %s, %s)",
                          $dbh->quote($regparam->guid()),
                          $dbh->quote($hostname),
                          $dbh->quote($target),
                          $dbh->quote($namespace),
-                         $dbh->quote($regparam->param("secret")));
+                         $dbh->quote($regparam->param("secret")),
+                         $dbh->quote($groupid));
     $log->debug("STATEMENT: $statement");
     eval
     {
@@ -1034,7 +1047,7 @@ sub findTarget
   my $result  = undef;
   
   my $rtarget = $regparam->param("ostarget");
-  if(!defined $rtarget || $rtarget ne "")
+  if(!defined $rtarget || $rtarget eq "")
   {
     $rtarget = $regparam->param("ostarget-bak");
     return undef if( ! defined $rtarget );
@@ -1054,60 +1067,6 @@ sub findTarget
       $result = $target->[0];
     }
   }
-  return $result;
-}
-
-sub findCatalogs
-{
-  my $r      = shift;
-  my $dbh    = shift;
-  my $target = shift;
-  my $productids = shift;
-  my $log = get_logger('apache.smt.registration');
-  
-  
-  my $result = {};
-  my $statement ="";
-  
-  my @q_pids = ();
-  foreach my $id (@{$productids})
-  {
-    push @q_pids, $dbh->quote($id);
-  }
-  
-  
-  # get catalog values (only for the once we DOMIRROR)
-  
-  $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc WHERE ";
-  $statement .= "pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID ";
-  $statement .= "AND (c.TARGET IS NULL ";
-  if(defined $target && $target ne "")
-  {
-    $statement .= sprintf("OR c.TARGET=%s", $dbh->quote($target));
-  }
-  $statement .= ") AND ";
-  
-  if(@{$productids} > 1)
-  {
-    $statement .= "pc.PRODUCTDATAID IN (".join(",", @q_pids).") ";
-  }
-  elsif(@{$productids} == 1)
-  {
-    $statement .= "pc.PRODUCTDATAID = ".$q_pids[0]." ";
-  }
-  else
-  {
-    # This should not happen
-    $log->error("No productids found");
-    return $result;
-  }
-  
-  $log->debug("STATEMENT: $statement");
-  
-  $result = $dbh->selectall_hashref($statement, "CATALOGID");
-  
-  $log->debug("RESULT: ".Data::Dumper->Dump([$result]));
-  
   return $result;
 }
 
@@ -1134,6 +1093,7 @@ sub buildZmdConfig
   
   my $LocalNUUrl = $cfg->val('LOCAL', 'url');
   my $aliasChange = $cfg->val('NU', 'changeAlias');
+  my $LocalBasePath = $cfg->val("LOCAL", "MirrorTo", "/srv/www/htdocs");
   if(defined $aliasChange && $aliasChange eq "true")
   {
     $aliasChange = 1;
@@ -1158,6 +1118,8 @@ sub buildZmdConfig
   my $nuCatCount = 0;
   foreach my $cat (keys %{$catalogs})
   {
+    next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "Y");
+    
     $nuCatCount++ if(lc($catalogs->{$cat}->{CATALOGTYPE}) eq "nu");
   }
   
@@ -1187,12 +1149,16 @@ sub buildZmdConfig
     foreach my $cat (keys %{$catalogs})
     {
       next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
+      next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "Y"); # we do not include optional catalogs here
+      
       if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
         $catalogs->{$cat}->{LOCALPATH} eq "")
       {
         $log->error("Path for repository '$cat' does not exists. Skipping the repository.");
         next;
       }
+      
+      my $localpath = SMT::Utils::cleanPath($LocalBasePath, "/repo/");
       
       my $catalogURL = "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH};
       my $catalogName = $catalogs->{$cat}->{NAME};
@@ -1204,7 +1170,14 @@ sub buildZmdConfig
         {
           $catalogName .= ":$namespace";
         }
+        $localpath = SMT::Utils::cleanPath($localpath, "$namespace");
       }
+      $localpath = SMT::Utils::cleanPath( $localpath,
+                                          $catalogs->{$cat}->{LOCALPATH},
+                                          "repodata/repomd.xml");
+      # check, if the repo exists on the harddisk
+      # if not, skip it
+      next if( ! -e "$localpath" );
       
       $writer->startTag("param", 
                         "name" => "catalog",
@@ -1221,6 +1194,8 @@ sub buildZmdConfig
   foreach my $cat (keys %{$catalogs})
   {
     next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "zypp" && lc($catalogs->{$cat}->{CATALOGTYPE}) ne "yum");
+    next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "Y");
+    
     if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
       $catalogs->{$cat}->{LOCALPATH} eq "")
     {
@@ -1228,13 +1203,24 @@ sub buildZmdConfig
       next;
     }
     
+    my $localpath = SMT::Utils::cleanPath($LocalBasePath, "/repo/",
+                                          $catalogs->{$cat}->{LOCALPATH},
+                                          "repodata/repomd.xml");
     my $catalogURL = "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH};
     my $catalogName = $catalogs->{$cat}->{NAME};
     if($namespace ne "" && uc($catalogs->{$cat}->{STAGING}) eq "Y")
     {
       $catalogURL = "$LocalNUUrl/repo/$namespace/".$catalogs->{$cat}->{LOCALPATH};
       $catalogName = $catalogs->{$cat}->{NAME}.":$namespace";
+      $localpath = SMT::Utils::cleanPath($LocalBasePath, "/repo/",
+                                         $namespace,
+                                         $catalogs->{$cat}->{LOCALPATH},
+                                         "repodata/repomd.xml");
     }
+    # check, if the repo exists on the harddisk
+    # if not, skip it
+    next if( ! -e "$localpath" );
+    
     #
     # this does not work
     # NCCcredentials are not known in SLE10 and not in RES
