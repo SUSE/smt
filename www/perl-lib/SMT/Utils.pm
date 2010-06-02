@@ -1123,7 +1123,7 @@ sub findCatalogs
   my $target     = shift;
   my $productids = shift;
   my $groupid    = shift || 1;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my $result = {};
   my $statement ="";

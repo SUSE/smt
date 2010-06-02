@@ -30,7 +30,7 @@ sub new
   chomp($id);
   $self->{websessionid} = $id;
   
-  $self->{LOG} = get_logger('apache.smt.regparams');
+  $self->{LOG} = get_logger();
   
   bless($self);
 

@@ -10,7 +10,7 @@ use Log::Log4perl qw(get_logger :levels);
 
 sub handler {
     my $r = shift;
-    my $log = get_logger('apache.nu.smtauth');
+    my $log = get_logger();
     
     my $requiredAuth = "none";
     my $cfg = undef;

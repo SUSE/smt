@@ -16,7 +16,7 @@ sub new
   $self->{DBH}      = $opt{dbh}  || undef;
   $self->{YAML}     = $opt{yaml} || "";
   $self->{INDB}     = 0;
-  $self->{LOG}      = get_logger('apache.smt.regsession');
+  $self->{LOG}      = get_logger();
   bless($self);
 
   return $self;

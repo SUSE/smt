@@ -31,7 +31,7 @@ use CGI;
 
 sub handler {
     my $r = shift;
-    my $log = get_logger('apache.smt.registration');
+    my $log = get_logger();
     
     $r->content_type('text/xml');
 
@@ -105,7 +105,7 @@ sub register
 {
   my $r          = shift;
   my $hargs      = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my $namespace  = "";
   
@@ -215,7 +215,7 @@ sub listproducts
 {
   my $r     = shift;
   my $hargs = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   $log->debug("listproducts called");
   
@@ -262,7 +262,7 @@ sub listparams
 {
   my $r     = shift;
   my $hargs = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   $log->debug("listparams called");
   
@@ -300,7 +300,7 @@ sub applyInteractive
   my $r     = shift;
   my $hargs = shift;
   my $pargs = {};
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   $r->content_type('text/html');
   
@@ -446,7 +446,7 @@ sub interactive
 {
   my $r     = shift;
   my $hargs = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   $r->content_type('text/html');
   
@@ -729,7 +729,7 @@ sub getParamsForProducts
   my $r = shift;
   my $dbh = shift;
   my $productarray = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my @list = findColumnsForProducts($r, $dbh, $productarray, "PRODUCTDATAID");
   if( @list > 0 )
@@ -754,7 +754,7 @@ sub insertRegistration
   my $regparam  = shift;
   my $namespace = shift || '';
   my $target    = shift || '';
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my $cnt     = 0;
   my $existingpids = {};
@@ -1042,7 +1042,7 @@ sub findTarget
   my $r        = shift;
   my $dbh      = shift;
   my $regparam = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my $result  = undef;
   
@@ -1076,7 +1076,7 @@ sub buildZmdConfig
   my $guid       = shift;
   my $catalogs   = shift;
   my $namespace  = shift || '';
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my $cfg = undef;
   
@@ -1255,7 +1255,7 @@ sub findColumnsForProducts
   my $dbh    = shift;
   my $parray = shift;
   my $column = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my @list = ();
   
@@ -1328,7 +1328,7 @@ sub findColumnsForProducts
 #
 sub read_post {
   my $r = shift;
-  my $log = get_logger('apache.smt.registration');
+  my $log = get_logger();
   
   my $bb = APR::Brigade->new($r->pool,
                              $r->connection->bucket_alloc);

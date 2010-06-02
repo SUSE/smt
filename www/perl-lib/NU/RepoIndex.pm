@@ -22,7 +22,7 @@ sub getCatalogsByGUID($$)
     my $dbh  = shift;
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
-    my $log = get_logger('apache.nu.repoindex');
+    my $log = get_logger();
     
     # see if the client has a target architecture
     my $targetselect = sprintf("select TARGET from Clients c where c.GUID=%s", $dbh->quote($guid));
@@ -57,7 +57,7 @@ sub getUsernameFromRequest($)
 sub handler {
     my $r = shift;
     my $dbh = undef;
-    my $log = get_logger('apache.nu.repoindex');
+    my $log = get_logger();
     
     my $regtimestring = SMT::Utils::getDBTimestamp();
 
