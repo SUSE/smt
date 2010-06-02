@@ -381,6 +381,12 @@ sub applyInteractive
       $regparam->param($value->{param_name}, $pargs->{$value->{param_name}});
     }
   }
+  #
+  # FIXME: should be check, if the groupname exists?
+  #
+  # special handling for the group name
+  $regparam->param('smtgroup', $pargs->{'smtgroup'}) if( $pargs->{'smtgroup'} );
+  
   $regparam->wasInteractive(1);
   $regsession->updateSession( $regparam->yaml() );
   
@@ -639,7 +645,28 @@ EOF
     $html .= '<div style="clear:both">&nbsp;</div>'."\n";
     delete $hashref->{$key};
   }
-  
+
+  #
+  # FIXME: Add a bigger text to explain the group. Make clear
+  #        that this is a SMT special and nothing for the
+  #        Novell registration
+
+  $html .= '    <div class="dLeft">'."\n";
+  $html .= 'Assign to SMT Group';
+  $html .= '    </div><div class="dRight">'."\n";
+  $html .= '    <input type="text" name="smtgroup" size="40" maxlength="100" ';
+  if(exists $oldata->{'smtgroup'} && defined $oldata->{'smtgroup'})
+  {
+    $html .= 'value="'.$oldata->{'smtgroup'}->{VALUE}.'"/>'."\n";
+  }
+  else
+  {
+    $html .= 'value="Default Group"/>'."\n";
+  }
+  $html .= '  </div>'."\n";
+  $html .= '<div style="clear:both">&nbsp;</div>'."\n";
+
+
   $html .= '</div><div id="pageEnd"> <div class="dRight">'."\n";
   $html .= '<input type="submit" name="submit" value="Submit"/>'."\n";
   $html .= '</div></div></form>'."\n";
