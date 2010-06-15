@@ -31,8 +31,7 @@ public
   def self.find
     ret = YastService.Call("YaPI::SMT::Read")
     Rails.logger.info "Read SMT config: #{ret.inspect}"
-    return Smt.new
-#    return Smt.new(ret)
+    return Smt.new(ret)
   end
 
   def update
