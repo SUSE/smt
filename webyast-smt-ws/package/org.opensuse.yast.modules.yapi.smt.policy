@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+  "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
+
+<policyconfig>
+  <vendor>Novell, Inc.</vendor>
+  <vendor_url>http://www.novell.com</vendor_url>
+  
+  <action id="org.opensuse.yast.modules.yapi.smt.read">
+    <description>Read SMT configuration.</description>
+    <message>System policy prevents the Yast DBus service from reading SMT server sonfiguration.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep_session</allow_active>
+    </defaults>
+  </action>
+  
+  <action id="org.opensuse.yast.modules.yapi.smt.write">
+    <description>Write SMT server configuration.</description>
+    <message>System policy prevents the Yast DBus service from writing SMT server sonfiguration.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep_session</allow_active>
+    </defaults>
+  </action>
+
+</policyconfig> 
+

@@ -19,25 +19,43 @@
 # you may find current contact information at www.novell.com
 #++
 
-require 'yast_service'
+class SmtController < ApplicationController
+  
+  before_filter :login_required
 
-# Group model, YastModel based
-class Smt < BaseModel::Base
-  attr_accessor :smt
-  attr_accessor :status
+  def show
+    permission_check "org.opensuse.yast.modules.yapi.smt.read"
+    smt = Smt.find
 
-public
+    # check for nil
+    smt = {} if smt.nil?
 
-  def self.find
-    ret = YastService.Call("YaPI::SMT::Read")
-    Rails.logger.info "Read SMT config: #{ret.inspect}"
-    return Smt.new
-#    return Smt.new(ret)
+    respond_to do |format|
+      format.xml  { render :xml => smt.to_xml}
+      format.json { render :json => smt.to_json }
+    end
   end
 
   def update
-    Rails.logger.info "Writing SMT config: #{self.inspect}"
-    YastService.Call("YaPI::SMT::Write", {})
+    permission_check "org.opensuse.yast.modules.yapi.smt.write"
+    root = params["smt"]
+    if root == nil || root == {}
+      # TODO: error handling
+    end
+
+    smt = Smt.find
+    smt.load root
+    smt.save
+
+    respond_to do |format|
+      format.xml  { render :xml => smt.to_xml}
+      format.json { render :json => smt.to_json }
+    end
+  end
+
+  # see update
+  def create
+    update
   end
 
 end

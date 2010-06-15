@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 Novell, Inc.
+# Copyright (c) 2009-2010 Novell, Inc.
 # 
 # All Rights Reserved.
 # 
@@ -19,25 +19,18 @@
 # you may find current contact information at www.novell.com
 #++
 
-require 'yast_service'
-
-# Group model, YastModel based
-class Smt < BaseModel::Base
-  attr_accessor :smt
-  attr_accessor :status
-
-public
-
-  def self.find
-    ret = YastService.Call("YaPI::SMT::Read")
-    Rails.logger.info "Read SMT config: #{ret.inspect}"
-    return Smt.new
-#    return Smt.new(ret)
+class RailsParent
+  
+  def RailsParent.parent
+    parent = ENV["RAILS_PARENT"]
+    unless parent
+      parent = File.expand_path(File.join('..','..','..', 'webservice'), File.dirname(__FILE__))
+      unless File.directory?( parent || "" )
+	$stderr.puts "Nope: #{parent}\nPlease set RAILS_PARENT environment"
+	exit 1
+      end
+    end
+    parent
   end
-
-  def update
-    Rails.logger.info "Writing SMT config: #{self.inspect}"
-    YastService.Call("YaPI::SMT::Write", {})
-  end
-
+  
 end

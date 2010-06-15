@@ -1,0 +1,3 @@
+interface: org.opensuse.yast.modules.yapi.smt
+controller: smt
+singular: true
