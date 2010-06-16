@@ -40,4 +40,17 @@
 
   <div class='plugin-icon'><img src='/icons/yast-online_update.png'/> <%= _("SMT") %></div>
   <div class='plugin-content'>
+
+    <% form_for(:smt, @smt, :url => { :action => 'update' },
+      :html => { :method => :put, :id => 'smt_form' }
+    ) do |f| %>
+
+	  <div class="smt-content" style="padding-bottom: 10px">
+	    <p>
+	      <%= check_box_tag 'service_running', true, @smt.status, :disabled => disabled, :name => 'smt[status]' -%>
+	      <%= _("Enable SMT") %>
+	    </p>
+
+    <% end %>
+
   </div>
