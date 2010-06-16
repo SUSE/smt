@@ -38,9 +38,9 @@ public
     Rails.logger.info "Writing SMT config: #{self.inspect}"
 
     # do not pass nil via DBUS
-    ["LOCAL", "NCC", "DB"].each do |section|
-	@credentials[section].each do |key, value|
-	    @credentials[section][key] = "" if @credentials[section][key].nil?
+    @credentials.each do |section, v|
+	v.each do |key, value|
+	    v[key] = "" if value.nil?
 	end
     end
 
@@ -49,6 +49,7 @@ public
 	"credentials"	=> [ "a{sa{ss}}", @credentials]
     }
 
+    Rails.logger.info "args: #{args.inspect}"
     YastService.Call("YaPI::SMT::Write", args)
   end
 
