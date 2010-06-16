@@ -36,7 +36,7 @@ public
 
   def update
     Rails.logger.info "Writing SMT config: #{self.inspect}"
-    YastService.Call("YaPI::SMT::Write", {})
+    YastService.Call("YaPI::SMT::Write", { 'credentials' => @credentials, 'status' => @status })
   end
 
 end

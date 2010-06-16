@@ -3,8 +3,9 @@ package YaPI::SMT;
 use strict;
 use YaST::YCP qw(:LOGGING);
 use YaPI;
+use Data::Dumper;
 
-textdomain ("smt");
+#textdomain ("smt");
 
 # ------------------- imported modules
 YaST::YCP::Import ("SMTData");
@@ -73,6 +74,11 @@ BEGIN{$TYPEINFO{Write} = ["function",
 sub Write {
 
     my $ret	= 0;
+    my $self	= shift;
+    my $args	= shift;
+
+y2internal ("input data: ", Dumper ($args));
+
     return $ret;
 }
 
