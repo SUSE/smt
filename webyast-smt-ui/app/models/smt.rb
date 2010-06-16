@@ -22,4 +22,5 @@
 class Smt < ActiveResource::Base
   extend YastModel::Base
   model_interface :'org.opensuse.yast.modules.yapi.smt'
+  self.primary_key :credentials
 end

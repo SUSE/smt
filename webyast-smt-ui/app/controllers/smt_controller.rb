@@ -48,6 +48,7 @@ class SmtController < ApplicationController
   end
 
   def update
+    @smt = Smt.new(params[:smt]).save
     redirect_to :action => :index and return
   end
 

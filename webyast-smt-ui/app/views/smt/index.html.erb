@@ -28,6 +28,42 @@
     div#password-strength { width: 25em; margin-left: -2em }
   </style>
 
+  <%= javascript_include_tag "validation.js" %>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $("#smt_form").validate({
+        rules: {
+          smt_mirror_to: {
+            required:true
+          }
+        },
+        messages: {
+          smt_mirror_to: {
+            required: "<%= _("Hey dude, where is mirror path?") %>"
+          }
+        }
+      })
+      $("#mirror_to").keyup( function(){ $("#smt_form").valid();});
+      $("#smt_form").valid();
+    })
+  </script>
+   
+   <style type="text/css">   label.error { 
+      float:none; 
+      display:inline; 
+      font-weight:bold; 
+      color:#990000; 
+      padding-left:.5em; 
+      vertical-align:middle; 
+     } 
+     label.valid { 
+      background: url('../images/checked.gif') no-repeat; 
+      padding:0px 0px 0px 18px; 
+      vertical-align:middle; 
+      margin-left:5px; 
+     } 
+    </style>
+
 <% end %>
 
 <% disabled = !@permissions[:write] %>
@@ -50,6 +86,13 @@
 	      <%= check_box_tag 'service_running', true, @smt.status, :disabled => disabled, :name => 'smt[status]' -%>
 	      <%= _("Enable SMT") %>
 	    </p>
+            <p>
+              <%= label_tag :smt_mirror_to, _("Mirror To") %>
+              <%= text_field_tag :smt_mirror_to, @smt.credentials.LOCAL.MirrorTo, :disabled => disabled, :class => 'required', :name => 'smt[credentials][LOCAL][MirrorTo]'  %>
+            </p>
+            <p>
+              <%= submit_tag %>
+            </p>
 
     <% end %>
 
