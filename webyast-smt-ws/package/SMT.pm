@@ -37,6 +37,7 @@ sub Read {
 	"status"	=> 0
     };
 
+    SMTData->ReadFirstRun ();
     SMTData->ReadCredentials ();
 
     foreach my $entry ("NUUser", "NUPass", "NUUrl") {
@@ -77,8 +78,16 @@ sub Write {
     my $self	= shift;
     my $args	= shift;
 
-y2internal ("input data: ", Dumper ($args));
+    SMTData->ReadFirstRun ();
+    SMTData->ReadCredentials ();
 
+    foreach my $section ("LOCAL", "DB", "NCC") {
+	foreach my $key (keys %{$args->{"credentials"}{$section}}) {
+	    y2security ("key $key, section $section, value: ", $args->{"credentials"}{$section}{$key});
+	    SMTData->SetCredentials ("LOCAL", $key, $args->{"credentials"}{$section}{$key});
+	}
+    }
+    $ret	= SMTData->WriteCredentials ();
     return $ret;
 }
 

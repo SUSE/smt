@@ -36,7 +36,20 @@ public
 
   def update
     Rails.logger.info "Writing SMT config: #{self.inspect}"
-    YastService.Call("YaPI::SMT::Write", { 'credentials' => @credentials, 'status' => @status })
+
+    # do not pass nil via DBUS
+    ["LOCAL", "NCC", "DB"].each do |section|
+	@credentials[section].each do |key, value|
+	    @credentials[section][key] = "" if @credentials[section][key].nil?
+	end
+    end
+
+    args	= {
+	"status"	=> [ "b", @status ],
+	"credentials"	=> [ "a{sa{ss}}", @credentials]
+    }
+
+    YastService.Call("YaPI::SMT::Write", args)
   end
 
 end
