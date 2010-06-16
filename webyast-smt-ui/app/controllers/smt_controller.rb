@@ -58,7 +58,7 @@ class SmtController < ApplicationController
       flash[:error] = _("Error while saving SMT configuration.")
       logger.warn e.inspect
     end
-    redirect_to :action => :index and return
+    redirect_success
   end
 
 end

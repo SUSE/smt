@@ -35,15 +35,24 @@
         rules: {
           smt_mirror_to: {
             required:true
+          },
+          smt_url: {
+            required:true,
+            url:true
           }
         },
         messages: {
           smt_mirror_to: {
             required: "<%= _("Hey dude, where is mirror path?") %>"
+          },
+          smt_url: {
+            required: "<%= _("Hey dude, you need to give your SMT server URL") %>",
+            url: "<%= _("Common... that's not URL") %>"
           }
         }
       })
-      $("#mirror_to").keyup( function(){ $("#smt_form").valid();});
+      $("#smt_mirror_to").keyup( function(){ $("#smt_form").valid();});
+      $("#smt_url").keyup( function(){ $("#smt_form").valid();});
       $("#smt_form").valid();
     })
   </script>
@@ -82,16 +91,25 @@
     ) do |f| %>
 
 	  <div class="smt-content" style="padding-bottom: 10px">
-	    <p>
+	    <!-- <p>
 	      <%= check_box_tag 'service_running', true, @smt.status, :disabled => disabled, :name => 'smt[status]' -%>
 	      <%= _("Enable SMT") %>
 	    </p>
+            -->
+            <p>
+              <%= label_tag :smt_url, _("Your SMT Server URL") %>
+            </p>
+            <p>
+              <%= text_field_tag :smt_url, @smt.credentials.LOCAL.url, :disabled => disabled, :class=> 'required', :name => 'smt[credentials][LOCAL][url]'  %>
+            </p>
             <p>
               <%= label_tag :smt_mirror_to, _("Mirror To") %>
+            </p>
+            <p>
               <%= text_field_tag :smt_mirror_to, @smt.credentials.LOCAL.MirrorTo, :disabled => disabled, :class => 'required', :name => 'smt[credentials][LOCAL][MirrorTo]'  %>
             </p>
             <p>
-              <%= submit_tag %>
+              <%= form_send_buttons :onclick=>"Element.show('progress')" %>
             </p>
 
     <% end %>
