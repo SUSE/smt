@@ -24,7 +24,8 @@ class SmtController < ApplicationController
   before_filter :login_required
 
   def show
-    permission_check "org.opensuse.yast.modules.yapi.smt.read"
+    #permission_check "org.opensuse.yast.modules.yapi.smt.read"
+    yapi_perm_check 'smt.read'
     smt = Smt.find
 
     # check for nil
@@ -37,7 +38,8 @@ class SmtController < ApplicationController
   end
 
   def update
-    permission_check "org.opensuse.yast.modules.yapi.smt.write"
+    # permission_check "org.opensuse.yast.modules.yapi.smt.write"
+    yapi_perm_check 'smt.write'
     root = params["smt"]
     if root == nil || root == {}
       # TODO: error handling
