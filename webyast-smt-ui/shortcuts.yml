@@ -1,0 +1,7 @@
+main:
+  icon: '/icons/yast-online_update.png'
+  url: /smt
+  groups: [ System ]
+  tags: [ smt]
+  title: SMT Configuration
+  description: Configure the SMT server
