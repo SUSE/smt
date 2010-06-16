@@ -23,7 +23,7 @@ require 'yast_service'
 
 # Group model, YastModel based
 class Smt < BaseModel::Base
-  attr_accessor :smt
+  attr_accessor :credentials
   attr_accessor :status
 
 public
