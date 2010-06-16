@@ -48,7 +48,16 @@ class SmtController < ApplicationController
   end
 
   def update
-    @smt = Smt.new(params[:smt]).save
+    begin
+      @smt = Smt.new(params[:smt]).save
+      flash[:message] = _("SMT configuraton successfully written.")
+    rescue ActiveResource::ClientError => e
+      flash[:error] = YaST::ServiceResource.error(e)
+      logger.warn e.inspect
+    rescue ActiveResource::ServerError => e
+      flash[:error] = _("Error while saving SMT configuration.")
+      logger.warn e.inspect
+    end
     redirect_to :action => :index and return
   end
 
