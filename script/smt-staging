@@ -233,7 +233,6 @@ if (not defined $repo)
         if ( $reponameid =~ /^[0-9]+$/ &&
             int($reponameid) > 0 && int($reponameid) <= $count)
         {
-            my $id = 1;
             foreach my $r (keys %$repos)
             {
                 if ($repos->{$r}->{rownr} == int($reponameid))
@@ -242,7 +241,6 @@ if (not defined $repo)
                     $repoid = $r;
                     last;
                 }
-                $id++;
             }
         }
         else
