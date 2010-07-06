@@ -944,8 +944,8 @@ sub createUserAgent
     
     $ua->max_redirect(2);
 
-    # set timeout to the same value as the iChain timeout
-    $ua->timeout(130);
+    # set timeout to a higher value than the iChain timeout
+    $ua->timeout(300);
 
     my $cfg = getSMTConfig;
     my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', "LWP::UserAgent/$LWP::VERSION");
