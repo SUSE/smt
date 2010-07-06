@@ -749,17 +749,26 @@ sub setMirrorableCatalogs
                         if($redirects > 2)
                         {
                             $ret = 1;
-                            last
+			    printLog($opt{log}, "error", "Too many redirects.");
+                            last;
                         }
                         
                         my $newuri = $response->header("location");
                         
-                        #printLog($opt{log}, "debug", "Redirected to $newuri") if($opt{debug});
+                        printLog($opt{log}, "debug", "Redirected to $newuri") if($opt{debug});
                         $remote = URI->new($newuri);
                     }
                     elsif($response->is_success)
                     {
                         $ret = 0;
+                    }
+                    elsif($opt{debug})
+                    {
+                        my $saveuri = URI->new($remote);
+                        $saveuri->userinfo(undef);
+
+                        printLog($opt{log}, "debug", sprintf(__("Failed to download '%s': %s"),
+                                                  $saveuri->as_string(), $response->status_line));
                     }
                 } while($response->is_redirect);
             }
@@ -770,7 +779,7 @@ sub setMirrorableCatalogs
             if(defined $catTarget && $catTarget ne "")
             {
                 $statement .= sprintf("AND TARGET=%s", $dbh->quote($catTarget) );
-            }        
+            }
             
             my $sth = $dbh->do( $statement );
         }
