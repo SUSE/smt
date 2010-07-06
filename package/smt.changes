@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Tue Jul  6 09:54:10 CEST 2010 - mc@suse.de
+
+- increase timeout
+- insert the right value into the clients table 
+
+-------------------------------------------------------------------
+Mon Apr 26 16:12:02 CEST 2010 - mc@suse.de
+
+- add Conflicts with slms-registration (bnc#591847)
+
+-------------------------------------------------------------------
 Wed Mar 31 14:16:30 CEST 2010 - mc@suse.de
 
 - copy headers directoy while staging of YUM repositories

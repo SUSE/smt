@@ -46,6 +46,7 @@ Requires:       satsolver-tools perl-satsolver
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
+Conflicts:      slms-registration
 PreReq:         %fillup_prereq apache2 apache2-mod_perl pwdutils
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
