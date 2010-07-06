@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jul  6 10:40:43 CEST 2010 - mc@suse.de
+
+- fix disabling of not mirrorable repositories (bnc#619314) 
+
+-------------------------------------------------------------------
 Tue Jul  6 09:54:10 CEST 2010 - mc@suse.de
 
 - increase timeout
