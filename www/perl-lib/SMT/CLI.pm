@@ -598,7 +598,13 @@ sub setCatalogDoMirror
 
     $sql .= " where 1";
 
-    $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+    # allow enable mirroring only if the repository is mirrorable
+    # but disabling is allowed if the repository is not mirrorable
+    # See bnc#619314
+    if($opt{enabled})
+    {
+      $sql .= sprintf(" and Mirrorable=%s", $dbh->quote("Y"));
+    }
 
     if(exists $opt{name} && defined $opt{name} && $opt{name} ne "")
     {
