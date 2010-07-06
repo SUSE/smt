@@ -700,7 +700,7 @@ sub insertRegistration
                              $dbh->quote($hostname),
                              $dbh->quote($target),
                              $dbh->quote($namespace),
-                             $dbh->quote($regdata->{register}->{guid}));
+                             $dbh->quote($regdata->{register}->{secret}));
         $r->log->info("STATEMENT: $statement");
         eval
         {
