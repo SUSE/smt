@@ -11,14 +11,12 @@ use Apache2::Filter ();
 
 use APR::Brigade;
 
-
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::Access ();
 
 use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES :log);
 use Apache2::RequestUtil;
-
 
 use XML::Writer;
 
@@ -30,27 +28,84 @@ use DBI qw(:sql_types);
 use Data::Dumper;
 
 
-
 #
-# updateLastContact
+# the handler for requests to the jobs ressource
 #
-sub updateLastContact($$)
+sub jobs_handler($$)
 {
-    my $r = shift || return undef;
+    my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $path = sub_path($r);
+    # username already checked in handler
+    my $username = $r->user;
 
-    my $client = SMT::Client->new({ 'dbh' => $dbh });
-    return $client->updateLastContact($r->user);
+    # jobs (for authenticated client)
+    my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY jobs
+    my $reJobsNext = qr{^jobs/\@next$};       # get MY next job
+    my $reJobsId   = qr{^jobs/([\d]+)$};      # get job information (GET) or finish job (PUT)
+
+    # get a job request object
+    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
+
+    # map the requests to the functions
+    if    ( $r->method() =~ /^GET$/i )
+    {
+        if    ( $path =~ $reJobs )     { return $jobq->getJobList( $username, 1 );   }
+        elsif ( $path =~ $reJobsNext ) { return $jobq->getJob( $username, $jobq->getNextJobID($username, 0), 1)   }
+        elsif ( $path =~ $reJobsId )   { return $jobq->retrieveJob( $username, $1, 1 ) }
+        else
+        {
+            $r->log->error("GET request to unknown jobs interface: $path");
+            return undef;
+        }
+    }
+    elsif ( $r->method() =~ /^PUT$/i )
+    {
+        if ( $path =~ $reJobsId )
+        {
+            my $c = read_post($r);
+            return $jobq->finishJob($username, $c);
+        }
+        else { return undef; }
+    }
+    elsif ( $r->method() =~ /^POST$/i )
+    {
+        # This request type is not (yet) supported
+        # POSTing to the "jobs" interface (which is only used by smt-clients) means "creating a job"
+        # It may be implemented later for the "clients" interface (which is for administrator usage).
+        $r->log->error("POST request to the jobs interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^DELETE$/i )
+    {
+        # This request type is not (yet) supported
+        # DELETEing to the "jobs" interface (which is only used by smt-clients) means "deleting a job"
+        # It may be implemented later for the "clients" interface (which is for administrator usage).
+        $r->log->error("DELETE request to the jobs interface. This is not supported.");
+        return undef;
+    }
+    else
+    {
+        $r->log->error("Unknown request to the jobs interface.");
+        return undef;
+    }
+
+    return undef;
 }
 
 
 #
-# handle all GET requests
+# the handler for requests to the clients ressource
 #
-sub GEThandler($$)
+# Note: this interface is for administrative use only, and not officially supported
+#       it is not enabled by default, the admin needs to enable it manually
+#       it offers full read-only access to all client data, patchstatus information and the JobQueue
+#
+sub clients_handler($$)
 {
-    my $r = shift || return undef;
+    my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $path = sub_path($r);
     # username already checked in handler
     my $username = $r->user;
 
@@ -71,19 +126,18 @@ sub GEThandler($$)
         # password checked already in Auth handler
     }
 
-    my $client = SMT::Client->new({ 'dbh' => $dbh });
+    # if not authenticated as administrator this complete interface will not be available
+    unless ($RR)
+    {
+        $r->log_error("Authentication as administrator failed or administrative interface is disabled.");
+        return undef;
+    }
 
-    my $path = $r->path_info();
-    # crop the prefix and trailing slash -  '/=' rest service identifier, '/1' version number
-    # there is only version 1 so far
-    $path =~ s/^\/(=\/)?1\///;
-    $path =~ s/\/?$//;
+    # get a client request object
+    my $client = SMT::Client->new({ 'dbh' => $dbh }) || return undef;
+    # get a job request object
+    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
 
-
-    # jobs (per client)
-    my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY jobs
-    my $reJobsNext = qr{^jobs/\@next$};       # get MY next job
-    my $reJobsId   = qr{^jobs/([\d]+)$};      # get MY next job information
     # clients
     my $reClients           = qr{^clients(/?\@all)?$};                 # get list of all clients
     my $reClientsId         = qr{^clients/([\w]+)$};                   # get client information
@@ -96,146 +150,106 @@ sub GEThandler($$)
     my $reClientsIdPatchstatus  = qr{^clients/([\d\w]+)/patchstatus$}; # get patchstatus info for one client
     my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
 
-    # get a job request object
-    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
-
-    # jobs
-    if    ( $path =~ $reJobs )      { return $jobq->getJobList( $username, 1 );   }
-    elsif ( $path =~ $reJobsNext )  { return $jobq->getJob( $username, $jobq->getNextJobID($username, 0), 1)   }
-    elsif ( $path =~ $reJobsId )    { return $jobq->retrieveJob( $username, $1, 1 ) }
-    # clients
-    elsif ( $path =~ $reClients )
+    # map the requests to the functions
+    if    ( $r->method() =~ /^GET$/i )
     {
-        return undef unless ($RR);
-        return $client->getAllClientsInfoAsXML(); 
+        if    ( $path =~ $reClients )              { return $client->getAllClientsInfoAsXML(); }
+        elsif ( $path =~ $reClientsId )            { return $client->getClientsInfo({'GUID' => $1, 'asXML' => 'one', 'selectAll' => '' }); }
+        elsif ( $path =~ $reClientsAllJobs )       { return $jobq->getAllJobsInfoAsXML(); }
+        elsif ( $path =~ $reClientsIdJobs )        { return $jobq->getJobList( $1, 1 );   }
+        elsif ( $path =~ $reClientsIdJobsNext )    { return $jobq->getJob( $1, $jobq->getNextJobID($1, 0), 1); }
+        elsif ( $path =~ $reClientsIdJobsId )      { return $jobq->getJob( $1, $2, 1); }
+        elsif ( $path =~ $reClientsIdPatchstatus )
+        {
+            return $client->getClientsInfo( { 'GUID' => $1, 'ID' => '', 'PATCHSTATUS' => '', 'asXML' => 'one' } );
+        }
+        elsif ( $path =~ $reClientsAllPatchstatus )
+        {
+            return $client->getClientsInfo( { 'GUID' => '', 'ID' => '', 'PATCHSTATUS' => '', 'asXML' => '' } );
+        }
+        else
+        {
+            $r->log->error("GET request to unknown clients interface: $path");
+            return undef;
+        }
     }
-    elsif ( $path =~ $reClientsId )
+    elsif ( $r->method() =~ /^PUT$/i )
     {
-        return undef unless ($RR);
-        return $client->getClientsInfo({'GUID' => $1, 'asXML' => 'one', 'selectAll' => '' });
+        # This request type is not yet supported for the clients interface
+        # Maybe it will be implemented later to be a full REST ressource for the clients information and JobQueue
+        $r->log->error("PUT request to the clients interface. This is not supported.");
+        return undef;
     }
-    elsif ( $path =~ $reClientsAllJobs )
+    elsif ( $r->method() =~ /^POST$/i )
     {
-        return undef unless ($RR);
-        return $jobq->getAllJobsInfoAsXML();
+        # This request type is not yet supported for the clients interface
+        # Maybe it will be implemented later to be a full REST ressource for the clients information and JobQueue
+        $r->log->error("POST request to the clients interface. This is not supported.");
+        return undef;
     }
-    elsif ( $path =~ $reClientsIdJobs )
+    elsif ( $r->method() =~ /^DELETE$/i )
     {
-        return undef unless ($RR);
-        return $jobq->getJobList( $1, 1 );
-    }
-    elsif ( $path =~ $reClientsIdJobsNext )
-    {
-        return undef unless ($RR);
-        return $jobq->getJob( $1, $jobq->getNextJobID($1, 0), 1);
-    }
-    elsif ( $path =~ $reClientsIdJobsId )
-    {
-        return undef unless ($RR);
-        return $jobq->getJob( $1, $2, 1);
-    }
-    elsif ( $path =~ $reClientsIdPatchstatus )
-    {
-        return undef unless ($RR);
-        return $client->getClientsInfo( { 'GUID' => $1, 'ID' => '',
-                                          'PATCHSTATUS' => '', 'asXML' => 'one' } );
-    }
-    elsif ( $path =~ $reClientsAllPatchstatus )
-    {
-        return undef unless ($RR);
-        return $client->getClientsInfo( { 'GUID' => '', 'ID' => '',
-                                          'PATCHSTATUS' => '', 'asXML' => '' } );
+        # This request type is not yet supported for the clients interface
+        # Maybe it will be implemented later to be a full REST ressource for the clients information and JobQueue
+        $r->log->error("DELETE request to the clients interface. This is not supported.");
+        return undef;
     }
     else
     {
-        $r->log->error("Request to undefined REST handler ($path) with method GET");
+        $r->log->error("Unknown request to the clients interface.");
         return undef;
     }
-};
 
-
-sub POSThandler($$)
-{
-    # DISABLE REQUEST TYPE
     return undef;
-
-    # will be enabled when full REST support is implemented
-    # then creating jobs via REST will work
-
-    #my $r = shift;
-    #return undef unless defined $r;
 }
 
 
-
-sub PUThandler($$)
+#
+# the handler for requests to Janos ressource :)
+#
+sub janos_handler($$)
 {
-    my $r = shift;
+    my $r = shift || return undef;
     my $dbh = shift || return undef;
-    return undef unless defined $r;
+    my $path = sub_path($r);
 
-    # username already checked in handler
-    my $username = $r->user;
+    my $result = '';
 
-    my $path = $r->path_info();
-    $path =~ s/^\/(=\/)?1\///;
-    $path =~ s/\/?$//;
+    if    ( $r->method() =~ /^GET$/i )    { $result = "GET request";    }
+    elsif ( $r->method() =~ /^PUT$/i )    { $result = "PUT request";    }
+    elsif ( $r->method() =~ /^POST$/i )   { $result = "POST request";   }
+    elsif ( $r->method() =~ /^DELETE$/i ) { $result = "DELETE request"; }
+    else  { $result = "unknown request"; }
 
-    # currently only supports job update via PUT:/job/<id>
-    my $reJobsId   = qr{^jobs/([\d]+)$};
-
-    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh });
-
-    if ( $path =~ $reJobsId )
-    {
-        my $c = read_post($r);
-        return $jobq->finishJob($username, $c);
-    }
-    else
-    {
-        $r->log->error("Request to undefined REST handler ($path) with method PUT.");
-        return undef;
-    }
+    return "<just><some xml='snippet'>$result</just>";
 }
 
-
-sub DELETEhandler($$)
-{
-     # DISABLE REQUEST TYPE
-    return undef;
-    # will be enabled when full REST support is implemented
-    # then deleting jobs via REST will work 
-
-    #my $r = shift;
-    #return undef unless defined $r;
-}
-
-
-
-
+#
+# Apache Handler
+# this is the main function of this request handler
+#
 sub handler {
-    use Switch;
     my $r = shift;
     $r->log->info("REST service request");
+    my $path = sub_path($r);
+    my $res = undef;
 
     # try to connect to the database - else report server error
     my $dbh = undef;
-    if ( ! ($dbh=SMT::Utils::db_connect()) ) 
+    if ( ! ($dbh=SMT::Utils::db_connect()) )
     {
         $r->log->error("RESTService could not connect to database.");
-        return Apache2::Const::SERVER_ERROR; 
+        return Apache2::Const::SERVER_ERROR;
     }
-
-    my $res = undef;
 
     # all REST Services need authentication
     return Apache2::Const::AUTH_REQUIRED unless ( defined $r->user  &&  $r->user ne '' );
 
     my ($status, $password) = $r->get_basic_auth_pw;
     return $status unless $status == Apache2::Const::OK;
- 
-    my $updateLastContact = updateLastContact($r, $dbh);
-    if ( $updateLastContact )
+
+    my $update_last_contact = update_last_contact($r, $dbh);
+    if ( $update_last_contact )
     {
         $r->log->info(sprintf("Request from client (%s). Updated its last contact timestamp.", $r->user) );
     }
@@ -244,42 +258,37 @@ sub handler {
         $r->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.", $r->user) );
     }
 
-    switch( $r->method() )
-    {
-        case /^GET$/i     { $res = GEThandler( $r, $dbh ) }
-        case /^PUT$/i     { $res = PUThandler( $r, $dbh ) }
-        case /^POST$/i    { $res = POSThandler( $r, $dbh ) }
-        case /^DELETE$/i  { $res = DELETEhandler( $r, $dbh ) }
-        else
-        {
-            $r->log->error("Unknown request method in SMT rest service.");
-            return Apache2::Const::NOT_FOUND
-        }
-    }
+    my $JobsRequest    = qr{^jobs};    # no trailing slash
+    my $ClientsRequest = qr{^clients}; # no trailing slash
+    my $JanosRequest   = qr{^jano};    # jano: please define your path(s)
+
+    if    ( $path =~ $JobsRequest    ) {  $res = jobs_handler($r, $dbh);    }
+    elsif ( $path =~ $ClientsRequest ) {  $res = clients_handler($r, $dbh); }
+    elsif ( $path =~ $JanosRequest   ) {  $res = janos_handler($r, $dbh);   } # jano: and add them like this
 
     if (not defined $res)
     {
-        # errors are logged in method handlers
+        # errors are logged in each handler
+        # returning undef from a handler is allowed, this will result in a 404 response, just as if no handler was defined for the request
         return Apache2::Const::NOT_FOUND;
     }
     else
     {
         $r->content_type('text/xml');
-        # $r->content_type('text/plain');
+        # $r->content_type('text/plain'); # could be enabled for testing
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $r->err_headers_out->add('Pragma' => "no-cache");
 
         print $res;
     }
 
-
-    # output some data for testing
+    # for testing only!! output some informative data about the request
     if (0) {
         my $writer = new XML::Writer(NEWLINES => 0);
         $writer->xmlDecl("UTF-8");
 
-        $writer->startTag("jobs4smt");
-        $writer->emptyTag('onejob',
+        $writer->startTag('testoutput');
+        $writer->emptyTag('something',
                           'id'   =>  42,
                           'method'   => $r->method(),
                           'pathinfo' => $r->path_info(),
@@ -290,16 +299,32 @@ sub handler {
         $writer->startTag('resultdata');
         $writer->characters("$res");
         $writer->endTag('resultdata');
-        $writer->endTag("jobs4smt");
+        $writer->endTag('testoutput');
         $writer->end();
     }
 
+    # return a 200 response
     return Apache2::Const::OK;
 }
 
 
+#
+# get the proper sub-path info part
+#  cropps the prefix of the path: "/=/1/"
+#
+sub sub_path($)
+{
+    my $r = shift || return '';
 
+    # get the path_info
+    my $path = $r->path_info();
+    # crop the prefix: '/=' rest service identifier, '/1' version number (currently there is only 1)
+    $path =~ s/^\/(=\/)?1\///;
+    # crop the trailing slash
+    $path =~ s/\/?$//;
 
+    return $path;
+}
 
 
 #
@@ -308,8 +333,7 @@ sub handler {
 sub read_post {
     my $r = shift;
 
-    my $bb = APR::Brigade->new($r->pool,
-                               $r->connection->bucket_alloc);
+    my $bb = APR::Brigade->new($r->pool, $r->connection->bucket_alloc);
 
     my $data = '';
     my $seen_eos = 0;
@@ -323,25 +347,28 @@ sub read_post {
                 last;
             }
 
-            if ($b->read(my $buf)) {
-                $data .= $buf;
-            }
-
+            if ($b->read(my $buf)) { $data .= $buf; }
             $b->remove; # optimization to reuse memory
         }
-
     } while (!$seen_eos);
 
     $bb->destroy;
-
     $r->log->info("Got content: $data");
-
     return $data;
 }
 
 
+#
+# update_last_contact
+#
+sub update_last_contact($$)
+{
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
 
-
+    my $client = SMT::Client->new({ 'dbh' => $dbh });
+    return $client->updateLastContact($r->user);
+}
 
 
 1;
