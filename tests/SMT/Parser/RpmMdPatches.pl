@@ -5,7 +5,7 @@ BEGIN {
 }
 
 use strict;
-use Test::Simple tests => 6;
+use Test::Simple tests => 11;
 use Cwd;
 #use File::Temp;
 
@@ -47,8 +47,36 @@ ok (
     $patches->{'audacity-523'}->{title} eq 'audacity security update' &&
     $patches->{'audacity-523'}->{description} eq 'Specially crafted GRO files could cause a stack based
 buffer in audacity (CVE-2009-0490).
-'
+' &&
+    $patches->{'audacity-523'}->{date} == 1234447476 &&
+    $patches->{'audacity-523'}->{targetrel} eq 'openSUSE 11.1'
 );
+
+ok (defined $patches->{'audacity-523'} &&
+    $patches->{'audacity-523'}->{refs}->[0]->{id} == 474258 &&
+    $patches->{'audacity-523'}->{refs}->[0]->{type} eq 'bugzilla' &&
+    $patches->{'audacity-523'}->{refs}->[0]->{href} eq 'https://bugzilla.novell.com/show_bug.cgi?id=474258',
+    'audacity-523 should refer to BNC #474258');
+
+print Dumper($patches->{'audacity-523'});
+
+ok (defined $patches->{'audacity-523'} &&
+    scalar @{$patches->{'audacity-523'}->{pkgs}} eq 3,
+    'audacity-523 should contain 3 packages');
+
+if (defined $patches->{'audacity-523'})
+{
+    foreach my $pkg (@{$patches->{'audacity-523'}->{pkgs}})
+    {
+      ok ($pkg->{name} eq 'audacity' &&
+          $pkg->{ver} eq '1.3.5' &&
+          $pkg->{rel} eq '49.12.1' &&
+          $pkg->{arch} &&
+          $pkg->{loc} eq $pkg->{name}.'-'.$pkg->{ver}.'-'.$pkg->{rel}.'.'.$pkg->{arch}.'.rpm',
+          'individual patch package data test');
+    }
+}
+
 
 my $filtered = $parser->filtered();
 ok ((keys %$filtered) == 2);

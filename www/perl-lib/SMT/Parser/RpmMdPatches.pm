@@ -21,7 +21,8 @@ updateinfo.xml (RPMMD) files and patches.xml with patch-*.xml (SUSE extension
 to RPMMD used on openSUSE 10.x and SLE 10).
 
 It returns a hash with patchid ("name-version") as key and subkeys
-I<name>, I<version>, I<title>, I<description>, and I<type>.
+I<name>, I<version>, I<title>, I<description>, I<type>, I<date>. I<targetrel>,
+I<refs>, I<pkgs>
 
 =head1 METHODS
 
@@ -260,8 +261,11 @@ sub handle_start_tag
         $self->{CURRENT}->{PATCHTYPE} = "";
         $self->{CURRENT}->{PATCHTITLE} = "";
         $self->{CURRENT}->{PATCHDESCR} = "";
+        $self->{CURRENT}->{PATCHDATE} = "";
+        $self->{CURRENT}->{PATCHTARGET} = "";
+        $self->{CURRENT}->{PATCHREFS} = [];
     }
-    
+
     if (lc($element) eq "updates")
     {
         # write out the original XML string read until now, the rest will be
@@ -275,6 +279,7 @@ sub handle_start_tag
     elsif ( lc($element) eq "patch" || lc($element) eq "data" )
     {
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
+        $self->{CURRENT}->{PATCHDATE} = $attrs{timestamp};
     }
     elsif ( lc($element) eq "update" )
     {
@@ -291,6 +296,10 @@ sub handle_start_tag
     {
         $self->{CURRENT}->{SUBELEMENT} = lc($element);
     }
+    elsif ( lc($element) eq "issued" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
+    {
+        $self->{CURRENT}->{PATCHDATE} = $attrs{date};
+    }
     elsif ( lc($element) eq "title" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
     {
         $self->{CURRENT}->{SUBELEMENT} = lc($element);
@@ -298,6 +307,14 @@ sub handle_start_tag
     elsif ( lc($element) eq "description" && ($self->{CURRENT}->{MAINELEMENT} eq "update" || $self->{CURRENT}->{MAINELEMENT} eq "patch") )
     {
         $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "release" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
+    {
+        $self->{CURRENT}->{SUBELEMENT} = lc($element);
+    }
+    elsif ( lc($element) eq "reference" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
+    {
+        push @{$self->{CURRENT}->{PATCHREFS}}, \%attrs;
     }
     elsif ( lc($element) eq "yum:name" && $self->{CURRENT}->{MAINELEMENT} eq "patch" )
     {
@@ -324,14 +341,11 @@ sub handle_start_tag
         push @{$self->{STACK}}, $self->{CURRENT}->{MAINELEMENT};
         $self->{CURRENT}->{MAINELEMENT} = 'package';
         $self->{CURRENT}->{SUBELEMENT} = undef;
-        if ($self->{SAVE_PACKAGES})
-        {
-            $self->{CURRENT}->{PKGNAME} = $attrs{name};
-            $self->{CURRENT}->{PKGEPO} = $attrs{epoch};
-            $self->{CURRENT}->{PKGVER} = $attrs{version};
-            $self->{CURRENT}->{PKGREL} = $attrs{release};
-            $self->{CURRENT}->{PKGARCH} = $attrs{arch};
-        }
+        $self->{CURRENT}->{PKGNAME} = $attrs{name};
+        $self->{CURRENT}->{PKGEPO} = $attrs{epoch};
+        $self->{CURRENT}->{PKGVER} = $attrs{version};
+        $self->{CURRENT}->{PKGREL} = $attrs{release};
+        $self->{CURRENT}->{PKGARCH} = $attrs{arch};
     }
 }
 
@@ -373,6 +387,10 @@ sub handle_char_tag
         {
             $self->{CURRENT}->{PATCHID} .= $string;
         }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq 'release')
+        {
+            $self->{CURRENT}->{PATCHTARGET} .= $string;
+        }
     }
 }
 
@@ -390,21 +408,18 @@ sub handle_end_tag
         $self->{CURRENT}->{ORIGXML} .= $line; 
     }
 
-    if (exists $self->{CURRENT}->{MAINELEMENT} && defined $self->{CURRENT}->{MAINELEMENT} &&
+    if (defined $self->{CURRENT}->{MAINELEMENT} &&
            lc($element) eq $self->{CURRENT}->{MAINELEMENT} )
     {
         if ($self->{CURRENT}->{MAINELEMENT} eq 'package')
         {
-            if ($self->{SAVE_PACKAGES})
-            {
-                my $pkg = {};
-                $pkg->{name} = $self->{CURRENT}->{PKGNAME}; 
-                $pkg->{epo}  = $self->{CURRENT}->{PKGEPO}; 
-                $pkg->{ver}  = $self->{CURRENT}->{PKGVER}; 
-                $pkg->{rel}  = $self->{CURRENT}->{PKGREL}; 
-                $pkg->{arch} = $self->{CURRENT}->{PKGARCH}; 
-                push @{$self->{CURRENT}->{PACKAGES}}, $pkg;
-            }
+            my $pkg = {};
+            $pkg->{name} = $self->{CURRENT}->{PKGNAME}; 
+            $pkg->{epo}  = $self->{CURRENT}->{PKGEPO}; 
+            $pkg->{ver}  = $self->{CURRENT}->{PKGVER}; 
+            $pkg->{rel}  = $self->{CURRENT}->{PKGREL}; 
+            $pkg->{arch} = $self->{CURRENT}->{PKGARCH}; 
+            push @{$self->{CURRENT}->{PACKAGES}}, $pkg;
             $self->{CURRENT}->{MAINELEMENT} = pop @{$self->{STACK}}; 
         }
 
@@ -419,6 +434,10 @@ sub handle_end_tag
             $self->{PATCHES}->{$str}->{type} = $self->{CURRENT}->{PATCHTYPE};
             $self->{PATCHES}->{$str}->{title} = $self->{CURRENT}->{PATCHTITLE};
             $self->{PATCHES}->{$str}->{description} = $self->{CURRENT}->{PATCHDESCR};
+            $self->{PATCHES}->{$str}->{date} = $self->{CURRENT}->{PATCHDATE};
+            $self->{PATCHES}->{$str}->{targetrel} = $self->{CURRENT}->{PATCHTARGET};
+            $self->{PATCHES}->{$str}->{refs} = $self->{CURRENT}->{PATCHREFS};
+            $self->{PATCHES}->{$str}->{pkgs} = $self->{CURRENT}->{PACKAGES};
 
             # remove the patch if it matches current filter
             if (defined $self->{FILTER} && $self->{FILTER}->matches($self->{PATCHES}->{$str}))
@@ -444,6 +463,9 @@ sub handle_end_tag
             $self->{CURRENT}->{PATCHTYPE} = "";
             $self->{CURRENT}->{PATCHTITLE} = "";
             $self->{CURRENT}->{PATCHDESCR} = "";
+            $self->{CURRENT}->{PATCHDATE} = "";
+            $self->{CURRENT}->{PATCHTARGET} = "";
+            $self->{CURRENT}->{PATCHREFS} = [];
             $self->{CURRENT}->{ORIGXML} = "";
         }
 
