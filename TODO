@@ -1,3 +1,16 @@
+TODO (SMT11SP1):
+
+- enable support for 307 redirects in smt-client and test this
+  NCC will rely on this functionality, as they have to redirect the 
+  requests to a system, that can handle REST requests  (to be done by jdsn)
+  Note for jdsn:
+    push @{ $ua->requests_redirectable }, 'PUT';
+    push @{ $ua->requests_redirectable }, 'POST';
+  Also raise redirect limit from 2 to default of 7.
+  
+  
+
+
 TODO (SMT11):
 =============================
 
