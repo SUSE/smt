@@ -58,7 +58,7 @@ ok (defined $patches->{'audacity-523'} &&
     $patches->{'audacity-523'}->{refs}->[0]->{href} eq 'https://bugzilla.novell.com/show_bug.cgi?id=474258',
     'audacity-523 should refer to BNC #474258');
 
-print Dumper($patches->{'audacity-523'});
+# print Dumper($patches->{'audacity-523'});
 
 ok (defined $patches->{'audacity-523'} &&
     scalar @{$patches->{'audacity-523'}->{pkgs}} eq 3,
@@ -71,8 +71,7 @@ if (defined $patches->{'audacity-523'})
       ok ($pkg->{name} eq 'audacity' &&
           $pkg->{ver} eq '1.3.5' &&
           $pkg->{rel} eq '49.12.1' &&
-          $pkg->{arch} &&
-          $pkg->{loc} eq $pkg->{name}.'-'.$pkg->{ver}.'-'.$pkg->{rel}.'.'.$pkg->{arch}.'.rpm',
+          $pkg->{arch},
           'individual patch package data test');
     }
 }

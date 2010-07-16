@@ -240,6 +240,7 @@ sub handle_start_tag
 {
     my $self = shift;
     my( $expat, $element, %attrs ) = @_;
+    my $lcelement = lc($element);
 
     # ask the expat object about our position
     # my $ln = $expat->current_line;
@@ -253,8 +254,8 @@ sub handle_start_tag
 
     if(! exists $self->{CURRENT}->{MAINELEMENT})
     {
-        $self->{CURRENT}->{MAINELEMENT} = undef;
-        $self->{CURRENT}->{SUBELEMENT} = undef;
+        $self->{CURRENT}->{MAINELEMENT} = '';
+        $self->{CURRENT}->{SUBELEMENT} = '';
         $self->{CURRENT}->{LOCATION} = "";
         $self->{CURRENT}->{PATCHID} = "";
         $self->{CURRENT}->{PATCHVER} = "";
@@ -266,7 +267,7 @@ sub handle_start_tag
         $self->{CURRENT}->{PATCHREFS} = [];
     }
 
-    if (lc($element) eq "updates")
+    if ($lcelement eq "updates")
     {
         # write out the original XML string read until now, the rest will be
         # writen patch by patch (<update> element)
@@ -276,7 +277,7 @@ sub handle_start_tag
             $self->{CURRENT}->{ORIGXML} = "";
         }
     }
-    elsif ( lc($element) eq "patch" || lc($element) eq "data" )
+    if ( $lcelement eq "patch" || $lcelement eq "data" )
     {
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
         $self->{CURRENT}->{PATCHDATE} = $attrs{timestamp};
@@ -335,17 +336,40 @@ sub handle_start_tag
     {
         $self->{CURRENT}->{LOCATION} = $attrs{href};
     }
-    # updateinfo.xml's <package>
-    elsif ( lc($element) eq 'package' )
+    elsif ($lcelement eq 'package')
     {
-        push @{$self->{STACK}}, $self->{CURRENT}->{MAINELEMENT};
-        $self->{CURRENT}->{MAINELEMENT} = 'package';
-        $self->{CURRENT}->{SUBELEMENT} = undef;
-        $self->{CURRENT}->{PKGNAME} = $attrs{name};
-        $self->{CURRENT}->{PKGEPO} = $attrs{epoch};
-        $self->{CURRENT}->{PKGVER} = $attrs{version};
-        $self->{CURRENT}->{PKGREL} = $attrs{release};
-        $self->{CURRENT}->{PKGARCH} = $attrs{arch};
+        # updateinfo.xml's <package>
+        if ($self->{CURRENT}->{MAINELEMENT} eq 'update')
+        {
+            push @{$self->{STACK}}, $self->{CURRENT}->{MAINELEMENT};
+            $self->{CURRENT}->{MAINELEMENT} = 'package';
+            $self->{CURRENT}->{SUBELEMENT} = '';
+            $self->{CURRENT}->{PKGNAME} = $attrs{name};
+            $self->{CURRENT}->{PKGEPO} = $attrs{epoch};
+            $self->{CURRENT}->{PKGVER} = $attrs{version};
+            $self->{CURRENT}->{PKGREL} = $attrs{release};
+            $self->{CURRENT}->{PKGARCH} = $attrs{arch};
+        }
+        # patch-*.xml's /patch/atom/package
+        elsif ($self->{CURRENT}->{MAINELEMENT} eq 'patch')
+        {
+            push @{$self->{STACK}}, $self->{CURRENT}->{MAINELEMENT};
+            $self->{CURRENT}->{MAINELEMENT} = 'package';
+            $self->{CURRENT}->{SUBELEMENT} = '';
+        }
+    }
+    elsif ($self->{CURRENT}->{MAINELEMENT} eq 'package')
+    {
+        if ($lcelement eq 'name' || $lcelement eq 'arch')
+        {
+            $self->{CURRENT}->{SUBELEMENT} = $lcelement;
+        }
+        elsif ($lcelement eq 'version')
+        {
+            $self->{CURRENT}->{PKGEPO} = $attrs{epoch};
+            $self->{CURRENT}->{PKGVER} = $attrs{ver};
+            $self->{CURRENT}->{PKGREL} = $attrs{rel};
+        }
     }
 }
 
@@ -391,6 +415,17 @@ sub handle_char_tag
         {
             $self->{CURRENT}->{PATCHTARGET} .= $string;
         }
+        elsif ($self->{CURRENT}->{MAINELEMENT} eq 'package')
+        {
+            if ($self->{CURRENT}->{SUBELEMENT} eq 'name')
+            {
+                $self->{CURRENT}->{PKGNAME} .= $string;
+            }
+            elsif ($self->{CURRENT}->{SUBELEMENT} eq 'arch')
+            {
+                $self->{CURRENT}->{PKGARCH} .= $string;
+            }
+        }
     }
 }
 
@@ -420,7 +455,12 @@ sub handle_end_tag
             $pkg->{rel}  = $self->{CURRENT}->{PKGREL}; 
             $pkg->{arch} = $self->{CURRENT}->{PKGARCH}; 
             push @{$self->{CURRENT}->{PACKAGES}}, $pkg;
-            $self->{CURRENT}->{MAINELEMENT} = pop @{$self->{STACK}}; 
+            $self->{CURRENT}->{MAINELEMENT} = pop @{$self->{STACK}} if (@{$self->{STACK}}); 
+            $self->{CURRENT}->{PKGNAME} = ''; 
+            $self->{CURRENT}->{PKGEPO} = ''; 
+            $self->{CURRENT}->{PKGVER} = ''; 
+            $self->{CURRENT}->{PKGREL} = ''; 
+            $self->{CURRENT}->{PKGARCH} = ''; 
         }
 
         elsif (($self->{CURRENT}->{MAINELEMENT} eq 'update' || $self->{CURRENT}->{MAINELEMENT} eq 'patch') &&
