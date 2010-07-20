@@ -24,6 +24,7 @@ use SMT::Utils;
 use SMT::JobQueue;
 use SMT::Job;
 use SMT::Client;
+use SMT::Product;
 use DBI qw(:sql_types);
 use Data::Dumper;
 
@@ -205,9 +206,40 @@ sub clients_handler($$)
 
 
 #
-# the handler for requests to Janos ressource :)
+# the handler for requests to products resource
 #
-sub janos_handler($$)
+sub products_handler($$)
+{
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
+
+    if ( $r->method() =~ /^GET$/i )
+    {
+        return SMT::Product::getAllAsXML $dbh;
+    }
+    elsif ( $r->method() =~ /^PUT$/i )
+    {
+        $r->log->error("PUT request to the products interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^POST$/i )
+    {
+        $r->log->error("POST request to the products interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^DELETE$/i )
+    {
+        $r->log->error("DELETE request to the products interface. This is not supported.");
+        return undef;
+    }
+    else
+    {
+        $r->log->error("Unknown request to the products interface.");
+        return undef;
+    }
+}
+
+sub product_handler($$)
 {
     my $r = shift || return undef;
     my $dbh = shift || return undef;
@@ -215,13 +247,16 @@ sub janos_handler($$)
 
     my $result = '';
 
-    if    ( $r->method() =~ /^GET$/i )    { $result = "GET request";    }
+    if    ( $r->method() =~ /^GET$/i )
+    {
+        $result = "GET request";
+    }
     elsif ( $r->method() =~ /^PUT$/i )    { $result = "PUT request";    }
     elsif ( $r->method() =~ /^POST$/i )   { $result = "POST request";   }
     elsif ( $r->method() =~ /^DELETE$/i ) { $result = "DELETE request"; }
     else  { $result = "unknown request"; }
 
-    return "<just><some xml='snippet'>$result</just>";
+    return $result;
 }
 
 #
@@ -260,11 +295,13 @@ sub handler {
 
     my $JobsRequest    = qr{^jobs};    # no trailing slash
     my $ClientsRequest = qr{^clients}; # no trailing slash
-    my $JanosRequest   = qr{^jano};    # jano: please define your path(s)
+    my $ProductsRequest = qr{^products$};  # all products
+    my $ProductRequest  = qr{^product/\d+$}; # specific product
 
     if    ( $path =~ $JobsRequest    ) {  $res = jobs_handler($r, $dbh);    }
     elsif ( $path =~ $ClientsRequest ) {  $res = clients_handler($r, $dbh); }
-    elsif ( $path =~ $JanosRequest   ) {  $res = janos_handler($r, $dbh);   } # jano: and add them like this
+    elsif ( $path =~ $ProductsRequest   ) {  $res = products_handler($r, $dbh);   }
+    elsif ( $path =~ $ProductRequest   ) {  $res = product_handler($r, $dbh);   }
 
     if (not defined $res)
     {
