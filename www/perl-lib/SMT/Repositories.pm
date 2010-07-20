@@ -3,6 +3,8 @@ package SMT::Repositories;
 
 use strict;
 use warnings;
+use XML::Simple;
+use DBI qw(:sql_types);
 
 use SMT::Utils;
 use SMT::Mirror::Utils;
@@ -770,6 +772,34 @@ sub getRepositoryDetails ($)
     return $ret;
 }
 
+=item getProductReposAsXML($dbh, $productid)
+Returns XML for /products/$productid/repos REST GET request.
+=cut
+
+sub getProductReposAsXML
+{
+    my ($dbh, $productid) = @_;
+    
+    my $sql = 'select c.* from Catalogs as c, ProductCatalogs as pc'
+        . ' where c.catalogid = pc.catalogid and productdataid = ?;';
+    my $sth = $dbh->prepare($sql);
+    $sth->bind_param(1, $productid, SQL_INTEGER);
+    $sth->execute();
+
+    my $data = { repo => []};
+    while (my $p = $sth->fetchrow_hashref())
+    {
+        # <repo id="%s" name="%s" target"%s"/>
+        push @{$data->{repo}}, {
+            id => $p->{ID},
+            name => $p->{NAME},
+            target => $p->{TARGET},
+            };
+    }
+    return XMLout($data,
+        rootname => 'repos',
+        xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
+}
 
 =back
 

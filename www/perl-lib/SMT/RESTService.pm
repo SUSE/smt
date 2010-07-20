@@ -25,6 +25,7 @@ use SMT::JobQueue;
 use SMT::Job;
 use SMT::Client;
 use SMT::Product;
+use SMT::Repositories;
 use DBI qw(:sql_types);
 use Data::Dumper;
 
@@ -280,6 +281,45 @@ sub product_handler($$)
     return undef;
 }
 
+
+sub product_repos_handler($$)
+{
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
+    my $path = sub_path($r);
+
+    $path =~ qr{^product/(\d+)/repos$}; # get specific product id
+    my $productid = $1;
+
+    if    ( $r->method() =~ /^GET$/i )
+    {
+        return SMT::Repositories::getProductReposAsXML $dbh, $productid;
+    }
+    elsif ( $r->method() =~ /^PUT$/i )
+    {
+        $r->log->error("PUT request to the product/\$pid/repos interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^POST$/i )
+    {
+        $r->log->error("POST request to the product/\$pid/repos interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^DELETE$/i )
+    {
+        $r->log->error("DELETE request to the product/\$pid/repos interface. This is not supported.");
+        return undef;
+    }
+    else
+    {
+        $r->log->error("Unknown request to the product/\$pid/repos interface.");
+        return undef;
+    }
+
+    return undef;
+}
+
+
 #
 # Apache Handler
 # this is the main function of this request handler
@@ -318,11 +358,13 @@ sub handler {
     my $ClientsRequest = qr{^clients}; # no trailing slash
     my $ProductsRequest = qr{^products$};  # all products
     my $ProductRequest  = qr{^product/\d+$}; # specific product
+    my $ProductReposRequest = qr{^product/\d+/repos$}; # product's repos
 
-    if    ( $path =~ $JobsRequest    ) {  $res = jobs_handler($r, $dbh);    }
-    elsif ( $path =~ $ClientsRequest ) {  $res = clients_handler($r, $dbh); }
-    elsif ( $path =~ $ProductsRequest   ) {  $res = products_handler($r, $dbh);   }
-    elsif ( $path =~ $ProductRequest   ) {  $res = product_handler($r, $dbh);   }
+    if    ( $path =~ $JobsRequest           ) {  $res = jobs_handler($r, $dbh);          }
+    elsif ( $path =~ $ClientsRequest        ) {  $res = clients_handler($r, $dbh);       }
+    elsif ( $path =~ $ProductsRequest       ) {  $res = products_handler($r, $dbh);      }
+    elsif ( $path =~ $ProductRequest        ) {  $res = product_handler($r, $dbh);       }
+    elsif ( $path =~ $ProductReposRequest   ) {  $res = product_repos_handler($r, $dbh); }
 
     if (not defined $res)
     {
