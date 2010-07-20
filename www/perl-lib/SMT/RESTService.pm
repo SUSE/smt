@@ -237,6 +237,8 @@ sub products_handler($$)
         $r->log->error("Unknown request to the products interface.");
         return undef;
     }
+    
+    return undef;
 }
 
 sub product_handler($$)
@@ -245,18 +247,37 @@ sub product_handler($$)
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    my $result = '';
+    $path =~ qr{^product/(\d+)$}; # get specific product info (GET)
+    my $productId = $1;
 
     if    ( $r->method() =~ /^GET$/i )
     {
-        $result = "GET request";
+        my $p = SMT::Product::findById $dbh, $productId;
+        return undef if (not defined $p);
+        return $p->asXML;
     }
-    elsif ( $r->method() =~ /^PUT$/i )    { $result = "PUT request";    }
-    elsif ( $r->method() =~ /^POST$/i )   { $result = "POST request";   }
-    elsif ( $r->method() =~ /^DELETE$/i ) { $result = "DELETE request"; }
-    else  { $result = "unknown request"; }
+    elsif ( $r->method() =~ /^PUT$/i )
+    {
+        $r->log->error("PUT request to the product interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^POST$/i )
+    {
+        $r->log->error("POST request to the product interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^DELETE$/i )
+    {
+        $r->log->error("DELETE request to the product interface. This is not supported.");
+        return undef;
+    }
+    else
+    {
+        $r->log->error("Unknown request to the product interface.");
+        return undef;
+    }
 
-    return $result;
+    return undef;
 }
 
 #
