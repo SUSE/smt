@@ -801,6 +801,58 @@ sub getProductReposAsXML
         xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
 }
 
+
+=item getRepositoryAsXML($dbh, $repoid)
+Returns XML for /products/$productid/repos REST GET request.
+=cut
+
+sub getRepositoryAsXML
+{
+    my ($dbh, $repoid) = @_;
+    
+    my $sql = 'select * from Catalogs where id = ?;';
+    my $sth = $dbh->prepare($sql);
+    $sth->bind_param(1, $repoid, SQL_INTEGER);
+    $sth->execute();
+
+    my $r = $sth->fetchrow_hashref();
+    return undef if (not $r);
+
+    # read smt.conf to get info base MirrorTo path
+    my $cfg = undef;
+    eval {  $cfg = SMT::Utils::getSMTConfig();  };
+    $r->log_error("Cannot read the SMT configuration file: ".$@)
+        if ( $@ || ! defined $cfg );
+
+    # can't use getFullRepoPath() 'cause that would load all repos needlessly
+    my $localpath = SMT::Utils::cleanPath(
+        $cfg->val('LOCAL', 'MirrorTo', '/srv/www/htdocs'),
+        'repo',
+        $r->{STAGING} eq 'Y' ? 'full' : '',
+        $r->{LOCALPATH});
+
+    #<repo name="SLES11-SP1-Updates" target="sle-11-x86_64" type="nu">
+    #  <description>SLES11-SP1-Updates for sle-11-x86_64</description>
+    #  <url>https://nu.novell.com/repo/$RCE/SLES11-SP1-Updates/sle-11-x86_64/</url>
+    #  <localpath>/srv/www/smt/repos/$RCE/SLES11-SP1-Updates/sle-11-x86_64</localpath>
+    #  <mirrored date="1271723799"/>
+    #</repo>
+
+    my $xdata = {
+        id => $r->{ID},
+        name => $r->{NAME},
+        target => $r->{TARGET},
+        type => $r->{TYPE},
+        description => [$r->{DESCRIPTION}],
+        url => [$r->{EXTURL}],
+        mirrored => [{date => $r->{LAST_MIRROR}}],
+        localpath => [ $localpath ]
+    };
+    return XMLout($xdata,
+        rootname => 'repo',
+        xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
+}
+
 =back
 
 =head1 NOTES
