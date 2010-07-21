@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Jul 21 11:16:27 CEST 2010 - jkupec@suse.cz
+
+- new REST API added:
+  - /products
+  - /product/$productid
+  - /product/$productid/repos
+  - /repo/$repoid
+
+-------------------------------------------------------------------
 Tue Jul  6 10:40:43 CEST 2010 - mc@suse.de
 
 - fix disabling of not mirrorable repositories (bnc#619314) 
