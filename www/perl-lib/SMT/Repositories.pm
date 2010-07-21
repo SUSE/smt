@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use XML::Simple;
 use DBI qw(:sql_types);
+use Date::Parse;
 
 use SMT::Utils;
 use SMT::Mirror::Utils;
@@ -845,7 +846,7 @@ sub getRepositoryAsXML
         type => $r->{TYPE},
         description => [$r->{DESCRIPTION}],
         url => [$r->{EXTURL}],
-        mirrored => [{date => $r->{LAST_MIRROR}}],
+        mirrored => [{date => str2time($r->{LAST_MIRROR})}],
         localpath => [ $localpath ]
     };
     return XMLout($xdata,
