@@ -223,17 +223,17 @@ sub products_handler($$)
     {
         if ( $path =~ $reProducts )
         {
-            return SMT::Product::getAllAsXML $dbh;
+            return SMT::Product::getAllAsXML($dbh);
         }
         elsif ( $path =~ $reProductsId )
         {
-            my $p = SMT::Product::findById $dbh, $1;
+            my $p = SMT::Product::findById($dbh, $1);
             return undef unless defined $p;
             return $p->asXML;
         }
         elsif ( $path =~ $reProductsIdRepos )
         {
-            return SMT::Repositories::getProductReposAsXML $dbh, $1;
+            return SMT::Repositories::getProductReposAsXML($dbh, $1);
         }
     }
     elsif ( $r->method() =~ /^PUT$/i )
@@ -276,7 +276,7 @@ sub repos_handler($$)
     {
         if ( $path =~ $reReposId )
         {
-            return SMT::Repositories::getRepositoryAsXML $dbh, $1;
+            return SMT::Repositories::getRepositoryAsXML($dbh, $1);
         }
         #elsif ( $path =~ $reRepos )
         #{
@@ -348,8 +348,8 @@ sub handler {
 
     my $JobsRequest         = qr{^jobs?};              # no trailing slash
     my $ClientsRequest      = qr{^clients?};           # no trailing slash
-    my $ProductsRequest     = qr{^products?$};         # all products
-    my $ReposRequest        = qr{^repos?$};            # specific repo
+    my $ProductsRequest     = qr{^products?};          # all products
+    my $ReposRequest        = qr{^repos?};             # specific repo
 
     if    ( $path =~ $JobsRequest           ) {  $res = jobs_handler($r, $dbh);          }
     elsif ( $path =~ $ClientsRequest        ) {  $res = clients_handler($r, $dbh);       }
