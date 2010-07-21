@@ -215,9 +215,9 @@ sub products_handler($$)
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    my $reProducts        =~ qr{^products?(/\@all)?$};    # get all products
-    my $reProductsId      =~ qr{^products?/(\d+)$};       # get specific product info (GET)
-    my $reProductsIdRepos =~ qr{^products?/(\d+)/repos$}; # get repos of a specific product id
+    my $reProducts        = qr{^products?(/\@all)?$};    # get all products
+    my $reProductsId      = qr{^products?/(\d+)$};       # get specific product info (GET)
+    my $reProductsIdRepos = qr{^products?/(\d+)/repos$}; # get repos of a specific product id
 
     if ( $r->method() =~ /^GET$/i )
     {
@@ -269,8 +269,8 @@ sub repos_handler($$)
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    my $reRepos   =~ qr{^repos?(/\@all)?$};  # get all repos
-    my $reReposId =~ qr{^repos?/(\d+)$};     # get specific repo
+    my $reRepos   = qr{^repos?(/\@all)?$};  # get all repos
+    my $reReposId = qr{^repos?/(\d+)$};     # get specific repo
 
     if    ( $r->method() =~ /^GET$/i )
     {
