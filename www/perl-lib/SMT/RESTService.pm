@@ -213,10 +213,28 @@ sub products_handler($$)
 {
     my $r = shift || return undef;
     my $dbh = shift || return undef;
+    my $path = sub_path($r);
+
+    my $reProducts        =~ qr{^products?(/\@all)?$};    # get all products
+    my $reProductsId      =~ qr{^products?/(\d+)$};       # get specific product info (GET)
+    my $reProductsIdRepos =~ qr{^products?/(\d+)/repos$}; # get repos of a specific product id
 
     if ( $r->method() =~ /^GET$/i )
     {
-        return SMT::Product::getAllAsXML $dbh;
+        if ( $path =~ $reProducts )
+        {
+            return SMT::Product::getAllAsXML $dbh;
+        }
+        elsif ( $path =~ $reProductsId )
+        {
+            my $p = SMT::Product::findById $dbh, $1;
+            return undef unless defined $p;
+            return $p->asXML;
+        }
+        elsif ( $path =~ $reProductsIdRepos )
+        {
+            return SMT::Repositories::getProductReposAsXML $dbh, $1;
+        }
     }
     elsif ( $r->method() =~ /^PUT$/i )
     {
@@ -242,95 +260,33 @@ sub products_handler($$)
     return undef;
 }
 
-sub product_handler($$)
+#
+# handler for requests to the repos ressource
+#
+sub repos_handler($$)
 {
     my $r = shift || return undef;
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    $path =~ qr{^product/(\d+)$}; # get specific product info (GET)
-    my $productId = $1;
+    my $reRepos   =~ qr{^repos?(/\@all)?$};  # get all repos
+    my $reReposId =~ qr{^repos?/(\d+)$};     # get specific repo
 
     if    ( $r->method() =~ /^GET$/i )
     {
-        my $p = SMT::Product::findById $dbh, $productId;
-        return undef if (not defined $p);
-        return $p->asXML;
-    }
-    elsif ( $r->method() =~ /^PUT$/i )
-    {
-        $r->log->error("PUT request to the product interface. This is not supported.");
-        return undef;
-    }
-    elsif ( $r->method() =~ /^POST$/i )
-    {
-        $r->log->error("POST request to the product interface. This is not supported.");
-        return undef;
-    }
-    elsif ( $r->method() =~ /^DELETE$/i )
-    {
-        $r->log->error("DELETE request to the product interface. This is not supported.");
-        return undef;
-    }
-    else
-    {
-        $r->log->error("Unknown request to the product interface.");
-        return undef;
-    }
-
-    return undef;
-}
-
-
-sub product_repos_handler($$)
-{
-    my $r = shift || return undef;
-    my $dbh = shift || return undef;
-    my $path = sub_path($r);
-
-    $path =~ qr{^product/(\d+)/repos$}; # get specific product id
-    my $productid = $1;
-
-    if    ( $r->method() =~ /^GET$/i )
-    {
-        return SMT::Repositories::getProductReposAsXML $dbh, $productid;
-    }
-    elsif ( $r->method() =~ /^PUT$/i )
-    {
-        $r->log->error("PUT request to the product/\$pid/repos interface. This is not supported.");
-        return undef;
-    }
-    elsif ( $r->method() =~ /^POST$/i )
-    {
-        $r->log->error("POST request to the product/\$pid/repos interface. This is not supported.");
-        return undef;
-    }
-    elsif ( $r->method() =~ /^DELETE$/i )
-    {
-        $r->log->error("DELETE request to the product/\$pid/repos interface. This is not supported.");
-        return undef;
-    }
-    else
-    {
-        $r->log->error("Unknown request to the product/\$pid/repos interface.");
-        return undef;
-    }
-
-    return undef;
-}
-
-sub repo_handler($$)
-{
-    my $r = shift || return undef;
-    my $dbh = shift || return undef;
-    my $path = sub_path($r);
-
-    $path =~ qr{^repo/(\d+)$}; # get specific product id
-    my $repoid = $1;
-
-    if    ( $r->method() =~ /^GET$/i )
-    {
-        return SMT::Repositories::getRepositoryAsXML $dbh, $repoid;
+        if ( $path =~ $reReposId )
+        {
+            return SMT::Repositories::getRepositoryAsXML $dbh, $1;
+        }
+        #elsif ( $path =~ $reRepos )
+        #{
+        #    # you could add a function to return a list of all repos
+        #}
+        else
+        {
+            $r->log->error("GET request to unknown repos interface: $path");
+            return undef;        
+        }
     }
     elsif ( $r->method() =~ /^PUT$/i )
     {
@@ -390,19 +346,15 @@ sub handler {
         $r->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.", $r->user) );
     }
 
-    my $JobsRequest         = qr{^jobs};               # no trailing slash
-    my $ClientsRequest      = qr{^clients};            # no trailing slash
-    my $ProductsRequest     = qr{^products$};          # all products
-    my $ProductRequest      = qr{^product/\d+$};       # specific product
-    my $ProductReposRequest = qr{^product/\d+/repos$}; # product's repos
-    my $RepoRequest         = qr{^repo/\d+$};         # specific repo
+    my $JobsRequest         = qr{^jobs?};              # no trailing slash
+    my $ClientsRequest      = qr{^clients?};           # no trailing slash
+    my $ProductsRequest     = qr{^products?$};         # all products
+    my $ReposRequest        = qr{^repos?$};            # specific repo
 
     if    ( $path =~ $JobsRequest           ) {  $res = jobs_handler($r, $dbh);          }
     elsif ( $path =~ $ClientsRequest        ) {  $res = clients_handler($r, $dbh);       }
     elsif ( $path =~ $ProductsRequest       ) {  $res = products_handler($r, $dbh);      }
-    elsif ( $path =~ $ProductRequest        ) {  $res = product_handler($r, $dbh);       }
-    elsif ( $path =~ $ProductReposRequest   ) {  $res = product_repos_handler($r, $dbh); }
-    elsif ( $path =~ $RepoRequest           ) {  $res = repo_handler($r, $dbh); }
+    elsif ( $path =~ $ReposRequest          ) {  $res = repos_handler($r, $dbh);         }
 
     if (not defined $res)
     {
