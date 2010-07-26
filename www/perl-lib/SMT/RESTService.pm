@@ -262,7 +262,7 @@ sub products_handler($$)
 }
 
 #
-# handler for requests to the repos ressource
+# handler for requests to the repos resource
 #
 sub repos_handler($$)
 {
@@ -296,27 +296,81 @@ sub repos_handler($$)
     }
     elsif ( $r->method() =~ /^PUT$/i )
     {
-        $r->log->error("PUT request to the product/\$pid/repos interface. This is not supported.");
+        $r->log->error("PUT request to the repos interface. This is not supported.");
         return undef;
     }
     elsif ( $r->method() =~ /^POST$/i )
     {
-        $r->log->error("POST request to the product/\$pid/repos interface. This is not supported.");
+        $r->log->error("POST request to the repos interface. This is not supported.");
         return undef;
     }
     elsif ( $r->method() =~ /^DELETE$/i )
     {
-        $r->log->error("DELETE request to the product/\$pid/repos interface. This is not supported.");
+        $r->log->error("DELETE request to the repos interface. This is not supported.");
         return undef;
     }
     else
     {
-        $r->log->error("Unknown request to the product/\$pid/repos interface.");
+        $r->log->error("Unknown request to the repos interface.");
         return undef;
     }
 
     return undef;
 }
+
+
+#
+# handler for requests to the patches resource
+#
+sub patches_handler($$)
+{
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
+    my $path = sub_path($r);
+
+    my $rePatches   = qr{^patch(es)?(/\@all)?$};       # get all patches
+    my $rePatchId   = qr{^patch(es)?/(\d+)$};          # get specific patch
+
+    if    ( $r->method() =~ /^GET$/i )
+    {
+        if ( $path =~ $rePatchId )
+        {
+            return SMT::Patch::findById($dbh, $2)->asXML();
+        }
+        #elsif ( $path =~ $rePatches )
+        #{
+        #    # we can add a function to return a list of all patches
+        #}
+        else
+        {
+            $r->log->error("GET request to unknown patches interface: $path");
+            return undef;        
+        }
+    }
+    elsif ( $r->method() =~ /^PUT$/i )
+    {
+        $r->log->error("PUT request to the patch/\$pid interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^POST$/i )
+    {
+        $r->log->error("POST request to the patch/\$pid interface. This is not supported.");
+        return undef;
+    }
+    elsif ( $r->method() =~ /^DELETE$/i )
+    {
+        $r->log->error("DELETE request to the patch/\$pid interface. This is not supported.");
+        return undef;
+    }
+    else
+    {
+        $r->log->error("Unknown request to the patch/\$pid interface.");
+        return undef;
+    }
+
+    return undef;
+}
+
 
 #
 # Apache Handler
@@ -354,13 +408,15 @@ sub handler {
 
     my $JobsRequest         = qr{^jobs?};              # no trailing slash
     my $ClientsRequest      = qr{^clients?};           # no trailing slash
-    my $ProductsRequest     = qr{^products?};          # all products
-    my $ReposRequest        = qr{^repos?};             # specific repo
+    my $ProductsRequest     = qr{^products?};          # products
+    my $ReposRequest        = qr{^repos?};             # repos
+    my $PatchesRequest      = qr{^patch(es)?};         # patches
 
     if    ( $path =~ $JobsRequest           ) {  $res = jobs_handler($r, $dbh);          }
     elsif ( $path =~ $ClientsRequest        ) {  $res = clients_handler($r, $dbh);       }
     elsif ( $path =~ $ProductsRequest       ) {  $res = products_handler($r, $dbh);      }
     elsif ( $path =~ $ReposRequest          ) {  $res = repos_handler($r, $dbh);         }
+    elsif ( $path =~ $PatchesRequest        ) {  $res = patches_handler($r, $dbh);       }
 
     if (not defined $res)
     {
