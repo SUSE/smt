@@ -157,14 +157,14 @@ sub findById
     return undef if (not $pdata);
 
     my $p = new;
-    $p->dbId($pdata->{id});
-    $p->repoId($pdata->{catalogid});
-    $p->name($pdata->{name});
-    $p->version($pdata->{version});
-    $p->categoryAsInt($pdata->{category});
-    $p->summary($pdata->{summary});
-    $p->description($pdata->{description});
-    $p->releaseDate(str2time($pdata->{reldate}));
+    $p->dbId($pdata->{ID});
+    $p->repoId($pdata->{CATALOGID});
+    $p->name($pdata->{NAME});
+    $p->version($pdata->{VERSION});
+    $p->categoryAsInt($pdata->{CATEGORY});
+    $p->summary($pdata->{SUMMARY});
+    $p->description($pdata->{DESCRIPTION});
+    $p->releaseDate(str2time($pdata->{RELDATE}));
     $p->{DIRTY} = 0;
 
     return $p;
@@ -273,5 +273,24 @@ sub getRepoPatchesAsXML
         rootname => 'patches',
         xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
 }
+
+sub asXML
+{
+    my $self = shift;
+
+    my $xdata = {
+        id => $self->dbId(),
+        category => $self->category(),
+        name => $self->name(),
+        version => $self->version(),
+        title => [$self->summary()],
+        description => [$self->description()]
+    };
+
+    return XMLout($xdata,
+        rootname => 'patch',
+        xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
+}
+
 
 1;
