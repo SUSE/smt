@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Jul 26 19:45:20 CEST 2010 - jkupec@suse.cz
+
+- new REST API added:
+  - /repo/$repoid/patches
+  - /patch/$patchid
+
+-------------------------------------------------------------------
 Wed Jul 21 11:16:27 CEST 2010 - jkupec@suse.cz
 
 - new REST API added:
