@@ -25,6 +25,7 @@ use SMT::JobQueue;
 use SMT::Job;
 use SMT::Client;
 use SMT::Product;
+use SMT::Patch;
 use SMT::Repositories;
 use DBI qw(:sql_types);
 use Data::Dumper;
@@ -269,14 +270,19 @@ sub repos_handler($$)
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    my $reRepos   = qr{^repos?(/\@all)?$};  # get all repos
-    my $reReposId = qr{^repos?/(\d+)$};     # get specific repo
+    my $reRepos   = qr{^repos?(/\@all)?$};       # get all repos
+    my $reReposId = qr{^repos?/(\d+)$};          # get specific repo
+    my $rePatches = qr{^repos?/(\d+)/patches$};  # get list of patches of a repo
 
     if    ( $r->method() =~ /^GET$/i )
     {
         if ( $path =~ $reReposId )
         {
             return SMT::Repositories::getRepositoryAsXML($dbh, $1);
+        }
+        elsif ($path =~ $rePatches)
+        {
+            return SMT::Patch::getRepoPatchesAsXML($dbh, $1);
         }
         #elsif ( $path =~ $reRepos )
         #{

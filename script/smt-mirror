@@ -9,6 +9,8 @@ use warnings;
 use SMT::Mirror::RpmMd;
 use SMT::Mirror::Yum;
 use SMT::Mirror::Utils;
+use SMT::Parser::RpmMdPatches;
+use SMT::Patch;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Parser::RegData;
@@ -298,7 +300,7 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $array = $dbh->selectall_arrayref( "select CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
+    $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
 	"from Catalogs ".
 	"where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
 	"order by CATALOGTYPE, NAME",
@@ -361,7 +363,7 @@ foreach my $entry (@{$array})
         }        
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $entry->{LOCALPATH} );
-        
+
         if($clean)
         {
             $zyppMirror->clean();
@@ -371,6 +373,37 @@ foreach my $entry (@{$array})
             $zyppMirror->uri( $zuri->as_string );
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirror( dryrun => $dryrun );
+
+            # parse and save patch data
+            if (not $dbreplfile)
+            {
+                my $parser = SMT::Parser::RpmMdPatches->new(
+                    log => $LOG, vblevel => $vblevel);
+                $parser->resource($zyppMirror->fullLocalRepoPath());
+                my $patches = $parser->parse(
+                    "repodata/updateinfo.xml.gz", "repodata/patches.xml");
+                # fetch old patch data for this repo from DB
+                my $oldpatches = SMT::Patch::findByRepoId($dbh, $entry->{ID});
+    
+                foreach my $pdata (values %$patches)
+                {
+                    my $patchid = $pdata->{name} . ':' . $pdata->{version};
+                    my $patch = $oldpatches->{$patchid};
+                    $patch = SMT::Patch::new() if (not $patch);
+                    $patch->setFromHash($pdata);
+                    $patch->repoId($entry->{ID});
+                    $patch->save($dbh);
+                    # delete old patch found in newly parsed patches to remove the
+                    # rest after the loop
+                    delete $oldpatches->{$patchid};
+                }
+                # Remove old patches not found in repo anymore. This should not
+                # happen given incremental updates, but just in case.
+                foreach my $patch (values %$oldpatches)
+                {
+                    $patch->delete($dbh);
+                }
+            }
 
             my $s = $zyppMirror->statistic();
             $download   += $s->{DOWNLOAD};
