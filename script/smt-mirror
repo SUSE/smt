@@ -384,9 +384,23 @@ foreach my $entry (@{$array})
                     "repodata/updateinfo.xml.gz", "repodata/patches.xml");
                 # fetch old patch data for this repo from DB
                 my $oldpatches = SMT::Patch::findByRepoId($dbh, $entry->{ID});
-    
+
                 foreach my $pdata (values %$patches)
                 {
+                    # set package location from patch package data
+                    foreach my $pkg (@{$pdata->{pkgs}})
+                    {
+                        my $rpmname = $pkg->{name} . '-' . $pkg->{ver} . '-'
+                            . $pkg->{rel} . '.' . $pkg->{arch} . '.rpm';
+                        $pkg->{loc} = SMT::Utils::cleanPath(
+                            $cfg->val('LOCAL', 'url'),
+                            'repo',
+                            $zyppMirror->localRepoPath(),
+                            'rpm',
+                            $pkg->{arch},
+                            $rpmname);
+                    }
+
                     my $patchid = $pdata->{name} . ':' . $pdata->{version};
                     my $patch = $oldpatches->{$patchid};
                     $patch = SMT::Patch::new() if (not $patch);
