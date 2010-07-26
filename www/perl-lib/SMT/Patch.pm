@@ -6,6 +6,8 @@ use DBI qw(:sql_types);
 use Date::Parse;
 use XML::Simple;
 
+use SMT::Package;
+
 sub new
 {
     my $data = shift;
@@ -19,6 +21,7 @@ sub new
         desc => undef,
         category => undef,
         date => undef,
+        pkgs => {},
         DIRTY => 1
     };
 
@@ -62,10 +65,10 @@ sub version
     my ($self, $value) = @_;
     if ($value)
     {
-        $self->{DIRTY} = 1 if (defined $self->{ver} && ! $value eq $self->{ver});
-        $self->{ver} = $value;
+        $self->{DIRTY} = 1 if (defined $self->{version} && ! $value eq $self->{version});
+        $self->{version} = $value;
     }
-    return $self->{ver};
+    return $self->{version};
 }
 
 sub categoryAsInt
@@ -79,6 +82,7 @@ sub categoryAsInt
     return $self->{category};
 }
 
+# FIXME set dirty flag
 sub category
 {
     my ($self, $value) = @_;
@@ -131,6 +135,37 @@ sub releaseDate
     return $self->{date};
 }
 
+sub packages
+{
+    my $self = shift;
+    return $self->{pkgs};
+}
+
+sub setPackages
+{
+    my ($self, $pkgs) = @_;
+
+    # first remove all Patch's packages not found in given $pkgs
+    foreach my $nevra (keys %{$self->{pkgs}})
+    {
+        delete $self->{pkgs}->{$nevra} if (not defined $pkgs->{$nevra});
+    }
+
+    # replace existing with those given, keeping dbId, and add new ones
+    foreach my $nevra (keys %$pkgs)
+    {
+        my $p = $pkgs->{$nevra};
+        if (defined $self->{pkgs}->{$nevra})
+        {
+            $p->dbId($self->{pkgs}->{$nevra}->dbId()) if ($self->{pkgs}->{$nevra}->dbId());
+        }
+        $self->{pkgs}->{$nevra} = $p;
+    }
+
+    # if new set of packages is empty, set also Patch's packages to empty
+    $self->{pkgs} = {} if (not keys %$pkgs);
+}
+
 
 sub setFromHash
 {
@@ -141,6 +176,14 @@ sub setFromHash
     $self->summary($data->{title});
     $self->description($data->{description});
     $self->releaseDate($data->{date});
+
+    my $pkgs = {};
+    foreach my $pdata (@{$data->{pkgs}})
+    {
+        my $pkg = SMT::Package::new($pdata);
+        $pkgs->{$pkg->NEVRA()} = $pkg;
+    };
+    $self->setPackages($pkgs);
 }
 
 
@@ -165,6 +208,7 @@ sub findById
     $p->summary($pdata->{SUMMARY});
     $p->description($pdata->{DESCRIPTION});
     $p->releaseDate(str2time($pdata->{RELDATE}));
+    $p->setPackages(SMT::Package::findByPatchId($dbh, $p->dbId()));
     $p->{DIRTY} = 0;
 
     return $p;
@@ -196,6 +240,7 @@ sub findByRepoId
       $p->summary($pdata->{SUMMARY});
       $p->description($pdata->{DESCRIPTION});
       $p->releaseDate(str2time($pdata->{RELDATE}));
+      $p->setPackages(SMT::Package::findByPatchId($dbh, $p->dbId()));
       $p->{DIRTY} = 0;
 
       $patches->{"$name:$version"} = $p;
@@ -235,6 +280,20 @@ sub save
 
     $self->dbId($dbh->last_insert_id(undef, undef, undef, undef))
         if ( not $self->dbId());
+
+    # load old packages
+    my $oldpkgs = SMT::Package::findByPatchId($dbh, $self->dbId());
+    # save current packages
+    foreach my $pkg (values %{$self->packages()})
+    {
+        $pkg->patchId($self->dbId());
+        $pkg->repoId($self->repoId());
+        $pkg->dbId($oldpkgs->{$pkg->NEVRA()}->dbId()) if (defined $oldpkgs->{$pkg->NEVRA()});
+        $pkg->save($dbh);
+        delete $oldpkgs->{$pkg->NEVRA()} if (defined $oldpkgs->{$pkg->NEVRA()});
+    }
+    # delete the olds which are not among current
+    foreach my $pkg (values %$oldpkgs) { $pkg->delete($dbh); }
 
     $self->{DIRTY} = 0;
 }
@@ -284,8 +343,22 @@ sub asXML
         name => $self->name(),
         version => $self->version(),
         title => [$self->summary()],
-        description => [$self->description()]
+        description => [$self->description()],
+        packages => {package=>[]}
     };
+
+    foreach my $p (values %{$self->packages()})
+    {
+        my $pdata = {
+            name => $p->name(),
+            epoch => $p->epoch(),
+            version => $p->version(),
+            release => $p->release(),
+            arch => $p->arch(),
+            location => [$p->location()]
+        };
+        push @{$xdata->{packages}->{package}}, $pdata;
+    }
 
     return XMLout($xdata,
         rootname => 'patch',
