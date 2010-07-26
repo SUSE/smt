@@ -240,10 +240,9 @@ create table Packages ( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         PATCHID     INTEGER UNSIGNED DEFAULT NULL,
                         NAME        VARCHAR(127) NOT NULL,
                         EPOCH       INTEGER UNSIGNED DEFAULT NULL,
-                        VERSION     VARCHAR(32) NOT NULL,
-                        RELEASE     VARCHAR(64) NOT NULL,
+                        VER         VARCHAR(32) NOT NULL,
+                        REL         VARCHAR(64) NOT NULL,
                         ARCH        VARCHAR(32) NOT NULL,
-                        -- relative .rpm file path within the repository
                         LOCATION    VARCHAR(255) NOT NULL,
                         PRIMARY KEY (ID)
                       );
