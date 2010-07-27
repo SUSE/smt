@@ -7,6 +7,7 @@ use Date::Parse;
 use XML::Simple;
 
 use SMT::Package;
+use SMT::PatchRef;
 
 sub new
 {
@@ -22,6 +23,7 @@ sub new
         category => undef,
         date => undef,
         pkgs => {},
+        refs => {},
         DIRTY => 1
     };
 
@@ -166,7 +168,83 @@ sub setPackages
     $self->{pkgs} = {} if (not keys %$pkgs);
 }
 
+sub references
+{
+    my $self = shift;
+    return $self->{refs};
+}
 
+sub setReferences
+{
+    my ($self, $refs) = @_;
+
+    # first remove all Patch's references not found in given $refs
+    foreach my $refid (keys %{$self->{refs}})
+    {
+        delete $self->{refs}->{$refid} if (not defined $refs->{$refid});
+    }
+
+    # replace existing with those given, keeping dbId, and add new ones
+    foreach my $refid (keys %$refs)
+    {
+        my $r = $refs->{$refid};
+        if (defined $self->{refs}->{$refid})
+        {
+            $r->dbId($self->{refs}->{$refid}->dbId()) if ($self->{refs}->{$refid}->dbId());
+        }
+        $self->{refs}->{$refid} = $r;
+    }
+
+    # if new set of references is empty, set also Patch's references to empty
+    $self->{refs} = {} if (not keys %$refs);
+}
+
+
+  
+=item
+Expects data in the form as in the following example:
+
+ $data = {
+      'pkgs' => [                                                                           
+            {                                                                         
+              'rel' => '1.3',                                                         
+              'epo' => undef,                                                         
+              'arch' => 'i586',                                                       
+              'ver' => '11',                                                          
+              'name' => 'sle-smt-release'                                             
+            },                                                                        
+            {                                                                         
+              'rel' => '1.3',                                                         
+              'epo' => undef,                                                         
+              'arch' => 'i586',                                                       
+              'ver' => '11',                                                          
+              'name' => 'sle-smt-release-cd'                                          
+            }                                                                         
+          ],                                                                          
+      'date' => '1267545307',                                                               
+      'version' => '2095',                                                                  
+      'name' => 'slesmtsp0-sle-smt-release',                                                
+      'description' => 'Long description of the patch',
+      'targetrel' => 'Subscription Management Tool 11',
+      'refs' => [                                      
+            {                                    
+              'href' => 'https://bugzilla.novell.com/show_bug.cgi?id=570637',
+              'type' => 'bugzilla',                                          
+              'title' => 'bug number 570637',                                
+              'id' => '570637'                                               
+            },                                                               
+            {                                                                
+              'href' => 'https://bugzilla.novell.com/show_bug.cgi?id=558871',
+              'type' => 'bugzilla',                                          
+              'title' => 'bug number 558871',                                
+              'id' => '558871'                                               
+            }                                                                
+          ],                                                                 
+      'type' => 'recommended',                                                     
+      'title' => 'Recommended update for Subscription Management Tool (SMT)'       
+    };
+
+=cut
 sub setFromHash
 {
     my ($self, $data) = @_; 
@@ -184,6 +262,14 @@ sub setFromHash
         $pkgs->{$pkg->NEVRA()} = $pkg;
     };
     $self->setPackages($pkgs);
+
+    my $refs = {};
+    foreach my $rdata (@{$data->{refs}})
+    {
+        my $r = SMT::PatchRef::new($rdata);
+        $refs->{$r->id()} = $r;
+    };
+    $self->setReferences($refs);
 }
 
 
@@ -209,6 +295,7 @@ sub findById
     $p->description($pdata->{DESCRIPTION});
     $p->releaseDate(str2time($pdata->{RELDATE}));
     $p->setPackages(SMT::Package::findByPatchId($dbh, $p->dbId()));
+    $p->setReferences(SMT::PatchRef::findByPatchId($dbh, $p->dbId()));
     $p->{DIRTY} = 0;
 
     return $p;
@@ -241,6 +328,7 @@ sub findByRepoId
       $p->description($pdata->{DESCRIPTION});
       $p->releaseDate(str2time($pdata->{RELDATE}));
       $p->setPackages(SMT::Package::findByPatchId($dbh, $p->dbId()));
+      $p->setReferences(SMT::PatchRef::findByPatchId($dbh, $p->dbId()));
       $p->{DIRTY} = 0;
 
       $patches->{"$name:$version"} = $p;
@@ -295,6 +383,19 @@ sub save
     # delete the olds which are not among current
     foreach my $pkg (values %$oldpkgs) { $pkg->delete($dbh); }
 
+    # load old references
+    my $oldrefs = SMT::PatchRef::findByPatchId($dbh, $self->dbId());
+    # save current refs
+    foreach my $ref (values %{$self->references()})
+    {
+        $ref->patchId($self->dbId());
+        $ref->dbId($oldrefs->{$ref->id()}->dbId()) if (defined $oldrefs->{$ref->id()});
+        $ref->save($dbh);
+        delete $oldrefs->{$ref->id()} if (defined $oldrefs->{$ref->id()});
+    }
+    # delete the olds which are not among current
+    foreach my $ref (values %$oldrefs) { $ref->delete($dbh); }
+
     $self->{DIRTY} = 0;
 }
 
@@ -303,6 +404,9 @@ sub delete
 {
     my ($self, $dbh) = @_;
     return if (not $self->dbId());
+
+    foreach my $ref (values %{$self->references()}) { $ref->delete($dbh); }
+    foreach my $pkg (values %{$self->packages()}  ) { $pkg->delete($dbh); }
 
     my $sql = 'delete from Patches where id=?';
     my $sth = $dbh->prepare($sql);
@@ -342,9 +446,11 @@ sub asXML
         category => $self->category(),
         name => $self->name(),
         version => $self->version(),
+        issued => [{date => $self->releaseDate()}],
         title => [$self->summary()],
         description => [$self->description()],
-        packages => {package=>[]}
+        packages => {package=>[]},
+        references => {reference=>[]}
     };
 
     foreach my $p (values %{$self->packages()})
@@ -358,6 +464,17 @@ sub asXML
             location => [$p->location()]
         };
         push @{$xdata->{packages}->{package}}, $pdata;
+    }
+
+    foreach my $r (values %{$self->references()})
+    {
+        my $rdata = {
+            id => $r->id(),
+            title => $r->title(),
+            href => $r->url(),
+            type => $r->type()
+        };
+        push @{$xdata->{references}->{reference}}, $rdata;
     }
 
     return XMLout($xdata,
