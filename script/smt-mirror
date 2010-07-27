@@ -82,7 +82,7 @@ my $repository;
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = GetOptions ("debug|d"      => \$debug,
                          "verboselevel|v=i" => \$vblevel,
-                         "cleanup|c"    => \$clean,
+                         "clean|c"      => \$clean,
                          "hardlink=i"   => \$hardlink,
                          "directory=s"  => \$LocalBasePath,
                          "fromdir=s"    => \$FromLocalBasePath,
