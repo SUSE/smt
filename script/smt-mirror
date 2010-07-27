@@ -387,6 +387,8 @@ foreach my $entry (@{$array})
 
                 foreach my $pdata (values %$patches)
                 {
+                    use Data::Dumper;
+                    print "<==================================================>\n" . Dumper($pdata);
                     # set package location from patch package data
                     foreach my $pkg (@{$pdata->{pkgs}})
                     {
