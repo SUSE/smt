@@ -12,7 +12,7 @@ use SMT::PatchRef;
 sub new
 {
     my $data = shift;
-    
+
     my $self = {
         dbid => undef,
         repoid => undef,
@@ -200,54 +200,54 @@ sub setReferences
 }
 
 
-  
+
 =item
 Expects data in the form as in the following example:
 
  $data = {
-      'pkgs' => [                                                                           
-            {                                                                         
-              'rel' => '1.3',                                                         
-              'epo' => undef,                                                         
-              'arch' => 'i586',                                                       
-              'ver' => '11',                                                          
-              'name' => 'sle-smt-release'                                             
-            },                                                                        
-            {                                                                         
-              'rel' => '1.3',                                                         
-              'epo' => undef,                                                         
-              'arch' => 'i586',                                                       
-              'ver' => '11',                                                          
-              'name' => 'sle-smt-release-cd'                                          
-            }                                                                         
-          ],                                                                          
-      'date' => '1267545307',                                                               
-      'version' => '2095',                                                                  
-      'name' => 'slesmtsp0-sle-smt-release',                                                
+      'pkgs' => [
+            {
+              'rel' => '1.3',
+              'epo' => undef,
+              'arch' => 'i586',
+              'ver' => '11',
+              'name' => 'sle-smt-release'
+            },
+            {
+              'rel' => '1.3',
+              'epo' => undef,
+              'arch' => 'i586',
+              'ver' => '11',
+              'name' => 'sle-smt-release-cd'
+            }
+          ],
+      'date' => '1267545307',
+      'version' => '2095',
+      'name' => 'slesmtsp0-sle-smt-release',
       'description' => 'Long description of the patch',
       'targetrel' => 'Subscription Management Tool 11',
-      'refs' => [                                      
-            {                                    
+      'refs' => [
+            {
               'href' => 'https://bugzilla.novell.com/show_bug.cgi?id=570637',
-              'type' => 'bugzilla',                                          
-              'title' => 'bug number 570637',                                
-              'id' => '570637'                                               
-            },                                                               
-            {                                                                
+              'type' => 'bugzilla',
+              'title' => 'bug number 570637',
+              'id' => '570637'
+            },
+            {
               'href' => 'https://bugzilla.novell.com/show_bug.cgi?id=558871',
-              'type' => 'bugzilla',                                          
-              'title' => 'bug number 558871',                                
-              'id' => '558871'                                               
-            }                                                                
-          ],                                                                 
-      'type' => 'recommended',                                                     
-      'title' => 'Recommended update for Subscription Management Tool (SMT)'       
+              'type' => 'bugzilla',
+              'title' => 'bug number 558871',
+              'id' => '558871'
+            }
+          ],
+      'type' => 'recommended',
+      'title' => 'Recommended update for Subscription Management Tool (SMT)'
     };
 
 =cut
 sub setFromHash
 {
-    my ($self, $data) = @_; 
+    my ($self, $data) = @_;
     $self->name($data->{name});
     $self->version($data->{version});
     $self->category($data->{type});
@@ -276,7 +276,7 @@ sub setFromHash
 sub findById
 {
     my ($dbh, $id) = @_;
-    
+
     my $sql = "select * from Patches where id = ?;";
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $id, SQL_INTEGER);
@@ -305,7 +305,7 @@ sub findById
 sub findByRepoId
 {
     my ($dbh, $repoid) = @_;
-    
+
     my $sql = 'select * from Patches where catalogid = ?';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $repoid, SQL_INTEGER);
@@ -418,10 +418,10 @@ sub delete
 sub getRepoPatchesAsXML
 {
     my ($dbh, $repoid) = @_;
-    
+
     my $patches = findByRepoId($dbh, $repoid);
     my $xdata = {'patch' => []};
-    
+
     foreach my $patch (values %$patches)
     {
       my $pdata = {};
