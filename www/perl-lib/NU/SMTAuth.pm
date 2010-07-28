@@ -47,7 +47,20 @@ sub handler {
             #return Apache2::Const::HTTP_UNAUTHORIZED;
             return Apache2::Const::AUTH_REQUIRED;
         }
-        #
+
+        # check for mirrorUser first
+        if (defined $cfg && $cfg->val('LOCAL', 'mirrorUser') && $r->user eq $cfg->val('LOCAL', 'mirrorUser'))
+        {
+            if (! $cfg->val('LOCAL', 'mirrorPassword') eq $password)
+            {
+                $r->log->error("Bad password from mirrorUser: ".$r->user()." trying to access: $requestedPath");
+                $r->note_basic_auth_failure;
+                return Apache2::Const::FORBIDDEN;
+            }
+
+            $r->log->info("Access granted for mirrorUser: ".$r->user().".");
+        }
+
         # no better check required for repoindex.xml
         # if the user is not valid, he get an empty index file
         return Apache2::Const::OK;
@@ -56,6 +69,7 @@ sub handler {
     #
     # ok, we need to check the credentials
     #
+
     my $dbh = undef;
 
     eval
