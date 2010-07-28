@@ -170,10 +170,12 @@ sub handler {
         
         $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
-        if(defined $LocalBasePath && $LocalBasePath ne "" && ! $mirroruser)
+        if(defined $LocalBasePath && $LocalBasePath ne "")
         {
             if(!-e "$LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml")
             {
+                next if ($mirroruser && $mirroruser eq $r->user);
+
                 # catalog does not exists on this server. Log it, that the admin has a chance 
                 # to find the error.
                 $r->log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
