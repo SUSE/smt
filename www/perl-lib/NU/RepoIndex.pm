@@ -167,17 +167,17 @@ sub handler {
         }
         
 
-        if(defined $LocalBasePath && $LocalBasePath ne "" && ! $mirroruser)
+        if(defined $LocalBasePath && $LocalBasePath ne "")
         {
-          if( ${$val}{'DOMIRROR'} eq "Y" )
-          {
-            # catalog does not exists on this server. Log it, that the admin has a chance 
-            # to find the error.
-            $log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
-            $log->warn("Run smt-mirror to create this catalog.");
-          }
-          # We do not return catalogs which do not exist on the harddisk
-          next;
+            if(!-e "$LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml")
+            {
+                next if ($mirroruser && $mirroruser eq $r->user);
+
+                # catalog does not exists on this server. Log it, that the admin has a chance 
+                # to find the error.
+                $r->log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
+                $r->log->warn("Run smt-mirror to create this catalog.");
+            }
         }
         $log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
         
