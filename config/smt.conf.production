@@ -62,6 +62,14 @@ signingKeyID=
 #
 UserAgent=
 
+# Mirroring credentials for this SMT server.
+# These are currently only used to get list of all available repositories
+# from https://your.smt.url/repo/repoindex.xml
+# Note: if authenticated as a client machine instead of these mirrorUser,
+# the above URL returns only repositories relevant for that client.
+mirrorUser=
+mirrorPassword=
+
 
 [REST]
 # Enable administrative access to the SMT RESTService by setting enableRESTAdminAccess=1

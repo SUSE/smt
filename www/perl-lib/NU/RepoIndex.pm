@@ -11,6 +11,7 @@ use Apache2::RequestUtil;
 use Log::Log4perl qw(get_logger :levels);
 use XML::Writer;
 use SMT::Utils;
+use SMT::Repositories;
 use DBI qw(:sql_types);
 
 use Data::Dumper;
@@ -73,6 +74,7 @@ sub handler {
     }
 
     my $aliasChange = 0;
+    my $mirroruser = undef;
     eval
     {
         my $cfg = SMT::Utils::getSMTConfig();
@@ -87,6 +89,8 @@ sub handler {
         {
             $aliasChange = 0;
         }
+        
+        $mirroruser = $cfg->val('LOCAL', 'mirrorUser');
     };
     if($@)
     {
@@ -103,7 +107,19 @@ sub handler {
 
     my $username = getUsernameFromRequest($r);
     return Apache2::Const::SERVER_ERROR unless defined $username;
-    my $catalogs = getCatalogsByGUID($dbh, $username);
+    
+    my $catalogs;
+    # FATE #310105: return all repositories for the mirrorUser
+    if ($mirroruser && $username eq $mirroruser)
+    {
+        my $rh = SMT::Repositories::new($dbh);
+        $catalogs = $rh->getAllRepositories(); 
+    }
+    # for other users, return only relevant repos
+    else
+    {
+        $catalogs = getCatalogsByGUID($dbh, $username);
+    }
 
     # see if the client uses a special namespace
     my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($username));
@@ -151,7 +167,7 @@ sub handler {
         }
         
 
-        if(!-e "$LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml")
+        if(defined $LocalBasePath && $LocalBasePath ne "" && ! $mirroruser)
         {
           if( ${$val}{'DOMIRROR'} eq "Y" )
           {
