@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Wed Jul 28 14:10:24 CEST 2010 - jkupec@suse.cz
+
+- FATE #310105 - return full repo list for mirrorUser on
+  https://smt.server/repo/repoindex.xml
+
+-------------------------------------------------------------------
+Tue Jul 27 15:11:53 CEST 2010 - jkupec@suse.cz
+
+- smt-mirror: match -c long option to docs (--clean) (bnc #617323)
+
+-------------------------------------------------------------------
 Tue Jul 27 12:17:15 CEST 2010 - jkupec@suse.cz
 
 - added package and patch reference data to /patch/$patchid XML
