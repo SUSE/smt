@@ -102,7 +102,7 @@ sub findByPatchId
     my $sql = 'select * from PatchRefs where patchid = ?';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $patchid, SQL_INTEGER);
-    $sth->execute();
+    $sth->execute(); # FIXME wrap in eval
 
     my $prs = {};
 
@@ -147,7 +147,7 @@ sub save
     $sth->bind_param(4, $self->title(), SQL_VARCHAR);
     $sth->bind_param(5, $self->patchId(), SQL_INTEGER);
     $sth->bind_param(6, $self->dbId(), SQL_INTEGER) if ($self->dbId());
-    $sth->execute();
+    $sth->execute(); # FIXME wrap in eval
 
     $self->dbId($dbh->last_insert_id(undef, undef, undef, undef))
         if ( not $self->dbId());
@@ -164,7 +164,7 @@ sub delete
     my $sql = 'delete from PatchRefs where id=?';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $self->dbId(), SQL_INTEGER);
-    $sth->execute();
+    $sth->execute(); # FIXME wrap in eval
 }
 
 1;

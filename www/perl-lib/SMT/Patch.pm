@@ -370,7 +370,7 @@ sub save
     $sth->bind_param(6, POSIX::strftime("%Y-%m-%d %H:%M", localtime($self->releaseDate())), SQL_TIMESTAMP);
     $sth->bind_param(7, $self->repoId(), SQL_INTEGER);
     $sth->bind_param(8, $self->dbId(), SQL_INTEGER) if ($self->dbId());
-    $sth->execute();
+    $sth->execute(); # FIXME wrap in eval
 
     $self->dbId($dbh->last_insert_id(undef, undef, undef, undef))
         if ( not $self->dbId());
@@ -417,7 +417,7 @@ sub delete
     my $sql = 'delete from Patches where id=?';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $self->dbId(), SQL_INTEGER);
-    $sth->execute();
+    $sth->execute(); # FIXME wrap in eval 
 }
 
 
