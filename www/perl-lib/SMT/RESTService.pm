@@ -284,10 +284,10 @@ sub repos_handler($$)
         {
             return SMT::Patch::getRepoPatchesAsXML($dbh, $1);
         }
-        #elsif ( $path =~ $reRepos )
-        #{
-        #    # you could add a function to return a list of all repos
-        #}
+        elsif ( $path =~ $reRepos )
+        {
+            return SMT::Repositories::getAllReposAsXML($dbh);
+        }
         else
         {
             $r->log->error("GET request to unknown repos interface: $path");
