@@ -773,6 +773,36 @@ sub getRepositoryDetails ($)
     return $ret;
 }
 
+
+=item getAllReposAsXML($dbh)
+Returns XML for /repos REST GET request.
+=cut
+
+sub getAllReposAsXML
+{
+    my $dbh = shift;
+    
+    my $sql = 'select * from Catalogs';
+    my $sth = $dbh->prepare($sql);
+    $sth->execute();
+
+    my $data = { repo => []};
+    while (my $p = $sth->fetchrow_hashref())
+    {
+        # <repo id="%s" name="%s" target"%s" mirrored="%s"/>
+        push @{$data->{repo}}, {
+            id => $p->{ID},
+            name => $p->{NAME},
+            target => $p->{TARGET},
+            mirrored => str2time($p->{LAST_MIRROR})
+            };
+    }
+    return XMLout($data,
+        rootname => 'repos',
+        xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
+}
+
+
 =item getProductReposAsXML($dbh, $productid)
 Returns XML for /products/$productid/repos REST GET request.
 =cut
@@ -820,17 +850,20 @@ sub getRepositoryAsXML
     return undef if (not $r);
 
     # read smt.conf to get info base MirrorTo path
-    my $cfg = undef;
-    eval {  $cfg = SMT::Utils::getSMTConfig();  };
-    $r->log_error("Cannot read the SMT configuration file: ".$@)
-        if ( $@ || ! defined $cfg );
-
-    # can't use getFullRepoPath() 'cause that would load all repos needlessly
-    my $localpath = SMT::Utils::cleanPath(
-        $cfg->val('LOCAL', 'MirrorTo', '/srv/www/htdocs'),
-        'repo',
-        $r->{STAGING} eq 'Y' ? 'full' : '',
-        $r->{LOCALPATH});
+    my $localpath = '/srv/www/htdocs/repo/' . $r->{LOCALPATH};
+    eval
+    {
+        my $cfg = SMT::Utils::getSMTConfig();  
+    
+        # can't use getFullRepoPath() 'cause that would load all repos needlessly
+        $localpath = SMT::Utils::cleanPath(
+            $cfg->val('LOCAL', 'MirrorTo', '/srv/www/htdocs'),
+            'repo',
+            $r->{LOCALPATH});
+    };
+    # don't have access to logger here
+    #log_error("Cannot read the SMT configuration file: ".$@)
+    #    if ( $@ || ! defined $cfg );
 
     #<repo name="SLES11-SP1-Updates" target="sle-11-x86_64" type="nu">
     #  <description>SLES11-SP1-Updates for sle-11-x86_64</description>
