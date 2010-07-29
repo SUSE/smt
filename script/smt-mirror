@@ -403,6 +403,8 @@ foreach my $entry (@{$array})
             # parse and save patch data
             if (not $dbreplfile)
             {
+              eval
+              {
                 my $parser = SMT::Parser::RpmMdPatches->new(
                     log => $LOG, vblevel => $vblevel);
                 $parser->resource($zyppMirror->fullLocalRepoPath());
@@ -443,6 +445,8 @@ foreach my $entry (@{$array})
                 {
                     $patch->delete($dbh);
                 }
+              };
+              SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Error getting patch data from repository: $@", 0, 1);
             }
 
             my $s = $zyppMirror->statistic();
