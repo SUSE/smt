@@ -358,6 +358,16 @@ sub handle_start_tag
             $self->{CURRENT}->{SUBELEMENT} = '';
         }
     }
+    elsif ($lcelement eq 'script' || $lcelement eq 'message')
+    {
+        # code 10 patch-*.xml's /patch/atom/message or /patch/atom/script 
+        if ($self->{CURRENT}->{MAINELEMENT} eq 'patch')
+        {
+            push @{$self->{STACK}}, $self->{CURRENT}->{MAINELEMENT};
+            $self->{CURRENT}->{MAINELEMENT} = $lcelement;
+            $self->{CURRENT}->{SUBELEMENT} = '';
+        }
+    }
     elsif ($self->{CURRENT}->{MAINELEMENT} eq 'package')
     {
         if ($lcelement eq 'name' || $lcelement eq 'arch')
@@ -383,6 +393,13 @@ sub handle_char_tag
     if ($self->{WRITE_OUT})
     {
         $self->{CURRENT}->{ORIGXML} .= $line; 
+    }
+
+    # skip code10 patch <script> and <message> data    
+    if ($self->{CURRENT}->{MAINELEMENT} eq 'script' ||
+        $self->{CURRENT}->{MAINELEMENT} eq 'message')
+    {
+        return;
     }
 
     if (defined $self->{CURRENT} && defined $self->{CURRENT}->{SUBELEMENT})
@@ -428,8 +445,6 @@ sub handle_char_tag
         }
     }
 }
-
-use Data::Dumper;
 
 sub handle_end_tag
 {
@@ -507,6 +522,13 @@ sub handle_end_tag
             $self->{CURRENT}->{PATCHTARGET} = "";
             $self->{CURRENT}->{PATCHREFS} = [];
             $self->{CURRENT}->{ORIGXML} = "";
+        }
+        elsif ($self->{CURRENT}->{MAINELEMENT} eq 'script' ||
+               $self->{CURRENT}->{MAINELEMENT} eq 'message')
+        {
+            $self->{CURRENT}->{MAINELEMENT} =
+               pop @{$self->{STACK}} if (@{$self->{STACK}});
+            $self->{CURRENT}->{SUBELEMENT} = ''; 
         }
 
         # second check location if we have other metadata files

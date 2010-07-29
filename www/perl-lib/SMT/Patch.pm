@@ -70,9 +70,11 @@ sub version
         $self->{DIRTY} = 1 if (defined $self->{version} && ! $value eq $self->{version});
         $self->{version} = $value;
     }
+
     # make sure the returned value is a string. A 0 would case DBI to insert
-    # NULL into the DB query, which would cause an error 
-    return '' . $self->{version};
+    # NULL into the DB query, which would cause an error
+    return '' if (not defined $self->{version}); 
+    return $self->{version};
 }
 
 sub categoryAsInt
@@ -114,6 +116,7 @@ sub summary
         $self->{DIRTY} = 1 if (defined $self->{summary} && ! $value eq $self->{summary});
         $self->{summary} = $value;
     }
+    return '' if (not defined $self->{summary}); 
     return $self->{summary};
 }
 
@@ -125,6 +128,7 @@ sub description
         $self->{DIRTY} = 1 if (defined $self->{desc} && ! $value eq $self->{desc});
         $self->{desc} = $value;
     }
+    return '' if (not defined $self->{desc}); 
     return $self->{desc};
 }
 
