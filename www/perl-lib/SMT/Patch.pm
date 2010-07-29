@@ -70,7 +70,9 @@ sub version
         $self->{DIRTY} = 1 if (defined $self->{version} && ! $value eq $self->{version});
         $self->{version} = $value;
     }
-    return $self->{version};
+    # make sure the returned value is a string. A 0 would case DBI to insert
+    # NULL into the DB query, which would cause an error 
+    return '' . $self->{version};
 }
 
 sub categoryAsInt
