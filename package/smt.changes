@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jul 29 16:20:52 CEST 2010 - jkupec@suse.cz
+
+- new REST API added: /repos to return all available repositories
+  as XML
+- fixed a few patch caching problems in smt-mirror
+
+-------------------------------------------------------------------
 Wed Jul 28 14:10:24 CEST 2010 - jkupec@suse.cz
 
 - FATE #310105 - return full repo list for mirrorUser on
