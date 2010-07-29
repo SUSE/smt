@@ -56,7 +56,7 @@ sub handler {
             {
                 $r->log->error("Bad password from mirrorUser: ".$r->user()." trying to access: $requestedPath");
                 $r->note_basic_auth_failure;
-                return Apache2::Const::FORBIDDEN;
+                return Apache2::Const::AUTH_REQUIRED;
             }
 
             $r->log->info("Access granted for mirrorUser: ".$r->user().".");
