@@ -100,7 +100,7 @@ sub new
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
 
-    $self->{MAX_REDIRECTS} = 2;
+    $self->{MAX_REDIRECTS} = 5;
     $self->{VBLEVEL}       = 0;
     $self->{LOG}           = undef;
 
@@ -581,9 +581,9 @@ sub mirror
             else
             {
                 my $newuri = $response->header("location");
-                
+                chomp($newuri);
                 #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
-                $remote = URI->new($newuri);
+                $remote = $newuri;
             }
         }
         elsif( $response->is_success )
@@ -683,9 +683,10 @@ sub modified
             }
             
             my $newuri = $response->header("location");
+            chomp($newuri);
             
             #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
-            $remote = URI->new($newuri);
+            $remote = $newuri;
         }
         elsif( $response->is_success )
         {

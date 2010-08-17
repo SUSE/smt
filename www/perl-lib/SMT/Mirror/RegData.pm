@@ -91,7 +91,7 @@ sub new
     $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
     $self->{USERAGENT}->protocols_allowed( [ 'https'] );
     
-    $self->{MAX_REDIRECTS} = 2;
+    $self->{MAX_REDIRECTS} = 5;
     
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";

@@ -29,7 +29,7 @@ sub new
     # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
     $self->{USERAGENT}  = undef; 
 
-    $self->{MAX_REDIRECTS} = 2;
+    $self->{MAX_REDIRECTS} = 5;
 
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";

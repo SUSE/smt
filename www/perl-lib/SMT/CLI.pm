@@ -1314,30 +1314,41 @@ sub isZyppMirrorable
         };
         if($@)
         {
-            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $@);
-            $ret = 0;
-            last;
+          printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Get request aborted: ".$@);
+          $ret = 0;
+          return $ret;
         }
         
         if ( $response->is_redirect )
         {
             $redirects++;
-            if($redirects > 2)
+            if($redirects > 5)
             {
                 $ret = 0;
-                last
+                printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "Too many redirects.");
+                return $ret;
             }
             
             my $newuri = $response->header("location");
-            
-            #printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri");
-            $remote = URI->new($newuri);
+            chomp($newuri);
+
+            printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Redirected to $newuri\n".$response->as_string());
+            $remote = $newuri;
         }
         elsif($response->is_success)
         {
             $ret = 1;
         }
-    } while($response->is_redirect);
+        else
+        {
+          my $saveuri = URI->new($remote);
+          $saveuri->userinfo(undef);
+          
+          printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("Failed to download '%s': %s"),
+                   $saveuri->as_string(), $response->status_line));
+          printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $response->as_string());
+        }
+    } while( $response->is_redirect );
     return $ret;
 }
 
