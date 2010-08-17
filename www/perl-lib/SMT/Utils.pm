@@ -848,8 +848,8 @@ sub getFile
             }
 
             my $newuri = $response->header("location");
-
-            $srcUrl = URI->new($newuri);
+            chomp($newuri);
+            $srcUrl = $newuri;
         }
         elsif($response->is_success)
         {
@@ -894,7 +894,9 @@ sub doesFileExist
         {
             $redirects++;
             $tries = 4 if ($redirects > 15);
-            $srcUrl = URI->new($response->header("location"));
+	    my $newuri = $response->header("location");
+	    chomp($newuri);
+            $srcUrl = $newuri;
         }
         elsif ( $response->is_success )
         {

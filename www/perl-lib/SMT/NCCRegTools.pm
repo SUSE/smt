@@ -31,7 +31,7 @@ sub new
     
     $self->{USERAGENT}  = undef;
 
-    $self->{MAX_REDIRECTS} = 2;
+    $self->{MAX_REDIRECTS} = 5;
 
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";

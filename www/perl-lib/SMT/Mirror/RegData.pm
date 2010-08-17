@@ -81,7 +81,7 @@ sub new
     $self->{LOG}   = get_logger();
     $self->{OUT}   = get_logger('userlogger');
     
-    $self->{MAX_REDIRECTS} = 2;
+    $self->{MAX_REDIRECTS} = 5;
 
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
