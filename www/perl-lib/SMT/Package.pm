@@ -110,7 +110,7 @@ sub arch
 }
 
 
-sub location
+sub smtLocation
 {
     my ($self, $value) = @_;
     if ($value)
@@ -119,6 +119,17 @@ sub location
         $self->{loc} = $value;
     }
     return $self->{loc};
+}
+
+sub extLocation
+{
+    my ($self, $value) = @_;
+    if ($value)
+    {
+        $self->{DIRTY} = 1 if (defined $self->{extloc} && ! $value eq $self->{extloc});
+        $self->{extloc} = $value;
+    }
+    return $self->{extloc};
 }
 
 sub NEVRA
@@ -145,7 +156,8 @@ sub setFromHash
     $self->version($data->{ver});
     $self->release($data->{rel});
     $self->arch($data->{arch});
-    $self->location($data->{loc});
+    $self->smtLocation($data->{loc});
+    $self->extLocation($data->{extloc});
 }
 
 
@@ -182,7 +194,8 @@ sub findByPatchId
         $p->version($ver);
         $p->release($rel);
         $p->arch($arch);
-        $p->location($pdata->{LOCATION});
+        $p->smtLocation($pdata->{LOCATION});
+        $p->extLocation($pdata->{EXTLOCATION});
         $p->{DIRTY} = 0;
   
         $pkgs->{$p->NEVRA(':')} = $p;
@@ -199,14 +212,14 @@ sub save
     if ($self->dbId())
     {
         $sql = 'update Packages set name=?, epoch=?, ver=?, rel=?,'
-            . ' arch=?, location=?, catalogid=?, patchid=?'
+            . ' arch=?, location=?, extlocation=?, catalogid=?, patchid=?'
             . ' where id=?';
     }
     else
     {
         $sql = 'insert into Packages'
-            . ' (name, epoch, ver, rel, arch, location, catalogid, patchid)'
-            . ' values (?,?,?,?,?,?,?,?)';
+            . ' (name, epoch, ver, rel, arch, location, extlocation, catalogid, patchid)'
+            . ' values (?,?,?,?,?,?,?,?,?)';
     }
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $self->name(), SQL_VARCHAR);
@@ -214,10 +227,11 @@ sub save
     $sth->bind_param(3, $self->version(), SQL_VARCHAR);
     $sth->bind_param(4, $self->release(), SQL_VARCHAR);
     $sth->bind_param(5, $self->arch(), SQL_VARCHAR);
-    $sth->bind_param(6, $self->location(), SQL_VARCHAR);
-    $sth->bind_param(7, $self->repoId(), SQL_INTEGER);
-    $sth->bind_param(8, $self->patchId(), SQL_INTEGER);
-    $sth->bind_param(9, $self->dbId(), SQL_INTEGER) if ($self->dbId());
+    $sth->bind_param(6, $self->smtLocation(), SQL_VARCHAR);
+    $sth->bind_param(7, $self->extLocation(), SQL_VARCHAR);
+    $sth->bind_param(8, $self->repoId(), SQL_INTEGER);
+    $sth->bind_param(9, $self->patchId(), SQL_INTEGER);
+    $sth->bind_param(10, $self->dbId(), SQL_INTEGER) if ($self->dbId());
     $sth->execute();
 
     $self->dbId($dbh->last_insert_id(undef, undef, undef, undef))

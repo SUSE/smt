@@ -390,14 +390,35 @@ foreach my $entry (@{$array})
                 foreach my $pdata (values %$patches)
                 {
                     # set package location from patch package data
+                    
+                    # the full locations could be computed in the Package module
+                    # itself had the Repositories module been redesigned into
+                    # a Repository module with appropriate class and object
+                    # methods which would allow create instances with or without
+                    # database.
+                    # That way the Repository instance could be passed to the
+                    # patch bellow and/or loaded from DB as needed and the
+                    # instance would have knowledge about EXTURL, local smt
+                    # URL, mirroring/staging paths, etc.
+
+                    # without it, computing the paths here and storing them
+                    # in the DB seems to be the cleanest approach, even at the
+                    # cost of creating a lot of reduncancy in the DB
                     foreach my $pkg (@{$pdata->{pkgs}})
                     {
                         my $rpmname = $pkg->{name} . '-' . $pkg->{ver} . '-'
                             . $pkg->{rel} . '.' . $pkg->{arch} . '.rpm';
+                        # location of the rpm on the SMT sever
                         $pkg->{loc} = SMT::Utils::cleanPath(
                             $cfg->val('LOCAL', 'url'),
                             'repo',
                             $zyppMirror->localRepoPath(),
+                            'rpm',
+                            $pkg->{arch},
+                            $rpmname);
+                        # location of the rpm in the original repo
+                        $pkg->{extloc} = SMT::Utils::cleanPath(
+                            $entry->{EXTURL},
                             'rpm',
                             $pkg->{arch},
                             $rpmname);

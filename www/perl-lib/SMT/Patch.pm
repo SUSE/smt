@@ -467,7 +467,8 @@ sub asXML
             version => $p->version(),
             release => $p->release(),
             arch => $p->arch(),
-            location => [$p->location()]
+            smtlocation => [$p->smtLocation()],
+            origlocation => [$p->extLocation()]
         };
         push @{$xdata->{packages}->{package}}, $pdata;
     }
