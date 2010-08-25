@@ -409,16 +409,14 @@ foreach my $entry (@{$array})
                         my $rpmname = $pkg->{name} . '-' . $pkg->{ver} . '-'
                             . $pkg->{rel} . '.' . $pkg->{arch} . '.rpm';
                         # location of the rpm on the SMT sever
-                        $pkg->{loc} = SMT::Utils::cleanPath(
-                            $cfg->val('LOCAL', 'url'),
+                        $pkg->{loc} = $cfg->val('LOCAL', 'url') . SMT::Utils::cleanPath(
                             'repo',
                             $zyppMirror->localRepoPath(),
                             'rpm',
                             $pkg->{arch},
                             $rpmname);
                         # location of the rpm in the original repo
-                        $pkg->{extloc} = SMT::Utils::cleanPath(
-                            $entry->{EXTURL},
+                        $pkg->{extloc} = $entry->{EXTURL} . SMT::Utils::cleanPath(
                             'rpm',
                             $pkg->{arch},
                             $rpmname);
