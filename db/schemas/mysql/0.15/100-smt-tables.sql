@@ -244,6 +244,7 @@ create table Packages ( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         REL         VARCHAR(64) NOT NULL,
                         ARCH        VARCHAR(32) NOT NULL,
                         LOCATION    VARCHAR(255) NOT NULL,
+                        EXTLOCATION VARCHAR(255) NOT NULL,
                         PRIMARY KEY (ID)
                       );
 
