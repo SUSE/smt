@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Aug 25 15:42:15 CEST 2010 - jkupec@suse.cz
+
+- added original rpm package location data to DB and /patch/$id XML
+
+-------------------------------------------------------------------
 Thu Jul 29 16:20:52 CEST 2010 - jkupec@suse.cz
 
 - new REST API added: /repos to return all available repositories
