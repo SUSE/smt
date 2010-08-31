@@ -72,7 +72,12 @@ sub mirror()
 
     # find out if we have old style yum repo with headers directoy
 
-    my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH}, dryrun => $dryrun );
+    my $job = SMT::Mirror::Job->new(
+        vblevel => ($errors ? $self->vblevel() : undef),
+        log => ($errors ? $self->{LOG} : undef), # suppress logging if there were no errors before
+        UserAgent => $self->{USERAGENT},
+        dbh => $self->{DBH},
+        dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
     $job->localRepoPath( $self->localRepoPath() );
