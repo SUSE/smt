@@ -153,6 +153,8 @@ sub new
     {
         $self->{DRYRUN} = $opt{dryrun};
     }
+    
+    $self->{RESPONSE_CODE} = undef;
 
     bless($self);
     return $self;
@@ -393,6 +395,18 @@ sub wasCopy()
     return ($self->{DOWNLOAD_TYPE} == 5);
 }
 
+sub wasForbidden()
+{
+    my $self = shift;
+    return $self->{RESPONSE_CODE} == 403;
+}
+
+sub wasNotFound()
+{
+    my $self = shift;
+    return $self->{RESPONSE_CODE} == 404;
+}
+
 
 =item vblevel([level])
 
@@ -627,6 +641,7 @@ sub mirror
         else
         {
             $errormsg = sprintf(__("E '%s': %s"), $saveuri, $response->status_line);
+            $self->{RESPONSE_CODE} = $response->code;
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)" , 0, 1);
             $tries++;
         }

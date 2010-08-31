@@ -69,7 +69,7 @@ sub mirror()
     my $errors = $self->SUPER::mirror(%options);
 
     return $errors if( $errors );
-    
+
     # find out if we have old style yum repo with headers directoy
 
     my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH}, dryrun => $dryrun );
@@ -78,19 +78,13 @@ sub mirror()
     $job->localRepoPath( $self->localRepoPath() );
     $job->localFileLocation( "headers/header.info" );
 
-    my $result = $job->modified(1);
-    if( ! defined $result )
-    {
-        return $errors;
-    }
-    
     my $mres = $job->mirror();
-    $self->job2statistic($job);
     if( $mres == 2 && $self->statistic()->{DOWNLOAD} == 0 && 
         $self->statistic()->{LINK} == 0 && $self->statistic()->{COPY} == 0 )
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s' All files are up-to-date."), $saveuri));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'. All files are up-to-date."), $saveuri));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
+        $self->job2statistic($job);
         return 0;
     }
     elsif( $mres == 0 && -e $job->fullLocalPath() )
@@ -142,16 +136,34 @@ sub mirror()
             }
             close HDR;
         };
-    }    
-    
+        $self->job2statistic($job);
+    }
+    # getting the headers/header.info file failed, but
+    # all the previous mirroing via Mirror::RpmMd succedded.
+    # This means the header.info is not there (NCC return 403 for not found
+    # files), so no need to mirror headers dir
+    elsif ($job->wasNotFound() || ($errors == 0 && $job->wasForbidden()))
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'. All files are up-to-date."), $saveuri));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
+        return 0;
+    }
+    # if there were errors before, we can't tell what's up with headers dir
+    else
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_WARN,
+            __("Cannot determine if 'header' directory needs mirroring. If this is a RES5 repository, this warning can be ignored."));
+        $self->job2statistic($job);
+    }
+
     if( $dryrun )
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished dryrun ")));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished dryrun '%s'"), $saveuri));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD}));
     }
     else
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring ")));
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
                                                $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE})));
