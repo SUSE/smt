@@ -7,7 +7,11 @@ TODO (SMT11SP1):
     push @{ $ua->requests_redirectable }, 'PUT';
     push @{ $ua->requests_redirectable }, 'POST';
   Also raise redirect limit from 2 to default of 7.
-  
+
+- feature to chain an SMT to the NCC JobQueue
+  * create new job types
+  * adapt configuration
+  * enhance database 
   
 
 
