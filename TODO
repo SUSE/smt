@@ -141,3 +141,4 @@ Rejected:
 - 2. e-mail address for admin mails.
   (e.g. smt-mirror --mail)
   Reason: we use one address for all.
+
