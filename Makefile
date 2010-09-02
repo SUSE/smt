@@ -116,19 +116,10 @@ install:
 	install -m 644 www/perl-lib/SMT/RESTService.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/RESTInfo.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	cd db/schemas; \
-	find mysql/ -name ".svn" -prune -o \
-                \( \
-                  \( -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
+	find mysql/ \
+                  -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \
                   -o \
-                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
-                \)
-	cd db/schemas; \
-        find _common/ -name ".svn" -prune -o \
-                \( \
-                  \( -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
-                  -o \
-                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
-                \)
+                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \)
 	install -m 755 config/rc.smt $(DESTDIR)/etc/init.d/smt
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
