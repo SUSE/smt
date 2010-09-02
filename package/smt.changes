@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Sep  2 11:52:45 CEST 2010 - jkupec@suse.cz
+
+- Don't run mirror if ncc-sync exits with error (bnc #630170)
+- Fixed supressed 'Finished mirroring' message if header.info
+  is not found when mirroring RES5 repositories (bnc #628676)
+
+-------------------------------------------------------------------
 Wed Aug 25 15:42:15 CEST 2010 - jkupec@suse.cz
 
 - added original rpm package location data to DB and /patch/$id XML
