@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Sep  2 11:45:17 CEST 2010 - jkupec@suse.cz
+
+- Don't run mirror if ncc-sync exits with error (bnc #630170)
+
+-------------------------------------------------------------------
 Tue Jun  1 13:55:09 CEST 2010 - mc@suse.de
 
 - check protocol version in registration handler
