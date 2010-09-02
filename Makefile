@@ -120,19 +120,10 @@ install:
 	install -m 644 www/perl-lib/SMT/RegParams.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/Log/Log4perl/Appender/TmpFileBuffer.pm $(DESTDIR)$(PERLMODDIR)/Log/Log4perl/Appender/
 	cd db/schemas; \
-	find mysql/ -name ".svn" -prune -o \
-                \( \
-                  \( -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
+	find mysql/ \
+                  -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \
                   -o \
-                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
-                \)
-	cd db/schemas; \
-        find _common/ -name ".svn" -prune -o \
-                \( \
-                  \( -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
-                  -o \
-                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \) \
-                \)
+                  \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \)
 	install -m 755 config/rc.smt $(DESTDIR)/etc/init.d/smt
 	install -m 644 config/log4perl.conf $(DESTDIR)/etc/smt.d/
 	install -m 644 config/log4perlApache.conf $(DESTDIR)/etc/smt.d/
