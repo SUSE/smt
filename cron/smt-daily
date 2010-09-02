@@ -49,6 +49,10 @@ else
     echo "         Please make sure SMT is properly installed."
 fi
 
+if [ $NCC_SYNC_RC -ne 0 ]
+    echo "WARNING: smt-ncc-sync exited with error."
+fi
+
 if [ -x ${SMTCMD}-report ]
 then
     ${SMTCMD}-report --nonccsync --dailycheck ${REPORT_PARAMS}
@@ -57,9 +61,14 @@ else
     echo "         Please make sure SMT is properly installed."
 fi
 
-if [ -x ${SMTCMD}-mirror -a $NCC_SYNC_RC -eq 0 ]
+if [ -x ${SMTCMD}-mirror ]
 then
-    ${SMTCMD}-mirror ${MIRROR_PARAMS}
+    if [ $NCC_SYNC_RC -eq 0 ]
+    then
+        ${SMTCMD}-mirror ${MIRROR_PARAMS}
+    else
+        echo "Skipping smt-mirror because previous run of smt-ncc-sync failed."
+    fi
 else
     echo "WARNING: Could not find the SMT binary ${SMTCMD}-mirror"
     echo "         Please make sure SMT is properly installed."
