@@ -375,10 +375,13 @@ foreach my $entry (@{$array})
             $zyppMirror->mirror( dryrun => $dryrun );
 
             # parse and save patch data
-            if (not $dbreplfile)
+            if (!($dbreplfile || $dryrun))
             {
                 eval
                 {
+                    SMT::Utils::printLog ($LOG, $vblevel, LOG_DEBUG,
+                        "Checking for patches in this repository...", 0, 1);
+
                     my $parser = SMT::Parser::RpmMdPatches->new(
                         log => $LOG, vblevel => $vblevel);
                     $parser->resource($zyppMirror->fullLocalRepoPath());
@@ -387,6 +390,17 @@ foreach my $entry (@{$array})
                         "repodata/updateinfo.xml.gz", "repodata/patches.xml");
                     # fetch old patch data for this repo from DB
                     my $oldpatches = SMT::Patch::findByRepoId($dbh, $entry->{ID});
+
+                    if (keys %$patches)
+                    {
+                        SMT::Utils::printLog ($LOG, $vblevel, LOG_INFO1,
+                            "Updating patch data in the database (" . (keys %$patches) . " patches)", 0, 1);
+                    }
+                    else
+                    {
+                        SMT::Utils::printLog ($LOG, $vblevel, LOG_DEBUG,
+                            "No patches found. Will remove any patches from this repo from the database..", 0, 1);
+                    }
 
                     foreach my $pdata (values %$patches)
                     {
