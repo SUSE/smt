@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Sep  7 16:39:01 CEST 2010 - jkupec@suse.cz
+
+- REST API documentation added (SMT-REST-API.txt)
+- fixed empty <product uiname="...">
+- sending correct repo type in /repo/repoid REST call response
+- added mirrored time stamp to /product/productid/repos response
+
+-------------------------------------------------------------------
 Thu Sep  2 11:52:45 CEST 2010 - jkupec@suse.cz
 
 - Don't run mirror if ncc-sync exits with error (bnc #630170)
