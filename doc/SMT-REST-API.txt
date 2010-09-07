@@ -9,24 +9,32 @@ described for each call by an RNC snippet with comments.
 
 QUICK REFERENCE
 
-API for authenticating clients
+API for authenticating smt clients
+Used internally in smt-client package. Not intended for general administrative use!
 
 GET /jobs                              get list of all jobs for client
-GET /jobs/@next                        get the next job for client
-GET /jobs/<jobid>                      get job with jobid for client
-PUT /jobs/<jobid>                      update job having <jobid> using XML data
+GET /job/@next                         get the next job for client
+GET /job/<jobid>                       get job with jobid for client, Note: this marks the job as retrieved
+PUT /job/<jobid>                       update job having <jobid> using XML data, Note: updates only retrieved jobs
+
+For backward compatibiltiy reasons also available:
+
+GET /jobs/@next                         same as GET /job/@next
+GET /jobs/<jobid>                       same as GET /job/<jobid>
+PUT /jobs/<jobid>                       same as PUT /job/<jobid>
+
 
 API for genaral access
 (needs authentication using credentials from smt.conf's [REST] section)
 
 GET /clients                           get data of all clients
-GET /clients/<GUID>                    get data of client with specified GUID
-GET /clients/<GUID>/jobs               get client's job data
-GET /clients/<GUID>/patchstatus        get client's patch status
-GET /clients/<GUID>/jobs/@next         get client's next job
-GET /clients/<GUID>/jobs/<jobid>       get specified client job data
-GET /clients/@all/jobs                 get job data of all clients
-GET /clients/@all/patchstatus          get patch status of all clients
+GET /client/<GUID>                     get data of client with specified GUID
+GET /client/<GUID>/jobs                get client's job data
+GET /client/<GUID>/patchstatus         get client's patch status
+GET /client/<GUID>/job/@next           get client's next job
+GET /client/<GUID>/job/<jobid>         get specified client job data
+GET /client/@all/jobs                  get job data of all clients
+GET /client/@all/patchstatus           get patch status of all clients
 GET /repo/<repoid>                     get details of repository with <repoid>
 GET /repo/<repoid>/patches             get repository's patches
 GET /repos                             get all repositories known to SMT
@@ -111,7 +119,7 @@ start = element job {
                                       # identified with guid and id. The same jobs for multiple clients have
                                       # the same job id.
   attribute parent_id {xsd:integer}?, # ID of the job on which this job depends
-  attribute guid {xsd:integer},
+  attribute guid {xsd:string},
   attribute guid_id {xsd:integer}?,   # internal database ID of the client (for compatibility reasons,
                                       # if third party application talks to SMT REST service).
   attribute type {                    # job type ID string. Must be uniqe and
