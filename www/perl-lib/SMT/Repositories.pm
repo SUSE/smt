@@ -825,6 +825,7 @@ sub getProductReposAsXML
             id => $p->{ID},
             name => $p->{NAME},
             target => $p->{TARGET},
+            mirrored => str2time($p->{LAST_MIRROR})
             };
     }
     return XMLout($data,
@@ -876,7 +877,7 @@ sub getRepositoryAsXML
         id => $r->{ID},
         name => $r->{NAME},
         target => $r->{TARGET},
-        type => $r->{TYPE},
+        type => $r->{CATALOGTYPE},
         description => [$r->{DESCRIPTION}],
         url => [$r->{EXTURL}],
         mirrored => [{date => str2time($r->{LAST_MIRROR})}],
