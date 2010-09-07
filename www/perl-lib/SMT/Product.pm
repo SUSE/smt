@@ -85,7 +85,7 @@ sub findById
     $p->version($pdata->{version});
     $p->release($pdata->{rel});
     $p->arch($pdata->{arch});
-    $p->uiName($pdata->{uiname});
+    $p->uiName($pdata->{friendly});
     
     return $p;
 }
