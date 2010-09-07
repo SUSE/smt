@@ -1,0 +1,442 @@
+SMT REST API
+
+The SMT REST interface is meant for communication with SMT clients and
+integration into other WebServices. The base URI for all the following REST
+calls is https://YOURSMTSERVER/=/1. The SMT server responds with XML data
+described for each call by an RNC snippet with comments.
+
+
+
+QUICK REFERENCE
+
+API for authenticating clients
+
+GET /jobs                              get list of all jobs for client
+GET /jobs/@next                        get the next job for client
+GET /jobs/<jobid>                      get job with jobid for client
+PUT /jobs/<jobid>                      update job having <jobid> using XML data
+
+API for genaral access
+(needs authentication using credentials from smt.conf's [REST] section)
+
+GET /clients                           get data of all clients
+GET /clients/<GUID>                    get data of client with specified GUID
+GET /clients/<GUID>/jobs               get client's job data
+GET /clients/<GUID>/patchstatus        get client's patch status
+GET /clients/<GUID>/jobs/@next         get client's next job
+GET /clients/<GUID>/jobs/<jobid>       get specified client job data
+GET /clients/@all/jobs                 get job data of all clients
+GET /clients/@all/patchstatus          get patch status of all clients
+GET /repo/<repoid>                     get details of repository with <repoid>
+GET /repo/<repoid>/patches             get repository's patches
+GET /repos                             get all repositories known to SMT
+GET /patch/<patchid>                   get patch <patchid> details
+GET /products                          get list of all products known to SMT
+GET /product/<productid>               get details of product with <productid>
+GET /product/<productid>/repos         get list of product's repositories
+
+
+
+DETAILED DESCRIPTION
+
+
+API for authenticating clients
+
+
+GET /jobs
+=========
+
+Get list of all jobs for an authenticating client.
+When getting the jobs via this path they will not be set to the status retrieved.
+
+Example:
+
+<jobs>
+  <job name="Patchstatus Job" created="2010-06-18 16:34:38" description="Patchstatus Job for Client 456" exitcode="" expires="" finished="" guid="456" guid_id="30" id="31" message="" parent_id="" persistent="1" retrieved="" status="0" stderr="" stdout="" targeted="" timelag="23:00:00" type="1" verbose="0">
+    <arguments></arguments>
+  </job>
+  <job name="Software Push" created="2010-06-18 16:37:59" description="Software Push: mmv, whois" exitcode="" expires="" finished="" guid="456" guid_id="30" id="32" message="" parent_id="" persistent="0" retrieved="" status="0" stderr="" stdout="" targeted="" timelag="" type="2" verbose="0"> 
+    <arguments>
+      <packages>
+        <package>mmv</package>
+        <package>whois</package>
+      </packages>
+    </arguments>
+  </job>
+  <job name="Update Job" created="2010-06-18 16:38:39" description="Update Job" exitcode="" expires="" finished="" guid="456" guid_id="30" id="34" message="" parent_id="" persistent="0" retrieved="" status="0" stderr="" stdout="" targeted="" timelag="" type="3" verbose="0">
+    <arguments></arguments>
+  </job>
+  <job name="Execute" created="2010-06-18 17:40:10" description="Execute custom command" exitcode="0" expires="" finished="2010-06-18 17:40:14" guid="456" guid_id="30" id="41" message="execute successfully finished" parent_id="" persistent="0" retrieved="2010-06-18 17:40:14" status="1" stderr="man:x:13:62:Manual pages viewer:/var/cache/man:/bin/bash" stdout="" targeted="" timelag="" type="4" verbose="1">
+   <arguments command="grep man /etc/passwd" />
+  </job>
+  <job name="Reboot" created="2010-06-18 16:40:28" description="Reboot now" exitcode="" expires="2011-06-12 15:15:15" finished="" guid="456" guid_id="30" id="37" message="" parent_id="" persistent="0" retrieved="" status="0" stderr="" stdout="" targeted="2010-06-12 15:15:15" timelag="" type="5" verbose="0">
+    <arguments></arguments>
+  </job>
+  <job name="Wait 5 sec. for exit 0." created="2010-06-18 16:40:59" description="Wait for 5 seconds and return with value 0." exitcode="" expires="" finished="" guid="456" guid_id="30" id="38" message="" parent_id="" persistent="0" retrieved="" status="0" stderr="" stdout="" targeted="" timelag="" type="7" verbose="0">
+    <arguments exitcode="0" waittime="5" />
+  </job>
+  <job name="Eject job" created="2010-06-18 16:42:00" description="Job to eject the CD/DVD drawer" exitcode="" expires="" finished="" guid="456" guid_id="30" id="39" message="" parent_id="" persistent="0" retrieved="" status="0" stderr="" stdout="" targeted="" timelag="" type="8" verbose="0">
+    <arguments action="toggle" />
+  </job>
+</jobs>
+
+
+GET /jobs/@next
+===============
+
+Get the next job for an authenticating client. The job will not be set to the retrieved status.
+
+Example:
+
+<job id="31" guid="456" type="patchstatus" verbose="false">
+  <arguments></arguments>
+</job>
+
+
+GET /jobs/<jobid>
+=================
+
+Get job with specified jobid for an authenticating client.
+The job will be set to the retrieved status.
+
+When the client retrieves a job, not all the metadata is part of the XML
+response. However, it can be the full set of metadata, as the smt-client
+only picks the data that is relevant. But a job retrieval should only contain
+the minimal set of data that is required to fulfill it.
+
+RNC:
+
+start = element job {
+  attribute id {xsd:integer},         # the job ID. A job id alone is not unique. A job is only uniquely
+                                      # identified with guid and id. The same jobs for multiple clients have
+                                      # the same job id.
+  attribute parent_id {xsd:integer}?, # ID of the job on which this job depends
+  attribute guid {xsd:integer},
+  attribute guid_id {xsd:integer}?,   # internal database ID of the client (for compatibility reasons,
+                                      # if third party application talks to SMT REST service).
+  attribute type {                    # job type ID string. Must be uniqe and
+                                      # equal to the name of the Perl module on
+                                      # the client.
+    "softwarepush",
+    "patchstatus",
+    "<custom>"                        # add your own job types
+  },
+  attribute name {xsd:string},        # short custom name of the job, user-defined
+  attribute description {xsd:string}, # custom description of what the job does
+  attribute created {xsd:string},     # time stamp of creation
+  attribute expires {xsd:string},     # expiration time stamp; the job expires if not retrieved by then
+  attribute finished {xsd:string},    # time stamp of job's completion
+  attribute retrieved {xsd:string},   # time stamp of retrieval of the job
+  attribute persistent {xsd:boolean}?, # defines whether the job is a persistent (repetitive) job
+  attribute verbose {xsd:boolean},    # if true, output of job commands is attached
+                                      # to the result
+  attribute exitcode {xsd:integer},   # the last exit code of the system command executed to complete the job
+  attribute message {xsd:string},     # custom human-readable message the client sends back as a result
+  attribute status {                  # logical status of the job
+    0,     # not yet worked on: The job may be already retrieved but no result was sent back yet.
+    1,     # success: The job was retrieved, processed and the client sent back a success response.
+    2,     # failed: The job was retrieved, processed and the client sent back a failure response. 
+    3},    # denied by client: The job was retrieved but could not be processed as the client denied to process
+           # this job type (a client needs to allow all job types that should be processed, any other will be denied).
+  attribute stderr {text},            # standard error output of jobs's system commands (filled if verbose)
+  attribute stdout {text},            # standard output of jobs's system commands (filled if verbose)
+  attribute targeted {xsd:string},    # time stamp when this job will be delivered at the earliest
+  attribute timelag {xsd:string}?,    # interval time of a persistent job in the format "HH:MM:SS" (HH can be bigger than 23)
+  element-arguments                   # job-type-specific XML data
+}
+
+Example:
+(minimal job definition for a 'softwarepush' job)
+
+<job id="32" guid="456" type="softwarepush" verbose="false">
+  <arguments>
+    <packages>
+      <package>mmv</package>
+      <package>whois</package>
+    </packages>
+  </arguments>
+</job>
+
+
+PUT /job/<jobid>
+================
+
+Update a job for an authenticating client using XML data.
+
+A client can only send job results for jobs properly retrieved previously.
+The jobs will be set to status done (with an exception of persistent jobs,
+in which case a new target time will be computed).
+
+Examples:
+
+    *  Example for a successful patchstatus job: 
+
+<job id="31" guid="abc123" exitcode="0" message="0:0:0:0 # PackageManager=0 Security=0 Recommended=0 Optional=0" status="1" stderr="" stdout="" />
+
+    * Example for a failed softwarepush 
+
+<job id="32" guid="abc123" exitcode="104" message="softwarepush failed" status="2" stderr="" stdout="" />
+
+    * Example for a successful update: 
+
+<job id="34" guid="abc123" exitcode="0" message="update successfully finished" status="1" stderr="" stdout="" />
+
+    * Example for a successful reboot job: 
+
+<job id="37" guid="abc123" exitcode="0" message="reboot triggered" status="1" stderr="" stdout="" />
+
+    * Execute for a successful wait job 
+
+<job id="38" guid="abc123" exitcode="0" message="wait successfully finished" status="1" stderr="" stdout="" />
+
+    * Example for a successful eject job 
+
+<job id="39" guid="abc123" exitcode="0" message="eject successfully finished" status="1" stderr="" stdout="" />
+
+    * Example for a successful execute job: 
+
+<job id="41" guid="abc123" exitcode="0" message="execute successfully finished" status="1" stderr="man:x:13:62:Manual pages viewer:/var/cache/man:/bin/bash" stdout="" />
+
+------------------------------------------------------------------------------
+API for general access
+
+GET /repo/<repoid>
+==================
+
+Returns detailed information about specified repository. The <repoid> can be
+obtained using the /repos or /products/<productid>/repos/ call.
+
+RNC:
+
+start = element repo {                       # repository
+  attribute id {xsd:integer},                # SMT ID of the repository
+  attribute name {xsd:string},               # repository's Unix name
+  attribute target {xsd:string},             # repository's target product
+  attribute type {"nu" | "yum" | "zypp" | "pum"}, # type of repository
+  element description {xsd:string},          # description of the repository
+  element localpath {xsd:string},            # path to local SMT mirror of the repository
+  element url {xsd:anyURI},                  # original URL of the repository
+  element mirrored {
+    attribute date {xsd:integer}             # timestamp of the last successful mirror
+                                             # (empty if not mirrored yet)
+  }
+}
+
+Example:
+
+<repo name="SLES10-SP2-Updates" id="226" target="sles-10-i586" type="nu">
+  <description>SLES10-SP2-Updates for sles-10-i586</description>
+  <localpath>/local/htdocs/repo/$RCE/SLES10-SP2-Updates/sles-10-i586</localpath>
+  <mirrored date="1283523440"/>
+  <url>https://nu.novell.com/repo/$RCE/SLES10-SP2-Updates/sles-10-i586/</url>
+</repo>
+
+
+GET /repo/<repoid>/patches
+==========================
+
+Returns a list of all patches in specified software repository. The repoid can
+be obtained using the /repos or /products/<productid>/repos/ call.
+
+RNC:
+
+start = element patches {
+  element patch {
+    attribute id {xsd:integer},                # SMT ID of the patch
+    attribute name {xsd:string},               # patch's Unix name
+    attribute version {xsd:integer}            # patch's version number
+    attribute category {                       # patch importance category
+      "security",
+      "recommended",
+      "optional",
+      "mandatory"}
+  }*
+}
+
+Example:
+
+<patches>
+  <patch name="slesp2-krb5" category="security" id="1471" version="6775"/>
+  <patch name="slesp2-heartbeat" category="recommended" id="1524" version="5857"/>
+  <patch name="slesp2-curl" category="security" id="1409" version="6402"/>
+  ...
+</patches>
+
+
+GET /repos
+==========
+
+Returns a list of all software repositories known to SMT.
+Those which are currently mirrored on SMT have non-empty mirror time stamp
+in the mirrored attribute.
+
+RNC:
+
+start = element repos {
+  element repo {
+    attribute id {xsd:integer},                # SMT ID of the repository
+    attribute name {xsd:string},               # repository's Unix name
+    attribute target {xsd:string},             # repository's target product
+    attribute mirrored {xsd:integer}           # time stamp of the last successful mirror
+                                               # (empty if not mirrored yet)
+  }*
+}
+
+Example:
+
+<repos>
+  <repo name="SLE10-SDK-Updates" id="1" mirrored="" target="sles-10-x86_64"/>
+  <repo name="SLE10-SDK-SP3-Pool" id="2" mirrored="" target="sles-10-ppc"/>
+  <repo name="SLES10-SP2-Updates" id="226" mirrored="1283523440" target="sles-10-i586"/>
+  ...
+</repo>
+
+
+GET /patch/<patchid>
+====================
+
+Returns detailed information about specified patch. The patchid can be obtained
+via the /repo/<repoid>/patches call.
+
+RNC:
+
+start = element patch {
+  attribute id {xsd:integer},                # SMT ID of the patch
+  attribute name {xsd:string},               # patch's Unix name
+  attribute version {xsd:integer},           # patch's version number
+  attribute category {                       # patch importance category
+    "security",
+    "recommended",
+    "optional",
+    "mandatory"},
+  element title {xsd:string},                # title of the patch
+  element description {text},                # description of issues fixed by the patch
+  element issued {
+    attribute date {xsd:integer}             # patch release time stamp
+  },
+  element packages {                         # packages which need update as part of this patch
+    element package {                        # individual RPM package data
+      attribute name {xsd:string},           # package name
+      attribute epoch {xsd:integer},         # epoch number
+      attribute version {xsd:string},        # version string
+      attribute release {xsd:string},        # release string
+      attribute arch {xsd:string},           # architecture string
+      element origlocation {xsd:anyURI},     # URL of the RPM package in the original repository
+      element smtlocation {xsd:anyURI}       # URL of the RPM package at the SMT server
+    }*
+  },
+  element references {                       # references to issues fixed by this patch
+    element reference {                      # individual reference details
+      attribute id,                          # ID number of the issue (bugzilla or CVE number)
+      attribute title {xsd:string},          # issue title
+      attribute type {"bugzilla","cve"},     # type of the issue
+      attribute href {xsd:anyURI}            # URL of the issue in its issue tracking system
+    }*
+  }
+}
+
+Example:
+
+<patch name="slesp2-krb5" category="security" id="1471" version="6775">
+  <description>
+    Specially crafted AES and RC4 packets could allow unauthenticated
+    remote attackers to trigger an integer overflow leads to heap memory
+    corruption (CVE-2009-4212). This has been fixed.
+    Specially crafted AES and RC4 packets could allow
+    unauthenticated remote attackers to trigger an integer
+    overflow leads to heap memory corruption (CVE-2009-4212).
+  </description>
+  <issued date="1263343020"/>
+  <packages>
+    <package name="krb5" arch="i586" epoch="" release="19.43.2" version="1.4.3">
+      <origlocation>https://nu.novell.com/repo/$RCE/SLES10-SP2-Updates/sles-10-i586/rpm/i586/krb5-1.4.3-19.43.2.i586.rpm</origlocation>
+      <smtlocation>http://kompost.suse.cz/repo/$RCE/SLES10-SP2-Updates/sles-10-i586/rpm/i586/krb5-1.4.3-19.43.2.i586.rpm</smtlocation>
+    </package>
+    <package name="krb5-apps-servers" arch="i586" epoch="" release="19.43.2" version="1.4.3">
+      <origlocation>https://nu.novell.com/repo/$RCE/SLES10-SP2-Updates/sles-10-i586/rpm/i586/krb5-apps-servers-1.4.3-19.43.2.i586.rpm</origlocation>
+      <smtlocation>http://kompost.suse.cz/repo/$RCE/SLES10-SP2-Updates/sles-10-i586/rpm/i586/krb5-apps-servers-1.4.3-19.43.2.i586.rpm</smtlocation>
+    </package>
+    ...
+  </packages>
+  <references>
+    <reference id="535943" href="https://bugzilla.novell.com/show_bug.cgi?id=535943" title="bug number 535943" type="bugzilla"/>
+    <reference id="CVE-2009-4212" href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-4212" title="CVE-2009-4212" type="cve"/>
+  </references>
+  <title>Security update for Kerberos 5</title>
+</patch>
+
+
+GET /products
+=============
+
+Returns list of all products known to SMT.
+
+RNC:
+
+start element products {
+  element product {
+    attribute id {xsd:integer},         # SMT ID of the product
+    attribute name {xsd:string},        # Unix name of the product
+    attribute version {xsd:string},     # version string
+    attribute rel {xsd:string},         # release string
+    attribute arch {xsd:string},        # target machine architecture string
+    attribute uiname {xsd:string}       # name of the product to be displayed to users
+  }*
+}
+
+Example:
+
+<products>
+  <product name="SUSE_SLED" arch="x86_64" id="1824" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="i686" id="1825" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="i686" id="1880" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="SUSE-Linux-Enterprise-Thin-Client" arch="" id="940" rel="SP1" uiname="SUSE Linux Enterprise 10 Thin Client SP1" version="10"/>
+  ...
+</products>
+
+
+GET /product/<productid>
+========================
+
+Returns information about specific product. The productid can be obtained from
+data returned by /products call.
+
+RNC:
+
+start = element product {
+  attribute id {xsd:integer},         # SMT ID of the product
+  attribute name {xsd:string},        # Unix name of the product
+  attribute version {xsd:string},     # version string
+  attribute rel {xsd:string},         # release string
+  attribute arch {xsd:string},        # target machine architecture string
+  attribute uiname {xsd:string}       # name of the product to be displayed to users
+}
+
+Example:
+
+<product name="SUSE_SLED" arch="x86_64" id="1824" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+
+
+GET /product/<productid>/repos
+==============================
+
+Returns the list of all software repositories repositories for specified
+product. The productid can be obtained from the data returned by /products
+call.
+
+RNC:
+
+See the /repos call.
+
+Example:
+
+<repos>
+  <repo name="SLED11-SP1-Updates" id="143" mirrored="" target="sle-11-x86_64"/>
+  <repo name="SLE11-SP1-Debuginfo-Pool" id="400" mirrored="" target="sle-11-x86_64"/>
+  <repo name="SLED11-Extras" id="417" mirrored="" target="sle-11-x86_64"/>
+  <repo name="SLED11-SP1-Pool" id="215" mirrored="" target="sle-11-x86_64"/>
+  <repo name="nVidia-Driver-SLE11-SP1" id="469" mirrored="" target=""/>
+  <repo name="ATI-Driver-SLE11-SP1" id="411" mirrored="" target=""/>
+  <repo name="SLE11-SP1-Debuginfo-Updates" id="6" mirrored="" target="sle-11-x86_64"/>
+</repos>
+
