@@ -10,7 +10,6 @@ use warnings;
 use SMT;
 use SMT::Mirror::Yum;
 use SMT::Mirror::Utils;
-use SMT::Parser::RpmMdPatches;
 use SMT::Patch;
 use SMT::Utils;
 use SMT::CLI;
@@ -20,6 +19,7 @@ use SMT::Repositories;
 use RPMMD::Callbacks;
 use RPMMD::Tools::Mirror;
 use RPMMD::Filter;
+use RPMMD::Parser::Updates;
 use Config::IniFiles;
 use File::Path;
 use URI;
@@ -405,8 +405,7 @@ foreach my $entry (@{$array})
             {
               eval
               {
-                my $parser = SMT::Parser::RpmMdPatches->new(
-                    log => $LOG, vblevel => $vblevel);
+                my $parser = RPMMD::Parser::Updates->new();
                 $parser->resource($zyppMirror->fullLocalRepoPath());
                 my $patches = $parser->parse(
                     "repodata/updateinfo.xml.gz", "repodata/patches.xml");
@@ -465,7 +464,10 @@ foreach my $entry (@{$array})
                     $patch->delete($dbh);
                 }
               };
-              SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Error getting patch data from repository: $@", 0, 1);
+              if ($@)
+              {
+                $log->error("Error getting patch data from repository: $@");
+              }
             }
 
             my $s = $zyppMirror->statistic();
