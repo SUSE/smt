@@ -374,8 +374,17 @@ foreach my $entry (@{$array})
             $zyppMirror->deepverify($deepverify);
             $zyppMirror->mirror( dryrun => $dryrun );
 
+            my $s = $zyppMirror->statistic();
+            $download   += $s->{DOWNLOAD};
+            $link       += $s->{LINK};
+            $copy       += $s->{COPY};
+            $errors     += $s->{ERROR};
+            $size       += $s->{DOWNLOAD_SIZE};
+            $secpatches += $s->{NEWSECPATCHES};
+            $recpatches += $s->{NEWRECPATCHES};
+
             # parse and save patch data
-            if (!($dbreplfile || $dryrun))
+            if (!($dbreplfile || $dryrun || $errors))
             {
                 eval
                 {
@@ -468,18 +477,9 @@ foreach my $entry (@{$array})
                 }
             }
 
-            my $s = $zyppMirror->statistic();
-            $download   += $s->{DOWNLOAD};
-            $link       += $s->{LINK};
-            $copy       += $s->{COPY};
-            $errors     += $s->{ERROR};
-            $size       += $s->{DOWNLOAD_SIZE};
-            $secpatches += $s->{NEWSECPATCHES};
-            $recpatches += $s->{NEWRECPATCHES};
-
             # Update last mirror timestamp and filtering only if not mirroring
-            # to a custom directory
-            if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
+            # to a custom directory and no error occured (bnc #614997)
+            if ( ! $errors && $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
             {
                 my $rh = SMT::Repositories::new($dbh, $LOG);
                 if ( !$dryrun ) 
