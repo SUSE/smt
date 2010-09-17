@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Fri Sep 17 11:13:36 CEST 2010 - jkupec@suse.cz
+
+- Merged REST API changes from branch_SMT11
+  * added /products /repos and /patches
+  * see SMT-REST-API.txt
+- Bumped db migration directories' version to 0.20 because of a
+  change in branc_SMT11
+- FATE #310105 - return full repo list for mirrorUser on
+  https://smt.server/repo/repoindex.xml
+
+-------------------------------------------------------------------
 Thu Sep  2 11:45:17 CEST 2010 - jkupec@suse.cz
 
 - Don't run mirror if ncc-sync exits with error (bnc #630170)
