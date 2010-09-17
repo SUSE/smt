@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Sep 17 15:11:36 CEST 2010 - jkupec@suse.cz
+
+- Avoid updating Last Mirror timestamp of a repository in case of
+  errors (bnc #614997)
+- version 1.1.18
+
+-------------------------------------------------------------------
 Tue Sep  7 16:39:01 CEST 2010 - jkupec@suse.cz
 
 - REST API documentation added (SMT-REST-API.txt)
