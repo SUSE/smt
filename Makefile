@@ -196,6 +196,7 @@ dist: clean
 	@cp doc/Server-Tuning.txt $(NAME)-$(VERSION)/doc/
 	@cp doc/SMT-Database-Schema.odg $(NAME)-$(VERSION)/doc/
 	@cp doc/SMT-Database-Schema.txt $(NAME)-$(VERSION)/doc/
+	@cp doc/SMT-REST-API.txt $(NAME)-$(VERSION)/doc/
 
 	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
 	@cp tests/SMT/Mirror/*.pl $(NAME)-$(VERSION)/tests/SMT/Mirror/
