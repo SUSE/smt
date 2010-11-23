@@ -48,6 +48,7 @@ else
 fi
 
 if [ $NCC_SYNC_RC -ne 0 ]
+then
     echo "WARNING: smt-ncc-sync exited with error."
 fi
 
