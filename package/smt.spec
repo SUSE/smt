@@ -20,7 +20,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.1.18
+Version:        1.1.19
 Release:        0.2
 Requires:       perl = %{perl_version}
 Requires:       perl-DBI
