@@ -98,12 +98,22 @@ sub category
         elsif ($self->{category} == 2) { return 'recommended' }
         elsif ($self->{category} == 3) { return 'mandatory'   }
         elsif ($self->{category} == 4) { return 'optional'    }
+        elsif ($self->{category} == 5) { return 'feature'     }
         else                           { return undef         }
     }
-    elsif ($value eq 'security')    { $self->{category} = 1 }
-    elsif ($value eq 'recommended') { $self->{category} = 2 }
-    elsif ($value eq 'mandatory')   { $self->{category} = 3 }
-    elsif ($value eq 'optional')    { $self->{category} = 4 }
+    else
+    {
+      if    ($value eq 'security')    { $self->{category} = 1 }
+      elsif ($value eq 'recommended') { $self->{category} = 2 }
+      elsif ($value eq 'mandatory')   { $self->{category} = 3 }
+      elsif ($value eq 'optional')    { $self->{category} = 4 }
+      elsif ($value eq 'feature')     { $self->{category} = 5 }
+      else
+      {
+        $self->{category} = 4; # default to 'optional'
+        # FIXME enable logging here and log this
+      }
+    }
 
     return undef;
 }
