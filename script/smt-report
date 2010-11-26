@@ -196,11 +196,11 @@ sub certificateCheck($$)
     my $days = SMT::CLI::certificateExpireCheck(log => $LOG, vblevel => $vblevel);
     if(defined $days && $days > 0 && $days <= 10)
     {
-        push @msg, { LOG_WARN => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) };
+        push @msg, { int(LOG_WARN) => sprintf(__("WARNING: SMT server certificate expired in %s days. Please re-new it soon!"), $days ) };
     }
     elsif(defined $days && $days <= 0)
     {
-        push @msg, { LOG_ERROR =>  __("ERROR: SMT server certificate is expired!") };
+        push @msg, { int(LOG_ERROR) =>  __("ERROR: SMT server certificate is expired!") };
     }
 
     foreach my $message (@msg)
