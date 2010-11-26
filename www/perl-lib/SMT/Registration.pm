@@ -48,7 +48,7 @@ sub handler {
     if(exists $hargs->{'version'} && defined $hargs->{'version'} &&
       $hargs->{'version'} ne "1.0")
     {
-      $log->error("protocol version '".$hargs->{'version'}."' not implemented");
+      $r->log_error("protocol version '".$hargs->{'version'}."' not implemented");
       $r->status(400);
       $r->content_type('text/plain');
       $r->print("Invalid protocol version.");
