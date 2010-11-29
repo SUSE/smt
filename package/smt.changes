@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Nov 29 14:52:11 CET 2010 - jdsn@suse.de
+
+- Fix use of uninitialized value during report generation (bnc#656254) 
+
+-------------------------------------------------------------------
 Fri Nov 26 16:16:27 CET 2010 - mc@suse.de
 
 - Fix certificate check. Print message correctly.
