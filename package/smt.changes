@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Nov 29 14:53:42 CET 2010 - jdsn@suse.de
+
+- Fix use of uninitialized value during report generation (bnc#656254) 
+
+-------------------------------------------------------------------
 Fri Sep 17 11:13:36 CEST 2010 - jkupec@suse.cz
 
 - Merged REST API changes from branch_SMT11
