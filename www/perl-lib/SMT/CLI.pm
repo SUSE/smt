@@ -86,6 +86,7 @@ sub escapeCSVRow($)
 
     foreach my $val (@{$arr})
     {
+        $val ||= '';            # (bnc#656254)
         $val =~ s/\"/\"\"/g;    # double all quotation marks
         $str .= '"'.$val.'",';  # delimit strings with quotation marks
     }
