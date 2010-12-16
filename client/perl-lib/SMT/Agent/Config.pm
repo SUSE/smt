@@ -49,7 +49,7 @@ sub getSecret
 sub readSmtUrl
 {
   my $uri;
-  open(FH, "< /etc/suseRegister.conf") or error ("Cannot open /etc/suseRegister.conf");
+  open(FH, "< /etc/suseRegister.conf") or SMT::Agent::Utils::error("Cannot open /etc/suseRegister.conf");
   while(<FH>)
   {
     if($_ =~ /^url\s*=\s*(\S*)\s*/ && defined $1 && $1 ne "")
