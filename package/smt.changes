@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Dec 17 15:07:13 CET 2010 - mc@suse.de
+
+- fix order when matching products (bnc#659912)
+
+-------------------------------------------------------------------
 Mon Nov 29 14:53:42 CET 2010 - jdsn@suse.de
 
 - Fix use of uninitialized value during report generation (bnc#656254) 
