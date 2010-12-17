@@ -980,10 +980,13 @@ sub findColumnsForProducts
         $statement .= " AND (";
         $statement .= "ARCHLOWER=".$dbh->quote(lc($phash->{arch}))." OR " if(defined $phash->{arch} && $phash->{arch} ne "");
         $statement .= "ARCHLOWER IS NULL)";
-        
+
+        # order by name,version,release,arch with NULL values at the end (bnc#659912)
+        $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
+
         $r->log_rerror(Apache2::Log::LOG_MARK, Apache2::Const::LOG_INFO,
                        APR::Const::SUCCESS, "STATEMENT: $statement");
-        
+
         my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
         
         #$r->log_error("RESULT: ".Data::Dumper->Dump([$pl]));
