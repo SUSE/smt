@@ -1,0 +1,36 @@
+start = element patch {
+  attribute id {xsd:integer},                # SMT ID of the patch
+  attribute name {xsd:string},               # patch's Unix name
+  attribute version {xsd:integer|""},        # patch's version number
+  attribute category {                       # patch importance category
+    "security"     |
+    "recommended"  |
+    "optional"     |
+    "mandatory"    |
+    "feature"},
+  element description {text},                # description of issues fixed by the patch
+  element issued {
+    attribute date {xsd:integer}             # patch release time stamp
+  },
+  element packages {                         # packages which need update as part of this patch
+    element package {                        # individual RPM package data
+      attribute name {xsd:string},           # package name
+      attribute epoch {xsd:integer|""},      # epoch number
+      attribute version {xsd:string},        # version string
+      attribute release {xsd:string},        # release string
+      attribute arch {xsd:string},           # architecture string
+      element origlocation {xsd:anyURI},     # URL of the RPM package in the original repository
+      element smtlocation {xsd:anyURI}       # URL of the RPM package at the SMT server
+    }*
+  },
+  element references {                       # references to issues fixed by this patch
+    element reference {                      # individual reference details
+      attribute id {xsd:string},             # ID number of the issue (bugzilla or CVE number)
+      attribute title {xsd:string},          # issue title
+      attribute type {"bugzilla"|"cve"},     # type of the issue
+      attribute href {xsd:anyURI}            # URL of the issue in its issue tracking system
+    }*
+  },
+  element title {xsd:string}                 # title of the patch
+}
+

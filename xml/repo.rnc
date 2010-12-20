@@ -1,0 +1,15 @@
+
+start = element repo {                       # repository
+  attribute id {xsd:integer},                # SMT ID of the repository
+  attribute name {xsd:string},               # repository's Unix name
+  attribute target {xsd:string},             # repository's target product
+  attribute type {"nu" | "yum" | "zypp" | "pum"}, # type of repository
+  element description {xsd:string},          # description of the repository
+  element localpath {xsd:string},            # path to local SMT mirror of the repository
+  element mirrored {
+    attribute date {xsd:integer|""}          # timestamp of the last successful mirror
+                                             # (empty if not mirrored yet)
+  },
+  element url {xsd:anyURI}                   # original URL of the repository
+}
+

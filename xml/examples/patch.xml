@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<patch name="slesmtsp0-htmldoc" category="security" id="1206" version="1681">
+  <description>Specially crafted files could cause a buffer overflow in
+htmldoc (CVE-2009-3050).
+</description>
+  <issued date="1261064940"/>
+  <packages>
+    <package name="htmldoc" arch="i586" epoch="" release="170.4.1" version="1.8.27">
+      <origlocation>https://nu.novell.com/repo/$RCE/SLE11-SMT-Updates/sle-11-i586/rpm/i586/htmldoc-1.8.27-170.4.1.i586.rpm</origlocation>
+      <smtlocation>http://kompost.suse.cz/repo/$RCE/SLE11-SMT-Updates/sle-11-i586/rpm/i586/htmldoc-1.8.27-170.4.1.i586.rpm</smtlocation>
+    </package>
+  </packages>
+  <references>
+    <reference id="535943" href="https://bugzilla.novell.com/show_bug.cgi?id=535943" title="bug number 535943" type="bugzilla"/>
+    <reference id="CVE-2009-3050" href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-3050" title="CVE-2009-3050" type="cve"/>
+  </references>
+  <title>Security update for htmldoc</title>
+</patch>

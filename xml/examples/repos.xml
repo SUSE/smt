@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<repos>
+  <repo name="SLES11-Extras" id="263" mirrored="1284728663" target="sle-11-i586"/>
+  <repo name="SLE11-SP1-Debuginfo-Pool" id="456" mirrored="" target="sle-11-i586"/>
+  <repo name="SLE11-WebYaST-SP1-Pool" id="55" mirrored="" target="sle-11-i586"/>
+  <repo name="SLE11-SP1-Debuginfo-Updates" id="247" mirrored="" target="sle-11-i586"/>
+  <repo name="SLES11-SP1-Updates" id="445" mirrored="" target="sle-11-i586"/>
+  <repo name="SLE11-WebYaST-SP1-Updates" id="27" mirrored="" target="sle-11-i586"/>
+  <repo name="SLES11-SP1-Pool" id="32" mirrored="" target="sle-11-i586"/>
+</repos>

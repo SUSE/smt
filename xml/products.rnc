@@ -1,0 +1,10 @@
+start = element products {
+  element product {
+    attribute id {xsd:integer},         # SMT ID of the product
+    attribute name {xsd:string},        # Unix name of the product
+    attribute version {xsd:string},     # version string
+    attribute rel {xsd:string},         # release string
+    attribute arch {xsd:string},        # target machine architecture string
+    attribute uiname {xsd:string}       # name of the product to be displayed to users
+  }*
+}

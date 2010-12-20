@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<products>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="i386" id="424" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="x86_64" id="425" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="i586" id="422" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="i486" id="423" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="i686" id="421" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1-migration" arch="x86_64" id="420" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1-migration" arch="i486" id="418" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1-migration" arch="i386" id="419" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1-migration" arch="i686" id="416" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1-migration" arch="i586" id="417" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1 Migration" version="10"/>
+  <product name="openSUSE-10.3-dvd5-download" arch="" id="376" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-CD-download" arch="" id="377" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="Zenworks Linux Management" arch="" id="396" rel="" uiname="Zenworks Linux Management 7.2" version="7.2"/>
+  <product name="openSUSE-10.2-FTP" arch="" id="340" rel="" uiname="openSUSE 10.2" version="10.2"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-i386" arch="i686" id="21" rel="" uiname="SUSE Linux Enterprise Desktop 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-i386" arch="i586" id="22" rel="" uiname="SUSE Linux Enterprise Desktop 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-i386" arch="i486" id="23" rel="" uiname="SUSE Linux Enterprise Desktop 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-i386" arch="i386" id="24" rel="" uiname="SUSE Linux Enterprise Desktop 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-x86_64" arch="x86_64" id="25" rel="" uiname="SUSE Linux Enterprise Desktop 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-i386" arch="i686" id="26" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-i386" arch="i586" id="27" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-i386" arch="i486" id="28" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-i386" arch="i386" id="29" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-x86_64" arch="x86_64" id="30" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-ppc" arch="ppc" id="31" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-ppc" arch="ppc64" id="32" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-ia64" arch="ia64" id="33" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-s390x" arch="s390x" id="34" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-s390x" arch="s390" id="35" rel="" uiname="SUSE Linux Enterprise Server 10" version="10"/>
+  <product name="nVidia Video Drivers" arch="" id="141" rel="" uiname="nVidia Video Drivers" version=""/>
+  <product name="ATI Video Drivers" arch="" id="142" rel="" uiname="ATI Video Drivers" version=""/>
+  <product name="SUSE-Linux-Enterprise-SDK-i386" arch="" id="176" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-x86_64" arch="" id="177" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-ia64" arch="" id="178" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-s390x" arch="" id="179" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-ppc" arch="" id="180" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="openSUSE-10.2-CD-download" arch="" id="236" rel="" uiname="SUSE Linux 10.2" version="10.2"/>
+  <product name="SUSE-Linux-Enterprise-RT" arch="" id="276" rel="" uiname="SUSE Linux Enterprise Real-Time 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-DVD-i386" arch="" id="316" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-DVD-x86_64" arch="" id="317" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-DVD-ia64" arch="" id="318" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-DVD-s390x" arch="" id="319" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-DVD-ppc" arch="" id="320" rel="" uiname="SUSE Linux 10 Software Development Kit" version="10"/>
+  <product name="openSUSE-10.2-dvd5-download" arch="" id="336" rel="" uiname="openSUSE 10.2" version="10.2"/>
+  <product name="openSUSE-10.2-CD-retail" arch="" id="337" rel="" uiname="openSUSE 10.2" version="10.2"/>
+  <product name="openSUSE-10.2-DVD9-retail" arch="" id="338" rel="" uiname="openSUSE 10.2" version="10.2"/>
+  <product name="openSUSE-10.2-Promo" arch="" id="339" rel="" uiname="openSUSE 10.2" version="10.2"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="ppc" id="426" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="ppc64" id="427" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="ia64" id="428" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="s390" id="429" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1-migration" arch="s390x" id="430" rel="" uiname="SUSE Linux Enterprise Server 10 SP1 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i686" id="431" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i586" id="432" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i486" id="433" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i386" id="434" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="x86_64" id="435" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i686" id="436" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i586" id="437" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i486" id="438" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i386" id="439" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="x86_64" id="440" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="ppc" id="441" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="ppc64" id="442" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="ia64" id="443" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="s390" id="444" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="s390x" id="445" rel="" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i686" id="446" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i586" id="447" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i486" id="448" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="i386" id="449" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="x86_64" id="450" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i686" id="451" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i586" id="452" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i486" id="453" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="i386" id="454" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="x86_64" id="455" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="ppc" id="456" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="ppc64" id="457" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="ia64" id="458" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="s390" id="459" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP1" arch="s390x" id="460" rel="online" uiname="SUSE Linux Enterprise Server 10 SP1" version="10"/>
+  <product name="Novell-Open-Enterprise-Server-i386" arch="i486" id="538" rel="" uiname="Novell Open Enterprise Server 2" version="2"/>
+  <product name="Novell-Open-Enterprise-Server-i386" arch="i686" id="536" rel="" uiname="Novell Open Enterprise Server 2" version="2"/>
+  <product name="Novell-Open-Enterprise-Server-i386" arch="i586" id="537" rel="" uiname="Novell Open Enterprise Server 2" version="2"/>
+  <product name="Novell-Open-Enterprise-Server-i386" arch="i386" id="539" rel="" uiname="Novell Open Enterprise Server 2" version="2"/>
+  <product name="Novell-Open-Enterprise-Server-x86_64" arch="x86_64" id="540" rel="" uiname="Novell Open Enterprise Server 2" version="2"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP1-migration" arch="" id="556" rel="" uiname="SUSE Linux 10 SP1 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP1" arch="" id="557" rel="" uiname="SUSE Linux 10 SP1 Software Development Kit" version="10"/>
+  <product name="openSUSE-10.3-GNOME-download" arch="" id="560" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-KDE-download" arch="" id="561" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="SUSE-Linux-Enterprise-Virtual-Machine-Driver-Pack" arch="" id="580" rel="" uiname="SUSE Linux Enterprise Virtual Machine Driver Pack 1.1" version="10"/>
+  <product name="ZENworks Pulsar" arch="" id="600" rel="" uiname="ZENworks Pulsar 1.0" version="1.0"/>
+  <product name="SUSE-Linux-Enterprise-HA-Server" arch="" id="621" rel="" uiname="SUSE Linux Enterprise HA Server 1.0" version="1.0"/>
+  <product name="ZENworks_Orchestrator" arch="i686" id="640" rel="" uiname="ZENworks Orchestrator 1.1" version="1.1"/>
+  <product name="openSUSE-10.3-OSS-Gnome" arch="" id="660" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-OSS-KDE" arch="" id="661" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-DVD" arch="" id="662" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-retail" arch="" id="663" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-FTP" arch="" id="664" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="SUSE-Linux-Enterprise-RT" arch="" id="680" rel="" uiname="SUSE Linux Enterprise Server RT Solution 10" version="10.2.0"/>
+  <product name="openSUSE-10.3-DVD-ct" arch="" id="700" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-DVD-Magazine" arch="" id="701" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="" id="720" rel="Lenovo_1_1y" uiname="SUSE Linux Enterprise Desktop 10 SP1 (Lenovo Edition)" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="" id="721" rel="Lenovo_1_3y" uiname="SUSE Linux Enterprise Desktop 10 SP1 (Lenovo Edition)" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="" id="722" rel="DellChina" uiname="SUSE Linux Enterprise Desktop 10 SP1 (Dell Edition)" version="10"/>
+  <product name="openSUSE-10.3-Live-Gnome" arch="" id="740" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-Live-KDE" arch="" id="741" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="openSUSE-10.3-Promo" arch="" id="742" rel="" uiname="openSUSE 10.3" version="10.3"/>
+  <product name="SUSE-Linux-SLES-i386" arch="" id="760" rel="" uiname="SUSE Linux Enterprise Server 9" version="9"/>
+  <product name="SLES9-SLD-SP-i386" arch="" id="761" rel="" uiname="Novell Linux Desktop 9" version="9"/>
+  <product name="Novell-Open-Enterprise-Server-i386" arch="" id="762" rel="" uiname="Novell Open Enterprise Server" version="9"/>
+  <product name="SUSE-Linux-SLES-x86_64" arch="" id="763" rel="" uiname="SUSE Linux Enterprise Server 9" version="9"/>
+  <product name="SLES9-SLD-SP-x86_64" arch="" id="764" rel="" uiname="Novell Linux Desktop 9" version="9"/>
+  <product name="Novell-Open-Enterprise-Server-x86_64" arch="" id="765" rel="" uiname="Novell Open Enterprise Server" version="9"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2-migration" arch="i686" id="800" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2-migration" arch="i586" id="801" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2-migration" arch="i486" id="802" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2-migration" arch="i386" id="803" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2-migration" arch="x86_64" id="804" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="i686" id="805" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="i586" id="806" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="i486" id="807" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="i386" id="808" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="x86_64" id="809" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="ppc" id="810" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="ppc64" id="811" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="ia64" id="812" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="s390" id="813" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-migration" arch="s390x" id="814" rel="" uiname="SUSE Linux Enterprise Server 10 SP2 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i686" id="815" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i586" id="816" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i486" id="817" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i386" id="818" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="x86_64" id="819" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i686" id="820" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i586" id="821" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i486" id="822" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i386" id="823" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="x86_64" id="824" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="ppc" id="825" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="ppc64" id="826" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="ia64" id="827" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="s390" id="828" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="s390x" id="829" rel="" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i686" id="830" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i586" id="831" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i486" id="832" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="i386" id="833" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="x86_64" id="834" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i686" id="835" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i586" id="836" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i486" id="837" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="i386" id="838" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="x86_64" id="839" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="ppc" id="840" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="ppc64" id="841" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="ia64" id="842" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="s390" id="843" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2" arch="s390x" id="844" rel="online" uiname="SUSE Linux Enterprise Server 10 SP2" version="10"/>
+  <product name="SUSE-Linux-Enterprise-POS" arch="" id="860" rel="" uiname="SUSE Linux Enterprise Point of Service 10" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP2" arch="" id="880" rel="" uiname="SUSE Linux 10 SP2 Software Development Kit" version="10"/>
+  <product name="ZENworks Pulsar" arch="" id="900" rel="" uiname="ZENworks Pulsar 2.0" version="2.0"/>
+  <product name="ATI Video Drivers SP2" arch="" id="921" rel="" uiname="ATI Video Drivers SP2" version=""/>
+  <product name="SUSE-Linux-Enterprise-Thin-Client" arch="" id="940" rel="SP1" uiname="SUSE Linux Enterprise 10 Thin Client SP1" version="10"/>
+  <product name="openSUSE-DVD" arch="" id="960" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-FTP" arch="" id="961" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-OSS-KDE" arch="" id="962" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-OSS-Gnome" arch="" id="963" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-DVD-Magazine" arch="" id="964" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-DVD-Cover" arch="" id="965" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-retail" arch="" id="966" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-Live-KDE" arch="" id="967" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-Live-Gnome" arch="" id="968" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="openSUSE-Promo" arch="" id="969" rel="" uiname="openSUSE 11.0" version="11.0"/>
+  <product name="SUSE-Linux-Enterprise-Thin-Client" arch="" id="980" rel="SP2" uiname="SUSE Linux Enterprise 10 Thin Client SP2" version="10"/>
+  <product name="NOWS-SBE" arch="" id="1000" rel="" uiname="Novell Open Workgroup Suite - Small Business Edition Product Version: 2" version="10.2.0"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP2-migration" arch="" id="1002" rel="online" uiname="SUSE Linux 10 SP2 Software Development Kit" version="10"/>
+  <product name="JeOS" arch="" id="1020" rel="" uiname="SUSE Linux Enterprise JeOS Beta" version="10.2.0"/>
+  <product name="SUSE-Linux-Enterprise-SMT-SP2" arch="" id="1021" rel="" uiname="SUSE Linux Enterprise 10 SP2 Subscription Managment Tool" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-10-SP1-SAP-AiO" arch="" id="1040" rel="SP1" uiname="SUSE Linux Enterprise Server 10 SP1 SAP AiO" version=""/>
+  <product name="Novell-Open-Enterprise-Server-SP1" arch="" id="1060" rel="" uiname="Novell Open Enterprise Server 2 SP1" version="2"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP2-SAP-AiO" arch="" id="1080" rel="SP2" uiname="SUSE Linux Enterprise Server for SAP Business All-in-One" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="" id="1100" rel="DellChina" uiname="SUSE Linux Enterprise Desktop 10 SP2 (Dell Edition)" version="10"/>
+  <product name="SUSE-Linux-Enterprise-RT" arch="" id="1120" rel="" uiname="SUSE Linux Enterprise Server RT Solution 10" version="10.2.2"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="" id="1140" rel="HP_01" uiname="SUSE Linux Enterprise Desktop 10 SP2 (HP Edition)" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP1" arch="" id="1160" rel="HP_07" uiname="SUSE Linux Enterprise Desktop 10 SP1 (HP Edition)" version="10"/>
+  <product name="Novell-Open-Enterprise-Server-SP1-migration" arch="" id="1180" rel="" uiname="Novell Open Enterprise Server 2 SP1 Migration" version="2"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP2" arch="" id="1200" rel="Lenovo_1_1y" uiname="SUSE Linux Enterprise Desktop 10 SP2 (Lenovo Edition)" version="10"/>
+  <product name="SUSE_SLED" arch="i686" id="1220" rel="" uiname="SUSE Linux Enterprise Desktop 11" version="11"/>
+  <product name="SUSE_SLED" arch="i586" id="1221" rel="" uiname="SUSE Linux Enterprise Desktop 11" version="11"/>
+  <product name="SUSE_SLED" arch="i486" id="1222" rel="" uiname="SUSE Linux Enterprise Desktop 11" version="11"/>
+  <product name="SUSE_SLED" arch="i386" id="1223" rel="" uiname="SUSE Linux Enterprise Desktop 11" version="11"/>
+  <product name="SUSE_SLED" arch="x86_64" id="1224" rel="" uiname="SUSE Linux Enterprise Desktop 11" version="11"/>
+  <product name="SUSE_SLES" arch="i686" id="1225" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="i586" id="1226" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="i486" id="1227" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="i386" id="1228" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="x86_64" id="1229" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="ppc" id="1230" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="ppc64" id="1231" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="ia64" id="1232" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="s390" id="1233" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="SUSE_SLES" arch="s390x" id="1234" rel="" uiname="SUSE Linux Enterprise Server 11" version="11"/>
+  <product name="sle-sdk" arch="" id="1240" rel="" uiname="SUSE Linux Enterprise 11 Software Development Kit" version="11"/>
+  <product name="openSUSE" arch="" id="1260" rel="" uiname="openSUSE 11.1" version="11.1"/>
+  <product name="openSUSE" arch="retail" id="1261" rel="" uiname="openSUSE 11.1" version="11.1"/>
+  <product name="SUSE_SLED" arch="" id="1360" rel="HP-BNB" uiname="SUSE Linux Enterprise Desktop 11 (HP BNB Edition)" version="11"/>
+  <product name="RES" arch="" id="1320" rel="" uiname="RES 3" version="3"/>
+  <product name="RES" arch="" id="1321" rel="" uiname="RES 4" version="4"/>
+  <product name="RES" arch="" id="1322" rel="" uiname="RES 5" version="5"/>
+  <product name="SUSE-Linux-Enterprise-Mono-Extension" arch="" id="1340" rel="" uiname="SUSE Linux Enterprise Mono Extension 2.4" version="10.2.2.4"/>
+  <product name="sle-mono" arch="" id="1341" rel="" uiname="SUSE Linux Enterprise Mono Extension 2.4" version="11.0.2.4"/>
+  <product name="SUSE_SLED" arch="" id="1361" rel="HP-WGBU" uiname="SUSE Linux Enterprise Desktop 11 (HP WGBU Edition)" version="11"/>
+  <product name="SUSE_SLED" arch="" id="1380" rel="MSI" uiname="SUSE Linux Enterprise Desktop 11 (MSI Edition)" version="11"/>
+  <product name="sle-hae" arch="i686" id="1400" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="sle-hae" arch="i586" id="1401" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="sle-hae" arch="i486" id="1402" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="sle-hae" arch="i386" id="1403" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="sle-hae" arch="x86_64" id="1404" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="sle-hae" arch="ia64" id="1405" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="sle-hae" arch="ppc64" id="1406" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="sle-hae" arch="s390x" id="1407" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11" version="11"/>
+  <product name="SUSE_SLED" arch="" id="1440" rel="HP-DPC" uiname="SUSE Linux Enterprise Desktop 11 (HP DPC Edition)" version="11"/>
+  <product name="sle-smt" arch="" id="1460" rel="" uiname="SUSE Linux Enterprise 11 Subscription Managment Tool" version="11"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3-migration" arch="i686" id="1480" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3-migration" arch="i586" id="1481" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3-migration" arch="i486" id="1482" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3-migration" arch="i386" id="1483" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3-migration" arch="x86_64" id="1484" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="i686" id="1485" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="i586" id="1486" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="i486" id="1487" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="i386" id="1488" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="x86_64" id="1489" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="ppc" id="1490" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="ppc64" id="1491" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="ia64" id="1492" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="s390" id="1493" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-migration" arch="s390x" id="1494" rel="" uiname="SUSE Linux Enterprise Server 10 SP3 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i686" id="1495" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i586" id="1496" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i486" id="1497" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i386" id="1498" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="x86_64" id="1499" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i686" id="1500" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i586" id="1501" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i486" id="1502" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i386" id="1503" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="x86_64" id="1504" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="ppc" id="1505" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="ppc64" id="1506" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="ia64" id="1507" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="s390" id="1508" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="s390x" id="1509" rel="" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i686" id="1510" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i586" id="1511" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i486" id="1512" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="i386" id="1513" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP3" arch="x86_64" id="1514" rel="online" uiname="SUSE Linux Enterprise Desktop 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i686" id="1515" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i586" id="1516" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i486" id="1517" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="i386" id="1518" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="x86_64" id="1519" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="ppc" id="1520" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="ppc64" id="1521" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="ia64" id="1522" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="s390" id="1523" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3" arch="s390x" id="1524" rel="online" uiname="SUSE Linux Enterprise Server 10 SP3" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP3" arch="" id="1541" rel="" uiname="SUSE Linux 10 SP3 Software Development Kit" version="10"/>
+  <product name="sle-pos" arch="" id="1560" rel="" uiname="SUSE Linux Enterprise Point of Service 11" version="11"/>
+  <product name="Novell-Open-Enterprise-Server-SP2" arch="" id="1580" rel="" uiname="Novell Open Enterprise Server 2 SP2" version="2"/>
+  <product name="SUSE_SLES" arch="" id="1600" rel="EC2-DevPay-Public" uiname="SUSE Linux Enterprise Server 11 (Amazon EC2 Image)" version="11"/>
+  <product name="NOWS-SBE" arch="" id="1620" rel="" uiname="Novell Open Workgroup Suite - Small Business Edition 2.5" version="10.2.5"/>
+  <product name="suse-moblin" arch="" id="1640" rel="" uiname="SUSE Moblin 2" version="2"/>
+  <product name="suse-moblin" arch="" id="1641" rel="Samsung" uiname="SUSE Moblin 2 (Samsung Edition)" version="2"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP2" arch="" id="881" rel="MigrationBeta" uiname="SUSE Linux 10 SP2 Software Development Kit" version="10"/>
+  <product name="Novell-Open-Enterprise-Server-SP2-migration" arch="" id="1660" rel="" uiname="Novell Open Enterprise Server 2 SP2 Migration" version="2"/>
+  <product name="ATI Video Drivers SP3" arch="" id="1680" rel="" uiname="ATI Video Drivers SP3" version=""/>
+  <product name="nVidia Video Drivers SP3" arch="" id="1681" rel="" uiname="nVidia Video Drivers SP3" version=""/>
+  <product name="SUSE-Linux-Enterprise-RT" arch="" id="1700" rel="" uiname="SUSE Linux Enterprise Server RT Solution 10" version="10.3"/>
+  <product name="sle-slms" arch="" id="1720" rel="" uiname="SUSE Lifecycle Management Server 1.0" version="1.0"/>
+  <product name="sle-studioonsite" arch="" id="1740" rel="" uiname="SUSE Studio OnSite 1.0" version="1.0"/>
+  <product name="sle-11-WebYaST" arch="" id="1760" rel="" uiname="WebYaST 1.0" version="1.0"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-SAP-APL" arch="" id="1780" rel="SP3" uiname="SUSE Linux Enterprise for SAP Appliances" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SMT-SP3" arch="" id="1800" rel="" uiname="SUSE Linux Enterprise 10 SP3 Subscription Management Tool" version="10.3"/>
+  <product name="SUSE_SLED" arch="i686" id="1820" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1" version="11.1"/>
+  <product name="SUSE_SLED" arch="i586" id="1821" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1" version="11.1"/>
+  <product name="SUSE_SLED" arch="i486" id="1822" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1" version="11.1"/>
+  <product name="SUSE_SLED" arch="i386" id="1823" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1" version="11.1"/>
+  <product name="SUSE_SLED" arch="x86_64" id="1824" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="i686" id="1825" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="i586" id="1826" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="i486" id="1827" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="i386" id="1828" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="x86_64" id="1829" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="ppc" id="1830" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="ppc64" id="1831" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="ia64" id="1832" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="s390" id="1833" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLES" arch="s390x" id="1834" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="SUSE_SLED-SP1-migration" arch="i686" id="1837" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration" version="11"/>
+  <product name="SUSE_SLED-SP1-migration" arch="i586" id="1838" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration" version="11"/>
+  <product name="SUSE_SLED-SP1-migration" arch="i486" id="1839" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration" version="11"/>
+  <product name="SUSE_SLED-SP1-migration" arch="i386" id="1840" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration" version="11"/>
+  <product name="SUSE_SLED-SP1-migration" arch="x86_64" id="1841" rel="" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="i686" id="1842" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="i586" id="1843" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="i486" id="1844" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="i386" id="1845" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="x86_64" id="1846" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="ppc" id="1847" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="ppc64" id="1848" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="ia64" id="1849" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="s390" id="1850" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="SUSE_SLES-SP1-migration" arch="s390x" id="1851" rel="" uiname="SUSE Linux Enterprise Server 11 SP1" version="11"/>
+  <product name="sle-sdk" arch="" id="1860" rel="" uiname="SUSE Linux Enterprise 11 SP1 Software Development Kit" version="11.1"/>
+  <product name="sle-sdk-SP1-migration" arch="" id="1861" rel="" uiname="SUSE Linux Enterprise 11 SP1 Software Development Kit" version="11"/>
+  <product name="sle-hae" arch="i686" id="1880" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="i586" id="1881" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="i486" id="1882" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="i386" id="1883" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="x86_64" id="1884" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="ppc" id="1885" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="ppc64" id="1886" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="ia64" id="1887" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="s390" id="1888" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae" arch="s390x" id="1889" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1" version="11.1"/>
+  <product name="sle-hae-SP1-migration" arch="i686" id="1890" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="i586" id="1891" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="i486" id="1892" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="i386" id="1893" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="x86_64" id="1894" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="ppc" id="1895" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="ppc64" id="1896" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="ia64" id="1897" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="s390" id="1898" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="sle-hae-SP1-migration" arch="s390x" id="1899" rel="" uiname="SUSE Linux Enterprise High Availability Extension 11 SP1 Migration" version="11"/>
+  <product name="SUSE_SLED" arch="" id="1900" rel="HP-BNB-2010" uiname="SUSE Linux Enterprise Desktop 11 (HP BNB 2010 Edition)" version="11"/>
+  <product name="suse-moblin" arch="" id="1920" rel="" uiname="SUSE Linux Enterprise Moblin 2.1" version="2.1"/>
+  <product name="suse-moblin" arch="" id="1921" rel="MSI" uiname="SUSE Linux Enterprise Moblin 2.1 (MSI Edition)" version="2.1"/>
+  <product name="NAM_AGA" arch="" id="1941" rel="" uiname="Novell Access Manager 3.1 - Access Gateway Appliance" version="3.1"/>
+  <product name="SUSE_SLED" arch="" id="1960" rel="HP-CNB" uiname="SUSE Linux Enterprise Desktop 11 (HP CNB Edition)" version="11"/>
+  <product name="webyast_on_sles11_for_slmsncc_integration_i586" arch="" id="1980" rel="" uiname="WebYaST on SLES11 for SLMS-NCC integration" version="0.0.1"/>
+  <product name="sentinel_log_manager_1010_32_i586" arch="" id="2000" rel="" uiname="Sentinel Log Manager" version="0.424.4"/>
+  <product name="sentinel_log_manager_1010_64_x86_64" arch="" id="2001" rel="" uiname="Sentinel Log Manager" version="0.424.4"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP3-migration" arch="" id="2020" rel="" uiname="SUSE Linux 10 SP3 Software Development Kit Migration" version="10"/>
+  <product name="SUSE_SLED" arch="" id="2040" rel="HP-BNB" uiname="SUSE Linux Enterprise Desktop 11 SP1 (HP BNB Edition)" version="11.1"/>
+  <product name="SUSE_SLED" arch="" id="2041" rel="HP-BNB-2010" uiname="SUSE Linux Enterprise Desktop 11 SP1 (HP BNB 2010 Edition)" version="11.1"/>
+  <product name="SUSE_SLED-SP1-migration" arch="" id="2042" rel="HP-BNB" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration (HP BNB 2010 Edition)" version="11"/>
+  <product name="SUSE_SLED-SP1-migration" arch="" id="2043" rel="HP-BNB-2010" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration (HP BNB 2010 Edition)" version="11"/>
+  <product name="suse-moblin" arch="" id="2060" rel="Samsung" uiname="SUSE Linux Enterprise Moblin 2.1 (Samsung Edition)" version="2.1"/>
+  <product name="sle-pos" arch="" id="2080" rel="" uiname="SUSE Linux Enterprise Point of Service 11 SP1" version="11.1"/>
+  <product name="SUSE_SLED" arch="" id="2100" rel="HP-CNB" uiname="SUSE Linux Enterprise Desktop 11 SP1 (HP CNB Edition)" version="11.1"/>
+  <product name="SUSE_SLED-SP1-migration" arch="" id="2101" rel="HP-CNB" uiname="SUSE Linux Enterprise Desktop 11 SP1 Migration (HP CNB Edition)" version="11"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP3-SAP-APL-migration" arch="" id="2120" rel="" uiname="SUSE Linux Enterprise for SAP Appliances Migration" version="10"/>
+  <product name="sle-pos-SP1-migration" arch="" id="2140" rel="" uiname="SUSE Linux Enterprise Point of Service 11 SP1 Migration" version="11"/>
+  <product name="sentinel_log_manager_1100_64_iso_x86_64" arch="x86_64" id="2180" rel="5e1b6a891359cdead4affc72b08ca690" uiname="Sentinal Log Manager" version="0.777.0"/>
+  <product name="sentinel_log_manager_1100_64_vmx_x86_64" arch="x86_64" id="2181" rel="c95e5b8875893a4bf22ebb01c4258375" uiname="Sentinal Log Manager" version="0.777.0"/>
+  <product name="sentinel_log_manager_1100_64_xen_x86_64" arch="x86_64" id="2182" rel="6fcd61901f79fefa584955fc936e8863" uiname="Sentinal Log Manager" version="0.777.0"/>
+  <product name="suse-meego" arch="" id="2200" rel="HP-CNB" uiname="SUSE Meego (HP CNB Edition)" version="1.0"/>
+  <product name="sle-studioonsite" arch="" id="2220" rel="" uiname="SUSE Studio OnSite 1.1" version="1.1"/>
+  <product name="SUSE-Linux-Enterprise-RT" arch="" id="2240" rel="" uiname="SUSE Linux Enterprise Real-Time 11.1" version="11.1"/>
+  <product name="sle-slms" arch="" id="2260" rel="" uiname="SUSE Lifecycle Management Server 1.0" version="1.1"/>
+  <product name="sle-slms-1.1-migration" arch="" id="2261" rel="" uiname="SUSE Lifecycle Management Server 1.0" version="1.0"/>
+  <product name="sle-smt" arch="" id="2280" rel="" uiname="SUSE Linux Enterprise 11 SP1 Subscription Managment Tool" version="11.1"/>
+  <product name="ZENworks" arch="" id="2300" rel="" uiname="ZENworks" version="11"/>
+  <product name="SUSE_SLES" arch="" id="2320" rel="VMWARE" uiname="SUSE Linux Enterprise Server 11 SP1" version="11.1"/>
+  <product name="sle-11-WebYaST" arch="" id="2340" rel="" uiname="WebYaST 1.1" version="1.1"/>
+  <product name="datasynchronizer-mobilitypack" arch="" id="2360" rel="" uiname="Data Synchronizer Mobility Pack 1" version="1"/>
+  <product name="SUSE_SLED" arch="" id="2380" rel="ACER" uiname="SUSE Linux Enterprise Desktop 11 SP1 (Acer Edition)" version="11.1"/>
+  <product name="suse-meego" arch="" id="2400" rel="MSI" uiname="SUSE Meego (MSI Edition)" version="1.0"/>
+  <product name="RES4-JBOSS" arch="" id="2440" rel="" uiname="JBoss Enterprise Application Platform 4.3.0 for RES 4" version="4.3.0"/>
+  <product name="RES5-JBOSS" arch="" id="2441" rel="" uiname="JBoss Enterprise Application Platform 4.3.0 for RES 5" version="4.3.0"/>
+  <product name="RES4-JBOSS" arch="" id="2460" rel="" uiname="JBoss Enterprise Application Platform 5.1.0 for RES 4" version="5.1.0"/>
+  <product name="RES5-JBOSS" arch="" id="2461" rel="" uiname="JBoss Enterprise Application Platform 5.1.0 for RES 5" version="5.1.0"/>
+  <product name="RES4-JBOSS" arch="" id="2480" rel="" uiname="JBoss Enterprise Application Platform 5.0.1 for RES 4" version="5.0.1"/>
+  <product name="RES5-JBOSS" arch="" id="2481" rel="" uiname="JBoss Enterprise Application Platform 5.0.1 for RES 5" version="5.0.1"/>
+  <product name="Novell-Open-Enterprise-Server-SP3" arch="" id="2500" rel="" uiname="Novell Open Enterprise Server 2 SP3" version="2"/>
+  <product name="Novell-Open-Enterprise-Server-SP3-migration" arch="" id="2501" rel="" uiname="Novell Open Enterprise Server 2 SP3 Migration" version="2"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4-migration" arch="i686" id="2502" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4-migration" arch="i586" id="2503" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4-migration" arch="i486" id="2504" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4-migration" arch="i386" id="2505" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4-migration" arch="x86_64" id="2506" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="i686" id="2507" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="i586" id="2508" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="i486" id="2509" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="i386" id="2510" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="x86_64" id="2511" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="ppc" id="2512" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="ppc64" id="2513" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="ia64" id="2514" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="s390" id="2515" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4-migration" arch="s390x" id="2516" rel="" uiname="SUSE Linux Enterprise Server 10 SP4 Migration" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4" arch="i686" id="2517" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4" arch="i586" id="2518" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4" arch="i486" id="2519" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4" arch="i386" id="2520" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Desktop-SP4" arch="x86_64" id="2521" rel="" uiname="SUSE Linux Enterprise Desktop 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="i686" id="2522" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="i586" id="2523" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="i486" id="2524" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="i386" id="2525" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="x86_64" id="2526" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="ppc" id="2527" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="ppc64" id="2528" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="ia64" id="2529" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="s390" id="2530" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="SUSE-Linux-Enterprise-Server-SP4" arch="s390x" id="2531" rel="" uiname="SUSE Linux Enterprise Server 10 SP4" version="10"/>
+  <product name="ATI Video Drivers SP4" arch="" id="2532" rel="" uiname="ATI Video Drivers SP4" version=""/>
+  <product name="nVidia Video Drivers SP4" arch="" id="2533" rel="" uiname="nVidia Video Drivers SP4" version=""/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP4" arch="" id="2534" rel="" uiname="SUSE Linux 10 SP4 Software Development Kit" version="10"/>
+  <product name="SUSE-Linux-Enterprise-SDK-SP4-migration" arch="" id="2535" rel="" uiname="SUSE Linux 10 SP4 Software Development Kit Migration" version="10"/>
+</products>

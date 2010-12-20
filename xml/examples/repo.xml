@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<repo name="SLES11-SP1-Updates" id="445" target="sle-11-i586" type="nu">
+  <description>SLES11-SP1-Updates for sle-11-i586</description>
+  <localpath>/local/htdocs/repo/$RCE/SLES11-SP1-Updates/sle-11-i586</localpath>
+  <mirrored date=""/>
+  <url>https://nu.novell.com/repo/$RCE/SLES11-SP1-Updates/sle-11-i586/</url>
+</repo>

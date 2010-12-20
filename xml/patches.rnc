@@ -1,0 +1,14 @@
+start = element patches {
+  element patch {
+    attribute id {xsd:integer},                # SMT ID of the patch
+    attribute name {xsd:string},               # patch's Unix name
+    attribute version {xsd:integer|""},        # patch's version number
+    attribute category {                       # patch importance category
+      "security"    |
+      "recommended" |
+      "optional"    |
+      "mandatory"   |
+      "featire"}
+  }*
+}
+
