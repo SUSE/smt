@@ -1342,8 +1342,8 @@ sub isZyppMirrorable
         else
         {
           my $saveuri = URI->new($remote);
-          $saveuri->userinfo(undef);
-          
+          $saveuri->userinfo(undef) if($saveuri->scheme ne "file");
+
           printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("Failed to download '%s': %s"),
                    $saveuri->as_string(), $response->status_line));
           printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, $response->as_string());
