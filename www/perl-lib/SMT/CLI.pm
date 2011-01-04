@@ -772,7 +772,7 @@ sub setMirrorableCatalogs
                     elsif($opt{debug})
                     {
                         my $saveuri = URI->new($remote);
-                        $saveuri->userinfo(undef);
+                        $saveuri->userinfo(undef) if($saveuri->scheme ne "file");
 
                         printLog($opt{log}, "debug", sprintf(__("Failed to download '%s': %s"),
                                                   $saveuri->as_string(), $response->status_line));
