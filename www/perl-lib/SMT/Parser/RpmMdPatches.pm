@@ -300,6 +300,7 @@ sub handle_start_tag
     elsif ( lc($element) eq "issued" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
     {
         $self->{CURRENT}->{PATCHDATE} = $attrs{date};
+        $self->{CURRENT}->{SUBELEMENT} = lc($element) if (! $attrs{date});
     }
     elsif ( lc($element) eq "title" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
     {
@@ -431,6 +432,10 @@ sub handle_char_tag
         elsif ($self->{CURRENT}->{SUBELEMENT} eq 'release')
         {
             $self->{CURRENT}->{PATCHTARGET} .= $string;
+        }
+        elsif ($self->{CURRENT}->{SUBELEMENT} eq 'issued')
+        {
+            $self->{CURRENT}->{PATCHDATE} .= $string;
         }
         elsif ($self->{CURRENT}->{MAINELEMENT} eq 'package')
         {
