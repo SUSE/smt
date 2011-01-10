@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jan 10 18:58:05 CET 2011 - jdsn@suse.de
+
+- fixed error handling if suseRegister.conf is missing (bnc#660191)
+- version 0.0.11
+
+-------------------------------------------------------------------
 Wed Jul 15 15:01:13 CEST 2009 - jdsn@suse.de
 
 - change license to GPLv2 (only)
