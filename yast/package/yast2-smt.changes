@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb 14 17:32:23 UTC 2011 - locilka@suse.cz
+
+- Fixed ag_smt to build a version using epo, rel and ver and drop
+  epo, rel, ver to prevent from Perl->YCP conversion errors while
+  parsing patch details (BNC #670654).
+
+-------------------------------------------------------------------
 Mon Apr 19 16:27:04 CEST 2010 - mc@suse.de
 
 - fix staging for yum repos (bnc#587606) 
