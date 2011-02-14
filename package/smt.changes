@@ -1,123 +1,118 @@
 -------------------------------------------------------------------
-Mon Feb  7 09:55:36 CET 2011 - mc@suse.de
+Fri Dec 17 15:07:13 CET 2010 - mc@suse.de
 
-- version 1.1.20
-- do not remove userinfo on file urls
-
--------------------------------------------------------------------
-Fri Dec 17 14:48:47 CET 2010 - mc@suse.de
-
-- fix order when matching products (bnc#659912)  
+- fix order when matching products (bnc#659912)
 
 -------------------------------------------------------------------
-Mon Nov 29 14:52:11 CET 2010 - jdsn@suse.de
+Mon Nov 29 14:53:42 CET 2010 - jdsn@suse.de
 
 - Fix use of uninitialized value during report generation (bnc#656254) 
 
 -------------------------------------------------------------------
-Fri Nov 26 16:16:27 CET 2010 - mc@suse.de
+Fri Sep 17 11:13:36 CEST 2010 - jkupec@suse.cz
 
-- Fix certificate check. Print message correctly.
-
--------------------------------------------------------------------
-Wed Nov 24 23:24:46 CET 2010 - jkupec@suse.cz
-
-- Fixed DB error when storing patches and unknown patch
-  category appears
-- version 1.1.19
-
--------------------------------------------------------------------
-Tue Nov 23 13:47:26 CET 2010 - jkupec@suse.cz
-
-- Fixed syntax error in smt-daily cron script (bnc #630170)
-
--------------------------------------------------------------------
-Fri Sep 17 15:11:36 CEST 2010 - jkupec@suse.cz
-
-- Avoid updating Last Mirror timestamp of a repository in case of
-  errors (bnc #614997)
-- version 1.1.18
-
--------------------------------------------------------------------
-Tue Sep  7 16:39:01 CEST 2010 - jkupec@suse.cz
-
-- REST API documentation added (SMT-REST-API.txt)
-- fixed empty <product uiname="...">
-- sending correct repo type in /repo/repoid REST call response
-- added mirrored time stamp to /product/productid/repos response
-
--------------------------------------------------------------------
-Thu Sep  2 11:52:45 CEST 2010 - jkupec@suse.cz
-
-- Don't run mirror if ncc-sync exits with error (bnc #630170)
-- Fixed supressed 'Finished mirroring' message if header.info
-  is not found when mirroring RES5 repositories (bnc #628676)
-
--------------------------------------------------------------------
-Wed Aug 25 15:42:15 CEST 2010 - jkupec@suse.cz
-
-- added original rpm package location data to DB and /patch/$id XML
-
--------------------------------------------------------------------
-Thu Jul 29 16:20:52 CEST 2010 - jkupec@suse.cz
-
-- new REST API added: /repos to return all available repositories
-  as XML
-- fixed a few patch caching problems in smt-mirror
-
--------------------------------------------------------------------
-Wed Jul 28 14:10:24 CEST 2010 - jkupec@suse.cz
-
+- Merged REST API changes from branch_SMT11
+  * added /products /repos and /patches
+  * see SMT-REST-API.txt
+- Bumped db migration directories' version to 0.20 because of a
+  change in branc_SMT11
 - FATE #310105 - return full repo list for mirrorUser on
   https://smt.server/repo/repoindex.xml
 
 -------------------------------------------------------------------
-Tue Jul 27 15:11:53 CEST 2010 - jkupec@suse.cz
+Thu Sep  2 11:45:17 CEST 2010 - jkupec@suse.cz
 
-- smt-mirror: match -c long option to docs (--clean) (bnc #617323)
-
--------------------------------------------------------------------
-Tue Jul 27 12:17:15 CEST 2010 - jkupec@suse.cz
-
-- added package and patch reference data to /patch/$patchid XML
+- Don't run mirror if ncc-sync exits with error (bnc #630170)
 
 -------------------------------------------------------------------
-Mon Jul 26 19:45:20 CEST 2010 - jkupec@suse.cz
+Tue Jun  1 13:55:09 CEST 2010 - mc@suse.de
 
-- new REST API added:
-  - /repo/$repoid/patches
-  - /patch/$patchid
-
--------------------------------------------------------------------
-Wed Jul 21 11:16:27 CEST 2010 - jkupec@suse.cz
-
-- new REST API added:
-  - /products
-  - /product/$productid
-  - /product/$productid/repos
-  - /repo/$repoid
+- check protocol version in registration handler
+- improve error messages in registration handler 
 
 -------------------------------------------------------------------
-Tue Jul  6 10:40:43 CEST 2010 - mc@suse.de
+Tue May 25 12:28:41 CEST 2010 - mc@suse.de
 
-- fix disabling of not mirrorable repositories (bnc#619314) 
-
--------------------------------------------------------------------
-Tue Jul  6 09:54:10 CEST 2010 - mc@suse.de
-
-- increase timeout
-- insert the right value into the clients table 
+- version 1.2.3
+- use perl Digest base module(bnc#607870) 
 
 -------------------------------------------------------------------
-Mon Apr 26 16:12:02 CEST 2010 - mc@suse.de
+Tue May 25 10:20:34 CEST 2010 - jkupec@suse.cz
+
+- checksum_type column added to RepositoryContentData db table
+  to support multiple checksum types supported by perl-rpmmd-0.4.0
+  (fate #309446)
+
+-------------------------------------------------------------------
+Fri May 14 20:23:07 CEST 2010 - jkupec@suse.cz
+
+- use Log4perl in smt-mirror
+
+-------------------------------------------------------------------
+Thu May  6 12:13:21 CEST 2010 - mc@suse.de
+
+- use Log4perl for Registration service
+- use Log4perl for NU service
+
+-------------------------------------------------------------------
+Tue May  4 14:10:21 CEST 2010 - mc@suse.de
+
+- introduce a sessionid for the interactive webpage
+- read data existing data from DB and display them in the 
+  interactive webpage
+- add a screen logger
+
+-------------------------------------------------------------------
+Tue May  4 13:05:45 CEST 2010 - jkupec@suse.cz
+
+- Exit gracefully on SIGINT & SIGTERM (bnc #515968).
+
+-------------------------------------------------------------------
+Fri Apr 30 13:16:01 CEST 2010 - mc@suse.de
+
+- require Log4perl 
+- let libcurl calculate the Content-Length of a post request
+  (bnc#597264)
+- add optimize command to smt-db
+
+-------------------------------------------------------------------
+Tue Apr 27 16:03:06 CEST 2010 - jkupec@suse.cz
+
+- passing smt network configuration to perl-rpmmd
+
+-------------------------------------------------------------------
+Mon Apr 26 16:08:50 CEST 2010 - mc@suse.de
 
 - add Conflicts with slms-registration (bnc#591847)
 
 -------------------------------------------------------------------
-Wed Mar 31 14:16:30 CEST 2010 - mc@suse.de
+Mon Apr 26 12:09:03 CEST 2010 - mc@suse.de
 
-- copy headers directoy while staging of YUM repositories
-  (bnc#587606)
+- version 1.2.1
+- add session and webpage to Registration.
+- simplify needinfo and paramlist commands.
+- ncc-sync parse now needinfo and put the values
+  into the database.
+
+-------------------------------------------------------------------
+Fri Apr 23 18:15:41 CEST 2010 - jkupec@suse.cz
+
+- Switched mirroring & filtering to perl-rpmmd (RPMMD::*)
+
+-------------------------------------------------------------------
+Wed Mar 31 14:06:13 CEST 2010 - mc@suse.de
+
+- version 1.2.0
+- use WWW::Curl for http(s) requests
+  - add support for ftp URLs
+  - add IPv6 support (FATE#305046)
+  - support NTLM proxy authentication
+
+-------------------------------------------------------------------
+Tue Mar 16 15:59:40 CET 2010 - mc@suse.de
+
+- add staging support for Yum repositories
+  (bnc#587606) 
 
 -------------------------------------------------------------------
 Wed Feb 10 15:58:22 CET 2010 - jsrain@suse.cz
@@ -126,45 +121,44 @@ Wed Feb 10 15:58:22 CET 2010 - jsrain@suse.cz
   by default now (bnc#574297)
 
 -------------------------------------------------------------------
-Wed Jan 20 09:48:26 CET 2010 - mc@suse.de
+Wed Jan 20 09:49:30 CET 2010 - mc@suse.de
 
 - use the database for staging (bnc#572170) 
 
 -------------------------------------------------------------------
-Wed Dec 16 13:40:09 CET 2009 - mc@suse.de
+Wed Dec 16 13:42:25 CET 2009 - mc@suse.de
 
 - fix report generation (bnc#564788) 
-- version 1.1.17
 
 -------------------------------------------------------------------
-Mon Dec  7 18:41:05 CET 2009 - jkupec@suse.cz
+Mon Dec  7 18:35:28 CET 2009 - jkupec@suse.cz
 
 - When generating testing repository with patch filterning, avoid
   overriding of generated repo signature and key with the original
   ones from the full mirror (bnc #560823).
 
 -------------------------------------------------------------------
-Mon Nov 23 20:17:45 CET 2009 - jkupec@suse.cz
+Mon Nov 23 21:09:55 CET 2009 - jkupec@suse.cz
 
 - Fixed error when creating testing snapshot of code 10 update
   repositories (those without updateinfo.xml) (bnc #556867)
 
 -------------------------------------------------------------------
-Mon Nov 16 10:45:06 CET 2009 - mc@suse.de
+Mon Nov 16 10:46:02 CET 2009 - mc@suse.de
 
-- fix misleading output of smt-repos command (bnc#522033)
+- fix misleading output of smt-repos command (bnc#522033) 
 
 -------------------------------------------------------------------
-Thu Nov 12 10:21:34 CET 2009 - mc@suse.de
+Thu Nov 12 10:22:35 CET 2009 - mc@suse.de
 
-- fix smt-mirror-sle9 (bnc#546132) 
+- fix smt-mirror-sle9 (bnc#546132)
 - send a user agent string in http requests (bnc#554856)
 
 -------------------------------------------------------------------
-Wed Nov 11 16:09:33 CET 2009 - mc@suse.de
+Wed Nov 11 16:10:59 CET 2009 - mc@suse.de
 
 - honor no_proxy variable (bnc#543327) 
-- print only a warning if registration server returns no 
+- print only a warning if registration server returns no
   data during ncc-sync. (bnc#547653)
 - do not search for an repoindex file if no service is
   configured (bnc#547654)
@@ -173,10 +167,10 @@ Wed Nov 11 16:09:33 CET 2009 - mc@suse.de
 Tue Nov 10 16:20:39 CET 2009 - mc@suse.de
 
 - print error if wrong guid is used in delete-registration
-  (bnc#515590) 
+  (bnc#515590)
 
 -------------------------------------------------------------------
-Fri Jul 24 15:04:18 CEST 2009 - jkupec@suse.cz
+Fri Jul 24 13:39:17 CEST 2009 - jkupec@suse.cz
 
 - require perl-satsolver (bnc #524972)
 
