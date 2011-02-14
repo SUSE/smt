@@ -396,11 +396,14 @@ sub handle_char_tag
         $self->{CURRENT}->{ORIGXML} .= $line; 
     }
 
-    # skip code10 patch <script> and <message> data    
-    if ($self->{CURRENT}->{MAINELEMENT} eq 'script' ||
-        $self->{CURRENT}->{MAINELEMENT} eq 'message')
+    if (defined $self->{CURRENT} && defined $self->{CURRENT}->{MAINELEMENT})
     {
-        return;
+        # skip code10 patch <script> and <message> data
+        if ($self->{CURRENT}->{MAINELEMENT} eq 'script' ||
+            $self->{CURRENT}->{MAINELEMENT} eq 'message')
+        {
+            return;
+        }
     }
 
     if (defined $self->{CURRENT} && defined $self->{CURRENT}->{SUBELEMENT})
