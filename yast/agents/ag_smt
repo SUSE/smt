@@ -230,6 +230,24 @@ sub GetAllPatches ($) {
 	$tmppatch = $fph->{$repositoryid}->{'ph'}->{'UPDATES'}->{$patchid};
 	$tmppatch->{'patchid'} = $patchid;
 	$tmppatch->{'filtered'} = ($fph->{$repositoryid}->{'fh'}->matches($tmppatch) ? YCP_TRUE:YCP_FALSE);
+
+	# Transforming packages description from epo, ver, rel to [epo:]ver-rel
+	# Perl->YCP conversion then never treats with version as integer
+	# BNC #670654
+	my $pkgs = [];
+	foreach my $pkg (@{$tmppatch->{'pkgs'}}) {
+	    my $new_pkg = {
+		'name' => (defined $pkg->{'name'} ? $pkg->{'name'}:''),
+		'arch' => (defined $pkg->{'arch'} ? $pkg->{'arch'}:''),
+		# Leading zero (default epoch) is ignored
+		'version' => (defined $pkg->{'epo'} && $pkg->{'epo'} ne '0' ? $pkg->{'epo'}.':':'').
+		    (defined $pkg->{'ver'} ? $pkg->{'ver'}:'0').'-'.
+		    (defined $pkg->{'rel'} ? $pkg->{'rel'}:'0'),
+	    };
+	    push @{$pkgs}, $new_pkg;
+	}
+	$tmppatch->{'pkgs'} = $pkgs;
+
 	push @ret, $tmppatch;
     }
 
