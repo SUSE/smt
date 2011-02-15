@@ -278,14 +278,18 @@ sub createUserAgent
 
     $ua->protocols_allowed( [ 'https' ] );
 
-
     # required to workaround a bug in LWP::UserAgent
     $ua->no_proxy();
 
-    $ua->max_redirect(2);
+    # reset to default redirect limit of 7
+    $ua->max_redirect(7);
 
-    # set timeout to the same value as the iChain timeout
-    $ua->timeout(130);
+    # allow redirecting of PUT and POST requests, as NCC relies on this functionality when binding an SMT server (acting as SMT client) to NCC
+    push @{ $ua->requests_redirectable }, 'PUT';
+    push @{ $ua->requests_redirectable }, 'POST';
+
+    # adapt to new iChain timeout (as changed in SMT server lately), note: smt-client will talk to NCC as well, so the timeout needs to raise as well
+    $ua->timeout(300);
 
     return $ua;
 }
