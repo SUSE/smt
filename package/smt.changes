@@ -1,10 +1,4 @@
 -------------------------------------------------------------------
-Mon Feb 14 17:32:23 UTC 2011 - locilka@suse.cz
-
-- Fixed RPMMD parser not to touch undefined keys in data hash
-  (BNC #670654).
-
--------------------------------------------------------------------
 Fri Dec 17 15:07:13 CET 2010 - mc@suse.de
 
 - fix order when matching products (bnc#659912)
