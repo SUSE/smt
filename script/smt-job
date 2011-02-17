@@ -167,13 +167,13 @@ if ( defined $help and ( $help == 1 ) )
   print "\n";
   print __("main parameters")."\n";
   print "   --guid        (-g) <guid> : " . __("the clients guid")."\n";
-  print __("                               can be used multiple times when creating a job")."\n";
+  print "                               " . __("can be used multiple times when creating a job")."\n";
   print "   --jobid       (-j) <id>   : " . __("the jobid")."\n";
-  print __("                        will be ignored when creating a job")."\n";
+  print "                               " . __("will be ignored when creating a job")."\n";
   print "   --deleteall   (-A)        : " . __("allows to omit either the guid or the jobid parameter")."\n";
-  print __("                       the missing parameter will then match all")."\n";
+  print "                               " . __("the missing parameter will then match all")."\n";
   print "\n";
-  print __("parameters to search for or change")."\n";
+  print __("parameters for creating, editing and searching jobs")."\n";
   print "   --type        (-t) <type> : " . __("job type (name or its id)")."\n";
   print "   --name        (-n) <name> : " . __("job name")."\n";
   print "   --description      <desc> : " . __("job description")."\n";
@@ -190,7 +190,7 @@ if ( defined $help and ( $help == 1 ) )
   print __("job specific parameters (only for creating a job)")."\n";
   print '  '.__("for software push jobs")."\n";
   print "   --package      (-P) <pack>: " . __("a package name")."\n";
-  print __("                               can be used multiple times")."\n";
+  print "                               " . __("can be used multiple times")."\n";
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
