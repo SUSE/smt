@@ -191,6 +191,7 @@ if ( defined $help and ( $help == 1 ) )
   print '  '.__("for software push jobs")."\n";
   print "   --package      (-P) <pack>: " . __("a package name")."\n";
   print "                               " . __("can be used multiple times")."\n";
+  print "                               " . __("may contain a version instruction of '< <= = >= >', example:") . ' "abc <= 3.2.1"'."\n";
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
