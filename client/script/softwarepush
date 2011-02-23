@@ -12,66 +12,92 @@ sub jobhandler
   SMT::Agent::Utils::logger ("jobhandler for softwarepush called", $jobid);
   SMT::Agent::Utils::logger ("softwarepush runs jobid \"$jobid\"", $jobid);
 
-
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
-
+  # check the passed args
+  SMT::Agent::Utils::error("no or invalid arguments for this job", $jobid) unless ( isa($args, 'ARRAY') && isa($args->[0], 'HASH') );
 
   # collect and verify arguments
   my $force;
   my $agreelicenses;
-  my $packages;
+  my %installables;
 
+  $force = $args->[0]->{force} || 'false';
+  $force = 'true'  if ($force eq '1');
+  $force = 'false' if ($force eq "0" );
+  SMT::Agent::Utils::error( "argument invalid: force", $jobid ) unless ( $force eq 'true' || $force eq 'false' );
 
-  $force   = $args->[0]->{force}  if ( defined ( $args->[0]->{force} ) );
-  $force = "false"	if ( ! defined( $force ) );
-  SMT::Agent::Utils::error( "argument invalid: force", $jobid )	if ( ! ( $force eq "true" || $force eq "false" || $force eq "1" || $force eq "0" ) );
-  $force = "true" if ($force eq "1" );
-  $force = "false" if ($force eq "0" );
-
-  $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
-  $agreelicenses = "false"	if ( ! defined( $agreelicenses ) );
-  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false"  || 
-									  $agreelicenses eq "0" || $agreelicenses eq "1"  ) );
-  $agreelicenses = "true" if ($agreelicenses eq "1" );
+  $agreelicenses = $args->[0]->{agreelicenses} || 'false';
+  $agreelicenses = "true"  if ($agreelicenses eq "1" );
   $agreelicenses = "false" if ($agreelicenses eq "0" );
+  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid ) unless ( $agreelicenses eq "true" || $agreelicenses eq "false" );
 
-  $packages   = $args->[0]->{packages}->[0]->{package}	if ( defined ( $args->[0]->{packages}->[0]->{package}  ) );
-  SMT::Agent::Utils::error( "argument missing: packages", $jobid ) 	if ( ! defined( $packages   ));
-  SMT::Agent::Utils::error( "argument invalid: packages", $jobid )  	if ( ! isa($packages, 'ARRAY' ) );
-
-
-  #==  run zypper ==
-
-  my $command = "/usr/bin/zypper";
-  my @cmdArgs;
-  push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
-  push (@cmdArgs, "-x");					# xml output
-  push (@cmdArgs, "--non-interactive");				# doesn't ask user
-  push (@cmdArgs, "in");					# install
-  push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
-  push (@cmdArgs, "-f") if ( $force eq "true" );		# reinstall
-
-  foreach my $pack (@$packages)                                                             
-  {                                                                                         
-    push (@cmdArgs, $pack);
-  }    
-
-  (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
-
-  if ( $verbose ne "true" )
+  if ( isa($args->[0]->{packages}, 'ARRAY') )
   {
-    $stdout="";
-    $stderr="";
+    if ( isa($args->[0]->{packages}->[0], 'HASH') )
+    { $installables{package} = $args->[0]->{packages}->[0]->{package} || undef; }
+    else { SMT::Agent::Utils::error("invalid arguments for packages", $jobid ); }
+  }
+  if ( isa($args->[0]->{patches}, 'ARRAY') )
+  {
+    if ( isa($args->[0]->{patches}->[0],  'HASH') )
+    { $installables{patch} = $args->[0]->{patchs}->[0]->{patch} || undef; }
+    else { SMT::Agent::Utils::error("invalid arguments for patches", $jobid ); }
+  }
+  if ( isa($args->[0]->{patterns}, 'ARRAY') )
+  {
+    if ( isa($args->[0]->{patterns}->[0], 'HASH') )
+    { $installables{pattern} = $args->[0]->{patterns}->[0]->{pattern} || undef; }
+    else { SMT::Agent::Utils::error("invalid arguments for patterns", $jobid ); }
+  }
+  if ( isa($args->[0]->{products}, 'ARRAY') )
+  {
+    if ( isa($args->[0]->{products}->[0], 'HASH') )
+    { $installables{product} = $args->[0]->{products}->[0]->{product} || undef; }
+    else { SMT::Agent::Utils::error("invalid arguments for products", $jobid ); }
   }
 
+  #==  create zypper base command ==
+  my $command = "/usr/bin/zypper";
+  my @zypperCmd;
+  push (@zypperCmd, "--no-cd");               # ignore CD/DVD repositories
+  push (@zypperCmd, "-x");                    # xml output
+  push (@zypperCmd, "--non-interactive");     # doesn't ask user
+  push (@zypperCmd, "in");                    # install
+  push (@zypperCmd, "-l") if ( $agreelicenses eq "true" );  # agree licenses
+  push (@zypperCmd, "-f") if ( $force eq "true" );          # reinstall
+
+  my $argumentsok = 0;
+  my $retval=0;
+  my @stdout=();
+  my @stderr=();
+  my @messages=();
+  foreach my $IN ( qw(package patch pattern product) )
+  {
+    next unless defined $installables{$IN};
+    next unless isa($installables{$IN}, 'ARRAY');
+    $argumentsok = 1;
+
+    my @installCmd = ( @zypperCmd, '-t', $IN, @{$installables{$IN}} );
+    (my $_retval, my $_stdout, my $_stderr) = SMT::Agent::Utils::executeCommand( $command, undef, @installCmd );
+    $retval |= $_retval;
+    push @stdout, $_stdout;
+    push @stderr, $_stderr;
+    unless ( $_retval == 0 )
+    {
+      push @messages, "$IN installation failed ($_retval)";
+    }
+  }
+
+  # die if the job did not contain anything to be installed
+  SMT::Agent::Utils::error( "too few arguments: need one or more of [packages, patches, patterns, products]", $jobid ) unless $argumentsok;
 
   return (
-    stdout => defined ( $stdout )? $stdout : "",
-    stderr => defined ( $stderr )? $stderr : "",
+    stdout   => ( scalar( @stdout )  &&  $verbose eq 'true' ) ? join("\n", @stdout) : '',
+    stderr   => ( scalar( @stderr )  &&  $verbose eq 'true' ) ? join("\n", @stderr) : '',
     exitcode => $retval,
-    success => ($retval == 0 ) ? "true" : "false",
-    message => ($retval == 0 ) ? "softwarepush successfully finished" : "softwarepush failed"
+    success  => ($retval == 0 ) ? "true" : "false",
+    message  => ($retval == 0 ) ? "softwarepush successfully finished" : ("softwarepush failed: " . join(", ", @messages))
   );
 
 }
