@@ -3,6 +3,7 @@ Mon Feb 14 17:32:23 UTC 2011 - locilka@suse.cz
 
 - Fixed RPMMD parser not to touch undefined keys in data hash
   (BNC #670654).
+- 1.1.21
 
 -------------------------------------------------------------------
 Mon Feb  7 09:55:36 CET 2011 - mc@suse.de
