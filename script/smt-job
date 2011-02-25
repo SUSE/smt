@@ -398,7 +398,7 @@ if ( defined $create )
             exit 3;
         }
 
-        $Job->{'name'}        = $query{'NAME'} || 'Software Push';        
+        $Job->{'name'}        = $query{'NAME'} || 'Software Push';
         $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
         $Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ] };
         $Job->{'arguments'}{'force'} = $SWforce if (defined $SWforce);
@@ -469,7 +469,7 @@ if ( defined $create )
     if ( $newjobid )
     {
         print sprintf(__("Successfully created new job. The job id is: %s"), $newjobid )."\n" unless $quiet;
- 
+
         # for new softwarepush and update jobs automatcally add a patchstatus job to refresh the patchstatus immediately
         # can be disabled by --no-autopatchstatus / it is enabled by default
         if ( ( $typeID == 2  ||  $typeID == 3 )  &&  $autoPatchstatus )
@@ -480,7 +480,7 @@ if ( defined $create )
             $PSjob->{'name'}        =  'Automatic Patchstatus Job';
             $PSjob->{'description'} =  sprintf("Automatic Patchstatus Job after job ID %s", $newjobid);
             $PSjob->{'parent_id'}  = $newjobid;
- 
+
             my $newPSjobid = undef;
             if (@guid > 0)
             {
@@ -491,7 +491,7 @@ if ( defined $create )
                 $newPSjobid = $PSjob->save();
             }
 
-            if ( $newPSjobid ) 
+            if ( $newPSjobid )
             {
                 print sprintf(__("Successfully created an automatic patchstatus job. The job id is: %s"), $newPSjobid )."\n" unless $quiet;
             }
@@ -545,7 +545,7 @@ elsif ( defined $delete )
     ##  DELETE  ##
     my $DELguid = undef;
     my $DELjobid = undef;
-    
+
     if ( (not defined $jobid)  &&  (not defined $GUID) )
     {
         print __("To delete a job please define a job ID and the GUID of the client or either of these together with --deleteall.");
@@ -633,17 +633,17 @@ else
     }
     elsif ($verbose == 3)
     {
-        @DPROP = qw(ID PARENT_ID GUID TYPE NAME DESCRIPTION PERSISTENT STATUS CREATED TARGETED EXPIRES RETRIEVED FINISHED TIMELAG ARGUMENTS VERBOSE STDOUT STDERR EXITCODE MESSAGE);
+        @DPROP = qw(ID PARENT_ID GUID TYPE NAME DESCRIPTION PERSISTENT STATUS CREATED TARGETED EXPIRES RETRIEVED FINISHED TIMELAG ARGUMENTS VERBOSE UPSTREAM CACHERESULT STDOUT STDERR EXITCODE MESSAGE);
     }
 
     # create the column titles
     my @cols = ();
     foreach my $prop (@DPROP)
     {
-        my $copyprop = $prop; 
+        my $copyprop = $prop;
         $copyprop =~ s/PARENT_ID/PARENT/;
         push( @cols, ucfirst(lc($copyprop)) );
-    }    
+    }
     $t->setCols(@cols);
 
     my $p = '';
@@ -656,7 +656,7 @@ else
     # rewrite JOB_TYPE and JOB_STATUS
     foreach my $xcid ( sort keys %{$res} )
     {
-        foreach my $xjid ( sort keys %{${$res}{$xcid}} ) 
+        foreach my $xjid ( sort keys %{${$res}{$xcid}} )
         {
             $onerow = [];
             $h = ${$res}{$xcid}{$xjid};
@@ -669,10 +669,10 @@ else
                 if ($p eq 'ARGUMENTS' &&  isa(${$h}{$p}, 'HASH') )
                 {
                     # fromat the arguments hash nicely as XML
-                    eval { ${$h}{$p}  =   XMLout( ${$h}{$p}, 'rootname' => 'arguments' ) }; 
+                    eval { ${$h}{$p}  =   XMLout( ${$h}{$p}, 'rootname' => 'arguments' ) };
                 }
 
-                # collect the information or just print it 
+                # collect the information or just print it
                 if ($verbose == 3)
                 {
                     print  $p eq 'PARENT_ID' ? 'Parent:   ':ucfirst(lc($p)).":";
@@ -681,7 +681,7 @@ else
                     {
                         # start multiline values in new line and indent them by 4 spaces and remove trailing newlines
                         chomp( ${$h}{$p} );
-                        ${$h}{$p} =~ s/\n/\n    /g; 
+                        ${$h}{$p} =~ s/\n/\n    /g;
                         print "\n    ";
                     }
                     print ''.(defined ${$h}{$p} ?  ${$h}{$p}:'')."\n";
@@ -701,13 +701,13 @@ else
             {
                 $t->addRow($onerow);
             }
-            
+
         }
     }
 
     # set the heading
     # disable heading, as rendering takes too long then
-    # $t->setOptions('headingText', __('Found jobs in SMT job queue'));    
+    # $t->setOptions('headingText', __('Found jobs in SMT job queue'));
     print $t->draw() if ($verbose != 3);
     print "\n";
 }
@@ -770,7 +770,7 @@ Creates a new job.
 
 =item -e, --edit
 
-Edits a job. 
+Edits a job.
 
 =item -d, --delete
 
@@ -784,7 +784,7 @@ Deletes a job.
 
 =item -g, --guid <guid>
 
-Specifies the client's guid. This paramater can be used multiple times when 
+Specifies the client's guid. This paramater can be used multiple times when
 creating a job in order to create a job for more than one client.
 
 =item -j, --jobid <id>
@@ -795,7 +795,7 @@ for multiple clients has the same job ID.
 
 =item -A, --deleteall
 
-Allows to omit either the client's guid or the job ID parameter in delete operation, the missing parameter will 
+Allows to omit either the client's guid or the job ID parameter in delete operation, the missing parameter will
 then match all clients resp. jobs.
 
 =back
@@ -804,7 +804,7 @@ then match all clients resp. jobs.
 
 =over
 
-=item -t, --type <type> 
+=item -t, --type <type>
 
 Specifies the job type (e.g.  C<patchstatus>, C<softwarepush>, C<update>, C<execute>, C<reboot>, C<wait>, C<eject>).
 B<Note:> Only C<patchstatus>, C<softwarepush> and C<update> are enabled by default on the client.
@@ -832,7 +832,7 @@ Opposite of C<--verbosejob>.
 
 =item --persistent
 
-Specifies whether a job is persistent. Non-persistent jobs are procressed only once, while persistent 
+Specifies whether a job is persistent. Non-persistent jobs are procressed only once, while persistent
 jobs are processed again and again. Please use C<--timelag> to define the time that elapses until the next run.
 
 =item --no-persistent
@@ -856,9 +856,9 @@ Opposite of C<--finished>.
 
 =over
 
-=item --targeted <time>  
+=item --targeted <time>
 
-Specifies the earliest execution time of a job in the format C<'YYYY-MM-DD[-HH:MM[:SS]]>. Please note that 
+Specifies the earliest execution time of a job in the format C<'YYYY-MM-DD[-HH:MM[:SS]]>. Please note that
 the job most likely won't run exactly at that point in time but probably some minutes/hours after, because
 the client polls in a fixed interval for jobs.
 
@@ -880,7 +880,7 @@ Defines the interval for persistent jobs in the format C<HH:MM[:SS]>.
 
 =item -P, --package <pack>
 
-Defines a package name to be installed or updated. This paramater can be used multiple times if you want to 
+Defines a package name to be installed or updated. This paramater can be used multiple times if you want to
 specify more than one package.
 
 =item -F, --forceinstall
@@ -990,7 +990,7 @@ It is necessary to update the targeted time as well as persistent jobs always ad
 
 =item Delete all jobs with job ID C<42>
 
-# smt-job --delete -jobid 42 --deleteall 
+# smt-job --delete -jobid 42 --deleteall
 
 =item Show everything known about jobid C<42>:
 
