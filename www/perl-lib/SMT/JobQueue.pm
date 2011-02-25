@@ -31,11 +31,11 @@ sub new ($$)
 }
 
 ###############################################################################
-# retriveJob 
+# retriveJob
 # returns the job description for job $id either in xml format and stets the
 # retrived date
 # or in hash structure
-# args: jobid 
+# args: jobid
 # args: guid
 #       xmlformat (default false)
 sub retrieveJob($$$$)
@@ -61,10 +61,10 @@ sub retrieveJob($$$$)
 }
 
 ###############################################################################
-# getJob 
+# getJob
 # returns the job description for job $id either in xml format
 # or in hash structure
-# args: jobid 
+# args: jobid
 # args: guid
 #       xmlformat (default false)
 sub getJob($$$$)
@@ -93,7 +93,7 @@ sub getJob($$$$)
 # or in hash structure
 # if no guid is passed jobs for all clients are taken
 #
-# args: guid 
+# args: guid
 #       xmlformat (default false)
 sub getNextJob($$$)
 {
@@ -111,7 +111,7 @@ sub getNextJob($$$)
 # or in hash structure and stets the retrived date
 # if no guid is passed jobs for all clients are taken
 #
-# args: guid 
+# args: guid
 #       xmlformat (default false)
 sub retrieveNextJob($$$)
 {
@@ -128,12 +128,12 @@ sub retrieveNextJob($$$)
 
 
 ###############################################################################
-# getNextJobID 
+# getNextJobID
 # returns the jobid of the next job either in xml format
 # or in hash structure
 # if no guid is passed jobs for all clients are taken
 #
-# args: guid 
+# args: guid
 #       xmlformat (default false)
 sub getNextJobID($$$)
 {
@@ -142,7 +142,7 @@ sub getNextJobID($$$)
   my $guid      = shift;
   my $xmlformat = shift || 0;
 
-  my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) '; 
+  my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) ';
      $sql .= ' where STATUS  = ' . 0				 ;          #( 0 = not yet worked on)
      $sql .= " and ";
      $sql .= " ( TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
@@ -231,7 +231,7 @@ sub calcNextTargeted
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
   my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
-  my $sql = 'select ADDTIME("'.SMT::Utils::getDBTimestamp().'", TIMELAG ) from JobQueue '; 
+  my $sql = 'select ADDTIME("'.SMT::Utils::getDBTimestamp().'", TIMELAG ) from JobQueue ';
      $sql .= ' where GUID_ID  = '. $self->{dbh}->quote($guidid) ;
      $sql .= ' AND ID  = '. $self->{dbh}->quote($jobid) ;
 
@@ -247,7 +247,7 @@ sub parentFinished($$)
   my $self      = shift;
   my $guid      = shift;	
   my $jobid     = shift; 	#jobid of parent job
- 
+
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
   my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
@@ -333,7 +333,7 @@ sub deleteJob($)
       $sql .= ' ID = '.$self->{dbh}->quote($jobid);
       # 'and' must be added inside this block
       if ($guid ne 'ALL')
-      {   
+      {
           $sql .= ' and ';
       }
   }
@@ -355,9 +355,9 @@ sub deleteJob($)
 
 #
 # the following api functions are similar to Client's api.
-# 
-# 
-# Query Example: 
+#
+#
+# Query Example:
 #
 #  getJobsInfo({ 'ID'      => undef,
 #                'STATUS'  => 0,
@@ -376,9 +376,9 @@ sub deleteJob($)
 
 #
 # Possible query keys are:
-#   ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT 
-#   STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED 
-#   PERSISTENT VERBOSE TIMELAG GUID
+#   ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT
+#   STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED
+#   UPSTREAM CACHERESULT PERSISTENT VERBOSE TIMELAG GUID
 #
 # Note: GUID doesn't support suffixes.
 
@@ -392,7 +392,7 @@ sub in_Array($$)
     my $str = shift || "";
     my $arr = shift || ();
 
-    foreach my $one (@{$arr}) 
+    foreach my $one (@{$arr})
     {
         return 1 if $one =~ /^$str$/;
     }
@@ -412,10 +412,10 @@ sub createSQLStatement($$)
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
 
-    my @PROPS = qw(ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED PERSISTENT VERBOSE TIMELAG);    
+    my @PROPS = qw(ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED UPSTREAM CACHERESULT PERSISTENT VERBOSE TIMELAG);
     my @ALLPROPS = @PROPS;
 
-    # add > and < properties 
+    # add > and < properties
     my @TMPPROPS = @PROPS;
     foreach my $prop ( @TMPPROPS )
     {
@@ -468,7 +468,7 @@ sub createSQLStatement($$)
 		{
                   push( @where, " jq.$prop = " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
 		}
-            }        
+            }
         }
     }
 
@@ -479,13 +479,13 @@ sub createSQLStatement($$)
     # add query for guid
     $fromstr .= ' LEFT JOIN Clients cl ON ( jq.GUID_ID = cl.ID ) ';
     push (@select, "GUID" );
-      
+
     if ( defined ${$filter}{'GUID'}  &&  ${$filter}{'GUID'} !~ /^$/ )
     {
         push( @where, " cl.GUID = " . $self->{'dbh'}->quote(${$filter}{'GUID'}) . ' ' );
     }
 
- 
+
     # make sure the primary key is in the select statement in any case
     push( @JQselect, "ID" ) unless ( in_Array("ID", \@JQselect) );
     push( @JQselect, "GUID_ID" ) unless ( in_Array("GUID_ID", \@JQselect) );
@@ -545,7 +545,7 @@ sub getJobsInfo_internal($)
 	   if ( defined ${$result}{$xguid}{$xjobid}{$argArg} )
 	   {
 	    eval { ${$result}{$xguid}{$xjobid}{$argArg} = XMLin( ${$result}{$xguid}{$xjobid}{$argArg} , forcearray => 1 ) } ;
-	   } 
+	   }
 	}
     }
 
@@ -595,7 +595,7 @@ sub getJobsInfo($$)
     my $self = shift;
     my $filter = shift || {};
 
-    return undef unless ( isa($filter, 'HASH') );  
+    return undef unless ( isa($filter, 'HASH') );
     return $self->getJobsInfo_internal($filter);
 }
 

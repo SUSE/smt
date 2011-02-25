@@ -188,7 +188,7 @@ sub readJobFromDatabase
       $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ); # convert xml to hash
   }
 
-  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished upstream cacheresult verbose timelag message success persistent);
 
   foreach my $attrib (@attribs)
   {
@@ -236,7 +236,7 @@ sub readJobFromXML
   return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
   return error( $self, "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
 
-  my @attribs = qw(id guid parent_id name description status stdout stderr exitcode created targeted expires retrieved finished verbose timelag message success persistent);
+  my @attribs = qw(id guid parent_id name description status stdout stderr exitcode created targeted expires retrieved finished upstream cacheresult verbose timelag message success persistent);
 
   foreach my $attrib (@attribs)
   {
@@ -306,7 +306,7 @@ sub save
   my @sqlvalues = ();
   my @updatesql = ();
  
-  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished timelag message success);
+  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished upstream cacheresult timelag message success);
  
   # VERBOSE
   push ( @sqlkeys, "VERBOSE" );

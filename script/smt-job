@@ -102,7 +102,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
+my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -128,6 +128,8 @@ if (! &Getopt::Long::GetOptions(
          'timelag=s' =>  \$timelag,
          # general switches
          'finished|f!' => \$finished,
+         'upstream!' => \$upstream,
+         'cacheresult!' => \$cacheresult,
          'verbosejob|V!' => \$verbosejob,
          'persistent!' => \$persistent,
          'parent=i' => \$parent,
@@ -181,6 +183,8 @@ if ( defined $help and ( $help == 1 ) )
   print "   --verbosejob  (-V)        : " . __("verbosity of job")."\n";
   print "   --persistent              : " . __("persistency of job")."\n";
   print "   --finished                : " . __("finds finished jobs")."\n";
+  print "   --upstream                : " . __("job that is contolled by an upstream SMT server")."\n";
+  print "   --cacheresult             : " . __("job results will be cached, used by upstream jobs")."\n";
   print "\n";
   print __("parameters for timing (timeformat: see below)")."\n";
   print "   --targeted                : " . __("targeted date and time")."\n";
@@ -209,6 +213,8 @@ if ( defined $help and ( $help == 1 ) )
   print "\n";
   print __("negatable parameters")."\n";
   print "   --finished        :  --no-finished"."\n";
+  print "   --upstream        :  --no-upstream"."\n";
+  print "   --cacheresult     :  --no-cacheresult"."\n";
   print "   --persistent      :  --no-persistent"."\n";
   print "   --verbosejob      :  --no-verbosejob"."\n";
   print "   --forceinstall    :  --no-forceinstall"."\n";
@@ -299,6 +305,14 @@ if (defined $finished)
     $query{'FINISHED+'} = 'NULL' if ($finished);
     $query{'FINISHED-'} = 'NULL' if (not $finished);
 }
+if (defined $upstream)
+{
+    $query{'UPSTREAM'} =  $upstream ? 1:0;
+}
+if (defined $cacheresult)
+{
+    $query{'CACHERESULT'} =  $cacheresult ? 1:0;
+}
 
 if (defined $verbosejob)
 {
@@ -361,14 +375,11 @@ if ( defined $create )
     $Job->newJob( @guid > 0 ? undef:$GUID, undef, $typeID, undef );
 
     # fill in parameters if they are specified - maybe overwritten in job type handling below
-    $Job->{'name'}        = $query{'NAME'}        if ( exists $query{'NAME'}        && defined $query{'NAME'} );
-    $Job->{'description'} = $query{'DESCRIPTION'} if ( exists $query{'DESCRIPTION'} && defined $query{'DESCRIPTION'} );
-    $Job->{'verbose'}     = $query{'VERBOSE'}     if ( exists $query{'VERBOSE'}     && defined $query{'VERBOSE'} );
-    $Job->{'persistent'}  = $query{'PERSISTENT'}  if ( exists $query{'PERSISTENT'}  && defined $query{'PERSISTENT'} );
-    $Job->{'parent_id'}   = $query{'PARENT_ID'}   if ( exists $query{'PARENT_ID'}   && defined $query{'PARENT_ID'} );
-    $Job->{'targeted'}    = $query{'TARGETED'}    if ( exists $query{'TARGETED'}    && defined $query{'TARGETED'} );
-    $Job->{'expires'}     = $query{'EXPIRES'}     if ( exists $query{'EXPIRES'}     && defined $query{'EXPIRES'} );
-    $Job->{'timelag'}     = $query{'TIMELAG'}     if ( exists $query{'TIMELAG'}     && defined $query{'TIMELAG'} );
+    my @CreateProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT);
+    foreach my $cprop (@CreateProps)
+    {
+        $Job->{lc($cprop)} = $query{uc($cprop)} if ( exists $query{uc($cprop)}  && defined $query{uc($cprop)} );
+    }
 
     if ( defined $Job->{'persistent'}  &&  $Job->{'persistent'} == 1 )
     {
@@ -523,7 +534,7 @@ elsif ( defined $edit )
     $Job->readJobFromDatabase($jobid, $GUID);
 
     # overwrite with new values
-    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG);
+    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT);
     foreach my $eprop (@EditProps)
     {
         $Job->{lc($eprop)} = $query{uc($eprop)} if ( exists $query{uc($eprop)}  && defined $query{uc($eprop)} );
@@ -847,7 +858,26 @@ Search option for finished jobs.
 
 Opposite of C<--finished>.
 
+=item --upstream
 
+Search and set option for upstream jobs. An upstream job is a job which was either created from an upstream
+SMT server or a job that was manually flagged as upstream by the admin to enable upstream control for that job.
+The upstream control means, that the upstream SMT server is allowed to request the full job results of that job
+and it may also delete it (persistent jobs wont be cleaned up automatically).
+
+=item --no-upstream
+
+Opposite of C<--upstream>.
+
+=item --cacheresult
+
+Search and set option for the cacheresult flag. The results of jobs with this flag will be cached (longer than
+the job itself) and not be removed when the job is deleted or cleaned up. Jobs that are created from an upstream
+SMT server are flagged with cacheresult in order to save the results until they are retrieved.
+
+=item --no-cacheresult
+
+Opposite of C<--cacheresult>.
 
 
 =back
