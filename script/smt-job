@@ -932,8 +932,23 @@ Defines the interval for persistent jobs in the format C<HH:MM[:SS]>.
 
 =item -P, --package <pack>
 
-Defines a package name to be installed or updated. This paramater can be used multiple times if you want to
-specify more than one package.
+Defines a package name to be installed or updated. This paramater can be used multiple times and
+it may contain a version instruction like "package>=2.13".
+
+=item --patch <patch>
+
+Defines a patch name to be installed. This paramater can be used multiple times and it may contain
+a version instruction like "patch>=2.13".
+
+=item --pattern <pattern>
+
+Defines a pattern name to be installed. This paramater can be used multiple times and it may contain
+a version instruction like "pattern>=2.13".
+
+=item --product <product>
+
+Defines a product name to be installed. This paramater can be used multiple times and it may contain
+a version instruction like "product>=2.13".
 
 =item -F, --forceinstall
 
