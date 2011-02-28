@@ -5,8 +5,8 @@ create table JobResults ( JOB_ID     INTEGER UNSIGNED NOT NULL,
                           CLIENT_ID  INTEGER UNSIGNED NOT NULL,
                           RETRIEVED  TINYINT(1) NOT NULL default 0,
                           RESULT     LONGBLOB,
-                          CREATED    TIMESTAMP NULL default NULL,
-                          CHANGED    TIMESTAMP default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                          CREATED    TIMESTAMP default CURRENT_TIMESTAMP,
+                          CHANGED    TIMESTAMP NULL default NULL,
                           PRIMARY KEY (JOB_ID, CLIENT_ID)
                         );
 
