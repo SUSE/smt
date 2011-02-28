@@ -25,6 +25,7 @@ sub updatejob
   my $job =
   {
     'id' => $jobid,
+    'guid' => SMT::Agent::Config::getGuid() || '',
     'status' =>  $status,
     'message' => $message,
     'stdout' => $stdout,
