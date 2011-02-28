@@ -102,7 +102,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
+my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -135,6 +135,9 @@ if (! &Getopt::Long::GetOptions(
          'parent=i' => \$parent,
          # job specific arguments
          'package|P=s@' => \@SWpackagelist,
+         'patch=s@' => \@SWpatchlist,
+         'pattern=s@' => \@SWpatternlist,
+         'product=s@' => \@SWproductlist,
          'forceinstall|F!' => \$SWforce,
          'agreelicense!' => \$SWagree,
          'exec|X=s' => \$EXECcommand,
@@ -257,7 +260,7 @@ else
 {
     @guid = undef;
 }
-$query{'ID'} = $jobid if (defined $jobid);
+$query{ID} = $jobid if (defined $jobid);
 
 my $typeID = getJobTypeID($type);
 if ( defined $type && not defined $typeID )
@@ -265,37 +268,37 @@ if ( defined $type && not defined $typeID )
     print "Job type unkown.\n";
     exit 4;
 }
-$query{'TYPE'} = $typeID if (defined $typeID);
-$query{'NAME'} = $name if (defined $name);
-$query{'DESCRIPTION'} = $description if (defined $description);
+$query{TYPE} = $typeID if (defined $typeID);
+$query{NAME} = $name if (defined $name);
+$query{DESCRIPTION} = $description if (defined $description);
 # check time format
-$query{'TARGETED'} = $targeted if (defined $targeted);
-$query{'EXPIRES'} = $expires if (defined $expires);
-$query{'TIMELAG'} = $timelag if (defined $timelag);
+$query{TARGETED} = $targeted if (defined $targeted);
+$query{EXPIRES} = $expires if (defined $expires);
+$query{TIMELAG} = $timelag if (defined $timelag);
 
 
-if ( exists $query{'TARGETED'} )
+if ( exists $query{TARGETED} )
 {
-    if ( $query{'TARGETED'} !~ /^\d{4}-\d{2}-\d{2}([-_+ ]\d{2}:\d{2}(:\d{2})?)?$/ )
+    if ( $query{TARGETED} !~ /^\d{4}-\d{2}-\d{2}([-_+ ]\d{2}:\d{2}(:\d{2})?)?$/ )
     {
-	print __("Invalid time format for 'targeted' time.")."\n";
-	exit 4;
+        print __("Invalid time format for 'targeted' time.")."\n";
+        exit 4;
     }
 }
-if ( exists $query{'EXPIRES'} )
+if ( exists $query{EXPIRES} )
 {
-    if ( $query{'EXPIRES'} !~ /^\d{4}-\d{2}-\d{2}([-_+ ]\d{2}:\d{2}(:\d{2})?)?$/ )
+    if ( $query{EXPIRES} !~ /^\d{4}-\d{2}-\d{2}([-_+ ]\d{2}:\d{2}(:\d{2})?)?$/ )
     {
-	print __("Invalid time format for 'expires' time.")."\n";
-	exit 4;
+        print __("Invalid time format for 'expires' time.")."\n";
+        exit 4;
     }
 }
-if ( exists $query{'TIMELAG'} )
+if ( exists $query{TIMELAG} )
 {
-    if ( $query{'TIMELAG'} !~ /^\d{2}:\d{2}(:\d{2})?$/ )
+    if ( $query{TIMELAG} !~ /^\d{2}:\d{2}(:\d{2})?$/ )
     {
-	print __("Invalid time format for 'timelag'.")."\n";
-	exit 4;
+        print __("Invalid time format for 'timelag'.")."\n";
+        exit 4;
     }
 }
 
@@ -307,30 +310,28 @@ if (defined $finished)
 }
 if (defined $upstream)
 {
-    $query{'UPSTREAM'} =  $upstream ? 1:0;
+    $query{UPSTREAM} =  $upstream ? 1:0;
 }
 if (defined $cacheresult)
 {
-    $query{'CACHERESULT'} =  $cacheresult ? 1:0;
+    $query{CACHERESULT} =  $cacheresult ? 1:0;
 }
 
 if (defined $verbosejob)
 {
-    $query{'VERBOSE'} =  $verbosejob ? 1:0;
+    $query{VERBOSE} =  $verbosejob ? 1:0;
 }
 if (defined $persistent)
 {
-    $query{'PERSISTENT'} = $persistent ? 1:0;
+    $query{PERSISTENT} = $persistent ? 1:0;
 }
-$query{'PARENT_ID'} = $parent if (defined $parent);
+$query{PARENT_ID} = $parent if (defined $parent);
 
 my %para = ();
-$para{'PACKAGELIST'} = \@SWpackagelist if (@SWpackagelist);
-$para{'SWFORCE'} = $SWforce if (defined $SWforce);
-$para{'EXECCOMMAND'} = $EXECcommand if (defined $EXECcommand);
-$para{'WAITTIME'} = $WAITtime if (defined $WAITtime);
-$para{'WAITSTATUS'} = $WAITstatus if (defined $WAITstatus);
-$para{'ACTION'} = $CDAction if (defined $CDAction);
+$para{EXECCOMMAND} = $EXECcommand if (defined $EXECcommand);
+$para{WAITTIME} = $WAITtime if (defined $WAITtime);
+$para{WAITSTATUS} = $WAITstatus if (defined $WAITstatus);
+$para{ACTION} = $CDAction if (defined $CDAction);
 
 
 
@@ -381,9 +382,9 @@ if ( defined $create )
         $Job->{lc($cprop)} = $query{uc($cprop)} if ( exists $query{uc($cprop)}  && defined $query{uc($cprop)} );
     }
 
-    if ( defined $Job->{'persistent'}  &&  $Job->{'persistent'} == 1 )
+    if ( defined $Job->{persistent}  &&  $Job->{persistent} == 1 )
     {
-        if ( ! defined $Job->{'timelag'}  ||  $Job->{'timelag'} =~ /^00:00/ )
+        if ( ! defined $Job->{timelag}  ||  $Job->{timelag} =~ /^00:00/ )
         {
             print __("Creating a persistent job with a timelag smaller than one minute is prohibited.")."\n";
             print __("If you really need a small interval first create the job with one minute and then edit its timelag.")."\n";
@@ -394,46 +395,67 @@ if ( defined $create )
     if ( $typeID == 1 )
     {
         ## PATCHSTATUS ##
-        $Job->{'name'}        = $query{'NAME'} || 'Patchstatus Job';
-        $Job->{'description'} = $query{'DESCRIPTION'} || "Patchstatus Job for Client $GUID";
-        $Job->{'persistent'}  = $query{'PERSISTENT'} || 1;
-        $Job->{'timelag'}     = $query{'TIMELAG'} || '23:00';
+        $Job->{name}        = $query{NAME} || 'Patchstatus Job';
+        $Job->{description} = $query{DESCRIPTION} || "Patchstatus Job for Client $GUID";
+        $Job->{persistent}  = $query{PERSISTENT} || 1;
+        $Job->{timelag}     = $query{TIMELAG} || '23:00';
     }
     elsif ( $typeID == 2 )
     {
         ## SOFTWARE PUSH ##
 
-        if ( not @SWpackagelist || @SWpackagelist == 0 )
+        $Job->{name}        = $query{NAME} || 'Software Push';
+        $Job->{description} = $query{DESCRIPTION} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
+        $Job->{arguments}{force} = $SWforce if (defined $SWforce);
+        $Job->{arguments}{agreelicenses} = $SWagree if (defined $SWagree);
+        my $argumentslistok = 0;
+
+        if ( (@SWpackagelist) && (@SWpackagelist > 0) )
+        {
+            $argumentslistok += 1;
+            $Job->{arguments}->{packages} = [ { package => \@SWpackagelist } ];
+        }
+        if ( (@SWpatchlist)   && (@SWpatchlist   > 0) )
+        {
+            $argumentslistok += 1;
+            $Job->{arguments}->{patches}  = [ { patch => \@SWpatchlist } ];
+        }
+        if ( (@SWpatternlist) && (@SWpatternlist > 0) )
+        {
+            $argumentslistok += 1;
+            $Job->{arguments}->{patterns} = [ { pattern => \@SWpatternlist } ];
+        }
+        if ( (@SWproductlist) && (@SWproductlist > 0) )
+        {
+            $argumentslistok += 1;
+            $Job->{arguments}->{products} = [ { product => \@SWproductlist } ];
+        }
+
+        unless ( $argumentslistok )
         {
             print __("Please define at least one package for a software push job.");
             exit 3;
         }
-
-        $Job->{'name'}        = $query{'NAME'} || 'Software Push';
-        $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
-        $Job->{'arguments'}   = { 'packages' => [ { 'package' => \@SWpackagelist } ] };
-        $Job->{'arguments'}{'force'} = $SWforce if (defined $SWforce);
-        $Job->{'arguments'}{'agreelicenses'} = $SWagree if (defined $SWagree);
     }
     elsif ( $typeID == 3 )
     {
         ## update ##
-        $Job->{'name'}        = $query{'NAME'} || 'Update Job';
-        $Job->{'description'} = $query{'DESCRIPTION'} || 'Update Job';
-        $Job->{'arguments'}{'agreelicenses'} = $SWagree if (defined $SWagree);
+        $Job->{name}        = $query{NAME} || 'Update Job';
+        $Job->{description} = $query{DESCRIPTION} || 'Update Job';
+        $Job->{arguments}{agreelicenses} = $SWagree if (defined $SWagree);
     }
     elsif ( $typeID == 4 )
     {
         ## exec ##
-        $Job->{'name'}        = $query{'NAME'} || 'Execute';
-        $Job->{'description'} = $query{'DESCRIPTION'} || 'Execute custom command';
-        $Job->{'arguments'}{'command'} = (exists $para{'EXECCOMMAND'} && defined $para{'EXECCOMMAND'}) ? $para{'EXECCOMMAND'} : ' /bin/true ' ;
+        $Job->{name}        = $query{NAME} || 'Execute';
+        $Job->{description} = $query{DESCRIPTION} || 'Execute custom command';
+        $Job->{arguments}{command} = (exists $para{EXECCOMMAND} && defined $para{EXECCOMMAND}) ? $para{EXECCOMMAND} : ' /bin/true ' ;
     }
     elsif ( $typeID == 5 )
     {
         ## reboot ##
-        $Job->{'name'}        = $query{'NAME'} || 'Reboot';
-        $Job->{'description'} = $query{'DESCRIPTION'} || 'Reboot now';
+        $Job->{name}        = $query{NAME} || 'Reboot';
+        $Job->{description} = $query{DESCRIPTION} || 'Reboot now';
     }
     elsif ( $typeID == 6 )
     {
@@ -444,20 +466,20 @@ if ( defined $create )
     elsif ( $typeID == 7 )
     {
         ## wait ##
-        my $sec = $para{'WAITTIME'} || '1';
-        my $ret = $para{'WAITSTATUS'} || '0';
+        my $sec = $para{WAITTIME} || '1';
+        my $ret = $para{WAITSTATUS} || '0';
 
-        $Job->{'name'}        = $query{'NAME'} || sprintf("Wait %s sec. for exit %s.", $sec, $ret );
-        $Job->{'description'} = $query{'DESCRIPTION'} || sprintf("Wait for %s seconds and return with value %s.", $sec, $ret );
-        $Job->{'arguments'}{'waittime'} = $sec;
-        $Job->{'arguments'}{'exitcode'} = $ret;
+        $Job->{name}        = $query{NAME} || sprintf("Wait %s sec. for exit %s.", $sec, $ret );
+        $Job->{description} = $query{DESCRIPTION} || sprintf("Wait for %s seconds and return with value %s.", $sec, $ret );
+        $Job->{arguments}{waittime} = $sec;
+        $Job->{arguments}{exitcode} = $ret;
     }
     elsif ( $typeID == 8 )
     {
         ## eject ##
-        $Job->{'name'}        = $query{'NAME'} || 'Eject job';
-        $Job->{'description'} = $query{'DESCRIPTION'} || 'Job to eject the CD/DVD drawer';
-        $Job->{'arguments'}{'action'} = (exists $para{'ACTION'} && defined $para{'ACTION'}) ? $para{'ACTION'} : 'open' ;
+        $Job->{name}        = $query{NAME} || 'Eject job';
+        $Job->{description} = $query{DESCRIPTION} || 'Job to eject the CD/DVD drawer';
+        $Job->{arguments}{action} = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open' ;
     }
     else
     {
@@ -488,9 +510,9 @@ if ( defined $create )
             my $PSjob = SMT::Job->new({ 'dbh' => $dbh });
             $PSjob->newJob( @guid > 0 ? undef:$GUID, undef, 1, undef );
 
-            $PSjob->{'name'}        =  'Automatic Patchstatus Job';
-            $PSjob->{'description'} =  sprintf("Automatic Patchstatus Job after job ID %s", $newjobid);
-            $PSjob->{'parent_id'}  = $newjobid;
+            $PSjob->{name}        =  'Automatic Patchstatus Job';
+            $PSjob->{description} =  sprintf("Automatic Patchstatus Job after job ID %s", $newjobid);
+            $PSjob->{parent_id}  = $newjobid;
 
             my $newPSjobid = undef;
             if (@guid > 0)
@@ -623,7 +645,7 @@ else
     }
 
     # make sure we select all data
-    $query{'selectAll'} = '';
+    $query{selectAll} = '';
     my $res = $JobQ->getJobsInfo(\%query);
 
     # reder the result
