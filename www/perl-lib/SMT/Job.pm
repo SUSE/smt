@@ -510,6 +510,20 @@ sub finished
       return $self->{finished};
 }
 
+sub upstream
+{
+      my ( $self, $upstream ) = @_;
+      $self->{upstream} = $upstream if defined( $upstream );
+      return $self->{upstream};
+}
+
+sub cacheresult
+{
+      my ( $self, $cacheresult ) = @_;
+      $self->{cacheresult} = $cacheresult if defined( $cacheresult );
+      return $self->{cacheresult};
+}
+
 sub persistent
 {
       my ( $self, $persistent ) = @_;
