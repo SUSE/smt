@@ -5,6 +5,7 @@ use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
 use SMT::Job;
+use SMT::Job::Result;
 use SMT::Client;
 use SMT::Utils;
 use Data::Dumper;
@@ -266,8 +267,8 @@ sub parentFinished($$)
 ###############################################################################
 sub finishJob($)
 {
-  my $self = shift;
-  my $guid      = shift || return undef;
+  my $self   = shift;
+  my $guid   = shift || return undef;
   my $jobxml = shift;
 
   my $xmljob = SMT::Job->new({ 'dbh' => $self->{dbh} });
@@ -278,7 +279,7 @@ sub finishJob($)
 
   return undef unless ( $job->{retrieved} );
 
-
+  # special handling for patchstatus job
   if ( $job->type() eq "patchstatus" )
   {
       my $client = SMT::Client->new( {'dbh' => $self->{'dbh'} });
@@ -288,9 +289,24 @@ sub finishJob($)
       $client->updatePatchstatus( $guid, $msg )
   }
 
+  # special handling for job with cacheresult flag
+  if ( $job->cacheresult() )
+  {
+      my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+      return undef unless defined $client;
+      my $client_id = $client->getClientIDByGUID( $xmljob->guid() );
 
-  $job->stderr  ( $xmljob->stderr()   );
-  $job->stdout  ( $xmljob->stdout()   );
+      my $res = SMT::Job::Result->new({ 'dbh' => $self->{dbh} });
+      return undef unless defined $res;
+      $res->saveResult( $xmljob->{id}, $client_id, $jobxml );
+  }
+
+  ## FIXME FIXME ... this works well with CDATA and the old parameter-style .... switch all all job types to new style and test all!!
+  $job->stderr( isa($xmljob->stderr(),'ARRAY') ? ( isa($xmljob->stderr()->[0],'HASH') ?  ($xmljob->stderr()->[0]->{stderr}) : ($xmljob->stderr()->[0]) ) : ($xmljob->stderr()) );
+  $job->stdout( isa($xmljob->stdout(),'ARRAY') ? ( isa($xmljob->stdout()->[0],'HASH') ?  ($xmljob->stdout()->[0]->{stdout}) : ($xmljob->stdout()->[0]) ) : ($xmljob->stdout()) );
+
+  # $job->stderr  ( $xmljob->stderr()   );
+  # $job->stdout  ( $xmljob->stdout()   );
   $job->exitcode( $xmljob->exitcode() );
   $job->message ( $xmljob->message()  );
   $job->status  ( $xmljob->status()   );
@@ -298,7 +314,7 @@ sub finishJob($)
 
   if ( $job->persistent() )
   {
-    $job->targeted( calcNextTargeted($self, $guid, $job->{id}) );
+    $job->targeted( $self->calcNextTargeted($guid, $job->{id}) );
     $job->message( sprintf("Last run failed # %s", $xmljob->message() ) )           if ( $xmljob->status() =~ /^2$/ );
     $job->message( sprintf("Last run denied by client # %s", $xmljob->message() ) ) if ( $xmljob->status() =~ /^3$/ );
     $job->status( 0 );
