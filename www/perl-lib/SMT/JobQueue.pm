@@ -298,7 +298,7 @@ sub finishJob($)
 
       my $res = SMT::Job::Result->new({ 'dbh' => $self->{dbh} });
       return undef unless defined $res;
-      $res->saveResult( $xmljob->{id}, $client_id, $jobxml );
+      return $res->saveResult( $xmljob->{id}, $client_id, $jobxml );
   }
 
   ## FIXME FIXME ... this works well with CDATA and the old parameter-style .... switch all all job types to new style and test all!!
