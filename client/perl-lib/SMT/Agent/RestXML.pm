@@ -10,34 +10,46 @@ use UNIVERSAL 'isa';
 use SMT::Agent::Constants;
 use SMT::Agent::Config;
 use SMT::Agent::Utils;
-
-
+use XML::Writer;
+use XML::Parser;
 
 ###############################################################################
 # updates status of a job on the smt server
 # args: jobid, status, message 
 sub updatejob
 {
-  my ($jobid, $status, $message, $stdout, $stderr, $exitcode) =  @_;
+  my ($jobid, $status, $message, $stdout, $stderr, $exitcode, $result) =  @_;
 
   SMT::Agent::Utils::logger( "updating job $jobid ($status) message: $message", $jobid);
 
-  my $job =
-  {
-    'id' => $jobid,
-    'guid' => SMT::Agent::Config::getGuid() || '',
-    'status' =>  $status,
-    'message' => $message,
-    'stdout' => $stdout,
-    'stderr' => $stderr,
-    'exitcode' => $exitcode
-  };
-  my $xmljob = XMLout($job, rootname => "job");
+  # create the XML output
+  my $w = undef;
+  my $xmlout = '';
+  # as the result section needs must be added as raw xml data, there is no other way than doing it in unsafe mode
+  $w = new XML::Writer( OUTPUT => \$xmlout, DATA_MODE => 1, DATA_INDENT => 2, UNSAFE => 1 );
+  SMT::Agent::Utils::error("Unable to create an answer for the current job.") unless $w;
+  $w->xmlDecl( 'UTF-8' );
+
+  $w->startTag('job', 'id'       => $jobid,
+                      'guid'     => SMT::Agent::Config::getGuid() || '',
+                      'status'   =>  $status,
+                      'message'  => $message,
+                      'exitcode' => $exitcode  );
+  $w->cdataElement('stdout', $stdout || '');
+  $w->cdataElement('stderr', $stderr || '');
+  $w->raw($result) if ($result);
+  $w->endTag('job');
+  $w->end();
+
+  # only check if well formed, meaning: no handles and no styles for parser
+  my $parser =  new XML::Parser();
+  SMT::Agent::Utils::error("Unable to merge job result data into an xml structure, not well-formed. Most likely a smt-client job handler is broken.") unless $parser->parse($xmlout);
+
   my $ua = createUserAgent();
   my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid );
   $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   $req->content_type ( "text/xml" );
-  $req->content ( $xmljob );
+  $req->content ( $xmlout );
 
   my $response ;
   eval { $response = $ua->request( $req ); };

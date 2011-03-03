@@ -4,6 +4,12 @@ use strict;
 use warnings;
 use UNIVERSAL 'isa';
 
+use SMT::Utils;
+
+use constant {
+    VBLEVEL     => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2,
+};
+
 sub new ($$)
 {
   my $class = shift;
@@ -40,12 +46,15 @@ sub saveResult($$$$)
   my $job_id    = shift || return undef;
   my $result    = shift || return undef;
 
-  # TODO: does the check for cacheresult need to go here?
-  my $sql = 'insert into JobResults (CLIENT_ID, JOB_ID, RESULT, CHANGED ) values (';
-  $sql .= $self->{dbh}->quote($client_id).', '.$self->{dbh}->quote($job_id).', '.$self->{dbh}->quote($result).', now()';
-  $sql .= ' ) on duplicate key update';
-  my $res = $self->{dbh}->do($sql);
-  return $res ? 1:0;
+  my $sth = $self->{dbh}->prepare('insert into JobResults (CLIENT_ID, JOB_ID, RESULT, CHANGED ) values (?, ?, ?, now() ) on duplicate key update RESULT=?, CHANGED=now()');
+  $sth->bind_param(1, $client_id );
+  $sth->bind_param(2, $job_id );
+  $sth->bind_param(3, $result );
+  $sth->bind_param(4, $result );
+  my $cnt = $sth->execute;
+
+  SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, 'Database error: '.$self->{dbh}->errstr() ) if $@;
+  return $cnt ? 1:0;
 }
 
 sub getResult($$$)

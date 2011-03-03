@@ -298,15 +298,12 @@ sub finishJob($)
 
       my $res = SMT::Job::Result->new({ 'dbh' => $self->{dbh} });
       return undef unless defined $res;
-      return $res->saveResult( $xmljob->{id}, $client_id, $jobxml );
+      $res->saveResult( $client_id, $xmljob->{id}, $jobxml );
   }
 
-  ## FIXME FIXME ... this works well with CDATA and the old parameter-style .... switch all all job types to new style and test all!!
-  $job->stderr( isa($xmljob->stderr(),'ARRAY') ? ( isa($xmljob->stderr()->[0],'HASH') ?  ($xmljob->stderr()->[0]->{stderr}) : ($xmljob->stderr()->[0]) ) : ($xmljob->stderr()) );
-  $job->stdout( isa($xmljob->stdout(),'ARRAY') ? ( isa($xmljob->stdout()->[0],'HASH') ?  ($xmljob->stdout()->[0]->{stdout}) : ($xmljob->stdout()->[0]) ) : ($xmljob->stdout()) );
+  $job->stderr( ( isa($xmljob->stderr(),'ARRAY') ? ( isa($xmljob->stderr()->[0],'HASH') ?  ($xmljob->stderr()->[0]->{stderr}) : ($xmljob->stderr()->[0]) ) : ($xmljob->stderr()) ) || '' );
+  $job->stdout( ( isa($xmljob->stdout(),'ARRAY') ? ( isa($xmljob->stdout()->[0],'HASH') ?  ($xmljob->stdout()->[0]->{stdout}) : ($xmljob->stdout()->[0]) ) : ($xmljob->stdout()) ) || '' );
 
-  # $job->stderr  ( $xmljob->stderr()   );
-  # $job->stdout  ( $xmljob->stdout()   );
   $job->exitcode( $xmljob->exitcode() );
   $job->message ( $xmljob->message()  );
   $job->status  ( $xmljob->status()   );
