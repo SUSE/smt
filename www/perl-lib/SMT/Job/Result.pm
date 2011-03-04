@@ -45,6 +45,8 @@ sub saveResult($$$$)
   my $client_id = shift || return undef;
   my $job_id    = shift || return undef;
   my $result    = shift || return undef;
+  # remove xml declaration from the result
+  $result =~ s/^\s*<\?[xX][mM][lL][^>]*>[\s\n]*//;
 
   my $sth = $self->{dbh}->prepare('insert into JobResults (CLIENT_ID, JOB_ID, RESULT, CHANGED ) values (?, ?, ?, now() ) on duplicate key update RESULT=?, CHANGED=now()');
   $sth->bind_param(1, $client_id );
@@ -59,20 +61,54 @@ sub saveResult($$$$)
 
 sub getResult($$$)
 {
-  # TODO
-  return 1;
+  my $self      = shift || return undef;
+  my $client_id = shift || return undef;
+  my $job_id    = shift || return undef;
+
+  my $rh = $self->{dbh}->selectrow_hashref('select * from JobResults where CLIENT_ID = ? and JOB_ID = ?', { Columns => {} }, ($client_id, $job_id) );
+  return $rh || undef;
 }
 
 sub getResultsByClientID($$)
 {
-  # TODO
-  return 1;
+  my $self      = shift || return undef;
+  my $client_id = shift || return undef;
+
+  my $rh = $self->{dbh}->selectall_arrayref('select * from JobResults where CLIENT_ID = ?', { Columns => {} }, $client_id );
+  return $rh || undef;
 }
 
 sub getResultsByJobID($$)
 {
-  # TODO
-  return 1;
+  my $self   = shift || return undef;
+  my $job_id = shift || return undef;
+
+  my $rh = $self->{dbh}->selectall_arrayref('select * from JobResults where JOB_ID = ?', { Columns => {} }, $job_id );
+  return $rh || undef;
 }
+
+#
+# getResultsXMLByJobID
+#
+#   create the full XML <results> snippet to be raw copied into a result job reply
+#
+sub getResultsXMLByJobID($$)
+{
+  my $self   = shift || return undef;
+  my $job_id = shift || return undef;
+
+  my $arrayref = $self->getResultsByJobID($job_id);
+  return undef unless isa($arrayref, 'ARRAY');
+
+  my $xml="<results>\n";
+
+  foreach my $ref ($arrayref)
+  {
+      $xml .= ($ref->{RESULT}."\n") if ( isa($ref, 'HASH') && defined $ref->{RESULT} );
+  }
+  $xml .= "\n</results>";
+  return $xml;
+}
+
 
 1;
