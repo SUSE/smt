@@ -43,7 +43,7 @@ sub updatejob
 
   # only check if well formed, meaning: no handles and no styles for parser
   my $parser =  new XML::Parser();
-  SMT::Agent::Utils::error("Unable to merge job result data into an xml structure, not well-formed. Most likely a smt-client job handler is broken.") unless $parser->parse($xmlout);
+  SMT::Agent::Utils::error("Unable to merge job result data into an xml structure, not well-formed. Most likely a smt-client job handler is broken.", $jobid) unless $parser->parse($xmlout);
 
   my $ua = createUserAgent();
   my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid );
