@@ -15,7 +15,7 @@ use XML::Parser;
 
 ###############################################################################
 # updates status of a job on the smt server
-# args: jobid, status, message 
+# args: jobid, status, message
 sub updatejob
 {
   my ($jobid, $status, $message, $stdout, $stderr, $exitcode, $result) =  @_;
@@ -32,11 +32,11 @@ sub updatejob
 
   $w->startTag('job', 'id'       => $jobid,
                       'guid'     => SMT::Agent::Config::getGuid() || '',
-                      'status'   =>  $status,
+                      'status'   => $status,
                       'message'  => $message,
                       'exitcode' => $exitcode  );
-  $w->cdataElement('stdout', $stdout || '');
-  $w->cdataElement('stderr', $stderr || '');
+  $stdout ? $w->cdataElement('stdout', $stdout ) : $w->emptyTag('stdout');
+  $stderr ? $w->cdataElement('stderr', $stderr ) : $w->emptyTag('stderr');
   $w->raw($result) if ($result);
   $w->endTag('job');
   $w->end();
@@ -48,16 +48,16 @@ sub updatejob
   my $ua = createUserAgent();
   my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid );
   $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
-  $req->content_type ( "text/xml" );
-  $req->content ( $xmlout );
+  $req->content_type( "text/xml" );
+  $req->content( $xmlout );
 
   my $response ;
   eval { $response = $ua->request( $req ); };
-  SMT::Agent::Utils::error ( "Unable to update job : $@" )              if ( $@ );
+  SMT::Agent::Utils::error( "Unable to update job : $@" ) if ( $@ );
 
   if (! $response->is_success )
   {
-    # Do not pass the jobid to the error() because that 
+    # Do not pass the jobid to the error() because that
     # causes an infinit recursion
     SMT::Agent::Utils::error( "Unable to update job: " . $response->status_line . "-" . $response->content );
   }
@@ -81,7 +81,7 @@ sub getjob
   $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   my $response ;
   eval { $response = $ua->request( $req ); };
-  SMT::Agent::Utils::error ( "Unable to request job $id : $@" )              if ( $@ );
+  SMT::Agent::Utils::error( "Unable to request job $id : $@" ) if ( $@ );
 
   if (! $response->is_success )
   {
@@ -104,7 +104,7 @@ sub getnextjob
   $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   my $response ;
   eval { $response = $ua->request( $req ); };
-  SMT::Agent::Utils::error ( "Unable to request next job : $@" )              if ( $@ );
+  SMT::Agent::Utils::error( "Unable to request next job : $@" ) if ( $@ );
 
   if (! $response->is_success )
   {
@@ -135,8 +135,8 @@ sub parsejob
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  SMT::Agent::Utils::error ( "unable to parse xml: $@" )              if ( $@ );
-  SMT::Agent::Utils::error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
+  SMT::Agent::Utils::error( "unable to parse xml: $@" ) if ( $@ );
+  SMT::Agent::Utils::error( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
 
   # retrieve variables
   $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
@@ -145,32 +145,32 @@ sub parsejob
   $verbose = 'true'            if ( defined $job->{verbose}  &&  ( $job->{verbose} =~ /^1$/  ||  $job->{verbose} =~ /^true$/   ));
 
   # check variables
-  SMT::Agent::Utils::error ( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
-  SMT::Agent::Utils::error ( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
-  SMT::Agent::Utils::error ( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
+  SMT::Agent::Utils::error( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
+  SMT::Agent::Utils::error( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
+  SMT::Agent::Utils::error( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
 
-  SMT::Agent::Utils::logger ( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
+  SMT::Agent::Utils::logger( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
 
   return ( id=>$jobid, type=>$jobtype, args=>$jobargs, verbose=>$verbose );
 };
 
 ###############################################################################
-# parse xml job description                                                    
-# args:    xml                                                                 
-# returns: id                                                                  
-sub parsejobid                                                                   
-{                                                                              
-  my $xmldata = shift;                                                         
+# parse xml job description
+# args:    xml
+# returns: id
+sub parsejobid
+{
+  my $xmldata = shift;
 
-  SMT::Agent::Utils::error ( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
+  SMT::Agent::Utils::error( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
 
   my $job;
   my $jobid;
 
   # parse xml
   eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  SMT::Agent::Utils::error ( "unable to parse xml: $@" )              if ( $@ );
-  SMT::Agent::Utils::error ( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' ) ) );
+  SMT::Agent::Utils::error( "unable to parse xml: $@" )              if ( $@ );
+  SMT::Agent::Utils::error( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' ) ) );
 
   # retrieve variables
   $jobid = $job->{id} if ( defined ( $job->{id} ) && ( $job->{id} =~ /^[0-9]+$/ ) );
@@ -194,7 +194,7 @@ sub createUserAgent
 
     if ( defined $ssl_ca_path && defined $ssl_ca_file )
     {
-      SMT::Agent::Utils::error ( "Configuration is inconsistent. Don't define SSL_CA_PATH when you want to use SSL_CA_FILE."  );
+      SMT::Agent::Utils::error( "Configuration is inconsistent. Don't define SSL_CA_PATH when you want to use SSL_CA_FILE."  );
     }
 
     use IO::Socket::SSL 'debug0';
@@ -217,28 +217,28 @@ sub createUserAgent
 
     if ( SMT::Agent::Utils::isServerDenied( SMT::Agent::Config::smtUrl() ) )
     {
-      SMT::Agent::Utils::error ( "Configuration doesn't allow to connect to ".SMT::Agent::Config::smtUrl() );
+      SMT::Agent::Utils::error( "Configuration doesn't allow to connect to ".SMT::Agent::Config::smtUrl() );
     }
 
 
 
     my %opts = @_;
-    
+
     my $user = undef;
     my $pass = undef;
 
     my ($httpsProxy, $proxyUser) = SMT::Agent::Config::getProxySettings();
-    
+
     if(defined $proxyUser)
     {
         ($user, $pass) = split(":", $proxyUser, 2);
     }
-    
+
     if(defined $httpsProxy)
     {
         # required for Crypt::SSLeay HTTPS Proxy support
         $ENV{HTTPS_PROXY} = $httpsProxy;
-        
+
         if(defined $user && defined $pass)
         {
             $ENV{HTTPS_PROXY_USERNAME} = $user;
@@ -252,20 +252,20 @@ sub createUserAgent
     }
 
     $ENV{HTTPS_CA_DIR} = "/etc/ssl/certs/";
-    
+
     # uncomment, if you want SSL debuging
     #$ENV{HTTPS_DEBUG} = 1;
 
     {
         package RequestAgent;
         @RequestAgent::ISA = qw(LWP::UserAgent);
-        
+
         sub new
         {
             my($class, $puser, $ppass, %cnf) = @_;
-            
+
             my $self = $class->SUPER::new(%cnf);
-            
+
             bless {
                    puser => $puser,
                    ppass => $ppass
@@ -275,7 +275,7 @@ sub createUserAgent
         sub get_basic_credentials
         {
             my($self, $realm, $uri, $proxy) = @_;
-            
+
             if($proxy)
             {
                 if(defined $self->{puser} && defined $self->{ppass})
