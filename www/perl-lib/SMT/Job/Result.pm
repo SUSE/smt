@@ -91,6 +91,7 @@ sub getResultsByJobID($$)
 # getResultsXMLByJobID
 #
 #   create the full XML <results> snippet to be raw copied into a result job reply
+#   the XML snipped is blindly copied from the database, the caller needs to check the well-formedness before transmission
 #
 sub getResultsXMLByJobID($$)
 {
@@ -102,7 +103,7 @@ sub getResultsXMLByJobID($$)
 
   my $xml="<results>\n";
 
-  foreach my $ref ($arrayref)
+  foreach my $ref (@$arrayref)
   {
       $xml .= ($ref->{RESULT}."\n") if ( isa($ref, 'HASH') && defined $ref->{RESULT} );
   }
