@@ -1,54 +1,13 @@
 package SMT::Job;
 
 use SMT::Utils;
+use SMT::Job::Constants;
 use strict;
 use warnings;
 use XML::Simple;
 use UNIVERSAL 'isa';
 
-use constant
-{
-  VBLEVEL     => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2,
-
-  JOB_STATUS =>
-  {
-      0  =>  'not yet worked on',
-      1  =>  'successful',
-      2  =>  'failed',
-      3  =>  'denied by client',
-
-      'not yet worked on' => 0,
-      'successful' 	  => 1,
-      'failed'            => 2,
-      'denied by client'  => 3,
-  },
-
-
-  JOB_TYPE    =>
-  {
-    # Maps JOB_TYPE ID to JOB_TYPE NAME
-    1       => 'patchstatus',
-    2       => 'softwarepush',
-    3       => 'update',
-    4       => 'execute',
-    5       => 'reboot',
-    6       => 'configure',
-    7       => 'wait',
-    8       => 'eject',
-
-    # Maps JOB_TYPE NAME to JOB_TYPE ID
-    'patchstatus'   =>      1,
-    'softwarepush'  =>      2,
-    'update'        =>      3,
-    'execute'       =>      4,
-    'reboot'        =>      5,
-    'configure'     =>      6,
-    'wait'          =>      7,
-    'eject'         =>      8,
-  },
-};
-
-
+use constant VBLEVEL => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 
 
 #
@@ -181,7 +140,7 @@ sub readJobFromDatabase
   $self->{id}        = $jobid;
   $self->{guid}      = $guid;
 
-  $self->{type}      = SMT::Job::JOB_TYPE->{ $result->{TYPE} } if defined SMT::Job::JOB_TYPE->{$result->{TYPE}};
+  $self->{type}      = SMT::Job::Constants::JOB_TYPE->{ $result->{TYPE} } if defined SMT::Job::Constants::JOB_TYPE->{$result->{TYPE}};
 
   if (exists $result->{ARGUMENTS} && defined $result->{ARGUMENTS})
   {
@@ -318,7 +277,7 @@ sub save
 
   # TYPE
   push ( @sqlkeys, "TYPE" );
-  push ( @sqlvalues,  $self->{type} =~ /^\d+$/ ? $self->{type} : SMT::Job::JOB_TYPE->{ $self->{type} } );
+  push ( @sqlvalues,  $self->{type} =~ /^\d+$/ ? $self->{type} : SMT::Job::Constants::JOB_TYPE->{ $self->{type} } );
 
   # GUID
   push ( @sqlkeys, "GUID_ID" );
@@ -616,7 +575,7 @@ sub resolveJobType
   my $self   = shift || return undef;
   my $type   = shift || return undef;
 
-  return JOB_TYPE->{ $type };
+  return SMT::Job::Constants::JOB_TYPE->{ $type };
 }
 
 sub resolveJobStatus
@@ -624,7 +583,7 @@ sub resolveJobStatus
   my $self   = shift || return undef;
   my $status = shift || return undef;
 
-  return JOB_STATUS->{ $status };
+  return SMT::Job::Constants::JOB_STATUS->{ $status };
 }
 
 

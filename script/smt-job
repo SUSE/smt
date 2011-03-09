@@ -12,6 +12,7 @@ use SMT::Utils;
 use SMT::Client;
 use SMT::JobQueue;
 use SMT::Job;
+use SMT::Job::Constants;
 
 use XML::Simple;
 use Text::ASCIITable;
@@ -24,45 +25,6 @@ use Data::Dumper;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-use constant JOB_TYPE    =>
-  {
-    # Maps JOB_TYPE ID to JOB_TYPE NAME
-    1       => 'patchstatus',
-    2       => 'softwarepush',
-    3       => 'update',
-    4       => 'execute',
-    5       => 'reboot',
-    6       => 'configure',
-    7       => 'wait',
-    8       => 'eject',
-
-    # Maps JOB_TYPE NAME to JOB_TYPE ID
-    'patchstatus'   =>      1,
-    'softwarepush'  =>      2,
-    'update'        =>      3,
-    'execute'       =>      4,
-    'reboot'        =>      5,
-    'configure'     =>      6,
-    'wait'          =>      7,
-    'eject'         =>      8,
-  };
-
-use constant JOB_STATUS   =>
-  {
-    # map JOB_STATUS ID to JOB_STATUS string
-    0  => 'queued',
-    1  => 'successful',
-    2  => 'failed',
-    3  => 'denied',
-
-    # map JOB_STATUS string to JOB_STATUS ID
-    'queued'     => 0,
-    'successful' => 1,
-    'failed'     => 2,
-    'denied'     => 3,
-  };
-
-
 #### START LOCAL FUNCTIONS ####
 
 sub getJobTypeID($)
@@ -71,12 +33,12 @@ sub getJobTypeID($)
 
     if ( $q =~ /^\d+$/ )
     {
-        return $q if exists JOB_TYPE->{$q};
+        return $q if exists SMT::Job::Constants::JOB_TYPE->{$q};
         return undef;
     }
-    elsif ( exists JOB_TYPE->{$q}  )
+    elsif ( exists SMT::Job::Constants::JOB_TYPE->{$q}  )
     {
-        return  JOB_TYPE->{$q};
+        return  SMT::Job::Constants::JOB_TYPE->{$q};
     }
 
     return undef;
@@ -696,8 +658,8 @@ else
 
             foreach $p (@DPROP)
             {
-                if ($p eq 'TYPE')   { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? JOB_TYPE->{${$h}{$p}}   : ${$h}{$p}  }
-                if ($p eq 'STATUS') { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? JOB_STATUS->{${$h}{$p}} : ${$h}{$p} }
+                if ($p eq 'TYPE')   { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? SMT::Job::Constants::JOB_TYPE->{${$h}{$p}}   : ${$h}{$p}  }
+                if ($p eq 'STATUS') { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? SMT::Job::Constants::JOB_STATUS->{${$h}{$p}} : ${$h}{$p} }
                 # transform hash to xml
                 if ($p eq 'ARGUMENTS' &&  isa(${$h}{$p}, 'HASH') )
                 {

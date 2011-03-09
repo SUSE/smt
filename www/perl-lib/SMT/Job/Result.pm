@@ -59,54 +59,94 @@ sub saveResult($$$$)
   return $cnt ? 1:0;
 }
 
-sub getResult($$$)
+#
+# getOneResult
+#   Function to query just one result entry
+#
+# parameters
+#   - job ID
+#   - client ID
+#   - configuration hash (see below)
+#
+sub getOneResult($$$;\%)
 {
   my $self      = shift || return undef;
-  my $client_id = shift || return undef;
   my $job_id    = shift || return undef;
-
-  my $rh = $self->{dbh}->selectrow_hashref('select * from JobResults where CLIENT_ID = ? and JOB_ID = ?', { Columns => {} }, ($client_id, $job_id) );
-  return $rh || undef;
-}
-
-sub getResultsByClientID($$)
-{
-  my $self      = shift || return undef;
   my $client_id = shift || return undef;
+  my $config    = shift || {};
 
-  my $rh = $self->{dbh}->selectall_arrayref('select * from JobResults where CLIENT_ID = ?', { Columns => {} }, $client_id );
-  return $rh || undef;
-}
-
-sub getResultsByJobID($$)
-{
-  my $self   = shift || return undef;
-  my $job_id = shift || return undef;
-
-  my $rh = $self->{dbh}->selectall_arrayref('select * from JobResults where JOB_ID = ?', { Columns => {} }, $job_id );
-  return $rh || undef;
+  return $self->getResults([$job_id], [$client_id], $config);
 }
 
 #
-# getResultsXMLByJobID
+# getResults
+#   Generic function to query the job result data
 #
-#   create the full XML <results> snippet to be raw copied into a result job reply
-#   the XML snipped is blindly copied from the database, the caller needs to check the well-formedness before transmission
+# parameters
+#   - array of job IDs
+#   - array of client IDs (optional)
+#   - configuration hash
+#     supported flags
+#     * asxml => 1         : return as XML snippet
+#     * checkupstream => 1 : only return data that is allowed to go upstream
 #
-sub getResultsXMLByJobID($$)
+sub getResults($\@;\@\%)
 {
-  my $self   = shift || return undef;
-  my $job_id = shift || return undef;
+  my $self       = shift || return undef;
+  my $job_ids    = shift || return undef;
+  my $client_ids = shift || ();
+  my $config     = shift || {};
+  my @params = ();
 
-  my $arrayref = $self->getResultsByJobID($job_id);
-  return undef unless isa($arrayref, 'ARRAY');
+  my $sql = 'select r.* from JobResults r inner join JobQueue j on (r.CLIENT_ID = j.GUID_ID and r.JOB_ID = j.ID) where ';
+  $sql .= ' j.UPSTREAM = 1 and ' if ( isa($config, 'HASH') && (exists $config->{checkupstream}) && ($config->{checkupstream} == 1) );
 
-  my $xml="<results>\n";
+  return undef unless ( isa($job_ids, 'ARRAY') && scalar @$job_ids );
+  my $jq = ' ?,' x scalar @$job_ids;
+  $jq =~ s/,$//;
+  $sql .= ' r.JOB_ID in ('.$jq.') ';
+  push @params, @$job_ids;
 
-  foreach my $ref (@$arrayref)
+  if ( isa($client_ids, 'ARRAY') && scalar @$client_ids )
   {
-      $xml .= ($ref->{RESULT}."\n") if ( isa($ref, 'HASH') && defined $ref->{RESULT} );
+      my $cq = ' ?,' x scalar @$client_ids;
+      $cq =~ s/,$//;
+      $sql .= ' and  r.CLIENT_ID in ('.$cq.') ';
+      push @params, @$client_ids;
   }
+
+  my $ref = $self->{dbh}->selectall_arrayref( $sql, { Columns => {} }, @params );
+
+  return $self->asResultsXML($ref) if ($config->{asxml} == 1);
+  return $ref || undef;
+}
+
+
+#
+# asResultsXML
+#   Internal helper function that transforms the result data into an XML snippet
+#    that can be transmitted via the report job
+# parameters:
+#   - the return of the function getResults()
+#
+sub asResultsXML($$)
+{
+  my $self = shift || return undef;
+  my $res  = shift || return undef;
+
+  my $xml = "<results>\n";
+  if ( isa($res, 'HASH') )
+  {
+      $xml .= ($res->{RESULT}."\n") if defined $res->{RESULT};
+  }
+  elsif ( isa($res, 'ARRAY') )
+  {
+      foreach my $href (@$res)
+      {
+          $xml .= ($href->{RESULT}."\n") if ( isa($href, 'HASH') || defined $href->{RESULT} );
+      }
+  }
+
   $xml .= "\n</results>";
   return $xml;
 }
