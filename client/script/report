@@ -8,34 +8,41 @@ sub jobhandler
 {
   my ($jobtype, $jobid, $args, $verbose) =  @_;
 
-  SMT::Agent::Utils::logger ("jobhandler for NEWJOB called", $jobid);
-  SMT::Agent::Utils::logger ("NEWJOB runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::logger("jobhandler for report job called", $jobid);
+  SMT::Agent::Utils::logger("report runs jobid \"$jobid\"", $jobid);
 
   # check whether this handler can handle requested jobtype
-  SMT::Agent::Utils::error ("wrong job handler: \"NEWJOB\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "NEWJOB" );
+  SMT::Agent::Utils::error("wrong job handler: \"report\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "report" );
   # check the passed args
   SMT::Agent::Utils::error("no or invalid arguments for this job", $jobid) unless ( isa($args, 'ARRAY') && isa($args->[0], 'HASH') );
+  SMT::Agent::Utils::error("the jobid element(s) in the arguments section contain invalid data", $jobid) unless ( isa($args->[0]->{jobid}, 'ARRAY') );
 
+  # try to import SMT server modules to find out if we are running on a SMT server
+  eval {
+      require SMT::CLI;          # for database connection
+      require SMT::Job::Result;  # request job results
+  };
+  SMT::Agent::Utils::error("Report job can only run on a SMT server. Could not find SMT server installation. Error message: $@", $jobid ) if ($@);
 
-  ##
-  ## TODO insert job workflow here
-  ##
+  # connect to database
+  my ($cfg, $dbh) = SMT::CLI::init();
+  SMT::Agent::Utils::error("Could not connect to the SMT server database. Error message: $@", $jobid ) unless defined $dbh;
 
-
-  SMT::Agent::Utils::error( "NEWJOB not yet implemented", $jobid ) if 1;
+  my $jr = SMT::Job::Result->new({ 'dbh' => $dbh });
+  my $resxml = $jr->getResults( $args->[0]->{jobid}, undef, { asxml => 1, checkupstream => 1 } );
 
   return (
-    stdout   => ( scalar( @stdout )  &&  $verbose eq 'true' ) ? join("\n", @stdout) : '',
-    stderr   => ( scalar( @stderr )  &&  $verbose eq 'true' ) ? join("\n", @stderr) : '',
-    exitcode => $retval,
-    success  => ($retval == 0 ) ? "true" : "false",
-    result   => undef,
-    message  => ($retval == 0 ) ? "NEWJOB successfully finished" : ("NEWJOB failed: " . join(", ", @messages))
+    stdout   => '',
+    stderr   => '',
+    exitcode => (defined $resxml) ? 0 : 1,
+    success  => (defined $resxml) ? "true" : "false",
+    result   => $resxml ? ("\n".$resxml) : undef,
+    message  => (defined $resxml) ? "Report job successfully finished" : "Report job failed."
   );
 
 }
 
-SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"NEWJOB\"");
+SMT::Agent::Utils::logger("successfully loaded handler for jobtype \"report\"");
 
 return 1;
 
