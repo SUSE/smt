@@ -98,7 +98,6 @@ sub newJob
 	$success     = $j->{success}      if ( defined ( $j->{success} ) );
 	$status      = $j->{status}       if ( defined ( $j->{status} ) && ( $j->{status} =~ /^[0-9]+$/ ) );
 
-
 	if ( defined $stdout  ) { $stdout =~ s/[\"\']//g;  }
 	if ( defined $stderr  ) { $stderr =~ s/[\"\']//g;  }
 	if ( defined $message ) { $message =~ s/[\"\']//g; }
@@ -202,6 +201,7 @@ sub readJobFromXML
     $self->{$attrib} = $j->{$attrib}  if ( defined $j->{$attrib} );
   }
 
+  ## FIXME this check does not belong here, must be done by the caller
   return error ( $self, "guid from xml does not match client's guid.") if ( defined $self->{guid} && $self->{guid} ne $guid );
 
   $self->{guid} = $guid;
@@ -233,17 +233,15 @@ sub save
 {
   my $self = shift;
   my $cookie = undef;
-
   return undef unless defined $self->{guid};
 
-
-  if ( defined $self->{parent_id} && defined $self->{id} && 
-   $self->{parent_id}  =~ /^\d+$/ &&  $self->{id} =~ /^\d+$/ && 
+  if ( defined $self->{parent_id} && defined $self->{id} &&
+   $self->{parent_id}  =~ /^\d+$/ &&  $self->{id} =~ /^\d+$/ &&
    $self->{parent_id}  == $self->{id} )
   {
     return undef;
   }
-  
+
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
   my $guidid = $client->getClientIDByGUID($self->{guid}) || return undef;
 
@@ -264,9 +262,9 @@ sub save
   my @sqlkeys = ();
   my @sqlvalues = ();
   my @updatesql = ();
- 
+
   my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished upstream cacheresult timelag message success);
- 
+
   # VERBOSE
   push ( @sqlkeys, "VERBOSE" );
   push ( @sqlvalues,  ( defined $self->{verbose} && ( $self->{verbose} =~ /^1$/  || $self->{verbose} =~ /^true$/ ) ) ? '1':'0' );
@@ -301,8 +299,7 @@ sub save
   $sql .= " on duplicate key update ". join (", ", @updatesql );
 
   $self->{dbh}->do($sql) || return undef ;
-
-  deleteJobIDCookie($self, $self->{id}, $cookie) if defined $cookie;
+  $self->deleteJobIDCookie($self->{id}, $cookie) if defined $cookie;
 
   return $self->{id};
 }
@@ -335,8 +332,7 @@ sub asXML
 
 
 
-
-## 
+##
 ## getters and setters
 ##
 
@@ -549,7 +545,7 @@ sub getNextAvailableJobID()
   my $sql1 = 'insert into JobQueue ( DESCRIPTION ) values ("'.$cookie.'")' ;
   $self->{dbh}->do($sql1) || return ( undef, $cookie);
 
-  my $sql2 = 'select ID from JobQueue '; 
+  my $sql2 = 'select ID from JobQueue ';
      $sql2 .= ' where DESCRIPTION  = "'.$cookie.'"';
 
   my $id = $self->{dbh}->selectall_arrayref($sql2)->[0]->[0];

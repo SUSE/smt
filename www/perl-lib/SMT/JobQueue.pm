@@ -10,11 +10,10 @@ use SMT::Client;
 use SMT::Utils;
 use Data::Dumper;
 
-sub new ($$)
+sub new ($;$)
 {
-    my $class = shift;
+    my $class  = shift || return undef;
     my $params = shift || {};
-
     my $self = {};
 
     if (defined $params->{dbh})
@@ -39,20 +38,21 @@ sub new ($$)
 # args: jobid
 # args: guid
 #       xmlformat (default false)
-sub retrieveJob($$$$)
+sub retrieveJob($$$;$)
 {
-  my $self      = shift;
-
-  my $guid      = shift;
-  my $jobid     = shift;
+  my $self      = shift || return undef;
+  my $guid      = shift || undef;
+  my $jobid     = shift || undef;
   my $xmlformat = shift || 0;
+
+  return ($xmlformat ? "<job />" : undef) unless (defined $guid && defined $jobid);
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $job->readJobFromDatabase( $jobid, $guid );
 
   if ( ! $job->isValid() )
   {
-    return $xmlformat ? "<job/>" : undef;
+    return $xmlformat ? "<job />" : undef;
   }
 
   $job->retrieved( SMT::Utils::getDBTimestamp() );
@@ -68,20 +68,21 @@ sub retrieveJob($$$$)
 # args: jobid
 # args: guid
 #       xmlformat (default false)
-sub getJob($$$$)
+sub getJob($$$;$)
 {
-  my $self      = shift;
-
-  my $guid      = shift;
-  my $jobid     = shift;
+  my $self      = shift || return undef;
+  my $guid      = shift || undef;
+  my $jobid     = shift || undef;
   my $xmlformat = shift || 0;
+
+  return ($xmlformat ? "<job />" : undef) unless (defined $guid && defined $jobid);
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $job->readJobFromDatabase( $jobid, $guid );
 
   if ( ! $job->isValid() )
   {
-    return $xmlformat ? "<job/>" : undef;
+    return $xmlformat ? "<job />" : undef;
   }
 
   return $xmlformat ? $job->asXML() : $job;
@@ -96,14 +97,13 @@ sub getJob($$$$)
 #
 # args: guid
 #       xmlformat (default false)
-sub getNextJob($$$)
+sub getNextJob($$;$)
 {
-  my $self      = shift;
-
-  my $guid      = shift;
+  my $self      = shift || return undef;
+  my $guid      = shift || return undef;
   my $xmlformat = shift || 0;
 
-  return getJob($self, $guid, getNextJobID($self, $guid, 0), $xmlformat );
+  return $self->getJob($guid, $self->getNextJobID($guid, 0), $xmlformat );
 }
 
 ###############################################################################
@@ -114,17 +114,14 @@ sub getNextJob($$$)
 #
 # args: guid
 #       xmlformat (default false)
-sub retrieveNextJob($$$)
+sub retrieveNextJob($$;$)
 {
-  my $self      = shift;
-
-  my $guid      = shift;
+  my $self      = shift || return undef;
+  my $guid      = shift || return undef;
   my $xmlformat = shift || 0;
 
-  return retrieveJob($self, $guid, getNextJobID($self, $guid, 0), $xmlformat );
+  return $self->retrieveJob($guid, $self->getNextJobID($guid, 0), $xmlformat );
 }
-
-
 
 
 
@@ -136,11 +133,10 @@ sub retrieveNextJob($$$)
 #
 # args: guid
 #       xmlformat (default false)
-sub getNextJobID($$$)
+sub getNextJobID($$;$)
 {
-  my $self      = shift;
-
-  my $guid      = shift;
+  my $self      = shift || return undef;
+  my $guid      = shift || return undef;
   my $xmlformat = shift || 0;
 
   my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) ';
@@ -157,15 +153,16 @@ sub getNextJobID($$$)
      $sql .= " ORDER BY jid ";
      $sql .= ' limit 1';
 
-  my $id = $self->{dbh}->selectall_arrayref($sql)->[0]->[0];
+  my $sel = $self->{dbh}->selectrow_arrayref($sql);
+  my $id  = ( isa($sel, 'ARRAY') && defined $sel->[0] ) ? $sel->[0] : undef;
 
-  if ( defined $id)
+  if ( defined $id )
   {
     return $xmlformat ? '<job id="'.$id.'">' : $id;
   }
   else
   {
-    return $xmlformat ? '<job/>' : undef;
+    return $xmlformat ? '<job />' : undef;
   }
 
 }
@@ -175,9 +172,9 @@ sub getNextJobID($$$)
 # returns a list of next jobs either in xml format
 # or in hash structure
 # if no guid is passed jobs for all clients are taken
-sub getJobList($$)
+sub getJobList($$;$)
 {
-  my $self      = shift;
+  my $self      = shift || return undef;
   my $guid      = shift || return undef;
   my $xmlformat = shift || 0;
 
@@ -194,8 +191,8 @@ sub getJobList($$)
 # add a job to the database (arg = jobobject)
 sub addJob($$)
 {
-  my $self = shift;
-  my $job = shift;
+  my $self = shift || return undef;
+  my $job  = shift || return undef;
 
   return $job->save();
 }
@@ -203,10 +200,10 @@ sub addJob($$)
 
 # add jobs for multiple guids
 # args: jobobject, guidlist
-sub addJobForMultipleGUIDs
+sub addJobForMultipleGUIDs($$@)
 {
-  my $self = shift;
-  my $job = shift;
+  my $self  = shift || return undef;
+  my $job   = shift || return undef;
   my @guids = @_;
 
   my $newjobid = undef;
@@ -223,9 +220,9 @@ sub addJobForMultipleGUIDs
 
 
 
-sub calcNextTargeted
+sub calcNextTargeted($$$)
 {
-  my $self  = shift;
+  my $self  = shift || return undef;
   my $guid  = shift || return undef;
   my $jobid = shift || return undef;
 
@@ -243,15 +240,14 @@ sub calcNextTargeted
 }
 
 
-sub parentFinished($$)
+sub parentFinished($$$)
 {
-  my $self      = shift;
-  my $guid      = shift;	
-  my $jobid     = shift; 	#jobid of parent job
+  my $self  = shift || return undef;
+  my $guid  = shift || return undef;
+  my $jobid = shift || return undef;  #jobid of parent job
 
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
   my $guidid = $client->getClientIDByGUID($guid) || return undef;
-
 
   my $sql = 'update JobQueue'.
   ' set PARENT_ID  = NULL '.
@@ -259,17 +255,15 @@ sub parentFinished($$)
   ' and GUID_ID = '.$self->{dbh}->quote($guidid);
 
   $self->{dbh}->do($sql) || return undef;
-
-
 }
 
 
 ###############################################################################
-sub finishJob($)
+sub finishJob($$$)
 {
-  my $self   = shift;
+  my $self   = shift || return undef;
   my $guid   = shift || return undef;
-  my $jobxml = shift;
+  my $jobxml = shift || return undef;
 
   my $xmljob = SMT::Job->new({ 'dbh' => $self->{dbh} });
   $xmljob->readJobFromXML( $guid, $jobxml );
@@ -324,11 +318,11 @@ sub finishJob($)
 
 };
 
-sub deleteJob($)
+sub deleteJob($$$)
 {
-  my $self = shift;
+  my $self  = shift || return undef;
   my $jobid = shift || return undef;
-  my $guid = shift || return undef;
+  my $guid  = shift || return undef;
 
   # do not allow to delete all jobs of all clients
   return undef if ($jobid eq 'ALL'  &&  $guid eq 'ALL');
@@ -420,8 +414,7 @@ sub in_Array($$)
 #
 sub createSQLStatement($$)
 {
-    my $self = shift;
-
+    my $self   = shift || return undef;
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
 
@@ -442,7 +435,6 @@ sub createSQLStatement($$)
     }
 
     my $asXML = ( exists ${$filter}{'asXML'}  &&  defined ${$filter}{'asXML'} ) ? 1 : 0;
-
 
     # fillup the filter if needed or filter empty
     if ( scalar( keys %{$filter} ) == 0 ||
@@ -498,7 +490,6 @@ sub createSQLStatement($$)
         push( @where, " cl.GUID = " . $self->{'dbh'}->quote(${$filter}{'GUID'}) . ' ' );
     }
 
-
     # make sure the primary key is in the select statement in any case
     push( @JQselect, "ID" ) unless ( in_Array("ID", \@JQselect) );
     push( @JQselect, "GUID_ID" ) unless ( in_Array("GUID_ID", \@JQselect) );
@@ -531,8 +522,7 @@ sub createSQLStatement($$)
 #
 sub getJobsInfo_internal($)
 {
-    my $self = shift;
-
+    my $self = shift || return undef;
     my $filter = shift || {};
     return undef unless ( isa($filter, 'HASH') );
 
@@ -564,7 +554,6 @@ sub getJobsInfo_internal($)
 
     if ( $asXML )
     {
-
         if ( keys %{$result} == 1  &&  ${$filter}{'asXML'} eq 'one' )
         {
             my @keys = keys %{$result};
@@ -594,7 +583,6 @@ sub getJobsInfo_internal($)
 
 
 
-
 #
 # getClientsInfo
 #   query all jobs about information, filtered by filter
@@ -603,9 +591,9 @@ sub getJobsInfo_internal($)
 #    $self
 #    $filter (hash) : filter for the query
 #
-sub getJobsInfo($$)
+sub getJobsInfo($;$)
 {
-    my $self = shift;
+    my $self   = shift || return undef;
     my $filter = shift || {};
 
     return undef unless ( isa($filter, 'HASH') );
@@ -621,7 +609,7 @@ sub getJobsInfo($$)
 #
 sub getAllJobsInfo($)
 {
-    my $self = shift;
+    my $self = shift || return undef;
 
     # emtpy filter means: select all information
     return $self->getJobsInfo_internal({});
@@ -635,7 +623,7 @@ sub getAllJobsInfo($)
 #    self
 sub getAllJobsInfoAsXML($)
 {
-    my $self = shift;
+    my $self = shift || return undef;
 
     # emtpy filter means: select all information
     return $self->getJobsInfo_internal({ 'asXML' => '', 'selectAll' => '' });
