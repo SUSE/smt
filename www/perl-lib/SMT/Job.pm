@@ -181,11 +181,8 @@ sub readJobFromHash
 sub readJobFromXML
 {
   my $self = shift || return undef;
-  my $guid = shift || return undef;
   my $xmldata = shift || return undef;
-
-  return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-  return error( $self, "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
+  return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) && length( $xmldata ) > 0 );
 
   my $j;
 
@@ -200,11 +197,6 @@ sub readJobFromXML
   {
     $self->{$attrib} = $j->{$attrib}  if ( defined $j->{$attrib} );
   }
-
-  ## FIXME this check does not belong here, must be done by the caller
-  return error ( $self, "guid from xml does not match client's guid.") if ( defined $self->{guid} && $self->{guid} ne $guid );
-
-  $self->{guid} = $guid;
 }
 
 #

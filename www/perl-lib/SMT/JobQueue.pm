@@ -266,17 +266,19 @@ sub finishJob($$$)
   my $jobxml = shift || return undef;
 
   my $xmljob = SMT::Job->new({ 'dbh' => $self->{dbh} });
-  $xmljob->readJobFromXML( $guid, $jobxml );
+  $xmljob->readJobFromXML( $jobxml );
+  # do not allow to update foreign job
+  return undef unless ( ''.$xmljob->guid() eq "$guid" );
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
-  $job->readJobFromDatabase( $xmljob->{id}, $xmljob->{guid} );
-
-  return undef unless ( $job->{retrieved} );
+  $job->readJobFromDatabase( $xmljob->id(), $guid );
+  return undef unless ( $job->retrieved() );
 
   # special handling for patchstatus job
   if ( $job->type() eq "patchstatus" )
   {
       my $client = SMT::Client->new( {'dbh' => $self->{'dbh'} });
+      return undef unless defined $client;
       my $msg = $xmljob->message();
       $msg = 'failed' if ( $xmljob->status() =~ /^2$/ );
       $msg = 'denied' if ( $xmljob->status() =~ /^3$/ );
@@ -315,7 +317,6 @@ sub finishJob($$$)
   $self->parentFinished($guid, $job->{id} ) if ( $xmljob->status() =~ /^1$/ );
 
   return $job->save();
-
 };
 
 sub deleteJob($$$)
