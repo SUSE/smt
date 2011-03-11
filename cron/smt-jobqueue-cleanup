@@ -105,7 +105,7 @@ my $maxDays = $cfg->val('JOBQUEUE', 'maxFinishedJobAge') || 8;
 
 
 ### DELETE OLD FINISHED JOBS (first) ###
-
+# FIXME  FIXME  upstream jobs must be deleted later than $maxDays ... maybe 5 x $maxDays or better a fixed value of 50 days
 my $delOldJobsSQL = " DELETE FROM JobQueue where DATE_ADD(FINISHED, INTERVAL $maxDays DAY) < NOW() AND PERSISTENT = 0 ";
 $res = $dbh->do($delOldJobsSQL);
 SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted finished jobs: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
