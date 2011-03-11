@@ -3,39 +3,64 @@ use strict;
 use warnings;
 use SMT::Agent::Constants;
 use SMT::Agent::Utils;
+use Data::Dumper; # DEBUG
 
 sub jobhandler
 {
   my ($jobtype, $jobid, $args, $verbose) =  @_;
 
-  SMT::Agent::Utils::logger ("jobhandler for NEWJOB called", $jobid);
-  SMT::Agent::Utils::logger ("NEWJOB runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::logger("jobhandler for createjob job called", $jobid);
+  SMT::Agent::Utils::logger("createjob runs jobid \"$jobid\"", $jobid);
 
   # check whether this handler can handle requested jobtype
-  SMT::Agent::Utils::error ("wrong job handler: \"NEWJOB\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "NEWJOB" );
+  SMT::Agent::Utils::error("wrong job handler: \"createjob\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "createjob" );
   # check the passed args
   SMT::Agent::Utils::error("no or invalid arguments for this job", $jobid) unless ( isa($args, 'ARRAY') && isa($args->[0], 'HASH') );
+  SMT::Agent::Utils::error("the job element in the arguments section containss invalid data", $jobid) unless ( isa($args->[0]->{job}, 'ARRAY') );
+  SMT::Agent::Utils::error("the guids element in the arguments section contains invalid data", $jobid) unless ( isa($args->[0]->{guids}, 'ARRAY') );
+  SMT::Agent::Utils::error("the guids element in the arguments section contains no or invalid data", $jobid) unless ( isa($args->[0]->{guids}->[0], 'HASH') );
+  SMT::Agent::Utils::error("the guid element in the arguments guids' section contains invalid data", $jobid) unless ( isa($args->[0]->{guids}->[0]->{guid}, 'ARRAY') );
+  my $jobxml   = $args->[0]->{job};
+  my $allguids = $args->[0]->{guids}->[0]->{guid};
 
+# FIXME
+# TODO check the xml and guid data
 
-  ##
-  ## TODO insert job workflow here
-  ##
+  # try to import SMT server modules to find out if we are running on a SMT server
+  eval {
+      require SMT::CLI;        # for database connection
+      require SMT::Job;        # to create a job
+      require SMT::Job::Queue; # to add the job to the JobQueue
+  };
+  SMT::Agent::Utils::error("The createjob job can only run on a SMT server. Could not find SMT server installation. Error message: $@", $jobid ) if ($@);
 
+  # connect to database
+  my ($cfg, $dbh) = SMT::CLI::init();
+  SMT::Agent::Utils::error("Could not connect to the SMT server database. Error message: $@", $jobid ) unless defined $dbh;
 
-  SMT::Agent::Utils::error( "NEWJOB not yet implemented", $jobid ) if 1;
+  my $newjob = SMT::Job::Result->new({ 'dbh' => $dbh });
+  $newjob->readJobFromXML($xmljob);
+  # reset the guid, as it is transported separately, jobxml is just a jobtemplate
+  $newjob->{guid} = undef;
+
+  # TODO  create the job and append to JobQueue
+
+  my $resxml =   # TODO create the reply
+
+FIXME
 
   return (
-    stdout   => ( scalar( @stdout )  &&  $verbose eq 'true' ) ? join("\n", @stdout) : '',
-    stderr   => ( scalar( @stderr )  &&  $verbose eq 'true' ) ? join("\n", @stderr) : '',
-    exitcode => $retval,
-    success  => ($retval == 0 ) ? "true" : "false",
-    result   => undef,
-    message  => ($retval == 0 ) ? "NEWJOB successfully finished" : ("NEWJOB failed: " . join(", ", @messages))
+    stdout   => '',
+    stderr   => '',
+    exitcode => (defined $resxml) ? 0 : 1,
+    success  => (defined $resxml) ? "true" : "false",
+    result   => $resxml ? ("\n".$resxml) : undef,
+    message  => (defined $resxml) ? "Createjob job successfully finished" : "Createjob job failed."
   );
 
 }
 
-SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"NEWJOB\"");
+SMT::Agent::Utils::logger("successfully loaded handler for jobtype \"createjob\"");
 
 return 1;
 
