@@ -11,8 +11,8 @@ use SMT::Utils;
 use File::Basename;
 use File::Temp;
 use SMT::JobQueue;
-
-use Data::Dumper;
+use SMT::Job::Constants;
+use UNIVERSAL 'isa';
 
 
 if( ! SMT::Utils::dropPrivileges() )
@@ -25,18 +25,18 @@ my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $logfile = "/var/log/smt/smt-jobqueuecleanup.log";
 my $debug   = 0;
 my $help    = 0;
-my $mail     = 0;
-my $quiet    = 0;
+my $mail    = 0;
+my $quiet   = 0;
 my $mailtempfile = undef;
 
 
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = GetOptions ("debug|d"     => \$debug,
                          "verboselevel|v=i" => \$vblevel,
-			 "logfile|L=s" => \$logfile,
+                         "logfile|L=s" => \$logfile,
                          "mail|m"      => \$mail,
                          "help|h"      => \$help,
-                         "quiet|q"      => \$quiet
+                         "quiet|q"     => \$quiet
                         );
 
 
@@ -121,9 +121,17 @@ SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted job 
 
 
 ### CHECK FOR UNSUPPORTED JOB TYPES (third) ###
-
-my $delUnsupportedJobsSQL = " DELETE FROM JobQueue where TYPE >= 9 ";
-$res = $dbh->do($delUnsupportedJobsSQL);
+my @alltypes = ();
+my $jobtypes = SMT::Job::Constants::JOB_TYPE;
+$jobtypes = {} unless isa($jobtypes, 'HASH');
+foreach my $_t ( keys %{$jobtypes} )
+{
+  push (@alltypes, $_t) if $_t =~ m/^\d+$/;
+}
+my $questionmarks = " ?," x scalar @alltypes;
+$questionmarks =~ s/,$//;
+my $delUnsupportedJobsSQL = " DELETE FROM JobQueue where TYPE not in ( ".$questionmarks." ) ";
+$res = $dbh->do($delUnsupportedJobsSQL, undef, @alltypes);
 SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted unsupported jobs: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
 
 
