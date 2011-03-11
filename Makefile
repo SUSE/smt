@@ -83,7 +83,6 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
 	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
-	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/job/
 	mkdir -p $(DESTDIR)$(DOCDIR)/smt
 	install -m 644 apache2/smt-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
 	install -m 644 apache2/conf.d/*.conf $(DESTDIR)/etc/smt.d/
