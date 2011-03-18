@@ -56,4 +56,14 @@ use constant
 };
 
 
+## Constants for job data (may not be encapsulated into a hash like structure like above)
+##
+# basic attributes: only primary keys and foreign key
+use constant JOB_DATA_BASIC => qw(id parent_id guid);
+  # all attributes that are attributes (in the job XML repersentation) to the job and are not not a CData section or a XML snippet itself
+use constant JOB_DATA_ATTRIBUTES => qw(type name description status exitcode created targeted expires retrieved finished upstream cacheresult verbose timelag message success persistent);
+  # sub-elements of the job (in the job XML representation) that need special handling (CData, XML snippet)
+use constant JOB_DATA_ELEMENTS => qw(stdout stderr arguments);
+
+
 1;
