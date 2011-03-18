@@ -5,6 +5,7 @@ use SMT::Job::Constants;
 use strict;
 use warnings;
 use XML::Simple;
+use XML::Writer;
 use UNIVERSAL 'isa';
 
 use constant VBLEVEL => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
@@ -59,14 +60,14 @@ sub newJob
     if ( defined ( $params[2] ) )
     {
         $guid = $params[0];
-	$id   = $params[1];
-	$type = $params[2];
-	$arguments = $params[3];
+        $id   = $params[1];
+        $type = $self->jobTypeToID($params[2]);
+        $arguments = $params[3];
 
-	if ( ! ( isa ( $arguments, 'HASH' )))
+        if ( ! ( isa ( $arguments, 'HASH' )))
         {
-          eval { $arguments = XMLin( $arguments, forcearray => 1 ) };	# no arguments provided => use empty argument list
-	  if ( $@ ) { $arguments = XMLin ( "<arguments></arguments>", forcearray => 1 ); }	
+            eval { $arguments = XMLin( $arguments, forcearray => 1 ) };	# no arguments provided => use empty argument list
+            if ( $@ ) { $arguments = XMLin ( "<arguments></arguments>", forcearray => 1 ); }
         }
     }
     elsif (! defined ( $params[1] ) )
@@ -89,7 +90,7 @@ sub newJob
 
 	# retrieve variables
 	$id   	     = $j->{id}           if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
-	$type	     = $j->{type}         if ( defined ( $j->{type} ) );
+	$type	     = $self->jobTypeToID($j->{type})  if ( defined ( $j->{type} ) );
 	$arguments   = $j->{arguments}    if ( defined ( $j->{arguments} ) );
 	$exitcode    = $j->{exitcode}     if ( defined ( $j->{exitcode} ) && ( $j->{exitcode} =~ /^[0-9]+$/ ) );
 	$stdout	     = $j->{stdout}       if ( defined ( $j->{stdout} ) );
@@ -107,7 +108,7 @@ sub newJob
 
     $self->{id}   = $id;
     $self->{guid} = $guid;
-    $self->{type} = $type;
+    $self->{type} = $self->jobTypeToID($type);
     $self->{arguments} = $arguments;
     $self->{exitcode} = $exitcode;
     $self->{stdout} = $stdout;
@@ -127,6 +128,7 @@ sub readJobFromDatabase
   my $guid  = shift || return undef;
 
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  return undef unless defined $client;
   my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
   my $sql = 'select * from JobQueue '
@@ -136,41 +138,60 @@ sub readJobFromDatabase
   my $result = $self->{'dbh'}->selectall_hashref($sql, 'ID')->{$jobid};
   return undef unless defined $result;
 
-  $self->{id}        = $jobid;
-  $self->{guid}      = $guid;
-
-  $self->{type}      = SMT::Job::Constants::JOB_TYPE->{ $result->{TYPE} } if defined SMT::Job::Constants::JOB_TYPE->{$result->{TYPE}};
-
-  if (exists $result->{ARGUMENTS} && defined $result->{ARGUMENTS})
+  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
   {
-      $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ); # convert xml to hash
+      if ( lc($att) eq 'guid' )
+      {
+          next; # set after this loop
+      }
+      elsif ( lc($att) eq 'arguments' )
+      {
+          $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ) if (defined $result->{ARGUMENTS}); # convert xml to hash
+      }
+      elsif ( lc($att) eq 'type' )
+      {
+          $self->{type} = $self->jobTypeToID( $result->{TYPE} );
+      }
+      else
+      {
+          $self->{lc($att)} = $result->{uc($att)} if ( defined $result->{uc($att)} );
+      }
   }
-
-  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished upstream cacheresult verbose timelag message success persistent);
-
-  foreach my $attrib (@attribs)
-  {
-    $self->{$attrib} = $result->{uc($attrib) }  if ( defined $result->{uc($attrib)} );
-  }
+  $self->{guid} = $guid;
 }
 
 
 sub isValid
 {
-  my $self = shift;
-
-  return (defined $self->{type} );
+  my $self = shift || return undef;
+  return ( defined $self->jobTypeToID($self->{type}) );
 }
 
 
-sub readJobFromHash
+sub readJobFromHash($$)
 {
   my $self = shift || return undef;
   my $attribs = shift || return undef;
+  return undef unless isa($attribs, 'HASH');
 
-  foreach my $key (keys %$attribs)
+  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
   {
-    $self->{$key} = $attribs->{$key};
+      if ( lc($att) eq 'guid' )
+      {
+          my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+          return undef unless defined $client;
+          $self->{guid_id} = $client->getClientIDByGUID($attribs->{guid}) || undef;
+          $self->{guid} = $attribs->{guid} || undef;
+      }
+      elsif ( lc($att) eq 'type' )
+      {
+          $self->{type} = $self->jobTypeToID( $attribs->{type} );
+      }
+      else
+      {
+          # check for exists instead of defined - maybe someone wants to reset a value
+          $self->{lc($att)} = $attribs->{lc($att)} if ( exists $attribs->{lc($att)} );
+      }
   }
 }
 
@@ -184,18 +205,34 @@ sub readJobFromXML
   my $xmldata = shift || return undef;
   return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) && length( $xmldata ) > 0 );
 
-  my $j;
-
   # parse xml
+  my $j;
   eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
   return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
-  return error( $self, "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
+  return error( $self, "job description contains invalid xml" ) unless ( isa($j, 'HASH') );
 
-  my @attribs = qw(id guid parent_id name description status stdout stderr exitcode created targeted expires retrieved finished upstream cacheresult verbose timelag message success persistent);
-
-  foreach my $attrib (@attribs)
+  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
   {
-    $self->{$attrib} = $j->{$attrib}  if ( defined $j->{$attrib} );
+      if ( lc($att) eq 'guid' )
+      {
+          my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+          return undef unless defined $client;
+          $self->{guid_id} = $client->getClientIDByGUID($j->{guid}) || undef;
+          $self->{guid} = $j->{guid} || undef;
+      }
+      elsif ( lc($att) eq 'type' )
+      {
+          $self->{type} = $self->jobTypeToID( $j->{type} );
+      }
+      elsif ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
+      {
+          # set all boolean flags to 1 or 0
+          $self->{lc($att)} = ( defined $self->{lc($att)} && ( $self->{lc($att)} =~ /^1$/  || $self->{lc($att)} =~ /^true$/ ) ) ? 1:0;
+      }
+      else
+      {
+          $self->{$att} = $j->{$att} if (exists $j->{$att});
+      }
   }
 }
 
@@ -214,7 +251,6 @@ sub checkparentisvalid
     . ' and   STATUS  =  0 ' ;
 
   my $result = $self->{'dbh'}->selectall_hashref($sql, 'ID')->{$parentid};
-
   return ( defined $result->{ID} ) ? 1 : 0;
 }
 
@@ -223,31 +259,32 @@ sub checkparentisvalid
 #
 sub save
 {
-  my $self = shift;
+  my $self = shift || return undef;
   my $cookie = undef;
-  return undef unless defined $self->{guid};
 
-  if ( defined $self->{parent_id} && defined $self->{id} &&
-   $self->{parent_id}  =~ /^\d+$/ &&  $self->{id} =~ /^\d+$/ &&
-   $self->{parent_id}  == $self->{id} )
+  if ( not defined $self->{guid_id} )
   {
-    return undef;
+      my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+      return undef unless defined $client;
+      $self->{guid_id} = $client->getClientIDByGUID( $self->{guid} || undef );
   }
+  return undef unless defined $self->{guid_id};
 
-  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
-  my $guidid = $client->getClientIDByGUID($self->{guid}) || return undef;
+  return undef if ( defined $self->{parent_id} && defined $self->{id} &&
+       $self->{parent_id}  =~ /^\d+$/ &&  $self->{id} =~ /^\d+$/ &&
+       $self->{parent_id}  == $self->{id} );
 
   if ( defined $self->{parent_id} )
   {
-    $self->checkparentisvalid($self->{parent_id}, $guidid ) || return undef;
+      $self->checkparentisvalid( $self->{parent_id}, $self->{guid_id} ) || return undef;
   }
 
   # retrieve next job id from database if no id is known
-  if (!defined $self->{id})
+  if ( not defined $self->{id})
   {
-    (my $id, $cookie) = $self->getNextAvailableJobID();
-    return undef unless defined $id and defined $cookie;
-    $self->{id} = $id;
+      (my $id, $cookie) = $self->getNextAvailableJobID();
+      return undef unless ( defined $id && defined $cookie );
+      $self->{id} = $id;
   }
 
   my $sql = "insert into JobQueue ";
@@ -255,37 +292,36 @@ sub save
   my @sqlvalues = ();
   my @updatesql = ();
 
-  my @attribs = qw(id parent_id name description status stdout stderr exitcode created targeted expires retrieved finished upstream cacheresult timelag message success);
-
-  # VERBOSE
-  push ( @sqlkeys, "VERBOSE" );
-  push ( @sqlvalues,  ( defined $self->{verbose} && ( $self->{verbose} =~ /^1$/  || $self->{verbose} =~ /^true$/ ) ) ? '1':'0' );
-
-  # PERSISTENT
-  push ( @sqlkeys, "PERSISTENT" );
-  push ( @sqlvalues,  ( defined $self->{persistent} && ( $self->{persistent} =~ /^1$/  || $self->{persistent} =~ /^true$/ ) ) ? '1':'0' );
-
-  # TYPE
-  push ( @sqlkeys, "TYPE" );
-  push ( @sqlvalues,  $self->{type} =~ /^\d+$/ ? $self->{type} : SMT::Job::Constants::JOB_TYPE->{ $self->{type} } );
-
-  # GUID
-  push ( @sqlkeys, "GUID_ID" );
-  push ( @sqlvalues, $self->{dbh}->quote($guidid) );
-
-  # arguments
-  push ( @sqlkeys, "ARGUMENTS" );
-  push ( @sqlvalues, $self->{dbh}->quote( $self->getArgumentsXML() ) ); # hash to xml
-
-  foreach my $attrib (@attribs)
+  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
   {
-    if ( defined $self->{$attrib} )
-    {
-      push ( @sqlkeys, uc($attrib) );
-      push ( @sqlvalues, $self->{dbh}->quote( $self->{$attrib} ));
-      push ( @updatesql, uc($attrib) . " = " .  $self->{dbh}->quote( $self->{$attrib} ));
-    }
+      if ( lc($att) eq 'guid' )
+      {
+          next; # conversion of guid to guid_id at the top of this function
+      }
+      elsif ( lc($att) eq 'arguments' )
+      {
+          next; # done after this loop
+      }
+      elsif ( lc($att) eq 'type' )
+      {
+          $self->{type} = $self->jobTypeToID( $self->{type} );
+      }
+      elsif ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
+      {
+          # set all boolean flags to 1 or 0
+          $self->{lc($att)} = ( defined $self->{lc($att)} && ( $self->{lc($att)} =~ /^1$/  || $self->{lc($att)} =~ /^true$/ ) ) ? 1:0;
+      }
+
+      # no else section - all values need to be set
+      push (@sqlkeys, uc($att));
+      push (@sqlvalues, $self->{dbh}->quote( $self->{lc($att)} ));
+      push (@updatesql, uc($att).' = '.$self->{dbh}->quote( $self->{lc($att)} ));
   }
+
+  push (@sqlkeys, "ARGUMENTS" );
+  push (@sqlvalues, $self->{dbh}->quote( $self->getArgumentsXML() ) ); # convert hash to xml
+  push (@updatesql, 'ARGUMENTS = '.$self->{dbh}->quote( $self->getArgumentsXML() ));
+
   $sql .= " (". join  (", ", @sqlkeys ) .") " ;
   $sql .= " values (". join  (", ", @sqlvalues ) .") " ;
   $sql .= " on duplicate key update ". join (", ", @updatesql );
@@ -300,17 +336,17 @@ sub save
 #
 # returns job in xml
 #
-sub asXML
+sub asSimpleXML
 {
     my ( $self ) = @_;
 
-    return "<job/>" unless isValid( $self );
+    return "<job />" unless isValid( $self );
 
     my $job =
     {
       'id'        => $self->{id},
       'guid'      => $self->{guid},
-      'type'      => $self->{type},
+      'type'      => $self->jobTypeToName($self->{type}),
       'arguments' => $self->{arguments},
       'verbose'   => ( defined $self->{verbose} && $self->{verbose} eq "1" ) ? "true" : "false"
 
@@ -322,6 +358,57 @@ sub asXML
                  );
 }
 
+#
+# return the job as XML data structure
+#
+sub asXML($;$)
+{
+  my $self = shift || return  undef;
+  my $config = shift || {};
+
+  # create the XML output
+  my $w = undef;
+  my $xmlout = '';
+  $w = new XML::Writer( OUTPUT => \$xmlout, DATA_MODE => 1, DATA_INDENT => 2, UNSAFE => 1);
+  return undef if ( ! $w || $@ );
+  $w->xmlDecl( 'UTF-8' ) unless (exists $config->{xmldecl} && $config->{xmldecl} == 0);
+
+  my @jobattributes = ();
+  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
+  {
+      if ( lc($att) eq 'guid_id' || lc($att) eq 'arguments' )
+      {
+          next;
+          # guid_id does not go to out - only internal
+          # arguments handled later
+      }
+      elsif ( lc($att) eq 'type' )
+      {
+          push @jobattributes, ( type => $self->jobTypeToName($self->{type}) );
+      }
+      elsif ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
+      {
+          push @jobattributes, ( lc($att) => ( defined $self->{lc($att)} && ( $self->{lc($att)} =~ /^1$/  || $self->{lc($att)} =~ /^true$/ ) ) ? 1:0 );
+      }
+      else
+      {
+          push @jobattributes, ( lc($att) => $self->{lc($att)} ) if defined $self->{lc($att)};
+      }
+  }
+
+  $w->startTag('job', @jobattributes );
+  $w->cdataElement('stdout', $self->{stdout} )  if ( defined $self->{stdout}    && not (exists $config->{stdout}    && $config->{stdout}    == 0) );
+  $w->cdataElement('stderr', $self->{stderr} )  if ( defined $self->{stderr}    && not (exists $config->{stderr}    && $config->{stderr}    == 0) );
+  $w->raw( "\n".$self->getArgumentsXML()."\n" ) if ( defined $self->{arguments} && not (exists $config->{arguments} && $config->{arguments} == 0) );
+  $w->endTag('job');
+  $w->end();
+
+  # only check if well formed, meaning: no handles and no styles for parser
+  my $parser = new XML::Parser();
+  return error("Can not create a well-formed XML out of the job definition.") unless $parser->parse($xmlout);
+
+  return $xmlout;
+}
 
 
 ##
@@ -363,6 +450,13 @@ sub guid
       my ( $self, $guid ) = @_;
       $self->{guid} = $guid if defined( $guid );
       return $self->{guid};
+}
+
+sub guid_id
+{
+      my ( $self, $guid_id ) = @_;
+      $self->{guid_id} = $guid_id if defined( $guid_id );
+      return $self->{guid_id};
 }
 
 sub parent_id
@@ -574,6 +668,34 @@ sub resolveJobStatus
   return SMT::Job::Constants::JOB_STATUS->{ $status };
 }
 
+#
+# jobTypeToName
+#
+#   Successor of the old "resolveJobType" function, that just toggled ID and Name
+#
+sub jobTypeToName($$)
+{
+  my $self = shift || return undef;
+  my $type = shift || return undef;
+
+  return SMT::Job::Constants::JOB_TYPE->{$type} if $type =~ /^\d+$/;
+  return ( exists SMT::Job::Constants::JOB_TYPE->{$type} ) ? $type : undef;
+}
+
+#
+# jobTypeToID
+#   Successor of the old "resolveJobType" function, that just toggled ID and Name
+# argument: job type name or id
+# returns the ID of the job type or "undef" if the job type does not exist
+#
+sub jobTypeToID($$)
+{
+  my $self = shift || return undef;
+  my $type = shift || return undef;
+
+  return SMT::Job::Constants::JOB_TYPE->{$type} if $type !~ /^\d+$/;
+  return ( exists SMT::Job::Constants::JOB_TYPE->{$type} ) ? $type : undef;
+}
 
 
 1;
