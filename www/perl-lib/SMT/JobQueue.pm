@@ -58,7 +58,7 @@ sub retrieveJob($$$;$)
   $job->retrieved( SMT::Utils::getDBTimestamp() );
   $job->save();
 
-  return $xmlformat ? $job->asSimpleXML() : $job;
+  return $xmlformat ? $job->asXML({short => 1}) : $job;
 }
 
 ###############################################################################
@@ -85,7 +85,7 @@ sub getJob($$$;$)
     return $xmlformat ? "<job />" : undef;
   }
 
-  return $xmlformat ? $job->asSimpleXML() : $job;
+  return $xmlformat ? $job->asXML({short => 1}) : $job;
 }
 
 

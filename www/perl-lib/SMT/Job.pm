@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use XML::Simple;
 use XML::Writer;
+use XML::Parser;
 use UNIVERSAL 'isa';
 
 use constant VBLEVEL => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
@@ -339,7 +340,6 @@ sub save
 sub asSimpleXML
 {
     my ( $self ) = @_;
-
     return "<job />" unless isValid( $self );
 
     my $job =
@@ -349,11 +349,9 @@ sub asSimpleXML
       'type'      => $self->jobTypeToName($self->{type}),
       'arguments' => $self->{arguments},
       'verbose'   => ( defined $self->{verbose} && $self->{verbose} eq "1" ) ? "true" : "false"
-
     };
 
     return XMLout($job, rootname => "job"
-                     # , noattr => 1
                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
                  );
 }
@@ -365,6 +363,9 @@ sub asXML($;$)
 {
   my $self = shift || return  undef;
   my $config = shift || {};
+  my $short = (exists $config->{short} && $config->{short} == 1) ? 1:0;
+  $config->{stdout} = 0 if ($short);
+  $config->{stderr} = 0 if ($short);
 
   # create the XML output
   my $w = undef;
@@ -374,29 +375,36 @@ sub asXML($;$)
   $w->xmlDecl( 'UTF-8' ) unless (exists $config->{xmldecl} && $config->{xmldecl} == 0);
 
   my @jobattributes = ();
-  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
+  my %optatt = map {$_ => 1} (SMT::Job::Constants::JOB_DATA_ATTRIBUTES);
+  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES )
   {
-      if ( lc($att) eq 'guid_id' || lc($att) eq 'arguments' )
+      if ( lc($att) eq 'guid_id' )
       {
           next;
-          # guid_id does not go to out - only internal
+          # guid_id does not go to out - only internal usage
           # arguments handled later
       }
       elsif ( lc($att) eq 'type' )
       {
+          # always set the type
           push @jobattributes, ( type => $self->jobTypeToName($self->{type}) );
       }
       elsif ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
       {
+          # keep back the internal flags in short mode (except verbose)
+          next if ( $short && (lc($att) ne 'verbose') );
           push @jobattributes, ( lc($att) => ( defined $self->{lc($att)} && ( $self->{lc($att)} =~ /^1$/  || $self->{lc($att)} =~ /^true$/ ) ) ? 1:0 );
       }
       else
       {
+          # keep back optional metadata (in short mode) that is not required to process the job
+          next if ($short && exists $optatt{$att});
           push @jobattributes, ( lc($att) => $self->{lc($att)} ) if defined $self->{lc($att)};
       }
   }
 
   $w->startTag('job', @jobattributes );
+  # special handling for the 3 JOB_DATA_ELEMENTS types
   $w->cdataElement('stdout', $self->{stdout} )  if ( defined $self->{stdout}    && not (exists $config->{stdout}    && $config->{stdout}    == 0) );
   $w->cdataElement('stderr', $self->{stderr} )  if ( defined $self->{stderr}    && not (exists $config->{stderr}    && $config->{stderr}    == 0) );
   $w->raw( "\n".$self->getArgumentsXML()."\n" ) if ( defined $self->{arguments} && not (exists $config->{arguments} && $config->{arguments} == 0) );
