@@ -64,7 +64,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
+my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -77,6 +77,7 @@ if (! &Getopt::Long::GetOptions(
          'edit|e' => \$edit,
          'delete|d' => \$delete,
          'list|l' => \$list,
+         'construct' => \$construct,
          # job identifier
          'guid|g=s' => \@guid,
          'jobid|j=i' => \$jobid,
@@ -131,6 +132,8 @@ if ( defined $help and ( $help == 1 ) )
   print "   --create      (-c) : " . __("create job")."\n";
   print "   --edit        (-e) : " . __("edit job")."\n";
   print "   --delete      (-d) : " . __("delete job")."\n";
+  print "   --construct        : " . __("like create, but only ouputs the the job formatted in XML")."\n";
+  print "                        " . __("this XML representation can be used to create a job of the type 'createjob'")."\n";
   print "\n";
   print __("main parameters")."\n";
   print "   --guid        (-g) <guid> : " . __("the clients guid")."\n";
@@ -313,6 +316,7 @@ $opc++ if (defined $create);
 $opc++ if (defined $edit);
 $opc++ if (defined $delete);
 $opc++ if (defined $list);
+$opc++ if (defined $construct);
 if ( $opc > 1 )
 {
     print __("Please define only one operation mode.")."\n";
@@ -320,7 +324,7 @@ if ( $opc > 1 )
 }
 
 
-if ( defined $create )
+if ( defined $create || defined $construct )
 {
     ## CREATE ##
 
@@ -329,7 +333,7 @@ if ( defined $create )
         print __("The job type is invalid.")."\n";
         exit 3;
     }
-    if ( not defined $GUID )
+    if ( ( not defined $GUID && not @guid ) && not defined $construct )
     {
         print __("The guid is invalid.")."\n";
         exit 3;
@@ -411,7 +415,7 @@ if ( defined $create )
         ## exec ##
         $Job->{name}        = $query{NAME} || 'Execute';
         $Job->{description} = $query{DESCRIPTION} || 'Execute custom command';
-        $Job->{arguments}{command} = (exists $para{EXECCOMMAND} && defined $para{EXECCOMMAND}) ? $para{EXECCOMMAND} : ' /bin/true ' ;
+        $Job->{arguments}->{command} = [ (exists $para{EXECCOMMAND} && defined $para{EXECCOMMAND}) ? $para{EXECCOMMAND} : ' /bin/true ' ];
     }
     elsif ( $typeID == 5 )
     {
@@ -443,6 +447,18 @@ if ( defined $create )
         $Job->{description} = $query{DESCRIPTION} || 'Job to eject the CD/DVD drawer';
         $Job->{arguments}{action} = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open' ;
     }
+    elsif ( $typeID == 51 )
+    {
+        # TODO createjob job
+    }
+    elsif ( $typeID == 52 )
+    {
+        # TODO report job
+    }
+    elsif ( $typeID == 53 )
+    {
+        # TODO inventory job
+    }
     else
     {
         print __("This job type is unsupported.")."\n";
@@ -450,58 +466,49 @@ if ( defined $create )
     }
 
     my $newjobid = undef;
-    if (@guid > 0)
-    {
-        ##  job for multiple guids ##
-        $newjobid = $JobQ->addJobForMultipleGUIDs($Job, @guid);
-    }
-    else
-    {
-        ## single job ##
-        $newjobid = $Job->save();
-    }
 
-    if ( $newjobid )
+    if ( defined $create )
     {
-        print sprintf(__("Successfully created new job. The job id is: %s"), $newjobid )."\n" unless $quiet;
+        $newjobid = (@guid > 0) ? $JobQ->addJobForMultipleGUIDs($Job, @guid) : $Job->save();
 
-        # for new softwarepush and update jobs automatcally add a patchstatus job to refresh the patchstatus immediately
-        # can be disabled by --no-autopatchstatus / it is enabled by default
-        if ( ( $typeID == 2  ||  $typeID == 3 )  &&  $autoPatchstatus )
+        if ( $newjobid )
         {
-            my $PSjob = SMT::Job->new({ 'dbh' => $dbh });
-            $PSjob->newJob( @guid > 0 ? undef:$GUID, undef, 1, undef );
+            print sprintf(__("Successfully created new job. The job id is: %s"), $newjobid )."\n" unless $quiet;
 
-            $PSjob->{name}        =  'Automatic Patchstatus Job';
-            $PSjob->{description} =  sprintf("Automatic Patchstatus Job after job ID %s", $newjobid);
-            $PSjob->{parent_id}  = $newjobid;
+            # for new softwarepush and update jobs automatcally add a patchstatus job to refresh the patchstatus immediately
+            # can be disabled by --no-autopatchstatus / it is enabled by default
+            if ( ( $typeID == 2  ||  $typeID == 3 )  &&  $autoPatchstatus )
+            {
+                my $PSjob = SMT::Job->new({ 'dbh' => $dbh });
+                $PSjob->newJob( @guid > 0 ? undef:$GUID, undef, 1, undef );
 
-            my $newPSjobid = undef;
-            if (@guid > 0)
-            {
-                $newPSjobid = $JobQ->addJobForMultipleGUIDs($PSjob, @guid);
-            }
-            else
-            {
-                $newPSjobid = $PSjob->save();
-            }
+                $PSjob->{name}        = 'Automatic Patchstatus Job';
+                $PSjob->{description} = sprintf("Automatic Patchstatus Job after job ID %s", $newjobid);
+                $PSjob->{parent_id}   = $newjobid;
 
-            if ( $newPSjobid )
-            {
-                print sprintf(__("Successfully created an automatic patchstatus job. The job id is: %s"), $newPSjobid )."\n" unless $quiet;
-            }
-            else
-            {
-                print  __("An error occurred when creating an automatic patchstatus job.")."\n";
+                my $newPSjobid = undef;
+                $newPSjobid = (@guid > 0) ? $JobQ->addJobForMultipleGUIDs($PSjob, @guid) : $PSjob->save();
+
+                if ( $newPSjobid )
+                {
+                    print sprintf(__("Successfully created an automatic patchstatus job. The job id is: %s"), $newPSjobid )."\n" unless $quiet;
+                }
+                else
+                {
+                    print  __("An error occurred when creating an automatic patchstatus job.")."\n";
+                }
             }
         }
-
+        else
+        {
+            print __("An error occurred when creating a new job.")."\n";
+        }
     }
-    else
+    elsif ( defined $construct )
     {
-        print __("An error occurred when creating a new job.")."\n";
+        $Job->{guid} = undef;
+        print $Job->asXML({xmldecl => 0, arguments => 1, stdout => 0 , stderr => 0 });
     }
-
 
 }
 elsif ( defined $edit )
