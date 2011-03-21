@@ -295,13 +295,16 @@ sub save
 
   foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
   {
-      if ( lc($att) eq 'guid' )
+      if ( lc($att) eq 'guid' || lc($att) eq 'arguments' )
       {
-          next; # conversion of guid to guid_id at the top of this function
+          # conversion of guid to guid_id at the top of this function
+          # arguments set after this loop
+          next;
       }
-      elsif ( lc($att) eq 'arguments' )
+      elsif ( lc($att) eq 'status' )
       {
-          next; # done after this loop
+          # status may not be undef aka. NULL
+          next unless (defined $self->{status});
       }
       elsif ( lc($att) eq 'type' )
       {
@@ -318,6 +321,9 @@ sub save
       push (@sqlvalues, $self->{dbh}->quote( $self->{lc($att)} ));
       push (@updatesql, uc($att).' = '.$self->{dbh}->quote( $self->{lc($att)} ));
   }
+
+  push (@sqlkeys, "GUID_ID");
+  push (@sqlvalues, $self->{guid_id});
 
   push (@sqlkeys, "ARGUMENTS" );
   push (@sqlvalues, $self->{dbh}->quote( $self->getArgumentsXML() ) ); # convert hash to xml
