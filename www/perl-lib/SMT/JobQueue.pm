@@ -9,6 +9,7 @@ use SMT::Job::Result;
 use SMT::Client;
 use SMT::Utils;
 use Data::Dumper;
+use SMT::Job::Constants;
 
 sub new ($;$)
 {
@@ -18,12 +19,12 @@ sub new ($;$)
 
     if (defined $params->{dbh})
     {
-	$self->{dbh} = $params->{dbh};
+        $self->{dbh} = $params->{dbh};
     }
 
     if (defined $params->{LOG})
     {
-	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
+        $self->{LOG} = SMT::Utils::openLog ($params->{LOG});
     }
 
     bless $self, $class;
@@ -140,7 +141,7 @@ sub getNextJobID($$;$)
   my $xmlformat = shift || 0;
 
   my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) ';
-     $sql .= ' where STATUS  = ' . 0				 ;          #( 0 = not yet worked on)
+     $sql .= ' where STATUS  = 0';          #( 0 = not yet worked on)
      $sql .= " and ";
      $sql .= " ( TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
      $sql .= "  OR TARGETED IS NULL ) ";
@@ -374,7 +375,7 @@ sub deleteJob($$$)
 # The suffix '>' after 'TYPE' indicates to search for values that are greater then 1.
 #
 # Possible suffixes are:
-#  >	greater
+#  >    greater
 #  <    less
 #  =    equal  (same as no suffix)
 #  !    not equal
@@ -419,7 +420,12 @@ sub createSQLStatement($$)
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
 
-    my @PROPS = qw(ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED UPSTREAM CACHERESULT PERSISTENT VERBOSE TIMELAG);
+    my @PROPS = ();
+    my @createDBprops = ('id', 'parent_id', SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS);
+    foreach my $_p (@createDBprops)
+    {
+        push (@PROPS, uc($_p));
+    }
     my @ALLPROPS = @PROPS;
 
     # add > and < properties
@@ -458,22 +464,22 @@ sub createSQLStatement($$)
     {
         if ( exists ${$filter}{$prop} )
         {
-	    my $p = $prop;
-	    $p =~ s/[<>+-=!~]+//;
+            my $p = $prop;
+            $p =~ s/[<>+-=!~]+//;
             push (@JQselect, "$p");
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
-		if    ( $prop =~ /.*\>/ ) { push( @where, " jq.$p > " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\</ ) { push( @where, " jq.$p < " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\+/ ) { push( @where, " jq.$p IS NOT NULL" ); }
-		elsif ( $prop =~ /.*\-/ )  { push( @where, " jq.$p IS NULL " ); }
-		elsif ( $prop =~ /.*\=/ )  { push( @where, " jq.$p =  " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\!/ )  { push( @where, " jq.$p <> " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\~/ )  { push( @where, " jq.$p LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		else
-		{
-                  push( @where, " jq.$prop = " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
-		}
+                if    ( $prop =~ /.*\>/ ) { push( @where, " jq.$p > " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\</ ) { push( @where, " jq.$p < " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\+/ ) { push( @where, " jq.$p IS NOT NULL" ); }
+                elsif ( $prop =~ /.*\-/ )  { push( @where, " jq.$p IS NULL " ); }
+                elsif ( $prop =~ /.*\=/ )  { push( @where, " jq.$p =  " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\!/ )  { push( @where, " jq.$p <> " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\~/ )  { push( @where, " jq.$p LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                else
+                {
+                    push( @where, " jq.$prop = " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
+                }
             }
         }
     }
@@ -544,13 +550,13 @@ sub getJobsInfo_internal($)
 
     foreach my $xguid ( keys %{$result} )
     {
-	foreach my $xjobid ( keys %{${$result}{$xguid}} )
-	{
-	   if ( defined ${$result}{$xguid}{$xjobid}{$argArg} )
-	   {
-	    eval { ${$result}{$xguid}{$xjobid}{$argArg} = XMLin( ${$result}{$xguid}{$xjobid}{$argArg} , forcearray => 1 ) } ;
-	   }
-	}
+        foreach my $xjobid ( keys %{${$result}{$xguid}} )
+        {
+           if ( defined ${$result}{$xguid}{$xjobid}{$argArg} )
+           {
+               eval { ${$result}{$xguid}{$xjobid}{$argArg} = XMLin( ${$result}{$xguid}{$xjobid}{$argArg} , forcearray => 1 ) };
+           }
+        }
     }
 
     if ( $asXML )
