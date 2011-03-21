@@ -333,7 +333,7 @@ if ( defined $create || defined $construct )
         print __("The job type is invalid.")."\n";
         exit 3;
     }
-    if ( ( not defined $GUID && not @guid ) && not defined $construct )
+    if ( ((not defined $GUID) && (not @guid)) && (not defined $construct) )
     {
         print __("The guid is invalid.")."\n";
         exit 3;
