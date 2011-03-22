@@ -12,6 +12,8 @@ use SMT::Agent::Config;
 use SMT::Agent::Utils;
 use XML::Writer;
 use XML::Parser;
+use XML::XPath;
+use XML::XPath::XMLParser;
 
 ###############################################################################
 # updates status of a job on the smt server
@@ -119,35 +121,26 @@ sub getnextjob
 ###############################################################################
 # parse xml job description
 # args:    xml
-# returns: hash (id, type, args)
+# returns: hash (id, type, args[XML], verbose)
 sub parsejob
 {
   my $xmldata = shift;
+  my $xpQuery = XML::XPath->new(xml => $xmldata);
+  my $jobSet = $xp->find('/job[@id and @type]');
+  SMT::Agent::Utils::error( "xml doesn't contain a job description" ) unless ( (defined $jobSet) && ($jobSet->size > 0) );
+  my $job = $jobSet->pop();
 
-  SMT::Agent::Utils::error( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
+  my $jobid   = $job->getAttribute('id');
+  my $jobtype = $job->getAttribute('type');
+  my $verbose = $job->getAttribute('verbose');
+  $verbose = ($verbose =~ /^1$/ || $verbose =~ /^true$/) ? 1 : 0;
 
-  my $job;
-  my $jobid;
-  my $jobtype;
-  my $jobargs;
-  # need to parse verbose flag as well (bnc#521952)
-  my $verbose = 'false';
-
-  # parse xml
-  eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  SMT::Agent::Utils::error( "unable to parse xml: $@" ) if ( $@ );
-  SMT::Agent::Utils::error( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' )));
-
-  # retrieve variables
-  $jobid   = $job->{id}        if ( defined ( $job->{id} )      && ( $job->{id} =~ /^[0-9]+$/ ));
-  $jobtype = $job->{type}      if ( defined ( $job->{type} )    && ( $job->{type} =~ /^[0-9a-zA-Z.]+$/ ));
-  $jobargs = $job->{arguments} if ( defined ( $job->{arguments} ));
-  $verbose = 'true'            if ( defined $job->{verbose}  &&  ( $job->{verbose} =~ /^1$/  ||  $job->{verbose} =~ /^true$/   ));
+  my $argumentsSet = $job->find('/job/arguments');
+  my $jobargs = ($argumentsSet->size() == 1) ? XML::XPath::XMLParser::as_string($argumentsSet->pop()) : undef;
 
   # check variables
-  SMT::Agent::Utils::error( "jobid unknown or invalid." )                if ( ! defined( $jobid   ));
-  SMT::Agent::Utils::error( "jobtype unknown or invalid.",      $jobid ) if ( ! defined( $jobtype ));
-  SMT::Agent::Utils::error( "jobarguments unknown or invalid.", $jobid ) if ( ! defined( $jobargs ));
+  SMT::Agent::Utils::error( "jobid unknown or invalid." )                unless defined $jobid;
+  SMT::Agent::Utils::error( "jobtype unknown or invalid.",      $jobid ) unless defined $jobtype;
 
   SMT::Agent::Utils::logger( "got jobid \"$jobid\" with jobtype \"$jobtype\"", $jobid);
 
