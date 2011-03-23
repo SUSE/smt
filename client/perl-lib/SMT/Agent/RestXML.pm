@@ -126,7 +126,7 @@ sub parsejob
 {
   my $xmldata = shift;
   my $xpQuery = XML::XPath->new(xml => $xmldata);
-  my $jobSet = $xp->find('/job[@id and @type]');
+  my $jobSet = $xpQuery->find('/job[@id and @type]');
   SMT::Agent::Utils::error( "xml doesn't contain a job description" ) unless ( (defined $jobSet) && ($jobSet->size > 0) );
   my $job = $jobSet->pop();
 
