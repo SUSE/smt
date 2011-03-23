@@ -263,21 +263,17 @@ sub save
   my $self = shift || return undef;
   my $cookie = undef;
 
-  if ( not defined $self->{guid_id} )
-  {
-      my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
-      return undef unless defined $client;
-      $self->{guid_id} = $client->getClientIDByGUID( $self->{guid} || undef );
-  }
-  return undef unless defined $self->{guid_id};
+  # on every save the guid_id must be queried again, as the guid might have been changed
+  # so this call is a must!
+  return undef unless defined $self->guid_id();
 
   return undef if ( defined $self->{parent_id} && defined $self->{id} &&
        $self->{parent_id}  =~ /^\d+$/ &&  $self->{id} =~ /^\d+$/ &&
        $self->{parent_id}  == $self->{id} );
 
-  if ( defined $self->{parent_id} )
+  if ( defined $self->parent_id() )
   {
-      $self->checkparentisvalid( $self->{parent_id}, $self->{guid_id} ) || return undef;
+      $self->checkparentisvalid( $self->parent_id(), $self->guid_id() ) || return undef;
   }
 
   # retrieve next job id from database if no id is known
@@ -323,7 +319,7 @@ sub save
   }
 
   push (@sqlkeys, "GUID_ID");
-  push (@sqlvalues, $self->{guid_id});
+  push (@sqlvalues, $self->guid_id());
 
   push (@sqlkeys, "ARGUMENTS" );
   push (@sqlvalues, $self->{dbh}->quote( $self->getArgumentsXML() ) ); # convert hash to xml
@@ -448,7 +444,7 @@ sub arguments
 sub getArgumentsXML
 {
     my ( $self ) = @_;
-    return XMLout($self->{arguments}, rootname => "arguments");
+    return isa($self->{arguments}, 'HASH') ? XMLout($self->{arguments}, rootname => "arguments") : $self->{arguments};
 }
 
 
@@ -470,6 +466,12 @@ sub guid_id
 {
       my ( $self, $guid_id ) = @_;
       $self->{guid_id} = $guid_id if defined( $guid_id );
+
+      # always query the guid_id, the guid might have changed in the meanwhile
+      my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+      return undef unless defined $client;
+      $self->{guid_id} = $client->getClientIDByGUID( $self->{guid} || undef );
+
       return $self->{guid_id};
 }
 
