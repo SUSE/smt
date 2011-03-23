@@ -3,7 +3,10 @@ use strict;
 use warnings;
 use SMT::Agent::Constants;
 use SMT::Agent::Utils;
-use Data::Dumper; # DEBUG
+use XML::Writer;
+use XML::Parser;
+use XML::XPath;
+use XML::XPath::XMLParser;
 
 sub jobhandler
 {
@@ -13,49 +16,82 @@ sub jobhandler
   SMT::Agent::Utils::logger("createjob runs jobid \"$jobid\"", $jobid);
 
   # check whether this handler can handle requested jobtype
-  SMT::Agent::Utils::error("wrong job handler: \"createjob\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "createjob" );
-  # check the passed args
-  SMT::Agent::Utils::error("no or invalid arguments for this job", $jobid) unless ( isa($args, 'ARRAY') && isa($args->[0], 'HASH') );
-  SMT::Agent::Utils::error("the job element in the arguments section containss invalid data", $jobid) unless ( isa($args->[0]->{job}, 'ARRAY') );
-  SMT::Agent::Utils::error("the guids element in the arguments section contains invalid data", $jobid) unless ( isa($args->[0]->{guids}, 'ARRAY') );
-  SMT::Agent::Utils::error("the guids element in the arguments section contains no or invalid data", $jobid) unless ( isa($args->[0]->{guids}->[0], 'HASH') );
-  SMT::Agent::Utils::error("the guid element in the arguments guids' section contains invalid data", $jobid) unless ( isa($args->[0]->{guids}->[0]->{guid}, 'ARRAY') );
-  my $jobxml   = $args->[0]->{job};
-  my $allguids = $args->[0]->{guids}->[0]->{guid};
+  SMT::Agent::Utils::error("wrong job handler: \"createjob\" cannot handle \"$jobtype\"", $jobid) unless ( $jobtype eq 'createjob' );
+  SMT::Agent::Utils::error("invalid arguments for this job", $jobid) unless defined $args;
 
-# FIXME
-# TODO check the xml and guid data
+  my $xpQuery = XML::XPath->new(xml => $args);
+  SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments/job[1][@type]'));
+  my $argSet = $xpQuery->find('/arguments');
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
 
-  # try to import SMT server modules to find out if we are running on a SMT server
-  eval {
-      require SMT::CLI;        # for database connection
-      require SMT::Job;        # to create a job
-      require SMT::Job::Queue; # to add the job to the JobQueue
+  my $jobSet = $arg->find('/arguments/job[1][@type]');
+  my $newjobNode = ($jobSet->size() == 1) ? $jobSet->pop() : undef;
+  my $newjobXML  = (defined $newjobNode) ? XML::XPath::XMLParser::as_string($newjobNode) : undef;
+  SMT::Agent::Utils::error("no or too many job definitions found for this job", $jobid) unless defined $newjobXML;
+
+  my $jobargSet = $arg->find('/arguments/job[1][@type]/arguments');
+  my $newjobargXML = ($jobargSet->size() == 1) ? XML::XPath::XMLParser::as_string($jobargSet->pop()) : undef;
+  SMT::Agent::Utils::error("no or too many arguments definitions found for this job", $jobid) unless defined $newjobargXML;
+
+  my @guids = ();
+  my $guidSet = $arg->find('/arguments/guids/guid');
+  SMT::Agent::Utils::error("no target guids defined for this job", $jobid) unless ( (defined $guidSet) && ($guidSet->size() > 0) );
+  foreach my $_node ($guidSet->get_nodelist) {
+      my $_str = $_node->string_value;
+      push (@guids, $_str) if ( (defined $_str) && ($_str !~ /^$/) );
+  }
+
+  # only check if well formed, meaning: no handles and no styles for parser
+  my $parser =  new XML::Parser();
+  SMT::Agent::Utils::error("Unable to check the job XML structure.", $jobid) unless defined $parser;
+  SMT::Agent::Utils::error("Error found in job XML structure, data is not well-formed.", $jobid) unless $parser->parse($newjobXML);
+
+  eval { require SMT::CLI;      # for database connection
+         require SMT::Job;      # to create a job
+         require SMT::JobQueue; # to add the job to the JobQueue
   };
-  SMT::Agent::Utils::error("The createjob job can only run on a SMT server. Could not find SMT server installation. Error message: $@", $jobid ) if ($@);
+  SMT::Agent::Utils::error("Could not find the SMT server installation. The job type createjob can only run on a SMT server. Error message: $@", $jobid ) if ($@);
 
   # connect to database
   my ($cfg, $dbh) = SMT::CLI::init();
   SMT::Agent::Utils::error("Could not connect to the SMT server database. Error message: $@", $jobid ) unless defined $dbh;
 
-  my $newjob = SMT::Job::Result->new({ 'dbh' => $dbh });
-  $newjob->readJobFromXML($xmljob);
+  # create the new job
+  my $newjob = SMT::Job->new({ 'dbh' => $dbh });
+  SMT::Agent::Utils::error("could not initiate the creation of a new job", $jobid) unless ($newjob);
+  $newjob->readJobFromXML($newjobXML);
   # reset the guid, as it is transported separately, jobxml is just a jobtemplate
   $newjob->{guid} = undef;
+  $newjob->{arguments} = $newjobargXML;
+  # createjob jobs must be automatically flagged as upstream and cacheresult, otherwise they make no sense at all
+  $newjob->{upstream} = 1;
+  $newjob->{cacheresult} = 1;
 
-  # TODO  create the job and append to JobQueue
+  # append job to JobQueue
+  my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh });
+  SMT::Agent::Utils::error("could not initiate a connection to the JobQueue backend", $jobid) unless defined $jobq;
+  my $newjobid = $jobq->addJobForMultipleGUIDs($newjob, @guids);
+  SMT::Agent::Utils::error("could not append the new job to the JobQueue", $jobid) unless defined $newjobid;
 
-  my $resxml =   # TODO create the reply
+  # create the XML reply
+  my $w = undef;
+  my $resxml = '';
+  $w = new XML::Writer( OUTPUT => \$resxml, DATA_MODE => 1, DATA_INDENT => 2 );
+  SMT::Agent::Utils::error("Unable to create an result XML snippet for the current job.", $jobid) unless $w;
+  $w->startTag('results');
+  $w->dataElement('createdjob', $newjobid) if (defined $newjobid);
+  $w->endTag('results');
+  $w->end();
 
-FIXME
-
+  my $success = ((defined $resxml) && (defined $newjobid)) ? 1:0;
   return (
     stdout   => '',
     stderr   => '',
-    exitcode => (defined $resxml) ? 0 : 1,
-    success  => (defined $resxml) ? "true" : "false",
-    result   => $resxml ? ("\n".$resxml) : undef,
-    message  => (defined $resxml) ? "Createjob job successfully finished" : "Createjob job failed."
+    exitcode => $success ? 0 : 1,
+    success  => $success ? "true" : "false",
+    result   => $success ? ("\n".$resxml) : undef,
+    message  => $success ? ("Successfully created job ".$newjobid) : "Createjob job failed."
   );
 
 }
