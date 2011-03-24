@@ -45,7 +45,8 @@ sub updatejob
 
   # only check if well formed, meaning: no handles and no styles for parser
   my $parser =  new XML::Parser();
-  SMT::Agent::Utils::error("Unable to merge job result data into an xml structure, not well-formed. Most likely a smt-client job handler is broken.", $jobid) unless $parser->parse($xmlout);
+  eval { $parser->parse($xmlout) };
+  SMT::Agent::Utils::error("Unable to merge job result data into an xml structure, not well-formed. Most likely a smt-client job handler is broken.", $jobid) if ( $@ );
 
   my $ua = createUserAgent();
   my $req = HTTP::Request->new( PUT => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_UPDATE_JOB.$jobid );
@@ -125,8 +126,11 @@ sub getnextjob
 sub parsejob
 {
   my $xmldata = shift;
+
   my $xpQuery = XML::XPath->new(xml => $xmldata);
-  my $jobSet = $xpQuery->find('/job[@id and @type]');
+  my $jobSet;
+  eval { $jobSet = $xpQuery->find('/job[@id and @type]') };
+  SMT::Agent::Utils::error( "xml is not parsable" ) if ($@);
   SMT::Agent::Utils::error( "xml doesn't contain a job description" ) unless ( (defined $jobSet) && ($jobSet->size > 0) );
   my $job = $jobSet->pop();
 
@@ -135,7 +139,9 @@ sub parsejob
   my $verbose = $job->getAttribute('verbose');
   $verbose = ($verbose =~ /^1$/ || $verbose =~ /^true$/) ? 1 : 0;
 
-  my $argumentsSet = $job->find('/job/arguments');
+  my $argumentsSet;
+  eval { $argumentsSet = $job->find('/job/arguments') };
+  SMT::Agent::Utils::error( "xml is not parsable" ) if ($@);
   my $jobargs = ($argumentsSet->size() == 1) ? XML::XPath::XMLParser::as_string($argumentsSet->pop()) : undef;
 
   # check variables
