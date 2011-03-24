@@ -14,6 +14,7 @@ sub jobhandler
 
   SMT::Agent::Utils::logger("jobhandler for createjob job called", $jobid);
   SMT::Agent::Utils::logger("createjob runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::logger("XMLXMLXML $args", $jobid);
 
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error("wrong job handler: \"createjob\" cannot handle \"$jobtype\"", $jobid) unless ( $jobtype eq 'createjob' );
@@ -21,21 +22,29 @@ sub jobhandler
 
   my $xpQuery = XML::XPath->new(xml => $args);
   SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments/job[1][@type]'));
-  my $argSet = $xpQuery->find('/arguments');
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
   SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
   my $arg = $argSet->pop();
 
-  my $jobSet = $arg->find('/arguments/job[1][@type]');
+  my $jobSet;
+  eval { $jobSet = $arg->find('/arguments/job[1][@type]') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
   my $newjobNode = ($jobSet->size() == 1) ? $jobSet->pop() : undef;
   my $newjobXML  = (defined $newjobNode) ? XML::XPath::XMLParser::as_string($newjobNode) : undef;
   SMT::Agent::Utils::error("no or too many job definitions found for this job", $jobid) unless defined $newjobXML;
 
-  my $jobargSet = $arg->find('/arguments/job[1][@type]/arguments');
+  my $jobargSet;
+  eval { $jobargSet = $arg->find('/arguments/job[1][@type]/arguments') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
   my $newjobargXML = ($jobargSet->size() == 1) ? XML::XPath::XMLParser::as_string($jobargSet->pop()) : undef;
   SMT::Agent::Utils::error("no or too many arguments definitions found for this job", $jobid) unless defined $newjobargXML;
 
   my @guids = ();
-  my $guidSet = $arg->find('/arguments/guids/guid');
+  my $guidSet;
+  eval { $guidSet = $arg->find('/arguments/guids/guid') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
   SMT::Agent::Utils::error("no target guids defined for this job", $jobid) unless ( (defined $guidSet) && ($guidSet->size() > 0) );
   foreach my $_node ($guidSet->get_nodelist) {
       my $_str = $_node->string_value;
@@ -45,7 +54,8 @@ sub jobhandler
   # only check if well formed, meaning: no handles and no styles for parser
   my $parser =  new XML::Parser();
   SMT::Agent::Utils::error("Unable to check the job XML structure.", $jobid) unless defined $parser;
-  SMT::Agent::Utils::error("Error found in job XML structure, data is not well-formed.", $jobid) unless $parser->parse($newjobXML);
+  eval { $parser->parse($newjobXML) };
+  SMT::Agent::Utils::error("Error found in job XML structure, data is not well-formed.", $jobid) if ($@);
 
   eval { require SMT::CLI;      # for database connection
          require SMT::Job;      # to create a job
