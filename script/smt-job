@@ -338,7 +338,7 @@ if ( defined $create || defined $construct )
         print __("The guid is invalid.")."\n";
         exit 3;
     }
-
+    # FIXME use $Job->new() instead of newJob()
     $Job->newJob( @guid > 0 ? undef:$GUID, undef, $typeID, undef );
 
     # fill in parameters if they are specified - maybe overwritten in job type handling below
@@ -445,7 +445,9 @@ if ( defined $create || defined $construct )
         ## eject ##
         $Job->{name}        = $query{NAME} || 'Eject job';
         $Job->{description} = $query{DESCRIPTION} || 'Job to eject the CD/DVD drawer';
-        $Job->{arguments}{action} = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open' ;
+        ## $Job->{arguments}{action} = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open' ;
+        my $action = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open';
+        $Job->{arguments} = '<arguments><action>'.$action.'</action></arguments>'; ## FIXME use XML::Writer here
     }
     elsif ( $typeID == 51 )
     {
@@ -480,6 +482,7 @@ if ( defined $create || defined $construct )
             if ( ( $typeID == 2  ||  $typeID == 3 )  &&  $autoPatchstatus )
             {
                 my $PSjob = SMT::Job->new({ 'dbh' => $dbh });
+                # FIXME use $Job->new() instead of newJob()
                 $PSjob->newJob( @guid > 0 ? undef:$GUID, undef, 1, undef );
 
                 $PSjob->{name}        = 'Automatic Patchstatus Job';
