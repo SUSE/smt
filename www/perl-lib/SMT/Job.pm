@@ -64,12 +64,7 @@ sub newJob
         $id   = $params[1];
         $type = $self->jobTypeToID($params[2]);
         $arguments = $params[3];
-
-        if ( ! ( isa ( $arguments, 'HASH' )))
-        {
-            eval { $arguments = XMLin( $arguments, forcearray => 1 ) };	# no arguments provided => use empty argument list
-            if ( $@ ) { $arguments = XMLin ( "<arguments></arguments>", forcearray => 1 ); }
-        }
+        $arguments = '<arguments></arguments>' unless defined $arguments;
     }
     elsif (! defined ( $params[1] ) )
     {
@@ -147,7 +142,7 @@ sub readJobFromDatabase
       }
       elsif ( lc($att) eq 'arguments' )
       {
-          $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ) if (defined $result->{ARGUMENTS}); # convert xml to hash
+          $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ) if (defined $result->{ARGUMENTS}); # convert hash to xml
       }
       elsif ( lc($att) eq 'type' )
       {
@@ -415,7 +410,15 @@ sub asXML($;$)
 
   # only check if well formed, meaning: no handles and no styles for parser
   my $parser = new XML::Parser();
-  return error("Can not create a well-formed XML out of the job definition.") unless $parser->parse($xmlout);
+  eval { $parser->parse($xmlout) };
+  if ($@) {
+      my $_id = $self->{id};
+      my $_guid = $self->{guid};
+      SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, "Error: The job with ID ($_id) for the client with GUID ($_guid) rendered and error when the client tried to retrieve it");
+      # return an undefined job type, will result in an error in the client and thus be reported
+      ###return '<job id="'.$_id.'" guid="'.$_guid.'" type="servererror" />';
+      $xmlout = '<job id="'.$_id.'" guid="'.$_guid.'" type="servererror" />';
+  }
 
   return $xmlout;
 }
@@ -430,21 +433,25 @@ sub arguments
     my ( $self, $arguments ) = @_;
     $self->{arguments} = $arguments if defined( $arguments );
 
-    # convert arguments given in xml to hash
-    if ( ! ( isa ($self->{arguments}, 'HASH' )))
+    # convert arguments to xml if given in hash - kept for backward compatibility
+    if ( isa($self->{arguments}, 'HASH') )
     {
-	eval { $self->{arguments} = XMLin( $self->{arguments}, forcearray => 1 ) };
-	return error( $self, "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
+        eval { $self->{arguments} = XMLout($self->{arguments}, rootname => "arguments") };
+        return error( $self, "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
     }
-
     return $self->{arguments};
 }
 
-
+#
+# getArgumentsXML
+#   kept for compatibility
+#   please use arguments() directly and only write plain XML to arguments($xml)
+#
 sub getArgumentsXML
 {
-    my ( $self ) = @_;
-    return isa($self->{arguments}, 'HASH') ? XMLout($self->{arguments}, rootname => "arguments") : $self->{arguments};
+    my $self = shift;
+    # call the getter function to trigger the XML conversion if needed
+    return $self->arguments();
 }
 
 
