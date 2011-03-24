@@ -25,15 +25,14 @@ sub loadjobhandler
 }
 
 
-
 my  $jobid  =  $ARGV[0];
 SMT::Agent::Utils::logger ( "jobid: $jobid" );
 
 my $xmldata = SMT::Agent::RestXML::getjob( $jobid );
 my %jobdata = SMT::Agent::RestXML::parsejob( $xmldata );
 
-
-if ( ! SMT::Agent::Utils::isAgentAllowed ( $jobdata{type} ) )
+# always allow the job type servererror
+if ( (not SMT::Agent::Utils::isAgentAllowed($jobdata{type}))  &&  ($jobdata{type} ne 'servererror') )
 {
   SMT::Agent::Utils::logger("Running ". $jobdata{type}. " denied by client policy", $jobdata{id} );
   SMT::Agent::RestXML::updatejob ( $jobdata{id}, 3 , "denied by client policy", "", "", "", undef );
@@ -41,7 +40,6 @@ if ( ! SMT::Agent::Utils::isAgentAllowed ( $jobdata{type} ) )
 else
 {
   loadjobhandler ( $jobdata{type}, $jobdata{id} ); 
-
 
   my $verbose = "false";
   $verbose = "true" if (defined $jobdata{verbose} && ( $jobdata{verbose} eq "1" || $jobdata{verbose} eq "true"  ) );
@@ -58,7 +56,4 @@ else
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " exitcode: ".$retval{exitcode}, $jobdata{id} );
   SMT::Agent::RestXML::updatejob ( $jobdata{id}, ($retval{success} eq "true")?1:2 , $retval{message}, $retval{stdout}, $retval{stderr}, $retval{exitcode}, $retval{result} );
 }
-
-
-
 
