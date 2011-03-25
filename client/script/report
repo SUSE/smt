@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use SMT::Agent::Constants;
 use SMT::Agent::Utils;
+use XML::XPath;
+use XML::XPath::XMLParser;
 
 sub jobhandler
 {
@@ -13,9 +15,23 @@ sub jobhandler
 
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error("wrong job handler: \"report\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "report" );
-  # check the passed args
-  SMT::Agent::Utils::error("no or invalid arguments for this job", $jobid) unless ( isa($args, 'ARRAY') && isa($args->[0], 'HASH') );
-  SMT::Agent::Utils::error("the jobid element(s) in the arguments section contain invalid data", $jobid) unless ( isa($args->[0]->{jobid}, 'ARRAY') );
+
+  my $xpQuery = XML::XPath->new(xml => $args);
+  SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]'));
+
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+
+  my $arg = $argSet->pop();
+  my @jobids = ();
+  my $jobidSet;
+  eval { $jobidSet = $xpQuery->find('/arguments[1]/jobid') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  foreach my $_n ($jobidSet->get_nodelist()) {
+      push (@jobids, $_n->string_value()) if (defined $_n);
+  }
 
   # try to import SMT server modules to find out if we are running on a SMT server
   eval {
@@ -29,7 +45,7 @@ sub jobhandler
   SMT::Agent::Utils::error("Could not connect to the SMT server database. Error message: $@", $jobid ) unless defined $dbh;
 
   my $jr = SMT::Job::Result->new({ 'dbh' => $dbh });
-  my $resxml = $jr->getResults( $args->[0]->{jobid}, undef, { asxml => 1, checkupstream => 1 } );
+  my $resxml = $jr->getResults( [@jobids], undef, { asxml => 1, checkupstream => 1 } );
 
   return (
     stdout   => '',
