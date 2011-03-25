@@ -14,7 +14,8 @@ use SMT::JobQueue;
 use SMT::Job;
 use SMT::Job::Constants;
 
-use XML::Simple;
+use XML::Writer;
+use XML::Parser;
 use Text::ASCIITable;
 use File::Basename;
 use Locale::gettext ();
@@ -27,27 +28,7 @@ my $PWD = $ENV{PWD} || '';
 
 #### START LOCAL FUNCTIONS ####
 
-sub getJobTypeID($)
-{
-    my $q = shift || return undef;
-
-    if ( $q =~ /^\d+$/ )
-    {
-        return $q if exists SMT::Job::Constants::JOB_TYPE->{$q};
-        return undef;
-    }
-    elsif ( exists SMT::Job::Constants::JOB_TYPE->{$q}  )
-    {
-        return  SMT::Job::Constants::JOB_TYPE->{$q};
-    }
-
-    return undef;
-}
-
-
-
 #### END LOCAL FUNCTIONS ####
-
 
 if(!SMT::Utils::dropPrivileges())
 {
@@ -177,11 +158,11 @@ if ( defined $help and ( $help == 1 ) )
   print "   --waitstatus       <exit> : " . __("exit code for the job to return with")."\n";
   print '  '.__("for eject jobs")."\n";
   print "   --action         <action> : " . __("action of CD or DVD tray: 'open'|'close'|'toggle'")."\n";
-  print '  '.__("for createjob jobs")."\n";
+  print '  '.__("for createjob jobs")."\n";  # FIXME document this in the man page
   print "   --jobtemplate      <file> : " . __("file containing the XML job definition for the job to be created")."\n";
   print "   --targetguid       <guid> : " . __("create the job for the target GUID on the remote SMT server")."\n";
   print "                               " . __("can be used multiple times")."\n";
-  print '  '.__("for report jobs")."\n";
+  print '  '.__("for report jobs")."\n";     # FIXME document this in the man page
   print "   --targetjob       <jobid> : " . __("query the results of the job <jobid> from the remote SMT server")."\n";
   print "                               " . __("can be used multiple times")."\n";
   print "\n";
@@ -238,7 +219,8 @@ else
 }
 $query{ID} = $jobid if (defined $jobid);
 
-my $typeID = getJobTypeID($type);
+my $queryJob = SMT::Job->new({ 'dbh' => $dbh });
+my $typeID = $queryJob->jobTypeToID($type);
 if ( defined $type && not defined $typeID )
 {
     print "Job type unkown.\n";
@@ -349,8 +331,11 @@ if ( defined $create || defined $construct )
         print __("The guid is invalid.")."\n";
         exit 3;
     }
-    # FIXME use $Job->new() instead of newJob()
-    $Job->newJob( @guid > 0 ? undef:$GUID, undef, $typeID, undef );
+
+    # create empty job skeleton
+    $Job->{guid} = (@guid > 0) ? undef : $GUID;
+    $Job->{id} = undef;
+    $Job->{type} = $typeID;
 
     # fill in parameters if they are specified - maybe overwritten in job type handling below
     my @CreateProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT);
@@ -383,50 +368,97 @@ if ( defined $create || defined $construct )
 
         $Job->{name}        = $query{NAME} || 'Software Push';
         $Job->{description} = $query{DESCRIPTION} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
-        $Job->{arguments}{force} = $SWforce if (defined $SWforce);
-        $Job->{arguments}{agreelicenses} = $SWagree if (defined $SWagree);
+
+        my $w = undef;
+        my $argXML = '';
+        $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
+        die "Unable to process the arguments for the new job." unless ($w);
+        $w->startTag('arguments');
+        $w->dataElement('force', $SWforce) if (defined $SWforce);
+        $w->dataElement('agreelicenses', $SWagree) if (defined $SWagree);
+
         my $argumentslistok = 0;
 
         if ( (@SWpackagelist) && (@SWpackagelist > 0) )
         {
-            $argumentslistok += 1;
-            $Job->{arguments}->{packages} = [ { package => \@SWpackagelist } ];
+            $w->startTag('packages');
+            foreach my $_p (@SWpackagelist) {
+                $w->dataElement('package', $_p);
+                $argumentslistok = 1;
+            }
+            $w->end('packages');
         }
-        if ( (@SWpatchlist)   && (@SWpatchlist   > 0) )
+        if ( (@SWpatchlist) && (@SWpatchlist > 0) )
         {
-            $argumentslistok += 1;
-            $Job->{arguments}->{patches}  = [ { patch => \@SWpatchlist } ];
+            $w->startTag('patches');
+            foreach my $_p (@SWpatchlist) {
+                $w->dataElement('patch', $_p);
+                $argumentslistok = 1;
+            }
+            $w->end('patches');
         }
         if ( (@SWpatternlist) && (@SWpatternlist > 0) )
         {
-            $argumentslistok += 1;
-            $Job->{arguments}->{patterns} = [ { pattern => \@SWpatternlist } ];
+            $w->startTag('patterns');
+            foreach my $_p (@SWpatternlist) {
+                $w->dataElement('pattern', $_p);
+                $argumentslistok = 1;
+            }
+            $w->end('patterns');
         }
         if ( (@SWproductlist) && (@SWproductlist > 0) )
         {
-            $argumentslistok += 1;
-            $Job->{arguments}->{products} = [ { product => \@SWproductlist } ];
+            $w->startTag('products');
+            foreach my $_p (@SWproductlist) {
+                $w->dataElement('product', $_p);
+                $argumentslistok = 1;
+            }
+            $w->end('products');
         }
+
+        $w->endTag('arguments');
+        $w->end();
 
         unless ( $argumentslistok )
         {
             print __("Please define at least one package for a software push job.");
             exit 3;
         }
+        $Job->{arguments} = $argXML || '';
     }
     elsif ( $typeID == 3 )
     {
         ## update ##
         $Job->{name}        = $query{NAME} || 'Update Job';
         $Job->{description} = $query{DESCRIPTION} || 'Update Job';
-        $Job->{arguments}{agreelicenses} = $SWagree if (defined $SWagree);
+
+        my $w = undef;
+        my $argXML = '';
+        $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
+        die "Unable to process the arguments for the new job." unless ($w);
+        $w->startTag('arguments');
+        $w->dataElement('agreelicenses', $SWagree) if (defined $SWagree);
+        $w->endTag('arguments');
+        $w->end();
+
+        $Job->{arguments} = $argXML || '';
     }
     elsif ( $typeID == 4 )
     {
         ## exec ##
         $Job->{name}        = $query{NAME} || 'Execute';
         $Job->{description} = $query{DESCRIPTION} || 'Execute custom command';
-        $Job->{arguments}->{command} = [ (exists $para{EXECCOMMAND} && defined $para{EXECCOMMAND}) ? $para{EXECCOMMAND} : ' /bin/true ' ];
+
+        my $w = undef;
+        my $argXML = '';
+        $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
+        die "Unable to process the arguments for the new job." unless ($w);
+        $w->startTag('arguments');
+        $w->dataElement('command', (exists $para{EXECCOMMAND} && defined $para{EXECCOMMAND}) ? $para{EXECCOMMAND} : ' /bin/true '  );
+        $w->endTag('arguments');
+        $w->end();
+
+        $Job->{arguments} = $argXML || '';
     }
     elsif ( $typeID == 5 )
     {
@@ -448,17 +480,36 @@ if ( defined $create || defined $construct )
 
         $Job->{name}        = $query{NAME} || sprintf("Wait %s sec. for exit %s.", $sec, $ret );
         $Job->{description} = $query{DESCRIPTION} || sprintf("Wait for %s seconds and return with value %s.", $sec, $ret );
-        $Job->{arguments}{waittime} = $sec;
-        $Job->{arguments}{exitcode} = $ret;
+
+        my $w = undef;
+        my $argXML = '';
+        $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
+        die "Unable to process the arguments for the new job." unless ($w);
+        $w->startTag('arguments');
+        $w->dataElement('waittime', $sec);
+        $w->dataElement('exitcode', $ret);
+        $w->endTag('arguments');
+        $w->end();
+
+        $Job->{arguments} = $argXML || '';
     }
     elsif ( $typeID == 8 )
     {
         ## eject ##
         $Job->{name}        = $query{NAME} || 'Eject job';
         $Job->{description} = $query{DESCRIPTION} || 'Job to eject the CD/DVD drawer';
-        ## $Job->{arguments}{action} = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open' ;
         my $action = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open';
-        $Job->{arguments} = '<arguments><action>'.$action.'</action></arguments>'; ## FIXME use XML::Writer here
+
+        my $w = undef;
+        my $argXML = '';
+        $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
+        die "Unable to process the arguments for the new job." unless ($w);
+        $w->startTag('arguments');
+        $w->dataElement('action', $action );
+        $w->endTag('arguments');
+        $w->end();
+
+        $Job->{arguments} = $argXML || '';
     }
     elsif ( $typeID == 51 )
     {
@@ -473,12 +524,28 @@ if ( defined $create || defined $construct )
             print __("Please enter one or more target GUIDs for this job.");
             exit 1;
         }
-        my $guidXML = "<guids>\n";
+
+        my $w = undef;
+        my $argXML = '';
+        $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2, UNSAFE => 1 );
+        die "Unable to process the arguments for the new job." unless ($w);
+        $w->startTag('arguments');
+        $w->startTag('guids');
         foreach my $_g (@targetguid) {
-           $guidXML .= "<guid>".$_g."</guid>\n" if defined $_g;
+            $w->dataElement('guid' , $_g) if defined $_g;
         }
-        $guidXML .= "</guids>\n";
-        $Job->{arguments} = "<arguments>\n".$guidXML.$jobtemplXML."\n</arguments>";
+        $w->endTag('guids');
+        $w->raw("\n".$jobtemplXML);
+        $w->endTag('arguments');
+        $w->end();
+
+        # we need do parse the XML because we were in unsafe mode because we needed to call raw()
+        my $parser = new XML::Parser();
+        die "Could not parse the arguments of the new job" unless ($parser);
+        eval { $parser->parse($argXML) };
+        die "Error when processing the arguments for the new job." if ($@);
+
+        $Job->{arguments} = $argXML || '';
     }
     elsif ( $typeID == 52 )
     {
@@ -489,12 +556,19 @@ if ( defined $create || defined $construct )
             print __("Please enter one or more target job IDs for this job.");
             exit 1;
         }
-        my $jobidXML = "<arguments>\n";
+
+        my $w = undef;
+        my $argXML = '';
+        $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
+        die "Unable to process the arguments for the new job." unless ($w);
+        $w->startTag('arguments');
         foreach my $_j (@targetjob) {
-           $jobidXML .= "<jobid>".$_j."</jobid>\n" if defined $_j;
+            $w->dataElement('jobid' , $_j) if defined $_j;
         }
-        $jobidXML .= "</arguments>\n";
-        $Job->{arguments} = $jobidXML;
+        $w->endTag('arguments');
+        $w->end();
+
+        $Job->{arguments} = $argXML || '';
     }
     elsif ( $typeID == 53 )
     {
@@ -521,9 +595,9 @@ if ( defined $create || defined $construct )
             if ( ( $typeID == 2  ||  $typeID == 3 )  &&  $autoPatchstatus )
             {
                 my $PSjob = SMT::Job->new({ 'dbh' => $dbh });
-                # FIXME use $Job->new() instead of newJob()
-                $PSjob->newJob( @guid > 0 ? undef:$GUID, undef, 1, undef );
-
+                $PSjob->{guid}        = (@guid > 0) ? undef : $GUID;
+                $PSjob->{id}          = undef;
+                $PSjob->{type}        = $PSjob->jobTypeToID('patchstatus');
                 $PSjob->{name}        = 'Automatic Patchstatus Job';
                 $PSjob->{description} = sprintf("Automatic Patchstatus Job after job ID %s", $newjobid);
                 $PSjob->{parent_id}   = $newjobid;
@@ -627,8 +701,6 @@ elsif ( defined $delete )
         }
     }
 
-    my $JobQ = SMT::JobQueue->new({ 'dbh' => $dbh });
-
     if ( not $JobQ->deleteJob($DELjobid, $DELguid) )
     {
         if ($deleteall)
@@ -707,14 +779,8 @@ else
 
             foreach $p (@DPROP)
             {
-                if ($p eq 'TYPE')   { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? SMT::Job::Constants::JOB_TYPE->{${$h}{$p}}   : ${$h}{$p}  }
+                if ($p eq 'TYPE')   { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? SMT::Job::Constants::JOB_TYPE->{${$h}{$p}}   : ${$h}{$p} }
                 if ($p eq 'STATUS') { ${$h}{$p} = ${$h}{$p} =~ /^\d+$/ ? SMT::Job::Constants::JOB_STATUS->{${$h}{$p}} : ${$h}{$p} }
-                # transform hash to xml
-                if ($p eq 'ARGUMENTS' &&  isa(${$h}{$p}, 'HASH') )
-                {
-                    # fromat the arguments hash nicely as XML
-                    eval { ${$h}{$p}  =   XMLout( ${$h}{$p}, 'rootname' => 'arguments' ) };
-                }
 
                 # collect the information or just print it
                 if ($verbose == 3)
