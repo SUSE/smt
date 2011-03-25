@@ -12,36 +12,45 @@ sub jobhandler
   SMT::Agent::Utils::logger ("jobhandler for execute called", $jobid);
   SMT::Agent::Utils::logger ("execute runs jobid \"$jobid\"", $jobid);
 
-
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"execute\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "execute" );
 
+  my $xpQuery = XML::XPath->new(xml => $args);
+  SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]'));
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
+  my @cmds = ();
+  push @cmds, $arg->getAttribute('command');
+  my $cmdSet;
+  eval { $cmdSet = $xpQuery->find('/arguments[1]/command[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  foreach my $_n ($cmdSet->get_nodelist()) {
+      push (@cmds, $_n->string_value()) if (defined $_n);
+  }
 
-  # collect and verify arguments
-  my $command;
-
-
-  my $commandline   = $args->[0]->{command}  if ( defined ( $args->[0]->{command} ) );
+  my $jobcommand = undef;
+  foreach my $_c (@cmds) {
+      if ( (defined $_c) && ($_c !~ /^$/) )
+          $action = $_a;
+          last;
+      }
+  }
+  $jobcommand = '/bin/false' unless defined $jobcommand;
 
   #==  run bash ==
-
   my $command = "/bin/bash";
   my @cmdArgs;
   push (@cmdArgs, "-c");
-  push (@cmdArgs, $commandline);
+  push (@cmdArgs, $jobcommand);
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
-  if ( $verbose ne "true" )
-  {
-    $stdout="";
-    $stderr="";
-  }
-
-
   return (
-    stdout => defined ( $stdout )? $stdout : "",
-    stderr => defined ( $stderr )? $stderr : "",
+    stdout => ((defined $stdout) && (defined $verbose)) ? $stdout : '',
+    stderr => ((defined $stderr) && (defined $verbose)) ? $stderr : '',
     exitcode => $retval,
     success => ($retval == 0 ) ? "true" : "false",
     message => ($retval == 0 ) ? "execute successfully finished" : "execute failed"
