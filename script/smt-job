@@ -20,10 +20,10 @@ use File::Basename;
 use Locale::gettext ();
 use UNIVERSAL 'isa';
 use POSIX ();     # Needed for setlocale()
-
-use Data::Dumper;
+use Data::Dumper; # DEBUG
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+my $PWD = $ENV{PWD} || '';
 
 #### START LOCAL FUNCTIONS ####
 
@@ -64,7 +64,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $autoPatchstatus) = undef;
+my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -107,6 +107,9 @@ if (! &Getopt::Long::GetOptions(
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus,
          'action=s' => \$CDAction,
+         'jobtemplate=s' => \$jobtemplate,
+         'targetguid=s' => \@targetguid,
+         'targetjob=s' => \@targetjob,
          'autopatchstatus!' => \$autoPatchstatus,
 ) )
 {
@@ -174,6 +177,13 @@ if ( defined $help and ( $help == 1 ) )
   print "   --waitstatus       <exit> : " . __("exit code for the job to return with")."\n";
   print '  '.__("for eject jobs")."\n";
   print "   --action         <action> : " . __("action of CD or DVD tray: 'open'|'close'|'toggle'")."\n";
+  print '  '.__("for createjob jobs")."\n";
+  print "   --jobtemplate      <file> : " . __("file containing the XML job definition for the job to be created")."\n";
+  print "   --targetguid       <guid> : " . __("create the job for the target GUID on the remote SMT server")."\n";
+  print "                               " . __("can be used multiple times")."\n";
+  print '  '.__("for report jobs")."\n";
+  print "   --targetjob       <jobid> : " . __("query the results of the job <jobid> from the remote SMT server")."\n";
+  print "                               " . __("can be used multiple times")."\n";
   print "\n";
   print __("time format")."\n";
   print "   targeted/expires          : " . __("'YYYY-MM-DD[-HH:MM[:SS]]'")."\n";
@@ -223,7 +233,8 @@ if (@guid && @guid > 0)
 }
 else
 {
-    @guid = undef;
+    # array needs to be emptied with the undef function instead setting it undef
+    undef @guid;
 }
 $query{ID} = $jobid if (defined $jobid);
 
@@ -451,11 +462,39 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 51 )
     {
-        # TODO createjob job
+        $Job->{name}        = $query{NAME} || 'Createjob job';
+        $Job->{description} = $query{DESCRIPTION} || 'Create a job in the clients SMT server';
+        my $filefull = $PWD.'/'.$jobtemplate;
+        open (JTMPL, '<', $filefull) or die "Can not open file $filefull: $!";
+        my $jobtemplXML = do { local $/; <JTMPL> };
+        close JTMPL;
+
+        if (@targetguid < 1) {
+            print __("Please enter one or more target GUIDs for this job.");
+            exit 1;
+        }
+        my $guidXML = "<guids>\n";
+        foreach my $_g (@targetguid) {
+           $guidXML .= "<guid>".$_g."</guid>\n" if defined $_g;
+        }
+        $guidXML .= "</guids>\n";
+        $Job->{arguments} = "<arguments>\n".$guidXML.$jobtemplXML."\n</arguments>";
     }
     elsif ( $typeID == 52 )
     {
-        # TODO report job
+        $Job->{name}        = $query{NAME} || 'Report job';
+        $Job->{description} = $query{DESCRIPTION} || 'Report';
+        $Job->{cacheresult} = defined $cacheresult ? $cacheresult : 1;
+        if (@targetjob < 1) {
+            print __("Please enter one or more target job IDs for this job.");
+            exit 1;
+        }
+        my $jobidXML = "<arguments>\n";
+        foreach my $_j (@targetjob) {
+           $jobidXML .= "<jobid>".$_j."</jobid>\n" if defined $_j;
+        }
+        $jobidXML .= "</arguments>\n";
+        $Job->{arguments} = $jobidXML;
     }
     elsif ( $typeID == 53 )
     {
