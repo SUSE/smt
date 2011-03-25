@@ -24,12 +24,12 @@ sub new ($$)
 
     if (defined $params->{dbh})
     {
-	$self->{dbh} = $params->{dbh};
+        $self->{dbh} = $params->{dbh};
     }
 
     if (defined $params->{LOG})
     {
-	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
+        $self->{LOG} = SMT::Utils::openLog ($params->{LOG});
     }
 
     bless $self, $class;
