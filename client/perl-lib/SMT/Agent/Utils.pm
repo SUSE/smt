@@ -105,7 +105,7 @@ sub executeCommand
 
     $code = ($?>>8);
 
-    return ($code, $err, $out);
+    return ($code, $out, $err);
 }
 
 
