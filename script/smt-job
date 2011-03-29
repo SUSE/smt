@@ -116,7 +116,7 @@ if ( defined $help and ( $help == 1 ) )
   print "   --create      (-c) : " . __("create job")."\n";
   print "   --edit        (-e) : " . __("edit job")."\n";
   print "   --delete      (-d) : " . __("delete job")."\n";
-  print "   --construct        : " . __("like create, but only ouputs the the job formatted in XML")."\n";
+  print "   --construct        : " . __("like create, but only ouputs the job formatted in XML")."\n";
   print "                        " . __("this XML representation can be used to create a job of the type 'createjob'")."\n";
   print "\n";
   print __("main parameters")."\n";
@@ -148,6 +148,9 @@ if ( defined $help and ( $help == 1 ) )
   print "   --package      (-P) <pack>: " . __("a package name")."\n";
   print "                               " . __("can be used multiple times")."\n";
   print "                               " . __("may contain a version instruction of '< <= = >= >', example:") . ' "abc <= 3.2.1"'."\n";
+  print "   --patch            <patch>: " . __("a patch name, usage like '--package'")."\n";
+  print "   --pattern        <pattern>: " . __("a pattern name, usage like '--package'")."\n";
+  print "   --product        <product>: " . __("a product name, usage like '--package'")."\n";
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
@@ -886,6 +889,10 @@ Edits a job.
 
 Deletes a job.
 
+=item --construct
+
+Like create, but only ouputs the job formatted in XML. This XML representation can be used to create a job of the type B<createjob>.
+
 =back
 
 =head2 MAIN PARAMETERS
@@ -1056,6 +1063,30 @@ Opposite of C<--autopatchstatus>
 
 =back
 
+=head3 createjob
+
+=over
+
+=item --jobtemplate <file>
+
+Specify a file name containing a job template definition. This template needs to be combined with a set of GUIDs in the createjob job type on the downstream SMT server. The template itself does (or must) not contain a GUID and thus requires one or more C<--targetguid> parameters. Use the C<--contruct> operation mode to create new job templates and adapt them by hand if needed.
+
+=item --targetguid
+
+Defines the GUID(s) for the job that is being created on the downstream SMT server. For all target GUIDs a job is created using the job template that is defined with C<--jobtemplate>. This paramater can be used multiple times.
+
+=back
+
+=head3 report
+
+=over
+
+=item --targetjob <id>
+
+Specify the job ID(s) of the downstream SMT server whose results should be sent upstream to this SMT server. The job ID can be found in the message of the createjob job, that created the downstream job. This paramater can be used multiple times.
+
+=back
+
 =head3 update
 
 =over
@@ -1130,11 +1161,11 @@ The action of CD or DVD tray: C<open>, C<close> or C<toggle>.
 
 It is necessary to update the targeted time as well as persistent jobs always add their timelag to the current targeted time.
 
-# smt-job --edit -j 42 -g 12345 --targeted 0000-00-00 --timelag 06:00:00
+# smt-job --edit -j 42 -g 12345 --targeted 0000-00-00 --timelag 06:00
 
 =item Delete all jobs with job ID C<42>
 
-# smt-job --delete -jobid 42 --deleteall
+# smt-job --delete -A -j 42
 
 =item Show everything known about jobid C<42>:
 
@@ -1144,14 +1175,14 @@ It is necessary to update the targeted time as well as persistent jobs always ad
 
 =head1 AUTHORS and CONTRIBUTORS
 
-Jens Daniel Schmidt, Thomas Goettlicher
+J. Daniel Schmidt, Thomas Goettlicher
 
 =cut
 
 
 =head1 LICENSE
 
-Copyright (c) 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+Copyright (c) 2009,2011 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
