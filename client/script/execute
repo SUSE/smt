@@ -33,8 +33,8 @@ sub jobhandler
 
   my $jobcommand = undef;
   foreach my $_c (@cmds) {
-      if ( (defined $_c) && ($_c !~ /^$/) )
-          $action = $_a;
+      if ( (defined $_c) && ($_c !~ /^$/) ) {
+          $jobcommand = $_c;
           last;
       }
   }
