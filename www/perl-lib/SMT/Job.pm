@@ -354,7 +354,6 @@ sub asXML($;$)
       {
           next;
           # guid_id does not go to out - only internal usage
-          # arguments handled later
       }
       elsif ( lc($att) eq 'type' )
       {
@@ -364,7 +363,7 @@ sub asXML($;$)
       elsif ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
       {
           # keep back the internal flags in short mode (except verbose)
-          next if ( $short && (lc($att) ne 'verbose') );
+          next if ( (lc($att) ne 'verbose') && ( $short || not defined $self->{lc($att)} ) );
           push @jobattributes, ( lc($att) => ( defined $self->{lc($att)} && ( $self->{lc($att)} =~ /^1$/  || $self->{lc($att)} =~ /^true$/ ) ) ? 1:0 );
       }
       else
