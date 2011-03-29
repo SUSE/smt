@@ -1069,7 +1069,7 @@ Opposite of C<--autopatchstatus>
 
 =item --jobtemplate <file>
 
-Specify a file name containing a job template definition. This template needs to be combined with a set of GUIDs in the createjob job type on the downstream SMT server. The template itself does (or must) not contain a GUID and thus requires one or more C<--targetguid> parameters. Use the C<--contruct> operation mode to create new job templates and adapt them by hand if needed.
+Specify a file name containing a job template definition. This template needs to be combined with a set of GUIDs in the createjob job type on the downstream SMT server. The template itself does (or must) not contain a GUID and thus requires one or more C<--targetguid> parameters. Use the C<--construct> operation mode to create new job templates and adapt them by hand if needed.
 
 =item --targetguid
 
