@@ -14,7 +14,6 @@ sub jobhandler
 
   SMT::Agent::Utils::logger("jobhandler for createjob job called", $jobid);
   SMT::Agent::Utils::logger("createjob runs jobid \"$jobid\"", $jobid);
-  SMT::Agent::Utils::logger("XMLXMLXML $args", $jobid);
 
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error("wrong job handler: \"createjob\" cannot handle \"$jobtype\"", $jobid) unless ( $jobtype eq 'createjob' );
