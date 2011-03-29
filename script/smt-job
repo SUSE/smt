@@ -161,11 +161,11 @@ if ( defined $help and ( $help == 1 ) )
   print "   --waitstatus       <exit> : " . __("exit code for the job to return with")."\n";
   print '  '.__("for eject jobs")."\n";
   print "   --action         <action> : " . __("action of CD or DVD tray: 'open'|'close'|'toggle'")."\n";
-  print '  '.__("for createjob jobs")."\n";  # FIXME document this in the man page
+  print '  '.__("for createjob jobs")."\n";
   print "   --jobtemplate      <file> : " . __("file containing the XML job definition for the job to be created")."\n";
   print "   --targetguid       <guid> : " . __("create the job for the target GUID on the remote SMT server")."\n";
   print "                               " . __("can be used multiple times")."\n";
-  print '  '.__("for report jobs")."\n";     # FIXME document this in the man page
+  print '  '.__("for report jobs")."\n";
   print "   --targetjob       <jobid> : " . __("query the results of the job <jobid> from the remote SMT server")."\n";
   print "                               " . __("can be used multiple times")."\n";
   print "\n";
