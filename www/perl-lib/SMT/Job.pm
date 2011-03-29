@@ -40,6 +40,7 @@ sub new ($$)
 # creates a new job (for compatibility)
 # please use if possible: readJobFromXML, readJobFromDatabase
 #
+# FIXME remove newJob - it is not used by anything anymore
 sub newJob
 {
     my $self = shift;
@@ -196,6 +197,9 @@ sub readJobFromXML
   my $self = shift || return undef;
   my $xmldata = shift || return undef;
   return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) && length( $xmldata ) > 0 );
+
+## FIXME get rid of XMLin - it does unwanted XML transformations
+##       switch to XML::XPath
 
   # parse xml
   my $j;
@@ -406,6 +410,7 @@ sub arguments
     my ( $self, $arguments ) = @_;
     $self->{arguments} = $arguments if defined( $arguments );
 
+    # FIXME get rid of the conversion - the database saves everything as XML anyway ever since
     # convert arguments to xml if given in hash - kept for backward compatibility
     if ( isa($self->{arguments}, 'HASH') )
     {
