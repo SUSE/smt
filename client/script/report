@@ -45,7 +45,7 @@ sub jobhandler
   SMT::Agent::Utils::error("Could not connect to the SMT server database. Error message: $@", $jobid ) unless defined $dbh;
 
   my $jr = SMT::Job::Result->new({ 'dbh' => $dbh });
-  my $resxml = $jr->getResults( [@jobids], undef, { asxml => 1, checkupstream => 1 } );
+  my $resxml = $jr->getResults( [@jobids], undef, { asXML => 1, checkupstream => 1 } );
 
   return (
     stdout   => '',
