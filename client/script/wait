@@ -4,7 +4,8 @@ use warnings;
 use IPC::Open3;
 use SMT::Agent::Constants;
 use SMT::Agent::Utils;
-use XML::Simple;
+use XML::XPath;
+use XML::XPath::XMLParser;
 use UNIVERSAL 'isa';
 
 sub jobhandler
@@ -17,17 +18,47 @@ sub jobhandler
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"wait\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "wait" );
 
-  my $waittime = "0";
-  $waittime   = $args->[0]->{waittime}  if ( defined ( $args->[0]->{waittime} ) );
+  my $xpQuery = XML::XPath->new(xml => $args);
+  SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]'));
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
 
-  my $exitcode = "0";
-  $exitcode   = $args->[0]->{exitcode}  if ( defined ( $args->[0]->{exitcode} ) );
+  my @waittimes = ();
+  my @exitcodes = ();
+  push @waittimes, $arg->getAttribute('waittime');
+  push @exitcodes, $arg->getAttribute('exitcode');
 
-  SMT::Agent::Utils::error( "argument invalid: waittime", $jobid ) if ( $waittime  !~ /^\d+$/ );
+  my $waitSet;
+  eval { $waitSet = $xpQuery->find('/arguments[1]/waittime[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($waitSet->get_nodelist()) {
+      push (@waittimes, $_n->string_value()) if (defined $_n);
+  }
+  my $exitSet;
+  eval { $exitSet = $xpQuery->find('/arguments[1]/exitcode[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($exitSet->get_nodelist()) {
+      push (@exitcodes, $_n->string_value()) if (defined $_n);
+  }
 
+  my $waittime;
+  my $exitcode;
+  do {
+      $waittime = shift @waittimes;
+      $waittime ||= 0 unless (@waittimes > 0);
+  } until (defined $waittime);
+  do {
+      $exitcode = shift @exitcodes;
+      $exitcode ||= 0 unless (@exitcodes > 0);
+  } until (defined $exitcode);
+
+  SMT::Agent::Utils::error( "argument invalid: waittime", $jobid ) unless ( $waittime  =~ /^\d+$/ );
+  SMT::Agent::Utils::error( "argument invalid: exitcode", $jobid ) unless ( $exitcode  =~ /^\d+$/ );
 
   #==  run sleep ==
-
   SMT::Agent::Utils::logger ("sleeping ".$waittime." seconds....", $jobid);
   sleep ($waittime);
   my $retval = $exitcode;
@@ -40,7 +71,6 @@ sub jobhandler
     success => ($retval == 0 ) ? "true" : "false",
     message => ($retval == 0 ) ? "wait successfully finished" : "wait failed"
   );
-
 
 }
 

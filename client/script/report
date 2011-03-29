@@ -21,14 +21,14 @@ sub jobhandler
 
   my $argSet;
   eval { $argSet = $xpQuery->find('/arguments[1]') };
-  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
   SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
 
   my $arg = $argSet->pop();
   my @jobids = ();
   my $jobidSet;
   eval { $jobidSet = $xpQuery->find('/arguments[1]/jobid') };
-  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
   foreach my $_n ($jobidSet->get_nodelist()) {
       push (@jobids, $_n->string_value()) if (defined $_n);
   }

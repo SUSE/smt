@@ -19,14 +19,14 @@ sub jobhandler
   SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]'));
   my $argSet;
   eval { $argSet = $xpQuery->find('/arguments[1]') };
-  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
   SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
   my $arg = $argSet->pop();
   my @cmds = ();
   push @cmds, $arg->getAttribute('command');
   my $cmdSet;
   eval { $cmdSet = $xpQuery->find('/arguments[1]/command[1]') };
-  SMT::Agent::Utils::error("xml data is not parsable") if ($@);
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
   foreach my $_n ($cmdSet->get_nodelist()) {
       push (@cmds, $_n->string_value()) if (defined $_n);
   }

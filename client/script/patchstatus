@@ -7,6 +7,8 @@ use SMT::Agent::Utils;
 use XML::Simple;
 use UNIVERSAL 'isa';
 
+# TODO
+# In the long run get rid of XML::Simple and switch to a more reliable solution like XML::Parser or XML::XPath
 
 sub jobhandler
 {
@@ -55,7 +57,7 @@ sub jobhandler
 
   # parse xml
   my $in;
-  eval { $in = XMLin( $stderr,  forcearray=>1 ) };
+  eval { $in = XMLin( $stdout,  forcearray=>1 ) };
   SMT::Agent::Utils::error ( "unable to parse zypper xml: $@", $jobid )              if ( $@ );
   SMT::Agent::Utils::error ( "zypper xml contains invalid xml", $jobid ) if ( ! ( isa ($in, 'HASH' )));
 
