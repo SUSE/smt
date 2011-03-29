@@ -140,10 +140,6 @@ sub readJobFromDatabase
       {
           next; # set after this loop
       }
-      elsif ( lc($att) eq 'arguments' )
-      {
-          $self->{arguments} = $self->arguments( $result->{ARGUMENTS} ) if (defined $result->{ARGUMENTS}); # convert hash to xml
-      }
       elsif ( lc($att) eq 'type' )
       {
           $self->{type} = $self->jobTypeToID( $result->{TYPE} );
@@ -186,7 +182,7 @@ sub readJobFromHash($$)
       else
       {
           # check for exists instead of defined - maybe someone wants to reset a value
-          $self->{lc($att)} = $attribs->{lc($att)} if ( exists $attribs->{lc($att)} );
+          $self->{lc($att)} = ( exists $attribs->{lc($att)} ) ? $attribs->{lc($att)} : undef;
       }
   }
 }
@@ -332,28 +328,6 @@ sub save
 
 
 #
-# returns job in xml
-#
-sub asSimpleXML
-{
-    my ( $self ) = @_;
-    return "<job />" unless isValid( $self );
-
-    my $job =
-    {
-      'id'        => $self->{id},
-      'guid'      => $self->{guid},
-      'type'      => $self->jobTypeToName($self->{type}),
-      'arguments' => $self->{arguments},
-      'verbose'   => ( defined $self->{verbose} && $self->{verbose} eq "1" ) ? "true" : "false"
-    };
-
-    return XMLout($job, rootname => "job"
-                     , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>'
-                 );
-}
-
-#
 # return the job as XML data structure
 #
 sub asXML($;$)
@@ -363,6 +337,7 @@ sub asXML($;$)
   my $short = (exists $config->{short} && $config->{short} == 1) ? 1:0;
   $config->{stdout} = 0 if ($short);
   $config->{stderr} = 0 if ($short);
+  return undef unless $self->isValid();
 
   # create the XML output
   my $w = undef;
@@ -416,7 +391,6 @@ sub asXML($;$)
       my $_guid = $self->{guid};
       SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, "Error: The job with ID ($_id) for the client with GUID ($_guid) rendered and error when the client tried to retrieve it");
       # return an undefined job type, will result in an error in the client and thus be reported
-      ###return '<job id="'.$_id.'" guid="'.$_guid.'" type="servererror" />';
       $xmlout = '<job id="'.$_id.'" guid="'.$_guid.'" type="servererror" />';
   }
 
@@ -436,6 +410,7 @@ sub arguments
     # convert arguments to xml if given in hash - kept for backward compatibility
     if ( isa($self->{arguments}, 'HASH') )
     {
+        SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, "Obsolete warning: Detected obsolete hash arguments at job (".$self->{id}.") for client (".$self->{guid}.").");
         eval { $self->{arguments} = XMLout($self->{arguments}, rootname => "arguments") };
         return error( $self, "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
     }
