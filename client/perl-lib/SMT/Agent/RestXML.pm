@@ -5,7 +5,6 @@ package SMT::Agent::RestXML;
 use HTTP::Request;
 use HTTP::Request::Common;
 use LWP::UserAgent;
-use XML::Simple;
 use UNIVERSAL 'isa';
 use SMT::Agent::Constants;
 use SMT::Agent::Config;
@@ -160,20 +159,18 @@ sub parsejob
 sub parsejobid
 {
   my $xmldata = shift;
-
   SMT::Agent::Utils::error( "xml doesn't contain a job description" ) if ( length( $xmldata ) <= 0 );
 
-  my $job;
-  my $jobid;
-
   # parse xml
-  eval { $job = XMLin( $xmldata,  forcearray=>1 ) };
-  SMT::Agent::Utils::error( "unable to parse xml: $@" )              if ( $@ );
-  SMT::Agent::Utils::error( "job description contains invalid xml" ) if ( ! ( isa ($job, 'HASH' ) ) );
+  my $xpQuery = XML::XPath->new(xml => $xmldata);
+  my $jobSet;
+  eval { $jobSet = $xpQuery->find('/job[@id]') };
+  SMT::Agent::Utils::error( "xml is not parsable" ) if ($@);
+  SMT::Agent::Utils::error( "xml doesn't contain a job description" ) unless ( (defined $jobSet) && ($jobSet->size > 0) );
+  my $job = $jobSet->pop();
+  my $jobid   = $job->getAttribute('id');
 
-  # retrieve variables
-  $jobid = $job->{id} if ( defined ( $job->{id} ) && ( $job->{id} =~ /^[0-9]+$/ ) );
-
+  $jobid = undef unless ($jobid =~ /^[0-9]+$/);
   return $jobid;
 };
 
