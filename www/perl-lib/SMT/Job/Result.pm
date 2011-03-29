@@ -87,7 +87,7 @@ sub getOneResult($$$;\%)
 #   - array of client IDs (optional)
 #   - configuration hash
 #     supported flags
-#     * asxml => 1         : return as XML snippet
+#     * asXML => 1         : return as XML snippet, also true if set to '' (compatiblility with JobQueue)
 #     * checkupstream => 1 : only return data that is allowed to go upstream
 #
 sub getResults($\@;\@\%)
@@ -117,7 +117,7 @@ sub getResults($\@;\@\%)
 
   my $ref = $self->{dbh}->selectall_arrayref( $sql, { Columns => {} }, @params );
 
-  return $self->asResultsXML($ref) if ($config->{asxml} == 1);
+  return $self->asResultsXML($ref) if (defined $config->{asXML} && ($config->{asXML} =~ /^1$/ || $config->{asXML} eq ''));
   return $ref || undef;
 }
 
