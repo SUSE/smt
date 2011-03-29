@@ -166,9 +166,9 @@ sub parsejobid
   my $jobSet;
   eval { $jobSet = $xpQuery->find('/job[@id]') };
   SMT::Agent::Utils::error( "xml is not parsable" ) if ($@);
-  SMT::Agent::Utils::error( "xml doesn't contain a job description" ) unless ( (defined $jobSet) && ($jobSet->size > 0) );
+  return undef unless ( (defined $jobSet) && ($jobSet->size > 0) );
   my $job = $jobSet->pop();
-  my $jobid   = $job->getAttribute('id');
+  my $jobid = $job->getAttribute('id');
 
   $jobid = undef unless ($jobid =~ /^[0-9]+$/);
   return $jobid;
