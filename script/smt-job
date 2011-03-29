@@ -930,8 +930,8 @@ then match all clients resp. jobs.
 
 =item -t, --type <type>
 
-Specifies the job type (e.g.  C<patchstatus>, C<softwarepush>, C<update>, C<execute>, C<reboot>, C<wait>, C<eject>).
-B<Note:> Only C<patchstatus>, C<softwarepush> and C<update> are enabled by default on the client.
+Specifies the job type (e.g.  C<patchstatus>, C<softwarepush>, C<update>, C<execute>, C<reboot>, C<wait>, C<eject>, C<createjob>, C<report>, C<inventory>).
+B<Note:> Only C<patchstatus>, C<inventory>, C<softwarepush> and C<update> are enabled by default on the client. On a SMT server that has an upstream SMT server the following are also enabled by default: C<createjob>, C<report>, C<inventory>.
 
 =item -n --name <name>
 

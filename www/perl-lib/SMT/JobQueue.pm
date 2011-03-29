@@ -287,7 +287,7 @@ sub finishJob($;$)
       my $msg = $xmljob->message();
       $msg = 'failed' if ( $xmljob->status() =~ /^2$/ );
       $msg = 'denied' if ( $xmljob->status() =~ /^3$/ );
-      $client->updatePatchstatus( $guid, $msg )
+      $client->updatePatchstatus( $guid, $msg );
   }
 
   # special handling for job with cacheresult flag
