@@ -184,6 +184,8 @@ if ( defined $help and ( $help == 1 ) )
   print "   --autopatchstatus :  --no-autopatchstatus"."\n";
   print "\n";
   print __("available job types")."\n";
+  print "   0 : -invalid job- : " . __("Invalid job type.") . "\n";
+  print '                       ' . __("Jobs of type 0 will be cleaned up regularly.")."\n";
   print "   1 : patchstatus   : " . __("Request patchstatus information from the client.") . "\n";
   print "   2 : softwarepush  : " . __("Install software on the client.") . "\n";
   print "   3 : update        : " . __("Install available updates.") . "\n";
@@ -192,9 +194,10 @@ if ( defined $help and ( $help == 1 ) )
   print "   6 : -reserved-    : " . __("Reserved") . "\n";
   print "   7 : wait          : " . __("Wait and return with specified status (for debugging).") . "\n";
   print "   8 : eject         : " . __("Eject CD/DVD drive (for debugging).") . "\n";
-  print "   0 : -invalid job- : " . __("Invalid job type.") . "\n";
-  print '       '.__("Jobs of type 0 will be cleaned up regularly.")."\n";
-
+  print "  51 : createjob     : " . __("Creates a job in a downstream SMT server.") . "\n";
+  print "  52 : report        : " . __("Retrieves the results of a job that was created via 'createjob'.") . "\n";
+  print "  53 : inventory     : " . __("Collect system information. Only created by the Novell Customer Center.") . "\n";
+  print "\n";
   exit 0;
 }
 
@@ -342,6 +345,7 @@ if ( defined $create || defined $construct )
 
     # fill in parameters if they are specified - maybe overwritten in job type handling below
     my @CreateProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT);
+
     foreach my $cprop (@CreateProps)
     {
         $Job->{lc($cprop)} = $query{uc($cprop)} if ( exists $query{uc($cprop)}  && defined $query{uc($cprop)} );
@@ -349,6 +353,7 @@ if ( defined $create || defined $construct )
 
     if ( defined $Job->{persistent}  &&  $Job->{persistent} == 1 )
     {
+        $Job->{timelag} = defined $query{TIMELAG} ? $query{TIMELAG} : '23:00';
         if ( ! defined $Job->{timelag}  ||  $Job->{timelag} =~ /^00:00/ )
         {
             print __("Creating a persistent job with a timelag smaller than one minute is prohibited.")."\n";
@@ -360,17 +365,15 @@ if ( defined $create || defined $construct )
     if ( $typeID == 1 )
     {
         ## PATCHSTATUS ##
-        $Job->{name}        = $query{NAME} || 'Patchstatus Job';
-        $Job->{description} = $query{DESCRIPTION} || "Patchstatus Job for Client $GUID";
-        $Job->{persistent}  = $query{PERSISTENT} || 1;
-        $Job->{timelag}     = $query{TIMELAG} || '23:00';
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} : 'Patchstatus Job';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : ("Patchstatus Job" . ($GUID ? " for Client $GUID":''));
     }
     elsif ( $typeID == 2 )
     {
         ## SOFTWARE PUSH ##
 
-        $Job->{name}        = $query{NAME} || 'Software Push';
-        $Job->{description} = $query{DESCRIPTION} || sprintf("Software Push: %s", join(', ', @SWpackagelist) );
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} : 'Software Push';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : sprintf("Software Push: %s", join(', ', @SWpackagelist));
 
         my $w = undef;
         my $argXML = '';
@@ -389,7 +392,7 @@ if ( defined $create || defined $construct )
                 $w->dataElement('package', $_p);
                 $argumentslistok = 1;
             }
-            $w->end('packages');
+            $w->endTag('packages');
         }
         if ( (@SWpatchlist) && (@SWpatchlist > 0) )
         {
@@ -398,7 +401,7 @@ if ( defined $create || defined $construct )
                 $w->dataElement('patch', $_p);
                 $argumentslistok = 1;
             }
-            $w->end('patches');
+            $w->endTag('patches');
         }
         if ( (@SWpatternlist) && (@SWpatternlist > 0) )
         {
@@ -407,7 +410,7 @@ if ( defined $create || defined $construct )
                 $w->dataElement('pattern', $_p);
                 $argumentslistok = 1;
             }
-            $w->end('patterns');
+            $w->endTag('patterns');
         }
         if ( (@SWproductlist) && (@SWproductlist > 0) )
         {
@@ -416,7 +419,7 @@ if ( defined $create || defined $construct )
                 $w->dataElement('product', $_p);
                 $argumentslistok = 1;
             }
-            $w->end('products');
+            $w->endTag('products');
         }
 
         $w->endTag('arguments');
@@ -432,8 +435,8 @@ if ( defined $create || defined $construct )
     elsif ( $typeID == 3 )
     {
         ## update ##
-        $Job->{name}        = $query{NAME} || 'Update Job';
-        $Job->{description} = $query{DESCRIPTION} || 'Update Job';
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} : 'Update Job';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Update Job';
 
         my $w = undef;
         my $argXML = '';
@@ -449,8 +452,8 @@ if ( defined $create || defined $construct )
     elsif ( $typeID == 4 )
     {
         ## exec ##
-        $Job->{name}        = $query{NAME} || 'Execute';
-        $Job->{description} = $query{DESCRIPTION} || 'Execute custom command';
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} : 'Execute';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Execute custom command';
 
         my $w = undef;
         my $argXML = '';
@@ -466,8 +469,8 @@ if ( defined $create || defined $construct )
     elsif ( $typeID == 5 )
     {
         ## reboot ##
-        $Job->{name}        = $query{NAME} || 'Reboot';
-        $Job->{description} = $query{DESCRIPTION} || 'Reboot now';
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} : 'Reboot';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Reboot now';
     }
     elsif ( $typeID == 6 )
     {
@@ -481,8 +484,8 @@ if ( defined $create || defined $construct )
         my $sec = $para{WAITTIME} || '1';
         my $ret = $para{WAITSTATUS} || '0';
 
-        $Job->{name}        = $query{NAME} || sprintf("Wait %s sec. for exit %s.", $sec, $ret );
-        $Job->{description} = $query{DESCRIPTION} || sprintf("Wait for %s seconds and return with value %s.", $sec, $ret );
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} : sprintf("Wait %s sec. for exit %s.", $sec, $ret);
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : sprintf("Wait for %s seconds and return with value %s.", $sec, $ret);
 
         my $w = undef;
         my $argXML = '';
@@ -499,8 +502,8 @@ if ( defined $create || defined $construct )
     elsif ( $typeID == 8 )
     {
         ## eject ##
-        $Job->{name}        = $query{NAME} || 'Eject job';
-        $Job->{description} = $query{DESCRIPTION} || 'Job to eject the CD/DVD drawer';
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} : 'Eject job';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Job to eject the CD/DVD drawer';
         my $action = (exists $para{ACTION} && defined $para{ACTION}) ? $para{ACTION} : 'open';
 
         my $w = undef;
@@ -516,8 +519,8 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 51 )
     {
-        $Job->{name}        = $query{NAME} || 'Createjob job';
-        $Job->{description} = $query{DESCRIPTION} || 'Create a job in the clients SMT server';
+        $Job->{name}        = defined $query{NAME} ?$query{NAME} : 'Createjob job';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Create a job in the clients SMT server';
         my $filefull = $PWD.'/'.$jobtemplate;
         open (JTMPL, '<', $filefull) or die "Can not open file $filefull: $!";
         my $jobtemplXML = do { local $/; <JTMPL> };
@@ -552,8 +555,8 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 52 )
     {
-        $Job->{name}        = $query{NAME} || 'Report job';
-        $Job->{description} = $query{DESCRIPTION} || 'Report';
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} :'Report job';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Report';
         $Job->{cacheresult} = defined $cacheresult ? $cacheresult : 1;
         if (@targetjob < 1) {
             print __("Please enter one or more target job IDs for this job.");
@@ -575,7 +578,9 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 53 )
     {
-        # TODO inventory job
+        # TODO maybe add inventory job
+        print "Not supported to be created by $0\n";
+        exit 3;
     }
     else
     {
