@@ -76,6 +76,8 @@ sub jobhandler
   # createjob jobs must be automatically flagged as upstream and cacheresult, otherwise they make no sense at all
   $newjob->{upstream} = 1;
   $newjob->{cacheresult} = 1;
+  # until we have a deletejob we have to prevent persistent jobs
+  $newjob->{persistent} = 0;
 
   # check if the SMT server allows to create such kind of jobs
   my $typename = $newjob->jobTypeToName($newjob->{type});
