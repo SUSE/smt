@@ -3,7 +3,7 @@ package SMT::Utils::RequestAgent;
 #
 # SMT::Utils::RequestAgent
 #   Originally part of SMT::Utils.
-#   It was taken out and into its own module file to prevent "subrountine redefined" errors.
+#   It was taken out and into its own module file to prevent "subroutine redefined" errors.
 #
 
 use strict;
