@@ -1,8 +1,9 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
+use XML::XPath;
+use XML::XPath::XMLParser;
 
 sub jobhandler
 {
@@ -13,47 +14,58 @@ sub jobhandler
 
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
-  # check the passed args
-  SMT::Agent::Utils::error("no or invalid arguments for this job", $jobid) unless ( isa($args, 'ARRAY') && isa($args->[0], 'HASH') );
 
-  # collect and verify arguments
-  my $force;
-  my $agreelicenses;
+  my $xpQuery = XML::XPath->new(xml => $args);
+  eval { SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]')); };
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
+
+  my $agreelicenses = $arg->getAttribute('agreelicenses');
+  my $force = $arg->getAttribute('force');
+  my $agreeSet;
+  eval { $agreeSet = $xpQuery->find('/arguments[1]/agreelicenses[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($agreeSet->get_nodelist()) {
+      $agreelicenses = $_n->string_value() if (defined $_n);
+      last if defined $agreelicenses;
+  }
+  my $forceSet;
+  eval { $forceSet = $xpQuery->find('/arguments[1]/force[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($forceSet->get_nodelist()) {
+      $force = $_n->string_value() if (defined $_n);
+      last if defined $force;
+  }
+  $agreelicenses = (defined $agreelicenses && ($agreelicenses =~ /^1$/ || $agreelicenses =~ /^true$/)) ? 1 : 0;
+  $force = (defined $force && ($force =~ /^1$/ || $force =~ /^true$/)) ? 1 : 0;
+
   my %installables;
-
-  $force = $args->[0]->{force} || 'false';
-  $force = 'true'  if ($force eq '1');
-  $force = 'false' if ($force eq "0" );
-  SMT::Agent::Utils::error( "argument invalid: force", $jobid ) unless ( $force eq 'true' || $force eq 'false' );
-
-  $agreelicenses = $args->[0]->{agreelicenses} || 'false';
-  $agreelicenses = "true"  if ($agreelicenses eq "1" );
-  $agreelicenses = "false" if ($agreelicenses eq "0" );
-  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid ) unless ( $agreelicenses eq "true" || $agreelicenses eq "false" );
-
-  if ( isa($args->[0]->{packages}, 'ARRAY') )
-  {
-    if ( isa($args->[0]->{packages}->[0], 'HASH') )
-    { $installables{package} = $args->[0]->{packages}->[0]->{package} || undef; }
-    else { SMT::Agent::Utils::error("invalid arguments for packages", $jobid ); }
+  my $packageSet;
+  eval { $packageSet = $xpQuery->find('/arguments[1]/packages[1]/package') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($packageSet->get_nodelist()) {
+      push @{$installables{package}}, $_n->string_value() if (defined $_n);
   }
-  if ( isa($args->[0]->{patches}, 'ARRAY') )
-  {
-    if ( isa($args->[0]->{patches}->[0],  'HASH') )
-    { $installables{patch} = $args->[0]->{patchs}->[0]->{patch} || undef; }
-    else { SMT::Agent::Utils::error("invalid arguments for patches", $jobid ); }
+  my $patchSet;
+  eval { $patchSet = $xpQuery->find('/arguments[1]/patches[1]/patch') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($patchSet->get_nodelist()) {
+      push @{$installables{patch}}, $_n->string_value() if (defined $_n);
   }
-  if ( isa($args->[0]->{patterns}, 'ARRAY') )
-  {
-    if ( isa($args->[0]->{patterns}->[0], 'HASH') )
-    { $installables{pattern} = $args->[0]->{patterns}->[0]->{pattern} || undef; }
-    else { SMT::Agent::Utils::error("invalid arguments for patterns", $jobid ); }
+  my $patternSet;
+  eval { $patternSet = $xpQuery->find('/arguments[1]/patterns[1]/pattern') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($patternSet->get_nodelist()) {
+      push @{$installables{pattern}}, $_n->string_value() if (defined $_n);
   }
-  if ( isa($args->[0]->{products}, 'ARRAY') )
-  {
-    if ( isa($args->[0]->{products}->[0], 'HASH') )
-    { $installables{product} = $args->[0]->{products}->[0]->{product} || undef; }
-    else { SMT::Agent::Utils::error("invalid arguments for products", $jobid ); }
+  my $productSet;
+  eval { $productSet = $xpQuery->find('/arguments[1]/products[1]/product') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($productSet->get_nodelist()) {
+      push @{$installables{product}}, $_n->string_value() if (defined $_n);
   }
 
   #==  create zypper base command ==
@@ -63,8 +75,8 @@ sub jobhandler
   push (@zypperCmd, "-x");                    # xml output
   push (@zypperCmd, "--non-interactive");     # doesn't ask user
   push (@zypperCmd, "in");                    # install
-  push (@zypperCmd, "-l") if ( $agreelicenses eq "true" );  # agree licenses
-  push (@zypperCmd, "-f") if ( $force eq "true" );          # reinstall
+  push (@zypperCmd, "-l") if $agreelicenses;  # agree licenses
+  push (@zypperCmd, "-f") if $force;          # reinstall
 
   my $argumentsok = 0;
   my $retval=0;
@@ -92,11 +104,11 @@ sub jobhandler
   SMT::Agent::Utils::error( "too few arguments: need one or more of [packages, patches, patterns, products]", $jobid ) unless $argumentsok;
 
   return (
-    stdout   => ( scalar( @stdout )  &&  $verbose eq 'true' ) ? join("\n", @stdout) : '',
-    stderr   => ( scalar( @stderr )  &&  $verbose eq 'true' ) ? join("\n", @stderr) : '',
+    stdout   => (scalar(@stdout) && $verbose) ? join("\n", @stdout) : '',
+    stderr   => (scalar(@stderr) && $verbose) ? join("\n", @stderr) : '',
     exitcode => $retval,
-    success  => ($retval == 0 ) ? "true" : "false",
-    message  => ($retval == 0 ) ? "softwarepush successfully finished" : ("softwarepush failed: " . join(", ", @messages))
+    success  => ($retval == 0) ? "true" : "false",
+    message  => ($retval == 0) ? "softwarepush successfully finished" : ("softwarepush failed: " . join(", ", @messages))
   );
 
 }

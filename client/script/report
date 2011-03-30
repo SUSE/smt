@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
 use XML::XPath;
 use XML::XPath::XMLParser;
@@ -17,7 +16,7 @@ sub jobhandler
   SMT::Agent::Utils::error("wrong job handler: \"report\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "report" );
 
   my $xpQuery = XML::XPath->new(xml => $args);
-  SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]'));
+  eval { SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]')); };
 
   my $argSet;
   eval { $argSet = $xpQuery->find('/arguments[1]') };

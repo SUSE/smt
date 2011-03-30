@@ -1,8 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use IPC::Open3;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
 
 sub jobhandler
@@ -12,69 +10,52 @@ sub jobhandler
   SMT::Agent::Utils::logger ("jobhandler for update called", $jobid);
   SMT::Agent::Utils::logger ("update runs jobid \"$jobid\"", $jobid);
 
-
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"update\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "update" );
 
+  my $xpQuery = XML::XPath->new(xml => $args);
+  eval { SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]')); };
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
 
-  # collect and verify arguments
-  my $force;
-  my $agreelicenses;
-  my $packages;
+  my $agreelicenses = $arg->getAttribute('agreelicenses');
 
-
-  $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
-  $agreelicenses = "false"	if ( ! defined( $agreelicenses ) );
-  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false"  || 
-									  $agreelicenses eq "0" || $agreelicenses eq "1"  ) );
-  $agreelicenses = "true" if ($agreelicenses eq "1" );
-  $agreelicenses = "false" if ($agreelicenses eq "0" );
-
-
+  my $agreeSet;
+  eval { $agreeSet = $xpQuery->find('/arguments[1]/agreelicenses[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($agreeSet->get_nodelist()) {
+      $agreelicenses = $_n->string_value() if (defined $_n);
+      last if defined $agreelicenses;
+  }
+  $agreelicenses = (defined $agreelicenses && ($agreelicenses =~ /^1$/ || $agreelicenses =~ /^true$/)) ? 1 : 0;
 
   #==  run zypper ==
-
   my $command = "/usr/bin/zypper";
   my @cmdArgs;
-  push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
-  push (@cmdArgs, "-x");					# xml output
-  push (@cmdArgs, "--non-interactive");				# doesn't ask user
-  push (@cmdArgs, "up");					# update
-  push (@cmdArgs, "-t");					# type
-  push (@cmdArgs, "patch");					# patch
-  push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
-
-  foreach my $pack (@$packages)                                                             
-  {                                                                                         
-    push (@cmdArgs, $pack);
-  }    
+  push (@cmdArgs, "--no-cd");               # ignore CD/DVD repositories
+  push (@cmdArgs, "--non-interactive");     # don't ask user
+  push (@cmdArgs, "up");                    # update
+  push (@cmdArgs, "-l") if $agreelicenses;  # agree licenses
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
-
   # run zypper again if needed because of pkgmgr patches
-  my $stdout2;
-  my $stderr2;
+  my $stdout2 = '';
+  my $stderr2 = '';
 
   if ( $retval == 103 )
-  {                                                                                         
-    ($retval, $stdout2, $stderr2) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
-  }    
-
+  {
+      ($retval, $stdout2, $stderr2) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
+  }
   $stdout .= $stdout2;
   $stderr .= $stderr2;
 
-
-  if ( $verbose ne "true" )
-  {
-    $stdout="";
-    $stderr="";
-  }
-
-
   return (
-    stdout => defined ( $stdout )? $stdout : "",
-    stderr => defined ( $stderr )? $stderr : "",
+    stdout => ((defined $stdout) && $verbose) ? $stdout : '',
+    stderr => ((defined $stderr) && $verbose) ? $stderr : '',
     exitcode => $retval,
     success => ($retval == 0 ) ? "true" : "false",
     message => ($retval == 0 ) ? "update successfully finished" : "update failed"

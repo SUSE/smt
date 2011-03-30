@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
 
 sub jobhandler

@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
 
 sub jobhandler
@@ -25,12 +24,12 @@ sub jobhandler
   SMT::Agent::Utils::error( "NEWJOB not yet implemented", $jobid ) if 1;
 
   return (
-    stdout   => ( scalar( @stdout )  &&  $verbose eq 'true' ) ? join("\n", @stdout) : '',
-    stderr   => ( scalar( @stderr )  &&  $verbose eq 'true' ) ? join("\n", @stderr) : '',
+    stdout   => ((defined $stdout) && $verbose ) ? $stdout : '',
+    stderr   => ((defined $stderr) && $verbose ) ? $stderr : '',
     exitcode => $retval,
     success  => ($retval == 0 ) ? "true" : "false",
     result   => undef,
-    message  => ($retval == 0 ) ? "NEWJOB successfully finished" : ("NEWJOB failed: " . join(", ", @messages))
+    message  => ($retval == 0 ) ? "NEWJOB successfully finished" : ("NEWJOB failed: " . $message))
   );
 
 }

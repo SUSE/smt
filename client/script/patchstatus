@@ -1,8 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use IPC::Open3;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
 use XML::Simple;
 use UNIVERSAL 'isa';
@@ -38,8 +36,8 @@ sub jobhandler
   push (@REFcmdArgs, '--service');
 
   (my $REFret, my $REFstdout, my $REFstderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @REFcmdArgs );
-  $REFstdout='' if ( $verbose ne "true" );
-  $REFstderr='' if ( $verbose ne "true" );
+  $REFstdout='' if ($verbose);
+  $REFstderr='' if ($verbose);
 
   return (
     stdout => defined ( $REFstdout ) ? $REFstdout : '',
@@ -75,18 +73,12 @@ sub jobhandler
       $patchSecurity++    if ( $h->{$hashkey}->{category}   eq "security" );
       $patchRecommended++ if ( $h->{$hashkey}->{category}   eq "recommended" );
       $patchOptional++    if ( $h->{$hashkey}->{category}   eq "optional" );
-      $pkgmanager++	  if ( $h->{$hashkey}->{pkgmanager} eq "true" );
-  }
-
-  if ( $verbose ne "true" )
-  {
-    $stdout="";
-    $stderr="";
+      $pkgmanager++	      if ( $h->{$hashkey}->{pkgmanager} eq "true" );
   }
 
   return (
-    stdout => defined ( $stdout )? $stdout : "",
-    stderr => defined ( $stderr )? $stderr : "",
+    stdout => ((defined $stdout) && $verbose ) ? $stdout : '',
+    stderr => ((defined $stderr) && $verbose ) ? $stderr : '',
     exitcode => $retval,
     success => "true",
     message => "$pkgmanager:$patchSecurity:$patchRecommended:$patchOptional # PackageManager=$pkgmanager Security=$patchSecurity Recommended=$patchRecommended Optional=$patchOptional" 

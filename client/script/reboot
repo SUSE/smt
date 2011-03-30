@@ -1,8 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use IPC::Open3;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
 
 sub jobhandler
@@ -12,13 +10,10 @@ sub jobhandler
   SMT::Agent::Utils::logger ("jobhandler for reboot called", $jobid);
   SMT::Agent::Utils::logger ("reboot runs jobid \"$jobid\"", $jobid);
 
-
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"reboot\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "reboot" );
 
-
   #==  run shutdown ==
-
   `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;				
 
   return (
