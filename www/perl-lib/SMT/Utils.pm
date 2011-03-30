@@ -20,6 +20,8 @@ use POSIX ();     # Needed for setlocale()
 use User::pwent;
 use Sys::GRP;
 
+use SMT::Utils::RequestAgent;
+
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 use English;
@@ -886,44 +888,12 @@ sub createUserAgent
     # uncomment, if you want SSL debuging
     #$ENV{HTTPS_DEBUG} = 1;
 
-    {
-        package RequestAgent;
-        @RequestAgent::ISA = qw(LWP::UserAgent);
-        
-        sub new
-        {
-            my($class, $puser, $ppass, %cnf) = @_;
-            
-            my $self = $class->SUPER::new(%cnf);
-            
-            bless {
-                   puser => $puser,
-                   ppass => $ppass
-                  }, $class;
-        }
-
-        sub get_basic_credentials
-        {
-            my($self, $realm, $uri, $proxy) = @_;
-            
-            if($proxy)
-            {
-                if(defined $self->{puser} && defined $self->{ppass})
-                {
-                    return ($self->{puser}, $self->{ppass});
-                }
-            }
-            return (undef, undef);
-        }
-    }
-
-    my $ua = RequestAgent->new($user, $pass, %opts);
+    my $ua = SMT::Utils::RequestAgent->new($user, $pass, %opts);
 
     # mirroring ATI/NVidia repos requires HTTP; so we do not forbid it here
     #$ua->protocols_allowed( [ 'https' ] );
     #$ua->default_headers->push_header('Content-Type' => 'text/xml');
 
-    
     if( defined $noProxy )
     {
         $ua->no_proxy(split(/\s*,\s*/, $noProxy));

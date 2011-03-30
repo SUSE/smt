@@ -200,6 +200,7 @@ sub readJobFromXML
 
 ## FIXME get rid of XMLin - it does unwanted XML transformations
 ##       switch to XML::XPath
+## FIXME the verbose flag gets lost during the XMLin transformation!!! must be fixed!
 
   # parse xml
   my $j;
@@ -675,7 +676,7 @@ sub resolveJobStatus
 #
 #   Successor of the old "resolveJobType" function, that just toggled ID and Name
 #
-sub jobTypeToName($$)
+sub jobTypeToName
 {
   my $self = shift || return undef;
   my $type = shift || return undef;
@@ -690,7 +691,7 @@ sub jobTypeToName($$)
 # argument: job type name or id
 # returns the ID of the job type or "undef" if the job type does not exist
 #
-sub jobTypeToID($$)
+sub jobTypeToID
 {
   my $self = shift || return undef;
   my $type = shift || return undef;
