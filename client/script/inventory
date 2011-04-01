@@ -14,9 +14,6 @@ sub jobhandler
   SMT::Agent::Utils::logger("inventory runs jobid \"$jobid\"", $jobid);
   SMT::Agent::Utils::error("wrong job handler: \"inventory\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "inventory" );
 
-  my ($stdout, $stderr, $message);
-$verbose = 1;  # DEBUG
-
   my $xpQuery = XML::XPath->new(xml => $args);
   eval { SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]')); };
   my $argSet;
@@ -61,33 +58,119 @@ $verbose = 1;  # DEBUG
           my $_type = $_node->getAttribute('type');
           if ( $_type eq 'packages' )
           {
-              # TODO get packages information
-              $stderr .= "packages information\n\n";
+              # read _INSTALLED_ packages
+              my $err = 0;
+              open INSTPACKAGES, 'zypper -q se -i -s |' or $err = 1;
+              if ($err)
+              {
+                  $w->emptyTag('software', ( type => $_type, error => "Error: Could not query $_type information."));
+                  SMT::Agent::Utils::error("Could not query $_type information for inventory job.", $jobid);
+                  next;
+              }
+              $w->startTag('software', ( type => $_type ));
+              while (my $line = <INSTPACKAGES>) {
+                  next if ( $line =~ /^\s*[S\-]+\s*/ || $line =~ /^\s*$/ );
+                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo);
+                  ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
+                  $_flag         =~ s/\s*$//; $_flag         =~ s/^\s*//;
+                  $_packname     =~ s/\s*$//; $_packname     =~ s/^\s*//;
+                  $_packtype     =~ s/\s*$//; $_packtype     =~ s/^\s*//;
+                  $_packversion  =~ s/\s*$//; $_packversion  =~ s/^\s*//;
+                  $_packarch     =~ s/\s*$//; $_packarch     =~ s/^\s*//;
+                  $_packrepo     =~ s/\s*$//; $_packrepo     =~ s/^\s*//;
+                  $w->dataElement('package', $_packname, ( catalog => $_packrepo, version => $_packversion, status => "Installed", type => $_packtype ));
+              }
+              close INSTPACKAGES;
+              $w->endTag('software');
           }
           elsif ( $_type eq 'patches' )
           {
-              # TODO get patch information
-              $stderr .= "patches information\n\n";
+              my %patches;
+              # search _ALL_ of type patches (need the installed-flag and arch information)
+              my $err = 0;
+              open PATCHTYPES, 'zypper -q se -s -t patch |' or $err = 1;
+              if ($err)
+              {
+                  $w->emptyTag('software', ( type => $_type, error => "Error: Could not query $_type information."));
+                  SMT::Agent::Utils::error("Could not query $_type information for inventory job.", $jobid);
+                  next;
+              }
+              while (my $line = <PATCHTYPES>) {
+                  next if ( $line =~ /^\s*[S\-]+\s*/ || $line =~ /^\s*$/ );
+                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo);
+                  ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
+                  $_flag         =~ s/\s*$//; $_flag         =~ s/^\s*//;
+                  $_packname     =~ s/\s*$//; $_packname     =~ s/^\s*//;
+                  $_packtype     =~ s/\s*$//; $_packtype     =~ s/^\s*//;
+                  $_packversion  =~ s/\s*$//; $_packversion  =~ s/^\s*//;
+                  $_packarch     =~ s/\s*$//; $_packarch     =~ s/^\s*//;
+                  $_packrepo     =~ s/\s*$//; $_packrepo     =~ s/^\s*//;
+                  $patches{$_packrepo.'-'.$_packname.'-'.$_packversion} = {
+                      flag => $_flag,
+                      name => $_packname,
+                      type => $_packtype,
+                      version => $_packversion,
+                      arch => $_packarch,
+                      repo => $_packrepo
+                  };
+              }
+              close PATCHTYPES;
+
+              # search _ALL_ patches (need the information about status and category)
+              $err = 0;
+              open ALLPATCHES, 'zypper -q list-patches --all |' or $err = 1;
+              if ($err)
+              {
+                  $w->emptyTag('software', ( type => $_type, error => "Error: Could not query $_type information."));
+                  SMT::Agent::Utils::error("Could not query $_type information for inventory job.", $jobid);
+                  next;
+              }
+              while (my $line = <ALLPATCHES>) {
+                  next if ( $line =~ /^\s*\-+\s*/ || $line =~ /^\s*$/ || $line =~ /^Repository\s*\|\s*Name\s*\|\s*Version/ );
+                  my ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus);
+                  ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus) = split /\|/, $line;
+                  $_packrepo     =~ s/\s*$//; $_packrepo     =~ s/^\s*//;
+                  $_packname     =~ s/\s*$//; $_packname     =~ s/^\s*//;
+                  $_packversion  =~ s/\s*$//; $_packversion  =~ s/^\s*//;
+                  $_packcategory =~ s/\s*$//; $_packcategory =~ s/^\s*//;
+                  $_packstatus   =~ s/\s*$//; $_packstatus   =~ s/^\s*//;
+                  my $_patchID = $_packrepo.'-'.$_packname.'-'.$_packversion;
+                  $patches{$_patchID}->{category} = $_packcategory;
+                  my $_s = $_packstatus || 'Unknown';
+                  $_s = 'Needed' if ($_packstatus =~ /^needed$/);
+                  $_s = 'Not needed' if ($_packstatus =~ /^not needed$/);
+                  $patches{$_patchID}->{status} = ( $patches{$_patchID}->{flag} =~ /^i$/ ? 'Installed' : $_s );
+              }
+              close ALLPATCHES;
+
+              $w->startTag('software', ( type => $_type ));
+              foreach my $patch (keys %patches) {
+                  next unless defined $patch;
+                  $w->dataElement('patch', $patches{$patch}->{name}, ( catalog  => $patches{$patch}->{repo},
+                                                                       version  => $patches{$patch}->{version},
+                                                                       status   => $patches{$patch}->{status},
+                                                                       arch     => $patches{$patch}->{arch},
+                                                                       category => $patches{$patch}->{category},
+                                                                       type     => $patches{$patch}->{type} ));
+              }
+              $w->endTag('software');
           }
           else
           {
-              # TODO should we warn about not spupported types??
+              $w->emptyTag('software', ( type => $_type, error => "Error: No handler to query software information of the type: $_type"));
           }
       }
   }
-
-
   $w->endTag('results');
   $w->end();
 
-SMT::Agent::Utils::logger("XMLXMLXML", $resxml);  # DEBUG
   return (
-    stdout   => ((defined $stdout) && $verbose ) ? $stdout : '',
-    stderr   => ((defined $stderr) && $verbose ) ? $stderr : '',
+    stdout   => '',
+    stderr   => '',
     exitcode => (defined $resxml) ? 0 : 1,
     success  => (defined $resxml) ? "true" : "false",
     result   => $resxml,
-    message  => (defined $resxml) ? "inventory successfully finished" : ("inventory failed: " . $message)
+    message  => (defined $resxml) ? "inventory successfully finished" : "inventory failed"
   );
 
 }
