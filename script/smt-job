@@ -527,7 +527,7 @@ if ( defined $create || defined $construct )
         close JTMPL;
 
         if (@targetguid < 1) {
-            print __("Please enter one or more target GUIDs for this job.");
+            print __("Please enter one or more target GUIDs for this job.")."\n";
             exit 1;
         }
 
@@ -557,6 +557,7 @@ if ( defined $create || defined $construct )
     {
         $Job->{name}        = defined $query{NAME} ? $query{NAME} :'Report job';
         $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Report';
+        # if undefined then cacheresult by default is enabled in report job - otherwise report makes no sense
         $Job->{cacheresult} = defined $cacheresult ? $cacheresult : 1;
         if (@targetjob < 1) {
             print __("Please enter one or more target job IDs for this job.");
@@ -578,9 +579,20 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 53 )
     {
-        # TODO maybe add inventory job
-        print "Not supported to be created by $0\n";
-        exit 3;
+        # FIXME - make the inventory job configurable
+        #         currently only full inventory job created statically
+        $Job->{name}        = defined $query{NAME} ? $query{NAME} :'Inventory job';
+        $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Inventory';
+
+        my $inventoryXML = '<arguments>
+          <refresh-hardware>
+            <param id="cpu" description="CPU" command="hwinfo --cpu" />
+            <param id="disk" description="Disk" command="hwinfo --disk" />
+          </refresh-hardware>
+          <refresh-software type="packages" />
+          <refresh-software type="patches" />
+        </arguments>';
+        $Job->{arguments} = $inventoryXML;
     }
     else
     {
