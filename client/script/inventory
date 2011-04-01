@@ -70,14 +70,10 @@ sub jobhandler
               $w->startTag('software', ( type => $_type ));
               while (my $line = <INSTPACKAGES>) {
                   next if ( $line =~ /^\s*[S\-]+\s*/ || $line =~ /^\s*$/ );
-                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo);
-                  ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
-                  $_flag         =~ s/\s*$//; $_flag         =~ s/^\s*//;
-                  $_packname     =~ s/\s*$//; $_packname     =~ s/^\s*//;
-                  $_packtype     =~ s/\s*$//; $_packtype     =~ s/^\s*//;
-                  $_packversion  =~ s/\s*$//; $_packversion  =~ s/^\s*//;
-                  $_packarch     =~ s/\s*$//; $_packarch     =~ s/^\s*//;
-                  $_packrepo     =~ s/\s*$//; $_packrepo     =~ s/^\s*//;
+                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
+                  foreach my $x ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) {
+                      strip_whitespace($x);
+                  }
                   $w->dataElement('package', $_packname, ( catalog => $_packrepo, version => $_packversion, status => "Installed", type => $_packtype ));
               }
               close INSTPACKAGES;
@@ -97,14 +93,10 @@ sub jobhandler
               }
               while (my $line = <PATCHTYPES>) {
                   next if ( $line =~ /^\s*[S\-]+\s*/ || $line =~ /^\s*$/ );
-                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo);
-                  ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
-                  $_flag         =~ s/\s*$//; $_flag         =~ s/^\s*//;
-                  $_packname     =~ s/\s*$//; $_packname     =~ s/^\s*//;
-                  $_packtype     =~ s/\s*$//; $_packtype     =~ s/^\s*//;
-                  $_packversion  =~ s/\s*$//; $_packversion  =~ s/^\s*//;
-                  $_packarch     =~ s/\s*$//; $_packarch     =~ s/^\s*//;
-                  $_packrepo     =~ s/\s*$//; $_packrepo     =~ s/^\s*//;
+                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
+                  foreach my $x ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) {
+                      strip_whitespace($x);
+                  }
                   $patches{$_packrepo.'-'.$_packname.'-'.$_packversion} = {
                       flag => $_flag,
                       name => $_packname,
@@ -127,13 +119,10 @@ sub jobhandler
               }
               while (my $line = <ALLPATCHES>) {
                   next if ( $line =~ /^\s*\-+\s*/ || $line =~ /^\s*$/ || $line =~ /^Repository\s*\|\s*Name\s*\|\s*Version/ );
-                  my ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus);
-                  ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus) = split /\|/, $line;
-                  $_packrepo     =~ s/\s*$//; $_packrepo     =~ s/^\s*//;
-                  $_packname     =~ s/\s*$//; $_packname     =~ s/^\s*//;
-                  $_packversion  =~ s/\s*$//; $_packversion  =~ s/^\s*//;
-                  $_packcategory =~ s/\s*$//; $_packcategory =~ s/^\s*//;
-                  $_packstatus   =~ s/\s*$//; $_packstatus   =~ s/^\s*//;
+                  my ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus) = split /\|/, $line;
+                  foreach my $x ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus) {
+                      strip_whitespace($x);
+                  }
                   my $_patchID = $_packrepo.'-'.$_packname.'-'.$_packversion;
                   $patches{$_patchID}->{category} = $_packcategory;
                   my $_s = $_packstatus || 'Unknown';
@@ -173,6 +162,11 @@ sub jobhandler
     message  => (defined $resxml) ? "inventory successfully finished" : "inventory failed"
   );
 
+}
+
+sub strip_whitespace($)
+{
+    $_[0] =~ s/\s*$//; $_[0] =~ s/^\s*//;
 }
 
 SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"inventory\"");
