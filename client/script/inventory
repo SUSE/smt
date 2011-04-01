@@ -2,39 +2,97 @@
 use strict;
 use warnings;
 use SMT::Agent::Utils;
+use XML::Writer;
+use SUSE::SuseRegister;
+use SUSE::SRPrivate;
 
 sub jobhandler
 {
   my ($jobtype, $jobid, $args, $verbose) =  @_;
 
-  SMT::Agent::Utils::logger ("jobhandler for NEWJOB called", $jobid);
-  SMT::Agent::Utils::logger ("NEWJOB runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::logger("jobhandler for inventory called", $jobid);
+  SMT::Agent::Utils::logger("inventory runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::error("wrong job handler: \"inventory\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "inventory" );
 
-  # check whether this handler can handle requested jobtype
-  SMT::Agent::Utils::error ("wrong job handler: \"NEWJOB\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "NEWJOB" );
-  # check the passed args
-  SMT::Agent::Utils::error("no or invalid arguments for this job", $jobid) unless ( isa($args, 'ARRAY') && isa($args->[0], 'HASH') );
+  my ($stdout, $stderr, $message);
+$verbose = 1;  # DEBUG
+
+  my $xpQuery = XML::XPath->new(xml => $args);
+  eval { SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]')); };
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
+
+  my $hardwareSet;
+  eval { $hardwareSet = $xpQuery->find('/arguments[1]/refresh-hardware/param') };
+
+  my $w = undef;
+  my $resxml = '';
+  $w = new XML::Writer( OUTPUT => \$resxml, DATA_MODE => 1, DATA_INDENT => 2 );
+  SMT::Agent::Utils::error("Unable to create an result XML snippet for the current job.", $jobid) unless $w;
+  $w->startTag('results');
+
+  # initialize SuseRegister context in order to use the "evaluateCommand" interface of SRPrivate
+  my $SRctx = SUSE::SuseRegister::init_ctx({ time => 0, nohwdata => 0 });
+
+  unless ($@ || not defined $hardwareSet)
+  {
+      # handle the hardware params
+      $w->startTag('hardware');
+      foreach my $_node ($hardwareSet->get_nodelist()) {
+          my $_id          = $_node->getAttribute('id') || '';
+          my $_description = $_node->getAttribute('description') || '';
+          my $_command     = $_node->getAttribute('command') || '';
+
+          my $_ret = SUSE::SRPrivate::evaluateCommand($SRctx, $_command, 1);
+          $w->cdataElement('param', $_ret, ( id => $_id ) );
+      }
+      $w->endTag('hardware');
+  }
+
+  my $softwareSet;
+  eval { $softwareSet = $xpQuery->findnodes('/arguments[1]/refresh-software[@type]') };
+  unless ($@ || not defined $softwareSet) 
+  {
+      # handle the software types
+      foreach my $_node ($softwareSet->get_nodelist()) {
+          my $_type = $_node->getAttribute('type');
+          if ( $_type eq 'packages' )
+          {
+              # TODO get packages information
+              $stderr .= "packages information\n\n";
+          }
+          elsif ( $_type eq 'patches' )
+          {
+              # TODO get patch information
+              $stderr .= "patches information\n\n";
+          }
+          else
+          {
+              # TODO should we warn about not spupported types??
+          }
+      }
+  }
 
 
-  ##
-  ## TODO insert job workflow here
-  ##
+  $w->endTag('results');
+  $w->end();
 
-
-  SMT::Agent::Utils::error( "NEWJOB not yet implemented", $jobid ) if 1;
-
+SMT::Agent::Utils::logger("XMLXMLXML", $resxml);  # DEBUG
   return (
     stdout   => ((defined $stdout) && $verbose ) ? $stdout : '',
     stderr   => ((defined $stderr) && $verbose ) ? $stderr : '',
-    exitcode => $retval,
-    success  => ($retval == 0 ) ? "true" : "false",
-    result   => undef,
-    message  => ($retval == 0 ) ? "NEWJOB successfully finished" : ("NEWJOB failed: " . $message))
+    exitcode => (defined $resxml) ? 0 : 1,
+    success  => (defined $resxml) ? "true" : "false",
+    result   => $resxml,
+    message  => (defined $resxml) ? "inventory successfully finished" : ("inventory failed: " . $message)
   );
 
 }
 
-SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"NEWJOB\"");
+SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"inventory\"");
 
 return 1;
 
