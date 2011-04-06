@@ -4,9 +4,9 @@ use SMT::Utils;
 use SMT::Job::Constants;
 use strict;
 use warnings;
-use XML::Simple;
 use XML::Writer;
 use XML::Parser;
+use XML::XPath;
 use UNIVERSAL 'isa';
 
 use constant VBLEVEL => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
@@ -36,84 +36,6 @@ sub new ($$)
     return $self;
 }
 
-#
-# creates a new job (for compatibility)
-# please use if possible: readJobFromXML, readJobFromDatabase
-#
-# FIXME remove newJob - it is not used by anything anymore
-sub newJob
-{
-    my $self = shift;
-    my @params = @_;
-
-    my $guid;
-    my $id;
-    my $type;
-    my $arguments;
-
-    my $message;
-    my $exitcode;
-    my $stdout;
-    my $stderr;
-    my $success;
-    my $status;
-
-    # Perl-only
-    if ( defined ( $params[2] ) )
-    {
-        $guid = $params[0];
-        $id   = $params[1];
-        $type = $self->jobTypeToID($params[2]);
-        $arguments = $params[3];
-        $arguments = '<arguments></arguments>' unless defined $arguments;
-    }
-    elsif (! defined ( $params[1] ) )
-    {
-      # empty constructor
-    }
-    else
-    {
-	my $xmldata = $params[1];
-
-	return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) );
-	return error( $self, "unable to create job. xml does not contain a job description" ) if ( length( $xmldata ) <= 0 );
-
-	my $j;
-
-	# parse xml
-	eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-	return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
-	return error( $self, "job description contains invalid xml" ) unless ( isa ($j, 'HASH' ) );
-
-	# retrieve variables
-	$id   	     = $j->{id}           if ( defined ( $j->{id} ) && ( $j->{id} =~ /^[0-9]+$/ ) );
-	$type	     = $self->jobTypeToID($j->{type})  if ( defined ( $j->{type} ) );
-	$arguments   = $j->{arguments}    if ( defined ( $j->{arguments} ) );
-	$exitcode    = $j->{exitcode}     if ( defined ( $j->{exitcode} ) && ( $j->{exitcode} =~ /^[0-9]+$/ ) );
-	$stdout	     = $j->{stdout}       if ( defined ( $j->{stdout} ) );
-	$stderr      = $j->{stderr}       if ( defined ( $j->{stderr} ) );
-	$message     = $j->{message}      if ( defined ( $j->{message} ) );
-	$success     = $j->{success}      if ( defined ( $j->{success} ) );
-	$status      = $j->{status}       if ( defined ( $j->{status} ) && ( $j->{status} =~ /^[0-9]+$/ ) );
-
-	if ( defined $stdout  ) { $stdout =~ s/[\"\']//g;  }
-	if ( defined $stderr  ) { $stderr =~ s/[\"\']//g;  }
-	if ( defined $message ) { $message =~ s/[\"\']//g; }
-	if ( defined $success ) { $success =~ s/[\"\']//g; }
-
-    }
-
-    $self->{id}   = $id;
-    $self->{guid} = $guid;
-    $self->{type} = $self->jobTypeToID($type);
-    $self->{arguments} = $arguments;
-    $self->{exitcode} = $exitcode;
-    $self->{stdout} = $stdout;
-    $self->{stderr} = $stderr;
-    $self->{message} = $message;
-    $self->{success} = $success;
-    $self->{status} = $status;
-}
 
 #
 # reads job specified by jobid and guid from database
@@ -195,41 +117,44 @@ sub readJobFromHash($$)
 sub readJobFromXML
 {
   my $self = shift || return undef;
-  my $xmldata = shift || return undef;
-  return error( $self, "unable to create job. xml does not contain a job description" ) unless ( defined ( $xmldata ) && length( $xmldata ) > 0 );
+  my $xmldata = shift || undef;
+  return $self->error("unable to create job. xml does not contain a job description") unless ($xmldata);
 
-## FIXME get rid of XMLin - it does unwanted XML transformations
-##       switch to XML::XPath
-## FIXME the verbose flag gets lost during the XMLin transformation!!! must be fixed!
+  my $xpQuery = XML::XPath->new(xml => $xmldata);
+  eval { return $self->error("could not parse the job xml") unless ( $xpQuery->exists('/job[1]')); };
 
-  # parse xml
-  my $j;
-  eval { $j = XMLin( $xmldata,  forcearray => 1 ) };
-  return error( $self, "unable to create job. unable to parse xml: $@" ) if ( $@ );
-  return error( $self, "job description contains invalid xml" ) unless ( isa($j, 'HASH') );
+  my $jobSet;
+  eval { $jobSet = $xpQuery->find("/job[1]"); };
+  return undef if ( $@ || ($jobSet->size() != 1) );
+  my $oneJob = $jobSet->pop();
+  return undef unless (defined $oneJob);
 
-  foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
-  {
-      if ( lc($att) eq 'guid' )
-      {
-          my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
-          return undef unless defined $client;
-          $self->{guid_id} = $client->getClientIDByGUID($j->{guid}) || undef;
-          $self->{guid} = $j->{guid} || undef;
-      }
-      elsif ( lc($att) eq 'type' )
-      {
-          $self->{type} = $self->jobTypeToID( $j->{type} );
-      }
-      elsif ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
+  my $attribNodes = $oneJob->getAttributeNodes();
+  my %attribs = map { $_->getName() => $_->string_value() } (@$attribNodes);
+  foreach my $att (SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES) {
+      # only write values that exist in $attribs, because it must be possible to update a job via this function
+      next unless (exists $attribs{lc($att)});
+      $self->{lc($att)} = $attribs{lc($att)};
+      $self->{type} = $self->jobTypeToID($attribs{type}) if (lc($att) eq 'type');
+      if ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
       {
           # set all boolean flags to 1 or 0
-          $self->{lc($att)} = ( defined $self->{lc($att)} && ( $self->{lc($att)} =~ /^1$/  || $self->{lc($att)} =~ /^true$/ ) ) ? 1:0;
+          $self->{lc($att)} = ( defined $attribs{lc($att)} && ( $attribs{lc($att)} =~ /^1$/  || $attribs{lc($att)} =~ /^true$/ ) ) ? 1:0;
       }
-      else
-      {
-          $self->{$att} = $j->{$att} if (exists $j->{$att});
-      }
+  }
+
+  my $elementNodes = $oneJob->getChildNodes();
+  my %elements;
+  foreach my $elm (@$elementNodes) {
+      next unless defined $elm;
+      my $name = $elm->getName();
+      next unless defined $name;
+      # special handling for arguments: plain XML
+      $elements{lc($name)} = ( lc($name) eq 'arguments' ) ? XML::XPath::XMLParser::as_string($elm) : $elm->string_value();
+  }
+  foreach my $elm (SMT::Job::Constants::JOB_DATA_ELEMENTS) {
+      # only write values that exist in $elements, because it must be possible to update a job via this function
+      $self->{lc($elm)} = $elements{lc($elm)} if (exists $elements{lc($elm)});
   }
 }
 
@@ -410,15 +335,6 @@ sub arguments
 {
     my ( $self, $arguments ) = @_;
     $self->{arguments} = $arguments if defined( $arguments );
-
-    # FIXME get rid of the conversion - the database saves everything as XML anyway ever since
-    # convert arguments to xml if given in hash - kept for backward compatibility
-    if ( isa($self->{arguments}, 'HASH') )
-    {
-        SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, "Obsolete warning: Detected obsolete hash arguments at job (".$self->{id}.") for client (".$self->{guid}.").");
-        eval { $self->{arguments} = XMLout($self->{arguments}, rootname => "arguments") };
-        return error( $self, "unable to set arguments. unable to parse xml argument list: $@" ) if ( $@ );
-    }
     return $self->{arguments};
 }
 
@@ -430,7 +346,6 @@ sub arguments
 sub getArgumentsXML
 {
     my $self = shift;
-    # call the getter function to trigger the XML conversion if needed
     return $self->arguments();
 }
 
