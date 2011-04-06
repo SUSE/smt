@@ -24,17 +24,20 @@ use POSIX ();     # Needed for setlocale()
 use Data::Dumper; # DEBUG
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
-my $PWD = $ENV{PWD} || '';
+my $PWD = $ENV{PWD} || '';  # read 'pwd' in case dropPrivileges is active, which changes the current 'pwd'
 
 #### START LOCAL FUNCTIONS ####
 
 #### END LOCAL FUNCTIONS ####
 
-if(!SMT::Utils::dropPrivileges())
-{
-    print STDERR __("Unable to drop privileges. Abort!\n");
-    exit 1;
-}
+# If dropPrivileges is active then reading files for "createjob" templates is no longer possible if they are in /root/
+# smt-job however is only doing read operations or interacting with the SMT database
+#
+#if(!SMT::Utils::dropPrivileges())
+#{
+#    print STDERR __("Unable to drop privileges. Abort!\n");
+#    exit 1;
+#}
 
 # connect to database
 my ($cfg, $dbh) = SMT::CLI::init();
