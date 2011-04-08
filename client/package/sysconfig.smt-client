@@ -1,12 +1,25 @@
 ## Path: System/SMT-Client
 ## Description: Configuration of SMT Client
 
-## Type:    string
-## Default: "softwarepush patchstatus"
+## Type:    string(patchstatus,softwarepush,update,execute,reboot,wait,eject,createjob,report,inventory)
+## Default: "softwarepush patchstatus update inventory createjob report"
 #
 # List of allowed agents that can be called via SMT job queue
+# The jobs createjob and report will only run on an SMT server that acts as smt-client relative to NCC.
 #
-ALLOWED_AGENTS="softwarepush patchstatus update"
+ALLOWED_AGENTS="softwarepush patchstatus update inventory createjob report"
+
+## Type:    string(patchstatus,softwarepush,update,execute,reboot,wait,eject,createjob,report,inventory)
+## Default: "inventory patchstatus"
+#
+# List of jobs that are allowed to be created in a local SMT server from an upstream SMT server
+#
+# Very useful setting:  "inventory softwarepush patchstatus report createjob"
+# Default setting:      "inventory patchstatus"
+# To disable creating jobs, please remove "createjob" from the ALLOWED_AGENTS variable.
+# Alternatively set the flag "forwardRegistration" to "false" in SMT configuration: /etc/smt.conf.
+#
+ALLOWED_CREATEJOB_JOBS="inventory patchstatus"
 
 ## Type:    string
 #
