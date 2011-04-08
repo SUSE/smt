@@ -11,6 +11,29 @@ if ( ! SMT::Agent::Utils::openLock("smt-agent") )
   SMT::Agent::Utils::error ("Cannot open Lock. Process still running?");
 }
 
+# check if we run on an SMT server and if yes, check if we are allowed to run smt-client
+if ( -f '/usr/sbin/smt' || -f '/etc/smt.conf')
+{
+    SMT::Agent::Utils::logger("Started smt-client on SMT server.");
+    my $cfg = undef;
+    eval {
+        require SMT::Utils;
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        SMT::Agent::Utils::error("Could not load SMT server configuration to find out if smt-client is allowed to run. Thus exiting.");
+    }
+
+    my $allowRegister = $cfg->val("LOCAL", "forwardRegistration");
+    if (!(defined $allowRegister && $allowRegister eq "true"))
+    {
+        SMT::Agent::Utils::logger("Not allowed to run smt-client on this SMT server. The configuration 'forwardRegistration' is disabled in the SMT server config: /etc/smt.conf .");
+        exit 0;
+    }
+}
+
+
 my $jobid;
 
 while( defined ( $jobid = SMT::Agent::RestXML::parsejobid( SMT::Agent::RestXML::getnextjob() )))
