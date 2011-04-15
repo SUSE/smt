@@ -35,11 +35,12 @@ sub jobhandler
 
   my $command = "/usr/bin/zypper";
   my @cmdArgs;
-  push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
-  push (@cmdArgs, "-xn");					# xml output
-  push (@cmdArgs, "patch");					# patch
-  push (@cmdArgs, "--with-interactive");			# doesn't ask user
-  push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
+  push (@cmdArgs, "--no-cd");                                   # ignore CD/DVD repositories
+  push (@cmdArgs, "-x");                                        # xml output
+  push (@cmdArgs, "--non-interactive");                         # don't ask any questions
+  push (@cmdArgs, "patch");                                     # patch
+  push (@cmdArgs, "--with-interactive");                        # include interactive patches anyhow
+  push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );        # agree with licenses
 
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );

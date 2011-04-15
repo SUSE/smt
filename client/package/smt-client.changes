@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Fri Apr 15 19:41:43 CEST 2011 - jdsn@suse.de
+
+- make new package to release the fix for (bnc#660191) as update
+- fix zypper parameters in update job
+- version 0.0.14
+
+-------------------------------------------------------------------
+Mon Jan 10 18:58:05 CET 2011 - jdsn@suse.de
+
+- fixed error handling if suseRegister.conf is missing (bnc#660191)
+
+-------------------------------------------------------------------
 Fri Sep 25 12:06:40 CEST 2009 - tgoettlicher@suse.de
 
 - improved message for update jobs that need a reboot
