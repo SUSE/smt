@@ -20,7 +20,6 @@ sub jobhandler
   # collect and verify arguments
   my $force;
   my $agreelicenses;
-  my $packages;
 
 
   $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
@@ -37,17 +36,11 @@ sub jobhandler
   my $command = "/usr/bin/zypper";
   my @cmdArgs;
   push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
-  push (@cmdArgs, "-x");					# xml output
-  push (@cmdArgs, "--non-interactive");				# doesn't ask user
-  push (@cmdArgs, "up");					# update
-  push (@cmdArgs, "-t");					# type
+  push (@cmdArgs, "-xn");					# xml output
   push (@cmdArgs, "patch");					# patch
+  push (@cmdArgs, "--with-interactive");			# doesn't ask user
   push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
 
-  foreach my $pack (@$packages)                                                             
-  {                                                                                         
-    push (@cmdArgs, $pack);
-  }    
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
 
@@ -71,13 +64,16 @@ sub jobhandler
     $stderr="";
   }
 
+  my $mesg = "update failed";
+  $mesg = "update successfully finished" if $retval == 0 ;
+  $mesg = "update successfully finished and reboot needed" if $retval == 102;
 
   return (
     stdout => defined ( $stdout )? $stdout : "",
     stderr => defined ( $stderr )? $stderr : "",
     exitcode => $retval,
     success => ($retval == 0 ) ? "true" : "false",
-    message => ($retval == 0 ) ? "update successfully finished" : "update failed"
+    message => $mesg
   );
 
 }

@@ -19,7 +19,7 @@
 
 
 Name:           smt-client
-Version:        0.0.11
+Version:        0.0.13
 Release:        0.1
 Requires:       perl = %{perl_version}
 Requires:       perl-XML-Simple
@@ -28,6 +28,7 @@ Requires:	perl-base
 Requires:	perl-libwww-perl
 Requires:       logrotate
 Requires:	cron
+Requires:	zypper >= 1.0.10
 PreReq:         %fillup_prereq 
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
