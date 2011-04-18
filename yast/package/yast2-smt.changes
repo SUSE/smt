@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Mar  4 16:35:23 CET 2011 - dmueller@suse.de
+
+- require latest smt version
+
+-------------------------------------------------------------------
 Mon Feb 14 17:32:23 UTC 2011 - locilka@suse.cz
 
 - Fixed ag_smt to build a version using epo, rel and ver and drop
