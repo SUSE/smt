@@ -182,6 +182,8 @@ fi
 %files
 %defattr(-,root,root)
 %dir %{perl_vendorlib}/SMT/
+%dir %{perl_vendorlib}/SMT/Job
+%dir %{perl_vendorlib}/SMT/Utils
 %dir %{perl_vendorlib}/SMT/Mirror
 %dir %{perl_vendorlib}/SMT/Parser
 %dir %{perl_vendorarch}/Sys
@@ -214,6 +216,8 @@ fi
 /usr/sbin/rcsmt
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
+%{perl_vendorlib}/SMT/Job/*.pm
+%{perl_vendorlib}/SMT/Utils/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm
 %{perl_vendorlib}/SMT/Parser/*.pm
 %{perl_vendorarch}/Sys/*.pm

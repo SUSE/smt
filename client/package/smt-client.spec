@@ -91,6 +91,7 @@ exit 0
 
 %files
 %defattr(-,root,root)
+%dir %{perl_vendorlib}/SMT
 %dir %{perl_vendorlib}/SMT/Agent
 %{perl_vendorlib}/SMT/Agent/*.pm
 /usr/sbin/smt-agent
@@ -99,7 +100,6 @@ exit 0
 %dir /usr/lib/SMT/bin/job
 /usr/lib/SMT/bin/job/*
 /usr/lib/SMT/bin/processjob
-%dir /usr/lib/perl5/vendor_perl/5.10.0/SMT
 /var/adm/fillup-templates/sysconfig.smt-client
 %ghost %{_sysconfdir}/cron.d/novell.com-smt-client
 %config /etc/logrotate.d/smt-client
