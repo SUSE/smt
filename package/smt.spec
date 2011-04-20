@@ -26,6 +26,8 @@ Requires:       perl = %{perl_version}
 Requires:       perl-DBI
 Requires:       perl-Crypt-SSLeay
 Requires:       perl-Config-IniFiles
+Requires:       perl-gettext
+Requires:       perl-XML-Simple
 Requires:       perl-XML-Parser
 Requires:       perl-XML-Writer
 Requires:       perl-XML-XPath

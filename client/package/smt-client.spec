@@ -23,12 +23,16 @@ Version:        0.0.14
 Release:        0.1
 Requires:       perl = %{perl_version}
 Requires:       perl-XML-Simple
-Requires:	perl-IO-Socket-SSL
-Requires:	perl-base
-Requires:	perl-libwww-perl
+Requires:       perl-XML-XPath
+Requires:       perl-XML-Parser
+Requires:       perl-XML-Writer
+Requires:       perl-IO-Socket-SSL
+Requires:       perl-base
+Requires:       perl-libwww-perl
 Requires:       logrotate
-Requires:	cron
-Requires:	zypper >= 1.0.10
+Requires:       cron
+Requires:       zypper >= 1.0.10
+Requires:       suseRegister
 PreReq:         %fillup_prereq 
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
