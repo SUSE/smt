@@ -43,9 +43,9 @@ sub jobs_handler($$)
     my $username = $r->user;
 
     # jobs (for authenticated client)
-    my $reJobs     = qr{^jobs(/?\@all)?$};    # get list of all MY jobs
-    my $reJobsNext = qr{^jobs/\@next$};       # get MY next job
-    my $reJobsId   = qr{^jobs/([\d]+)$};      # get job information (GET) or finish job (PUT)
+    my $reJobs     = qr{^jobs?(/(\@all)?)?$};  # get list of all MY jobs
+    my $reJobsNext = qr{^jobs?/\@next$};       # get MY next job
+    my $reJobsId   = qr{^jobs?/([\d]+)$};      # get job information (GET) or finish job (PUT)
 
     # get a job request object
     my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
@@ -53,9 +53,9 @@ sub jobs_handler($$)
     # map the requests to the functions
     if    ( $r->method() =~ /^GET$/i )
     {
-        if    ( $path =~ $reJobs )     { return $jobq->getJobList( $username, 1 );   }
-        elsif ( $path =~ $reJobsNext ) { return $jobq->getJob( $username, $jobq->getNextJobID($username, 0), 1)   }
-        elsif ( $path =~ $reJobsId )   { return $jobq->retrieveJob( $username, $1, 1 ) }
+        if    ( $path =~ $reJobs )     { return $jobq->getJobList({ asXML => '', short => 0, GUID => $username }) }
+        elsif ( $path =~ $reJobsNext ) { return $jobq->getJob    ({ asXML => '', short => 1, GUID => $username, ID => $jobq->getNextJobID({ GUID => $username }) }) }
+        elsif ( $path =~ $reJobsId )   { return $jobq->getJob    ({ asXML => '', short => 1, GUID => $username, ID => $1, retrieve => 1 }) }
         else
         {
             $r->log->error("GET request to unknown jobs interface: $path");
@@ -67,7 +67,7 @@ sub jobs_handler($$)
         if ( $path =~ $reJobsId )
         {
             my $c = read_post($r);
-            return $jobq->finishJob($username, $c);
+            return $jobq->finishJob({ GUID => $username, xmldata => $c });
         }
         else { return undef; }
     }
@@ -142,16 +142,16 @@ sub clients_handler($$)
     my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
 
     # clients
-    my $reClients           = qr{^clients(/?\@all)?$};                 # get list of all clients
-    my $reClientsId         = qr{^clients/([\w]+)$};                   # get client information
+    my $reClients           = qr{^clients?(/(\@all)?)?$};               # get list of all clients
+    my $reClientsId         = qr{^clients?/([\w]+)$};                   # get client information
     # clients/jobs
-    my $reClientsAllJobs    = qr{^clients/\@all/jobs(/?\@all)?$};      # get list of jobs of all clients
-    my $reClientsIdJobs     = qr{^clients/([\w]+)/jobs(/?\@all)?$};    # get list of jobs of one client
-    my $reClientsIdJobsNext = qr{^clients/([\w]+)/jobs/\@next$};       # get next job for one client
-    my $reClientsIdJobsId   = qr{^clients/([\w]+)/jobs/(\d+)$};        # get job information of one job for one client
+    my $reClientsAllJobs    = qr{^clients?/\@all/jobs?(/(\@all)?)?$};   # get list of jobs of all clients
+    my $reClientsIdJobs     = qr{^clients?/([\w]+)/jobs?(/(\@all)?)?$}; # get list of jobs of one client
+    my $reClientsIdJobsNext = qr{^clients?/([\w]+)/jobs?/\@next$};      # get next job for one client
+    my $reClientsIdJobsId   = qr{^clients?/([\w]+)/jobs?/(\d+)$};       # get job information of one job for one client
     # clients/patchstatus
-    my $reClientsIdPatchstatus  = qr{^clients/([\d\w]+)/patchstatus$}; # get patchstatus info for one client
-    my $reClientsAllPatchstatus = qr{^clients/\@all/patchstatus$};     # get patchstatus info for all clients
+    my $reClientsIdPatchstatus  = qr{^clients?/([\d\w]+)/patchstatus$}; # get patchstatus info for one client
+    my $reClientsAllPatchstatus = qr{^clients?/\@all/patchstatus$};     # get patchstatus info for all clients
 
     # map the requests to the functions
     if    ( $r->method() =~ /^GET$/i )
@@ -159,9 +159,9 @@ sub clients_handler($$)
         if    ( $path =~ $reClients )              { return $client->getAllClientsInfoAsXML(); }
         elsif ( $path =~ $reClientsId )            { return $client->getClientsInfo({'GUID' => $1, 'asXML' => 'one', 'selectAll' => '' }); }
         elsif ( $path =~ $reClientsAllJobs )       { return $jobq->getAllJobsInfoAsXML(); }
-        elsif ( $path =~ $reClientsIdJobs )        { return $jobq->getJobList( $1, 1 );   }
-        elsif ( $path =~ $reClientsIdJobsNext )    { return $jobq->getJob( $1, $jobq->getNextJobID($1, 0), 1); }
-        elsif ( $path =~ $reClientsIdJobsId )      { return $jobq->getJob( $1, $2, 1); }
+        elsif ( $path =~ $reClientsIdJobs )        { return $jobq->getJobList({ asXML => '', short => 0, GUID => $1, });  }
+        elsif ( $path =~ $reClientsIdJobsNext )    { return $jobq->getJob    ({ asXML => '', short => 0, GUID => $1, ID => $jobq->getNextJobID({ GUID => $1 }) }); }
+        elsif ( $path =~ $reClientsIdJobsId )      { return $jobq->getJob    ({ asXML => '', short => 0, GUID => $1, ID => $2 }); }
         elsif ( $path =~ $reClientsIdPatchstatus )
         {
             return $client->getClientsInfo( { 'GUID' => $1, 'ID' => '', 'PATCHSTATUS' => '', 'asXML' => 'one' } );
@@ -216,7 +216,7 @@ sub products_handler($$)
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    my $reProducts        = qr{^products?(/\@all)?$};    # get all products
+    my $reProducts        = qr{^products?(/(\@all)?)?$}; # get all products
     my $reProductsId      = qr{^products?/(\d+)$};       # get specific product info (GET)
     my $reProductsIdRepos = qr{^products?/(\d+)/repos$}; # get repos of a specific product id
 
@@ -270,7 +270,7 @@ sub repos_handler($$)
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    my $reRepos   = qr{^repos?(/\@all)?$};       # get all repos
+    my $reRepos   = qr{^repos?(/(\@all)?)?$};    # get all repos
     my $reReposId = qr{^repos?/(\d+)$};          # get specific repo
     my $rePatches = qr{^repos?/(\d+)/patches$};  # get list of patches of a repo
 
@@ -328,7 +328,7 @@ sub patches_handler($$)
     my $dbh = shift || return undef;
     my $path = sub_path($r);
 
-    my $rePatches   = qr{^patch(es)?(/\@all)?$};       # get all patches
+    my $rePatches   = qr{^patch(es)?(/(\@all)?)?$};    # get all patches
     my $rePatchId   = qr{^patch(es)?/(\d+)$};          # get specific patch
 
     if    ( $r->method() =~ /^GET$/i )

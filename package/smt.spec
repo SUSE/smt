@@ -28,6 +28,7 @@ Requires:       perl-Crypt-SSLeay
 Requires:       perl-Config-IniFiles
 Requires:       perl-XML-Parser
 Requires:       perl-XML-Writer
+Requires:       perl-XML-XPath
 Requires:       perl-libwww-perl
 Requires:       perl-URI
 Requires:       perl-TimeDate

@@ -1,2 +1,4 @@
 smt-*/
 package/smt-*.tar.bz2
+client/smt-client-*/
+client/package/smt-client-*.tar.bz2

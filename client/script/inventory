@@ -1,0 +1,175 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use SMT::Agent::Utils;
+use XML::Writer;
+use SUSE::SuseRegister;
+use SUSE::SRPrivate;
+
+sub jobhandler
+{
+  my ($jobtype, $jobid, $args, $verbose) =  @_;
+
+  SMT::Agent::Utils::logger("jobhandler for inventory called", $jobid);
+  SMT::Agent::Utils::logger("inventory runs jobid \"$jobid\"", $jobid);
+  SMT::Agent::Utils::error("wrong job handler: \"inventory\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "inventory" );
+
+  my $xpQuery = XML::XPath->new(xml => $args);
+  eval { SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]')); };
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
+
+  my $hardwareSet;
+  eval { $hardwareSet = $xpQuery->find('/arguments[1]/refresh-hardware/param') };
+
+  my $w = undef;
+  my $resxml = '';
+  $w = new XML::Writer( OUTPUT => \$resxml, DATA_MODE => 1, DATA_INDENT => 2 );
+  SMT::Agent::Utils::error("Unable to create an result XML snippet for the current job.", $jobid) unless $w;
+  $w->startTag('results');
+
+  # initialize SuseRegister context in order to use the "evaluateCommand" interface of SRPrivate
+  my $SRctx = SUSE::SuseRegister::init_ctx({ time => 0, nohwdata => 0 });
+
+  unless ($@ || not defined $hardwareSet)
+  {
+      # handle the hardware params
+      $w->startTag('hardware');
+      foreach my $_node ($hardwareSet->get_nodelist()) {
+          my $_id          = $_node->getAttribute('id') || '';
+          my $_description = $_node->getAttribute('description') || '';
+          my $_command     = $_node->getAttribute('command') || '';
+
+          my $_ret = SUSE::SRPrivate::evaluateCommand($SRctx, $_command, 1);
+          $w->cdataElement('param', $_ret, ( id => $_id ) );
+      }
+      $w->endTag('hardware');
+  }
+
+  my $softwareSet;
+  eval { $softwareSet = $xpQuery->findnodes('/arguments[1]/refresh-software[@type]') };
+  unless ($@ || not defined $softwareSet) 
+  {
+      # handle the software types
+      foreach my $_node ($softwareSet->get_nodelist()) {
+          my $_type = $_node->getAttribute('type');
+          if ( $_type eq 'packages' )
+          {
+              # read _INSTALLED_ packages
+              my $err = 0;
+              open INSTPACKAGES, 'zypper -q se -i -s |' or $err = 1;
+              if ($err)
+              {
+                  $w->emptyTag('software', ( type => $_type, error => "Error: Could not query $_type information."));
+                  SMT::Agent::Utils::error("Could not query $_type information for inventory job.", $jobid);
+                  next;
+              }
+              $w->startTag('software', ( type => $_type ));
+              while (my $line = <INSTPACKAGES>) {
+                  next if ( $line =~ /^\s*[S\-]+\s*/ || $line =~ /^\s*$/ );
+                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
+                  foreach my $x ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) {
+                      strip_whitespace($x);
+                  }
+                  $w->dataElement('package', $_packname, ( catalog => $_packrepo, version => $_packversion, status => "Installed", type => $_packtype ));
+              }
+              close INSTPACKAGES;
+              $w->endTag('software');
+          }
+          elsif ( $_type eq 'patches' )
+          {
+              my %patches;
+              # search _ALL_ of type patches (need the installed-flag and arch information)
+              my $err = 0;
+              open PATCHTYPES, 'zypper -q se -s -t patch |' or $err = 1;
+              if ($err)
+              {
+                  $w->emptyTag('software', ( type => $_type, error => "Error: Could not query $_type information."));
+                  SMT::Agent::Utils::error("Could not query $_type information for inventory job.", $jobid);
+                  next;
+              }
+              while (my $line = <PATCHTYPES>) {
+                  next if ( $line =~ /^\s*[S\-]+\s*/ || $line =~ /^\s*$/ );
+                  my ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) = split /\|/, $line;
+                  foreach my $x ($_flag, $_packname, $_packtype, $_packversion, $_packarch, $_packrepo) {
+                      strip_whitespace($x);
+                  }
+                  $patches{$_packrepo.'-'.$_packname.'-'.$_packversion} = {
+                      flag => $_flag,
+                      name => $_packname,
+                      type => $_packtype,
+                      version => $_packversion,
+                      arch => $_packarch,
+                      repo => $_packrepo
+                  };
+              }
+              close PATCHTYPES;
+
+              # search _ALL_ patches (need the information about status and category)
+              $err = 0;
+              open ALLPATCHES, 'zypper -q list-patches --all |' or $err = 1;
+              if ($err)
+              {
+                  $w->emptyTag('software', ( type => $_type, error => "Error: Could not query $_type information."));
+                  SMT::Agent::Utils::error("Could not query $_type information for inventory job.", $jobid);
+                  next;
+              }
+              while (my $line = <ALLPATCHES>) {
+                  next if ( $line =~ /^\s*\-+\s*/ || $line =~ /^\s*$/ || $line =~ /^Repository\s*\|\s*Name\s*\|\s*Version/ );
+                  my ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus) = split /\|/, $line;
+                  foreach my $x ($_packrepo, $_packname, $_packversion, $_packcategory, $_packstatus) {
+                      strip_whitespace($x);
+                  }
+                  my $_patchID = $_packrepo.'-'.$_packname.'-'.$_packversion;
+                  $patches{$_patchID}->{category} = $_packcategory;
+                  my $_s = $_packstatus || 'Unknown';
+                  $_s = 'Needed' if ($_packstatus =~ /^needed$/);
+                  $_s = 'Not needed' if ($_packstatus =~ /^not needed$/);
+                  $patches{$_patchID}->{status} = ( $patches{$_patchID}->{flag} =~ /^i$/ ? 'Installed' : $_s );
+              }
+              close ALLPATCHES;
+
+              $w->startTag('software', ( type => $_type ));
+              foreach my $patch (keys %patches) {
+                  next unless defined $patch;
+                  $w->dataElement('patch', $patches{$patch}->{name}, ( catalog  => $patches{$patch}->{repo},
+                                                                       version  => $patches{$patch}->{version},
+                                                                       status   => $patches{$patch}->{status},
+                                                                       arch     => $patches{$patch}->{arch},
+                                                                       category => $patches{$patch}->{category},
+                                                                       type     => $patches{$patch}->{type} ));
+              }
+              $w->endTag('software');
+          }
+          else
+          {
+              $w->emptyTag('software', ( type => $_type, error => "Error: No handler to query software information of the type: $_type"));
+          }
+      }
+  }
+  $w->endTag('results');
+  $w->end();
+
+  return (
+    stdout   => '',
+    stderr   => '',
+    exitcode => (defined $resxml) ? 0 : 1,
+    success  => (defined $resxml) ? "true" : "false",
+    result   => $resxml,
+    message  => (defined $resxml) ? "inventory successfully finished" : "inventory failed"
+  );
+
+}
+
+sub strip_whitespace($)
+{
+    $_[0] =~ s/\s*$//; $_[0] =~ s/^\s*//;
+}
+
+SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"inventory\"");
+
+return 1;
+

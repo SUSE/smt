@@ -6,9 +6,6 @@ use warnings;
 use SMT::Agent::Constants;
 use IO::File;
 use IPC::Open3;
-use constant false => 0;
-use constant true => not false;
-
 
 
 sub openLog
@@ -105,7 +102,7 @@ sub executeCommand
 
     $code = ($?>>8);
 
-    return ($code, $err, $out);
+    return ($code, $out, $err);
 }
 
 
@@ -129,14 +126,22 @@ sub error
 sub isAgentAllowed
 {
   my $agent = shift;
-
   my $allowedagents = SMT::Agent::Config::getSysconfigValue( "ALLOWED_AGENTS" );
-  return false if (!defined $allowedagents );
-
-  return ( $allowedagents =~ /^(.*\s+)*$agent(\s+.*)*$/ );
-
+  return 0 unless (defined $allowedagents);
+  $allowedagents =~ s/\s+/ /g;
+  my %hash = map {$_ => 1} (split (" ", $allowedagents));
+  return exists $hash{$agent};
 }
 
+sub isAllowedToCreate
+{
+  my $jobtype = shift;
+  my $allowedcreate = SMT::Agent::Config::getSysconfigValue( "ALLOWED_CREATEJOB_JOBS" );
+  return 0 unless (defined $allowedcreate);
+  $allowedcreate =~ s/\s+/ /g;
+  my %hash = map {$_ => 1} (split (" ", $allowedcreate));
+  return exists $hash{$jobtype};
+}
 
 
 # check whether smt url is denied
@@ -146,17 +151,17 @@ sub isServerDenied
   $server =~ s/.*:\/\///;	#remove protocol part from url 
 
   my $denied = SMT::Agent::Config::getSysconfigValue( "DENIED_SMT_SERVERS" );
-  return false unless defined $denied;
+  return 0 unless defined $denied;
 
   my @deniedlist = split(/ /, $denied);
 
   foreach my $item ( @deniedlist )
   {
-    return true if ( substr($item,0,1) ne "." &&  $server =~ /^$item$/ );	# host match
-    return true if ( substr($item,0,1) eq "." && $server =~/.*$item$/ ); 	# domain match
+    return 1 if ( substr($item,0,1) ne "." &&  $server =~ /^$item$/ );	# host match
+    return 1 if ( substr($item,0,1) eq "." && $server =~/.*$item$/ ); 	# domain match
   }
 
-  return false;
+  return 0;
 }
 
 

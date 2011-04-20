@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use IPC::Open3;
-use SMT::Agent::Constants;
 use SMT::Agent::Utils;
+use XML::XPath;
+use XML::XPath::XMLParser;
 
 sub jobhandler
 {
@@ -12,70 +12,107 @@ sub jobhandler
   SMT::Agent::Utils::logger ("jobhandler for softwarepush called", $jobid);
   SMT::Agent::Utils::logger ("softwarepush runs jobid \"$jobid\"", $jobid);
 
-
   # check whether this handler can handle requested jobtype
   SMT::Agent::Utils::error ("wrong job handler: \"softwarepush\" cannot handle \"$jobtype\"", $jobid) if ( $jobtype ne "softwarepush" );
 
+  my $xpQuery = XML::XPath->new(xml => $args);
+  eval { SMT::Agent::Utils::error("no argument section found for this job", $jobid) unless ( $xpQuery->exists('/arguments[1]')); };
+  my $argSet;
+  eval { $argSet = $xpQuery->find('/arguments[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
+  my $arg = $argSet->pop();
 
-  # collect and verify arguments
-  my $force;
-  my $agreelicenses;
-  my $packages;
+  my $agreelicenses = $arg->getAttribute('agreelicenses');
+  my $force = $arg->getAttribute('force');
+  my $agreeSet;
+  eval { $agreeSet = $xpQuery->find('/arguments[1]/agreelicenses[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($agreeSet->get_nodelist()) {
+      $agreelicenses = $_n->string_value() if (defined $_n);
+      last if defined $agreelicenses;
+  }
+  my $forceSet;
+  eval { $forceSet = $xpQuery->find('/arguments[1]/force[1]') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($forceSet->get_nodelist()) {
+      $force = $_n->string_value() if (defined $_n);
+      last if defined $force;
+  }
+  $agreelicenses = (defined $agreelicenses && ($agreelicenses =~ /^1$/ || $agreelicenses =~ /^true$/)) ? 1 : 0;
+  $force = (defined $force && ($force =~ /^1$/ || $force =~ /^true$/)) ? 1 : 0;
 
-
-  $force   = $args->[0]->{force}  if ( defined ( $args->[0]->{force} ) );
-  $force = "false"	if ( ! defined( $force ) );
-  SMT::Agent::Utils::error( "argument invalid: force", $jobid )	if ( ! ( $force eq "true" || $force eq "false" || $force eq "1" || $force eq "0" ) );
-  $force = "true" if ($force eq "1" );
-  $force = "false" if ($force eq "0" );
-
-  $agreelicenses = $args->[0]->{agreelicenses} if ( defined ( $args->[0]->{agreelicenses} ) );
-  $agreelicenses = "false"	if ( ! defined( $agreelicenses ) );
-  SMT::Agent::Utils::error( "argument invalid: agreelicenses", $jobid )	if ( ! ( $agreelicenses eq "true" || $agreelicenses eq "false"  || 
-									  $agreelicenses eq "0" || $agreelicenses eq "1"  ) );
-  $agreelicenses = "true" if ($agreelicenses eq "1" );
-  $agreelicenses = "false" if ($agreelicenses eq "0" );
-
-  $packages   = $args->[0]->{packages}->[0]->{package}	if ( defined ( $args->[0]->{packages}->[0]->{package}  ) );
-  SMT::Agent::Utils::error( "argument missing: packages", $jobid ) 	if ( ! defined( $packages   ));
-  SMT::Agent::Utils::error( "argument invalid: packages", $jobid )  	if ( ! isa($packages, 'ARRAY' ) );
-
-
-  #==  run zypper ==
-
-  my $command = "/usr/bin/zypper";
-  my @cmdArgs;
-  push (@cmdArgs, "--no-cd");					# ignore CD/DVD repositories
-  push (@cmdArgs, "-x");					# xml output
-  push (@cmdArgs, "--non-interactive");				# doesn't ask user
-  push (@cmdArgs, "in");					# install
-  push (@cmdArgs, "-l") if ( $agreelicenses eq "true" );	# agree licenses
-  push (@cmdArgs, "-f") if ( $force eq "true" );		# reinstall
-
-  foreach my $pack (@$packages)                                                             
-  {                                                                                         
-    push (@cmdArgs, $pack);
-  }    
-
-  (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
-
-  if ( $verbose ne "true" )
-  {
-    $stdout="";
-    $stderr="";
+  my %installables;
+  my $packageSet;
+  eval { $packageSet = $xpQuery->find('/arguments[1]/packages[1]/package') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($packageSet->get_nodelist()) {
+      push @{$installables{package}}, $_n->string_value() if (defined $_n);
+  }
+  my $patchSet;
+  eval { $patchSet = $xpQuery->find('/arguments[1]/patches[1]/patch') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($patchSet->get_nodelist()) {
+      push @{$installables{patch}}, $_n->string_value() if (defined $_n);
+  }
+  my $patternSet;
+  eval { $patternSet = $xpQuery->find('/arguments[1]/patterns[1]/pattern') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($patternSet->get_nodelist()) {
+      push @{$installables{pattern}}, $_n->string_value() if (defined $_n);
+  }
+  my $productSet;
+  eval { $productSet = $xpQuery->find('/arguments[1]/products[1]/product') };
+  SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
+  foreach my $_n ($productSet->get_nodelist()) {
+      push @{$installables{product}}, $_n->string_value() if (defined $_n);
   }
 
-  my $mesg = "softwarepush failed";
+  #==  create zypper base command ==
+  my $command = "/usr/bin/zypper";
+  my @zypperCmd;
+  push (@zypperCmd, "--no-cd");               # ignore CD/DVD repositories
+  push (@zypperCmd, "-x");                    # xml output
+  push (@zypperCmd, "--non-interactive");     # doesn't ask user
+  push (@zypperCmd, "in");                    # install
+  push (@zypperCmd, "-l") if $agreelicenses;  # agree licenses
+  push (@zypperCmd, "-f") if $force;          # reinstall
+
+  my $argumentsok = 0;
+  my $retval=0;
+  my @stdout=();
+  my @stderr=();
+  my @messages=();
+  foreach my $IN ( qw(package patch pattern product) )
+  {
+    next unless defined $installables{$IN};
+    next unless isa($installables{$IN}, 'ARRAY');
+    $argumentsok = 1;
+
+    my @installCmd = ( @zypperCmd, '-t', $IN, @{$installables{$IN}} );
+    (my $_retval, my $_stdout, my $_stderr) = SMT::Agent::Utils::executeCommand( $command, undef, @installCmd );
+    $retval |= $_retval;
+    push @stdout, $_stdout;
+    push @stderr, $_stderr;
+    unless ( $_retval == 0 )
+    {
+      push @messages, "$IN installation failed ($_retval)";
+    }
+  }
+
+  # die if the job did not contain anything to be installed
+  SMT::Agent::Utils::error( "too few arguments: need one or more of [packages, patches, patterns, products]", $jobid ) unless $argumentsok;
+
+  my $mesg = '';
   $mesg = "softwarepush successfully finished" if $retval == 0 ;
   $mesg = "softwarepush successfully finished and reboot needed" if $retval == 102;
 
-
   return (
-    stdout => defined ( $stdout )? $stdout : "",
-    stderr => defined ( $stderr )? $stderr : "",
+    stdout   => (scalar(@stdout) && $verbose) ? join("\n", @stdout) : '',
+    stderr   => (scalar(@stderr) && $verbose) ? join("\n", @stderr) : '',
     exitcode => $retval,
-    success => ($retval == 0 ) ? "true" : "false",
-    message => $mesg
+    success  => ($retval == 0) ? "true" : "false",
+    message  => $mesg || ("softwarepush failed: " . join(", ", @messages))
   );
 
 }

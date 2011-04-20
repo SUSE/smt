@@ -2,28 +2,29 @@ package SMT::JobQueue;
 
 use strict;
 use warnings;
-use XML::Simple;
+use XML::Writer;
 use UNIVERSAL 'isa';
 use SMT::Job;
+use SMT::Job::Result;
 use SMT::Client;
 use SMT::Utils;
 use Data::Dumper;
+use SMT::Job::Constants;
 
-sub new ($$)
+sub new ($;$)
 {
-    my $class = shift;
+    my $class  = shift || return undef;
     my $params = shift || {};
-
     my $self = {};
 
     if (defined $params->{dbh})
     {
-	$self->{dbh} = $params->{dbh};
+        $self->{dbh} = $params->{dbh};
     }
 
     if (defined $params->{LOG})
     {
-	$self->{LOG} = SMT::Utils::openLog ($params->{LOG});
+        $self->{LOG} = SMT::Utils::openLog ($params->{LOG});
     }
 
     bless $self, $class;
@@ -31,119 +32,119 @@ sub new ($$)
 }
 
 ###############################################################################
-# retriveJob 
-# returns the job description for job $id either in xml format and stets the
-# retrived date
-# or in hash structure
-# args: jobid 
-# args: guid
-#       xmlformat (default false)
-sub retrieveJob($$$$)
+# retriveJob
+#  like getJob but flags the job as retrieved
+#  kept for backward compatibility
+# args: see getJob
+sub retrieveJob($;$)
 {
-  my $self      = shift;
+  my $self      = shift || return undef;
+  my $config    = shift || {};
+  $config->{retrieve} = 1;
 
-  my $guid      = shift;
-  my $jobid     = shift;
-  my $xmlformat = shift || 0;
-
-  my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
-  $job->readJobFromDatabase( $jobid, $guid );
-
-  if ( ! $job->isValid() )
-  {
-    return $xmlformat ? "<job/>" : undef;
-  }
-
-  $job->retrieved( SMT::Utils::getDBTimestamp() );
-  $job->save();
-
-  return $xmlformat ? $job->asXML() : $job;
+  return $self->getJob($config);
 }
 
 ###############################################################################
-# getJob 
-# returns the job description for job $id either in xml format
-# or in hash structure
-# args: jobid 
-# args: guid
-#       xmlformat (default false)
-sub getJob($$$$)
+# getJob
+#  returns the job description either in xml format or as hash
+#  returned structure may be configured by a config hash as first parameter
+#
+# args: config hash containing one or many of the following
+#   *  all job properties (name of the DB fields in upper case) like: "GUID", "ID"
+#      if set to '' they act as a request to query that data, if set to a value they act as a filter
+#      See createSQLStatement() for more defails.
+#   * "asXML" : will return the result as XML.
+#      true if defined and != 0 ; false otherwise ; all these are true: 1, '1', '', 'yes', 'one'
+#      if set to 'one' only a single result will be returned
+#   * "short" : filter out internal job metadata, only outputs data that the smt-client needs to process the job
+#      true if set to 1, false otherwise
+#   * "retrieve" : flag the job as retrieved
+#      true if set to 1, false otherwise ; only supported in getJob()
+#   * "selectAll" : fetch all data of that job, not only the queried from the config hash
+#
+sub getJob($;$)
 {
-  my $self      = shift;
+  my $self      = shift || return undef;
+  my $config    = shift || {};
 
-  my $guid      = shift;
-  my $jobid     = shift;
-  my $xmlformat = shift || 0;
+  my $guid      = $config->{GUID} || undef;
+  my $jobid     = $config->{ID}   || undef;
+  my $xmlformat = (defined $config->{asXML}    && $config->{asXML} !~ /^0$/) ? 1 : 0;
+  my $short     = (defined $config->{short}    && $config->{short}    == 1)  ? 1 : 0;
+  my $retrieve  = (defined $config->{retrieve} && $config->{retrieve} == 1)  ? 1 : 0;
+
+  return ($xmlformat ? "<job />" : undef) unless (defined $guid && defined $jobid);
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
+  return undef unless defined $job;
   $job->readJobFromDatabase( $jobid, $guid );
 
-  if ( ! $job->isValid() )
+  return ($xmlformat ? "<job />" : undef) unless ($job->isValid());
+
+  if ($retrieve)
   {
-    return $xmlformat ? "<job/>" : undef;
+      $job->retrieved( SMT::Utils::getDBTimestamp() );
+      $job->save();
   }
 
-  return $xmlformat ? $job->asXML() : $job;
+  return $xmlformat ? $job->asXML({short => $short}) : $job;
 }
 
 
 ###############################################################################
 # getNextJob
-# returns the next job either in xml format
-# or in hash structure
-# if no guid is passed jobs for all clients are taken
+#  returns the next job either in xml format or as hash
+#  like getJob but does not require an id (read jobID), it will query the next ID automatically
 #
-# args: guid 
-#       xmlformat (default false)
-sub getNextJob($$$)
+# args: config hash: see getJob
+sub getNextJob($;$)
 {
-  my $self      = shift;
+  my $self      = shift || return undef;
+  my $config    = shift || {};
+  my $guid      = $config->{guid} || undef;
+  return undef unless defined ($guid);
+  $config->{id} = $self->getNextJobID({ guid => $guid }) || undef;
 
-  my $guid      = shift;
-  my $xmlformat = shift || 0;
-
-  return getJob($self, $guid, getNextJobID($self, $guid, 0), $xmlformat );
+  return $self->getJob( $config );
 }
 
 ###############################################################################
 # retrieveNextJob
-# returns the next job either in xml format
-# or in hash structure and stets the retrived date
-# if no guid is passed jobs for all clients are taken
+#  returns the next job either in xml format or as hash
+#  like getJob but does not require an id (read jobID), it will query the next ID automatically
+#  and the job will be flagged as retrieved
 #
-# args: guid 
-#       xmlformat (default false)
-sub retrieveNextJob($$$)
+# args: config hash: see getJob
+sub retrieveNextJob($;$)
 {
-  my $self      = shift;
+  my $self      = shift || return undef;
+  my $config    = shift || {};
+  $config->{retrieve} = 1;
 
-  my $guid      = shift;
-  my $xmlformat = shift || 0;
-
-  return retrieveJob($self, $guid, getNextJobID($self, $guid, 0), $xmlformat );
+  return $self->getNextJob( $config );
 }
 
 
 
-
-
 ###############################################################################
-# getNextJobID 
+# getNextJobID
 # returns the jobid of the next job either in xml format
 # or in hash structure
 # if no guid is passed jobs for all clients are taken
 #
-# args: guid 
+# args: guid
 #       xmlformat (default false)
-sub getNextJobID($$$)
+sub getNextJobID($;$)
 {
-  my $self      = shift;
+  my $self      = shift || return undef;
+  my $config    = shift || {};
+  my $guid      = $config->{GUID} || undef;
+  my $xmlformat = (defined $config->{asXML} && $config->{asXML} !~ /^0$/) ? 1 : 0;
+  return undef unless defined ($guid);
 
-  my $guid      = shift;
-  my $xmlformat = shift || 0;
-
-  my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) '; 
-     $sql .= ' where STATUS  = ' . 0				 ;          #( 0 = not yet worked on)
+  my $sql = 'select JobQueue.ID jid from JobQueue inner join Clients on ( JobQueue.GUID_ID = Clients.ID ) ';
+     $sql .= ' where STATUS  = 0';          #( 0 = not yet worked on)
      $sql .= " and ";
      $sql .= " ( TARGETED <= \"". SMT::Utils::getDBTimestamp() . "\"";
      $sql .= "  OR TARGETED IS NULL ) ";
@@ -156,36 +157,30 @@ sub getNextJobID($$$)
      $sql .= " ORDER BY jid ";
      $sql .= ' limit 1';
 
-  my $id = $self->{dbh}->selectall_arrayref($sql)->[0]->[0];
+  my $sel = $self->{dbh}->selectrow_arrayref($sql);
+  my $id  = ( isa($sel, 'ARRAY') && defined $sel->[0] ) ? $sel->[0] : undef;
 
-  if ( defined $id)
+  if ( defined $id )
   {
     return $xmlformat ? '<job id="'.$id.'">' : $id;
   }
   else
   {
-    return $xmlformat ? '<job/>' : undef;
+    return $xmlformat ? '<job />' : undef;
   }
 
 }
 
 
 ###############################################################################
-# returns a list of next jobs either in xml format
-# or in hash structure
-# if no guid is passed jobs for all clients are taken
-sub getJobList($$)
+# returns a list of all following jobs either in xml format or as hash
+#
+# configured via a config hash, see getJob
+sub getJobList($;$)
 {
-  my $self      = shift;
-  my $guid      = shift || return undef;
-  my $xmlformat = shift || 0;
-
-  my $filter = {};
-  ${$filter}{'asXML'} = '' if ($xmlformat);
-  ${$filter}{'selectAll'} = '';
-  ${$filter}{'GUID'} = $guid;
-
-  return $self->getJobsInfo($filter);
+  my $self      = shift || return undef;
+  my $config    = shift || {};
+  return $self->getJobsInfo($config);
 }
 
 
@@ -193,8 +188,8 @@ sub getJobList($$)
 # add a job to the database (arg = jobobject)
 sub addJob($$)
 {
-  my $self = shift;
-  my $job = shift;
+  my $self = shift || return undef;
+  my $job  = shift || return undef;
 
   return $job->save();
 }
@@ -202,10 +197,10 @@ sub addJob($$)
 
 # add jobs for multiple guids
 # args: jobobject, guidlist
-sub addJobForMultipleGUIDs
+sub addJobForMultipleGUIDs($$@)
 {
-  my $self = shift;
-  my $job = shift;
+  my $self  = shift || return undef;
+  my $job   = shift || return undef;
   my @guids = @_;
 
   my $newjobid = undef;
@@ -222,16 +217,19 @@ sub addJobForMultipleGUIDs
 
 
 
-sub calcNextTargeted
+sub calcNextTargeted($;$)
 {
-  my $self  = shift;
-  my $guid  = shift || return undef;
-  my $jobid = shift || return undef;
+  my $self   = shift || return undef;
+  my $config = shift || {};
+  my $guid   = $config->{GUID} || undef;
+  my $jobid  = $config->{ID}   || undef;
+  return undef unless (defined $guid && defined $jobid);
 
   my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  return undef unless defined ($client);
   my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
-  my $sql = 'select ADDTIME("'.SMT::Utils::getDBTimestamp().'", TIMELAG ) from JobQueue '; 
+  my $sql = 'select ADDTIME("'.SMT::Utils::getDBTimestamp().'", TIMELAG ) from JobQueue ';
      $sql .= ' where GUID_ID  = '. $self->{dbh}->quote($guidid) ;
      $sql .= ' AND ID  = '. $self->{dbh}->quote($jobid) ;
 
@@ -242,15 +240,17 @@ sub calcNextTargeted
 }
 
 
-sub parentFinished($$)
+sub parentFinished($;$)
 {
-  my $self      = shift;
-  my $guid      = shift;	
-  my $jobid     = shift; 	#jobid of parent job
- 
-  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
-  my $guidid = $client->getClientIDByGUID($guid) || return undef;
+  my $self  = shift || return undef;
+  my $config = shift || {};
+  my $guid   = $config->{GUID} || undef;
+  my $jobid  = $config->{ID}   || undef;  #jobid of parent job
+  return undef unless (defined $guid && defined $jobid);
 
+  my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+  return undef unless defined ($client);
+  my $guidid = $client->getClientIDByGUID($guid) || return undef;
 
   my $sql = 'update JobQueue'.
   ' set PARENT_ID  = NULL '.
@@ -258,39 +258,53 @@ sub parentFinished($$)
   ' and GUID_ID = '.$self->{dbh}->quote($guidid);
 
   $self->{dbh}->do($sql) || return undef;
-
-
 }
 
 
 ###############################################################################
-sub finishJob($)
+sub finishJob($;$)
 {
-  my $self = shift;
-  my $guid      = shift || return undef;
-  my $jobxml = shift;
+  my $self   = shift || return undef;
+  my $config = shift || {};
+  my $guid   = $config->{GUID}    || undef;
+  my $jobxml = $config->{xmldata} || undef;
+  return undef unless (defined $guid && defined $jobxml);
 
   my $xmljob = SMT::Job->new({ 'dbh' => $self->{dbh} });
-  $xmljob->readJobFromXML( $guid, $jobxml );
+  $xmljob->readJobFromXML( $jobxml );
+  # do not allow to update foreign job
+  return undef unless ( ''.$xmljob->guid() eq "$guid" );
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
-  $job->readJobFromDatabase( $xmljob->{id}, $xmljob->{guid} );
+  $job->readJobFromDatabase( $xmljob->id(), $guid );
+  return undef unless ( $job->retrieved() );
 
-  return undef unless ( $job->{retrieved} );
-
-
+  # special handling for patchstatus job
   if ( $job->type() eq "patchstatus" )
   {
       my $client = SMT::Client->new( {'dbh' => $self->{'dbh'} });
+      return undef unless defined $client;
       my $msg = $xmljob->message();
       $msg = 'failed' if ( $xmljob->status() =~ /^2$/ );
       $msg = 'denied' if ( $xmljob->status() =~ /^3$/ );
-      $client->updatePatchstatus( $guid, $msg )
+      $client->updatePatchstatus( $guid, $msg );
   }
 
+  # special handling for job with cacheresult flag
+  if ( $job->cacheresult() )
+  {
+      my $client = SMT::Client->new({ 'dbh' => $self->{dbh} });
+      return undef unless defined $client;
+      my $client_id = $client->getClientIDByGUID( $xmljob->guid() );
 
-  $job->stderr  ( $xmljob->stderr()   );
-  $job->stdout  ( $xmljob->stdout()   );
+      my $res = SMT::Job::Result->new({ 'dbh' => $self->{dbh} });
+      return undef unless defined $res;
+      $res->saveResult( $client_id, $xmljob->{id}, $jobxml );
+  }
+
+  $job->stderr( ( isa($xmljob->stderr(),'ARRAY') ? ( isa($xmljob->stderr()->[0],'HASH') ?  ($xmljob->stderr()->[0]->{stderr}) : ($xmljob->stderr()->[0]) ) : ($xmljob->stderr()) ) || '' );
+  $job->stdout( ( isa($xmljob->stdout(),'ARRAY') ? ( isa($xmljob->stdout()->[0],'HASH') ?  ($xmljob->stdout()->[0]->{stdout}) : ($xmljob->stdout()->[0]) ) : ($xmljob->stdout()) ) || '' );
+
   $job->exitcode( $xmljob->exitcode() );
   $job->message ( $xmljob->message()  );
   $job->status  ( $xmljob->status()   );
@@ -298,24 +312,23 @@ sub finishJob($)
 
   if ( $job->persistent() )
   {
-    $job->targeted( calcNextTargeted($self, $guid, $job->{id}) );
+    $job->targeted( $self->calcNextTargeted({ GUID => $guid, ID => $job->{id} }) );
     $job->message( sprintf("Last run failed # %s", $xmljob->message() ) )           if ( $xmljob->status() =~ /^2$/ );
     $job->message( sprintf("Last run denied by client # %s", $xmljob->message() ) ) if ( $xmljob->status() =~ /^3$/ );
     $job->status( 0 );
   }
 
   # only activate the client jobs if this job was successful (bnc#520700)
-  $self->parentFinished($guid, $job->{id} ) if ( $xmljob->status() =~ /^1$/ );
+  $self->parentFinished({ GUID => $guid, ID => $job->{id} }) if ( $xmljob->status() =~ /^1$/ );
 
   return $job->save();
-
 };
 
-sub deleteJob($)
+sub deleteJob($$$)
 {
-  my $self = shift;
+  my $self  = shift || return undef;
   my $jobid = shift || return undef;
-  my $guid = shift || return undef;
+  my $guid  = shift || return undef;
 
   # do not allow to delete all jobs of all clients
   return undef if ($jobid eq 'ALL'  &&  $guid eq 'ALL');
@@ -333,7 +346,7 @@ sub deleteJob($)
       $sql .= ' ID = '.$self->{dbh}->quote($jobid);
       # 'and' must be added inside this block
       if ($guid ne 'ALL')
-      {   
+      {
           $sql .= ' and ';
       }
   }
@@ -346,7 +359,7 @@ sub deleteJob($)
   my $result = $self->{dbh}->do($sql);
 
   # if parentFinished fails it will be corrected via a cleanup cron script
-  $self->parentFinished($guid, $jobid);
+  $self->parentFinished({ GUID => $guid, ID => $jobid });
 
   return $result;
 };
@@ -355,9 +368,9 @@ sub deleteJob($)
 
 #
 # the following api functions are similar to Client's api.
-# 
-# 
-# Query Example: 
+#
+#
+# Query Example:
 #
 #  getJobsInfo({ 'ID'      => undef,
 #                'STATUS'  => 0,
@@ -366,7 +379,7 @@ sub deleteJob($)
 # The suffix '>' after 'TYPE' indicates to search for values that are greater then 1.
 #
 # Possible suffixes are:
-#  >	greater
+#  >    greater
 #  <    less
 #  =    equal  (same as no suffix)
 #  !    not equal
@@ -376,9 +389,9 @@ sub deleteJob($)
 
 #
 # Possible query keys are:
-#   ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT 
-#   STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED 
-#   PERSISTENT VERBOSE TIMELAG GUID
+#   ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT
+#   STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED
+#   UPSTREAM CACHERESULT PERSISTENT VERBOSE TIMELAG GUID
 #
 # Note: GUID doesn't support suffixes.
 
@@ -392,7 +405,7 @@ sub in_Array($$)
     my $str = shift || "";
     my $arr = shift || ();
 
-    foreach my $one (@{$arr}) 
+    foreach my $one (@{$arr})
     {
         return 1 if $one =~ /^$str$/;
     }
@@ -407,15 +420,19 @@ sub in_Array($$)
 #
 sub createSQLStatement($$)
 {
-    my $self = shift;
-
+    my $self   = shift || return undef;
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
 
-    my @PROPS = qw(ID PARENT_ID NAME DESCRIPTION TYPE ARGUMENTS STATUS STDOUT STDERR EXITCODE MESSAGE CREATED TARGETED EXPIRES RETRIEVED FINISHED PERSISTENT VERBOSE TIMELAG);    
+    my @PROPS = ();
+    my @createDBprops = ('id', 'parent_id', SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS);
+    foreach my $_p (@createDBprops)
+    {
+        push (@PROPS, uc($_p));
+    }
     my @ALLPROPS = @PROPS;
 
-    # add > and < properties 
+    # add > and < properties
     my @TMPPROPS = @PROPS;
     foreach my $prop ( @TMPPROPS )
     {
@@ -430,10 +447,10 @@ sub createSQLStatement($$)
 
     my $asXML = ( exists ${$filter}{'asXML'}  &&  defined ${$filter}{'asXML'} ) ? 1 : 0;
 
-
     # fillup the filter if needed or filter empty
     if ( scalar( keys %{$filter} ) == 0 ||
-         ( exists ${$filter}{'selectAll'}  &&  defined ${$filter}{'selectAll'} )  )
+         ( exists ${$filter}{'selectAll'}  &&  defined ${$filter}{'selectAll'} ) ||
+         ( exists $filter->{short} && defined $filter->{short} && $filter->{short} !~ /^1$/ )   )
     {
         foreach my $prop (@ALLPROPS)
         {
@@ -452,23 +469,23 @@ sub createSQLStatement($$)
     {
         if ( exists ${$filter}{$prop} )
         {
-	    my $p = $prop;
-	    $p =~ s/[<>+-=!~]+//;
+            my $p = $prop;
+            $p =~ s/[<>+-=!~]+//;
             push (@JQselect, "$p");
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
-		if    ( $prop =~ /.*\>/ ) { push( @where, " jq.$p > " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\</ ) { push( @where, " jq.$p < " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\+/ ) { push( @where, " jq.$p IS NOT NULL" ); }
-		elsif ( $prop =~ /.*\-/ )  { push( @where, " jq.$p IS NULL " ); }
-		elsif ( $prop =~ /.*\=/ )  { push( @where, " jq.$p =  " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\!/ )  { push( @where, " jq.$p <> " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		elsif ( $prop =~ /.*\~/ )  { push( @where, " jq.$p LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
-		else
-		{
-                  push( @where, " jq.$prop = " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
-		}
-            }        
+                if    ( $prop =~ /.*\>/ ) { push( @where, " jq.$p > " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\</ ) { push( @where, " jq.$p < " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\+/ ) { push( @where, " jq.$p IS NOT NULL" ); }
+                elsif ( $prop =~ /.*\-/ )  { push( @where, " jq.$p IS NULL " ); }
+                elsif ( $prop =~ /.*\=/ )  { push( @where, " jq.$p =  " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\!/ )  { push( @where, " jq.$p <> " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                elsif ( $prop =~ /.*\~/ )  { push( @where, " jq.$p LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' ); }
+                else
+                {
+                    push( @where, " jq.$prop = " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
+                }
+            }
         }
     }
 
@@ -479,13 +496,12 @@ sub createSQLStatement($$)
     # add query for guid
     $fromstr .= ' LEFT JOIN Clients cl ON ( jq.GUID_ID = cl.ID ) ';
     push (@select, "GUID" );
-      
+
     if ( defined ${$filter}{'GUID'}  &&  ${$filter}{'GUID'} !~ /^$/ )
     {
         push( @where, " cl.GUID = " . $self->{'dbh'}->quote(${$filter}{'GUID'}) . ' ' );
     }
 
- 
     # make sure the primary key is in the select statement in any case
     push( @JQselect, "ID" ) unless ( in_Array("ID", \@JQselect) );
     push( @JQselect, "GUID_ID" ) unless ( in_Array("GUID_ID", \@JQselect) );
@@ -518,8 +534,7 @@ sub createSQLStatement($$)
 #
 sub getJobsInfo_internal($)
 {
-    my $self = shift;
-
+    my $self = shift || return undef;
     my $filter = shift || {};
     return undef unless ( isa($filter, 'HASH') );
 
@@ -527,7 +542,7 @@ sub getJobsInfo_internal($)
     my $sql = $self->createSQLStatement($filter);
     return undef unless defined $sql;
 
-    my $asXML = ( exists ${$filter}{'asXML'} &&  defined ${$filter}{'asXML'} ) ? 1:0;
+    my $asXML = (defined $filter->{asXML} && $filter->{asXML} !~ /^0$/) ? 1:0;
 
     ## NOTE: This can be used for testing/debugging
     ## NOTE: will only return the generated SQL statement but not evaluate it
@@ -536,41 +551,45 @@ sub getJobsInfo_internal($)
     my @refKeys = $asXML ? ( 'guid_id', 'id' ) : ( 'GUID_ID', 'ID' );
     my $result = $self->{'dbh'}->selectall_hashref($sql, \@refKeys );
 
-    my $argArg = $asXML ? 'arguments':'ARGUMENTS';
-
-    foreach my $xguid ( keys %{$result} )
-    {
-	foreach my $xjobid ( keys %{${$result}{$xguid}} )
-	{
-	   if ( defined ${$result}{$xguid}{$xjobid}{$argArg} )
-	   {
-	    eval { ${$result}{$xguid}{$xjobid}{$argArg} = XMLin( ${$result}{$xguid}{$xjobid}{$argArg} , forcearray => 1 ) } ;
-	   } 
-	}
-    }
-
     if ( $asXML )
     {
+        my $Job = SMT::Job->new({ 'dbh' => $self->{dbh} });
+        return undef unless defined $Job;
 
-        if ( keys %{$result} == 1  &&  ${$filter}{'asXML'} eq 'one' )
+        if ($filter->{asXML} eq 'one')
         {
-            my @keys = keys %{$result};
-            return XMLout( ${$result}{$keys[0]}
-                      , rootname => "job"
-                      , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>' );
+            foreach my $_g (keys %{$result})
+            {
+                foreach my $_j (keys %{$result->{$_g}})
+                {
+                    $Job->readJobFromHash( $result->{$_g}->{$_j} );
+                    last;
+                }
+            }
+            return $Job->asXML($filter) || '<job />';
         }
         else
         {
-            my @jobList = ();
-            foreach my $key ( keys %{$result} )
-            {
-                push ( @jobList, ${$result}{$key} );
-            }
+            $filter->{xmldecl} = 0;
+            my $w = undef;
+            my $output = '';
+            $w = new XML::Writer( OUTPUT => \$output, DATA_MODE => 1, DATA_INDENT => 2, UNSAFE => 1 );
+            return undef unless ($w);
+            $w->startTag('jobs');
 
-            my $jobsHash = {  'job' => [@jobList]  };
-            return XMLout( $jobsHash
-                          , rootname => "jobs"
-                          , xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>' );
+            foreach my $_g ( keys %{$result} )
+            {
+                next unless defined $_g;
+                foreach my $_j ( keys %{$result->{$_g}} )
+                {
+                    next unless defined $_j;
+                    $Job->readJobFromHash( $result->{$_g}->{$_j} );
+                    $w->raw( $Job->asXML($filter) );
+                }
+            }
+            $w->endTag('jobs');
+            $w->end();
+            return $output;
         }
     }
     else
@@ -578,7 +597,6 @@ sub getJobsInfo_internal($)
         return $result;
     }
 }
-
 
 
 
@@ -590,12 +608,12 @@ sub getJobsInfo_internal($)
 #    $self
 #    $filter (hash) : filter for the query
 #
-sub getJobsInfo($$)
+sub getJobsInfo($;$)
 {
-    my $self = shift;
+    my $self   = shift || return undef;
     my $filter = shift || {};
 
-    return undef unless ( isa($filter, 'HASH') );  
+    return undef unless ( isa($filter, 'HASH') );
     return $self->getJobsInfo_internal($filter);
 }
 
@@ -608,7 +626,7 @@ sub getJobsInfo($$)
 #
 sub getAllJobsInfo($)
 {
-    my $self = shift;
+    my $self = shift || return undef;
 
     # emtpy filter means: select all information
     return $self->getJobsInfo_internal({});
@@ -622,7 +640,7 @@ sub getAllJobsInfo($)
 #    self
 sub getAllJobsInfoAsXML($)
 {
-    my $self = shift;
+    my $self = shift || return undef;
 
     # emtpy filter means: select all information
     return $self->getJobsInfo_internal({ 'asXML' => '', 'selectAll' => '' });
