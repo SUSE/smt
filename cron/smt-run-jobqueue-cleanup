@@ -1,41 +1,14 @@
 #!/bin/sh
 #
-#
-# smt-cleanup-jobqueue
-# This script cleans-up the jobqueue.
+# smt-run-cleanup-jobqueue
+# This script calls the clean-up script of the SMT JobQueue.
 
 PATH="/sbin:/usr/sbin:/usr/bin:/bin"
-SMTCMD=/usr/sbin/smt
+
 . /etc/smt.d/smt-cron.conf
 
-while read line ; do
-    case "$line" in
-    \#*|"") continue ;;
-    esac
-    eval val=${line#*=}
-    case "$line" in
-    PROXY_ENABLED=*)
-        PROXY_ENABLED="${val}"
-        ;;
-    HTTP_PROXY=*)
-        test -n "$val" || continue
-        http_proxy="${val}"
-        export http_proxy
-        ;;
-    HTTPS_PROXY=*)
-        test -n "$val" || continue
-        https_proxy="${val}"
-        export https_proxy
-        ;;
-        esac
-done < /etc/sysconfig/proxy
-unset sys line val
-
-if test "$PROXY_ENABLED" != "yes" ; then
-    unset http_proxy https_proxy
-fi
-unset PROXY_ENABLED
-
+# source the profile to get the proxy settings
+. /etc/profile.d/profile.sh
 
 if [ -x /usr/lib/SMT/bin/smt-jobqueue-cleanup ]
 then
@@ -47,6 +20,4 @@ fi
 
 # in cronjobs always do an exit 0 - even on errors - exit 1 only in case of real panic
 exit 0
-
-
 
