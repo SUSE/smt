@@ -58,7 +58,6 @@ if($help || !$optres)
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 
-
 # open the logfile
 my $LOG = SMT::Utils::openLog($logfile);
 
@@ -94,6 +93,43 @@ if($mail)
   select MAILTEMPFILE; $| = 1;        # make unbuffered
 }
 
+###########################################################
+
+sub deleteJobAndChildren($$;$);
+
+sub deleteJobAndChildren($$;$)
+{
+    my $jobID = shift || return undef;
+    my $clientID = shift || return undef;
+    my $cleanResults = shift || 1;
+    my $resJ;
+    my $resR;
+
+    # get the children of the job that is going to be deleted
+    my $getChildJobs = " SELECT ID from JobQueue where GUID_ID = ? and PARENT_ID = ? ";
+    my $childJobs = $dbh->selectcol_arrayref($getChildJobs, {}, ( $clientID, $jobID ));
+
+    # delete the job first and the children later to prevent loops
+    my $deleteJob = ' DELETE FROM JobQueue where ID = ? and GUID_ID = ? ';
+    $resJ = $dbh->do($deleteJob, {}, ($jobID, $clientID));
+    $resJ = ($resJ =~ /^0E0$/) ? 0:$resJ;
+
+    if ($cleanResults)
+    {
+        my $deleteRes = ' DELETE FROM JobResults where JOB_ID = ? and CLIENT_ID = ? ';
+        $resR = $dbh->do($deleteRes, {}, ($jobID, $clientID));
+        $resR = ($resR =~ /^0E0$/) ? 0:$resR;
+    }
+
+    if (isa($childJobs, 'ARRAY') && scalar @$childJobs)
+    {
+        foreach my $child (@$childJobs) {
+            $resJ += deleteJobAndChildren($child, $clientID, $cleanResults);
+        }
+    }
+    return $resJ >= $resR ? $resJ : $resR;
+}
+
 
 
 ###############################################################################
@@ -101,19 +137,54 @@ if($mail)
 
 SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  "Starting daily SMT JobQueue cleanup" , 0, 1 );
 my $maxDays = $cfg->val('JOBQUEUE', 'maxFinishedJobAge') || 8;
-
-
+$maxDays = 8 unless ($maxDays =~ /^\d+$/);
 
 ### DELETE OLD FINISHED JOBS (first) ###
-# FIXME  FIXME  upstream jobs must be deleted later than $maxDays ... maybe 5 x $maxDays or better a fixed value of 50 days
-my $delOldJobsSQL = " DELETE FROM JobQueue where DATE_ADD(FINISHED, INTERVAL $maxDays DAY) < NOW() AND PERSISTENT = 0 ";
+# keep persistent jobs and jobs that are flagged cacheresult
+my $delOldJobsSQL = " DELETE FROM JobQueue where DATE_ADD(FINISHED, INTERVAL $maxDays DAY) < NOW() AND PERSISTENT = 0 AND CACHERESULT = 0 ";
 $res = $dbh->do($delOldJobsSQL);
 SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted finished jobs: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
 
 
+### DELETE OLD JOBS that have JobResults (they are kept longer) ###
+my $tooOldCacheresultJobs = " SELECT JOB_ID, CLIENT_ID FROM JobResults where DATE_ADD(CHANGED, INTERVAL (? * 5) DAY) < NOW() or ( CHANGED IS NULL and  DATE_ADD(CREATED, INTERVAL (? * 50) DAY) < NOW() ) ";
+my $cachejobs = $dbh->selectall_arrayref($tooOldCacheresultJobs, {Slice => {}}, ($maxDays, $maxDays));
+
+if ( isa($cachejobs, 'ARRAY') )
+{
+    my $delCount=0;
+    foreach my $href (@$cachejobs) {
+        next unless (isa($href, 'HASH') && defined $href->{JOB_ID} && defined $href->{CLIENT_ID});
+        $delCount += deleteJobAndChildren($href->{JOB_ID}, $href->{CLIENT_ID}, 1);
+    }
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted jobs with jobresults (upstream jobs): %s", $delCount , $quiet? 0:1 , 1 ));
+}
+else
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Error when searching for old jobs with cached results."));
+}
+
+### DELETE TOO OLD JOBS
+my $tooOldJobs = " SELECT ID, GUID_ID FROM JobQueue where DATE_ADD(CREATED, INTERVAL (? * 50) DAY) < NOW() and (RETRIEVED IS NULL or DATE_ADD(RETRIEVED, INTERVAL (? * 50) DAY) < NOW() ) and (EXPIRES IS NULL or DATE_ADD(EXPIRES, INTERVAL (? * 50) DAY) < NOW() ) ";
+my $oldjobs = $dbh->selectall_arrayref($tooOldJobs, {Slice => {}}, ($maxDays, $maxDays, $maxDays));
+
+if ( isa($oldjobs, 'ARRAY') )
+{
+    my $delCount=0;
+    foreach my $href (@$oldjobs) {
+        next unless (isa($href, 'HASH') && defined $href->{ID} && defined $href->{GUID_ID});
+        $delCount += deleteJobAndChildren($href->{ID}, $href->{GUID_ID}, 1);
+    }
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted old unprocessed jobs: %s", $delCount , $quiet? 0:1 , 1 ));
+}
+else
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Error when searching for old jobs with cached results."));
+}
+
+
 
 ### DELETE JOB COOKIES (second) ###
-
 my $delOldJobCookiesSQL = " DELETE FROM JobQueue where TYPE = 0 and DATE_ADD(CREATED, INTERVAL 1 DAY) < NOW() ";
 $res = $dbh->do($delOldJobCookiesSQL);
 SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1,  sprintf("Number of deleted job cookies: %s", ($res =~ /^0E0$/) ? "0":$res) , $quiet? 0:1 , 1 );
