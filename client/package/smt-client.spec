@@ -31,7 +31,8 @@ Requires:       perl-base
 Requires:       perl-libwww-perl
 Requires:       logrotate
 Requires:       cron
-Requires:       zypper >= 1.0.10
+Requires:       zypper >= 1.3.14
+Requires:       libzypp >= 6.36.0
 Requires:       suseRegister
 PreReq:         %fillup_prereq 
 AutoReqProv:    on
