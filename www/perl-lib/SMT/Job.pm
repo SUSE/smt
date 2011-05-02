@@ -232,6 +232,11 @@ sub save
           # set all boolean flags to 1 or 0
           $self->{lc($att)} = ( defined $self->{lc($att)} && ( $self->{lc($att)} =~ /^1$/  || $self->{lc($att)} =~ /^true$/ ) ) ? 1:0;
       }
+      elsif (lc($att) eq 'name')
+      {
+          # prevent that name is set to NULL, which is not allowed
+          $self->{name} ||= '';
+      }
 
       # no else section - all values need to be set
       push (@sqlkeys, uc($att));
