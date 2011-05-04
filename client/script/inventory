@@ -98,7 +98,7 @@ sub jobhandler
                   $w->dataElement('package', $_n->getAttribute('name'), ( catalog => $_n->getAttribute('repository'),
                                                                           version => $_n->getAttribute('edition'),
                                                                           arch    => $_n->getAttribute('arch'),
-                                                                          type    => $_n->getAttribute('type'),
+                                                                          type    => $_n->getAttribute('kind'),
                                                                           status  => $_s ));
               }
               $w->endTag('software');
