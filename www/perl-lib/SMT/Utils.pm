@@ -1097,6 +1097,22 @@ sub executeCommand
     return ($exitcode, $err, $out);
 }
 
+=item runHook($hook_name)
+
+Run an external script specified in smt.conf LOCAL section by $hook_name value
+Example smt.conf entry:
+[LOCAL]
+mirror_postunlock_hook = echo "I was here"
+
+=cut
+
+sub runHook($)
+{ my($hookname)=@_;
+  my $cfg = getSMTConfig();
+  my $hook=$cfg->val("LOCAL", $hookname);
+  return unless $hook;
+  system($hook);
+}
 
 =back
 

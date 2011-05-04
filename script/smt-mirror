@@ -540,12 +540,15 @@ if(!defined $dbreplfile)
     }
 }
 
+SMT::Utils::runHook("mirror_preunlock_hook");
+
 if(!SMT::Utils::unLock("smt-mirror"))
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
     exit 1;
 }
 
+SMT::Utils::runHook("mirror_postunlock_hook");
 
 if(!$clean && !$hardlink)
 {
