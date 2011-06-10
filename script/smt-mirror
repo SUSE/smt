@@ -291,6 +291,7 @@ foreach my $id (keys %{$hash})
 #
 my $mirror = SMT::Mirror::NU->new(debug => $debug, log => $LOG, mirrorsrc => $mirrorsrc);
 $mirror->deepverify($deepverify);
+$mirror->uri( $uri->as_string );
 if($clean)
 {
     $mirror->clean( $LocalBasePath );
@@ -302,7 +303,6 @@ else
         $mirror->dbreplacement($dbreplacement);
     }
     
-    $mirror->uri( $uri->as_string );
     $mirror->mirrorTo( $LocalBasePath, { urltree => 0, dryrun => $dryrun } );
 }
 

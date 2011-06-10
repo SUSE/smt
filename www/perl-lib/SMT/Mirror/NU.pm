@@ -244,16 +244,26 @@ sub clean()
     my $dest = shift;
 
     # algorithm
-    
+
     if ( not -e $dest )
-    { 
+    {
         printLog($self->{LOG}, "error", sprintf(__("Destination '%s' does not exist"), $dest));
         exit 1;
     }
 
-    $self->{LOCALPATH} = $dest;
+    my $destdir = File::Temp::tempdir(CLEANUP => 1);
+    my $path = join( "/", ( $destdir, "repo/repoindex.xml" ) );
 
-    my $path = $self->{LOCALPATH}."/repo/repoindex.xml";
+    # get the repository index
+    my $job = SMT::Mirror::Job->new(debug => $self->{DEBUG}, log => $self->{LOG});
+    $job->uri( $self->{URI} );
+    $job->resource( "/repo/repoindex.xml" );
+    $job->localdir( $destdir );
+
+    # get the file
+    $job->mirror();
+
+    $self->{LOCALPATH} = $dest;
 
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
@@ -264,7 +274,7 @@ sub clean()
 
     my $parser = SMT::Parser::NU->new(log => $self->{LOG});
     $parser->parse($path, sub{ clean_handler($self, $dbh, @_) });
-    
+
     $dbh->disconnect;
 }
 
