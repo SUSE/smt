@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jun 14 12:00:49 CEST 2011 - mc@suse.de
+
+- make smt-mirror --hardlink 0 work (bnc#699107)
+- fix logging while hardlining (bnc#699107)
+- improve hardlink speed (bnc#699107)
+
+-------------------------------------------------------------------
 Mon Feb 14 17:32:23 UTC 2011 - locilka@suse.cz
 
 - Fixed RPMMD parser not to touch undefined keys in data hash
