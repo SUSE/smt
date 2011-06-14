@@ -51,7 +51,7 @@ my $debug    = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 
 my $clean    = 0;
-my $hardlink = 0;
+my $hardlink = undef;
 my $deepverify = 0;
 my $dryrun     = 0;
 
@@ -235,7 +235,7 @@ if ( $fromlocalsmt )
     }
 }
 
-if($hardlink > 0)
+if(defined $hardlink)
 {
     SMT::CLI::hardlink(log => $LOG, size => $hardlink, vblevel => $vblevel, basepath => $LocalBasePath);
     SMT::Utils::unLockAndExit( "smt-mirror", 0, $LOG, $vblevel );
