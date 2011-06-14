@@ -1515,12 +1515,12 @@ sub hardlink
     my ($cfg, $dbh) = init();
     my $t0 = [gettimeofday] ;
 
-    my $vblevel = 0;
-    if(exists $options{debug} && defined $options{debug})
+    my $vblevel = LOG_ERROR | LOG_WARN | LOG_INFO1 | LOG_INFO2;
+    if(exists $options{vblevel} && defined $options{vblevel})
     {
         $vblevel = $options{vblevel};
     }
-    
+
     my $dir = "";
     if(! exists $options{basepath} || ! defined $options{basepath} || ! -d $options{basepath})
     {
@@ -1535,54 +1535,146 @@ sub hardlink
     {
         $dir = $options{basepath};
     }
-    
-    my $cmd = "find $dir -xdev -iname '*.rpm' -type f -size +$options{size}k ";
-    printLog($options{log}, $vblevel, LOG_DEBUG, "$cmd");
-    
-    my $filelist = `$cmd`;
-    my @files = sort split(/\n/, $filelist);
-    my @f2 = @files;
-    
-    foreach my $MM (@files)
-    {
-        foreach my $NN (@f2)
-        {
-            next if (!defined $NN);
 
-            if( $NN ne $MM  &&  basename($MM) eq basename($NN) )
+    #
+    # Hash table of all the unique rpm files. The keys in this table are
+    # the basenames of the files. Each key will return an array of rpm
+    # hashes (all the rpms that share the same basename) that will contain
+    # the information for each of the individual rpms.
+    #
+    my %rpmdb;
+
+    #
+    # Preallocate a bunch of space for hash of all filenames
+    #
+    keys(%rpmdb) = 20000;
+
+    my $cmd = "find $dir -xdev -iname '*.rpm' -type f -size +$options{size}k ";
+    SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "$cmd");
+
+    open(FIND, "$cmd |") || die "bad find: $!";
+    while (<FIND>)
+    {
+        next if (!defined $_ || $_ eq "" || $_ eq "\n");
+
+        #
+        # Remove trailing '\n'
+        #
+        chop($_);
+
+        #
+        # Link the file up!
+        #
+        my %rpm;
+        my $file = $_;
+        my $name = basename($file);
+
+        $rpm{'PATH'} = $file;
+        $rpm{'NAME'} = $name;
+        $rpm{'INODE'} = (stat($file))[1];
+
+        #
+        # If we've never seen this file before,
+        # create an array and add it to our database.
+        #
+        if (! exists $rpmdb{$name})
+        {
+            #
+            # Add this rpm to the array of rpms
+            # that share this same 'NAME'
+            #
+            push(@{ $rpmdb{$name} }, \%rpm);
+            SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "Added: $rpm{'INODE'} - $rpm{'NAME'}");
+            next;
+        }
+
+        #
+        # This name is in the database already
+        #
+        foreach my $known (@{ $rpmdb{$name} })
+        {
+            SMT::Utils::printLog($options{log}, $vblevel, LOG_INFO1, "Compare: $rpm{'INODE'} - $rpm{PATH}");
+            SMT::Utils::printLog($options{log}, $vblevel, LOG_INFO1, "   With: $known->{'INODE'} - $known->{PATH}");
+
+            #
+            # Is it already linked to what is in the database?
+            #
+            if ($known->{'INODE'} == $rpm{'INODE'})
             {
-                printLog($options{log}, $vblevel, LOG_INFO1, "$MM ");
-                printLog($options{log}, $vblevel, LOG_INFO1, "$NN ");
-                if( (stat($MM))[1] != (stat($NN))[1] )
+                SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "Files are hard linked. Nothing to do.");
+                last;
+            }
+
+            #
+            # We'll need to compare the SHA1's. Compute
+            # them if that hasn't been done already.
+            #
+            if (! defined $known->{'SHA1'} )
+            {
+                $known->{'SHA1'} = _sha1sum($known->{'PATH'});
+                SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "SHA1: $known->{'SHA1'} - $known->{PATH}");
+            }
+
+            if (! defined $rpm{'SHA1'} )
+            {
+                $rpm{'SHA1'} = _sha1sum($rpm{'PATH'});
+                SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "SHA1: $rpm{'SHA1'} - $rpm{PATH}");
+            }
+
+            #
+            # Now compare the SHA1's to see if these
+            # files are actually identical.
+            #
+            if ($known->{'SHA1'} eq $rpm{'SHA1'})
+            {
+                my $source = $known->{'PATH'};
+                my $target = $rpm{'PATH'};
+
+                SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "$rpm{'INODE'}:$target");
+                SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "$known->{'INODE'}:$target");
+
+                #
+                # Let's link in such a way as to keep
+                # the lowest numbered inode around.
+                #
+                if ($rpm{'INODE'} < $known->{'INODE'})
                 {
-                    my $sha1MM = _sha1sum($MM);
-                    my $sha1NN = _sha1sum($NN);
-                    if(defined $sha1MM && defined $sha1NN && $sha1MM eq $sha1NN)
+                    my $tmp = $source;
+                    $source = $target;
+                    $target = $tmp;
+                }
+
+                SMT::Utils::printLog($options{log}, $vblevel, LOG_INFO2, "Hardlink $target");
+                my $ret;
+                $ret = unlink($target);
+                if ($ret == 1)
+                {
+                    $ret = link( $source, $target );
+                    if ($ret == 0)
                     {
-                        printLog($options{log}, $vblevel, LOG_INFO2, "Hardlink $NN");
-                        #my $ret = link $MM, $NN;
-                        #print "RET: $ret\n";
-                        link( $MM, $NN );
-                        $NN = undef;
-                    }
-                    else
-                    {
-                        printLog($options{log}, $vblevel, LOG_DEBUG, "Checksums does not match $sha1MM != $sha1NN.");
+                        SMT::Utils::printLog($options{log}, $vblevel, LOG_ERROR, "Unable to link $target");
                     }
                 }
                 else
                 {
-                    printLog($options{log}, $vblevel, LOG_DEBUG, "Files are hard linked. Nothing to do.");
-                    $NN = undef;
+                    SMT::Utils::printLog($options{log}, $vblevel, LOG_ERROR, "Unable to remove $target");
                 }
+                last;
             }
-            elsif($NN eq $MM)
+            else
             {
-                $NN = undef;
+                SMT::Utils::printLog($options{log}, $vblevel, LOG_INFO1, "Checksums does not match $rpm{'SHA1'} != $known->{'SHA1'}.");
             }
         }
+
+        #
+        # None of the other files that share this name were
+        # identical to this one. So add this one to the list.
+        #
+        push(@{ $rpmdb{$name} }, \%rpm);
+        SMT::Utils::printLog($options{log}, $vblevel, LOG_DEBUG, "Added: $rpm{'INODE'} - $rpm{'NAME'}");
     }
-    printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
+    SMT::Utils::printLog($options{log}, $vblevel, LOG_INFO1, sprintf(__("Hardlink Time      : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
 }
 
 sub productClassReport
