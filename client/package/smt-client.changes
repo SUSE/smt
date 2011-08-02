@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Aug  2 19:01:13 CEST 2011 - jdsn@suse.de
+
+- bump version number to prevent numbering conflicts
+  0.9.x reserved for merging SLE11 branch to master
+  then switch to 1.0 and consistently do maintenance in third digit
+- 0.9.0
+
+-------------------------------------------------------------------
 Fri Apr 15 19:41:43 CEST 2011 - jdsn@suse.de
 
 - port to master from SLE11: fix zypper parameters in update job
