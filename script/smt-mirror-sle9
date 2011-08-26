@@ -35,10 +35,11 @@ my $log    = undef;
 my $errors = 0;
 my $help     = 0;
 my $logfile = "/dev/null";
-
+my $trace = 0;
 
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = GetOptions ("debug|d"     => \$debug,
+                         "trace|t"   => \$trace,
                          "verboselevel|v=i" => \$vblevel,
                          "logfile|L=s" => \$logfile,
                          "help|h"      => \$help
@@ -54,7 +55,8 @@ if($help || !$optres)
     exit 0;
 }
 
-$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG if($debug);
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($trace);
 
 # get a lock
 
@@ -164,7 +166,7 @@ foreach my $sname (@sections)
             SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string));
             SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("Target:    %s"), $destdir));
 
-            #printLog($log, $vblevel, LOG_DEBUG, "Execute $cmd ".join(" ", @cmdargs));
+            printLog($log, $vblevel, LOG_DEBUG2, "Execute $cmd ".join(" ", @cmdargs));
             
             my $pid = open3(\*IN, \*ERR, \*ERR, $cmd, @cmdargs) or do
             {
@@ -184,6 +186,8 @@ foreach my $sname (@sections)
                 chomp($err);
                 next if($err =~ /^\s*$/);
                 next if($err =~ /\.\.\.\.\./);
+
+                printLog($log, $vblevel, LOG_DEBUG2, "wgetout: $err");
                 
                 if($err =~ /not\s+retrieving/i)
                 {
@@ -236,8 +240,10 @@ foreach my $sname (@sections)
             }
             close ERR;
             waitpid $pid, 0;
-            if(($?>>8) != 0)
+            my $code = ($?>>8);
+            if($code != 0)
             {
+                printLog($log, $vblevel, LOG_DEBUG2, "wget exit with error code $code");
                 $errors += 1;
             }
 
