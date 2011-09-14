@@ -35,7 +35,7 @@ sub handler {
     if(! defined $args)
     {
         $r->log_error("Registration called without args.");
-        return Apache2::Const::SERVER_ERROR;
+        return http_fail($r, 400, "Bad Request");
     }
 
     foreach my $a (split(/\&/, $args))
@@ -43,6 +43,14 @@ sub handler {
         chomp($a);
         my ($key, $value) = split(/=/, $a, 2);
         $hargs->{$key} = $value;
+    }
+
+    # check protocol version
+    if( exists $hargs->{'version'} && defined $hargs->{'version'} &&
+        $hargs->{'version'} ne "1.0")
+    {
+        $r->log_error("protocol version '".$hargs->{'version'}."' not implemented");
+        return http_fail($r, 400, "Invalid protocol version.");
     }
     $r->log->info("Registration called with command: ".$hargs->{command});
     
@@ -63,13 +71,13 @@ sub handler {
         else
         {
             $r->log_error("Unknown command: ".$hargs->{command});
-            return Apache2::Const::SERVER_ERROR;
+            return http_fail($r, 400, "Bad Request");
         }
     }
     else
     {
         $r->log_error("Missing command");
-        return Apache2::Const::SERVER_ERROR;
+        return http_fail($r, 400, "Bad Request");
     }
     
     return Apache2::Const::OK;
@@ -109,7 +117,8 @@ sub register
         if($@ || !defined $cfg)
         {
             $r->log_error("Cannot read the SMT configuration file: ".$@);
-            die "SMT server is missconfigured. Please contact your administrator.";
+            return http_fail($r, 500,
+                             "SMT server is missconfigured. Please contact your administrator.");
         }
 
         my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
@@ -125,7 +134,7 @@ sub register
     if(!$dbh)
     {
         $r->log_error("Cannot open Database");
-        die "Please contact your administrator.";
+        return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
     }
     
     my $regroot = { ACCEPTOPT => 1, CURRENTELEMENT => "", PRODUCTATTR => {}, register => {}};
@@ -205,6 +214,11 @@ sub register
 
         my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $namespace);
 
+        if( ! defined $zmdconfig )
+        {
+            # error already printed, so we only need to return
+            return;
+        }
         $r->log->info("Return ZMDCONFIG: $zmdconfig");
         
         print $zmdconfig;
@@ -229,7 +243,7 @@ sub listproducts
     if(!$dbh)
     {
         $r->log_error("Cannot connect to database");
-        die "Please contact your administrator";
+        return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
     }
     
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
@@ -834,7 +848,8 @@ sub buildZmdConfig
     if($@ || !defined $cfg)
     {
         $r->log_error("Cannot read the SMT configuration file: ".$@);
-        die "SMT server is missconfigured. Please contact your administrator.";
+        http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
+        return undef;
     }
     
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
@@ -852,7 +867,8 @@ sub buildZmdConfig
     if(!defined $LocalNUUrl || $LocalNUUrl !~ /^http/)
     {
         $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
-        die "SMT server is missconfigured. Please contact your administrator.";
+        http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
+        return undef;
     }
     my $localID = "SMT-".$LocalNUUrl;
     $localID =~ s/:*\/+/_/g;
@@ -1034,7 +1050,8 @@ sub findColumnsForProducts
         else
         {
             $r->log_error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
-            die "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found in the database.";
+            http_fail($r, 400, "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found on Server.");
+            exit 0;
         }
     }
     return @list;
@@ -1078,6 +1095,17 @@ sub read_post {
     return $data;
 }
 
+sub http_fail
+{
+    my $r   = shift;
+    my $status = shift || 400;
+    my $message = shift || "Bad Request";
+
+    $r->status(int($status));
+    $r->content_type('text/plain');
+    $r->print($message);
+    return Apache2::Const::OK; # don't laugh.
+}
 
 ###############################################################################
 ### XML::Parser Handler
