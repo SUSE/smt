@@ -1,6 +1,6 @@
 # let's rename this module to SMT::Common (it's already used by YaST, too),
 # or even split it into several (it's ~3000 lines already) e.g. SMT::Common,
-# SMT::Common::Repos, SMT::Common::CLI, SMT::Command::Reports etc.  
+# SMT::Common::Repos, SMT::Common::CLI, SMT::Command::Reports etc.
 
 package SMT::CLI;
 use strict;
@@ -159,7 +159,7 @@ sub escapeCSVRow($)
 #
 sub renderReport($$$)
 {
-    my $d     = shift; 
+    my $d     = shift;
     my $mode  = shift;
     my $repid = shift;
     my $res = '';
@@ -171,10 +171,10 @@ sub renderReport($$$)
     my %data = (%{$d});
     if ( ! exists  $data{'cols'} ||
          ! exists  $data{'vals'} ||
-         ! defined $data{'cols'} ||  
+         ! defined $data{'cols'} ||
          ! defined $data{'vals'}    )  { return ''; }
 
-    # general handling of header string 
+    # general handling of header string
     my $heading  = undef;
     if (exists $data{'opts'}{'headingText'}  &&  defined $data{'opts'}{'headingText'})
     { $heading = $data{'opts'}{'headingText'}; }
@@ -233,7 +233,7 @@ sub renderReport($$$)
 
         # draw the table now, because we need to work with it
         $res = $t->draw();
-        
+
         # manually add the heading (bnc#396702)
         if (defined $heading)
         {
@@ -244,14 +244,14 @@ sub renderReport($$$)
                 my $tlen = length(substr($res, 0, index($res, "\n")));
                 $hoff = int(($tlen - $hstrlen)/2);
                 if ($hoff < 0 ) { $hoff = 0 }
-                
+
                 $headingFmt = "\n " . ' ' x $hoff . $heading . "\n";
-                
+
                 $res = $headingFmt.$res;
             }
         }
     }
-    elsif ($mode eq 'csv') 
+    elsif ($mode eq 'csv')
     {
         my @valbody  = [];
 
@@ -273,7 +273,7 @@ sub renderReport($$$)
             $res .= escapeCSVRow(\@cols);
             $res .= "\n";
         }
-        
+
         foreach my $valrow (@{$data{'vals'}})
         {
             $res .= escapeCSVRow(\@{$valrow});
@@ -287,7 +287,7 @@ sub renderReport($$$)
             $res .= "<h2>$heading</h2>";
         }
         $res .= '<table border="1"><tr>';
-        
+
         if(ref($data{'cols'}->[0]) ne "HASH")
         {
             foreach my $val (@{$data{'cols'}})
@@ -321,15 +321,15 @@ sub renderReport($$$)
         my $writer = new XML::Writer(OUTPUT => \$res);
         my $haveID = 0;
         my %tattr = (title => "$heading", id => "$repid");
-        
+
         if($heading =~ /\((.+)\)/ && defined $1 && $1 ne "")
         {
             $tattr{date} = $1;
         }
-        
+
         $writer->startTag("table", %tattr);
         my @cols = ();
-        
+
         if(ref($data{'cols'}->[0]) ne "HASH")
         {
             foreach my $val (@{$data{'cols'}})
@@ -342,7 +342,7 @@ sub renderReport($$$)
         else
         {
             $haveID = 1 if( exists $data{'cols'}->[0]->{id} );
-            
+
             foreach my $col (@{$data{'cols'}})
             {
                 my $name = "";
@@ -354,7 +354,7 @@ sub renderReport($$$)
                 {
                     $name = $col->{name};
                 }
-                
+
                 $name =~ s/\n/ /g;
                 push @cols, $name;
             }
@@ -401,7 +401,7 @@ sub renderReport($$$)
     elsif ($mode eq 'docbook')
     {
         my $writer = new XML::Writer(OUTPUT => \$res);
-        
+
         $writer->startTag("section");
         $writer->startTag("title");
         $writer->characters($heading);
@@ -411,7 +411,7 @@ sub renderReport($$$)
         $writer->characters($heading);
         $writer->endTag("title");
         my @cols = ();
-        
+
         if(ref($data{'cols'}->[0]) ne "HASH")
         {
             foreach my $val (@{$data{'cols'}})
@@ -443,7 +443,7 @@ sub renderReport($$$)
         $writer->endTag("row");
         $writer->endTag("thead");
         $writer->startTag("tbody");
-        
+
         foreach my $row (@{$data{'vals'}})
         {
             $writer->startTag("row");
@@ -454,7 +454,7 @@ sub renderReport($$$)
                 {
                     $value = $row->[$i];
                 }
-                
+
                 $writer->startTag("entry");
                 $writer->characters($value);
                 $writer->endTag("entry");
@@ -573,7 +573,7 @@ sub getProducts
         push @HEAD,  __('Repos mirrored?');
     }
 
-    while (my $value = $sth->fetchrow_hashref())  # keep fetching until 
+    while (my $value = $sth->fetchrow_hashref())  # keep fetching until
                                                   # there's nothing left
     {
         next if ( exists($options{ used }) && defined($options{used}) && (int($value->{registered_machines}) < 1) );
@@ -602,21 +602,21 @@ sub getProducts
             # else some are available, some not => not all catalogs available
 
 
-            push @VALUES, [ $value->{PRODUCTDATAID}, 
-                            $value->{PRODUCT}, 
-                            $value->{VERSION} || "-", 
-                            $value->{ARCH}    || "-", 
-                            $value->{REL}     || "-", 
-                            $value->{registered_machines}, 
+            push @VALUES, [ $value->{PRODUCTDATAID},
+                            $value->{PRODUCT},
+                            $value->{VERSION} || "-",
+                            $value->{ARCH}    || "-",
+                            $value->{REL}     || "-",
+                            $value->{registered_machines},
                             $cm ];
         }
         else
         {
-            push @VALUES, [ $value->{PRODUCTDATAID}, 
-                            $value->{PRODUCT}, 
-                            $value->{VERSION} || "-", 
-                            $value->{ARCH}    || "-", 
-                            $value->{REL}     || "-", 
+            push @VALUES, [ $value->{PRODUCTDATAID},
+                            $value->{PRODUCT},
+                            $value->{VERSION} || "-",
+                            $value->{ARCH}    || "-",
+                            $value->{REL}     || "-",
                             $value->{registered_machines} ];
         }
     }
@@ -651,7 +651,7 @@ sub getRegistrations
 {
     my ($cfg, $dbh) = init();
 
-    my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", 
+    my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT",
                                            {Slice => {}});
 
     my @HEAD = ( __('Unique ID'), __('Hostname'), __('Last Contact'), __('Namespace'), __('Product') );
@@ -697,12 +697,12 @@ sub listRegistrations
     {
         my ($cfg, $dbh) = init();
 
-        my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT", 
+        my $clients = $dbh->selectall_arrayref("SELECT GUID, HOSTNAME, LASTCONTACT, NAMESPACE from Clients ORDER BY LASTCONTACT",
                                                {Slice => {}});
 
         foreach my $clnt (@{$clients})
         {
-            my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH, r.REGDATE, r.NCCREGDATE, r.NCCREGERROR from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", 
+            my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH, r.REGDATE, r.NCCREGDATE, r.NCCREGERROR from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID",
                                                             $dbh->quote($clnt->{GUID})), {Slice => {}});
 
             print __('Unique ID')." : $clnt->{GUID}\n";
@@ -730,7 +730,7 @@ sub listRegistrations
                 }
             }
 
-            my $subscr = $dbh->selectall_arrayref(sprintf("select s.SUBNAME , s.REGCODE, s.SUBSTATUS, s.SUBENDDATE, s.NODECOUNT, s.CONSUMED, s.SERVERCLASS  from ClientSubscriptions cs, Subscriptions s where cs.GUID = %s and cs.SUBID = s.SUBID order by SERVERCLASS DESC;", 
+            my $subscr = $dbh->selectall_arrayref(sprintf("select s.SUBNAME , s.REGCODE, s.SUBSTATUS, s.SUBENDDATE, s.NODECOUNT, s.CONSUMED, s.SERVERCLASS  from ClientSubscriptions cs, Subscriptions s where cs.GUID = %s and cs.SUBID = s.SUBID order by SERVERCLASS DESC;",
                                                           $dbh->quote($clnt->{GUID})), {Slice => {}});
 
             foreach my $sub (@{$subscr})
@@ -809,15 +809,15 @@ sub setCatalogsByProduct
 
         if($enable && uc($row->{MIRRORABLE}) ne "Y")
         {
-            print sprintf(__("Repository [%s %s] cannot be enabled. Access on the server denied.\n"), 
-                          $row->{NAME}, 
+            print sprintf(__("Repository [%s %s] cannot be enabled. Access on the server denied.\n"),
+                          $row->{NAME},
                           ($row->{TARGET}) ? $row->{TARGET} : "");
         }
         else
         {
             SMT::CLI::setCatalogDoMirror(enabled => $enable, name => $row->{NAME}, target => $row->{TARGET});
             print sprintf(__("Repository [%s %s] %s.\n"),
-                          $row->{NAME}, 
+                          $row->{NAME},
                           ($row->{TARGET}) ? $row->{TARGET} : "",
                           ($enable?__("enabled"):__("disabled")));
         }
@@ -1074,7 +1074,7 @@ sub setMirrorableCatalogs
         #
         # TODO: what, if we have more then one NU server?
         my $array = $dbh->selectall_arrayref("select distinct EXTHOST from Catalogs where CATALOGTYPE = 'nu'", {Slice =>{}});
-        if(exists $array->[0] && exists $array->[0]->{EXTHOST} && 
+        if(exists $array->[0] && exists $array->[0]->{EXTHOST} &&
            defined $array->[0]->{EXTHOST} && $array->[0]->{EXTHOST} =~ /^http/)
         {
             $nuri = URI->new( $array->[0]->{EXTHOST} );
@@ -1131,7 +1131,7 @@ sub setMirrorableCatalogs
                                              ['Name', 'Target']);
 
         my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
-        $parser->parse($indexfile, 
+        $parser->parse($indexfile,
                        sub
                        {
                            my $repodata = shift;
@@ -1140,9 +1140,9 @@ sub setMirrorableCatalogs
                            {
                                if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
                                {
-                                   printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
+                                   printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
                                             sprintf(__("* New mirrorable repository '%s %s' ."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
-                                   my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
+                                   my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s",
                                                                $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                                }
                                delete $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}};
@@ -1156,9 +1156,9 @@ sub setMirrorableCatalogs
             {
                 if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
                 {
-                    printLog($opt{log}, $opt{vblevel}, LOG_INFO1, 
+                    printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
                              sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
-                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s", 
+                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s",
                                                 $dbh->quote($cname), $dbh->quote($target) ));
                 }
             }
@@ -1174,7 +1174,7 @@ sub setMirrorableCatalogs
             printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, "Parsing $mirrorablefile" );
             $mirrorable_idx = {};
             my $mirrorable_parser = SMT::Parser::RegData->new(vblevel => 0, log => undef);
-            $mirrorable_parser->parse($mirrorablefile, 
+            $mirrorable_parser->parse($mirrorablefile,
                 sub {
                     my $data = shift;
                     $mirrorable_idx->{$data->{CATALOGID}} = 1;
@@ -1210,7 +1210,7 @@ sub setMirrorableCatalogs
                         $ret = 0;
                     }
                 }
-                else 
+                else
                 {
                     $ret = 1;
                 }
@@ -1224,8 +1224,8 @@ sub setMirrorableCatalogs
             }
             printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 1) ? '' : ' not' )));
             my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
-                                    ( ($ret == 1) ? $dbh->quote('Y') : $dbh->quote('N') ), 
-                                    $dbh->quote($catName)); 
+                                    ( ($ret == 1) ? $dbh->quote('Y') : $dbh->quote('N') ),
+                                    $dbh->quote($catName));
             if(defined $catTarget && $catTarget ne "")
             {
                 $statement .= sprintf("AND TARGET=%s", $dbh->quote($catTarget) );
@@ -1342,7 +1342,7 @@ sub createDBReplacementFile
         die "No filename given.";
     }
 
-    my $dbout = $dbh->selectall_arrayref("SELECT CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE, STAGING from Catalogs where DOMIRROR = 'Y' order by CATALOGTYPE, NAME", 
+    my $dbout = $dbh->selectall_arrayref("SELECT CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE, STAGING from Catalogs where DOMIRROR = 'Y' order by CATALOGTYPE, NAME",
                                         { Slice => {} });
 
     my $output = new IO::File("> $xmlfile");
@@ -1387,7 +1387,7 @@ sub db2Xml
     {
         die "No filename given.";
     }
-    my $columstr = join ( ', ', @{$opts{columns}} ); 
+    my $columstr = join ( ', ', @{$opts{columns}} );
     my $dbout = $dbh->selectall_arrayref("SELECT $columstr from ".$opts{table} , { Slice => {} });
 
     my $output = new IO::File("> ".$opts{outfile});
@@ -1621,28 +1621,28 @@ sub productClassReport
         printLog($options{log}, $vblevel, LOG_ERROR, "Invalid configuration provided.");
         return undef;
     }
-   
-    my @HEAD = ( __("Product Class"), __("Architecture"), __("Installed Clients") ); 
-    my @VALUES = ();   
-    
+
+    my @HEAD = ( __("Product Class"), __("Architecture"), __("Installed Clients") );
+    my @VALUES = ();
+
     my $classes = $dbh->selectcol_arrayref("SELECT DISTINCT PRODUCT_CLASS from Products where PRODUCT_CLASS is not NULL");
-    
+
     foreach my $class (@{$classes})
     {
         my $found = 0;
-        
+
         my $cn = $class;
         $cn = $conf{$class}->{NAME} if(exists $conf{$class}->{NAME} && defined $conf{$class}->{NAME});
-        
+
         my %groups = %{$conf{SMT_DEFAULT}->{ARCHGROUPS}};
         %groups = %{$conf{$class}->{ARCHGROUPS}} if(exists $conf{$class}->{ARCHGROUPS} && defined $conf{$class}->{ARCHGROUPS});
-        
+
         foreach my $archgroup (keys %groups)
         {
             my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
-            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s AND ", 
+            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s AND ",
                                   $dbh->quote($class));
-            
+
             if(@{$groups{$archgroup}} == 1)
             {
                 if(defined @{$groups{$archgroup}}[0])
@@ -1662,31 +1662,31 @@ sub productClassReport
             {
                 die "This should not happen";
             }
-            
+
             $statement .= ")";
-            
+
             printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
-            
+
             my $count = $dbh->selectcol_arrayref($statement);
-            
+
             if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
             {
                 push @VALUES, [ "$cn", $archgroup, $count->[0] ];
                 $found = 1;
             }
         }
-        
+
         if(!$found)
         {
-            # this select is for products which do not have an architecture set (ARCHLOWER is NULL) 
+            # this select is for products which do not have an architecture set (ARCHLOWER is NULL)
             my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
-            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s)", 
+            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s)",
                                   $dbh->quote($class));
-            
+
             printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
-            
+
             my $count = $dbh->selectcol_arrayref($statement);
-            
+
             if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
             {
                 push @VALUES, [ "$cn", "", $count->[0] ];
@@ -1705,13 +1705,13 @@ sub productSubscriptionReport
     my %options = @_;
     my ($cfg, $dbh) = init();
     my %report = ();
-    
+
     my $vblevel = 0;
     if(exists $options{vblevel} && defined $options{vblevel})
     {
         $vblevel = $options{vblevel};
     }
-    
+
     my $statement = "";
     my $time = SMT::Utils::getDBTimestamp();
     my $calchash = {};
@@ -1723,18 +1723,18 @@ sub productSubscriptionReport
     my $subnamesByProductClass = {};
 
     my $subhash = {};
-    
+
     $statement = "select distinct PRODUCT_CLASS, SUBNAME from Subscriptions;";
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
     my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
-    
+
     foreach my $node (@{$res})
     {
         my $subname = $node->{SUBNAME};
         my $product_class = $node->{PRODUCT_CLASS};
-        
+
         if(exists $subnamesByProductClass->{$product_class} && defined $subnamesByProductClass->{$product_class})
         {
             $subnamesByProductClass->{$product_class} .= "\n".$subname;
@@ -1786,7 +1786,7 @@ sub productSubscriptionReport
         $subhash->{$node->{PRODUCT_CLASS}}->{MINDATE_EXPSOON} = ((defined $node->{MINDATE})?"$node->{MINDATE}":"never");
         $subhash->{$node->{PRODUCT_CLASS}}->{UNLIMITED_EXPSOON} = $node->{UNLIMITED_EXPSOON};
     }
-    
+
     $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID";
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
@@ -1796,13 +1796,13 @@ sub productSubscriptionReport
 
     #
     # You need one subscription for every physical machine per product_class.
-    # So we need to filter out virtual machines which running on the same hardware 
+    # So we need to filter out virtual machines which running on the same hardware
     # We should not count them multiple times.
     #
     foreach my $set (@{$res})
     {
         my $key = $set->{PRODUCT_CLASS}." ".$set->{GUID};
-        
+
         #
         # we have this combination already => skip it.
         #
@@ -1815,10 +1815,10 @@ sub productSubscriptionReport
             $calchash->{$set->{PRODUCT_CLASS}}->{MACHINES_LEFT} = 0;
             $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINES}   = 0;
         }
-        
+
         $statement = sprintf("select VALUE from MachineData where GUID='%s' and KEYNAME='host';", $set->{GUID});
         my $arr = $dbh->selectcol_arrayref($statement);
-        
+
         if( exists $arr->[0] && defined $arr->[0] && $arr->[0] ne "")
         {
             #
@@ -1830,14 +1830,14 @@ sub productSubscriptionReport
             next;
         }
         $dhash->{$key} = $set;
-        
+
         #
         # count the machines which need a subscription
         #
         $calchash->{$set->{PRODUCT_CLASS}}->{MACHINES_LEFT} += 1;
         $calchash->{$set->{PRODUCT_CLASS}}->{TOTMACHINES}   += 1;
     }
-    
+
     printLog($options{log}, $vblevel, LOG_DEBUG, "SUBSCRIPTION HASH");
     printLog($options{log}, $vblevel, LOG_DEBUG, Data::Dumper->Dump([$subhash]));
     printLog($options{log}, $vblevel, LOG_DEBUG, "CALC HASH");
@@ -1901,8 +1901,8 @@ sub productSubscriptionReport
 
                 my $free = ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) - $subhash->{$subprodclass}->{ASSIGNEDMACHINES};
 
-                if( $free >= $calchash->{$pc}->{MACHINES_LEFT} || 
-                    $subhash->{$subprodclass}->{UNLIMITED_ACTIVE} || 
+                if( $free >= $calchash->{$pc}->{MACHINES_LEFT} ||
+                    $subhash->{$subprodclass}->{UNLIMITED_ACTIVE} ||
                     $subhash->{$subprodclass}->{UNLIMITED_EXPSOON} )
                 {
                     # we have more (or equal) free subscriptions left then registered maschines to assign
@@ -1994,7 +1994,7 @@ sub productSubscriptionReport
     #
     # Active Subscriptions
     #
-    
+
     my @AHEAD = ( {
                    name  => __("Subscriptions"),
                    align => "auto",
@@ -2027,7 +2027,7 @@ sub productSubscriptionReport
     {
         # skip subscription with a nodecount of 0
         next if($subhash->{$pc}->{NODECOUNT_ACTIVE} == 0);
-    
+
         if( $subhash->{$pc}->{UNLIMITED_ACTIVE} ||
             $subhash->{$pc}->{NODECOUNT_ACTIVE} >= $subhash->{$pc}->{ASSIGNEDMACHINES} )
         {
@@ -2057,7 +2057,7 @@ sub productSubscriptionReport
     #
     # Expire soon
     #
-    
+
     my @SHEAD = ( {
                    name  => __("Subscriptions"),
                    align => "auto",
@@ -2101,9 +2101,9 @@ sub productSubscriptionReport
         {
             $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON} = ($subhash->{$pc}->{ASSIGNEDMACHINES} - $subhash->{$pc}->{ASSIGNEDMACHINES_ACTIVE});
         }
-        
+
         next if($subhash->{$pc}->{NODECOUNT_EXPSOON} == 0 && $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON} == 0);
-        
+
         push @SVALUES, [ $subnamesByProductClass->{$pc},
                          ($subhash->{$pc}->{UNLIMITED_EXPSOON})?"unlimited":$subhash->{$pc}->{NODECOUNT_EXPSOON},
                          $subhash->{$pc}->{ASSIGNEDMACHINES_EXPSOON},
@@ -2122,7 +2122,7 @@ sub productSubscriptionReport
     #
     # Expired Subscriptions
     #
-    
+
     $statement  = "select PRODUCT_CLASS, SUBSTATUS, SUM(NODECOUNT) as SUM_NODECOUNT, MIN(NODECOUNT) = -1 as UNLIMITED, MAX(SUBENDDATE) as MAXENDDATE ";
     $statement .= "from Subscriptions where (SUBSTATUS = 'EXPIRED' or (SUBENDDATE < ? and SUBENDDATE IS NOT NULL)) ";
     $statement .= "group by PRODUCT_CLASS order by PRODUCT_CLASS;";
@@ -2132,7 +2132,7 @@ sub productSubscriptionReport
     $res = $sth->fetchall_hashref("PRODUCT_CLASS");
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement});
-    
+
     my @EHEAD = ( {
                    name  => __("Subscriptions"),
                    align => "auto",
@@ -2150,7 +2150,7 @@ sub productSubscriptionReport
                   });
     my @EVALUES = ();
     my %EOPTIONS = ( 'headingText' => __("Expired Subscriptions")." ($time)", drawRowLine => 1 );
-    
+
     foreach my $product_class (keys %{$res})
     {
         my $nc =  (int $res->{$product_class}->{SUM_NODECOUNT});
@@ -2159,14 +2159,14 @@ sub productSubscriptionReport
         {
             $nc = "unlimited";
         }
-        
+
         push @EVALUES, [ $subnamesByProductClass->{$product_class},
                          $nc,
                          $res->{$product_class}->{MAXENDDATE}
                        ];
     }
 
-    $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => \@EVALUES, 'opts' => \%EOPTIONS } : undef; 
+    $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => \@EVALUES, 'opts' => \%EOPTIONS } : undef;
 
     #
     # registrations without subscriptions
@@ -2184,7 +2184,7 @@ sub productSubscriptionReport
                   });
     my @RVALUES = ();
     my %ROPTIONS = ( 'headingText' => __("Registered Products without Subscriptions")." ($time)", drawRowLine => 1 );
-    
+
     $statement  = "select p.PRODUCT_CLASS, p.PRODUCT, p.VERSION, p.ARCH, p.REL, count(r.GUID) as NUMBER ";
     $statement .= "from Products p, Registration r where r.PRODUCTID = p.PRODUCTDATAID group by p.PRODUCT_CLASS;";
     $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
@@ -2192,37 +2192,37 @@ sub productSubscriptionReport
     foreach my $product_class (keys %{$res})
     {
         next if(exists $subnamesByProductClass->{$product_class});
-        
+
         my $pname = $res->{$product_class}->{PRODUCT}." ".$res->{$product_class}->{VERSION};
         $pname .= " ".$res->{$product_class}->{ARCH} if(defined $res->{$product_class}->{ARCH} && $res->{$product_class}->{ARCH} ne "");
         $pname .= " ".$res->{$product_class}->{REL} if(defined $res->{$product_class}->{REL} && $res->{$product_class}->{REL} ne "");
-        
+
         push @RVALUES, [ $pname,
                          $res->{$product_class}->{NUMBER}
                        ];
     }
 
-    $report{'wosub'} = (@RVALUES > 0) ? {'cols' => \@RHEAD, 'vals' => \@RVALUES, 'opts' => \%ROPTIONS } : undef; 
+    $report{'wosub'} = (@RVALUES > 0) ? {'cols' => \@RHEAD, 'vals' => \@RVALUES, 'opts' => \%ROPTIONS } : undef;
 
     #
     # Summary
     #
-    
-    my $alerts = ''; 
-    my $warning = ''; 
+
+    my $alerts = '';
+    my $warning = '';
 
     my @SUMHEAD = ( {
-                     name  => __("Subscription Type"), 
+                     name  => __("Subscription Type"),
                      align => "auto",
                      id    => "subtype"
                     },
                     {
-                     name  => __("Active\nPurchase Count"), 
+                     name  => __("Active\nPurchase Count"),
                      align => "right",
                      id    => "active"
                     },
                     {
-                     name  => __("Soon expiring\nPurchase Counts"), 
+                     name  => __("Soon expiring\nPurchase Counts"),
                      align => "right",
                      id    => "expiresoon"
                     },
@@ -2254,7 +2254,7 @@ sub productSubscriptionReport
                           $subhash->{$product_class}->{ASSIGNEDMACHINES} + $subhash->{$product_class}->{MACHINES_LEFT},
                           $subhash->{$product_class}->{VMCOUNT_TOTAL},
                           $subhash->{$product_class}->{MACHINES_LEFT}];
-        
+
         if($subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON} == 1)
         {
             $warning .= sprintf(__("%d machine use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"),
@@ -2265,7 +2265,7 @@ sub productSubscriptionReport
             $warning .= sprintf(__("%d machines use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"),
                                 $subhash->{$product_class}->{ASSIGNEDMACHINES_EXPSOON}, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
-        
+
         if($subhash->{$product_class}->{MACHINES_LEFT} == 1)
         {
             $alerts .= sprintf(__("%d machine use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"),
@@ -2285,7 +2285,7 @@ sub productSubscriptionReport
     {
         $alerts .= sprintf(__("NCC registration failed for %d Machines. \n"), $count->[0]);
     }
-    
+
     $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => \@SUMVALUES, 'opts' => \%SUMOPTIONS };
     $report{'alerts'} = "";
     if($alerts ne "")
@@ -2296,7 +2296,7 @@ sub productSubscriptionReport
     {
         $report{'alerts'} .= "\n".__("Warnings:\n").$warning ;
     }
-        
+
     return \%report;
 }
 
@@ -2309,13 +2309,13 @@ sub subscriptionReport
     my %options = @_;
     my ($cfg, $dbh) = init();
     my %report = ();
-    
+
     my $vblevel = 0;
     if(exists $options{vblevel} && defined $options{vblevel})
     {
         $vblevel = $options{vblevel};
     }
-    
+
     my $statement = "";
     my $time = SMT::Utils::getDBTimestamp();
     my $calchash = {};
@@ -2324,18 +2324,18 @@ sub subscriptionReport
     my $sth = undef;
 
     my $subnamesByProductClass = {};
-    
+
     $statement = "select distinct PRODUCT_CLASS, SUBNAME from Subscriptions;";
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
     my $res = $dbh->selectall_arrayref($statement, {Slice=>{}});
-    
+
     foreach my $node (@{$res})
     {
         my $subname = $node->{SUBNAME};
         my $product_class = $node->{PRODUCT_CLASS};
-        
+
         if(exists $subnamesByProductClass->{$product_class} && defined $subnamesByProductClass->{$product_class})
         {
             $subnamesByProductClass->{$product_class} .= "\n".$subname;
@@ -2362,7 +2362,7 @@ sub subscriptionReport
         {
             $res->{$product_class}->{SUM_TOTALCONSUMEDVIRT} = 0;
         }
-        
+
         $calchash->{$product_class}->{MACHINES}        = int $res->{$product_class}->{SUM_TOTALCONSUMED};
         $calchash->{$product_class}->{TOTMACHINES}     = int $calchash->{$product_class}->{MACHINES};
         $calchash->{$product_class}->{TOTMACHINESVIRT} = int $res->{$product_class}->{SUM_TOTALCONSUMEDVIRT};
@@ -2459,11 +2459,11 @@ sub subscriptionReport
 
     my @AVALUES = ();
     my %AOPTIONS = ( 'headingText' => __("Active Subscriptions")." ($time)" );
-    
+
     printLog($options{log}, $vblevel, LOG_DEBUG, "Assigned status: ".Data::Dumper->Dump([$res]));
-    
+
     my $skipped = 0;
-    
+
     foreach my $subid (keys %{$res})
     {
         my $nc = (int $res->{$subid}->{NODECOUNT});
@@ -2478,8 +2478,8 @@ sub subscriptionReport
             $skipped++;
             next;
         }
-        
-        
+
+
         if($nc == -1)
         {
             $calchash->{$product_class}->{SUM_ACTIVE_SUB} = -1;
@@ -2489,7 +2489,7 @@ sub subscriptionReport
         {
             $calchash->{$product_class}->{SUM_ACTIVE_SUB} += $nc if($calchash->{$product_class}->{SUM_ACTIVE_SUB} != -1);
         }
-        
+
         push @AVALUES, [ $res->{$subid}->{SUBNAME},
                          $res->{$subid}->{REGCODE},
                          $nc,
@@ -2537,17 +2537,17 @@ sub subscriptionReport
     }
 
     my @SHEAD = ( {
-                   name  => __("Subscriptions"), 
+                   name  => __("Subscriptions"),
                    align => "auto",
                    id    => "sub"
                   },
                   {
-                   name  => __("Activation Code"), 
+                   name  => __("Activation Code"),
                    align => "left",
                    id    => "regcode"
                   },
                   {
-                   name  => __("Total\nPurchase Count"), 
+                   name  => __("Total\nPurchase Count"),
                    align => "right",
                    id    => "number"
                   },
@@ -2562,7 +2562,7 @@ sub subscriptionReport
                    id    => "usedvirt"
                   },
                   {
-                   name  => __("Used\nLocally"), 
+                   name  => __("Used\nLocally"),
                    align => "auto",
                    id    => "localused"
                   },
@@ -2595,7 +2595,7 @@ sub subscriptionReport
             $skipped++;
             next;
         }
-        
+
         if($nc == -1)
         {
             $calchash->{$product_class}->{SUM_ESOON_SUB} = -1;
@@ -2631,9 +2631,9 @@ sub subscriptionReport
     $sth->bind_param(1, $now, SQL_TIMESTAMP);
     $sth->execute;
     $res = $sth->fetchall_hashref("SUBID");
-    
+
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: ".$sth->{Statement}." DATE: $nowP30day");
-    
+
     foreach my $subid (keys %{$assigned})
     {
         if(exists $res->{$subid})
@@ -2653,17 +2653,17 @@ sub subscriptionReport
     }
 
     my @EHEAD = ( {
-                   name  => __("Subscriptions"), 
+                   name  => __("Subscriptions"),
                    align => "auto",
                    id    => "sub"
                   },
                   {
-                   name  => __("Activation Code"), 
+                   name  => __("Activation Code"),
                    align => "left",
                    id    => "regcode"
                   },
                   {
-                   name  => __("Total\nPurchase Count"), 
+                   name  => __("Total\nPurchase Count"),
                    align => "right",
                    id    => "purchasecount"
                   },
@@ -2678,7 +2678,7 @@ sub subscriptionReport
                    id    => "usedvirt"
                   },
                   {
-                   name  => __("Used\nLocally"), 
+                   name  => __("Used\nLocally"),
                    align => "auto",
                    id    => "localused"
                   },
@@ -2694,7 +2694,7 @@ sub subscriptionReport
                   } );
     my @EVALUES = ();
     my %EOPTIONS = ( 'headingText' => __('Expired Subscriptions')." ($time)" );
-    
+
     $skipped = 0;
 
     foreach my $subid (keys %{$res})
@@ -2710,12 +2710,12 @@ sub subscriptionReport
             $skipped++;
             next;
         }
-        
+
         if($nc == -1)
         {
             $nc = "unlimited";
         }
-        
+
         push @EVALUES, [ $res->{$subid}->{SUBNAME},
                          $res->{$subid}->{REGCODE},
                          $nc,
@@ -2728,7 +2728,7 @@ sub subscriptionReport
     }
     printLog($options{log}, $vblevel, LOG_DEBUG, "EXPIRED skipped $skipped");
 
-    $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @EVALUES], 'opts' => \%EOPTIONS } : undef; 
+    $report{'expired'} = (@EVALUES > 0) ? {'cols' => \@EHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @EVALUES], 'opts' => \%EOPTIONS } : undef;
 
 
     #
@@ -2747,7 +2747,7 @@ sub subscriptionReport
                   });
     my @RVALUES = ();
     my %ROPTIONS = ( 'headingText' => __("Registered Products without Subscriptions")." ($time)", drawRowLine => 1 );
-    
+
     $statement  = "select p.PRODUCT_CLASS, p.PRODUCT, p.VERSION, p.ARCH, p.REL, count(r.GUID) as NUMBER from Products p, Registration r ";
     $statement .= "where r.PRODUCTID = p.PRODUCTDATAID group by p.PRODUCT_CLASS;";
     $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
@@ -2755,17 +2755,17 @@ sub subscriptionReport
     foreach my $product_class (keys %{$res})
     {
         next if(exists $subnamesByProductClass->{$product_class});
-        
+
         my $pname = $res->{$product_class}->{PRODUCT}." ".$res->{$product_class}->{VERSION};
         $pname .= " ".$res->{$product_class}->{ARCH} if(defined $res->{$product_class}->{ARCH} && $res->{$product_class}->{ARCH} ne "");
         $pname .= " ".$res->{$product_class}->{REL} if(defined $res->{$product_class}->{REL} && $res->{$product_class}->{REL} ne "");
-        
+
         push @RVALUES, [ $pname,
                          $res->{$product_class}->{NUMBER}
                        ];
     }
 
-    $report{'wosub'} = (@RVALUES > 0) ? {'cols' => \@RHEAD, 'vals' => \@RVALUES, 'opts' => \%ROPTIONS } : undef; 
+    $report{'wosub'} = (@RVALUES > 0) ? {'cols' => \@RHEAD, 'vals' => \@RVALUES, 'opts' => \%ROPTIONS } : undef;
 
 
     #
@@ -2784,7 +2784,7 @@ sub subscriptionReport
                      id    => "active"
                     },
                     {
-                     name  => __("Soon expiring\nPurchase Counts"), 
+                     name  => __("Soon expiring\nPurchase Counts"),
                      align => "right",
                      id    => "expiresoon"
                     },
@@ -2812,13 +2812,13 @@ sub subscriptionReport
         #
         # let us skip all subscriptions with nodecount = 0 and no machines assigned to it.
         #
-        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == 0 && $calchash->{$product_class}->{SUM_ESOON_SUB} == 0 && 
+        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == 0 && $calchash->{$product_class}->{SUM_ESOON_SUB} == 0 &&
            $calchash->{$product_class}->{TOTMACHINES} == 0 && $calchash->{$product_class}->{TOTMACHINESVIRT} == 0)
         {
             $skipped++;
             next;
         }
-        
+
         my $missing = $calchash->{$product_class}->{TOTMACHINES} - $calchash->{$product_class}->{SUM_ACTIVE_SUB} - $calchash->{$product_class}->{SUM_ESOON_SUB};
 
         if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
@@ -2826,21 +2826,21 @@ sub subscriptionReport
         {
             $missing = 0;
         }
-        
+
         $missing = 0 if ($missing < 0);
-        
-        push @SUMVALUES, [$subnamesByProductClass->{$product_class}, 
-                          ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB}, 
-                          ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB}, 
-                          $calchash->{$product_class}->{TOTMACHINES}, 
-                          $calchash->{$product_class}->{TOTMACHINESVIRT}, 
+
+        push @SUMVALUES, [$subnamesByProductClass->{$product_class},
+                          ($calchash->{$product_class}->{SUM_ACTIVE_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ACTIVE_SUB},
+                          ($calchash->{$product_class}->{SUM_ESOON_SUB}==-1)?"unlimited":$calchash->{$product_class}->{SUM_ESOON_SUB},
+                          $calchash->{$product_class}->{TOTMACHINES},
+                          $calchash->{$product_class}->{TOTMACHINESVIRT},
                           $missing];
         my $used_active = 0;
         my $used_esoon  = 0;
         my $used_expired = 0;
         my $dummy = $calchash->{$product_class}->{TOTMACHINES};
-        
-        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 || 
+
+        if($calchash->{$product_class}->{SUM_ACTIVE_SUB} == -1 ||
            $dummy <= $calchash->{$product_class}->{SUM_ACTIVE_SUB})
         {
             $used_active = $dummy;
@@ -2868,23 +2868,23 @@ sub subscriptionReport
 
         if($used_esoon == 1)
         {
-            $warning .= sprintf(__("%d machine use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
+            $warning .= sprintf(__("%d machine use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"),
                                 $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
         elsif($used_esoon > 1)
         {
-            $warning .= sprintf(__("%d machines use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"), 
+            $warning .= sprintf(__("%d machines use a '%s' subscription, which expires within the next 30 Days. Please renew the subscription.\n"),
                                 $used_esoon, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
 
         if($missing == 1)
         {
-            $alerts .= sprintf(__("%d machine use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
+            $alerts .= sprintf(__("%d machine use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"),
                                $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
         elsif($missing > 1)
         {
-            $alerts .= sprintf(__("%d machines use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"), 
+            $alerts .= sprintf(__("%d machines use too many '%s' subscriptions. Please log in to the Novell Customer Center (http://www.novell.com/center) and assign or purchase matching entitlements.\n"),
                                $missing, join(" / ", split(/\n/, $subnamesByProductClass->{$product_class})));
         }
     }
@@ -2899,7 +2899,7 @@ sub subscriptionReport
         $alerts .= sprintf(__("NCC registration failed for %d Machines. \n"), $count->[0]);
     }
 
-    $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @SUMVALUES], 'opts' => \%SUMOPTIONS }; 
+    $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @SUMVALUES], 'opts' => \%SUMOPTIONS };
     $report{'alerts'} = "";
     if($alerts ne "")
     {
@@ -2910,7 +2910,7 @@ sub subscriptionReport
     {
         $report{'alerts'} .= "\n".__("Warnings:\n").$warning ;
     }
-    
+
     return \%report;
 
 }

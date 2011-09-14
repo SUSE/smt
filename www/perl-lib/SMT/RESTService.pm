@@ -257,7 +257,7 @@ sub products_handler($$)
         $r->log->error("Unknown request to the products interface.");
         return undef;
     }
-    
+
     return undef;
 }
 
@@ -291,7 +291,7 @@ sub repos_handler($$)
         else
         {
             $r->log->error("GET request to unknown repos interface: $path");
-            return undef;        
+            return undef;
         }
     }
     elsif ( $r->method() =~ /^PUT$/i )
@@ -344,7 +344,7 @@ sub patches_handler($$)
         else
         {
             $r->log->error("GET request to unknown patches interface: $path");
-            return undef;        
+            return undef;
         }
     }
     elsif ( $r->method() =~ /^PUT$/i )

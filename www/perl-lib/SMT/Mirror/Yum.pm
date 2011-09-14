@@ -43,7 +43,7 @@ sub new
     bless($self);
     $self = $self->SUPER::new(@_);
     bless($self);
-    
+
     return $self;
 }
 
@@ -84,7 +84,7 @@ sub mirror()
     $job->localFileLocation( "headers/header.info" );
 
     my $mres = $job->mirror();
-    if( $mres == 2 && $self->statistic()->{DOWNLOAD} == 0 && 
+    if( $mres == 2 && $self->statistic()->{DOWNLOAD} == 0 &&
         $self->statistic()->{LINK} == 0 && $self->statistic()->{COPY} == 0 )
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'. All files are up-to-date."), $saveuri));
@@ -102,23 +102,23 @@ sub mirror()
                 {
                     my $epoch = $1;
                     my $file  = $2;
-                    
+
                     if($file =~ /^(.+)-([^-]+)-([^-]+)\.([a-zA-Z0-9_]+)$/)
                     {
                         my $name = $1;
                         my $version = $2;
                         my $release = $3;
                         my $arch = $4;
-                        
+
                         my $hdrLocation = "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr";
-                        
+
                         my $hjob = SMT::Mirror::Job->new(vblevel => $self->vblevel(), UserAgent => $self->{USERAGENT}, log => $self->{LOG}, dbh => $self->{DBH}, dryrun => $dryrun );
                         $hjob->uri( $self->uri() );
                         $hjob->localBasePath( $self->localBasePath() );
                         $hjob->localRepoPath( $self->localRepoPath() );
                         $hjob->localFileLocation( $hdrLocation );
                         $hjob->noChecksumCheck(1);
-                        
+
                         if( $dryrun )
                         {
                             if( $hjob->outdated() )
@@ -133,7 +133,7 @@ sub mirror()
                             }
                             next;
                         }
-                        
+
                         $mres = $hjob->mirror();
                         $self->job2statistic($hjob);
                     }
@@ -170,13 +170,13 @@ sub mirror()
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD}));
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"),
                                                $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE})));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total linked files          : %s"), $self->{STATISTIC}->{LINK}));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total copied files          : %s"), $self->{STATISTIC}->{COPY}));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE}));
     }
-    
+
     #
     # I think YUM repositories do not have patches
     #
@@ -185,7 +185,7 @@ sub mirror()
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR}));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0))));
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "", 1, 0);
-    
+
     return $self->{STATISTIC}->{ERROR};
 }
 
@@ -199,18 +199,18 @@ sub clean
     $self->SUPER::clean();
 
     my $headerFile = SMT::Utils::cleanPath($self->localBasePath(), $self->localRepoPath(), "headers/header.info");
-    
+
     if( -e $headerFile )
     {
         $self->{CLEANLIST} = {};
-        
+
         find ( { wanted =>
                  sub
                  {
                      if ( $File::Find::dir =~ /\/headers/ && -f $File::Find::name )
-                     { 
+                     {
                          my $name = SMT::Utils::cleanPath($File::Find::name);
-                         
+
                          $self->{CLEANLIST}->{$name} = 1;
                      }
                  }
@@ -219,7 +219,7 @@ sub clean
         # remove headers/header.info first
         my $hdrLocation = SMT::Utils::cleanPath($self->fullLocalRepoPath(), "headers/header.info");
         delete $self->{CLEANLIST}->{$hdrLocation} if (exists $self->{CLEANLIST}->{$hdrLocation});
-        
+
         open(HDR, "< $headerFile") and do
         {
             while(<HDR>)
@@ -228,16 +228,16 @@ sub clean
                 {
                     my $epoch = $1;
                     my $file  = $2;
-                    
+
                     if($file =~ /^(.+)-([^-]+)-([^-]+)\.([a-zA-Z0-9_]+)$/)
                     {
                         my $name = $1;
                         my $version = $2;
                         my $release = $3;
                         my $arch = $4;
-                        
+
                         $hdrLocation = SMT::Utils::cleanPath($self->fullLocalRepoPath(), "headers/".$name."-".$epoch."-".$version."-".$release.".".$arch.".hdr");
-                        
+
                         # if this path is in the CLEANLIST, delete it
                         delete $self->{CLEANLIST}->{$hdrLocation} if (exists $self->{CLEANLIST}->{$hdrLocation});
                     }
@@ -245,17 +245,17 @@ sub clean
             }
         };
         close HDR;
-        
+
         my $cnt = 0;
         foreach my $file ( keys %{$self->{CLEANLIST}} )
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Delete: $file");
             $cnt += unlink $file;
-        
+
             # header do not have a checksum, so they are not in the DB
             #$self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
         }
-        
+
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath()."/headers/" ));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Removed files : %s"), $cnt));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Clean Time    : %s"), SMT::Utils::timeFormat(tv_interval($t0))));

@@ -185,12 +185,12 @@ while ( my $v = $sth->fetchrow_hashref() ) {
     my $catDesc = $v->{DESCRIPTION};
     my $catMA   = $v->{MIRRORABLE};
     my $catStaging = $v->{STAGING};
-  
+
     if (defined($verbose)) {
         my $st = sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.ARCH, p.REL, pc.OPTIONAL from Products p, ProductCatalogs pc where pc.CATALOGID=%s and p.PRODUCTDATAID = pc.PRODUCTDATAID order by p.PRODUCT, p.VERSION, p.ARCH, p.REL",
                          $dbh->quote($catId));
         my $products = $dbh->selectall_arrayref($st,{Slice=>{}} );
-      
+
         $output .= "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
         $output .= "          (" . $v->{DESCRIPTION} .")\n";
         $output .= "          " . $v->{EXTURL} ."\n";
@@ -202,11 +202,11 @@ while ( my $v = $sth->fetchrow_hashref() ) {
             my $version = (defined $h->{VERSION}?$h->{VERSION}:"");
             my $arch    = (defined $h->{ARCH}?$h->{ARCH}:"");
             my $rel     = (defined $h->{REL}?$h->{REL}:"");
-                           
+
             $output .= "          Assigned to product: $product $version $arch $rel\n";
         }
     } else {
-        $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"), 
+        $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"),
                     $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")), (( $catStaging eq "Y" ) ? __("Yes") : __("No")));
     }
 }
@@ -295,7 +295,7 @@ else
 
     my $answer = <STDIN>;
     chomp($answer);
-  
+
     if (lc($answer) eq __("a"))
     {
         if ( $disable || $enable )
@@ -306,7 +306,7 @@ else
             exit 0;
         }
         elsif( $disableStaging || $enableStaging)
-        {   
+        {
             my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, name => $name, target => $target);
             # FIXME this should use gettext for variable mutliplicity
             print sprintf(__("%d Repo(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
@@ -405,7 +405,7 @@ Disable staging for a repository.
 
 Shows mirrorable repositories only.
 
-=item --only-enabled -o 
+=item --only-enabled -o
 
 Shows repositories set to be mirrored only.
 

@@ -69,7 +69,7 @@ sub new()
 =item repoPath()
 
 Set or get the path of the repository to check. Must be a local dir - repo2solv
-does not handle different media. 
+does not handle different media.
 
 =cut
 
@@ -124,7 +124,7 @@ sub check()
     else
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
-            'Using cached solv file ' . $self->{SOLV}, 0);    
+            'Using cached solv file ' . $self->{SOLV}, 0);
     }
 
     # load the solv file
@@ -135,7 +135,7 @@ sub check()
 
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
         'FilteredRepoChecker: repo loaded. Pool size: ' . $pool->size() .
-        ', count: ' . $pool->count(), 0);    
+        ', count: ' . $pool->count(), 0);
 
     # get the patches
     my $allowed = {};

@@ -6,7 +6,7 @@
 #
 # exit codes in "smt-db":
 #
-# 1 : cannot disable echo mode 
+# 1 : cannot disable echo mode
 # 2 : Cannot read the SMT configuration file
 # 3 : Invalid Database configuration. Missing value for DB/config
 # 4 : Cannot connect to database (wrong mysql root password?)
@@ -43,7 +43,7 @@ sub db_connect
         print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), $@);
         exit 2;
     }
-    
+
     my $config = $cfg->val('DB', 'config');
     my $user   = $cfg->val('DB', 'user');
     my $pass   = $cfg->val('DB', 'pass');
@@ -53,7 +53,7 @@ sub db_connect
         print STDERR __("Invalid Database configuration. Missing value for DB/config.\n");
 	exit 3;
     }
-     
+
     my $dbh    = DBIx::Transaction->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});
 
     return $dbh;
@@ -78,7 +78,7 @@ sub optimize
     print STDERR __("ERROR: Could not connect to the database.\n");
     return 20;
   }
-  
+
   my @tables = ( "Catalogs",
                  "ClientSubscriptions",
                  "Clients",
@@ -125,8 +125,8 @@ sub migrate
         desired_version_from    => 'SMT',
         dbh                     => $dbh
         );
-  
-    eval 
+
+    eval
     {
         $m->full_migrate;
     };
@@ -284,7 +284,7 @@ sub setup
     chomp($password = <STDIN>);
     system("stty echo") if($opt ne "--yast");
     print "\n";
-    
+
     my $cfg = undef;
 
     eval
@@ -296,7 +296,7 @@ sub setup
         print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), $@);
         return 2;
     }
-    
+
     my $config = $cfg->val('DB', 'config');
     if(!defined $config || $config eq "")
     {
@@ -318,24 +318,24 @@ sub setup
 	    print STDERR "Cannot connect to database: $@\n";
 	    return 4;
     }
-    
+
     my $r = $dbh->selectcol_arrayref("show databases");
     my $found = 0;
-    
+
     foreach (@{$r})
     {
         $found = 1 if($_ eq "smt");
     }
-    
+
     if($found)
     {
         print STDERR "SMT database already exists.\n";
 	return 5;
     }
-    
+
     print "Enter a new username for the smt database: ";
     chomp($smtuser = <STDIN>);
-    
+
     print "New password for user $smtuser: ";
     if($opt ne "--yast")
     {
@@ -347,9 +347,9 @@ sub setup
     chomp($smtpass = <STDIN>);
     system("stty echo") if($opt ne "--yast");
     print "\n";
-    
+
     my $smtpassV = "";
-    
+
     print "Repeat password for user $smtuser: ";
     if($opt ne "--yast")
     {
@@ -361,7 +361,7 @@ sub setup
     chomp($smtpassV = <STDIN>);
     system("stty echo") if($opt ne "--yast");
     print "\n";
-    
+
     if($smtpass ne $smtpassV)
     {
         print STDERR "Passwords do not match.\n";
@@ -374,9 +374,9 @@ sub setup
         print STDERR "Cannot create Database smt.\n";
 	return 7;
     }
-    
+
     $r = $dbh->do("grant all on smt.* to '$smtuser'\@$host identified by '$smtpass'");
-    
+
     $cfg->setval('DB', 'user', $smtuser);
     $cfg->setval('DB', 'pass', $smtpass);
     $cfg->RewriteConfig();
@@ -387,7 +387,7 @@ sub setup
 }
 
 
-if (defined $ARGV[0] ) 
+if (defined $ARGV[0] )
 {
   my $cmd = shift(@ARGV);
   #print "cmd: $cmd\n";

@@ -213,7 +213,7 @@ sub handle_start_tag
     {
         $self->{CURRENT}->{PKGID} = $attrs{pkgid};
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
-        
+
         if(exists $self->{TOREMOVE}->{$attrs{pkgid}})
         {
             $self->{DROP} = 1;
@@ -240,14 +240,14 @@ sub handle_end_tag
     {
         print {$self->{OUT}} $expat->original_string  if ($self->{WRITE_OUT});
     }
-    
+
     if (exists $self->{CURRENT}->{MAINELEMENT} &&
         defined $self->{CURRENT}->{MAINELEMENT} &&
         $self->{CURRENT}->{MAINELEMENT} eq lc($element) &&
         $self->{CURRENT}->{MAINELEMENT} eq "package")
     {
         # </package>
-        
+
         my $pkgid = $self->{CURRENT}->{PKGID};
         if (exists $self->{TOREMOVE}->{$pkgid})
         {
@@ -263,7 +263,7 @@ sub handle_end_tag
 sub handle_the_rest
 {
     my $self = shift;
- 
+
     return if($self->{DROP});
 
     my $expat = shift;
@@ -277,7 +277,7 @@ sub handle_the_end
 {
     my $self = shift;
     my $expat = shift;
-    
+
     # print the original XML read from last <package> to the end
     if ($self->{WRITE_OUT})
     {

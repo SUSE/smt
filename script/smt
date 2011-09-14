@@ -27,7 +27,7 @@ sub help
     print __("show help\n");
     my @files;
     find( {wanted => sub { push(@files, $1) if $_ =~ /smt\-(.+)/; }, no_chdir => 1}, "/usr/sbin");
-    
+
     print __("Subscription Management Tool (SMT). (c)2007,2008,2009 Novell Inc.\n\n");
 
     foreach my $cmd (@files)
@@ -49,8 +49,8 @@ sub executeCommand
 
   # quote all the options, otherwise whithespace causes problems
   foreach (@options)
-  { 
-    $_ =~ s/\'/\\\'/; 
+  {
+    $_ =~ s/\'/\\\'/;
     $cmd .= "'$_' ";
   }
 
@@ -65,13 +65,13 @@ sub executeCommand
   }
 }
 
-if (defined $ARGV[0] ) 
+if (defined $ARGV[0] )
 {
     my $cmd = shift(@ARGV);
     #print "cmd: $cmd\n";
     if ( $cmd eq "help" || $cmd eq "-h" || $cmd eq "--help")
     {
-        if (defined $ARGV[0] ) 
+        if (defined $ARGV[0] )
         {
             my $targethelp = shift(@ARGV);
             executeCommand($targethelp,"-h");

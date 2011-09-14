@@ -22,9 +22,9 @@ function usage()
 
     cat << EOT >&2
 
-  Usage: $0 [--dryrun] [--yes] --user <username> 
+  Usage: $0 [--dryrun] [--yes] --user <username>
 
-  Change the permissions on files and directories used by a user which 
+  Change the permissions on files and directories used by a user which
   should run the smt commands.
 
   --dryrun (-n) show the commands but do not execute them
@@ -114,19 +114,19 @@ if [ ! -e "$NCC_CREDENTIAL" ]; then
 fi
 
 INLOCAL=0
-while IFS== read -sr key val ; do 
+while IFS== read -sr key val ; do
     #echo "KEY=VAL: '$key' '$val'"
-    
+
     case "$key" in
-        \[LOCAL\]) 
-            INLOCAL=1; 
+        \[LOCAL\])
+            INLOCAL=1;
             #echo "inlocal = 1"
             ;;
-        \[*) 
+        \[*)
             INLOCAL=0;
             # echo "inlocal = 0"
             ;;
-        MirrorTo*) 
+        MirrorTo*)
             #echo "found mirrorTO"
             if [ $INLOCAL -eq 1 -a -n "$val" ]; then
                 val=`echo -n $val`;
@@ -137,7 +137,7 @@ while IFS== read -sr key val ; do
             ;;
         *) ;;
     esac
-    
+
 done < $SMTCONF
 
 for dir in ${SMT_DIRS[@]}; do

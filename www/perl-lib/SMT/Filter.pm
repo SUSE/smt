@@ -11,7 +11,7 @@ use DBI qw(:sql_types);
 
 SMT::Filter - reads/stores patch filters for repository and tells whether
   a patch matches the filter.
-  
+
 =head1 SYNOPSIS
 
   # to get a filter object
@@ -28,7 +28,7 @@ SMT::Filter - reads/stores patch filters for repository and tells whether
 
   # the core subroutine :O)
   $bool = $filter->matches($patchdata);
-  
+
   # check if the filter element is already there
   $bool = $filter->contains($filtertype, $value);
 
@@ -43,12 +43,12 @@ TODO
 
 =item Filter Types
 TYPE_NAME_EXACT
-    matches if the patch name is the same as the filter value     
+    matches if the patch name is the same as the filter value
 TYPE_NAME_REGEX
     matches if the patch name matches the perl regex in filter value
 TYPE_NAME_VERSION
-    matches if the patch ID ("$name-$version") is the same as the filter value 
-TYPE_SECURITY_LEVEL 
+    matches if the patch ID ("$name-$version") is the same as the filter value
+TYPE_SECURITY_LEVEL
     matches if the patch category string is the same as the filter value
 =back
 =cut
@@ -76,7 +76,7 @@ Arguments are an anonymous hash array of parameters:
 
 =item vblevel <level>
 
-Set the verbose level. 
+Set the verbose level.
 
 =item log
 
@@ -168,7 +168,7 @@ sub save
     my ($self, $dbh, $catalog) = @_;
 
     if (!$self->{DIRTY}) { return 1; }
-    
+
     my $query = "select ID from Catalogs where CATALOGID = '$catalog'";
     my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
     my $cid = $array->[0]->{ID};
@@ -241,7 +241,7 @@ sub save
     # delete those which are not here anymore
     foreach my $f (values %$dbfilters)
     {
-        # if the filter is not in our list 
+        # if the filter is not in our list
         if (!$self->contains($f->[0], $f->[1]))
         {
             eval
@@ -269,7 +269,7 @@ Whether a filter element of given $type and $value already exists in this filter
 object.
 
 Example:
-$found = $filter->contains(TYPE_NAME_EXACT, 'kernel'); 
+$found = $filter->contains(TYPE_NAME_EXACT, 'kernel');
 
 =cut
 sub contains
@@ -296,7 +296,7 @@ sub empty
 
 =item dirty()
 
-Retuns true if the filter has been changed since the last load() call. 
+Retuns true if the filter has been changed since the last load() call.
 
 =cut
 
@@ -358,7 +358,7 @@ sub remove
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
             "Invalid arguments. Expecting a (number, string), got ($type, $value).");
     }
-    
+
     return 0;
 }
 
@@ -455,7 +455,7 @@ subfilter matches the patch data.
 sub whatMatches()
 {
     my ($self, $patch) = @_;
-    
+
     my $mf = [];
     foreach my $f (values %{$self->{FILTERS}})
     {
@@ -524,7 +524,7 @@ sub vblevel
 =head1 NOTES
 
 This module is intended for filtering of patches. Can be extended to work also
-with packages, patterns, or products if needed. 
+with packages, patterns, or products if needed.
 
 =head1 AUTHOR
 

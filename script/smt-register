@@ -135,8 +135,8 @@ eval
         my $res = $dbh->do("Update Registration SET NCCREGERROR=0");
         SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Reset NCC Registration Errors. Result: $res");
     }
-    
-    my $nccreg = SMT::NCCRegTools->new(vblevel => $vblevel, useragent => $useragent, dbh => $dbh, 
+
+    my $nccreg = SMT::NCCRegTools->new(vblevel => $vblevel, useragent => $useragent, dbh => $dbh,
                                        log => $LOG, nccemail => $nccEmail);
     my $err = $nccreg->NCCRegister($sleeptime);
     if($err != 0)
@@ -171,7 +171,7 @@ if($mail)
         my $datestring = POSIX::strftime("%Y-%m-%d %H:%M", localtime);
         my $subject = sprintf("SMT Registration Report $datestring (%s) -- Registration %s",
                               SMT::Utils::getFQDN(), (($exitcode > 0)?"failed":"successful"));
-        
+
         SMT::Utils::sendMailToAdmins($subject, $body);
     }
 }
@@ -185,7 +185,7 @@ SMT::Utils::unLockAndExit( "smt-register", $exitcode, $LOG, $vblevel );
 
 =head1 NAME
 
-smt register 
+smt register
 
 =head1 SYNOPSIS
 
@@ -232,7 +232,7 @@ Show a help message.
 Register all clients which are currently not registered or whose
 registration data was updated since the last registration.
 
- smt register 
+ smt register
 
 with writing to a logfile
 

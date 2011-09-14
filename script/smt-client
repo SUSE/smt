@@ -114,7 +114,7 @@ if ($command eq '' || $command eq 'status')
     }
 
     my $filter = { 'selectAll' => '' };
-    ${$filter}{'GUID'} = $guid if ( defined $guid && $guid ne '' ); 
+    ${$filter}{'GUID'} = $guid if ( defined $guid && $guid ne '' );
     ${$filter}{'PATCHSTATUS'} = $serverityFilter if ( defined $serverityFilter );
 
     my $client_info = $clients->getClientsInfo($filter);
@@ -220,9 +220,9 @@ Shows the help screen.
 
 =item -v, --verbose
 
-Shows detailed client information. 
+Shows detailed client information.
 The patch status is explained in detail and shows the number of patches for the package manager, security, recommended and optional patches. The last contact date is also shown in verbose mode.
- 
+
 =item -d, --debug
 
 Enables debug mode.

@@ -73,7 +73,7 @@ sub version
 
     # make sure the returned value is a string. A 0 would case DBI to insert
     # NULL into the DB query, which would cause an error
-    return '' if (not defined $self->{version}); 
+    return '' if (not defined $self->{version});
     return $self->{version};
 }
 
@@ -126,7 +126,7 @@ sub summary
         $self->{DIRTY} = 1 if (defined $self->{summary} && ! $value eq $self->{summary});
         $self->{summary} = $value;
     }
-    return '' if (not defined $self->{summary}); 
+    return '' if (not defined $self->{summary});
     return $self->{summary};
 }
 
@@ -138,7 +138,7 @@ sub description
         $self->{DIRTY} = 1 if (defined $self->{desc} && ! $value eq $self->{desc});
         $self->{desc} = $value;
     }
-    return '' if (not defined $self->{desc}); 
+    return '' if (not defined $self->{desc});
     return $self->{desc};
 }
 
@@ -427,7 +427,7 @@ sub delete
     my $sql = 'delete from Patches where id=?';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $self->dbId(), SQL_INTEGER);
-    $sth->execute(); # FIXME wrap in eval 
+    $sth->execute(); # FIXME wrap in eval
 }
 
 

@@ -20,7 +20,7 @@ POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 =item Usage
 
 All getClient[^s]* (except the '_internal' one) can be used to query the SMT database
-for client information. The parameter for functions ending with "ByID" or "ByGUID" 
+for client information. The parameter for functions ending with "ByID" or "ByGUID"
 is the "ID" resp. the "GUID".
 
 For queries on all clients ( getClients* ) the parameter is a filter hash. This hash
@@ -32,7 +32,7 @@ The patchstatus query string is different. It is a set of 4 values separated by 
 colon. Each value may be an exact number to query or an empty string if it should
 not be filtered by that value. Or it may be a string like "<100" or ">0", so its
 value will be checked if it is lower than or greater that the given number.
-The 4 sets represent the pending patches for 1. the packagemanager, 2. security 
+The 4 sets represent the pending patches for 1. the packagemanager, 2. security
 updates, 3. recommended updates, 4. optional updates, in this order.
 If a string does not match a valid search pattern, undef will be returned.
 
@@ -52,14 +52,14 @@ Possible query keys are:
 
 
 
-The return value for all functions is a hash of hashes. The key is always the client ID 
+The return value for all functions is a hash of hashes. The key is always the client ID
 (not GUID) and the value-hash is a hash similar to the filter hash. This is also valid for
 the functions that only select information about one client. Only the patchstatus information
 is split into 5 separate keys: PATCHSTATUS_P for packagemanager, PATCHSTATUS_S for security
-updates, PATCHSTATUS_R for recommended updates, PATCHSTATUS_O for optional patches and 
+updates, PATCHSTATUS_R for recommended updates, PATCHSTATUS_O for optional patches and
 PATCHSTATUS_DATE for the date of the current patchstatus information.
 
-The return value is empty for empty search results and it is undef for invaild 
+The return value is empty for empty search results and it is undef for invaild
 search queries.
 
 The return value for the above example might look like this:
@@ -153,7 +153,7 @@ sub in_Array($$)
     my $str = shift || "";
     my $arr = shift || ();
 
-    foreach my $one (@{$arr}) 
+    foreach my $one (@{$arr})
     {
         return 1 if $one =~ /^$str$/;
     }
@@ -205,7 +205,7 @@ sub createPatchstatusQuery($$)
                 # if no number is given skip to next
                 next unless defined $2;
                 # if not lower or greater is defined it means equal
-                # $op should not be $self->{'dbh'}->quote~d so make sure only  <, >, = are possible 
+                # $op should not be $self->{'dbh'}->quote~d so make sure only  <, >, = are possible
                 my $op = (defined $1) ?  ($1 eq '>' ? '>':'<' ) : '=';
                 # create where statement snippet
                 push(@whereClause, sprintf(" ps.$KEYS[$i] $op %s ", $self->{'dbh'}->quote($2) ));
@@ -276,7 +276,7 @@ sub createSQLStatement($$)
             if ( defined ${$filter}{$prop}  &&  ${$filter}{$prop} !~ /^$/ )
             {
                 push( @where, " cl.$prop LIKE " . $self->{'dbh'}->quote(${$filter}{$prop}) . ' ' );
-            }        
+            }
         }
     }
 
@@ -301,7 +301,7 @@ sub createSQLStatement($$)
         }
         push( @where, $patchstatusQuery) unless ( $patchstatusQuery eq '');
     }
- 
+
     # make sure the ID is in the select statement in any case
     push( @select, "ID" ) unless ( in_Array("ID", \@select) );
     # if XML gets exported then switch to lower case attributes
@@ -424,7 +424,7 @@ sub getClientsInfo($$)
     my $self = shift;
     my $filter = shift || {};
 
-    return undef unless ( isa($filter, 'HASH') );  
+    return undef unless ( isa($filter, 'HASH') );
     return $self->getClientsInfo_internal($filter);
 }
 
@@ -432,7 +432,7 @@ sub getClientsInfo($$)
 #
 # getClientInfoByGUID
 #   get detailled information about one client via his GUID
-#   For future compatibility there are both functions available ~ByID and ~ByGUID, as 
+#   For future compatibility there are both functions available ~ByID and ~ByGUID, as
 #   we will move to IDs as primary key in a later version.
 #   parameters:
 #    self
@@ -452,7 +452,7 @@ sub getClientInfoByGUID($$)
 #
 # getClientDetailsByID
 #   get detailled information about one client via his ID (internal SMT client ID)
-#   For future compatibility there are both functions available ~ByID and ~ByGUID, as 
+#   For future compatibility there are both functions available ~ByID and ~ByGUID, as
 #   we will move to IDs as primary key in a later version.
 #   parameters:
 #    self
@@ -532,7 +532,7 @@ sub getClientIDByGUID($$)
     my $guid = shift || "";
 
     return undef unless (defined $guid && $guid !~ /^$/);
-    my $res = $self->getClientsInfo_internal({ 'GUID' => $guid, 
+    my $res = $self->getClientsInfo_internal({ 'GUID' => $guid,
                                         'ID' => ''  });
     if ( keys %{$res} == 1 )
     {
@@ -601,8 +601,8 @@ sub updatePatchstatus($$)
         my $PSs = $self->{'dbh'}->quote($2) || 'NULL';
         my $PSr = $self->{'dbh'}->quote($3) || 'NULL';
         my $PSo = $self->{'dbh'}->quote($4) || 'NULL';
- 
-        $sql .= " ( $cid, $PSp, $PSs, $PSr, $PSo, CURRENT_TIMESTAMP ) ";     
+
+        $sql .= " ( $cid, $PSp, $PSs, $PSr, $PSo, CURRENT_TIMESTAMP ) ";
         $sql .= ' ON DUPLICATE KEY UPDATE ';
         $sql .= " PKGMGR = $PSp , SECURITY = $PSs , RECOMMENDED = $PSr , OPTIONAL = $PSo, PATCHSTATUS_DATE = CURRENT_TIMESTAMP ";
     }
@@ -657,13 +657,13 @@ sub updateLastContact($)
 }
 
 
-# 
-# Counts the number of patches of particular patch level 
+#
+# Counts the number of patches of particular patch level
 # and returns an appropriate label that describes such status
 # and non-localized status string
 #
 # See CLIENT_STATUS_LABEL and CLIENT_STATUS constants
-# 
+#
 sub getPatchStatusLabel ($)
 {
     my $client_data = shift || {};

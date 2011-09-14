@@ -44,7 +44,7 @@ Arguments are an anonymous hash array of parameters:
 
 =item vblevel <level>
 
-Set the verbose level. 
+Set the verbose level.
 
 =item log
 
@@ -60,8 +60,8 @@ Table name
 
 =item key
 
-Primary key of the table. If more then one column build the primary key, provide 
-a array reference. 
+Primary key of the table. If more then one column build the primary key, provide
+a array reference.
 
 =item fromdir
 
@@ -101,12 +101,12 @@ sub new
     $self->{ELEMENT} = "";
     $self->{TABLE}   = "";
     $self->{KEYNAME}     = [];
-    
+
     $self->{XML}->{DATA}    = {};
 
     $self->{FROMDIR} = undef;
     $self->{TODIR}   = undef;
-    
+
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -150,7 +150,7 @@ sub new
 
     $self->{AUTHUSER} = $authuser;
     $self->{AUTHPASS} = $authpass;
-    
+
     bless($self);
 
     if(exists $opt{key} && defined $opt{key})
@@ -203,14 +203,14 @@ sub table
 
 =item key([$key|@key])
 
-Set or get the key name(s). 
+Set or get the key name(s).
 
 =cut
 sub key
 {
     my $self = shift;
-    if (@_) 
-    { 
+    if (@_)
+    {
         my $data = shift;
         if(ref($data) eq "ARRAY")
         {
@@ -278,7 +278,7 @@ sub _requestData
 
     my $uri = URI->new($self->{URI});
     $uri->query("command=regdata&lang=en-US&version=1.0");
-    
+
     my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
              "client_version" => "1.2.3",
              "lang" => "en");
@@ -287,7 +287,7 @@ sub _requestData
     my $writer = new XML::Writer(NEWLINES => 0, OUTPUT => \$content);
     $writer->xmlDecl();
     $writer->startTag($self->{ELEMENT}, %a);
-    
+
     $writer->startTag("authuser");
     $writer->characters($self->{AUTHUSER});
     $writer->endTag("authuser");
@@ -295,16 +295,16 @@ sub _requestData
     $writer->startTag("authpass");
     $writer->characters($self->{AUTHPASS});
     $writer->endTag("authpass");
-    
+
     $writer->startTag("smtguid");
     $writer->characters($self->{SMTGUID});
     $writer->endTag("smtguid");
-    
+
     $writer->endTag($self->{ELEMENT});
-    
+
     my $response = "";
     my $redirects = 0;
-    
+
     do
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Send to '$uri' content: $content") ;
@@ -317,7 +317,7 @@ sub _requestData
         };
         if($@)
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Failed to POST '%s'"), 
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Failed to POST '%s'"),
                                                     $uri->as_string()));
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $@);
             return undef;
@@ -325,7 +325,7 @@ sub _requestData
 
         # enable this if you want to have a trace
         #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, Data::Dumper->Dump([$response]));
-        
+
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Result: ".$response->code()." ".$response->message()) ;
 
         if ( $response->is_redirect )
@@ -336,14 +336,14 @@ sub _requestData
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Reach maximal redirects. Abort");
                 return undef;
             }
-            
+
             my $newuri = $response->header("location");
-            
+
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Redirected to $newuri") ;
             $uri = URI->new($newuri);
         }
     } while($response->is_redirect);
-    
+
     if( $response->is_success && -e $destdir."/".$self->{ELEMENT}.".xml")
     {
         if($self->vblevel() & LOG_DEBUG)
@@ -355,7 +355,7 @@ sub _requestData
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Content:".join("\n", @c));
             };
         }
-        
+
         return $destdir."/".$self->{ELEMENT}.".xml";
     }
     else
@@ -403,14 +403,14 @@ sub ncc_handler
             # fix RELEASE => REL
             $data->{REL} = $data->{RELEASE};
             delete $data->{RELEASE};
-        }        
+        }
 
         if(exists $data->{PARAM} && defined $data->{PARAM})
         {
             # fix PARAM => PARAMLIST
             $data->{PARAMLIST} = $data->{PARAM};
             delete $data->{PARAM};
-        }        
+        }
 
 
         $data->{PRODUCTLOWER} = lc($data->{PRODUCT}) if(exists $data->{PRODUCT} && defined $data->{PRODUCT});
@@ -418,8 +418,8 @@ sub ncc_handler
         $data->{RELLOWER}     = lc($data->{REL}) if(exists $data->{REL} && defined $data->{REL});
         $data->{ARCHLOWER}    = lc($data->{ARCH}) if(exists $data->{ARCH} && defined $data->{ARCH});
     }
-        
-    push @{$self->{XML}->{DATA}->{$root}}, $data; 
+
+    push @{$self->{XML}->{DATA}->{$root}}, $data;
 }
 
 
@@ -430,7 +430,7 @@ sub _updateDB
 
     my $table = $self->{TABLE};
     my $key   = $self->{KEYNAME};
-    
+
     if(!defined $table || $table eq "")
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid table name");
@@ -441,14 +441,14 @@ sub _updateDB
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid key element.");
         return 1;
     }
-    
+
     if(! exists $self->{XML}->{DATA}->{$self->{ELEMENT}})
     {
         # data not available; no need to update the database
         printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "No $self->{ELEMENT} returned.");
         return 0;
     }
-    
+
     my $dbh = SMT::Utils::db_connect();
     if(!defined $dbh)
     {
@@ -461,21 +461,21 @@ sub _updateDB
     {
         push @q_key, $dbh->quote_identifier($k);
     }
-    
+
     # get all datasets which are from NCC
     my $stm = sprintf("SELECT %s FROM %s WHERE SRC='N'", join(',', @q_key),  $dbh->quote_identifier($table));
-    
+
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $stm") ;
-    
+
     my $alln = $dbh->selectall_arrayref($stm, {Slice=>{}});
-    
+
     my $allhash = {};
-    
+
     foreach my $sv (@{$alln})
     {
         my $str = "";
         my $j=0;
-        foreach my $k (@$key) 
+        foreach my $k (@$key)
         {
             $str .= "-" if($j > 0);
             $str .= $sv->{$k};
@@ -483,13 +483,13 @@ sub _updateDB
         }
         $allhash->{$str} = 1;
     }
-    
+
     foreach my $row (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
     {
         my @primkeys_where = ();
         my $str = "";
         my $j=0;
-        foreach (@$key) 
+        foreach (@$key)
         {
             push @primkeys_where, $dbh->quote_identifier($_)."=".$dbh->quote($row->{$_});
             $str .= "-" if($j > 0);
@@ -499,11 +499,11 @@ sub _updateDB
         delete $allhash->{$str} if(exists $allhash->{$str});
 
         # does the key exists in the db?
-        my $st = sprintf("SELECT %s FROM %s WHERE %s", 
+        my $st = sprintf("SELECT %s FROM %s WHERE %s",
                          join(',', @q_key), $dbh->quote_identifier($table), join(' AND ', @primkeys_where));
-        
+
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st") ;
-                    
+
         my $all = $dbh->selectall_arrayref($st);
 
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, Data::Dumper->Dump([$all]))  ;
@@ -519,7 +519,7 @@ sub _updateDB
             else
             {
                 # we need to check if this is ATI or NVidia SP1 repos and have to rename it
-                
+
                 if($row->{NAME} eq "ATI-Drivers" && $row->{EXTURL} =~ /sle10sp1/)
                 {
                     $row->{NAME} = $row->{NAME}."-SP1";
@@ -528,12 +528,12 @@ sub _updateDB
                 {
                     $row->{NAME} = $row->{NAME}."-SP1";
                 }
-                
+
                 $row->{LOCALPATH} = 'RPMMD/'.$row->{NAME};
             }
         }
 
-        
+
         # PRIMARY KEY exists in DB, do update
         if(@$all == 1)
         {
@@ -552,16 +552,16 @@ sub _updateDB
                     push @pairs, $dbh->quote_identifier($cn)." = ".$dbh->quote($row->{$cn});
                 }
             }
-            
-            # if all columns of a table are part of the primary key 
+
+            # if all columns of a table are part of the primary key
             # no update is needed. We found this with the select above.
             # This row is up-to-date.
             next if(@pairs == 0);
-            
+
             $statement .= join(', ', @pairs);
 
             $statement .= " WHERE ".join(' AND ', @primkeys_where);
-            
+
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement") ;
 
             eval
@@ -596,9 +596,9 @@ sub _updateDB
             $statement .= ") VALUES (";
             $statement .= join(',', @v);
             $statement .= ")";
-            
+
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement") ;
-            
+
             eval
             {
                 $dbh->do($statement);
@@ -624,7 +624,7 @@ sub _updateDB
         if(@$key > 1)
         {
             my @vals = split(/-/, $set);
-            
+
             for(my $j=0; $j < @vals; $j++)
             {
                 push @primkeys_where, $dbh->quote_identifier($key->[$j])." = ".$dbh->quote($vals[$j]);
@@ -634,14 +634,14 @@ sub _updateDB
         {
             push @primkeys_where, $dbh->quote_identifier($key->[0])." = ".$dbh->quote($set);
         }
-        
+
         my $delstr = sprintf("DELETE from %s where %s", $dbh->quote_identifier($table), join(' AND ', @primkeys_where));
-        
+
         my $res = $dbh->do($delstr);
 
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $delstr Result: $res") ;
     }
-    
+
     $dbh->disconnect;
     return 0;
 }

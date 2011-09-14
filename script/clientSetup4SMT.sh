@@ -195,7 +195,7 @@ SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
 
 
 $CAT $SRCONF | $GREP -v "^url" > $SRCTMP
-$CP $SRCONF ${SRCONF}-`date '+%F'` 
+$CP $SRCONF ${SRCONF}-`date '+%F'`
 echo "url=$REGURL" > $SRCONF
 $CAT $SRCTMP >> $SRCONF
 $RM $SRCTMP
@@ -212,7 +212,7 @@ if [ -z $TMPDIR ]; then
     exit 1
 fi
 
-$WGET --quiet --mirror --no-parent --no-host-directories --directory-prefix $TMPDIR --cut-dirs 2 $KEYSURL 
+$WGET --quiet --mirror --no-parent --no-host-directories --directory-prefix $TMPDIR --cut-dirs 2 $KEYSURL
 
 for key in `ls $TMPDIR/*.key 2>/dev/null`; do
 
@@ -236,7 +236,7 @@ for key in `ls $TMPDIR/*.key 2>/dev/null`; do
     if [ "$YN" != "Y" -a "$YN" != "y" ]; then
         continue ;
     fi
-   
+
     rpm --import $key
 done
 

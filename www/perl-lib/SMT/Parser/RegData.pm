@@ -18,7 +18,7 @@ sub new
     $self->{LOG}       = undef;
     $self->{VBLEVEL}   = 0;
     $self->{ERRORS}    = 0;
-    
+
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
@@ -52,7 +52,7 @@ sub parse()
     my $handler  = shift;
 
     $self->{HANDLER} = $handler;
-    
+
     if (!defined $file)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid filename");
@@ -76,7 +76,7 @@ sub parse()
                                     Char => sub { handle_char_tag($self, @_) },
                                     End=> sub { handle_end_tag($self, @_) },
                                    });
-    
+
     if ( $file =~ /(.+)\.gz/ )
     {
         my $fh = IO::Zlib->new($file, "rb");
@@ -130,7 +130,7 @@ sub handle_start_tag()
 #         else
 #         {
         $self->{COLNAME} = $attrs{name};
-        
+
         # undef to indicate a NULL value which is defined for an empyt col element
         $self->{CURRENT}->{$attrs{name}} = undef;
 #        }
@@ -172,7 +172,7 @@ sub handle_char_tag
 sub handle_end_tag
 {
     my( $self, $expat, $element ) = @_;
-    
+
     if(lc($element) eq "col")
     {
         $self->{COLNAME} = "";
@@ -180,7 +180,7 @@ sub handle_end_tag
     elsif(lc($element) eq "row")
     {
         $self->{CURRENT}->{MAINELEMENT} = $self->{MAINELEMENT};
-        
+
         # first call the callback
         $self->{HANDLER}->($self->{CURRENT});
     }

@@ -27,11 +27,11 @@ sub saveStatus($)
     my $mirrorfile = $repopath.'/'.TIMESTAMP_FILE;
     unlink $mirrorfile if (-e $mirrorfile);
 
-    # Creates a .mirror file in the root of a repository 
+    # Creates a .mirror file in the root of a repository
     open MIRROR, ">$mirrorfile" || return 0;
     print MIRROR time;
     close MIRROR;
-    
+
     return 1;
 }
 
@@ -95,16 +95,16 @@ sub getStatus($)
     return $ret;
 }
 
-=head1 NOTES 
- 
-=head1 AUTHOR 
- 
+=head1 NOTES
+
+=head1 AUTHOR
+
 jkupec@suse.cz, locilka@suse.cz
- 
-=head1 COPYRIGHT 
- 
-Copyright 2009 SUSE LINUX Products GmbH, Nuernberg, Germany. 
- 
+
+=head1 COPYRIGHT
+
+Copyright 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
 =cut
 
 1;

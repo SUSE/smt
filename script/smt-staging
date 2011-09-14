@@ -113,7 +113,7 @@ sub printhelp
 if ($help || !$optres)
 {
     printhelp(basename($0));
-    exit 0;    
+    exit 0;
 }
 
 if(!SMT::Utils::dropPrivileges())
@@ -296,9 +296,9 @@ my $basepath = $cfg->val("LOCAL", "MirrorTo");
 my $localfullrepopath = SMT::Utils::cleanPath(
     $basepath, "repo/full", $repo->{LOCALPATH});
 my $localtestingrepopath = SMT::Utils::cleanPath(
-    $basepath, $rh->getTestingRepoPath($repoid)); 
+    $basepath, $rh->getTestingRepoPath($repoid));
 my $localproductionrepopath = SMT::Utils::cleanPath(
-    $basepath, $rh->getProductionRepoPath($repoid)); 
+    $basepath, $rh->getProductionRepoPath($repoid));
 
 
 # list of known patch categories
@@ -420,7 +420,7 @@ elsif ($command eq 'listupdates')
             print sprintf (__("Cannot use %s when %s is specified. Ignoring."),
                 '--category', '--patch') . "\n";
         }
-        
+
         foreach (@userpatches)
         {
             if (not defined $patches->{$_})
@@ -474,7 +474,7 @@ elsif ($command eq 'listupdates')
         my @cols = (
             __("T"),
             __("P"),
-            __("Name"), 
+            __("Name"),
             __("Version"),
             __("Category")
         );
@@ -520,7 +520,7 @@ elsif ($command eq 'listupdates')
                 $patches->{$id}->{type}
             );
             push @row, $patches->{$id}->{title} if (not $nodesc);
-            $t->addRow(@row); 
+            $t->addRow(@row);
         }
         if (%$patches)
         {
@@ -629,7 +629,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
                         push @stillfiltered, $_
                             if ($filter->matches($patches->{$_}))
                     }
-    
+
                     if (@stillfiltered)
                     {
                         print __('The following patches are still filtered by other means than category:') . "\n";
@@ -684,7 +684,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         else
         {
             # remove all filters first, then forbid all, individually
-            $filter->clean(); 
+            $filter->clean();
             $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
                 foreach (keys %$patches);
             SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
@@ -704,29 +704,29 @@ elsif ($command eq 'allow' || $command eq 'forbid')
     if ($filter->dirty() && not $all)
     {
         my $checker = SMT::Parser::FilteredRepoChecker->new(
-            log => $log, vblevel => $vblevel); 
+            log => $log, vblevel => $vblevel);
         $checker->repoPath($localfullrepopath);
         $checker->filter($filter);
         printLog ($log, $vblevel, LOG_INFO2, __('Checking repository consistency...'));
         my ($result, $problems, $causes) = $checker->check();
         printLog ($log, $vblevel, LOG_DEBUG, 'DONE checking dependencies', 0);
-    
+
         if (not $result)
         {
             SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
                 __("Dependecy problems found."));
-    
+
             foreach my $pkg (keys %$problems)
             {
                 printLog ($log, $vblevel, LOG_ERROR, sprintf (
                     __("Cannot remove package '%s' required by forbidden patch '%s'.\n"),
                     $pkg, $causes->{$pkg}));
-    
+
                 printLog ($log, $vblevel, LOG_ERROR, sprintf (
                     __("The package is needed by patch '%s', which is allowed.\n"),
                     $problems->{$pkg}));
             }
-    
+
             SMT::Utils::unLockAndExit( "smt-staging", 1, $log, $vblevel );
         }
         else
@@ -961,7 +961,7 @@ counts.
 =item patch
 
 An update of a package or group of packages. The term I<update> and I<patch> are
-interchangable throughout this manual and in the C<smt staging> script. 
+interchangable throughout this manual and in the C<smt staging> script.
 
 =back
 
@@ -1017,13 +1017,13 @@ The following options apply to any command.
 =item -L, --logfile <filepath>
 
 Write log to the specified file. If the file does not exist, it will be
-created. 
+created.
 
 =item -d, --debug
 
 Turn on debugging output and log.
 
-=item -v, --verbose 
+=item -v, --verbose
 
 Enable more detailed output.
 
@@ -1045,7 +1045,7 @@ The output is as follows:
     the repository has not ever been (successfully) created
  'created (corresponding mirror date: YYYY-MM-DD hh:mm:ss)'
     meaning the repository has been successfully created from the full mirror
-    which was mirrored on the shown date. 
+    which was mirrored on the shown date.
 
 =item listupdates
 
@@ -1118,7 +1118,7 @@ used multiple times.
 This option is used in the B<allow>, B<forbid>, and B<listupdates> commands.
 
 If used in B<listupdates>, the command will print detailed information about
-the specified patches. 
+the specified patches.
 
 =item --category
 
@@ -1136,7 +1136,7 @@ Allow or forbid all patches in the B<allow> or B<forbid> commands.
 =item --individually
 
 Allow or forbid multiple patches (e.g. by category) one by one, that is,
-as if the I<--patch> option had been used on each of the patches. 
+as if the I<--patch> option had been used on each of the patches.
 
 =item --testing
 

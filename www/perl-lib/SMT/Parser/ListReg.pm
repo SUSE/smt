@@ -31,7 +31,7 @@ sub new
     $self->{LOG}       = undef;
     $self->{VBLEVEL}   = 0;
     $self->{ERRORS}    = 0;
-    
+
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
@@ -63,9 +63,9 @@ sub parse()
     my $self     = shift;
     my $file     = shift;
     my $handler  = shift;
-    
+
     $self->{HANDLER} = $handler;
-    
+
     if (!defined $file)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid filename");
@@ -82,7 +82,7 @@ sub parse()
         $self->{ERRORS} += 1;
         return $self->{ERRORS};
     }
-    
+
     my $parser = XML::Parser->new( Handlers =>
                                    {
                                     Start=> sub { handle_start_tag($self, @_) },
@@ -168,7 +168,7 @@ sub handle_end_tag
         # first call the callback
         $self->{HANDLER}->($self->{CURRENT});
 
-        $self->{ELEMENT} = undef; 
+        $self->{ELEMENT} = undef;
         $self->{REGCODE} = "";
         $self->{CURRENT} = undef;
     }
@@ -176,9 +176,9 @@ sub handle_end_tag
     {
         chomp($self->{REGCODE});
         push @{$self->{CURRENT}->{SUBREF}}, $self->{REGCODE};
-        $self->{REGCODE} = "";        
+        $self->{REGCODE} = "";
     }
-    
+
 }
 
 1;

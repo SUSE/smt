@@ -70,7 +70,7 @@ sub uiName
 sub findById
 {
     my ($dbh, $id) = @_;
-    
+
     my $sql = "select productdataid, product, version, rel, arch, friendly from Products where productdataid = ?;";
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $id, SQL_INTEGER);
@@ -86,7 +86,7 @@ sub findById
     $p->release($pdata->{rel});
     $p->arch($pdata->{arch});
     $p->uiName($pdata->{friendly});
-    
+
     return $p;
 }
 
@@ -103,7 +103,7 @@ sub asXML
         arch => $self->arch,
         uiname => $self->uiName
     };
-    
+
     return XMLout($xdata,
         rootname => 'product',
         xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
@@ -114,7 +114,7 @@ sub asXML
 sub getAllAsXML
 {
     my $dbh = shift;
-    
+
     my $sql = "select productdataid, product, version, rel, arch, friendly from Products;";
     my $sth = $dbh->prepare($sql);
     $sth->execute();

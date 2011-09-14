@@ -130,12 +130,12 @@ foreach my $sname (@sections)
     my $mirror          = (lc($cfg->val($sname, "mirror")) eq "true")?1:0;
 
     next if(!$mirror);
-    
+
     my $mirror_prod     = $cfg->val($sname, "mirror_prod");
     my @mirror_archs    = split(/\s*,\s*/, $cfg->val($sname, "mirror_archs"));
     my @mirror_versions = split(/\s*,\s*/, $cfg->val($sname, "mirror_version"));
     my $credentials     = $cfg->val($sname, "credentials");
-    
+
     foreach my $arch (@mirror_archs)
     {
         foreach my $version (@mirror_versions)
@@ -143,17 +143,17 @@ foreach my $sname (@sections)
             # reset error variable
             $errors = 0;
             my $t0 = [gettimeofday] ;
-            
+
             my $uri = URI->new("https://you.novell.com/");
             $uri->userinfo($credentials);
             $uri->path("/update/$arch/update/$mirror_prod/$version/");
-            
+
             my $saveuri = $uri->clone();
             $saveuri->userinfo(undef);
-            
+
             my $destdir = "$mirrorTo/$arch/update/$mirror_prod/$version/";
             &File::Path::mkpath( $destdir );
-            
+
             my   $cmd = "/usr/bin/wget";
             my   @cmdargs = ("--mirror", "--no-parent", "--no-host-directories");
             push @cmdargs, "--dns-timeout", "30";
@@ -162,24 +162,24 @@ foreach my $sname (@sections)
             push @cmdargs, "--directory-prefix", $destdir;
             push @cmdargs, "--cut-dirs", "5"; #, "-nv";
             push @cmdargs, "-i", "-";
-            
+
             SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri->as_string));
             SMT::Utils::printLog($log, $vblevel, LOG_INFO1, sprintf(__("Target:    %s"), $destdir));
 
             printLog($log, $vblevel, LOG_DEBUG2, "Execute $cmd ".join(" ", @cmdargs));
-            
+
             my $pid = open3(\*IN, \*ERR, \*ERR, $cmd, @cmdargs) or do
             {
                 SMT::Utils::printLog($log, $vblevel, LOG_ERROR, "Cannot execute $cmd ".join(" ", @cmdargs).": $!");
                 return 1;
             };
             print IN $uri->as_string."\n";
-            
+
             close IN;
-            
+
             my $err = "";
             my $currentfile="";
-            
+
             while (<ERR>)
             {
                 $err = $_;
@@ -188,7 +188,7 @@ foreach my $sname (@sections)
                 next if($err =~ /\.\.\.\.\./);
 
                 printLog($log, $vblevel, LOG_DEBUG2, "wgetout: $err");
-                
+
                 if($err =~ /not\s+retrieving/i)
                 {
                     SMT::Utils::printLog($log, $vblevel, LOG_DEBUG, sprintf("----> %s is up to date", $currentfile));
@@ -199,7 +199,7 @@ foreach my $sname (@sections)
                     SMT::Utils::printLog($log, $vblevel, LOG_DEBUG, sprintf("Fetch [%s]", $currentfile));
                     $currentfile = "";
                 }
-                
+
                 if($err =~ /--\s+(http.*)$/)
                 {
                     next if("$1" eq "$currentfile");
@@ -211,7 +211,7 @@ foreach my $sname (@sections)
                 {
                     my $code = $1;
                     my $msg  = $2;
-                    
+
                     if(int($code) >= 400)
                     {
                         next if(int($code) == 401);  # Unauthorized means, password not yet send. We can ignore this
@@ -274,7 +274,7 @@ smt mirror-sle9 [--debug] [--logfile <file>]
 
 =head1 DESCRIPTION
 
-C<smt mirror-sle9> mirror old style update repositories which were used for 
+C<smt mirror-sle9> mirror old style update repositories which were used for
 SUSE LINUX Enterprise Server 9 and similar products. This script mirrores from
 I<you.novell.com>.
 
@@ -306,7 +306,7 @@ Show a help message.
 =over
 
 The sections which are used by C<smt mirror-sle9> begin with B<YOU9->. All
-products which are still in maintanence mode are listed. 
+products which are still in maintanence mode are listed.
 
 =item mirror_prod
 
@@ -315,7 +315,7 @@ The product name.
 =item mirror_archs
 
 List of architectures which should be mirrored. The list is seperated by B<,>.
-The default list include all possible architectures. Remove the once you 
+The default list include all possible architectures. Remove the once you
 do not want to mirror.
 
 =item mirror_version

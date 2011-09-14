@@ -113,7 +113,7 @@ smt delete-registration
 
 =head1 SYNOPSIS
 
-smt [help|--help|-h] delete-registration 
+smt [help|--help|-h] delete-registration
 
 smt delete-registration --guid|-g id1 [--guid|-g id2] ...
 

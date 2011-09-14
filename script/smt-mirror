@@ -133,7 +133,7 @@ if($help || !$optres)
     print "                        " . __("mirrored repository, but copy it.\n");
     print "--dbreplfile arg        " . __("Path to XML file to use as database replacement. Such a file can\n");
     print "                        " . __("be created with the sync-ncc command. This option is only\n");
-    print "                        " . __("useful if the smt database does not exist on the host from\n"); 
+    print "                        " . __("useful if the smt database does not exist on the host from\n");
     print "                        " . __("which the smt-mirror script is being executed.\n");
     print "--mail -m               " . __("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
     print "                        " . __("The output on stdout and stderr will be suppressed.\n");
@@ -201,7 +201,7 @@ else
         eval {
             &File::Path::mkpath($LocalBasePath);
         };
-        if ($@) 
+        if ($@)
         {
             SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $LocalBasePath, $@));
             SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
@@ -228,13 +228,13 @@ if ( $fromlocalsmt )
 {
     if ( $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
                 sprintf( __("Using '--fromlocalsmt' requires the '--directory' argument.")));
         SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
     }
     if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
                 sprintf( __("The options '--fromlocalsmt' and '--fromdir' cannot be used at the same time")));
         SMT::Utils::unLockAndExit( "smt-mirror", 1, $LOG, $vblevel );
     }
@@ -252,7 +252,7 @@ my $dbh = undef;
 if(!defined $dbreplfile)
 {
     $dbh = SMT::Utils::db_connect($cfg);
-    
+
     if(!$dbh)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot connect to database"));
@@ -263,7 +263,7 @@ else
 {
     # add a parser
     $dbreplacement = [];
-    
+
     my $parser = SMT::Parser::RegData->new();
     $parser->parse( $dbreplfile, sub { catalog_handler($dbreplacement, @_); });
 }
@@ -365,7 +365,7 @@ foreach my $entry (@{$array})
         {
             $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                   mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
-        }        
+        }
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $entry->{LOCALPATH} );
 
@@ -500,7 +500,7 @@ foreach my $entry (@{$array})
                 if ($@)
                 {
                     SMT::Utils::printLog ($LOG, $vblevel, LOG_ERROR,
-                        "Error getting patch data from repository: $@", 0, 1); 
+                        "Error getting patch data from repository: $@", 0, 1);
                 }
             }
 
@@ -509,7 +509,7 @@ foreach my $entry (@{$array})
             if ( ! $errors && $LocalBasePath eq $cfg->val("LOCAL", "MirrorTo") )
             {
                 my $rh = SMT::Repositories::new($dbh, $LOG);
-                if ( !$dryrun ) 
+                if ( !$dryrun )
                 {
                     $rh->updateLastMirror ($entry->{CATALOGID});
                     # Something new has been downloaded, update the mirroring timestamp
@@ -551,13 +551,13 @@ if(!defined $dbreplfile)
 	"from Catalogs ".
 	"where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
 	"CATALOGID" );
-    
+
     if(keys %{$hash} > 0)
     {
-    
+
         my $warning = __("WARNING: The following repositories cannot be mirrored.\n");
         $warning   .= __("         Maybe you have not enough permissions to download these repositories?\n\n");
-        
+
         foreach my $id (keys %{$hash})
         {
             $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
@@ -581,7 +581,7 @@ if(!$clean && !$hardlink)
 {
     # print summary only when mirroring
     my @summary = ();
-    
+
     push @summary, __("Summary");
     push @summary, sprintf(__("Total transfered files    : %d "), $download );
     push @summary, sprintf(__("Total transfered file size: %d (%s)"), $size, SMT::Utils::byteFormat($size));
@@ -599,7 +599,7 @@ if(!$clean && !$hardlink)
     }
     push @summary, sprintf(__("Errors:                   : %d"), $errors);
     push @summary, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime)));
-    
+
     if(!$mail)
     {
         foreach my $str (@summary)
@@ -616,11 +616,11 @@ if(!$clean && !$hardlink)
             $body .= $str."\n";
         }
         $body .= "\n";
-        
+
         close (STDOUT);
         close (STDERR);
         close (MAILTEMPFILE);
-        
+
         open(MAIL, "< $mailtempfile") and do
         {
             while(<MAIL>)
@@ -633,7 +633,7 @@ if(!$clean && !$hardlink)
         my $subject = sprintf("SMT Mirror Report $datestring (%s) -- $errors Errors", SMT::Utils::getFQDN());
         SMT::Utils::sendMailToAdmins($subject, $body);
     }
-    
+
     #
     # does not make sense here. If a complete repo is up-to-date we do not have the number of files
     #
@@ -651,7 +651,7 @@ sub catalog_handler
 
     #print "called ".Data::Dumper->Dump([$node])."\n";
 
-    if(defined $node && ref($node) eq "HASH" && 
+    if(defined $node && ref($node) eq "HASH" &&
        exists $node->{MAINELEMENT} && defined $node->{MAINELEMENT} &&
        lc($node->{MAINELEMENT}) eq "catalogs")
     {
@@ -671,7 +671,7 @@ sub signal_handler
 
 =head1 NAME
 
-smt mirror 
+smt mirror
 
 =head1 SYNOPSIS
 
@@ -690,11 +690,11 @@ C<smt mirror> performs the mirroring procedure and downloads repositories which 
 If it is called with the B<--clean> parameter it searches inside of the mirrored repositories for
 obsolete files and remove them.
 
-The B<--hardlink> paramter cause C<smt mirror> to search for files greater then I<size>. If it finds 
+The B<--hardlink> paramter cause C<smt mirror> to search for files greater then I<size>. If it finds
 duplicate files it creates hardlinks instead of holding two copies of the same file.
 
 Depending on the verbose level you will see the files which are checked in the output.
-Such a line starts with a flag to show the status of this file. 
+Such a line starts with a flag to show the status of this file.
 
 =over
 
@@ -735,9 +735,9 @@ It shows only the names which would be downloaded.
 
 =item --dbreplfile <file>
 
-Path to XML file to use as database replacement. Such a file can      
+Path to XML file to use as database replacement. Such a file can
 be created with the sync-ncc command. This option is only
-useful if the smt database does not exist on the host from 
+useful if the smt database does not exist on the host from
 which the smt-mirror script is being executed.
 
 =item --fromdir <path>
@@ -765,7 +765,7 @@ Enable debug mode.
 
 =item --verboselevel -v <level>
 
-Set the output verbose level. The following categories exists. 
+Set the output verbose level. The following categories exists.
 These categories can be bitwise-or'd to use as verbose level.
 
 =over 4
@@ -822,7 +822,7 @@ The output on stdout and stderr will be suppressed in this mode.
 
 Enable clean mode. With this parameter C<smt mirror> searches inside of
 the mirrored repositories for
-obsolete files and remove them. It does not mirror new files. 
+obsolete files and remove them. It does not mirror new files.
 
 =item --directory <path>
 
@@ -845,7 +845,7 @@ Enable debug mode.
 
 =item --verboselevel -v <level>
 
-Set the output verbose level. 
+Set the output verbose level.
 
 =back
 
@@ -874,7 +874,7 @@ Enable debug mode.
 
 =item --verboselevel -v <level>
 
-Set the output verbose level. 
+Set the output verbose level.
 
 =back
 
@@ -894,7 +894,7 @@ run mirror with verifing all checksums and debug mode
 
 clean the repositories from files, which are no longer mentioned in the metadata
 
- smt mirror --clean 
+ smt mirror --clean
 
 create hardlinks for all duplicate files greater then 20000 kb
 

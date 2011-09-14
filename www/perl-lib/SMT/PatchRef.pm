@@ -87,7 +87,7 @@ sub type
 
 sub setFromHash
 {
-    my ($self, $data) = @_; 
+    my ($self, $data) = @_;
     $self->id($data->{id});
     $self->title($data->{title});
     $self->url($data->{href});
@@ -116,7 +116,7 @@ sub findByPatchId
         $p->type($pdata->{REFTYPE});
         $p->url($pdata->{URL});
         $p->{DIRTY} = 0;
-  
+
         $prs->{$p->id()} = $p;
     }
 

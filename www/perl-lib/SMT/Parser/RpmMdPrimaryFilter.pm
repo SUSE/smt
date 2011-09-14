@@ -166,7 +166,7 @@ sub parse($$)
     foreach my $pkg (@$unwanted)
     {
         my $nvra = $pkg->{name} . '-' .
-            (defined $pkg->{epo} ? $pkg->{epo} : '0') . ':' .  
+            (defined $pkg->{epo} ? $pkg->{epo} : '0') . ':' .
             $pkg->{ver} . '-' .
             $pkg->{rel} . '.' .
             $pkg->{arch};
@@ -240,7 +240,7 @@ sub handle_start_tag
 
     if (lc($element) eq 'package')
     {
-        if( exists $self->{CURRENT}->{MAINELEMENT} && 
+        if( exists $self->{CURRENT}->{MAINELEMENT} &&
             defined $self->{CURRENT}->{MAINELEMENT} &&
             $self->{CURRENT}->{MAINELEMENT})
         {
@@ -314,7 +314,7 @@ sub handle_char_tag
     my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        $self->{CURRENT}->{ORIGXML} .= $line;
     }
 
     if (defined $self->{CURRENT} && defined $self->{CURRENT}->{SUBELEMENT})
@@ -345,7 +345,7 @@ sub handle_end_tag
     my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        $self->{CURRENT}->{ORIGXML} .= $line;
     }
 
     if (exists $self->{CURRENT}->{MAINELEMENT} &&
@@ -411,7 +411,7 @@ sub handle_the_rest
     my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        $self->{CURRENT}->{ORIGXML} .= $line;
     }
 }
 

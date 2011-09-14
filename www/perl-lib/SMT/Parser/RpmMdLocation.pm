@@ -74,7 +74,7 @@ sub new
     $self->{VBLEVEL}   = 0;
     $self->{ERRORS}   = 0;
     $self->{DEFAULTARCH} = "noarch";
-    
+
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
@@ -122,16 +122,16 @@ sub parse
     my $handler  = shift;
 
     my $path     = undef;
-    
+
     $self->{HANDLER} = $handler;
-    
+
     if(!defined $self->{RESOURCE})
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid resource");
         $self->{ERRORS} += 1;
         return $self->{ERRORS};
     }
-    
+
     $path = $self->{RESOURCE}."/$repodata";
 
     # for security reason strip all | characters.
@@ -143,22 +143,22 @@ sub parse
         $self->{ERRORS} += 1;
         return $self->{ERRORS};
     }
-    
+
     # if we need these data sometimes later then we have to find
     # a new solution. But this save us 80% time.
     return $self->{ERRORS} if($repodata =~ /other\.xml[\.gz]*$/);
     return $self->{ERRORS} if($repodata =~ /filelists\.xml[\.gz]*$/);
     #return $self->{ERRORS} if($repodata =~ /updateinfo\.xml[\.gz]*$/);
     #return $self->{ERRORS} if($repodata =~ /susedata\.xml[\.gz]*$/);
-    
+
     my $parser;
-    
+
     $parser = XML::Parser->new( Handlers =>
                                 { Start=> sub { handle_start_tag($self, @_) },
                                   Char => sub { handle_char_tag($self, @_) },
                                   End=> sub { handle_end_tag($self, @_) },
                                 });
-    
+
     if ( $path =~ /(.+)\.gz/ )
     {
       my $fh = IO::Zlib->new($path, "rb");
@@ -206,10 +206,10 @@ sub handle_start_tag
         $self->{CURRENT}->{LOCATION} = undef;
     }
 
-    if ( lc($element) eq "package" || lc($element) eq "patch" || lc($element) eq "data" || 
+    if ( lc($element) eq "package" || lc($element) eq "patch" || lc($element) eq "data" ||
          lc($element) eq "delta" || lc($element) eq "patchrpm" || lc($element) eq "deltarpm" )
     {
-        if( exists $self->{CURRENT}->{MAINELEMENT} && 
+        if( exists $self->{CURRENT}->{MAINELEMENT} &&
             defined $self->{CURRENT}->{MAINELEMENT} &&
             $self->{CURRENT}->{MAINELEMENT} ne "")
         {
@@ -222,7 +222,7 @@ sub handle_start_tag
             $self->{CURRENT}->{ARCH} = ((defined $parentarch && $parentarch ne "")?"$parentarch":"$self->{DEFAULTARCH}");
             $self->{CURRENT}->{LOCATION} = undef;
         }
-        
+
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
     }
     elsif ( defined $self->{CURRENT}->{MAINELEMENT} && $self->{CURRENT}->{MAINELEMENT} ne "" &&
@@ -253,14 +253,14 @@ sub handle_start_tag
     {
         $self->{DEFAULTARCH} = $attrs{arch};
     }
-    
+
 }
 
 sub handle_char_tag
 {
     my $self = shift;
     my( $expat, $string ) = @_;
-    
+
     if (defined $self->{CURRENT} && defined $self->{CURRENT}->{SUBELEMENT})
     {
         if (lc($self->{CURRENT}->{SUBELEMENT}) eq "checksum")
@@ -289,13 +289,13 @@ sub handle_end_tag
     {
         # first: call the callback if LOCATION has a value
         if(exists $self->{CURRENT}->{LOCATION} &&
-           defined $self->{CURRENT}->{LOCATION} && 
+           defined $self->{CURRENT}->{LOCATION} &&
            $self->{CURRENT}->{LOCATION} ne "")
         {
             $self->{HANDLER}->($self->{CURRENT});
-               
+
             # second: check location if we have other metadata files to parse
-        
+
             if($self->{CURRENT}->{LOCATION} =~ /(.+)\.xml(.*)/)
             {
                 my $location = $self->{CURRENT}->{LOCATION};
@@ -308,9 +308,9 @@ sub handle_end_tag
                 $self->parse($location, $self->{HANDLER});
             }
         }
-        
+
         # third: check the STORE and move the last entry to CURRENT
-        
+
         $self->{CURRENT} = pop @{$self->{STORE}};
     }
     elsif ( exists $self->{CURRENT}->{SUBELEMENT} && defined $self->{CURRENT}->{SUBELEMENT} &&

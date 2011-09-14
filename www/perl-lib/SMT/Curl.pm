@@ -311,7 +311,7 @@ sub request
     else
     {
       printLog( $self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "$curlcode ".$self->{curlobj}->strerror($curlcode) );
-      my $response = HTTP::Response->new(&HTTP::Status::RC_INTERNAL_SERVER_ERROR, 
+      my $response = HTTP::Response->new(&HTTP::Status::RC_INTERNAL_SERVER_ERROR,
                                          "CURL ERROR($curlcode) ".$self->{curlobj}->strerror($curlcode));
       $response->request($request);
       $response->header("Client-Date" => HTTP::Date::time2str(time));

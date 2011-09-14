@@ -230,7 +230,7 @@ repackageArchive() {
 			test -n "$CONTACT_TERMID"  && echo "Terminal ID:          $CONTACT_TERMID" >> $LOGCONTACT
 			echo >> $LOGCONTACT
 			logEntry 'Details' Added
-	
+
 			logEntry 'Archiving' 'In Progress'
 			logFileCmd "tar ${TARCMP}cf ${NEW_ARCH_FILE} ${NEW_ARCH_DIR}/*"
 			if [ $? -gt 0 ]; then
@@ -349,7 +349,7 @@ uploadIncoming() {
 					RPG_ERR=1
 				fi
 			fi
-			if [ $RPG_ERR -eq 0 ]; then			
+			if [ $RPG_ERR -eq 0 ]; then
 				UPLOAD_FILEPATH=${SMT_INCOMING}/${ARCH_FILE}
 				logEntry Uploading $ARCH_FILE
 				test -s ${UPLOAD_FILEPATH}.md5 && secureUpload ${UPLOAD_FILEPATH}.md5

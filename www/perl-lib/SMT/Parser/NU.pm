@@ -99,7 +99,7 @@ sub parse()
     my $self     = shift;
     my $path     = shift;
     my $handler  = shift;
-    
+
     $self->{HANDLER} = $handler;
 
     # for security reason strip all | characters.
@@ -111,15 +111,15 @@ sub parse()
         $self->{ERRORS} += 1;
         return $self->{ERRORS};
     }
-    
+
     my $parser;
-    
+
     $parser = XML::Parser->new( Handlers =>
                                 {
                                  Start=> sub { handle_start_tag($self, @_) },
                                  End=> sub { handle_end_tag($self, @_) },
                                 });
-    
+
     if ( $path =~ /(.+)\.gz/ )
     {
         my $fh = IO::Zlib->new($path, "rb");
