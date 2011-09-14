@@ -63,10 +63,50 @@ sub help
 {
     print __("\nSMT database maintenance tool\n");
     print __("Available commands:");
-    print "  help : ".__("show help\n");
-    print "  init : ".__("initialize or upgrade database\n");
-    print "  setup: ".__("setup the database\n");
+    print "  help :    ".__("show help\n");
+    print "  init :    ".__("initialize or upgrade database\n");
+    print "  setup:    ".__("setup the database\n");
+    print "  optimize: ".__("optimize the database\n");
     exit 0;
+}
+
+sub optimize
+{
+  my $dbh;
+  if ( not $dbh=db_connect() )
+  {
+    print STDERR __("ERROR: Could not connect to the database.\n");
+    return 20;
+  }
+  
+  my @tables = ( "Catalogs",
+                 "ClientSubscriptions",
+                 "Clients",
+                 "Filters",
+                 "JobQueue",
+                 "MachineData",
+                 "Patchstatus",
+                 "ProductCatalogs",
+                 "Products",
+                 "Registration",
+                 "RepositoryContentData",
+                 "Subscriptions",
+                 "Targets"
+                 );
+  foreach my $table (@tables)
+  {
+    my $statement = sprintf("OPTIMIZE TABLE %s", $dbh->quote_identifier($table));
+    #print "STATMENT: $statement\n";
+    my $res = $dbh->selectall_arrayref($statement, { Slice => {}} );
+    foreach my $line (@{$res})
+    {
+      my $status = "     ";
+      $status = "ERROR" if($line->{Msg_type} eq "error");
+      $status = "WARN " if($line->{Msg_type} eq "warning");
+      $status = "INFO " if($line->{Msg_type} eq "info");
+      print "$status Table: ".$line->{Table}.": ".$line->{Msg_text}."\n";
+    }
+  }
 }
 
 sub migrate
@@ -319,51 +359,55 @@ sub setup
 
 if (defined $ARGV[0] ) 
 {
-    my $cmd = shift(@ARGV);
-    #print "cmd: $cmd\n";
-    if ( $cmd eq "help" )
+  my $cmd = shift(@ARGV);
+  #print "cmd: $cmd\n";
+  if ( $cmd eq "help" )
+  {
+    help();
+  }
+  elsif ( $cmd eq "init" )
+  {
+    migrate();
+  }
+  elsif ( $cmd eq "optimize" )
+  {
+    optimize();
+  }
+  elsif ( $cmd eq "setup" )
+  {
+    my $opt = "";
+    if (defined $ARGV[0] )
     {
-
+      $opt = shift(@ARGV);
     }
-    elsif ( $cmd eq "init" )
+    my $ret = setup($opt);
+    if($ret != 0)
     {
-        migrate();
+      exit $ret;
     }
-    elsif ( $cmd eq "setup" )
+    $ret = migrate();
+    if($ret != 0)
     {
-	my $opt = "";
-	if (defined $ARGV[0] )
-	{
-		$opt = shift(@ARGV);
-	}
-        my $ret = setup($opt);
-	if($ret != 0)
-	{
-		exit $ret;
-	}
-        $ret = migrate();
-	if($ret != 0)
-	{
-	        exit $ret;
-	}
+      exit $ret;
     }
-    elsif ( $cmd eq "cpw" )
+  }
+  elsif ( $cmd eq "cpw" )
+  {
+    my $opt = "";
+    if (defined $ARGV[0] )
     {
-	my $opt = "";
-        if (defined $ARGV[0] )
-        {
-                $opt = shift(@ARGV);
-        }
-	my $ret = cpw($opt);
-	if($ret != 0)
-        {
-                exit $ret;
-        }
+      $opt = shift(@ARGV);
     }
+    my $ret = cpw($opt);
+    if($ret != 0)
+    {
+      exit $ret;
+    }
+  }
 }
 else
 {
-    help();
+  help();
 }
 
 exit 0;
