@@ -14,6 +14,7 @@ print PERF "GUID\t| Time\n";
 my ($start, $end);
 $start=shift or $start=0;
 $end=shift or $end=10000;
+$guidprefix = shift;
 
 my $opts = shift || "";
 
@@ -26,8 +27,8 @@ if(! -x "./suse_register")
 for( my $cnt = $start; $cnt <= $end; $cnt++)
 {
     my $t0 = [gettimeofday];
-    
-    `./suse_register --fakeguid $cnt $opts`;
+
+    `./suse_register --fakeguid "$guidprefix-$cnt" $opts`;
 
     print PERF "$cnt\t|".(tv_interval($t0))."\n";
     print "$cnt\t|".(tv_interval($t0))."\n";
