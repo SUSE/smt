@@ -86,13 +86,9 @@ sub new
     $self->{URI}   = undef;
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
-    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = SMT::Utils::createUserAgent(keep_alive => 1);
-    $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
-    $self->{USERAGENT}->protocols_allowed( [ 'https'] );
-    
+
     $self->{MAX_REDIRECTS} = 5;
-    
+
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
 
@@ -143,6 +139,9 @@ sub new
     {
         $self->{LOG} = SMT::Utils::openLog();
     }
+
+    $self->{USERAGENT}  = SMT::Utils::createUserAgent(log => $self->{LOG}, vblevel => $self->{VBLEVEL});
+    $self->{USERAGENT}->protocols_allowed( [ 'https'] );
 
     my ($ruri, $authuser, $authpass) = SMT::Utils::getLocalRegInfos();
 
@@ -312,9 +311,9 @@ sub _requestData
 
         eval
         {
-            $response = $self->{USERAGENT}->post( $uri->as_string(), {},
-                                                  ':content_file' => $destdir."/".$self->{ELEMENT}.".xml",
-                                                  'Content' => $content);
+            $response = $self->{USERAGENT}->post( $uri->as_string(), 'Content-Type' => 'text/xml',
+		                                  'Content' => $content,
+                                                  ':content_file' => $destdir."/".$self->{ELEMENT}.".xml");
         };
         if($@)
         {

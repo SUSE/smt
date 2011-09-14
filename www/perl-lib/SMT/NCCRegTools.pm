@@ -26,8 +26,7 @@ sub new
     $self->{URI}   = undef;
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
-    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = undef; 
+    $self->{USERAGENT}  = undef;
 
     $self->{MAX_REDIRECTS} = 5;
 
@@ -51,17 +50,6 @@ sub new
 
     $self->{ERRORS} = 0;
 
-    if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
-    {
-        $self->{USERAGENT} = $opt{useragent};
-    }
-    else
-    {
-        $self->{USERAGENT} = SMT::Utils::createUserAgent(keep_alive => 1);
-        $self->{USERAGENT}->default_headers->push_header('Content-Type' => 'text/xml');
-        $self->{USERAGENT}->protocols_allowed( [ 'https'] );
-    }
-
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -78,16 +66,16 @@ sub new
 
     if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
     {
-	    $self->{FROMDIR} = $opt{fromdir};
+        $self->{FROMDIR} = $opt{fromdir};
     }
     elsif(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
     {
-	    $self->{TODIR} = $opt{todir};
+        $self->{TODIR} = $opt{todir};
     }
 
     if(exists $opt{dbh} && defined $opt{dbh} && $opt{dbh})
     {
-	    $self->{DBH} = $opt{dbh};
+        $self->{DBH} = $opt{dbh};
     }
     elsif(!defined $self->{TODIR} || $self->{TODIR} eq "")
     {
@@ -99,8 +87,17 @@ sub new
     {
         $self->{NCCEMAIL} = $opt{nccemail};
     }
-    
-    
+
+    if(exists $opt{useragent} && defined $opt{useragent} && $opt{useragent})
+    {
+        $self->{USERAGENT} = $opt{useragent};
+    }
+    else
+    {
+        $self->{USERAGENT} = SMT::Utils::createUserAgent(log => $self->{LOG}, vblevel => $self->{VBLEVEL});
+        $self->{USERAGENT}->protocols_allowed( [ 'https'] );
+    }
+
     my ($ruri, $user, $pass) = SMT::Utils::getLocalRegInfos();
     
     $self->{URI}      = $ruri;
@@ -1008,7 +1005,7 @@ sub _sendData
 
         eval
         {
-            $response = $self->{USERAGENT}->post( $regurl->as_string(), {}, %params);
+            $response = $self->{USERAGENT}->post( $regurl->as_string(), 'Content-Type' => 'text/xml', %params);
         };
         if($@)
         {
