@@ -9,6 +9,7 @@ Wed Sep 14 11:44:13 CEST 2011 - mc@suse.de
   - let libcurl calculate the Content-Length of a post request
     (bnc#597264)
   - add optimize command to smt-db
+  - Exit gracefully on SIGINT & SIGTERM (bnc #515968).
 
 -------------------------------------------------------------------
 Tue Jun 14 12:00:49 CEST 2011 - mc@suse.de
