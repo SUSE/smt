@@ -128,10 +128,6 @@ sub new
     $self->{MIRRORSRC} = 1;
     $self->{NOHARDLINK} = 0;
     
-    # Do _NOT_ set env_proxy for LWP::UserAgent, this would break https proxy support
-    $self->{USERAGENT}  = (defined $opt{useragent} && $opt{useragent})?$opt{useragent}:SMT::Utils::createUserAgent(keep_alive => 1);
-
-
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -168,6 +164,15 @@ sub new
 
     $self->{STATISTIC} = {};
     resetStatistics($self->{STATISTIC});
+
+    if(defined $opt{useragent} && $opt{useragent})
+    {
+        $self->{USERAGENT}  = $opt{useragent};
+    }
+    else
+    {
+        $self->{USERAGENT} = SMT::Utils::createUserAgent(log => $self->{LOG}, vblevel => $self->{VBLEVEL});
+    }
 
     bless($self);
     return $self;
@@ -481,7 +486,8 @@ sub mirror()
             return $self->{STATISTIC}->{ERROR};
         }
     }
-    if ( !defined $self->uri() || $self->uri() !~ /^http/ && $self->uri() !~ /^file/ )
+    if ( !defined $self->uri() || 
+         $self->uri() !~ /^http/ && $self->uri() !~ /^file/ && $self->uri() !~ /^ftp/)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid URL: ".((defined $self->uri())?$self->uri():"") );
         $self->{STATISTIC}->{ERROR} += 1;
