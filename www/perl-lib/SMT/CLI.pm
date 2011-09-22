@@ -856,7 +856,7 @@ sub setCatalogDoMirror
     if(exists $opt{enabled} && defined $opt{enabled} )
     {
         my $sql .= sprintf("update Catalogs set Domirror=%s where 1",
-                           $dbh->quote(  $opt{enabled} ? "Y" : "N" ) );
+                            $dbh->quote(  $opt{enabled} ? "Y" : "N" ) );
 
         # allow enable mirroring only if the repository is mirrorable
         # but disabling is allowed if the repository is not mirrorable
