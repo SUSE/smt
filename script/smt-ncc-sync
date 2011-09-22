@@ -322,7 +322,7 @@ eval
                                         log     => $LOG,
                                         vblevel => $vblevel);
         # if todir parameter is set, we can stop here. Everything is done.
-        SMT::Utils::unLockAndExit("smt-ncc-sync", 0);
+        SMT::Utils::unLockAndExit("smt-ncc-sync", 0, $LOG, $vblevel);
     }
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
