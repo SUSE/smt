@@ -92,15 +92,15 @@ eval
     my $err = $nccreg->NCCDeleteRegistration(@guids);
     if($err != 0)
     {
-        SMT::Utils::unLockAndExit( "smt-delete-registration", 1 );
+        SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
     }
 };
 if($@)
 {
-    SMT::Utils::unLockAndExit( "smt-delete-registration", 1 );
+    SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
 }
 
-SMT::Utils::unLockAndExit( "smt-delete-registration", 0 );
+SMT::Utils::unLockAndExit( "smt-delete-registration", 0, $LOG, $vblevel );
 
 
 #
