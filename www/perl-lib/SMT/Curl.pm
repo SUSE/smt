@@ -241,7 +241,7 @@ sub request
     {
         $self->setopt(CURLOPT_POST, 1);
         $self->setopt(CURLOPT_POSTFIELDS, $request->content);
-	# let libcurl calculate the Content-Length of a post request (bnc#597264)
+        # let libcurl calculate the Content-Length of a post request (bnc#597264)
         $self->setopt(CURLOPT_POSTFIELDSIZE, -1 );
     }
     elsif ($request->method eq 'GET')
@@ -310,7 +310,8 @@ sub request
     }
     else
     {
-      printLog( $self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "$curlcode ".$self->{curlobj}->strerror($curlcode) );
+      # this error is typically logged in the calling function
+      printLog( $self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, "$curlcode ".$self->{curlobj}->strerror($curlcode) );
       my $response = HTTP::Response->new(&HTTP::Status::RC_INTERNAL_SERVER_ERROR,
                                          "CURL ERROR($curlcode) ".$self->{curlobj}->strerror($curlcode));
       $response->request($request);
