@@ -545,13 +545,14 @@ sub printLog
     $doprint = 1 if (not defined $doprint);
     my $dolog    = shift;
     $dolog = 1 if (not defined $dolog);
+    $vblevel = 3 if (not defined $vblevel);
 
     return if( !($vblevel & $category) );
     $category = ($vblevel & $category);
 
     # Forcing the defualt behavior
     $doprint = $log_behavior->{'doprint'}
-	if (defined $log_behavior->{'doprint'});
+    if (defined $log_behavior->{'doprint'});
 
     if($doprint)
     {
