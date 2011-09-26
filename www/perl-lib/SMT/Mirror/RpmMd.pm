@@ -46,7 +46,7 @@ In order to clean the repository, that is removing all files
 which are not mentioned in the metadata, you can use the clean method:
 
  $mirror->clean();
- 
+
 In order to filter unwanted patches from the repository, pass an SMT::Filter
 object to the constructor.
 
@@ -66,11 +66,11 @@ Arguments are an anonymous hash array of parameters:
 
 =item vblevel <level>
 
-Set the verbose level. 
+Set the verbose level.
 
 =item useragent
 
-LWP::UserAgent object to use for this job. Usefull for keep_alive. 
+LWP::UserAgent object to use for this job. Usefull for keep_alive.
 
 =item dbh
 
@@ -101,13 +101,13 @@ sub new
 {
     my $pkgname = shift;
     my %opt   = @_;
-    
+
     my $self  = {};
     $self->{URI}   = undef;
 
     # starting with / upto  repo/
     $self->{LOCALBASEPATH} = undef;
-    
+
     # catalog Path like LOCALPATH in the DB.
     # e.g. $RCE/SLES11-Updates/sle-11-i586/
     $self->{LOCALREPOPATH}   = undef;
@@ -119,7 +119,7 @@ sub new
     $self->{CLEANLIST}    = {};
 
     $self->{FILTER} = undef;
-    
+
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
     $self->{DEEPVERIFY}   = 0;
@@ -127,7 +127,7 @@ sub new
 
     $self->{MIRRORSRC} = 1;
     $self->{NOHARDLINK} = 0;
-    
+
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -137,7 +137,7 @@ sub new
     {
         $self->{DBH} = $opt{dbh};
     }
-    
+
     if(exists $opt{log} && defined $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
@@ -146,11 +146,11 @@ sub new
     {
         $self->{LOG} = SMT::Utils::openLog();
     }
-    
+
     if(exists $opt{mirrorsrc} && defined $opt{mirrorsrc} && !$opt{mirrorsrc})
     {
         $self->{MIRRORSRC} = 0;
-    }    
+    }
 
     if(exists $opt{nohardlink} && defined $opt{nohardlink} && $opt{nohardlink})
     {
@@ -172,6 +172,18 @@ sub new
     else
     {
         $self->{USERAGENT} = SMT::Utils::createUserAgent(log => $self->{LOG}, vblevel => $self->{VBLEVEL});
+    }
+
+    $self->{CFG} = undef;
+    if($opt{cfg})
+    {
+        $self->{CFG} = $opt{cfg};
+    }
+
+    $self->{REPOID} = undef;
+    if($opt{repoid})
+    {
+        $self->{REPOID} = $opt{repoid};
     }
 
     bless($self);
@@ -209,7 +221,7 @@ sub localBasePath
 
 =item localRepoPath([path])
 
-Set and get the repository path on the local system. 
+Set and get the repository path on the local system.
 E.g. $RCE/SLES11-Updates/sle-11-i586/
 
 =cut
@@ -231,13 +243,13 @@ localBasePath() and localRepoPath().
 sub fullLocalRepoPath
 {
     my $self = shift;
-    
+
     return SMT::Utils::cleanPath($self->localBasePath(), $self->localRepoPath());
 }
 
 =item deepverify()
 
-Enable or disable deepverify mode. 
+Enable or disable deepverify mode.
 Returns the current state.
 
 =cut
@@ -257,24 +269,24 @@ sub dbh
 {
     my $self = shift;
     if (@_) { $self->{DBH} = shift }
-    
+
     return $self->{DBH};
 }
 
 =item statistic()
 
-Returns the statistic hash reference. 
+Returns the statistic hash reference.
 Available keys in this has are:
 
 =over 4
 
 =item TOTALFILES
 
-Total number of files in the repository (referenced from the metadata).   
+Total number of files in the repository (referenced from the metadata).
 
 =item DOWNLOAD
 
-Number of downloaded new/changed files.   
+Number of downloaded new/changed files.
 
 =item LINK
 
@@ -333,7 +345,7 @@ sub vblevel
 {
     my $self = shift;
     if (@_) { $self->{VBLEVEL} = shift }
-    
+
     return $self->{VBLEVEL};
 }
 
@@ -416,7 +428,7 @@ Available options:
 =item dryrun
 
 If set to 1, only the metadata are downloaded to a temporary directory and all
-files which are outdated are reported. After this is finished, the directory 
+files which are outdated are reported. After this is finished, the directory
 containing the metadata is removed.
 
 =item force
@@ -486,21 +498,21 @@ sub mirror()
             return $self->{STATISTIC}->{ERROR};
         }
     }
-    if ( !defined $self->uri() || 
+    if ( !defined $self->uri() ||
          $self->uri() !~ /^http/ && $self->uri() !~ /^file/ && $self->uri() !~ /^ftp/)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid URL: ".((defined $self->uri())?$self->uri():"") );
         $self->{STATISTIC}->{ERROR} += 1;
         return $self->{STATISTIC}->{ERROR};
     }
-    
-    
+
+
     # extract the url components to create
     # the destination directory
     # so we save the repo to:
     # $destdir/hostname.com/path
     my $saveuri = SMT::Utils::getSaveUri($self->{URI});
-    
+
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Mirroring: %s"), $saveuri )) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Target:    %s"), $self->fullLocalRepoPath() )) if(!$isYum);
 
@@ -516,17 +528,17 @@ sub mirror()
     # We expect the data are ok. If repomd.xml does not exist we downlaod everything new
     # which is like deepverify
     my $verifySuccess = 1;
-    
+
     if ( $self->deepverify() && -e $job->fullLocalPath() )
     {
-        # a deep verify check is requested 
+        # a deep verify check is requested
 
         my $removeinvalid = 1;
         $removeinvalid = 0 if( $dryrun );
 
         $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => ($self->vblevel() != LOG_DEBUG) );
 
-	resetStatistics $self->{STATISTIC};
+        resetStatistics $self->{STATISTIC};
 
         if ( ! $dryrun )
         {
@@ -543,7 +555,7 @@ sub mirror()
     }
     # else if $outdated, forced, or verify failed; we must download repomd.xml
 
-    # copy repodata to .repodata 
+    # copy repodata to .repodata
     # we do not want to damage the repodata until we
     # have them all
 
@@ -558,16 +570,16 @@ sub mirror()
 
     if( -d $job->fullLocalRepoPath()."/repodata" )
     {
-        opendir(DIR, $job->fullLocalRepoPath()."/repodata") or do 
+        opendir(DIR, $job->fullLocalRepoPath()."/repodata") or do
         {
             $self->{STATISTIC}->{ERROR} += 1;
             return $self->{STATISTIC}->{ERROR};
         };
-        
+
         foreach my $entry (readdir(DIR))
         {
             next if ($entry =~ /^\./);
-            
+
             my $fullpath = $job->fullLocalRepoPath()."/repodata/$entry";
             if( -f $fullpath )
             {
@@ -597,11 +609,11 @@ sub mirror()
     $job->remoteFileLocation($resource);
     $resource =~ s/repodata/.repodata/;
     $job->localFileLocation($resource);
-    
+
     my $result = $job->mirror();
     $self->job2statistic($job);
-    
-    $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+
+    $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                  dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -617,7 +629,7 @@ sub mirror()
         $self->{JOBS}->{".repodata/repomd.xml.asc"} = $job;
     }
 
-    $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+    $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                  dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
     $job->uri( $self->uri() );
     $job->localBasePath( $self->localBasePath() );
@@ -633,7 +645,7 @@ sub mirror()
         $self->{JOBS}->{".repodata/repomd.xml.key"} = $job;
     }
 
-    
+
     # we ignore errors. The code work also without this variable set
     # create a hash with filename => checksum
     if ( defined $self->{DBH} )
@@ -651,7 +663,7 @@ sub mirror()
     $parser->specialmdlocation(1);
     my $err = $parser->parse(".repodata/repomd.xml", sub { download_handler($self, $dryrun, @_)});
     $self->{STATISTIC}->{ERROR} += $err;
-    
+
     $self->{EXISTS} = undef;
 
     #
@@ -718,7 +730,7 @@ sub mirror()
         $sha1->addfile(*FILE);
         my $digest = $sha1->hexdigest();
         close FILE;
-        
+
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("new checksum %s", $digest ), 1);
 
         # unzip the old file
@@ -745,7 +757,7 @@ sub mirror()
         # if checksums differ, overwrite the old updateinfo & update repomd later
         if (not $digest eq $olddigest)
         {
-            #for (keys %{$self->{MDFILES}}) { if ($_ =~ /updateinfo.*xml/) { $mdkey = $_; last }} 
+            #for (keys %{$self->{MDFILES}}) { if ($_ =~ /updateinfo.*xml/) { $mdkey = $_; last }}
             $self->{MDFILES}->{'repodata/updateinfo.xml.gz'}->{changednew} = $uifname;
             $self->{MDFILES}->{'repodata/updateinfo.xml.gz'}->{changedorig} = $olduifname;
         }
@@ -759,7 +771,7 @@ sub mirror()
         $parsenew->specialmdlocation(1);
         $newpatches = $parsenew->parse(
             ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
-    
+
         my $parseorig = SMT::Parser::RpmMdPatches->new(
             log => $self->{LOG}, vblevel => $self->vblevel());
         $parseorig->resource($self->fullLocalRepoPath());
@@ -777,9 +789,9 @@ sub mirror()
         if( exists $newpatches->{$pid} )
         {
             delete $newpatches->{$pid};
-        }        
+        }
     }
-    
+
     foreach $pid (keys %{$newpatches})
     {
         if($newpatches->{$pid}->{type} eq "security")
@@ -895,7 +907,7 @@ sub mirror()
             }
             else
             {
-                # Now store the repodata jobs into the database. We know, that they are now at the 
+                # Now store the repodata jobs into the database. We know, that they are now at the
                 # correct/final place and all modification happens
                 foreach my $key (keys %{$self->{REPODATAJOBS}})
                 {
@@ -908,11 +920,19 @@ sub mirror()
             }
         }
     }
-   
+
+    if( !$dryrun && $self->{STATISTIC}->{ERROR} == 0 )
+    {
+        if($self->parsePatchData())
+        {
+            $self->{STATISTIC}->{ERROR} += 1;
+        }
+    }
+
     if( $dryrun )
     {
         rmtree( $metatempdir, 0, 0 );
-        
+
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished dryrun '%s'"), $saveuri)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files to download           : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
     }
@@ -921,13 +941,13 @@ sub mirror()
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Finished mirroring '%s'"), $saveuri)) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total files                 : %s"), $self->{STATISTIC}->{TOTALFILES})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred files     : %s"), $self->{STATISTIC}->{DOWNLOAD})) if(!$isYum);
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"), 
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total transferred file size : %s bytes (%s)"),
                                                                     $self->{STATISTIC}->{DOWNLOAD_SIZE}, SMT::Utils::byteFormat($self->{STATISTIC}->{DOWNLOAD_SIZE}))) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total linked files          : %s"), $self->{STATISTIC}->{LINK})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Total copied files          : %s"), $self->{STATISTIC}->{COPY})) if(!$isYum);
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Files up to date            : %s"), $self->{STATISTIC}->{UPTODATE})) if(!$isYum);
     }
-    
+
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Errors                      : %s"), $self->{STATISTIC}->{ERROR})) if(!$isYum);
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Mirror Time                 : %s"), SMT::Utils::timeFormat(tv_interval($t0)))) if(!$isYum);
 
@@ -957,11 +977,11 @@ sub clean()
 {
     my $self = shift;
     my $isYum = (ref($self) eq "SMT::Mirror::Yum");
-    
+
     my $t0 = [gettimeofday] ;
 
     if ( ! -d $self->fullLocalRepoPath() )
-    { 
+    {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
         return;
     }
@@ -969,12 +989,12 @@ sub clean()
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Cleaning:         %s"), $self->fullLocalRepoPath() ) ) if(!$isYum);
 
     # algorithm
-    
+
     find ( { wanted =>
              sub
              {
                  if ( $File::Find::dir !~ /\/headers/ && -f $File::Find::name )
-                 { 
+                 {
                      my $name = SMT::Utils::cleanPath($File::Find::name);
 
                      $self->{CLEANLIST}->{$name} = 1;
@@ -985,9 +1005,9 @@ sub clean()
     my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
     $parser->resource($self->fullLocalRepoPath());
     $parser->parse("/repodata/repomd.xml", sub { clean_handler($self, @_)});
-    
+
     my $path = SMT::Utils::cleanPath($self->fullLocalRepoPath(), "/repodata/repomd.xml");
-    
+
     delete $self->{CLEANLIST}->{$path} if (exists $self->{CLEANLIST}->{$path});
     delete $self->{CLEANLIST}->{$path.".asc"} if (exists $self->{CLEANLIST}->{$path.".asc"});;
     delete $self->{CLEANLIST}->{$path.".key"} if (exists $self->{CLEANLIST}->{$path.".key"});;
@@ -997,7 +1017,7 @@ sub clean()
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Delete: $file");
         $cnt += unlink $file;
-        
+
         $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
     }
 
@@ -1054,7 +1074,7 @@ sub verify()
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Verifying: %s"), $self->fullLocalRepoPath() )) if(!$quiet);
 
     $self->{STATISTIC}->{ERROR} = 0;
-    
+
     # parse it and find more resources
     my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
     $parser->resource( $self->fullLocalRepoPath() );
@@ -1065,7 +1085,7 @@ sub verify()
     foreach (sort keys %{$self->{VERIFYJOBS}} )
     {
         $job = $self->{VERIFYJOBS}->{$_};
-        
+
         my $ok = ( (-e $job->fullLocalPath()) && $job->verify());
         $cnt++;
         if ($ok || ($job->localFileLocation() =~ /repomd\.xml$/ ) )
@@ -1105,7 +1125,7 @@ sub verify()
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("=> Verify Time       : %s"), SMT::Utils::timeFormat(tv_interval($t0)) ));
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "\n");
     }
-    
+
     return ($self->{STATISTIC}->{ERROR} == 0);
 }
 
@@ -1120,7 +1140,7 @@ sub clean_handler
     {
         # get the repository index
         my $resource = SMT::Utils::cleanPath($self->fullLocalRepoPath(), $data->{LOCATION});
-        
+
         # if this path is in the CLEANLIST, delete it
         delete $self->{CLEANLIST}->{$resource} if (exists $self->{CLEANLIST}->{$resource});
     }
@@ -1142,28 +1162,28 @@ sub download_handler
         {
             # we do not want source rpms - skip
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Skip source RPM: ".$data->{LOCATION});
-            
+
             return;
         }
 
-        # save locations of metadata files found in repomd.xml's <data> elements        
+        # save locations of metadata files found in repomd.xml's <data> elements
         $self->{MDFILES}->{$data->{LOCATION}} = undef if ($data->{MAINELEMENT} eq 'data');
 
         # get the repository index
-        my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+        my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                         dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK}, dryrun => $dryrun );
         $job->uri( $self->{URI} );
         $job->localBasePath( $self->localBasePath() );
         $job->localRepoPath( $self->localRepoPath() );
         $job->localFileLocation( $data->{LOCATION} );
         $job->checksum( $data->{CHECKSUM} );
-        
-        if( exists $self->{EXISTS}->{$job->fullLocalPath()} && 
-            $self->{EXISTS}->{$job->fullLocalPath()}->{checksum} eq $data->{CHECKSUM} && 
+
+        if( exists $self->{EXISTS}->{$job->fullLocalPath()} &&
+            $self->{EXISTS}->{$job->fullLocalPath()}->{checksum} eq $data->{CHECKSUM} &&
             -e $job->fullLocalPath() )
         {
-            # file exists and is up-to-date. 
-            # with deepverify call a verify 
+            # file exists and is up-to-date.
+            # with deepverify call a verify
             if( $self->deepverify() && !$job->verify() )
             {
                 #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "deepverify: verify failed");
@@ -1194,8 +1214,8 @@ sub download_handler
             }
         }
         # else mean wrong checksum. Can happen in the repodata case. Same filename with new checksum.
-        #      This will be detected and fixed later 
-        
+        #      This will be detected and fixed later
+
         # if it is an xml file we have to download it now and
         # process it
         if (  $job->localFileLocation() =~ /(.+)\.xml(.*)/ )
@@ -1203,7 +1223,7 @@ sub download_handler
             # metadata! change the download area
 
             my $localres = $data->{LOCATION};
-            
+
             $localres =~ s/repodata/.repodata/;
             $job->remoteFileLocation( $data->{LOCATION} );
             $job->localFileLocation( $localres );
@@ -1255,10 +1275,10 @@ sub verify_handler
     {
         # we do not want source rpms - skip
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Skip source RPM: ".$data->{LOCATION});
-        
+
         return;
     }
-    
+
     if(exists $data->{LOCATION} && defined $data->{LOCATION} &&
        $data->{LOCATION} ne "")
     {
@@ -1267,13 +1287,13 @@ sub verify_handler
         # all other files (rpms) are verified only if deepverify is requested.
         if($self->deepverify() || $data->{LOCATION} =~ /repodata/)
         {
-            my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG}, 
+            my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
                                             dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
             $job->localBasePath( $self->localBasePath() );
             $job->localRepoPath( $self->localRepoPath() );
             $job->localFileLocation( $data->{LOCATION} );
             $job->checksum( $data->{CHECKSUM} );
-            
+
             if(!exists $self->{VERIFYJOBS}->{$job->fullLocalPath()})
             {
                 $self->{VERIFYJOBS}->{$job->fullLocalPath()} = $job;
@@ -1287,7 +1307,7 @@ sub verify_handler
 Signs the repository index file, repomd.xml using the key specified by $keyid
 argument and specified $passphrase. If $keyid is not specified, the function
 removes any previous signature and public key (repomd.xml.asc and
-repomd.xml.key). 
+repomd.xml.key).
 
 The function works on the repodata located at $repodatadir.
 
@@ -1398,7 +1418,7 @@ Example of input data:
  # of the original file. $mdfiles->{'repodata/susedata.xml.gz'}->{changednew}
  # then contains the path to new metadata file, non-gzipped.
  #
- $mdfiles = {                                                                                                 
+ $mdfiles = {
     'repodata/primary.xml.gz' => undef,
     'repodata/other.xml.gz' => undef,
     'repodata/filelists.xml.gz' => undef,
@@ -1415,7 +1435,7 @@ Example of input data:
 sub removePackages($$$)
 {
     my ($self, $pkgstoremove, $mdfiles) = @_;
-    
+
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
         'Going to remove ' . (scalar @$pkgstoremove) . ' filtered packages.');
 
@@ -1424,7 +1444,7 @@ sub removePackages($$$)
     my $errc = 0;
     my $tgtrepopath = $self->fullLocalRepoPath();
 
-    # first, remove the unwanted packages from primary.xml.gz 
+    # first, remove the unwanted packages from primary.xml.gz
 
     # file to write the new primary.xml
     my $primarynew = SMT::Utils::cleanPath($self->{TMPDIR}, '/primary.xml');
@@ -1457,7 +1477,7 @@ sub removePackages($$$)
     my $pkgsfound = $parser->found();
 
 
-    # now remove corresponding package data from the following metadata files 
+    # now remove corresponding package data from the following metadata files
 
     my %mdtoupdate = (
         'repodata/other.xml.gz' =>
@@ -1484,7 +1504,7 @@ sub removePackages($$$)
         $mdfh->open('>' . $mdnew);
 
         # update the *.xml
-        my $parser = SMT::Parser::RpmMdOtherFilter->new(log => $self->{LOG}, 
+        my $parser = SMT::Parser::RpmMdOtherFilter->new(log => $self->{LOG},
                                                         vblevel => $self->{VBLEVEL});
         $parser->resource($tgtrepopath);
         $errc = $parser->parse($mdtoupdate{$mdfile}->{'orig'}, $pkgsfound, out => $mdfh);
@@ -1583,7 +1603,7 @@ Example of input data:
  # of the original file. $mdfiles->{'repodata/susedata.xml.gz'}->{changednew}
  # then contains the path to new metadata file, non-gzipped.
  #
- $mdfiles = {                                                                                                 
+ $mdfiles = {
     'repodata/primary.xml.gz' => {
                   'changedorig' => '/path/to/repo/.repodata/primary.xml.gz',
                   'changednew'  => '/tmp/yakHpx8kvP/primary.xml'
@@ -1605,7 +1625,7 @@ NOTE: Another alternative would be to use createrepo (see below) to update
 primary/other/filelists, but that would be slow, and we'd still need to
 parse primary.xml and deal with susedata.xml. So removing the package data
 from the files by ourselves seems to be better approach.
- 
+
 # write output to tmpdir, then copy to .repodata
 # createrepo --update <repobase> --outputdir $tmpdir $self->fullLocalRepoPath()
 =cut
@@ -1619,12 +1639,12 @@ sub updateRepomd($$$)
 
     # unlink the original repomd.xml first to avoid modifying the original
     # repomd.xml on the source URI if hardlinked from elsewhere
-    my $repomdpath = SMT::Utils::cleanPath($repodatadir, 'repomd.xml'); 
+    my $repomdpath = SMT::Utils::cleanPath($repodatadir, 'repomd.xml');
     copy($repomdpath, "$repomdpath.tmp");
     unlink ($repomdpath);
     rename("$repomdpath.tmp", $repomdpath);
 
-    my $errc = 0; 
+    my $errc = 0;
 
     # update changed metadata files in repomd.xml
     foreach my $mdfile (values %$mdfiles)
@@ -1649,6 +1669,107 @@ sub updateRepomd($$$)
     return 0 if ($errc);
     return 1;
 }
+
+=item parsePatchData()
+
+Parse and save Patch Data
+
+=cut
+
+sub parsePatchData
+{
+    my $self = shift;
+
+    # We do not say, that this is an error, because DB is not
+    # available in db replacemant file case
+    return 0 if(!$self->{DBH} || !$self->{CFG} || !$self->{REPOID});
+
+    eval
+    {
+        printLog ($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                  "Checking for patches in this repository...", 0, 1);
+
+        my $parser = SMT::Parser::RpmMdPatches->new(
+            log => $self->{LOG}, vblevel => $self->vblevel());
+        $parser->resource($self->fullLocalRepoPath());
+
+        my $patches = $parser->parse(
+            "repodata/updateinfo.xml.gz", "repodata/patches.xml");
+        # fetch old patch data for this repo from DB
+        my $oldpatches = SMT::Patch::findByRepoId($self->{DBH}, $self->{REPOID});
+
+        if (keys %$patches)
+        {
+            printLog ($self->{LOG}, $self->vblevel(), LOG_INFO1,
+                      "Updating patch data in the database (" . (keys %$patches) . " patches)", 0, 1);
+        }
+        else
+        {
+            printLog ($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                      "No patches found. Will remove any patches from this repo from the database..", 0, 1);
+        }
+
+        foreach my $pdata (values %$patches)
+        {
+            # set package location from patch package data
+
+            # the full locations could be computed in the Package
+            # module itself had the Repositories module been
+            # redesigned into a Repository module with appropriate
+            # class and object methods which would allow create
+            # instances with or without database.
+            # That way the Repository instance could be passed to
+            # the patch bellow and/or loaded from DB as needed and
+            # the instance would have knowledge about EXTURL, local
+            # smt URL, mirroring/staging paths, etc.
+
+            # without it, computing the paths here and storing them
+            # in the DB seems to be the cleanest approach, even at
+            # the cost of creating a lot of reduncancy in the DB
+            foreach my $pkg (@{$pdata->{pkgs}})
+            {
+                my $rpmname = $pkg->{name} . '-' . $pkg->{ver} . '-'
+                    . $pkg->{rel} . '.' . $pkg->{arch} . '.rpm';
+
+                # location of the rpm on the SMT sever
+                $pkg->{loc} = $self->{CFG}->val('LOCAL', 'url')
+                    .SMT::Utils::cleanPath('repo', $self->localRepoPath(),
+                                           'rpm', $pkg->{arch}, $rpmname);
+
+                # location of the rpm in the original repo
+                $pkg->{extloc} = SMT::Utils::getSaveUri($self->{URI})
+                                . SMT::Utils::cleanPath(
+                                    'rpm',
+                                    $pkg->{arch},
+                                    $rpmname);
+            }
+
+            my $patchid = $pdata->{name} . ':' . $pdata->{version};
+            my $patch = $oldpatches->{$patchid};
+            $patch = SMT::Patch::new() if (not $patch);
+            $patch->setFromHash($pdata);
+            $patch->repoId($self->{REPOID});
+            $patch->save($self->{DBH});
+            # delete old patch found in newly parsed patches to
+            # remove the rest after the loop
+            delete $oldpatches->{$patchid};
+        }
+        # Remove old patches not found in repo anymore. This should
+        # not happen given incremental updates, but just in case.
+        foreach my $patch (values %$oldpatches)
+        {
+            $patch->delete($self->{DBH});
+        }
+    };
+    if ($@)
+    {
+        printLog ($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                  "Error getting patch data from repository: $@", 0, 1);
+        return 1;
+    }
+    return 0;
+}
+
 
 =back
 
