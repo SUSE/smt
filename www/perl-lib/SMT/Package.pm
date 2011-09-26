@@ -79,7 +79,7 @@ sub epoch
 sub version
 {
     my ($self, $value) = @_;
-    if ($value)
+    if (defined $value)
     {
         $self->{DIRTY} = 1 if (defined $self->{ver} && ! $value eq $self->{ver});
         $self->{ver} = $value;
@@ -90,7 +90,7 @@ sub version
 sub release
 {
     my ($self, $value) = @_;
-    if ($value)
+    if (defined $value)
     {
         $self->{DIRTY} = 1 if (defined $self->{rel} && ! $value eq $self->{rel});
         $self->{rel} = $value;
@@ -136,7 +136,10 @@ sub NEVRA
 {
     my ($self, $separator) = @_;
 
-    return undef if (not $self->name() && $self->version() && $self->release() && $self->arch());
+    return undef if (not ($self->name() &&
+                          defined $self->version() && $self->version() ne "" &&
+                          defined $self->release() && $self->release() ne "" &&
+                          $self->arch()));
 
     $separator = ':' if (not $separator);
     my $nevra = $self->name();
