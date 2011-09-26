@@ -174,6 +174,18 @@ sub new
         $self->{USERAGENT} = SMT::Utils::createUserAgent(log => $self->{LOG}, vblevel => $self->{VBLEVEL});
     }
 
+    $self->{CFG} = undef;
+    if($opt{cfg})
+    {
+        $self->{CFG} = $opt{cfg};
+    }
+
+    $self->{REPOID} = undef;
+    if($opt{repoid})
+    {
+        $self->{REPOID} = $opt{repoid};
+    }
+
     bless($self);
     return $self;
 }
@@ -526,7 +538,7 @@ sub mirror()
 
         $verifySuccess = $self->verify( removeinvalid => $removeinvalid, quiet => ($self->vblevel() != LOG_DEBUG) );
 
-	resetStatistics $self->{STATISTIC};
+        resetStatistics $self->{STATISTIC};
 
         if ( ! $dryrun )
         {
@@ -906,6 +918,14 @@ sub mirror()
                     $rjob->updateDB();
                 }
             }
+        }
+    }
+
+    if( !$dryrun && $self->{STATISTIC}->{ERROR} == 0 )
+    {
+        if($self->parsePatchData())
+        {
+            $self->{STATISTIC}->{ERROR} += 1;
         }
     }
 
@@ -1649,6 +1669,107 @@ sub updateRepomd($$$)
     return 0 if ($errc);
     return 1;
 }
+
+=item parsePatchData()
+
+Parse and save Patch Data
+
+=cut
+
+sub parsePatchData
+{
+    my $self = shift;
+
+    # We do not say, that this is an error, because DB is not
+    # available in db replacemant file case
+    return 0 if(!$self->{DBH} || !$self->{CFG} || !$self->{REPOID});
+
+    eval
+    {
+        printLog ($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                  "Checking for patches in this repository...", 0, 1);
+
+        my $parser = SMT::Parser::RpmMdPatches->new(
+            log => $self->{LOG}, vblevel => $self->vblevel());
+        $parser->resource($self->fullLocalRepoPath());
+
+        my $patches = $parser->parse(
+            "repodata/updateinfo.xml.gz", "repodata/patches.xml");
+        # fetch old patch data for this repo from DB
+        my $oldpatches = SMT::Patch::findByRepoId($self->{DBH}, $self->{REPOID});
+
+        if (keys %$patches)
+        {
+            printLog ($self->{LOG}, $self->vblevel(), LOG_INFO1,
+                      "Updating patch data in the database (" . (keys %$patches) . " patches)", 0, 1);
+        }
+        else
+        {
+            printLog ($self->{LOG}, $self->vblevel(), LOG_DEBUG,
+                      "No patches found. Will remove any patches from this repo from the database..", 0, 1);
+        }
+
+        foreach my $pdata (values %$patches)
+        {
+            # set package location from patch package data
+
+            # the full locations could be computed in the Package
+            # module itself had the Repositories module been
+            # redesigned into a Repository module with appropriate
+            # class and object methods which would allow create
+            # instances with or without database.
+            # That way the Repository instance could be passed to
+            # the patch bellow and/or loaded from DB as needed and
+            # the instance would have knowledge about EXTURL, local
+            # smt URL, mirroring/staging paths, etc.
+
+            # without it, computing the paths here and storing them
+            # in the DB seems to be the cleanest approach, even at
+            # the cost of creating a lot of reduncancy in the DB
+            foreach my $pkg (@{$pdata->{pkgs}})
+            {
+                my $rpmname = $pkg->{name} . '-' . $pkg->{ver} . '-'
+                    . $pkg->{rel} . '.' . $pkg->{arch} . '.rpm';
+
+                # location of the rpm on the SMT sever
+                $pkg->{loc} = $self->{CFG}->val('LOCAL', 'url')
+                    .SMT::Utils::cleanPath('repo', $self->localRepoPath(),
+                                           'rpm', $pkg->{arch}, $rpmname);
+
+                # location of the rpm in the original repo
+                $pkg->{extloc} = SMT::Utils::getSaveUri($self->{URI})
+                                . SMT::Utils::cleanPath(
+                                    'rpm',
+                                    $pkg->{arch},
+                                    $rpmname);
+            }
+
+            my $patchid = $pdata->{name} . ':' . $pdata->{version};
+            my $patch = $oldpatches->{$patchid};
+            $patch = SMT::Patch::new() if (not $patch);
+            $patch->setFromHash($pdata);
+            $patch->repoId($self->{REPOID});
+            $patch->save($self->{DBH});
+            # delete old patch found in newly parsed patches to
+            # remove the rest after the loop
+            delete $oldpatches->{$patchid};
+        }
+        # Remove old patches not found in repo anymore. This should
+        # not happen given incremental updates, but just in case.
+        foreach my $patch (values %$oldpatches)
+        {
+            $patch->delete($self->{DBH});
+        }
+    };
+    if ($@)
+    {
+        printLog ($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                  "Error getting patch data from repository: $@", 0, 1);
+        return 1;
+    }
+    return 0;
+}
+
 
 =back
 

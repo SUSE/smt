@@ -306,10 +306,10 @@ if(!defined $dbreplfile)
     # search for all zypp repositories we need to mirror and start the mirror process
     #
     $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
-	"from Catalogs ".
-	"where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
-	"order by CATALOGTYPE, NAME",
-	{ Slice => {} } );
+                                       "from Catalogs ".
+                                       "where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
+                                       "order by CATALOGTYPE, NAME",
+                                       { Slice => {} } );
 }
 else
 {
@@ -359,12 +359,14 @@ foreach my $entry (@{$array})
         if( lc($entry->{CATALOGTYPE}) eq "yum")
         {
             $zyppMirror = SMT::Mirror::Yum->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
-                                                mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
+                                                mirrorsrc => $mirrorsrc, nohardlink => $nohardlink,
+                                                cfg => $cfg, repoid => $entry->{ID});
         }
         else
         {
             $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
-                                                  mirrorsrc => $mirrorsrc, nohardlink => $nohardlink);
+                                                  mirrorsrc => $mirrorsrc, nohardlink => $nohardlink,
+                                                  cfg => $cfg, repoid => $entry->{ID});
         }
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $entry->{LOCALPATH} );
@@ -408,100 +410,6 @@ foreach my $entry (@{$array})
               {
                 $recpatchtitles{$title} = 1;
               }
-            }
-
-            # parse and save patch data
-            if (!($dbreplfile || $dryrun || $errors))
-            {
-                eval
-                {
-                    SMT::Utils::printLog ($LOG, $vblevel, LOG_DEBUG,
-                        "Checking for patches in this repository...", 0, 1);
-
-                    my $parser = SMT::Parser::RpmMdPatches->new(
-                        log => $LOG, vblevel => $vblevel);
-                    $parser->resource($zyppMirror->fullLocalRepoPath());
-
-                    my $patches = $parser->parse(
-                        "repodata/updateinfo.xml.gz", "repodata/patches.xml");
-                    # fetch old patch data for this repo from DB
-                    my $oldpatches = SMT::Patch::findByRepoId($dbh, $entry->{ID});
-
-                    if (keys %$patches)
-                    {
-                        SMT::Utils::printLog ($LOG, $vblevel, LOG_INFO1,
-                            "Updating patch data in the database (" . (keys %$patches) . " patches)", 0, 1);
-                    }
-                    else
-                    {
-                        SMT::Utils::printLog ($LOG, $vblevel, LOG_DEBUG,
-                            "No patches found. Will remove any patches from this repo from the database..", 0, 1);
-                    }
-
-                    foreach my $pdata (values %$patches)
-                    {
-                        # set package location from patch package data
-
-                        # the full locations could be computed in the Package
-                        # module itself had the Repositories module been
-                        # redesigned into a Repository module with appropriate
-                        # class and object methods which would allow create
-                        # instances with or without database.
-                        # That way the Repository instance could be passed to
-                        # the patch bellow and/or loaded from DB as needed and
-                        # the instance would have knowledge about EXTURL, local
-                        # smt URL, mirroring/staging paths, etc.
-
-                        # without it, computing the paths here and storing them
-                        # in the DB seems to be the cleanest approach, even at
-                        # the cost of creating a lot of reduncancy in the DB
-                        foreach my $pkg (@{$pdata->{pkgs}})
-                        {
-                            my $rpmname =
-                                $pkg->{name} . '-' . $pkg->{ver} . '-'
-                                . $pkg->{rel} . '.' . $pkg->{arch} . '.rpm';
-
-                            # location of the rpm on the SMT sever
-                            $pkg->{loc} =
-                                $cfg->val('LOCAL', 'url')
-                                . SMT::Utils::cleanPath(
-                                    'repo',
-                                    $zyppMirror->localRepoPath(),
-                                    'rpm',
-                                    $pkg->{arch},
-                                    $rpmname);
-
-                            # location of the rpm in the original repo
-                            $pkg->{extloc} =
-                                $entry->{EXTURL}
-                                . SMT::Utils::cleanPath(
-                                    'rpm',
-                                    $pkg->{arch},
-                                    $rpmname);
-                        }
-
-                        my $patchid = $pdata->{name} . ':' . $pdata->{version};
-                        my $patch = $oldpatches->{$patchid};
-                        $patch = SMT::Patch::new() if (not $patch);
-                        $patch->setFromHash($pdata);
-                        $patch->repoId($entry->{ID});
-                        $patch->save($dbh);
-                        # delete old patch found in newly parsed patches to
-                        # remove the rest after the loop
-                        delete $oldpatches->{$patchid};
-                    }
-                    # Remove old patches not found in repo anymore. This should
-                    # not happen given incremental updates, but just in case.
-                    foreach my $patch (values %$oldpatches)
-                    {
-                        $patch->delete($dbh);
-                    }
-                };
-                if ($@)
-                {
-                    SMT::Utils::printLog ($LOG, $vblevel, LOG_ERROR,
-                        "Error getting patch data from repository: $@", 0, 1);
-                }
             }
 
             # Update last mirror timestamp and filtering only if not mirroring
@@ -548,9 +456,9 @@ foreach my $entry (@{$array})
 if(!defined $dbreplfile)
 {
     my $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE ".
-	"from Catalogs ".
-	"where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
-	"CATALOGID" );
+                                        "from Catalogs ".
+                                        "where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
+                                        "CATALOGID" );
 
     if(keys %{$hash} > 0)
     {
