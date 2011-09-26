@@ -4,6 +4,7 @@ use URI;
 use XML::Parser;
 use SMT::Utils;
 use IO::Zlib;
+use Date::Parse;
 
 =head1 NAME
 
@@ -299,7 +300,16 @@ sub handle_start_tag
     }
     elsif ( lc($element) eq "issued" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
     {
-        $self->{CURRENT}->{PATCHDATE} = $attrs{date};
+        # RedHat has date="YYYY-MM-DD HH:MM:SS"
+        # SUSE used timestamp since epoch
+        if (index($attrs{date}, " ") > 0)
+        {
+            $self->{CURRENT}->{PATCHDATE} = str2time($attrs{date}, "GMT");
+        }
+        else
+        {
+            $self->{CURRENT}->{PATCHDATE} = $attrs{date};
+        }
         $self->{CURRENT}->{SUBELEMENT} = lc($element) if (! $attrs{date});
     }
     elsif ( lc($element) eq "title" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
@@ -316,6 +326,15 @@ sub handle_start_tag
     }
     elsif ( lc($element) eq "reference" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
     {
+        if(!exists $attrs{'id'} && $attrs{'type'} eq "self")
+        {
+            # This is a reference to RedHat Errata.
+            # We need to find out an ID for it
+            if( $attrs{'href'} =~ /errata\/([^.]+).html$/ )
+            {
+                $attrs{'id'} = $1;
+            }
+        }
         push @{$self->{CURRENT}->{PATCHREFS}}, \%attrs;
     }
     elsif ( lc($element) eq "yum:name" && $self->{CURRENT}->{MAINELEMENT} eq "patch" )

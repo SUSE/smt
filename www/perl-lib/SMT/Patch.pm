@@ -105,9 +105,11 @@ sub category
     {
       if    ($value eq 'security')    { $self->{category} = 1 }
       elsif ($value eq 'recommended') { $self->{category} = 2 }
+      elsif ($value eq 'bugfix')      { $self->{category} = 2 }
       elsif ($value eq 'mandatory')   { $self->{category} = 3 }
       elsif ($value eq 'optional')    { $self->{category} = 4 }
       elsif ($value eq 'feature')     { $self->{category} = 5 }
+      elsif ($value eq 'enhancement') { $self->{category} = 5 }
       else
       {
         $self->{category} = 4; # default to 'optional'
