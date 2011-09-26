@@ -76,7 +76,7 @@ sub copyStatus($$)
 Gets saved mirror status from the .mirror file under $path. $path must be
 the full local path to the mirrored repository.
 
-Returns a timestamp of the last mirroring of a repository.
+Returns a timestamp of the last change in a repository after mirroring.
 
 =cut
 sub getStatus($)
