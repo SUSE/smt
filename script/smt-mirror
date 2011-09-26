@@ -392,11 +392,15 @@ foreach my $entry (@{$array})
                 my $rh = SMT::Repositories::new($dbh, $LOG);
                 if ( !$dryrun )
                 {
+                    # This date reflects the last successfull sync.
+                    # Updated even if nothing changed.
                     $rh->updateLastMirror ($entry->{CATALOGID});
                     # Something new has been downloaded, update the mirroring timestamp
                     # BNC #510320: Downloaded per repository, not a total download size
                     if ($s->{DOWNLOAD})
                     {
+                        # This status is the date of the last change in the repo
+                        # This is used to compare staged repos full => testing => production
                         if (!SMT::Mirror::Utils::saveStatus($zyppMirror->fullLocalRepoPath()))
                         {
                             SMT::Utils::printLog($LOG, $vblevel, LOG_WARN,
