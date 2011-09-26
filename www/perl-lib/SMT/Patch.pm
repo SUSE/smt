@@ -73,7 +73,7 @@ sub version
 
     # make sure the returned value is a string. A 0 would case DBI to insert
     # NULL into the DB query, which would cause an error
-    return '' if (not defined $self->{version}); 
+    return '' if (not defined $self->{version});
     return $self->{version};
 }
 
@@ -105,9 +105,11 @@ sub category
     {
       if    ($value eq 'security')    { $self->{category} = 1 }
       elsif ($value eq 'recommended') { $self->{category} = 2 }
+      elsif ($value eq 'bugfix')      { $self->{category} = 2 }
       elsif ($value eq 'mandatory')   { $self->{category} = 3 }
       elsif ($value eq 'optional')    { $self->{category} = 4 }
       elsif ($value eq 'feature')     { $self->{category} = 5 }
+      elsif ($value eq 'enhancement') { $self->{category} = 5 }
       else
       {
         $self->{category} = 4; # default to 'optional'
@@ -126,7 +128,7 @@ sub summary
         $self->{DIRTY} = 1 if (defined $self->{summary} && ! $value eq $self->{summary});
         $self->{summary} = $value;
     }
-    return '' if (not defined $self->{summary}); 
+    return '' if (not defined $self->{summary});
     return $self->{summary};
 }
 
@@ -138,7 +140,7 @@ sub description
         $self->{DIRTY} = 1 if (defined $self->{desc} && ! $value eq $self->{desc});
         $self->{desc} = $value;
     }
-    return '' if (not defined $self->{desc}); 
+    return '' if (not defined $self->{desc});
     return $self->{desc};
 }
 
@@ -427,7 +429,7 @@ sub delete
     my $sql = 'delete from Patches where id=?';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $self->dbId(), SQL_INTEGER);
-    $sth->execute(); # FIXME wrap in eval 
+    $sth->execute(); # FIXME wrap in eval
 }
 
 

@@ -4,6 +4,7 @@ use URI;
 use XML::Parser;
 use SMT::Utils;
 use IO::Zlib;
+use Date::Parse;
 
 =head1 NAME
 
@@ -162,7 +163,7 @@ sub parse
         return {};
     }
 
-    $self->{PACKAGES} = [];   
+    $self->{PACKAGES} = [];
     $self->{PATCHES} = {};
 
     foreach my $start (@repodata)
@@ -249,7 +250,7 @@ sub handle_start_tag
     my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        $self->{CURRENT}->{ORIGXML} .= $line;
     }
 
     if(! exists $self->{CURRENT}->{MAINELEMENT})
@@ -299,7 +300,16 @@ sub handle_start_tag
     }
     elsif ( lc($element) eq "issued" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
     {
-        $self->{CURRENT}->{PATCHDATE} = $attrs{date};
+        # RedHat has date="YYYY-MM-DD HH:MM:SS"
+        # SUSE used timestamp since epoch
+        if (index($attrs{date}, " ") > 0)
+        {
+            $self->{CURRENT}->{PATCHDATE} = str2time($attrs{date}, "GMT");
+        }
+        else
+        {
+            $self->{CURRENT}->{PATCHDATE} = $attrs{date};
+        }
         $self->{CURRENT}->{SUBELEMENT} = lc($element) if (! $attrs{date});
     }
     elsif ( lc($element) eq "title" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
@@ -316,6 +326,15 @@ sub handle_start_tag
     }
     elsif ( lc($element) eq "reference" && $self->{CURRENT}->{MAINELEMENT} eq "update" )
     {
+        if(!exists $attrs{'id'} && $attrs{'type'} eq "self")
+        {
+            # This is a reference to RedHat Errata.
+            # We need to find out an ID for it
+            if( $attrs{'href'} =~ /errata\/([^.]+).html$/ )
+            {
+                $attrs{'id'} = $1;
+            }
+        }
         push @{$self->{CURRENT}->{PATCHREFS}}, \%attrs;
     }
     elsif ( lc($element) eq "yum:name" && $self->{CURRENT}->{MAINELEMENT} eq "patch" )
@@ -361,7 +380,7 @@ sub handle_start_tag
     }
     elsif ($lcelement eq 'script' || $lcelement eq 'message')
     {
-        # code 10 patch-*.xml's /patch/atom/message or /patch/atom/script 
+        # code 10 patch-*.xml's /patch/atom/message or /patch/atom/script
         if ($self->{CURRENT}->{MAINELEMENT} eq 'patch')
         {
             push @{$self->{STACK}}, $self->{CURRENT}->{MAINELEMENT};
@@ -393,7 +412,7 @@ sub handle_char_tag
     my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        $self->{CURRENT}->{ORIGXML} .= $line;
     }
 
     if (defined $self->{CURRENT} && defined $self->{CURRENT}->{MAINELEMENT})
@@ -463,7 +482,7 @@ sub handle_end_tag
     my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        $self->{CURRENT}->{ORIGXML} .= $line;
     }
 
     if (defined $self->{CURRENT}->{MAINELEMENT} &&
@@ -472,18 +491,18 @@ sub handle_end_tag
         if ($self->{CURRENT}->{MAINELEMENT} eq 'package')
         {
             my $pkg = {};
-            $pkg->{name} = $self->{CURRENT}->{PKGNAME}; 
-            $pkg->{epo}  = $self->{CURRENT}->{PKGEPO}; 
-            $pkg->{ver}  = $self->{CURRENT}->{PKGVER}; 
-            $pkg->{rel}  = $self->{CURRENT}->{PKGREL}; 
-            $pkg->{arch} = $self->{CURRENT}->{PKGARCH}; 
+            $pkg->{name} = $self->{CURRENT}->{PKGNAME};
+            $pkg->{epo}  = $self->{CURRENT}->{PKGEPO};
+            $pkg->{ver}  = $self->{CURRENT}->{PKGVER};
+            $pkg->{rel}  = $self->{CURRENT}->{PKGREL};
+            $pkg->{arch} = $self->{CURRENT}->{PKGARCH};
             push @{$self->{CURRENT}->{PACKAGES}}, $pkg;
-            $self->{CURRENT}->{MAINELEMENT} = pop @{$self->{STACK}} if (@{$self->{STACK}}); 
-            $self->{CURRENT}->{PKGNAME} = ''; 
-            $self->{CURRENT}->{PKGEPO} = ''; 
-            $self->{CURRENT}->{PKGVER} = ''; 
-            $self->{CURRENT}->{PKGREL} = ''; 
-            $self->{CURRENT}->{PKGARCH} = ''; 
+            $self->{CURRENT}->{MAINELEMENT} = pop @{$self->{STACK}} if (@{$self->{STACK}});
+            $self->{CURRENT}->{PKGNAME} = '';
+            $self->{CURRENT}->{PKGEPO} = '';
+            $self->{CURRENT}->{PKGVER} = '';
+            $self->{CURRENT}->{PKGREL} = '';
+            $self->{CURRENT}->{PKGARCH} = '';
         }
 
         elsif (($self->{CURRENT}->{MAINELEMENT} eq 'update' || $self->{CURRENT}->{MAINELEMENT} eq 'patch') &&
@@ -511,7 +530,7 @@ sub handle_end_tag
                 }
                 if ($self->{SAVE_PACKAGES})
                 {
-                    push @{$self->{PACKAGES}}, @{$self->{CURRENT}->{PACKAGES}}; 
+                    push @{$self->{PACKAGES}}, @{$self->{CURRENT}->{PACKAGES}};
                 }
                 delete($self->{PATCHES}->{$str});
             }
@@ -536,7 +555,7 @@ sub handle_end_tag
         {
             $self->{CURRENT}->{MAINELEMENT} =
                pop @{$self->{STACK}} if (@{$self->{STACK}});
-            $self->{CURRENT}->{SUBELEMENT} = ''; 
+            $self->{CURRENT}->{SUBELEMENT} = '';
         }
 
         # second check location if we have other metadata files
@@ -584,7 +603,7 @@ sub handle_the_rest
     my $line = $expat->original_string;
     if ($self->{WRITE_OUT})
     {
-        $self->{CURRENT}->{ORIGXML} .= $line; 
+        $self->{CURRENT}->{ORIGXML} .= $line;
     }
 }
 
