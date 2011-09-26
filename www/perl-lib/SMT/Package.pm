@@ -79,7 +79,7 @@ sub epoch
 sub version
 {
     my ($self, $value) = @_;
-    if ($value)
+    if (defined $value)
     {
         $self->{DIRTY} = 1 if (defined $self->{ver} && ! $value eq $self->{ver});
         $self->{ver} = $value;
@@ -90,7 +90,7 @@ sub version
 sub release
 {
     my ($self, $value) = @_;
-    if ($value)
+    if (defined $value)
     {
         $self->{DIRTY} = 1 if (defined $self->{rel} && ! $value eq $self->{rel});
         $self->{rel} = $value;
@@ -136,21 +136,24 @@ sub NEVRA
 {
     my ($self, $separator) = @_;
 
-    return undef if (not $self->name() && $self->version() && $self->release() && $self->arch());
-    
+    return undef if (not ($self->name() &&
+                          defined $self->version() && $self->version() ne "" &&
+                          defined $self->release() && $self->release() ne "" &&
+                          $self->arch()));
+
     $separator = ':' if (not $separator);
     my $nevra = $self->name();
     $nevra .= $separator . ($self->epoch() ? $self->epoch() : '');
     $nevra .= $separator . $self->version();
     $nevra .= $separator . $self->release();
     $nevra .= $separator . $self->arch();
-    
+
     return $nevra;
 }
 
 sub setFromHash
 {
-    my ($self, $data) = @_; 
+    my ($self, $data) = @_;
     $self->name($data->{name});
     $self->epoch($data->{epo});
     $self->version($data->{ver});
@@ -184,7 +187,7 @@ sub findByPatchId
         my $ver = $pdata->{VER};
         my $rel = $pdata->{REL};
         my $arch = $pdata->{ARCH};
-  
+
         my $p = new;
         $p->dbId($pdata->{ID});
         $p->repoId($pdata->{CATALOGID});
@@ -197,7 +200,7 @@ sub findByPatchId
         $p->smtLocation($pdata->{LOCATION});
         $p->extLocation($pdata->{EXTLOCATION});
         $p->{DIRTY} = 0;
-  
+
         $pkgs->{$p->NEVRA(':')} = $p;
     }
 
