@@ -80,12 +80,12 @@ function adjust_services () {
 
         tmp_exitcode=1
 
-        # if we do not have a local mysql daemon configured skip 
+        # if we do not have a local mysql daemon configured skip
         # mysql service
         if [ "${service}" == "mysql" -a ! has_local_mysql ]; then
             continue
         fi
-        
+
         # if action is start and the service is already running
         # do only a reload
         if [ "${action}" == "start" -a "${s_status}" == "0" ]; then
@@ -316,13 +316,31 @@ function check_copy_cert {
     fi
 }
 
+function test_ncccred_permissions {
+    ncccred_file="/etc/zypp/credentials.d/NCCcredentials"
+    if [ -e $ncccred_file ]; then
+        su -s /bin/bash -c "if [ ! -r $ncccred_file ]; then
+                                echo \"${warn}Unable to read $ncccred_file: Permission denied.${norm}\";
+                                echo \"You need to grant read access for the user 'smt'\";
+                                echo \"Example: /usr/bin/setfacl -m u:smt:r $ncccred_file\";
+                                exit 1;
+                            fi" - smt
+        if [ "$?" != "0" ]; then
+            rc_failed 4
+            rc_status -v1
+            rc_exit
+        fi
+    fi
+}
+
 #
-# main part 
+# main part
 #
 case "$action" in
     # starts the SMT service (symlinks apache configuration)
     start*)
 	action="start"
+	test_ncccred_permissions
 	mysql_config
 	link_smt_plugins
 	check_copy_cert
@@ -360,7 +378,7 @@ case "$action" in
 	adjust_services
 	;;
     *)
-    cat >&2 <<-EOF 
+    cat >&2 <<-EOF
 	Usage: $0 <command> <server flags>
 
 	where <command> is one of:
@@ -370,7 +388,7 @@ case "$action" in
 	        restart            - stops smt if running, and starts it again
 	        try-restart        - restart smt if it is running
 	        help               - this screen
-	
+
 	EOF
     exit_code=1
 esac
