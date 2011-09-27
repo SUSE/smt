@@ -940,11 +940,15 @@ sub setCatalogStaging
 
     my ($cfg, $dbh) = init();
 
-    # only mirrorable repos can be staged
-    my $where = sprintf(' where MIRRORABLE=%s', $dbh->quote('Y'));
+    my $where = ' where ';
+    if( $opt{enabled} )
+    {
+        # only mirrorable repos can be enabled for staging
+        $where .= sprintf(' MIRRORABLE=%s and ', $dbh->quote('Y'));
+    } # But disabling should work for all
 
     # ignore the rows having the desired STAGING value
-    $where .= sprintf(' and STAGING!=%s',
+    $where .= sprintf(' STAGING!=%s',
                 $dbh->quote($opt{enabled} ? 'Y' : 'N' ));
 
     # select desired repos
