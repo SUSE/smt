@@ -528,6 +528,10 @@ Debug message. ( 16 )
 
 Debug message 2. ( 32 )
 
+=item LOG_DEBUG2 ( 0x0040 )
+
+Debug message 3. ( 64 )
+
 =back
 
 These constants can be bitwise-or'd to use as verbose level to control the output.

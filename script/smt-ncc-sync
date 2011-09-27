@@ -456,6 +456,46 @@ Path to logfile.
 
 Enable display of debug information.
 
+=item --verboselevel -v <level>
+
+Set the output verbose level. The following categories exists.
+These categories can be bitwise-or'd to use as verbose level.
+
+=over 4
+
+=item error messages
+
+Value: 0x0001 == 1
+
+=item warning messages
+
+Value: 0x0002 == 2
+
+=item info messages 1
+
+Value: 0x0004 == 4
+
+=item info messages 2
+
+Value: 0x0008 == 8
+
+=item debug messages 1
+
+Value: 0x0010 == 16
+
+=item debug messages 2
+
+Value: 0x0020 == 32
+
+=item debug messages 3
+
+Value: 0x0040 == 64
+
+=back
+
+The default verbose level is 15 (error, warning and all info messages).
+B<--debug> set the verbose level to 63.
+
 =item --mail -m
 
 Send output as e-mail to the administrators defined in reportEmail in smt.conf .
