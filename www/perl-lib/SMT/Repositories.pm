@@ -14,7 +14,7 @@ use SMT::Mirror::Job;        # for filteringAllowed()
 # TODO seems we have a mess in logging and error reporting:
 # we should use
 # - newErrorMessage() to set __(translated) message to show to user
-#   * does this module have anything interesting to say to the user? 
+#   * does this module have anything interesting to say to the user?
 # - printLog to print and/or log untranslated message
 #   * or even better, we should not print anything in this module
 #     (use printLog with doprint = 0 parameter), the front-end code (UI) should
@@ -104,7 +104,7 @@ use constant {
     MIRRORING		=> 'DOMIRROR',
     MIRRORING_TRUE	=> 'Y',
     MIRRORING_FALSE	=> 'N',
-    
+
     LAST_MIRROR         => 'LAST_MIRROR',
 
     # Repository has Staging feature enabled
@@ -121,7 +121,7 @@ use constant {
     VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2,
 };
 
-=head1 METHODS 
+=head1 METHODS
 
 =over 4
 
@@ -193,7 +193,7 @@ sub getAndClearErrorMessage () {
 
 Returns hash filled up with description of repositories matching the filter
 given as a parameter. If not filter is given, all repositories are returned.
-The hash has repository IDs as keys and hashes of repository data as values. 
+The hash has repository IDs as keys and hashes of repository data as values.
 
 If no filter is used, all repositories are returned and cached. Any subsequent
 calls to getRepository*() functions then reuse the cached data without
@@ -262,7 +262,7 @@ sub getAllRepositories ($$) {
 =item getAllRepositories
 
 Returns a hash of repository data for given repository ID. The hash keys
-correspond to Catalogs database table. 
+correspond to Catalogs database table.
 
 =cut
 sub getRepository($$)
@@ -297,7 +297,7 @@ sub getRepository($$)
 =item getRepositoryPath($repoid)
 
 Returns relative path of given repository (ID). The path is relative to the
-directory given in the LOCAL.MirrorTo option in smt.conf.  
+directory given in the LOCAL.MirrorTo option in smt.conf.
 
  $repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
      -> '$RCE/SLE11-SDK-Updates/sle-11-x86_64'
@@ -309,7 +309,7 @@ sub getRepositoryPath ($$) {
     my $repository = shift;
 
     my $repo = $self->getRepository($repository);
-    return undef if (not defined $repo); 
+    return undef if (not defined $repo);
 
     my $repo_local_path = '';
     if (defined $repo->{'LOCALPATH'}) {
@@ -324,7 +324,7 @@ sub getRepositoryPath ($$) {
 
 =item getRepositoryUrl($repoid)
 
-Returns source URL of given repository (ID).  
+Returns source URL of given repository (ID).
 
  $repo->getRepositoryPath ('262c8b023a6802b1b753868776a80aec2d08e85b')
      -> 'http://download.opensuse.org/update/11.1'
@@ -336,7 +336,7 @@ sub getRepositoryUrl ($$) {
     my $repository = shift;
 
     my $repo = $self->getRepository($repository);
-    return undef if (not defined $repo); 
+    return undef if (not defined $repo);
 
     my $repo_url = '';
     if (defined $repo->{'EXTURL'}) {
@@ -512,7 +512,7 @@ always starts with a slash.
  $repohandler = SMT::Repositories::new($dbh);
  $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
  $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
- $thepath = getFullRepoPath($repoid, $basepath); 
+ $thepath = getFullRepoPath($repoid, $basepath);
 
 TODO: move to SMT::Common::Repos
 
@@ -537,7 +537,7 @@ always starts with a slash.
  $repohandler = SMT::Repositories::new($dbh);
  $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
  $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
- $thepath = getTestingRepoPath($repoid, $basepath); 
+ $thepath = getTestingRepoPath($repoid, $basepath);
 
 TODO: move to SMT::Common::Repos
 
@@ -781,7 +781,7 @@ Returns XML for /repos REST GET request.
 sub getAllReposAsXML
 {
     my $dbh = shift;
-    
+
     my $sql = 'select * from Catalogs';
     my $sth = $dbh->prepare($sql);
     $sth->execute();
@@ -810,7 +810,7 @@ Returns XML for /products/$productid/repos REST GET request.
 sub getProductReposAsXML
 {
     my ($dbh, $productid) = @_;
-    
+
     my $sql = 'select c.* from Catalogs as c, ProductCatalogs as pc'
         . ' where c.catalogid = pc.catalogid and productdataid = ?;';
     my $sth = $dbh->prepare($sql);
@@ -841,7 +841,7 @@ Returns XML for /products/$productid/repos REST GET request.
 sub getRepositoryAsXML
 {
     my ($dbh, $repoid) = @_;
-    
+
     my $sql = 'select * from Catalogs where id = ?;';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $repoid, SQL_INTEGER);
@@ -854,8 +854,8 @@ sub getRepositoryAsXML
     my $localpath = '/srv/www/htdocs/repo/' . $r->{LOCALPATH};
     eval
     {
-        my $cfg = SMT::Utils::getSMTConfig();  
-    
+        my $cfg = SMT::Utils::getSMTConfig();
+
         # can't use getFullRepoPath() 'cause that would load all repos needlessly
         $localpath = SMT::Utils::cleanPath(
             $cfg->val('LOCAL', 'MirrorTo', '/srv/www/htdocs'),
