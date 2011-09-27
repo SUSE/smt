@@ -140,7 +140,7 @@ if( $exportdir ne "" )
 {
     if ( $todir ne "" || $fromdir ne "" )
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, 
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
                 __("--exportdir and --todir or --fromdir cannot be used at the same time."));
         SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
     }
@@ -149,7 +149,7 @@ if( $exportdir ne "" )
         eval {
                 &File::Path::mkpath($exportdir);
         };
-        if ($@) 
+        if ($@)
         {
             SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
             SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
@@ -163,7 +163,7 @@ if($todir ne "" && ! -d $todir)
     eval {
         &File::Path::mkpath($todir);
     };
-    if ($@) 
+    if ($@)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
         SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
@@ -181,48 +181,48 @@ if($todir ne "")
 
 if ( $exportdir ne "" )
 {
-    
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Exporting repository information"));
     SMT::CLI::db2Xml(outfile => "$exportdir/catalogs.xml",
                      type => "catalogs",
-                     table => "Catalogs", 
+                     table => "Catalogs",
                      columns => [ 'CATALOGID', 'NAME', 'DESCRIPTION', 'TARGET', 'EXTHOST', 'EXTURL',
                                   'CATALOGTYPE', 'DOMIRROR' ],
                      row_handler => \&catalog_handler
                     );
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Product information"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/productdata.xml", 
+    SMT::CLI::db2Xml(outfile => "$exportdir/productdata.xml",
                      type => "productdata",
-                     table => "Products", 
-                     columns => [ 'PRODUCTDATAID', 'PRODUCT', 'VERSION', 'REL', 'ARCH', 'FRIENDLY', 
+                     table => "Products",
+                     columns => [ 'PRODUCTDATAID', 'PRODUCT', 'VERSION', 'REL', 'ARCH', 'FRIENDLY',
                                   'PARAMLIST', 'NEEDINFO', 'SERVICE', 'PRODUCT_LIST', 'PRODUCT_CLASS' ]
                     );
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Exporting product/repository relations"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/productcatalogs.xml", 
+    SMT::CLI::db2Xml(outfile => "$exportdir/productcatalogs.xml",
                      type => "productcatalogs",
-                     table => "ProductCatalogs", 
+                     table => "ProductCatalogs",
                      columns => [ 'PRODUCTDATAID', 'CATALOGID', 'OPTIONAL' ]
                     );
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Target information"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/targets.xml", 
+    SMT::CLI::db2Xml(outfile => "$exportdir/targets.xml",
                      type => "targets",
-                     table => "Targets", 
+                     table => "Targets",
                      columns => [ 'OS', 'TARGET' ]
                     );
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Subscription information"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/listsubscriptions.xml", 
+    SMT::CLI::db2Xml(outfile => "$exportdir/listsubscriptions.xml",
                      type => "subscriptionlist",
-                     table => "Subscriptions", 
-                     columns => [ "SUBID", "REGCODE", "SUBNAME", "SUBTYPE", "SUBSTATUS", 
-                                  "SUBSTARTDATE", "SUBENDDATE", "SUBDURATION", "SERVERCLASS", 
+                     table => "Subscriptions",
+                     columns => [ "SUBID", "REGCODE", "SUBNAME", "SUBTYPE", "SUBSTATUS",
+                                  "SUBSTARTDATE", "SUBENDDATE", "SUBDURATION", "SERVERCLASS",
                                   "PRODUCT_CLASS" , "NODECOUNT", "CONSUMED", "CONSUMEDVIRT"],
                      row_handler => \&subscriptions_handler );
 
-    # an empty registrations file should be enough for our purposes (later import into 
+    # an empty registrations file should be enough for our purposes (later import into
     # an isolated SMT)
     my $output = new IO::File("> $exportdir/listregistrations.xml");
     if(!defined $output)
@@ -249,19 +249,19 @@ eval
                                       fromdir => (($fromdir ne "")?$fromdir:undef),
                                       todir   => (($todir ne "")?$todir:undef));
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product information"));
-    
+
     my $res = $rd->sync();
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Products data."));
         $exitcode = 1;
     }
-    
-    
+
+
     $rd->element("targets");
     $rd->table("Targets");
     $rd->key("OS");
-    
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Target information"));
     $res = $rd->sync();
     if ($res)
@@ -269,11 +269,11 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Targets data."));
         $exitcode = 1;
     }
-    
+
     $rd->element("catalogs");
     $rd->table("Catalogs");
     $rd->key("CATALOGID");
-    
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading repository information"));
     $res = $rd->sync();
     if ($res)
@@ -281,11 +281,11 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching repository data."));
         $exitcode = 1;
     }
-    
+
     $rd->element("productcatalogs");
     $rd->table("ProductCatalogs");
     $rd->key(['PRODUCTDATAID', 'CATALOGID']);
-    
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product/Repository relations"));
     $res = $rd->sync();
     if ($res)
@@ -293,8 +293,8 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching ProductCatalogs data."));
         $exitcode = 1;
     }
-    
-    
+
+
     my $lr= SMT::NCCRegTools->new(vblevel => $vblevel,
                                   log     => $LOG,
                                   fromdir => (($fromdir ne "")?$fromdir:undef),
@@ -307,7 +307,7 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
         $exitcode = 1;
     }
-    
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
     $res = $lr->NCCListRegistrations();
     if ($res)
@@ -315,7 +315,7 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
         $exitcode = 1;
     }
-    
+
     if ($todir ne "")
     {
         SMT::CLI::setMirrorableCatalogs(todir   => $todir,
@@ -324,7 +324,7 @@ eval
         # if todir parameter is set, we can stop here. Everything is done.
         SMT::Utils::unLockAndExit("smt-ncc-sync", 0, $LOG, $vblevel);
     }
-    
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
                                     todir   => ($todir ne "")?$todir:undef,
@@ -339,7 +339,7 @@ eval
             SMT::CLI::setDoMirrorFromXml( xml => $mirrorinfofile );
         }
     }
-    
+
 };
 if ($@)
 {
@@ -353,7 +353,7 @@ if($mail)
     close (STDOUT);
     close (MAILTEMPFILE);
     my $body = "";
-    
+
     open(MAIL, "< $mailtempfile") and do
     {
         while(<MAIL>)
@@ -376,7 +376,7 @@ sub subscriptions_handler
 {
     my ($writer,$row) = @_;
     # The SQL column name don't map 1to1 to the XML tag names for the Subscriptions-Table
-    my %col2tag = ( 
+    my %col2tag = (
         "SUBID"         => "subid",
         "REGCODE"       => "regcode",
         "SUBNAME"       => "subname",
@@ -420,7 +420,7 @@ sub catalog_handler
 
 =head1 NAME
 
-smt ncc-sync -  
+smt ncc-sync -
 
 =head1 SYNOPSIS
 
@@ -456,6 +456,46 @@ Path to logfile.
 
 Enable display of debug information.
 
+=item --verboselevel -v <level>
+
+Set the output verbose level. The following categories exists.
+These categories can be bitwise-or'd to use as verbose level.
+
+=over 4
+
+=item error messages
+
+Value: 0x0001 == 1
+
+=item warning messages
+
+Value: 0x0002 == 2
+
+=item info messages 1
+
+Value: 0x0004 == 4
+
+=item info messages 2
+
+Value: 0x0008 == 8
+
+=item debug messages 1
+
+Value: 0x0010 == 16
+
+=item debug messages 2
+
+Value: 0x0020 == 32
+
+=item debug messages 3
+
+Value: 0x0040 == 64
+
+=back
+
+The default verbose level is 15 (error, warning and all info messages).
+B<--debug> set the verbose level to 63.
+
 =item --mail -m
 
 Send output as e-mail to the administrators defined in reportEmail in smt.conf .
@@ -464,7 +504,7 @@ The output on stdout and stderr will be suppressed in this mode.
 =item --export directory
 
 Export the NCC informations from the local database to a directory of XML files,
-that directory can later be imported on another SMT instance with 
+that directory can later be imported on another SMT instance with
 C<smt ncc-sync --fromdir directory>.
 
 =back

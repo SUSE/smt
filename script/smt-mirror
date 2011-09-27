@@ -665,6 +665,10 @@ Value: 0x0010 == 16
 
 Value: 0x0020 == 32
 
+=item debug messages 3
+
+Value: 0x0040 == 64
+
 =back
 
 The default verbose level is 15 (error, warning and all info messages).
