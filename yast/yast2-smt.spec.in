@@ -73,6 +73,7 @@ done
 @desktopdir@/smt*.desktop
 @scrconfdir@/smt*.scr
 @execcompdir@/servers_non_y2/ag_*
+@ybindir@/regsrv-check-creds
 %doc @docdir@
 %dir /usr/share/YaST2/control
 /usr/share/YaST2/control/smt_control.xml
