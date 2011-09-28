@@ -91,12 +91,22 @@
 
 			`Left (`Frame (_("NCC Mirroring Credentials"), (`VBox (
 			    `HSquash (`MinWidth (
-				25,
-				// TRANSLATORS: text entry (User name)
-				`InputField (`id ("NUUser"), _("&User"))
+				40,
+				// TRANSLATORS: text entry
+				`InputField (`id ("NURegUrl"), _("&Registration Server Url"))
 			    )),
+                `HSquash (`MinWidth (
+                40,
+                // TRANSLATORS: text entry
+                `InputField (`id ("NUUrl"), _("&Download Server Url"))
+                )),
+                `HSquash (`MinWidth (
+                40,
+                // TRANSLATORS: text entry (User name)
+                `InputField (`id ("NUUser"), _("&User"))
+                )),
 			    `HSquash (`MinWidth (
-				25,
+				40,
 				// TRANSLATORS: password entry
 				`Password (`id ("NUPass"), _("&Password"))
 			    )),
@@ -145,7 +155,7 @@
 			// TRANSLATORS: password entry
 			`Password (`id ("DB-password-2"), _("C&onfirm Password"))
 		    ))),
-		    
+
 		    `VStretch()
 		)
 	    ),
@@ -780,7 +790,7 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
     }
 
     void InitCredentialsDialog (string id) {
-	foreach (string one_entry, ["NUUser", "NUPass"], {
+	foreach (string one_entry, ["NUUser", "NUPass", "NURegUrl", "NUUrl"], {
 	    string value = SMTData::GetCredentials ("NU", one_entry);
 	    if (value == nil) value = "";
 	    UI::ChangeWidget (`id (one_entry), `Value, value);
@@ -812,7 +822,7 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
     }
 
     void StoreCredentialsDialog (string id, map event) {
-	foreach (string one_entry, ["NUUser", "NUPass"], {
+	foreach (string one_entry, ["NUUser", "NUPass", "NURegUrl", "NUUrl"], {
 	    SMTData::SetCredentials ("NU", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
 
