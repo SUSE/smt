@@ -1,0 +1,96 @@
+#! /usr/bin/perl -w
+
+use strict;
+use SMT::Utils;
+use XML::Writer;
+
+my $config = $ARGV[0];
+
+if (! -r "$config")
+{
+    die "Configuration file not found";
+}
+
+my $cfg = new Config::IniFiles( -file => $config );
+if(!defined $cfg)
+{
+    # die is ok here.
+    die sprintf("Cannot read configuration file: %s", @Config::IniFiles::errors);
+}
+
+my $smtguid = SMT::Utils::getSMTGuid();
+my $authuser = $cfg->val('GLOBAL', 'user');
+my $authpass = $cfg->val('GLOBAL', 'pass');
+my $uri = $cfg->val('GLOBAL', 'url');
+
+if (!($uri && $authuser && $authpass))
+{
+    die "Invalid values";
+}
+if(!$smtguid)
+{
+    $smtguid = "1234567890";
+}
+
+my $ua = SMT::Utils::createUserAgent();
+$ua->protocols_allowed( [ 'https'] );
+
+my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+         "client_version" => "1.2.3",
+         "lang" => "en");
+
+my $content = "";
+my $writer = new XML::Writer(NEWLINES => 0, OUTPUT => \$content);
+$writer->xmlDecl();
+$writer->startTag('targets', %a);
+
+$writer->startTag("authuser");
+$writer->characters($authuser);
+$writer->endTag("authuser");
+
+$writer->startTag("authpass");
+$writer->characters($authpass);
+$writer->endTag("authpass");
+
+$writer->startTag("smtguid");
+$writer->characters($smtguid);
+$writer->endTag("smtguid");
+
+$writer->endTag('targets');
+
+my $response;
+my $redirects = 0;
+do
+{
+    #print "SEND TO: $uri\n";
+    #print "$content\n";
+    eval
+    {
+        $response = $ua->post( $uri, 'Content-Type' => 'text/xml',
+                               'Content' => $content);
+    };
+    if($@)
+    {
+        die "$@";
+    }
+
+    if ( $response->is_redirect )
+    {
+        $redirects++;
+        if($redirects > 10)
+        {
+            die "Reach maximal redirects. Abort";
+        }
+
+        $uri = $response->header("location");
+    }
+} while($response->is_redirect);
+
+if( $response->is_success)
+{
+    exit 0;
+}
+#require Data::Dumper;
+#print "response: ".Data::Dumper->Dump([$response])."\n";
+exit 1;
+

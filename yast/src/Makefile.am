@@ -17,6 +17,8 @@ ynclude_DATA = \
 control_DATA = \
 	smt_control.xml
 
+ybin_SCRIPTS = regsrv-check-creds
+
 desktop_DATA = $(wildcard *.desktop)
 
 module_DATA = $(wildcard SMT*.ycp)
@@ -28,6 +30,6 @@ ycpchook = smt
 
 controldir = $(yast2dir)/control
 
-EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(desktop_DATA) $(control_DATA)
+EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(desktop_DATA) $(control_DATA) $(ybin_SCRIPTS)
 
 include $(top_srcdir)/Makefile.am.common
