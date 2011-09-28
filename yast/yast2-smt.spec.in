@@ -16,7 +16,8 @@ Requires:	/bin/chmod
 Requires:	/usr/bin/getent
 # Modified smt-catalogs (added --batch-mode)
 # SMT::Client::getPatchStatusLabel returning two values
-Requires:	smt >= 1.1.21
+# require smt version having SMT::Curl
+Requires:	smt >= 1.1.23
 # Icons
 Requires:	hicolor-icon-theme
 # any YaST theme
