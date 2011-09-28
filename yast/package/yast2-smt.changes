@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Sep 28 11:59:55 CEST 2011 - mc@suse.de
+
+- 2.17.24
+- modify credentials test to work also with a
+  SLMS registration server (bnc#549481)
+- make registration and download url configurable
+
+-------------------------------------------------------------------
 Fri Mar  4 16:35:23 CET 2011 - dmueller@suse.de
 
 - require latest smt version
