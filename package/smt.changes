@@ -1,4 +1,21 @@
 -------------------------------------------------------------------
+Tue Sep 27 12:39:12 CEST 2011 - mc@suse.de
+
+- version 1.1.23
+- fix disable staging of not mirrorable repositories (bnc#650682)
+- document verbose level in the manpages (bnc#710348)
+- check permissions on the credentials file (bnc#677361)
+- fix message of certificate check in smt-report (bnc#656121)
+
+-------------------------------------------------------------------
+Mon Sep 26 10:23:33 CEST 2011 - mc@suse.de
+
+- fix for packages with release or version equal 0 (bnc#698512)
+- Move parsing patch data in the mirror process (bnc#653937)
+- fix parsing RES patches which have different date format,
+  references without id and category names (bnc#653893)
+
+-------------------------------------------------------------------
 Tue Sep 20 10:45:47 CEST 2011 - mc@suse.de
 
 - version 1.1.22
