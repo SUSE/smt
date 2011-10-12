@@ -4,6 +4,7 @@ Wed Oct 12 15:53:59 CEST 2011 - mc@suse.de
 - version 1.1.23
 - fix invalid warning about clients in NCC does not exist
   locally (bnc#721238)
+- cut patch description down to DB column size (bnc#723571)
 
 -------------------------------------------------------------------
 Tue Sep 27 12:39:12 CEST 2011 - mc@suse.de
