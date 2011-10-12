@@ -335,11 +335,19 @@ sub NCCListRegistrations
             return $err;
         }
 
-        # $guidhash includes now a list of GUIDs which are no longer in NCC
+        my @deleteGuids = ();
+        foreach my $hash (values %{$guidhash})
+        {
+            if (exists $hash->{GUID} && ! exists $hash->{found})
+            {
+                push @deleteGuids, $hash->{GUID};
+            }
+        }
+        # @deleteGuids includes now a list of GUIDs which are no longer in NCC
         # A customer may have removed them via NCC web page.
         # So remove them also here in SMT
 
-        $self->_deleteRegistrationLocal(keys %{$guidhash});
+        $self->_deleteRegistrationLocal(@deleteGuids);
 
         return 0;
     }
@@ -680,7 +688,7 @@ sub _listreg_handler
         # check if data->{GUID} exists localy
         if(exists $guidhash->{$data->{GUID}})
         {
-            delete $guidhash->{$data->{GUID}};
+            $guidhash->{$data->{GUID}}->{found} = 1;
 
             foreach my $subid (@{$data->{SUBREF}})
             {
@@ -691,15 +699,6 @@ sub _listreg_handler
                 $self->{DBH}->do($statement);
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$statement") ;
             }
-        }
-        else
-        {
-            # FIXME: maybe we get GUID from other SMTs of this company. If yes, we should
-            #        skip this warning.
-            #
-            # We found a registration from SMT in NCC which does not exist in SMT anymore
-            # print and error. The admin has to delete it in NCC by hand.
-            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, sprintf(__("WARNING: Found a Client in NCC which is not available here: '%s'"), $data->{GUID}));
         }
     };
     if($@)
