@@ -1,7 +1,13 @@
 -------------------------------------------------------------------
-Tue Sep 27 12:39:12 CEST 2011 - mc@suse.de
+Wed Oct 12 15:53:59 CEST 2011 - mc@suse.de
 
 - version 1.1.23
+- fix invalid warning about clients in NCC does not exist
+  locally (bnc#721238)
+
+-------------------------------------------------------------------
+Tue Sep 27 12:39:12 CEST 2011 - mc@suse.de
+
 - fix disable staging of not mirrorable repositories (bnc#650682)
 - document verbose level in the manpages (bnc#710348)
 - check permissions on the credentials file (bnc#677361)
