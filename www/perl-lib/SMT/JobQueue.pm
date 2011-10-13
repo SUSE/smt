@@ -271,11 +271,25 @@ sub finishJob($;$)
   return undef unless (defined $guid && defined $jobxml);
 
   my $xmljob = SMT::Job->new({ 'dbh' => $self->{dbh} });
+  return undef unless $xmljob;
   $xmljob->readJobFromXML( $jobxml );
   # do not allow to update foreign job
-  return undef unless ( ''.$xmljob->guid() eq "$guid" );
+  my $sentguid = $xmljob->guid();
+  if ($sentguid)
+  {
+      return undef unless ( "$sentguid" eq "$guid" );
+  }
+  else
+  {
+      # set the guid from the config hash if not present in job XML
+      # backward compatibility for old clients (bnc#723583)
+      $xmljob->guid($guid);
+      # LATER: add a warning to the client status, to help admins find and update old smt clients that do not include their guid in XML
+      # this is needed for consistent use of the new job types that send data upstream to a cascaded SMT server
+  }
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
+  return undef unless $job;
   $job->readJobFromDatabase( $xmljob->id(), $guid );
   return undef unless ( $job->retrieved() );
 
