@@ -67,6 +67,7 @@ sub updatejob
   {
     SMT::Agent::Utils::logger( "successfully updated job $jobid");
   }
+  return 1;
 };
 
 

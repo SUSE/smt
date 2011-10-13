@@ -33,15 +33,8 @@ sub logger
   # prevent multiline log entries
   $message =~ s/\n/ /g;
 
-  if ( defined ( $jobid ) )
-  {
-    print ($LOG "$time: ($jobid) $message\n") ;
-  }
-  else
-  
-  {
-    print ($LOG "$time: () $message\n") ;
-  }
+  my $jobidstr = (defined $jobid) ? $jobid : '';
+  print ($LOG "$time: ($jobidstr) $message\n") ;
 }
 
 
