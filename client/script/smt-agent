@@ -44,7 +44,7 @@ while( defined ( $jobid = SMT::Agent::RestXML::parsejobid( SMT::Agent::RestXML::
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( SMT::Agent::Constants::PROCESSJOB, undef, ( $jobid ) );
   if ( $retval != 0) 
   {
-  	SMT::Agent::Utils::logger ("warning: job $jobid exited with $retval. stdout: '$stdout' stderr: '$stderr'", $jobid);
+      SMT::Agent::Utils::error("error: job $jobid exited with $retval. stdout: '$stdout' stderr: '$stderr'", $jobid);
   }
 
   sleep (3);

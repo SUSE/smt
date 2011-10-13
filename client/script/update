@@ -52,8 +52,8 @@ sub jobhandler
       ($retval, $stdout2, $stderr2) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
   }
 
-  $stdout .= $stdout2;
-  $stderr .= $stderr2;
+  $stdout .= $stdout2 if $stdout2;
+  $stderr .= $stderr2 if $stderr2;
 
   my $mesg = "update failed";
   $mesg = "update successfully finished" if $retval == 0 ;
