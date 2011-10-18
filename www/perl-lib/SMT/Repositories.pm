@@ -804,7 +804,7 @@ sub getProductReposAsXML
 {
     my ($dbh, $productid) = @_;
 
-    my $sql = 'select c.* from Catalogs as c, ProductCatalogs as pc'
+    my $sql = 'select c.*, pc.OPTIONAL from Catalogs as c, ProductCatalogs as pc'
         . ' where c.catalogid = pc.catalogid and productdataid = ?;';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $productid, SQL_INTEGER);
@@ -813,12 +813,13 @@ sub getProductReposAsXML
     my $data = { repo => []};
     while (my $p = $sth->fetchrow_hashref())
     {
-        # <repo id="%s" name="%s" target"%s"/>
+        # <repo id="%s" name="%s" target"%s" mirrored="%s" optional="%s"/>
         push @{$data->{repo}}, {
             id => $p->{ID},
             name => $p->{NAME},
             target => $p->{TARGET},
-            mirrored => str2time($p->{LAST_MIRROR})
+            mirrored => str2time($p->{LAST_MIRROR}),
+            optional => $p->{OPTIONAL}
             };
     }
     return XMLout($data,
@@ -828,7 +829,7 @@ sub getProductReposAsXML
 
 
 =item getRepositoryAsXML($dbh, $repoid)
-Returns XML for /products/$productid/repos REST GET request.
+Returns XML for /repos REST GET request.
 =cut
 
 sub getRepositoryAsXML
