@@ -53,8 +53,6 @@ sub new
     }
     $self->setopt(CURLOPT_SSL_VERIFYHOST, 2 );
     $self->setopt(CURLOPT_SSL_VERIFYPEER, 1 );
-    # bnc #306272
-    $self->setopt(CURLOPT_PROXY_TRANSFER_MODE, 1);
 
     if(exists $opt{useragent})
     {
@@ -262,7 +260,9 @@ sub request
     my @req_headers;
     foreach my $h ($request->headers->header_field_names)
     {
-        push(@req_headers, "$h: " . $request->header($h));
+        # Content-Length is calculated by libcurl
+        # we do not want to set it as custom headers
+        push(@req_headers, "$h: " . $request->header($h)) if("$h" ne "Content-Length");
     }
     if (scalar(@req_headers))
     {

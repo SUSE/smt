@@ -864,9 +864,8 @@ sub createUserAgent
     my $ua = SMT::Curl->new(%opts);
 
     my $cfg = getSMTConfig;
-    my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', "LWP::UserAgent/$LWP::VERSION");
-    $userAgentString  = "LWP::UserAgent/$LWP::VERSION" if( $userAgentString eq "");
-    $ua->agent($userAgentString);
+    my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', WWW::Curl::Easy->version());
+    $ua->agent($userAgentString) if( $userAgentString ne "");
 
     return $ua;
 }

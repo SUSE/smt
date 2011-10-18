@@ -62,9 +62,10 @@ signingKeyID=
 
 #
 # This string is send in HTTP requests as UserAgent.
-# If it is empty, a default is used.
+# If the key UserAgent does not exist, a default is used.
+# If UserAgent is empty, no UserAgent string is set.
 #
-UserAgent=
+#UserAgent=
 
 # Mirroring credentials for this SMT server.
 # These are currently only used to get list of all available repositories
