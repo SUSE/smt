@@ -112,7 +112,7 @@ sub asXML
         rel => $self->release,
         arch => $self->arch,
         uiname => $self->uiName,
-	class => $self->prclass
+        class => $self->prclass
     };
 
     return XMLout($xdata,
