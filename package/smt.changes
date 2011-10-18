@@ -1,7 +1,18 @@
 -------------------------------------------------------------------
-Wed Oct 12 15:53:59 CEST 2011 - mc@suse.de
+Tue Oct 18 11:54:57 CEST 2011 - mc@suse.de
 
 - version 1.1.23
+- do not set Content-Length as custom header. Let libcurl
+  set it. (bnc#723901)
+- Use libcurl string as UserAgent default if not specified
+  in smt.conf.
+- If UserAgent in smt.conf is empty do not send a UserAgent
+  string. Use the default only if UserAgent is not specified
+  in smt.conf
+
+-------------------------------------------------------------------
+Wed Oct 12 15:53:59 CEST 2011 - mc@suse.de
+
 - fix invalid warning about clients in NCC does not exist
   locally (bnc#721238)
 - cut patch description down to DB column size (bnc#723571)
