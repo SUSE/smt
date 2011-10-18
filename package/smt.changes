@@ -9,6 +9,7 @@ Tue Oct 18 11:54:57 CEST 2011 - mc@suse.de
 - If UserAgent in smt.conf is empty do not send a UserAgent
   string. Use the default only if UserAgent is not specified
   in smt.conf
+- enhance REST API for Products and Repositories
 
 -------------------------------------------------------------------
 Wed Oct 12 15:53:59 CEST 2011 - mc@suse.de
