@@ -15,7 +15,8 @@ sub new
         version => undef,
         rel => undef,
         arch => undef,
-        uiname => undef
+        uiname => undef,
+        prclass => undef
     };
 
     bless $self, __PACKAGE__;
@@ -67,11 +68,19 @@ sub uiName
 }
 
 
+sub prclass
+{
+    my ($self, $value) = @_;
+    $self->{prclass} = $value if ($value);
+    return $self->{prclass};
+}
+
+
 sub findById
 {
     my ($dbh, $id) = @_;
-    
-    my $sql = "select productdataid, product, version, rel, arch, friendly from Products where productdataid = ?;";
+
+    my $sql = "select productdataid, product, version, rel, arch, friendly, product_class from Products where productdataid = ?;";
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $id, SQL_INTEGER);
     $sth->execute();
@@ -86,7 +95,8 @@ sub findById
     $p->release($pdata->{rel});
     $p->arch($pdata->{arch});
     $p->uiName($pdata->{friendly});
-    
+    $p->prclass($pdata->{product_class});
+
     return $p;
 }
 
@@ -101,9 +111,10 @@ sub asXML
         version => $self->version,
         rel => $self->release,
         arch => $self->arch,
-        uiname => $self->uiName
+        uiname => $self->uiName,
+	class => $self->prclass
     };
-    
+
     return XMLout($xdata,
         rootname => 'product',
         xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
@@ -114,21 +125,22 @@ sub asXML
 sub getAllAsXML
 {
     my $dbh = shift;
-    
-    my $sql = "select productdataid, product, version, rel, arch, friendly from Products;";
+
+    my $sql = "select productdataid, product, version, rel, arch, friendly, product_class from Products;";
     my $sth = $dbh->prepare($sql);
     $sth->execute();
     my $data = { product => []};
     while (my $p = $sth->fetchrow_hashref())
     {
-        # <product id="%s" name="%s" version="%s" rel="%s" arch="%s" uiname="%s"/>
+        # <product id="%s" name="%s" version="%s" rel="%s" arch="%s" uiname="%s" class="%s"/>
         push @{$data->{product}}, {
             id => $p->{productdataid},
             name => $p->{product},
             version => $p->{version},
             rel => $p->{rel},
             arch => $p->{arch},
-            uiname => $p->{friendly}
+            uiname => $p->{friendly},
+            class => $p->{product_class}
             };
     }
     return XMLout($data,
