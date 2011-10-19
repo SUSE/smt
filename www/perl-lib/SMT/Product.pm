@@ -7,6 +7,75 @@ use DBI qw(:sql_types);
 
 use SMT::Utils;
 
+use constant SERVERCLASSDEFAULT => {
+              "AiO"=>"OS",
+              "ATI"=>"ADDON",
+              "Broadcom-Acer-Repo"=>"ADDON",
+              "Broadcom-HP-BNB-Network"=>"ADDON",
+              "Conexant-Acer-Modem"=>"ADDON",
+              "DSMP"=>"ADDON",
+              "HP-HWREF"=>"ADDON",
+              "JBEAP"=>"OS",
+              "jeos"=>"OS",
+              "LSI"=>"ADDON",
+              "MEEGO-1"=>"OS",
+              "Moblin-2-Samsung"=>"OS",
+              "Moblin-2.1-MSI"=>"OS",
+              "MONO"=>"ADDON",
+              "NAM-AGA"=>"OS",
+              "NETIQ-AG4C"=>"ADDON",
+              "nVidia"=>"ADDON",
+              "OES2"=>"ADDON",
+              "PUM"=>"OS",
+              "RES"=>"OS",
+              "SENTINEL_SERVER"=>"ADDON",
+              "SLE-HAE-GEO"=>"ADDON",
+              "SLE-HAE-IA"=>"ADDON",
+              "SLE-HAE-PPC"=>"ADDON",
+              "SLE-HAE-X86"=>"ADDON",
+              "SLE-HAE-Z"=>"ADDON",
+              "SLE-HAS"=>"ADDON",
+              "SLE-SDK"=>"ADDON",
+              "SLES-EC2"=>"OS",
+              "SLES-IA"=>"OS",
+              "SLESMT"=>"ADDON",
+              "SLES-PPC"=>"OS",
+              "SLES-X86-VMWARE"=>"OS",
+              "SLES-Z"=>"OS",
+              "SLE-TC"=>"ADDON",
+              "SLM"=>"OS",
+              "SLMS"=>"ADDON",
+              "SM_ENT_MGM_S"=>"ADDON",
+              "SM_ENT_MGM_V"=>"ADDON",
+              "SM_ENT_MGM_Z"=>"ADDON",
+              "SM_ENT_MON_S"=>"ADDON",
+              "SM_ENT_MON_V"=>"ADDON",
+              "SM_ENT_MON_Z"=>"ADDON",
+              "SM_ENT_PROV_S"=>"ADDON",
+              "SM_ENT_PROV_V"=>"ADDON",
+              "SM_ENT_PROV_Z"=>"ADDON",
+              "SMP"=>"OS",
+              "SMS"=>"OS",
+              #"STUDIOONSITE"=>"ADDON",  # old
+              "STUDIOONSITE"=>"OS",
+              "STUDIOONSITERUNNER"=>"OS",
+              "SUSE"=>"OS",
+              "Test"=>"ADDON",
+              "VMDP"=>"ADDON",
+              "WEBYAST"=>"ADDON",
+              "WebYast-SLMS"=>"OS",
+              "ZLM7"=>"ADDON",
+              #"ZLM7"=>"OS",   # unknown
+              "ZOS"=>"ADDON",
+              "10040"=>"ADDON",
+              "13319"=>"ADDON",
+              #"13319"=>"OS",   # old 
+              "18962"=>"OS",
+              "20082"=>"ADDON",
+              "7260"=>"OS",
+              "7261"=>"OS",
+        };
+
 sub new
 {
     my $self = {
@@ -16,7 +85,8 @@ sub new
         rel => undef,
         arch => undef,
         uiname => undef,
-        prclass => undef
+        prclass => undef,
+        srvclass => undef
     };
 
     bless $self, __PACKAGE__;
@@ -75,12 +145,36 @@ sub prclass
     return $self->{prclass};
 }
 
+sub srvclass
+{
+    my ($self, $value) = @_;
+    $self->{srvclass} = $value if ($value);
+    if( $self->{srvclass} )
+    {
+        return $self->{srvclass};
+    }
+    elsif(exists SERVERCLASSDEFAULT->{$self->{prclass}})
+    {
+        return SERVERCLASSDEFAULT->{$self->prclass};
+    }
+    return "";
+}
+
 
 sub findById
 {
     my ($dbh, $id) = @_;
 
-    my $sql = "select productdataid, product, version, rel, arch, friendly, product_class from Products where productdataid = ?;";
+    my $sql = "select p.productdataid,
+                      p.product,
+                      p.version,
+                      p.rel,
+                      p.arch,
+                      p.friendly,
+                      p.product_class,
+                      (select distinct s.serverclass from Subscriptions s where s.product_class = p.product_class) as serverclass
+                 from Products p
+                where productdataid = ?;";
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $id, SQL_INTEGER);
     $sth->execute();
@@ -96,6 +190,7 @@ sub findById
     $p->arch($pdata->{arch});
     $p->uiName($pdata->{friendly});
     $p->prclass($pdata->{product_class});
+    $p->srvclass($pdata->{serverclass});
 
     return $p;
 }
@@ -112,7 +207,8 @@ sub asXML
         rel => $self->release,
         arch => $self->arch,
         uiname => $self->uiName,
-        class => $self->prclass
+        class => $self->prclass,
+        serverclass => $self->srvclass
     };
 
     return XMLout($xdata,
@@ -126,22 +222,39 @@ sub getAllAsXML
 {
     my $dbh = shift;
 
-    my $sql = "select productdataid, product, version, rel, arch, friendly, product_class from Products;";
+    my $sql = "select p.productdataid,
+                      p.product,
+                      p.version,
+                      p.rel,
+                      p.arch,
+                      p.friendly,
+                      p.product_class,
+                      (select distinct s.serverclass from Subscriptions s where s.product_class = p.product_class) as serverclass
+                 from Products p
+             order by p.product, p.version, p.rel, p.arch;";
+
     my $sth = $dbh->prepare($sql);
     $sth->execute();
     my $data = { product => []};
     while (my $p = $sth->fetchrow_hashref())
     {
-        # <product id="%s" name="%s" version="%s" rel="%s" arch="%s" uiname="%s" class="%s"/>
-        push @{$data->{product}}, {
+        # <product id="%s" name="%s" version="%s" rel="%s" arch="%s" uiname="%s" class="%s" serverclass="%s"/>
+        my $entry = {
             id => $p->{productdataid},
             name => $p->{product},
             version => $p->{version},
             rel => $p->{rel},
             arch => $p->{arch},
             uiname => $p->{friendly},
-            class => $p->{product_class}
+            class => $p->{product_class},
+            serverclass => $p->{serverclass}
             };
+        if(! $entry->{serverclass} && exists SERVERCLASSDEFAULT->{$p->{product_class}})
+        {
+            $entry->{serverclass} = SERVERCLASSDEFAULT->{$p->{product_class}};
+        }
+       
+        push @{$data->{product}}, $entry;
     }
     return XMLout($data,
         rootname => 'products',
