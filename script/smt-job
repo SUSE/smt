@@ -208,7 +208,7 @@ if ( defined $help and ( $help == 1 ) )
   print "   8 : eject         : " . __("Eject CD/DVD drive (for debugging).") . "\n";
   print "  51 : createjob     : " . __("Creates a job in a downstream SMT server.") . "\n";
   print "  52 : report        : " . __("Retrieves the results of a job that was created via 'createjob'.") . "\n";
-  print "  53 : inventory     : " . __("Collect system information. Only created by the Novell Customer Center.") . "\n";
+  print "  53 : inventory     : " . __("Collect system information.") . "\n";
   print "\n";
   exit 0;
 }
@@ -533,6 +533,7 @@ if ( defined $create || defined $construct )
     {
         $Job->{name}        = defined $query{NAME} ?$query{NAME} : 'Createjob job';
         $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Create a job in the clients SMT server';
+        die "Please define a jobtemplate file via --jobtemplate parameter." unless $jobtemplate;
         my $filefull = $PWD.'/'.$jobtemplate;
         open (JTMPL, '<', $filefull) or die "Can not open file $filefull: $!";
         my $jobtemplXML = do { local $/; <JTMPL> };
