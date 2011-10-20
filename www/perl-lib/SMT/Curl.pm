@@ -231,7 +231,7 @@ sub request
 
     if(defined $self->{PROXYUSER} && $self->{PROXYUSER} ne "")
     {
-        $self->setopt(CURLOPT_PROXYAUTH, 15); #basic, digest, gssapi, ntlm
+        $self->setopt(CURLOPT_PROXYAUTH, 11); #basic, digest, ntlm
         $self->setopt(CURLOPT_PROXYUSERPWD, $self->{PROXYUSER});
     }
 
