@@ -1,7 +1,12 @@
 -------------------------------------------------------------------
-Tue Oct 18 11:54:57 CEST 2011 - mc@suse.de
+Thu Oct 20 10:00:29 CEST 2011 - mc@suse.de
 
 - version 1.1.23
+- remove negotiate from supported proxy auth methods (bnc#724687)
+
+-------------------------------------------------------------------
+Tue Oct 18 11:54:57 CEST 2011 - mc@suse.de
+
 - do not set Content-Length as custom header. Let libcurl
   set it. (bnc#723901)
 - Use libcurl string as UserAgent default if not specified
