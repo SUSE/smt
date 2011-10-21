@@ -25,7 +25,7 @@ sub jobhandler
   my @cmds = ();
   push @cmds, $arg->getAttribute('command');
   my $cmdSet;
-  eval { $cmdSet = $xpQuery->find('/arguments[1]/command[1]') };
+  eval { $cmdSet = $xpQuery->find('/arguments[1]/options[1]/command[1]') };
   SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
   foreach my $_n ($cmdSet->get_nodelist()) {
       push (@cmds, $_n->string_value()) if (defined $_n);

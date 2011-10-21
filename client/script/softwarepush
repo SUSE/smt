@@ -26,14 +26,14 @@ sub jobhandler
   my $agreelicenses = $arg->getAttribute('agreelicenses');
   my $force = $arg->getAttribute('force');
   my $agreeSet;
-  eval { $agreeSet = $xpQuery->find('/arguments[1]/agreelicenses[1]') };
+  eval { $agreeSet = $xpQuery->find('/arguments[1]/options[1]/agreelicenses[1]') };
   SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
   foreach my $_n ($agreeSet->get_nodelist()) {
       $agreelicenses = $_n->string_value() if (defined $_n);
       last if defined $agreelicenses;
   }
   my $forceSet;
-  eval { $forceSet = $xpQuery->find('/arguments[1]/force[1]') };
+  eval { $forceSet = $xpQuery->find('/arguments[1]/options[1]/force[1]') };
   SMT::Agent::Utils::error("xml data is not parsable", $jobid) if ($@);
   foreach my $_n ($forceSet->get_nodelist()) {
       $force = $_n->string_value() if (defined $_n);
