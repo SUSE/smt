@@ -48,7 +48,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
+my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $UPupdatebeforepatch, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -87,6 +87,7 @@ if (! &Getopt::Long::GetOptions(
          'product=s@' => \@SWproductlist,
          'forceinstall|F!' => \$SWforce,
          'agreelicense!' => \$SWagree,
+         'updatebeforepatch' => \$UPupdatebeforepatch,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus,
@@ -160,6 +161,10 @@ if ( defined $help and ( $help == 1 ) )
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
+  print '  '.__("for update jobs")."\n";
+  print "   --updatebeforepatch       : " . __("updates all packages before patching")."\n";
+  print "                               " . __("note: this will install new versions of packages if available")."\n";
+  print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print '  '.__("for execute jobs")."\n";
   print "   --exec         (-X) <cmd> : " . __("the command to execute")."\n";
   print '  '.__("for wait jobs")."\n";
@@ -383,7 +388,6 @@ if ( defined $create || defined $construct )
     elsif ( $typeID == 2 )
     {
         ## SOFTWARE PUSH ##
-
         $Job->{name}        = defined $query{NAME} ? $query{NAME} : 'Software Push';
         $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : sprintf("Software Push: %s", join(', ', @SWpackagelist));
 
@@ -391,9 +395,20 @@ if ( defined $create || defined $construct )
         my $argXML = '';
         $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
         die "Unable to process the arguments for the new job." unless ($w);
-        $w->startTag('arguments');
-        $w->dataElement('force', $SWforce) if (defined $SWforce);
-        $w->dataElement('agreelicenses', $SWagree) if (defined $SWagree);
+        my %options;
+        $options{force} = 1 if defined $SWforce;
+        $options{agreelicenses} = 1 if defined $SWagree;
+        $w->startTag('arguments', %options);
+
+        # new arguments/options format:
+        if (%options)
+        {
+            $w->startTag('options');
+            foreach my $optkey (keys %options) {
+                $w->dataElement($optkey, $options{$optkey});
+            }
+            $w->endTag('options');
+        }
 
         my $argumentslistok = 0;
 
@@ -454,8 +469,21 @@ if ( defined $create || defined $construct )
         my $argXML = '';
         $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
         die "Unable to process the arguments for the new job." unless ($w);
-        $w->startTag('arguments');
-        $w->dataElement('agreelicenses', $SWagree) if (defined $SWagree);
+
+        my %options;
+        $options{updatebeforepatch} = 1 if $UPupdatebeforepatch;
+        $options{agreelicenses} = ($SWagree ? 1:0) if defined $SWagree;
+        $w->startTag('arguments', %options);
+
+        # new arguments/options format:
+        if (%options)
+        {
+            $w->startTag('options');
+            foreach my $optkey (keys %options) {
+                $w->dataElement($optkey, $options{$optkey});
+            }
+            $w->endTag('options');
+        }
         $w->endTag('arguments');
         $w->end();
 
@@ -471,8 +499,12 @@ if ( defined $create || defined $construct )
         my $argXML = '';
         $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
         die "Unable to process the arguments for the new job." unless ($w);
-        $w->startTag('arguments');
-        $w->dataElement('command', (exists $para{EXECCOMMAND} && defined $para{EXECCOMMAND}) ? $para{EXECCOMMAND} : ' /bin/true '  );
+        my $cmd = (exists $para{EXECCOMMAND} && defined $para{EXECCOMMAND}) ? $para{EXECCOMMAND} : undef;
+        die "Please define a command to be executed." unless $cmd;
+        $w->startTag('arguments', (command => $cmd));
+        $w->startTag('options');
+        $w->dataElement('command', $cmd );
+        $w->endTag('options');
         $w->endTag('arguments');
         $w->end();
 
@@ -503,9 +535,21 @@ if ( defined $create || defined $construct )
         my $argXML = '';
         $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
         die "Unable to process the arguments for the new job." unless ($w);
-        $w->startTag('arguments');
-        $w->dataElement('waittime', $sec);
-        $w->dataElement('exitcode', $ret);
+
+        my %options;
+        $options{waittime} = $sec;
+        $options{exitcode} = $ret;
+        $w->startTag('arguments', %options);
+
+        # new arguments/options format:
+        if (%options)
+        {
+            $w->startTag('options');
+            foreach my $optkey (keys %options) {
+                $w->dataElement($optkey, $options{$optkey});
+            }
+            $w->endTag('options');
+        }
         $w->endTag('arguments');
         $w->end();
 
@@ -522,8 +566,10 @@ if ( defined $create || defined $construct )
         my $argXML = '';
         $w = new XML::Writer( OUTPUT => \$argXML, DATA_MODE => 1, DATA_INDENT => 2 );
         die "Unable to process the arguments for the new job." unless ($w);
-        $w->startTag('arguments');
-        $w->dataElement('action', $action );
+        $w->startTag('arguments', (action => $action));
+        $w->startTag('options');
+        $w->dataElement('action', $action);
+        $w->endTag('options');
         $w->endTag('arguments');
         $w->end();
 
@@ -531,6 +577,7 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 51 )
     {
+        ## createjob ##
         $Job->{name}        = defined $query{NAME} ?$query{NAME} : 'Createjob job';
         $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Create a job in the clients SMT server';
         die "Please define a jobtemplate file via --jobtemplate parameter." unless $jobtemplate;
@@ -538,6 +585,7 @@ if ( defined $create || defined $construct )
         open (JTMPL, '<', $filefull) or die "Can not open file $filefull: $!";
         my $jobtemplXML = do { local $/; <JTMPL> };
         close JTMPL;
+        die "The jobtemplate file does not contain valid content." unless $jobtemplXML;
 
         if (@targetguid < 1) {
             print __("Please enter one or more target GUIDs for this job.")."\n";
@@ -568,6 +616,7 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 52 )
     {
+        ## report ##
         $Job->{name}        = defined $query{NAME} ? $query{NAME} :'Report job';
         $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Report';
         # if undefined then cacheresult by default is enabled in report job - otherwise report makes no sense
@@ -592,6 +641,7 @@ if ( defined $create || defined $construct )
     }
     elsif ( $typeID == 53 )
     {
+        ## inventory ##
         $Job->{name}        = defined $query{NAME} ? $query{NAME} :'Inventory job';
         $Job->{description} = defined $query{DESCRIPTION} ? $query{DESCRIPTION} : 'Inventory';
 
@@ -714,7 +764,7 @@ elsif ( defined $delete )
 
     if ( (not defined $jobid)  &&  (not defined $GUID) )
     {
-        print __("To delete a job please define a job ID and the GUID of the client or either of these together with --deleteall.");
+        print __("To delete a job please define a job ID and the GUID of the client or either of these together with --deleteall.")."\n";
         exit 3;
     }
     elsif ( defined $jobid  &&  defined $GUID )
@@ -1142,6 +1192,11 @@ Specify the job ID(s) of the downstream SMT server whose results should be sent 
 =head3 update
 
 =over
+
+=item --updatebeforepatch
+
+This option will trigger a package update before the patching. In this case newer versions of packages will be installed if available even if no patch is requiring it.
+Background information: The smt client by default only runs B<zypper patch> in an update job. With this option used it will run B<zypper update ; zypper patch>.
 
 =item --agreelicenses
 
