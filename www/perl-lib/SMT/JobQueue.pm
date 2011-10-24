@@ -316,8 +316,8 @@ sub finishJob($;$)
       $res->saveResult( $client_id, $xmljob->{id}, $jobxml );
   }
 
-  $job->stderr( ( isa($xmljob->stderr(),'ARRAY') ? ( isa($xmljob->stderr()->[0],'HASH') ?  ($xmljob->stderr()->[0]->{stderr}) : ($xmljob->stderr()->[0]) ) : ($xmljob->stderr()) ) || '' );
-  $job->stdout( ( isa($xmljob->stdout(),'ARRAY') ? ( isa($xmljob->stdout()->[0],'HASH') ?  ($xmljob->stdout()->[0]->{stdout}) : ($xmljob->stdout()->[0]) ) : ($xmljob->stdout()) ) || '' );
+  $job->stderr( (defined $xmljob->stderr()) ? $xmljob->stderr() : '' );
+  $job->stdout( (defined $xmljob->stdout()) ? $xmljob->stdout() : '' );
 
   $job->exitcode( $xmljob->exitcode() );
   $job->message ( $xmljob->message()  );

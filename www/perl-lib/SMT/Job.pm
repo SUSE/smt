@@ -131,9 +131,11 @@ sub readJobFromXML
 
   my $attribNodes = $oneJob->getAttributeNodes();
   my %attribs = map { $_->getName() => $_->string_value() } (@$attribNodes);
-  foreach my $att (SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES) {
+  foreach my $att (SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS) {
       # only write values that exist in $attribs, because it must be possible to update a job via this function
       next unless (exists $attribs{lc($att)});
+      # JOB_DATA_ELEMENTS could be stdout/err (support old XML style), but arguments must be filtered
+      next if ($att =~ /^arguments$/);
       $self->{lc($att)} = $attribs{lc($att)};
       $self->{type} = $self->jobTypeToID($attribs{type}) if (lc($att) eq 'type');
       if ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
