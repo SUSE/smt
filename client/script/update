@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use SMT::Agent::Utils;
+use XML::XPath;
 
 sub jobhandler
 {
