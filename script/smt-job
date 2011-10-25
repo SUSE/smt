@@ -48,7 +48,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $UPupdatebeforepatch, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
+my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $UPpatchwithupdate, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -87,7 +87,7 @@ if (! &Getopt::Long::GetOptions(
          'product=s@' => \@SWproductlist,
          'forceinstall|F!' => \$SWforce,
          'agreelicense!' => \$SWagree,
-         'updatebeforepatch' => \$UPupdatebeforepatch,
+         'patchwithupdate' => \$UPpatchwithupdate,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
          'waitstatus=i' => \$WAITstatus,
@@ -162,7 +162,7 @@ if ( defined $help and ( $help == 1 ) )
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
   print '  '.__("for update jobs")."\n";
-  print "   --updatebeforepatch       : " . __("updates all packages before patching")."\n";
+  print "   --patchwithupdate         : " . __("patches the system and updates all packages")."\n";
   print "                               " . __("note: this will install new versions of packages if available")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print '  '.__("for execute jobs")."\n";
@@ -471,7 +471,7 @@ if ( defined $create || defined $construct )
         die "Unable to process the arguments for the new job." unless ($w);
 
         my %options;
-        $options{updatebeforepatch} = 1 if $UPupdatebeforepatch;
+        $options{patchwithupdate} = 1 if $UPpatchwithupdate;
         $options{agreelicenses} = ($SWagree ? 1:0) if defined $SWagree;
         $w->startTag('arguments', %options);
 
@@ -1193,10 +1193,10 @@ Specify the job ID(s) of the downstream SMT server whose results should be sent 
 
 =over
 
-=item --updatebeforepatch
+=item --patchwithupdate
 
-This option will trigger a package update before the patching. In this case newer versions of packages will be installed if available even if no patch is requiring it.
-Background information: The smt client by default only runs B<zypper patch> in an update job. With this option used it will run B<zypper update ; zypper patch>.
+This option will not only patch the system but also trigger a package update. In this case newer versions of packages will be installed if available even if no patch is requiring it.
+Background information: The smt client by default only runs B<zypper patch> in an update job. With this option used it will run B<zypper patch ; zypper update>.
 
 =item --agreelicenses
 

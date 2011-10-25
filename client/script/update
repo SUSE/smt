@@ -33,34 +33,20 @@ sub jobhandler
   $agreelicenses = (defined $agreelicenses && ($agreelicenses =~ /^1$/ || $agreelicenses =~ /^true$/)) ? 1 : 0;
 
 
-  # updatebeforepatch option was introduced with new smt server and client, thus only in options element
-  my $updatebeforepatch;
-  my $upb4paSet;
-  eval { $upb4paSet = $xpQuery->find('/arguments[1]/options[1]/updatebeforepatch[1]') };
-  foreach my $_n ($upb4paSet->get_nodelist()) {
-      $updatebeforepatch = $_n->string_value() if (defined $_n);
-      last if defined $updatebeforepatch;
+  # patchwithupdate option was introduced with new smt server and client, thus only in options element
+  my $patchwithupdate;
+  my $pawupSet;
+  eval { $pawupSet = $xpQuery->find('/arguments[1]/options[1]/patchwithupdate[1]') };
+  foreach my $_n ($pawupSet->get_nodelist()) {
+      $patchwithupdate = $_n->string_value() if (defined $_n);
+      last if defined $patchwithupdate;
   }
-  $updatebeforepatch = (defined $updatebeforepatch && ($updatebeforepatch =~ /^1$/ || $updatebeforepatch =~ /^true$/)) ? 1 : 0;
+  $patchwithupdate = (defined $patchwithupdate && ($patchwithupdate =~ /^1$/ || $patchwithupdate =~ /^true$/)) ? 1 : 0;
 
   #== ZYPPER
   my $command = "/usr/bin/zypper";
   my $retval;
-  my ($stdoutup, $upstderrup, $stdout1, $stderr1, $stdout2, $stderr2, $stdout, $stderr) = undef;
-
-  #== run zypper update if needed ==
-  if ($updatebeforepatch)
-  {
-      my @upcmdArgs;
-      push (@upcmdArgs, "--no-cd");                                   # ignore CD/DVD repositories
-      push (@upcmdArgs, "--non-interactive");                         # don't ask any questions
-      push (@upcmdArgs, "update");                                    # update
-      push (@upcmdArgs, "-l") if $agreelicenses;                      # agree licenses
-
-      ($retval, $stdoutup, $stderrup) = SMT::Agent::Utils::executeCommand ( $command, undef, @upcmdArgs );
-      $retval = (defined $retval) ? $retval : 'undefined';
-      $stderrup .= "\nzypper update exited with exitcode: ".$retval."\n" if $retval !~ /^0$/;
-  }
+  my ($stdoutup, $stderrup, $stdout1, $stderr1, $stdout2, $stderr2, $stdout, $stderr) = undef;
 
   #==  run zypper patch ==
   my @cmdArgs;
@@ -70,22 +56,31 @@ sub jobhandler
   push (@cmdArgs, "--with-interactive");                        # include interactive patches anyhow
   push (@cmdArgs, "-l") if $agreelicenses;                      # agree licenses
 
-  ($retval, $stdout1, $stderr1) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
+  ($retval, $stdout1, $stderr1) = SMT::Agent::Utils::executeCommand($command, undef, @cmdArgs);
 
   # run zypper again if needed because of pkgmgr patches
-  if ( $retval == 103 )
+  ($retval, $stdout2, $stderr2) = SMT::Agent::Utils::executeCommand($command, undef, @cmdArgs) if ($retval == 103);
+
+  #== run zypper update if needed - but only if patch was successful ==
+  if (($retval == 0) && $patchwithupdate)
   {
-      ($retval, $stdout2, $stderr2) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
+      my @upcmdArgs;
+      push (@upcmdArgs, "--no-cd");                                   # ignore CD/DVD repositories
+      push (@upcmdArgs, "--non-interactive");                         # don't ask any questions
+      push (@upcmdArgs, "update");                                    # update
+      push (@upcmdArgs, "-l") if $agreelicenses;                      # agree licenses
+
+      ($retval, $stdoutup, $stderrup) = SMT::Agent::Utils::executeCommand($command, undef, @upcmdArgs);
   }
 
   $stdout = '';
   $stderr = '';
-  $stdout .= $stdoutup if $stdoutup;
-  $stderr .= $stderrup if $stderrup;
   $stdout .= $stdout1 if $stdout1;
   $stderr .= $stderr1 if $stderr1;
   $stdout .= $stdout2 if $stdout2;
   $stderr .= $stderr2 if $stderr2;
+  $stdout .= $stdoutup if $stdoutup;
+  $stderr .= $stderrup if $stderrup;
 
   my $mesg = "update failed";
   $mesg = "update successfully finished" if $retval == 0 ;
