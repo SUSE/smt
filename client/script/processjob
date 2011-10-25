@@ -58,5 +58,5 @@ else
 }
 
 # pass server failures via exit code to prevent infinit loops one layer above
-exit ($ret) ? 0:1;
+exit (($ret) ? 0:1);
 
