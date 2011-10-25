@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Oct 25 14:31:50 CEST 2011 - jdsn@suse.de
+
+- prevent SMT JobQueue from looping (bnc#723583)
+- fix patch counting (bnc#723843)
+- add 'zypper up' support to smt update job for custom updates
+- version 0.0.15
+
+-------------------------------------------------------------------
 Fri Apr 15 19:41:43 CEST 2011 - jdsn@suse.de
 
 - make new package to release the fix for (bnc#660191) as update
