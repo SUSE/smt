@@ -119,6 +119,7 @@ sub error
 sub isAgentAllowed
 {
   my $agent = shift;
+  return 0 unless defined $agent;
   my $allowedagents = SMT::Agent::Config::getSysconfigValue( "ALLOWED_AGENTS" );
   return 0 unless (defined $allowedagents);
   $allowedagents =~ s/\s+/ /g;
