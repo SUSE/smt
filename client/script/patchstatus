@@ -92,9 +92,20 @@ sub jobhandler
   my $securityCount = $PATCHES{security};
   my $optionalCount = $PATCHES{optional} + $PATCHES{enhancement} + $PATCHES{feature} + $PATCHES{document} + $PATCHES{_other};
   my $msgComment = "PackageManager=$pkgMgrCount Security=$securityCount Recommended=$recommendedCount (Bugfix=".$PATCHES{bugfix}.") Optional=$optionalCount (Enhancement=".$PATCHES{enhancement}." Feature=".$PATCHES{feature}." Document=".$PATCHES{document}." Other=".$PATCHES{_other}.")";
+  my $customStdout = "Patch Information\n".
+                     "------------------\n".
+                     "PackageManager: $pkgMgrCount\n".
+                     "Security:       $securityCount\n".
+                     "Recommended:    $recommendedCount\n".
+                     "- Bugfix:       ".$PATCHES{bugfix}."\n".
+                     "Optional:       $optionalCount\n".
+                     "- Enhancement:  ".$PATCHES{enhancement}."\n".
+                     "- Feature:      ".$PATCHES{feature}."\n".
+                     "- Document:     ".$PATCHES{document}."\n".
+                     "- Other:        ".$PATCHES{_other}."\n";
 
   return (
-    stdout => ((defined $stdout) && $verbose ) ? $stdout : '',
+    stdout => ((defined $customStdout) && $verbose ) ? $customStdout : '',
     stderr => ((defined $stderr) && $verbose ) ? $stderr : '',
     exitcode => $retval,
     success => "true",
