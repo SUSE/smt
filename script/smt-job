@@ -454,7 +454,7 @@ if ( defined $create || defined $construct )
 
         unless ( $argumentslistok )
         {
-            print __("Please define at least one package for a software push job.");
+            print __("Please define at least one package for a software push job.")."\n";
             exit 3;
         }
         $Job->{arguments} = $argXML || '';
