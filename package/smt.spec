@@ -51,6 +51,7 @@ Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
 Conflicts:      slms-registration
+Conflicts:      smt-client <= 0.0.14
 PreReq:         %fillup_prereq apache2 apache2-mod_perl pwdutils
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
