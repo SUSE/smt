@@ -294,7 +294,9 @@ sub finishJob($;$)
   return undef unless ( $job->retrieved() );
 
   # special handling for patchstatus job
-  if ( $job->type() eq "patchstatus" )
+  my $jobtype = $job->type();
+  $jobtype = ($jobtype =~ /^\d+$/) ? SMT::Job::Constants::JOB_TYPE->{$jobtype} : $jobtype;
+  if ( $jobtype eq "patchstatus" )
   {
       my $client = SMT::Client->new( {'dbh' => $self->{'dbh'} });
       return undef unless defined $client;
