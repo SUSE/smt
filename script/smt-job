@@ -803,11 +803,11 @@ elsif ( defined $delete )
     {
         if ($deleteall)
         {
-            print sprintf(__("An error occurred when deleting job %s for all guids."), $jobid )."\n" unless $quiet;
+            print sprintf(__("An error occurred when deleting job (%s) for guid (%s)."), $DELjobid || '', $DELguid || '')."\n" unless $quiet;
         }
         else
         {
-            print sprintf(__("An error occurred when deleting job %s for guid %s."), $jobid, $GUID )."\n" unless $quiet;
+            print sprintf(__("An error occurred when deleting job %s for guid %s."), $DELjobid || '', $DELguid || '')."\n" unless $quiet;
         }
     }
     else
