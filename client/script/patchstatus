@@ -18,6 +18,7 @@ sub jobhandler
 
   my $command = "/usr/bin/zypper";
   my @cmdArgs;
+  push (@cmdArgs, "--no-cd");
   push (@cmdArgs, "--non-interactive");			
   push (@cmdArgs, "--xmlout");			
   push (@cmdArgs, "list-patches");
@@ -25,7 +26,9 @@ sub jobhandler
 
   ## perform a refresh of repos and services prior to a patchstatus job
   my @REFcmdArgs = ();
-  push (@REFcmdArgs, 'ref');
+  push (@REFcmdArgs, '--no-cd');
+  push (@REFcmdArgs, '--non-interactive');
+  push (@REFcmdArgs, 'refresh');
   push (@REFcmdArgs, '--service');
 
   (my $REFret, my $REFstdout, my $REFstderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @REFcmdArgs );
