@@ -271,16 +271,32 @@ sub finishJob($;$)
   return undef unless (defined $guid && defined $jobxml);
 
   my $xmljob = SMT::Job->new({ 'dbh' => $self->{dbh} });
+  return undef unless $xmljob;
   $xmljob->readJobFromXML( $jobxml );
   # do not allow to update foreign job
-  return undef unless ( ''.$xmljob->guid() eq "$guid" );
+  my $sentguid = $xmljob->guid();
+  if ($sentguid)
+  {
+      return undef unless ( "$sentguid" eq "$guid" );
+  }
+  else
+  {
+      # set the guid from the config hash if not present in job XML
+      # backward compatibility for old clients (bnc#723583)
+      $xmljob->guid($guid);
+      # LATER: add a warning to the client status, to help admins find and update old smt clients that do not include their guid in XML
+      # this is needed for consistent use of the new job types that send data upstream to a cascaded SMT server
+  }
 
   my $job = SMT::Job->new({ 'dbh' => $self->{dbh} });
+  return undef unless $job;
   $job->readJobFromDatabase( $xmljob->id(), $guid );
   return undef unless ( $job->retrieved() );
 
   # special handling for patchstatus job
-  if ( $job->type() eq "patchstatus" )
+  my $jobtype = $job->type();
+  $jobtype = ($jobtype =~ /^\d+$/) ? SMT::Job::Constants::JOB_TYPE->{$jobtype} : $jobtype;
+  if ( $jobtype eq "patchstatus" )
   {
       my $client = SMT::Client->new( {'dbh' => $self->{'dbh'} });
       return undef unless defined $client;
@@ -302,8 +318,8 @@ sub finishJob($;$)
       $res->saveResult( $client_id, $xmljob->{id}, $jobxml );
   }
 
-  $job->stderr( ( isa($xmljob->stderr(),'ARRAY') ? ( isa($xmljob->stderr()->[0],'HASH') ?  ($xmljob->stderr()->[0]->{stderr}) : ($xmljob->stderr()->[0]) ) : ($xmljob->stderr()) ) || '' );
-  $job->stdout( ( isa($xmljob->stdout(),'ARRAY') ? ( isa($xmljob->stdout()->[0],'HASH') ?  ($xmljob->stdout()->[0]->{stdout}) : ($xmljob->stdout()->[0]) ) : ($xmljob->stdout()) ) || '' );
+  $job->stderr( (defined $xmljob->stderr()) ? $xmljob->stderr() : '' );
+  $job->stdout( (defined $xmljob->stdout()) ? $xmljob->stdout() : '' );
 
   $job->exitcode( $xmljob->exitcode() );
   $job->message ( $xmljob->message()  );

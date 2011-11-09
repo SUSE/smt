@@ -131,9 +131,11 @@ sub readJobFromXML
 
   my $attribNodes = $oneJob->getAttributeNodes();
   my %attribs = map { $_->getName() => $_->string_value() } (@$attribNodes);
-  foreach my $att (SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES) {
+  foreach my $att (SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS) {
       # only write values that exist in $attribs, because it must be possible to update a job via this function
       next unless (exists $attribs{lc($att)});
+      # JOB_DATA_ELEMENTS could be stdout/err (support old XML style), but arguments must be filtered
+      next if ($att =~ /^arguments$/);
       $self->{lc($att)} = $attribs{lc($att)};
       $self->{type} = $self->jobTypeToID($attribs{type}) if (lc($att) eq 'type');
       if ( lc($att) eq 'verbose' || lc($att) eq 'persistent' || lc($att) eq 'cacheresult' || lc($att) eq 'upstream' )
@@ -313,7 +315,11 @@ sub asXML($;$)
   # special handling for the 3 JOB_DATA_ELEMENTS types
   $w->cdataElement('stdout', $self->{stdout} )  if ( defined $self->{stdout}    && not (exists $config->{stdout}    && $config->{stdout}    == 0) );
   $w->cdataElement('stderr', $self->{stderr} )  if ( defined $self->{stderr}    && not (exists $config->{stderr}    && $config->{stderr}    == 0) );
-  $w->raw( "\n".$self->getArgumentsXML()."\n" ) if ( defined $self->{arguments} && not (exists $config->{arguments} && $config->{arguments} == 0) );
+  ## LATER: the following line should be used in the long term (instead of the one below)
+  ##        this requires the latest smt-client package on the client systems, that are tolerant to missing XML elements
+  ## $w->raw( $self->{arguments} ) if ( defined $self->{arguments} && not (exists $config->{arguments} && $config->{arguments} == 0) );
+  # for backward compatibility return empty arguments element
+  $w->raw( (defined $self->{arguments}) ? $self->{arguments} : "<arguments></arguments>" ) unless (exists $config->{arguments} && $config->{arguments} == 0);
   $w->endTag('job');
   $w->end();
 

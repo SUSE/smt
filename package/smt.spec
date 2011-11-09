@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.2.0)
+# spec file for package smt (Version 1.1.23)
 #
 # Copyright (c) 2010 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -20,8 +20,8 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.2.0
-Release:        0.2
+Version:        1.1.23
+Release:        0.<RELEASE6>
 Requires:       perl = %{perl_version}
 Requires:       perl-DBI
 Requires:       perl-Crypt-SSLeay
@@ -51,6 +51,7 @@ Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
 Conflicts:      slms-registration
+Conflicts:      smt-client <= 0.0.14
 PreReq:         %fillup_prereq apache2 apache2-mod_perl pwdutils
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy

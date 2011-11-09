@@ -33,15 +33,8 @@ sub logger
   # prevent multiline log entries
   $message =~ s/\n/ /g;
 
-  if ( defined ( $jobid ) )
-  {
-    print ($LOG "$time: ($jobid) $message\n") ;
-  }
-  else
-  
-  {
-    print ($LOG "$time: () $message\n") ;
-  }
+  my $jobidstr = (defined $jobid) ? $jobid : '';
+  print ($LOG "$time: ($jobidstr) $message\n") ;
 }
 
 
@@ -126,6 +119,7 @@ sub error
 sub isAgentAllowed
 {
   my $agent = shift;
+  return 0 unless defined $agent;
   my $allowedagents = SMT::Agent::Config::getSysconfigValue( "ALLOWED_AGENTS" );
   return 0 unless (defined $allowedagents);
   $allowedagents =~ s/\s+/ /g;

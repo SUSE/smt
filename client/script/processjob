@@ -30,12 +30,13 @@ SMT::Agent::Utils::logger ( "jobid: $jobid" );
 
 my $xmldata = SMT::Agent::RestXML::getjob( $jobid );
 my %jobdata = SMT::Agent::RestXML::parsejob( $xmldata );
+my $ret;
 
 # always allow the job type servererror
 if ( (not SMT::Agent::Utils::isAgentAllowed($jobdata{type}))  &&  ($jobdata{type} ne 'servererror') )
 {
   SMT::Agent::Utils::logger("Running ". $jobdata{type}. " denied by client policy", $jobdata{id} );
-  SMT::Agent::RestXML::updatejob ( $jobdata{id}, 3 , "denied by client policy", "", "", "", undef );
+  $ret = SMT::Agent::RestXML::updatejob ( $jobdata{id}, 3 , "denied by client policy", "", "", "", undef );
 }
 else
 {
@@ -53,6 +54,9 @@ else
   }
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " message: ".$retval{message}, $jobdata{id} );
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " exitcode: ".$retval{exitcode}, $jobdata{id} );
-  SMT::Agent::RestXML::updatejob ( $jobdata{id}, ($retval{success} eq "true")?1:2 , $retval{message}, $retval{stdout}, $retval{stderr}, $retval{exitcode}, $retval{result} );
+  $ret = SMT::Agent::RestXML::updatejob ( $jobdata{id}, ($retval{success} eq "true")?1:2 , $retval{message}, $retval{stdout}, $retval{stderr}, $retval{exitcode}, $retval{result} );
 }
+
+# pass server failures via exit code to prevent infinit loops one layer above
+exit (($ret) ? 0:1);
 

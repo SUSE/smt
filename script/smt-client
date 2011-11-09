@@ -160,7 +160,7 @@ if ($command eq '' || $command eq 'status')
 		    (defined $client_info->{$key}->{PATCHSTATUS_S} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown")),
 		    (defined $client_info->{$key}->{PATCHSTATUS_P} ? $client_info->{$key}->{PATCHSTATUS_P}:__("Unknown")),
 		    (defined $client_info->{$key}->{PATCHSTATUS_R} ? $client_info->{$key}->{PATCHSTATUS_R}:__("Unknown")),
-		    (defined $client_info->{$key}->{PATCHSTATUS_O} ? $client_info->{$key}->{PATCHSTATUS_S}:__("Unknown")),
+		    (defined $client_info->{$key}->{PATCHSTATUS_O} ? $client_info->{$key}->{PATCHSTATUS_O}:__("Unknown")),
                     $client_info->{$key}->{PATCHSTATUS_DATE},
 		    $client_info->{$key}->{LASTCONTACT}
 		);

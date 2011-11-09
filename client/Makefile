@@ -1,5 +1,5 @@
 NAME          = smt-client
-VERSION       = 0.0.14
+VERSION       = 0.0.15
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -44,9 +44,9 @@ test: clean
 clean:
 	find . -name "*~" -print0 | xargs -0 rm -f
 	rm -rf tests/testdata/rpmmdtest/*
-	rm -rf $(NAME)-$(VERSION)/
-	rm -f $(NAME)-$(VERSION).tar.bz2
-	rm -f package/$(NAME)-$(VERSION).tar.bz2
+	rm -rf $(NAME)-*/
+	rm -f $(NAME)-*.tar.bz2
+	rm -f package/$(NAME)-*.tar.bz2
 
 dist: clean
 	rm -rf $(NAME)-$(VERSION)/

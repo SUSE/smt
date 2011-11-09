@@ -19,10 +19,9 @@
 
 
 Name:           smt-client
-Version:        0.0.14
+Version:        0.0.15
 Release:        0.1
 Requires:       perl = %{perl_version}
-Requires:       perl-XML-Simple
 Requires:       perl-XML-XPath
 Requires:       perl-XML-Parser
 Requires:       perl-XML-Writer

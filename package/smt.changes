@@ -1,4 +1,51 @@
 -------------------------------------------------------------------
+Thu Oct 20 10:00:29 CEST 2011 - mc@suse.de
+
+- version 1.1.23
+- remove negotiate from supported proxy auth methods (bnc#724687)
+
+-------------------------------------------------------------------
+Tue Oct 18 11:54:57 CEST 2011 - mc@suse.de
+
+- do not set Content-Length as custom header. Let libcurl
+  set it. (bnc#723901)
+- Use libcurl string as UserAgent default if not specified
+  in smt.conf.
+- If UserAgent in smt.conf is empty do not send a UserAgent
+  string. Use the default only if UserAgent is not specified
+  in smt.conf
+- enhance REST API for Products and Repositories
+
+-------------------------------------------------------------------
+Wed Oct 12 15:53:59 CEST 2011 - mc@suse.de
+
+- fix invalid warning about clients in NCC does not exist
+  locally (bnc#721238)
+- cut patch description down to DB column size (bnc#723571)
+
+-------------------------------------------------------------------
+Tue Sep 27 12:39:12 CEST 2011 - mc@suse.de
+
+- fix disable staging of not mirrorable repositories (bnc#650682)
+- document verbose level in the manpages (bnc#710348)
+- check permissions on the credentials file (bnc#677361)
+- fix message of certificate check in smt-report (bnc#656121)
+
+-------------------------------------------------------------------
+Mon Sep 26 10:23:33 CEST 2011 - mc@suse.de
+
+- fix for packages with release or version equal 0 (bnc#698512)
+- Move parsing patch data in the mirror process (bnc#653937)
+- fix parsing RES patches which have different date format,
+  references without id and category names (bnc#653893)
+
+-------------------------------------------------------------------
+Tue Sep 20 10:45:47 CEST 2011 - mc@suse.de
+
+- version 1.1.22
+- use perl-WWW-Curl as backend to fix several issues with https
+  connections via proxyies.(bnc#710365, bnc#718042, bnc#718055)
+-------------------------------------------------------------------
 Wed Sep 14 11:44:13 CEST 2011 - mc@suse.de
 
 - version 1.2.0
