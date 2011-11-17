@@ -40,7 +40,7 @@ if ( (not SMT::Agent::Utils::isAgentAllowed($jobdata{type}))  &&  ($jobdata{type
 }
 else
 {
-  loadjobhandler ( $jobdata{type}, $jobdata{id} ); 
+  loadjobhandler ( $jobdata{type}, $jobdata{id} );
 
   my $verbose = (defined $jobdata{verbose} && ($jobdata{verbose} =~ /^1$/ || $jobdata{verbose} =~ /^true$/)) ? 1 : 0;
 
