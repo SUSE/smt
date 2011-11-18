@@ -833,13 +833,13 @@ else
     my $t = new Text::ASCIITable;
 
     # basic job list info - without a --verbose switch
-    my @DPROP = qw(ID GUID TYPE NAME STATUS UPSTREAM);
+    my @DPROP = qw(ID PARENT_ID GUID TYPE NAME STATUS UPSTREAM);
     $verbose = 0 if (not $verbose);
 
     # set the level of verbosity
     if ($verbose == 1)
     {
-        @DPROP = qw(ID GUID TYPE NAME PERSISTENT STATUS UPSTREAM FINISHED);
+        @DPROP = qw(ID PARENT_ID GUID TYPE NAME PERSISTENT STATUS UPSTREAM FINISHED);
     }
     elsif ($verbose == 2)
     {
