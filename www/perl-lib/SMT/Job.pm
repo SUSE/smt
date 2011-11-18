@@ -589,14 +589,6 @@ sub resolveJobType
   return SMT::Job::Constants::JOB_TYPE->{ $type };
 }
 
-sub resolveJobStatus
-{
-  my $self   = shift || return undef;
-  my $status = shift || return undef;
-
-  return SMT::Job::Constants::JOB_STATUS->{ $status };
-}
-
 #
 # jobTypeToName
 #
@@ -624,6 +616,36 @@ sub jobTypeToID
 
   return SMT::Job::Constants::JOB_TYPE->{$type} if $type !~ /^\d+$/;
   return ( exists SMT::Job::Constants::JOB_TYPE->{$type} ) ? $type : undef;
+}
+
+#
+# jobStatusToName
+#
+#   return string representation of a job status
+#   input can be ID or string
+#
+sub jobTypeToName
+{
+  my $self   = shift || return undef;
+  my $status = shift || return undef;
+
+  return SMT::Job::Constants::JOB_STATUS->{$status} if $status =~ /^\d+$/;
+  return ( exists SMT::Job::Constants::JOB_STATUS->{$status} ) ? $status : undef;
+}
+
+#
+# jobStatusToID
+#
+#   return ID of a job status
+#   input can be ID or string
+#
+sub jobTypeToID
+{
+  my $self   = shift || return undef;
+  my $status = shift || return undef;
+
+  return SMT::Job::Constants::JOB_STATUS->{$status} if $status !~ /^\d+$/;
+  return ( exists SMT::Job::Constants::JOB_STATUS->{$status} ) ? $status : undef;
 }
 
 

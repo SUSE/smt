@@ -46,7 +46,6 @@ $job->id(44);
 
 $job->readJobFromHash({'id'=>'11', 'guid'=>'Thomas'}  );
 
-print $job->resolveJobStatus('1');
 
 
 #if ( $c->addJob($job) )
