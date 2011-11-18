@@ -13,7 +13,7 @@ use constant
   # so chained jobs will be delivered, the only difference is that attention should be drawn to the message
   JOB_STATUS =>
   {
-      0  =>  'not yet worked on',
+      0  =>  'queued',
       1  =>  'successful',
       2  =>  'failed',
       3  =>  'denied by client',
@@ -21,7 +21,7 @@ use constant
       5  =>  'action needed',
       6  =>  'reboot needed',
 
-      'not yet worked on' => 0,
+      'queued'            => 0,
       'successful'        => 1,
       'failed'            => 2,
       'denied by client'  => 3,
