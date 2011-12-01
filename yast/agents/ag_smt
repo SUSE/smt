@@ -122,14 +122,14 @@ sub LoadRepositoryData ($) {
     # repo/full/$REPOSITORY
     $fph->{$repositoryid}->{'paths'} = {
         # The base local path to all repos
-        'base'		=> $base_path.'/repo/',
+        'base'       => $base_path.'/repo/',
         # Particular subrepositories
         # * 'full' contains the mirrored data
-        'full'		=> 'full/'.$repo_path_suffix,
+        'full'       => 'full/'.$repo_path_suffix,
         # * 'testing' is a snapshot intended for testing
-        'testing'	=> 'testing/'.$repo_path_suffix,
+        'testing'    => 'testing/'.$repo_path_suffix,
         # * 'production' is a snapshot intended for production
-        'production'	=> $repo_path_suffix,
+        'production' => $repo_path_suffix,
     };
 
     y2milestone ("Parsing local repository: ".$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
@@ -237,9 +237,9 @@ sub GetAllPatches ($) {
 sub ChangePatchStatus ($) {
     my $params = shift;
 
-    my $repositoryid	= $params->{'repositoryid'}	|| '';
-    my $patchid		= $params->{'patchid'}		|| '';
-    my $new_status	= $params->{'status'}		|| '';
+    my $repositoryid = $params->{'repositoryid'} || '';
+    my $patchid      = $params->{'patchid'}      || '';
+    my $new_status   = $params->{'status'}       || '';
 
     if ($repositoryid eq '') {
         y2error ("Parameter 'repositoryid' not defined");
@@ -302,8 +302,8 @@ sub ChangeCategoryFilterStatus ($) {
 sub GetPatchStatus ($) {
     my $params = shift;
 
-    my $repositoryid	= $params->{'repositoryid'}	|| '';
-    my $patchid		= $params->{'patchid'}		|| '';
+    my $repositoryid = $params->{'repositoryid'} || '';
+    my $patchid      = $params->{'patchid'}      || '';
 
     if ($repositoryid eq '') {
         y2error ("Parameter 'repositoryid' not defined");
@@ -329,9 +329,9 @@ sub GetPatchStatus ($) {
 sub FilterExists ($) {
     my $params = shift;
 
-    my $repositoryid	= $params->{'repositoryid'}	|| '';
-    my $type		= $params->{'type'}		|| '';
-    my $filter		= $params->{'filter'}		|| '';
+    my $repositoryid = $params->{'repositoryid'} || '';
+    my $type         = $params->{'type'}         || '';
+    my $filter       = $params->{'filter'}       || '';
 
     if ($repositoryid eq '') {
         y2error ("Parameter 'repositoryid' not defined");
@@ -633,8 +633,8 @@ sub GetRepositoryDetails ($) {
     LoadRepositoryData ($repositoryid);
 
     my $repo_args = {
-        'repositoryid'	=> $arg->{'repositoryid'},
-        'basepath'	=> $base_path,
+        'repositoryid' => $arg->{'repositoryid'},
+        'basepath'     => $base_path,
     };
 
     my $ret = $repositories->getRepositoryDetails($repo_args);
