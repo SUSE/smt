@@ -58,13 +58,13 @@ use constant {
 
     # All Mirrored repositories with Staging feature enabled
     MIRRORED_REPO_FILTER => {
-	SMT::Repositories::MIRRORING	=> SMT::Repositories::MIRRORING_TRUE,
-	SMT::Repositories::STAGING	=> SMT::Repositories::STAGING_TRUE,
+        SMT::Repositories::MIRRORING	=> SMT::Repositories::MIRRORING_TRUE,
+        SMT::Repositories::STAGING	=> SMT::Repositories::STAGING_TRUE,
     },
 
-    # All Mirrored repositories with Staging feature enabled 
+    # All Mirrored repositories with Staging feature enabled
     ALL_REPO_FILTER => {
-	SMT::Repositories::MIRRORABLE	=> SMT::Repositories::MIRRORABLE_TRUE,
+        SMT::Repositories::MIRRORABLE	=> SMT::Repositories::MIRRORABLE_TRUE,
     },
 };
 
@@ -89,14 +89,14 @@ sub LoadRepositoryData ($) {
 
     # No repository ID defined, unable to load data
     if ($repositoryid eq "") {
-	y2error ("Repository ID must be defined");
-	return undef;
+        y2error ("Repository ID must be defined");
+        return undef;
     }
 
     # Already loaded
     if (defined $fph->{$repositoryid}) {
-	y2debug ('Repository '.$repositoryid.' already loaded');
-	return 1;
+        y2debug ('Repository '.$repositoryid.' already loaded');
+        return 1;
     }
 
     my $ret = 1;
@@ -107,29 +107,29 @@ sub LoadRepositoryData ($) {
     # New Filter handler
     $fph->{$repositoryid}->{'fh'} = SMT::Filter->new();
     if (! $fph->{$repositoryid}->{'fh'}->load($dbh, $repositoryid)) {
-	y2error ("Cannot load filters for repository: ".$repositoryid);
-	$ret = 0;
+        y2error ("Cannot load filters for repository: ".$repositoryid);
+        $ret = 0;
     }
 
     # Repository path relative to the base-path
     my $repo_path_suffix = $repositories->getRepositoryPath($repositoryid) || do {
-	y2error ('Unable to load repository data for: '.$repositoryid);
-	return;
+        y2error ('Unable to load repository data for: '.$repositoryid);
+        return;
     };
 
     # repo/$REPOSITORY
     # repo/testing/$REPOSITORY
     # repo/full/$REPOSITORY
     $fph->{$repositoryid}->{'paths'} = {
-	# The base local path to all repos
-	'base'		=> $base_path.'/repo/',
-	# Particular subrepositories
-	# * 'full' contains the mirrored data
-	'full'		=> 'full/'.$repo_path_suffix,
-	# * 'testing' is a snapshot intended for testing
-	'testing'	=> 'testing/'.$repo_path_suffix,
-	# * 'production' is a snapshot intended for production
-	'production'	=> $repo_path_suffix,
+        # The base local path to all repos
+        'base'		=> $base_path.'/repo/',
+        # Particular subrepositories
+        # * 'full' contains the mirrored data
+        'full'		=> 'full/'.$repo_path_suffix,
+        # * 'testing' is a snapshot intended for testing
+        'testing'	=> 'testing/'.$repo_path_suffix,
+        # * 'production' is a snapshot intended for production
+        'production'	=> $repo_path_suffix,
     };
 
     y2milestone ("Parsing local repository: ".$fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'});
@@ -156,10 +156,10 @@ sub LoadRepositoryData ($) {
     my $patchname;
 
     foreach $patchname (@all_patches) {
-	$fph->{$repositoryid}->{'ph'}->{PATCHES}->{$patchname}->{'testing'} =
-	    (defined $testing->{$patchname} ? YCP_TRUE:YCP_FALSE);
-	$fph->{$repositoryid}->{'ph'}->{PATCHES}->{$patchname}->{'production'} =
-	    (defined $production->{$patchname} ? YCP_TRUE:YCP_FALSE);
+        $fph->{$repositoryid}->{'ph'}->{PATCHES}->{$patchname}->{'testing'} =
+            (defined $testing->{$patchname} ? YCP_TRUE:YCP_FALSE);
+        $fph->{$repositoryid}->{'ph'}->{PATCHES}->{$patchname}->{'production'} =
+            (defined $production->{$patchname} ? YCP_TRUE:YCP_FALSE);
     }
 
     return $ret;
@@ -174,14 +174,14 @@ sub WritePatchFilters () {
 
     # Runs through all already loaded repositories
     foreach $repositoryid (keys %{$fph}) {
-	y2milestone ("Calling save() on Catalog:".$repositoryid);
+        y2milestone ("Calling save() on Catalog:".$repositoryid);
 
-	if (! defined $fph->{$repositoryid}->{'fh'}) {
-	    y2warning ("FilterHandle not defined for repo: ".$repositoryid);
-	} elsif (! $fph->{$repositoryid}->{'fh'}->save($dbh, $repositoryid)) {
-	    y2error ("Error saving catalog ".$repositoryid);
-	    $ret = 0;
-	}
+        if (! defined $fph->{$repositoryid}->{'fh'}) {
+            y2warning ("FilterHandle not defined for repo: ".$repositoryid);
+        } elsif (! $fph->{$repositoryid}->{'fh'}->save($dbh, $repositoryid)) {
+            y2error ("Error saving catalog ".$repositoryid);
+            $ret = 0;
+        }
     }
 
     return ($ret ? YCP_TRUE:YCP_FALSE);
@@ -192,8 +192,8 @@ sub GetAllPatches ($) {
     my $repositoryid = shift || "";
 
     if ($repositoryid eq "") {
-	y2error ("Catalog ID must be defined");
-	return undef;
+        y2error ("Catalog ID must be defined");
+        return undef;
     }
 
     y2milestone ("Handling repositoryid: ".$repositoryid);
@@ -205,28 +205,28 @@ sub GetAllPatches ($) {
     my $tmppatch = {};
 
     foreach my $patchid (keys %{$fph->{$repositoryid}->{'ph'}->{'PATCHES'}}) {
-	$tmppatch = $fph->{$repositoryid}->{'ph'}->{'PATCHES'}->{$patchid};
-	$tmppatch->{'patchid'} = $patchid;
-	$tmppatch->{'filtered'} = ($fph->{$repositoryid}->{'fh'}->matches($tmppatch) ? YCP_TRUE:YCP_FALSE);
+        $tmppatch = $fph->{$repositoryid}->{'ph'}->{'PATCHES'}->{$patchid};
+        $tmppatch->{'patchid'} = $patchid;
+        $tmppatch->{'filtered'} = ($fph->{$repositoryid}->{'fh'}->matches($tmppatch) ? YCP_TRUE:YCP_FALSE);
 
-	# Transforming packages description from epo, ver, rel to [epo:]ver-rel
-	# Perl->YCP conversion then never treats with version as integer
-	# BNC #670654
-	my $pkgs = [];
-	foreach my $pkg (@{$tmppatch->{'pkgs'}}) {
-	    my $new_pkg = {
-		'name' => (defined $pkg->{'name'} ? $pkg->{'name'}:''),
-		'arch' => (defined $pkg->{'arch'} ? $pkg->{'arch'}:''),
-		# Leading zero (default epoch) is ignored
-		'version' => (defined $pkg->{'epo'} && $pkg->{'epo'} ne '0' ? $pkg->{'epo'}.':':'').
-		    (defined $pkg->{'ver'} ? $pkg->{'ver'}:'0').'-'.
-		    (defined $pkg->{'rel'} ? $pkg->{'rel'}:'0'),
-	    };
-	    push @{$pkgs}, $new_pkg;
-	}
-	$tmppatch->{'pkgs'} = $pkgs;
+        # Transforming packages description from epo, ver, rel to [epo:]ver-rel
+        # Perl->YCP conversion then never treats with version as integer
+        # BNC #670654
+        my $pkgs = [];
+        foreach my $pkg (@{$tmppatch->{'pkgs'}}) {
+            my $new_pkg = {
+                'name' => (defined $pkg->{'name'} ? $pkg->{'name'}:''),
+                'arch' => (defined $pkg->{'arch'} ? $pkg->{'arch'}:''),
+                # Leading zero (default epoch) is ignored
+                'version' => (defined $pkg->{'epo'} && $pkg->{'epo'} ne '0' ? $pkg->{'epo'}.':':'').
+                (defined $pkg->{'ver'} ? $pkg->{'ver'}:'0').'-'.
+                (defined $pkg->{'rel'} ? $pkg->{'rel'}:'0'),
+            };
+            push @{$pkgs}, $new_pkg;
+        }
+        $tmppatch->{'pkgs'} = $pkgs;
 
-	push @ret, $tmppatch;
+        push @ret, $tmppatch;
     }
 
     return \@ret;
@@ -242,26 +242,26 @@ sub ChangePatchStatus ($) {
     my $new_status	= $params->{'status'}		|| '';
 
     if ($repositoryid eq '') {
-	y2error ("Parameter 'repositoryid' not defined");
-	return YCP_FALSE;
+        y2error ("Parameter 'repositoryid' not defined");
+        return YCP_FALSE;
     }
     if ($patchid eq '') {
-	y2error ("Parameter 'patchid' not defined");
-	return YCP_FALSE;
+        y2error ("Parameter 'patchid' not defined");
+        return YCP_FALSE;
     }
 
     if (! GetStagingAllowedInternal({'repositoryid' => $repositoryid})) {
-	y2error ('Repository '.$repositoryid.' does not allow filtering');
+        y2error ('Repository '.$repositoryid.' does not allow filtering');
     }
 
     LoadRepositoryData($repositoryid);
 
     # true -> wanted in testig repository
     if ($new_status) {
-	$fph->{$repositoryid}->{'fh'}->remove(SMT::Filter::TYPE_NAME_VERSION, $patchid);
-    # false -> not wanted
+        $fph->{$repositoryid}->{'fh'}->remove(SMT::Filter::TYPE_NAME_VERSION, $patchid);
+        # false -> not wanted
     } else {
-	$fph->{$repositoryid}->{'fh'}->add(SMT::Filter::TYPE_NAME_VERSION, $patchid);
+        $fph->{$repositoryid}->{'fh'}->add(SMT::Filter::TYPE_NAME_VERSION, $patchid);
     }
 
     return YCP_TRUE;
@@ -276,22 +276,22 @@ sub ChangeCategoryFilterStatus ($) {
     my $new_status	= $params->{'status'}		|| '';
 
     if ($repositoryid eq '') {
-	y2error ("Parameter 'repositoryid' not defined");
-	return YCP_FALSE;
+        y2error ("Parameter 'repositoryid' not defined");
+        return YCP_FALSE;
     }
     if ($type eq '') {
-	y2error ("Parameter 'type' not defined");
-	return YCP_FALSE;
+        y2error ("Parameter 'type' not defined");
+        return YCP_FALSE;
     }
 
     LoadRepositoryData($repositoryid);
 
     # true -> filter is required
     if ($new_status) {
-	$fph->{$repositoryid}->{'fh'}->add(SMT::Filter::TYPE_SECURITY_LEVEL, $type);
-    # false -> remove filter
+        $fph->{$repositoryid}->{'fh'}->add(SMT::Filter::TYPE_SECURITY_LEVEL, $type);
+        # false -> remove filter
     } else {
-	$fph->{$repositoryid}->{'fh'}->remove(SMT::Filter::TYPE_SECURITY_LEVEL, $type);
+        $fph->{$repositoryid}->{'fh'}->remove(SMT::Filter::TYPE_SECURITY_LEVEL, $type);
     }
 
     return YCP_TRUE;
@@ -306,12 +306,12 @@ sub GetPatchStatus ($) {
     my $patchid		= $params->{'patchid'}		|| '';
 
     if ($repositoryid eq '') {
-	y2error ("Parameter 'repositoryid' not defined");
-	return undef;
+        y2error ("Parameter 'repositoryid' not defined");
+        return undef;
     }
     if ($patchid eq '') {
-	y2error ("Parameter 'patchid' not defined");
-	return undef;
+        y2error ("Parameter 'patchid' not defined");
+        return undef;
     }
 
     LoadRepositoryData($repositoryid);
@@ -334,16 +334,16 @@ sub FilterExists ($) {
     my $filter		= $params->{'filter'}		|| '';
 
     if ($repositoryid eq '') {
-	y2error ("Parameter 'repositoryid' not defined");
-	return undef;
+        y2error ("Parameter 'repositoryid' not defined");
+        return undef;
     }
     if ($type eq '') {
-	y2error ("Parameter 'type' not defined");
-	return undef;
+        y2error ("Parameter 'type' not defined");
+        return undef;
     }
     if ($filter eq '') {
-	y2error ("Parameter 'filter' not defined");
-	return undef;
+        y2error ("Parameter 'filter' not defined");
+        return undef;
     }
 
     LoadRepositoryData($repositoryid);
@@ -354,17 +354,17 @@ sub FilterExists ($) {
 sub SecurityLevelFilterExists ($) {
     my $arg = shift;
     my $repositoryid = $arg->{'repositoryid'} || do {
-	y2error ("Parameter 'repositoryid' not defined");
-	return undef;
+        y2error ("Parameter 'repositoryid' not defined");
+        return undef;
     };
 
     LoadRepositoryData($repositoryid);
 
     my $func_args = {
-	'type' => SMT::Filter::TYPE_SECURITY_LEVEL,
-	# filter string is the security level of a patch
-	'filter' => (defined $arg->{'type'} ? $arg->{'type'}:''),
-	'repositoryid' => $repositoryid,
+        'type' => SMT::Filter::TYPE_SECURITY_LEVEL,
+        # filter string is the security level of a patch
+        'filter' => (defined $arg->{'type'} ? $arg->{'type'}:''),
+        'repositoryid' => $repositoryid,
     };
 
     return (FilterExists ($func_args) ? YCP_TRUE:YCP_FALSE);
@@ -375,14 +375,14 @@ sub CreateSnapshot ($) {
 
     # Identifies the repository
     my $repositoryid = $arg->{'repositoryid'} || do {
-	y2error ("Parameter 'repositoryid' not defined");
-	return YCP_FALSE;
+        y2error ("Parameter 'repositoryid' not defined");
+        return YCP_FALSE;
     };
 
     # Defines a type of generated subrepository
     my $type = $arg->{'type'} || do {
-	y2error ("Parameter 'type' not defined");
-	return YCP_FALSE;
+        y2error ("Parameter 'type' not defined");
+        return YCP_FALSE;
     };
 
     # Fills up also $fph->{$repositoryid}->{'paths'}
@@ -390,8 +390,8 @@ sub CreateSnapshot ($) {
 
     # 'testing' or 'production' or ...
     if (not defined $fph->{$repositoryid}->{'paths'}->{$type}) {
-	y2error ("Unknown 'type': ".$type);
-	return YCP_FALSE;
+        y2error ("Unknown 'type': ".$type);
+        return YCP_FALSE;
     }
 
     my $mirrorsrc = $cfg->val('LOCAL', 'MirrorSRC');
@@ -401,9 +401,9 @@ sub CreateSnapshot ($) {
     { $mirrorsrc = 1; }
 
     my %mirror_args = (
-	log => $log,
-	dbh => $dbh,
-	vblevel => $vblevel,
+        log => $log,
+        dbh => $dbh,
+        vblevel => $vblevel,
         mirrorsrc => $mirrorsrc
     );
 
@@ -412,10 +412,10 @@ sub CreateSnapshot ($) {
     # Use filters only if staging (filtering) is allowed and...
     # Additionally, filters are used for 'full->testing' only
     if ($staging_allowed && $type eq 'testing') {
-	y2milestone ('Filtering is allowed, using all defined filters');
-	$mirror_args{'filter'} = $fph->{$repositoryid}->{'fh'};
+        y2milestone ('Filtering is allowed, using all defined filters');
+        $mirror_args{'filter'} = $fph->{$repositoryid}->{'fh'};
     } else {
-	y2milestone ('Not using filters');
+        y2milestone ('Not using filters');
     }
 
     # The default source
@@ -424,22 +424,22 @@ sub CreateSnapshot ($) {
     # If there are no filters allowed, we create the production snapshot from the testing one
     # because the testing repository is actually the one we want to have in production snapshot
     if ($type eq 'testing') {
-	$staging_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
+        $staging_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'full'};
     } elsif ($type eq 'production') {
-	my $check_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'};
+        my $check_source = $fph->{$repositoryid}->{'paths'}->{'base'}.$fph->{$repositoryid}->{'paths'}->{'testing'};
 
-	# Testing snapshot exists and is not empty
-	# And contains a flag: successful mirroring
-	if (-e $check_source && -d $check_source && -s $check_source && SMT::Mirror::Utils::getStatus ($check_source)) {
-	    y2milestone ('Using \'testing\' repository as source for \'production\'');
-	    $staging_source = $check_source;
-	} else {
-	    y2error ('Cannot use \'testing\' repository as a source for \'production\'');
-	    # FIXME: return the error to UI
-	    return YCP_FALSE;
-	}
+        # Testing snapshot exists and is not empty
+        # And contains a flag: successful mirroring
+        if (-e $check_source && -d $check_source && -s $check_source && SMT::Mirror::Utils::getStatus ($check_source)) {
+            y2milestone ('Using \'testing\' repository as source for \'production\'');
+            $staging_source = $check_source;
+        } else {
+            y2error ('Cannot use \'testing\' repository as a source for \'production\'');
+            # FIXME: return the error to UI
+            return YCP_FALSE;
+        }
     } else {
-	y2error ('Unknown type: \''.$type.'\'');
+        y2error ('Unknown type: \''.$type.'\'');
     }
 
     my $mirror = SMT::Mirror::RpmMd->new(%mirror_args);
@@ -455,9 +455,9 @@ sub CreateSnapshot ($) {
 
     # Where the resulting subrepository is created
     y2milestone (
-	'Base: '.$fph->{$repositoryid}->{'paths'}->{'base'}.' '.
-	'Repo: '.$fph->{$repositoryid}->{'paths'}->{$type}.' '.
-	'Type: ('.$type.')'
+        'Base: '.$fph->{$repositoryid}->{'paths'}->{'base'}.' '.
+        'Repo: '.$fph->{$repositoryid}->{'paths'}->{$type}.' '.
+        'Type: ('.$type.')'
     );
     $mirror->localBasePath($fph->{$repositoryid}->{'paths'}->{'base'});
     $mirror->localRepoPath($fph->{$repositoryid}->{'paths'}->{$type});
@@ -468,17 +468,17 @@ sub CreateSnapshot ($) {
 
     # 'signingKeyID' should be used, passphrase is set
     if (defined $arg->{'key'} && defined $arg->{'passphrase'}) {
-	y2milestone ("Using signing key ID: ".$arg->{'key'});
+        y2milestone ("Using signing key ID: ".$arg->{'key'});
 
-	# 'signingKeyPassphrase' (from smt.conf is not defined) but it came as a parameter
-	if (! defined $passphrase) {
-	    y2milestone ("Using passphrase defined as a parameter");
-	    $passphrase = $arg->{'passphrase'};
-	    $passphrase_cached = 1;
-	}
+        # 'signingKeyPassphrase' (from smt.conf is not defined) but it came as a parameter
+        if (! defined $passphrase) {
+            y2milestone ("Using passphrase defined as a parameter");
+            $passphrase = $arg->{'passphrase'};
+            $passphrase_cached = 1;
+        }
 
-	$args{keyid}	= $arg->{'key'};
-	$args{keypass}	= $passphrase;
+        $args{keyid}    = $arg->{'key'};
+        $args{keypass}  = $passphrase;
     }
 
     # And GO!
@@ -487,23 +487,23 @@ sub CreateSnapshot ($) {
     y2milestone ("mirror() returned: ".(defined $ret ? $ret:'nil'));
 
     if (defined $ret && $ret == 0) {
-	SMT::Mirror::Utils::copyStatus($staging_source,
-	    SMT::Utils::cleanPath(
-		$fph->{$repositoryid}->{'paths'}->{'base'},
-		$fph->{$repositoryid}->{'paths'}->{$type}
-	    )
-	);
-	SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
-	    sprintf __("Repository successfully generated at %s."),
-		$fph->{$repositoryid}->{'paths'}->{$type}
-	);
+        SMT::Mirror::Utils::copyStatus($staging_source,
+                                       SMT::Utils::cleanPath(
+                                           $fph->{$repositoryid}->{'paths'}->{'base'},
+                                           $fph->{$repositoryid}->{'paths'}->{$type}
+                                       )
+        );
+        SMT::Utils::printLog($log, $vblevel, LOG_INFO1,
+                             sprintf __("Repository successfully generated at %s."),
+                             $fph->{$repositoryid}->{'paths'}->{$type}
+        );
     } else {
-	SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
-	    sprintf __("Unable to generated repository %s."),
-		$fph->{$repositoryid}->{'paths'}->{$type}
-	);
-	# Reset the changed passphrase if generating failed
-	$passphrase = undef if ($passphrase_cached);
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR,
+                             sprintf __("Unable to generated repository %s."),
+                             $fph->{$repositoryid}->{'paths'}->{$type}
+        );
+        # Reset the changed passphrase if generating failed
+        $passphrase = undef if ($passphrase_cached);
     }
 
     # FIXME: Invalidate/re-read only the piece of cache which has just been rewritten
@@ -522,34 +522,34 @@ sub GetStagingAllowedInternal ($) {
     my $arg = shift || {};
 
     my $repositoryid = $arg->{'repositoryid'} || do {
-	y2error ('Parameter repositoryid must be defined');
-	return undef;
+        y2error ('Parameter repositoryid must be defined');
+        return undef;
     };
 
     # Purge the old result to recheck
     if (defined $arg->{'force_check'} && defined $st_allowed_cache->{$repositoryid}) {
-	y2milestone ('Purging cached info for repository '.$repositoryid.' on request');
-	$st_allowed_cache->{$repositoryid} = undef;
+        y2milestone ('Purging cached info for repository '.$repositoryid.' on request');
+        $st_allowed_cache->{$repositoryid} = undef;
     }
 
     my $allowed = 0;
     my $errors = '';
 
     if (defined $st_allowed_cache->{$repositoryid}) {
-	$allowed = $st_allowed_cache->{$repositoryid};
+        $allowed = $st_allowed_cache->{$repositoryid};
     } else {
-	# Clear all the previous errors
-	$repositories->getAndClearErrorMessage();
-	$allowed = $repositories->filteringAllowed($repositoryid, $base_path);
-	$errors = $repositories->getAndClearErrorMessage();
-	# Cache the result
-	$st_allowed_cache->{$repositoryid} = $allowed;
+        # Clear all the previous errors
+        $repositories->getAndClearErrorMessage();
+        $allowed = $repositories->filteringAllowed($repositoryid, $base_path);
+        $errors = $repositories->getAndClearErrorMessage();
+        # Cache the result
+        $st_allowed_cache->{$repositoryid} = $allowed;
     }
 
     if ($errors) {
-	foreach my $eline (split (/\n/, $errors)) {
-	    y2error ("stagingAllowed: ".$eline);
-	}
+        foreach my $eline (split (/\n/, $errors)) {
+            y2error ("stagingAllowed: ".$eline);
+        }
     }
 
     return $allowed;
@@ -565,13 +565,13 @@ sub AdjustRepository ($) {
     my $arg = shift || {};
 
     my $repositoryid = $arg->{'repositoryid'} || do {
-	y2error ('Parameter repositoryid must be defined');
-	return undef;
+        y2error ('Parameter repositoryid must be defined');
+        return undef;
     };
 
     if (! defined $arg->{'mirroring'} && ! defined $arg->{'staging'}) {
-	y2error ('Parameters staging or mirroring must be defined');
-	return undef;
+        y2error ('Parameters staging or mirroring must be defined');
+        return undef;
     }
 
     LoadRepositoryData ($repositoryid);
@@ -597,16 +597,16 @@ sub IsSubrepositoryUpToDate ($) {
     my $arg = shift || {};
 
     my $repositoryid = $arg->{'repositoryid'} || do {
-	y2error ('Parameter repositoryid must be defined');
-	return undef;
+        y2error ('Parameter repositoryid must be defined');
+        return undef;
     };
 
     LoadRepositoryData ($repositoryid);
 
     my $repo_args = {
-	'repositoryid' => $arg->{'repositoryid'},
-	'type' => $arg->{'type'},
-	'basepath' => $base_path,
+        'repositoryid' => $arg->{'repositoryid'},
+        'type' => $arg->{'type'},
+        'basepath' => $base_path,
     };
 
     return ($repositories->isSnapshotUpToDate($repo_args) ? YCP_TRUE:YCP_FALSE);
@@ -619,30 +619,30 @@ sub GetDateFromTimestamp ($) {
 
     # BNC #537087: Months are zero-based
     return ($year + 1900).'-'.sprintf('%02d', $mon + 1).'-'.sprintf('%02d', $mday).' '.
-	sprintf('%02d', $hour).':'.sprintf('%02d', $min).':'.sprintf('%02d', $sec);
+    sprintf('%02d', $hour).':'.sprintf('%02d', $min).':'.sprintf('%02d', $sec);
 }
 
 sub GetRepositoryDetails ($) {
     my $arg = shift || {};
 
     my $repositoryid = $arg->{'repositoryid'} || do {
-	y2error ('Parameter repositoryid must be defined');
-	return undef;
+        y2error ('Parameter repositoryid must be defined');
+    return undef;
     };
 
     LoadRepositoryData ($repositoryid);
 
     my $repo_args = {
-	'repositoryid'	=> $arg->{'repositoryid'},
-	'basepath'	=> $base_path,
+        'repositoryid'	=> $arg->{'repositoryid'},
+        'basepath'	=> $base_path,
     };
 
     my $ret = $repositories->getRepositoryDetails($repo_args);
 
     foreach my $key (keys %{$ret}) {
-	if (defined $ret->{$key}) {
-	    $ret->{$key} = GetDateFromTimestamp ($ret->{$key});
-	}
+        if (defined $ret->{$key}) {
+            $ret->{$key} = GetDateFromTimestamp ($ret->{$key});
+        }
     }
 
     return $ret;
@@ -656,8 +656,8 @@ sub GetAllClientsStatus ($) {
 
     my $id = '';
     foreach $id (keys %{$info_copy}) {
-	($info->{$id}->{STATUSLABEL}, $info->{$id}->{STATUSSTRING}) =
-	    SMT::Client::getPatchStatusLabel($info_copy->{$id});
+        ($info->{$id}->{STATUSLABEL}, $info->{$id}->{STATUSSTRING}) =
+        SMT::Client::getPatchStatusLabel($info_copy->{$id});
     }
 
     return $info;
@@ -665,8 +665,8 @@ sub GetAllClientsStatus ($) {
 
 sub PurgeRepositoryCache ($) {
     my $repositoryid = shift || do {
-	y2error ('Repository ID must be defined');
-	return YCP_FALSE;
+        y2error ('Repository ID must be defined');
+        return YCP_FALSE;
     };
 
     $fph->{$repositoryid} = undef if (defined $fph->{$repositoryid});
@@ -675,17 +675,17 @@ sub PurgeRepositoryCache ($) {
 
 sub CheckThatDirectoryIsWritable ($) {
     my $directory = shift || do {
-	y2error ('Directory not defined!');
-	return 0;
+        y2error ('Directory not defined!');
+        return 0;
     };
 
     if (! -e $directory) {
-	y2error ($directory." does not exist");
-	return 0;
+        y2error ($directory." does not exist");
+        return 0;
     }
 
     if (! -w $directory) {
-	return 0;
+        return 0;
     }
 
     # Directory is writable
@@ -696,14 +696,14 @@ sub CheckRepository ($) {
     my $arg = shift || {};
 
     my $directory = $arg->{'directory'} || do {
-	y2error ('Parameter directory must be defined');
-	return undef;
+        y2error ('Parameter directory must be defined');
+        return undef;
     };
 
     return YCP_FALSE if (! CheckThatDirectoryIsWritable ($directory));
 
     opendir (DIR, $directory) || do {
-	y2warning ("Cannot open directory: %1", $directory);
+        y2warning ("Cannot open directory: %1", $directory);
     };
     my @files = grep (!/^\.{1,2}/, readdir DIR);
     closedir (DIR);
@@ -712,11 +712,11 @@ sub CheckRepository ($) {
     my $ret = 1;
 
     foreach $one_file (@files) {
-	$one_file = $directory.'/'.$one_file;
-	if (! CheckThatDirectoryIsWritable ($one_file)) {
-	    $ret = 0;
-	    last;
-	}
+        $one_file = $directory.'/'.$one_file;
+        if (! CheckThatDirectoryIsWritable ($one_file)) {
+            $ret = 0;
+            last;
+        }
     }
 
     return ($ret ? YCP_TRUE:YCP_FALSE);
@@ -730,61 +730,61 @@ while (<STDIN>) {
 
     # For Perl-only testing, otherwise already removed
     if ($path =~ /^\.smt/) {
-	$path =~ s/^\.smt//;
+        $path =~ s/^\.smt//;
     }
 
     if ($command eq 'Read') {
-	if ($path eq '.staging.repositories') {
-	    ycp::Return ($repositories->getAllRepositories (MIRRORED_REPO_FILTER));
-	} elsif ($path eq '.staging.patches') {
-	    ycp::Return (GetAllPatches ($arg));
-	} elsif ($path eq '.staging.patch.status') {
-	    ycp::Return (GetPatchStatus ($arg));
-	} elsif ($path eq '.staging.category_filter') {
-	    ycp::Return (SecurityLevelFilterExists ($arg));
-	} elsif ($path eq '.staging.repository.uptodate') {
-	    ycp::Return (IsSubrepositoryUpToDate ($arg));
-	} elsif ($path eq '.staging.repository.details') {
-	    ycp::Return (GetRepositoryDetails ($arg));
-	} elsif ($path eq '.repositories.all') {
-	    ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER));
-	} elsif ($path eq '.repository.staging_allowed') {
-	    ycp::Return (GetStagingAllowed ($arg));
-	} elsif ($path eq '.clients.status') {
-	    ycp::Return (GetAllClientsStatus ($arg));
-	} elsif ($path eq '.check_directory') {
-	    ycp::Return (CheckRepository ($arg));
-	} else {
-	    UnsupportedPath (\$command, \$path);
-	}
+        if ($path eq '.staging.repositories') {
+            ycp::Return ($repositories->getAllRepositories (MIRRORED_REPO_FILTER));
+        } elsif ($path eq '.staging.patches') {
+            ycp::Return (GetAllPatches ($arg));
+        } elsif ($path eq '.staging.patch.status') {
+            ycp::Return (GetPatchStatus ($arg));
+        } elsif ($path eq '.staging.category_filter') {
+            ycp::Return (SecurityLevelFilterExists ($arg));
+        } elsif ($path eq '.staging.repository.uptodate') {
+            ycp::Return (IsSubrepositoryUpToDate ($arg));
+        } elsif ($path eq '.staging.repository.details') {
+            ycp::Return (GetRepositoryDetails ($arg));
+        } elsif ($path eq '.repositories.all') {
+            ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER));
+        } elsif ($path eq '.repository.staging_allowed') {
+            ycp::Return (GetStagingAllowed ($arg));
+        } elsif ($path eq '.clients.status') {
+            ycp::Return (GetAllClientsStatus ($arg));
+        } elsif ($path eq '.check_directory') {
+            ycp::Return (CheckRepository ($arg));
+        } else {
+            UnsupportedPath (\$command, \$path);
+        }
     } elsif ($command eq 'Write') {
-	if ($path eq '.staging.patch.status') {
-	    ycp::Return (ChangePatchStatus ($arg));
-	} elsif ($path eq '.staging.patches') {
-	    ycp::Return (WritePatchFilters());
-	} elsif ($path eq '.staging.category_filter') {
-	    ycp::Return (ChangeCategoryFilterStatus ($arg));
-	} elsif ($path eq '.staging.snapshot') {
-	    ycp::Return (CreateSnapshot ($arg));
-	} elsif ($path eq '.repository.set') {
-	    ycp::Return (AdjustRepository ($arg));
-	} else {
-	    UnsupportedPath (\$command, \$path);
-	}
+        if ($path eq '.staging.patch.status') {
+            ycp::Return (ChangePatchStatus ($arg));
+        } elsif ($path eq '.staging.patches') {
+            ycp::Return (WritePatchFilters());
+        } elsif ($path eq '.staging.category_filter') {
+            ycp::Return (ChangeCategoryFilterStatus ($arg));
+        } elsif ($path eq '.staging.snapshot') {
+            ycp::Return (CreateSnapshot ($arg));
+        } elsif ($path eq '.repository.set') {
+            ycp::Return (AdjustRepository ($arg));
+        } else {
+            UnsupportedPath (\$command, \$path);
+        }
     } elsif ($command eq 'Execute') {
-	if ($path eq '.repository.purge_cache') {
-	    ycp::Return (PurgeRepositoryCache ($arg));
-	} else {
-	    UnsupportedPath (\$command, \$path);
-	    ycp::Return (undef);
-	}
-    # destructor
+        if ($path eq '.repository.purge_cache') {
+            ycp::Return (PurgeRepositoryCache ($arg));
+        } else {
+            UnsupportedPath (\$command, \$path);
+            ycp::Return (undef);
+        }
+        # destructor
     } elsif ($command eq 'result') {
-	y2milestone ('Bye bye...');
-	last;
+        y2milestone ('Bye bye...');
+        last;
     } else {
-	y2error ('Unknown SCR command: '.$command);
-	ycp::Return (undef);
+        y2error ('Unknown SCR command: '.$command);
+        ycp::Return (undef);
     }
 }
 # the main() loop
