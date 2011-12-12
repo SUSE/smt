@@ -54,9 +54,20 @@ else
   }
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " message: ".$retval{message}, $jobdata{id} );
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " exitcode: ".$retval{exitcode}, $jobdata{id} );
-  $ret = SMT::Agent::RestXML::updatejob ( $jobdata{id}, ($retval{success} eq "true")?1:2 , $retval{message}, $retval{stdout}, $retval{stderr}, $retval{exitcode}, $retval{result} );
+
+  # transform success messages to IDs;
+  #   0 is no reasonable success ID, thus it should also map to 2 (failed) like 'undef', (0 might lead to an infinit loop)
+  #   all other IDs pass as they are, as there might be new IDs introduced
+  my $success = $retval{success} || 2;
+  $success = 1 if $success =~ /^true$/;
+  $success = 2 if $success =~ /^false$/;
+  $success = 2 if $success !~ /^\d+$/;
+
+  $ret = SMT::Agent::RestXML::updatejob( $jobdata{id}, $success, $retval{message}, $retval{stdout}, $retval{stderr}, $retval{exitcode}, $retval{result} );
 }
 
 # pass server failures via exit code to prevent infinit loops one layer above
-exit (($ret) ? 0:1);
+my $exitcode = (($ret) ? 0:1);
+$exitcode = 8 if (exists $retval{breakloop} && defined $retval{breakloop} && $retval{breakloop} =~ /^true$/);
+exit $exitcode;
 

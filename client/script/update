@@ -43,6 +43,16 @@ sub jobhandler
   }
   $patchwithupdate = (defined $patchwithupdate && ($patchwithupdate =~ /^1$/ || $patchwithupdate =~ /^true$/)) ? 1 : 0;
 
+  # reboot
+  my $reboot;
+  my $rebootSet;
+  eval { $rebootSet = $xpQuery->find('/arguments[1]/options[1]/reboot[1]') };
+  foreach my $_n ($rebootSet->get_nodelist()) {
+      $reboot = $_n->string_value() if (defined $_n);
+      last if defined $reboot;
+  }
+  $reboot = "never" unless defined $reboot;
+
   #== ZYPPER
   my $command = "/usr/bin/zypper";
   my $retval;
@@ -83,17 +93,39 @@ sub jobhandler
   $stderr .= $stderrup if $stderrup;
 
   my $mesg = "update failed";
-  $mesg = "update successfully finished" if $retval == 0 ;
+  $mesg = "update successfully finished" if $retval == 0;
+
+  my $exitcode = $retval;
+  my $doReboot = 0;
+  if ($retval == 102)
+  {
+      if ($reboot == 'never')
+      {
+          $mesg = "update successfully finished and reboot needed";
+          $retval = 6;
+      }
+      elsif ($reboot == 'ifneeded')
+      {
+          $doReboot = 1;
+          $retval = 0;
+      }
+  }
   $mesg = "update successfully finished and reboot needed" if $retval == 102;
+
+  if ($doReboot || $reboot == 'enforce')
+  {
+      $retval = 0 if $retval = 102;
+      # TODO trigger reboot
+  }
 
   return (
     stdout => ((defined $stdout) && $verbose) ? $stdout : '',
     stderr => ((defined $stderr) && $verbose) ? $stderr : '',
-    exitcode => $retval,
-    success => ($retval == 0 ) ? "true" : "false",
-    message => $mesg
+    exitcode => $exitcode,
+    success => $retval,
+    message => $mesg,
+    breakloop => $doReboot ? 'true':'false';
   );
-
 }
 
 SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"update\"");
