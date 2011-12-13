@@ -99,23 +99,29 @@ sub jobhandler
   my $doReboot = 0;
   if ($retval == 102)
   {
-      if ($reboot == 'never')
+      if ($reboot eq 'never')
       {
           $mesg = "update successfully finished and reboot needed";
           $retval = 6;
       }
-      elsif ($reboot == 'ifneeded')
+      elsif ($reboot eq 'ifneeded')
       {
+          $mesg = "update successfully finished and reboot executed";
           $doReboot = 1;
           $retval = 0;
       }
   }
-  $mesg = "update successfully finished and reboot needed" if $retval == 102;
 
-  if ($doReboot || $reboot == 'enforce')
+  if ($reboot eq 'enforce' && ($retval == 0 || $retval == 102))
   {
-      $retval = 0 if $retval = 102;
-      # TODO trigger reboot
+      $doReboot = 1;
+      $retval = 0;
+      $mesg = "update successfully finished and reboot executed";
+  }
+
+  if ($doReboot)
+  {
+      `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;
   }
 
   return (
