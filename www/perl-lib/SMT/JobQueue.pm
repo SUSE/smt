@@ -334,8 +334,25 @@ sub finishJob($;$)
     $job->status( 0 );
   }
 
+  # get smt.conf to find out what job status values are allowed to unblock a chain; feature (bnc#730469)
+  my %successIDs=( 1 => '',   # successful
+                   4 => '' ); # warning
+  my $cfg;
+  eval {  $cfg = SMT::Utils::getSMTConfig();  };
+  if ( (! $@) && defined $cfg )
+  {
+      my $sval = $cfg->val('JOBQUEUE', 'jobStatusIsSuccess');
+      if (defined $sval)
+      {
+          $sval =~ s/[^\d,]+//g;
+          %successIDs = map {$_ => ''} (split (",", $sval)) if ($sval != /^$/);
+      }
+  }
+  # ID 0 is reserved for "queued" jobs - they can not be finished before retrieval
+  delete($successIDs{0});
+
   # only activate the client jobs if this job was successful (bnc#520700)
-  $self->parentFinished({ GUID => $guid, ID => $job->{id} }) if ( $xmljob->status() =~ /^1$/ );
+  $self->parentFinished({ GUID => $guid, ID => $job->{id} }) if ( exists $successIDs{ $xmljob->status() } );
 
   return $job->save();
 };
