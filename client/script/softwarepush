@@ -94,6 +94,7 @@ sub jobhandler
   my @stdout=();
   my @stderr=();
   my @messages=();
+  my $success = 1;
   my $doReboot = ($reboot eq 'enforce') ? 1:0;
   foreach my $IN ( qw(package patch pattern product) )
   {
@@ -106,21 +107,30 @@ sub jobhandler
     push @stdout, $_stdout;
     push @stderr, $_stderr;
 
-    if ($_retval == 102 && $reboot ne 'never')
+    if ($_retval == 102)
     {
-      $doReboot = 1;
       push @messages, "$IN installation requires reboot ($_retval)";
-      # retval remains untouched
+      if ($reboot eq 'ifneeded')
+      {
+        $doReboot = 1;
+        # retval remains untouched
+      }
+      else
+      {
+        $success = ($success == 6 || $success == 0) ? 6:2;
+        $retval += $_retval;
+      }
     }
     elsif ($_retval == 103)
     {
-      push @messages, "$IN installation requires restart of packagemanager ($_retval)";
-      # retvak remains untouched
+      push @messages, "$IN installation succeeded (packagemanager restart needed) ($_retval)";
+      # retval remains untouched
     }
     elsif ($_retval != 0)
     {
       $retval += $_retval;
       $doReboot = 0;
+      $success = 2;
       push @messages, "$IN installation failed ($_retval)";
     }
     else
@@ -129,21 +139,25 @@ sub jobhandler
     }
   }
 
+  # die if the job did not contain anything to be installed
+  SMT::Agent::Utils::error( "too few arguments: need one or more of [packages, patches, patterns, products]", $jobid ) unless $argumentsok;
+
   if ($doReboot && $retval == 0)
   {
       push @messages, "reboot executed";
       `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;
   }
 
-  # die if the job did not contain anything to be installed
-  SMT::Agent::Utils::error( "too few arguments: need one or more of [packages, patches, patterns, products]", $jobid ) unless $argumentsok;
+  my $msg = join(", ", @messages);
+  SMT::Agent::Utils::logger("job results:  $msg");
+  SMT::Agent::Utils::logger("job successcode:  $success, exitcode: $retval");
 
   return (
     stdout   => (scalar(@stdout) && $verbose) ? join("\n", @stdout) : '',
     stderr   => (scalar(@stderr) && $verbose) ? join("\n", @stderr) : '',
     exitcode => $retval,
-    success  => ($retval == 0) ? "true" : "false",
-    message  => "status: " . join(", ", @messages)
+    success  => $success,
+    message  => "result: ".$msg
   );
 
 }
