@@ -48,7 +48,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $UPpatchwithupdate, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
+my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $SWreboot, $UPpatchwithupdate, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -87,6 +87,7 @@ if (! &Getopt::Long::GetOptions(
          'product=s@' => \@SWproductlist,
          'forceinstall|F!' => \$SWforce,
          'agreelicense!' => \$SWagree,
+         'reboot=s' => \$SWreboot,
          'patchwithupdate' => \$UPpatchwithupdate,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
@@ -161,10 +162,12 @@ if ( defined $help and ( $help == 1 ) )
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
+  print "   --reboot         <policy> : " . __("reboot policy: 'never'|'ifneeded'|'enforce'")."\n";
   print '  '.__("for update jobs")."\n";
   print "   --patchwithupdate         : " . __("patches the system and updates all packages")."\n";
   print "                               " . __("note: this will install new versions of packages if available")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
+  print "   --reboot         <policy> : " . __("reboot policy: 'never'|'ifneeded'|'enforce'")."\n";
   print '  '.__("for execute jobs")."\n";
   print "   --exec         (-X) <cmd> : " . __("the command to execute")."\n";
   print '  '.__("for wait jobs")."\n";
@@ -215,6 +218,16 @@ if ( defined $help and ( $help == 1 ) )
   print "  52 : report        : " . __("Retrieves the results of a job that was created via 'createjob'.") . "\n";
   print "  53 : inventory     : " . __("Collect system information.") . "\n";
   print "\n";
+  print __("job status IDs")."\n";
+
+  # dynamically list all available job status IDs
+  foreach my $ID (sort keys SMT::Job::Constants::JOB_STATUS)
+  {
+      next unless $ID =~ /^\d+$/;
+      my $count = length("$ID");
+      print " ".(" " x (3 - $count))." $ID : ".SMT::Job::Constants::JOB_STATUS->{$ID}."\n";
+  }
+  print "\n";
   exit 0;
 }
 
@@ -242,11 +255,22 @@ else
 }
 $query{ID} = $jobid if (defined $jobid);
 
+if (defined $SWreboot)
+{
+    if ( $SWreboot ne 'never'    &&
+         $SWreboot ne 'ifneeded' &&
+         $SWreboot ne 'enforce'    )
+    {
+        print _("Invalid reboot policy. Possible values:")." (never, ifneeded, enforce)"."\n";
+        exit 4;
+    }
+}
+
 my $queryJob = SMT::Job->new({ 'dbh' => $dbh });
 my $typeID = $queryJob->jobTypeToID($type);
 if ( defined $type && not defined $typeID )
 {
-    print "Job type unkown.\n";
+    print _("Job type unkown.")."\n";
     exit 4;
 }
 $query{TYPE} = $typeID if (defined $typeID);
@@ -398,6 +422,7 @@ if ( defined $create || defined $construct )
         my %options;
         $options{force} = 1 if defined $SWforce;
         $options{agreelicenses} = 1 if defined $SWagree;
+        $options{reboot} = $SWreboot if defined $SWreboot;
         $w->startTag('arguments', %options);
 
         # new arguments/options format:
@@ -473,6 +498,7 @@ if ( defined $create || defined $construct )
         my %options;
         $options{patchwithupdate} = 1 if $UPpatchwithupdate;
         $options{agreelicenses} = ($SWagree ? 1:0) if defined $SWagree;
+        $options{reboot} = $SWreboot if defined $SWreboot;
         $w->startTag('arguments', %options);
 
         # new arguments/options format:
