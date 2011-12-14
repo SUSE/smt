@@ -96,7 +96,7 @@ sub jobhandler
   $mesg = "update successfully finished" if $retval == 0;
 
   my $exitcode = $retval;
-  my $doReboot = 0;
+  my $doReboot = ($reboot eq 'enforce') ? 1:0;
   if ($retval == 102)
   {
       if ($reboot eq 'never')
@@ -104,7 +104,7 @@ sub jobhandler
           $mesg = "update successfully finished and reboot needed";
           $retval = 6;
       }
-      elsif ($reboot eq 'ifneeded')
+      elsif ($reboot eq 'ifneeded' || $reboot eq 'enforce')
       {
           $mesg = "update successfully finished and reboot executed";
           $doReboot = 1;
@@ -112,14 +112,10 @@ sub jobhandler
       }
   }
 
-  if ($reboot eq 'enforce' && ($retval == 0 || $retval == 102))
-  {
-      $doReboot = 1;
-      $retval = 0;
-      $mesg = "update successfully finished and reboot executed";
-  }
+  SMT::Agent::Utils::logger("job results: $mesg");
+  SMT::Agent::Utils::logger("job successcode: $success, exitcode: $retval");
 
-  if ($doReboot)
+  if ($doReboot && $retval == 0)
   {
       `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;
   }
