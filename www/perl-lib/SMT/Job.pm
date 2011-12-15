@@ -624,7 +624,7 @@ sub jobTypeToID
 #   return string representation of a job status
 #   input can be ID or string
 #
-sub jobTypeToName
+sub jobStatusToName
 {
   my $self   = shift || return undef;
   my $status = shift || return undef;
@@ -639,7 +639,7 @@ sub jobTypeToName
 #   return ID of a job status
 #   input can be ID or string
 #
-sub jobTypeToID
+sub jobStatusToID
 {
   my $self   = shift || return undef;
   my $status = shift || return undef;
