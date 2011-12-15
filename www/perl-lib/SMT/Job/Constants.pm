@@ -20,6 +20,7 @@ use constant
       4  =>  'warning',
       5  =>  'action needed',
       6  =>  'reboot needed',
+      7  =>  'disabled',
 
       'queued'            => 0,
       'successful'        => 1,
@@ -27,7 +28,8 @@ use constant
       'denied by client'  => 3,
       'warning'           => 4,
       'action needed'     => 5,
-      'reboot needed'     => 6
+      'reboot needed'     => 6,
+      'disabled'          => 7
   },
 
   # Job type ID range
