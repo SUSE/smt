@@ -221,7 +221,7 @@ if ( defined $help and ( $help == 1 ) )
   print __("job status IDs")."\n";
 
   # dynamically list all available job status IDs
-  foreach my $ID (sort keys SMT::Job::Constants::JOB_STATUS)
+  foreach my $ID (sort keys %SMT::Job::Constants::JOB_STATUS)
   {
       next unless $ID =~ /^\d+$/;
       my $count = length("$ID");
