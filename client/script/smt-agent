@@ -37,7 +37,7 @@ if ( -f '/usr/sbin/smt' || -f '/etc/smt.conf')
 my $jobid;
 my $breakloop = 0;
 
-my $retval, $stdout, $stderr;
+my ($retval, $stdout, $stderr);
 while( (! $breakloop) &&  defined ( $jobid = SMT::Agent::RestXML::parsejobid( SMT::Agent::RestXML::getnextjob() )))
 {
   # prevent command injection
