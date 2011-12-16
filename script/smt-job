@@ -48,7 +48,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $SWreboot, $UPpatchwithupdate, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
+my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, $parentreset, $enable, $disable, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $SWreboot, $UPpatchwithupdate, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -80,6 +80,9 @@ if (! &Getopt::Long::GetOptions(
          'verbosejob|V!' => \$verbosejob,
          'persistent!' => \$persistent,
          'parent=i' => \$parent,
+         'parentreset' => \$parentreset,
+         'enable' => \$enable,
+         'disable' => \$disable,
          # job specific arguments
          'package|P=s@' => \@SWpackagelist,
          'patch=s@' => \@SWpatchlist,
@@ -140,6 +143,9 @@ if ( defined $help and ( $help == 1 ) )
   print "   --name        (-n) <name> : " . __("job name")."\n";
   print "   --description      <desc> : " . __("job description")."\n";
   print "   --parent           <id>   : " . __("parent job, describes a dependency")."\n";
+  print "   --parentreset             : " . __("reset the parent id of a job")."\n";
+  print "   --enable                  : " . __("(re)enable a job that was disabled or returned without success")."\n";
+  print "   --disable                 : " . __("disable a job")."\n";
   print "   --verbosejob  (-V)        : " . __("verbosity of job")."\n";
   print "   --persistent              : " . __("persistency of job")."\n";
   print "   --finished                : " . __("finds finished jobs")."\n";
@@ -221,11 +227,12 @@ if ( defined $help and ( $help == 1 ) )
   print __("job status IDs")."\n";
 
   # dynamically list all available job status IDs
-  foreach my $ID (sort keys %SMT::Job::Constants::JOB_STATUS)
+  my $X=SMT::Job::Constants::JOB_STATUS;
+  foreach my $ID (sort keys %$X)
   {
       next unless $ID =~ /^\d+$/;
       my $count = length("$ID");
-      print " ".(" " x (3 - $count))." $ID : ".SMT::Job::Constants::JOB_STATUS->{$ID}."\n";
+      print ((" " x (3 - $count))." $ID : ".SMT::Job::Constants::JOB_STATUS->{$ID}."\n");
   }
   print "\n";
   exit 0;
@@ -280,6 +287,8 @@ $query{DESCRIPTION} = $description if (defined $description);
 $query{TARGETED} = $targeted if (defined $targeted);
 $query{EXPIRES} = $expires if (defined $expires);
 $query{TIMELAG} = $timelag if (defined $timelag);
+$query{STATUS} = 0 if (defined $enable);
+$query{STATUS} = 7 if (defined $disable);
 
 
 if ( exists $query{TARGETED} )
@@ -331,6 +340,7 @@ if (defined $persistent)
     $query{PERSISTENT} = $persistent ? 1:0;
 }
 $query{PARENT_ID} = $parent if (defined $parent);
+$query{PARENT_ID} = 'NULL' if (defined $parentreset);
 
 my %para = ();
 $para{EXECCOMMAND} = $EXECcommand if (defined $EXECcommand);
@@ -765,7 +775,7 @@ elsif ( defined $edit )
     $Job->readJobFromDatabase($jobid, $GUID);
 
     # overwrite with new values
-    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT);
+    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT STATUS);
     foreach my $eprop (@EditProps)
     {
         $Job->{lc($eprop)} = $query{uc($eprop)} if ( exists $query{uc($eprop)}  && defined $query{uc($eprop)} );
@@ -1066,6 +1076,21 @@ Specifies a job description
 
 Specifies the job id of the parent job. This is used in order to describe a dependency.
 A job won't be processed until its parent has successfully finished.
+
+=item --parentreset
+
+Reset the parent id of a existing job. This removes the dependency on another job that was created with the C<--parent> parameter.
+Note: Useful only in editing mode. A job chain can be restarted with this, if one job in the chain failed.
+
+=item --enable
+
+Enable or reenable a job that is currently not queued. Jobs that are disabled or have already failed can be (re)enabled to add them to the queue. A job chain can be restarted with this, if one job in the chain failed.
+Note: Only in editing mode. The timing constraints are not touched when enabling a job. A failed and reenabled job might not get delivered due to expiry settings.
+
+=item --disable
+
+Disable a job. This prevents the job from being delivered to the client. A job chain would also be stopped if another job is relying on the disabled one.
+Note: Only in editing mode.
 
 =item -V, --verbosejob
 
