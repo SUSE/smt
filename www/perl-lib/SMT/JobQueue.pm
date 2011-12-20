@@ -11,7 +11,7 @@ use SMT::Utils;
 use Data::Dumper;
 use SMT::Job::Constants;
 
-sub new ($;$)
+sub new ($)
 {
     my $class  = shift || return undef;
     my $params = shift || {};
@@ -32,11 +32,11 @@ sub new ($;$)
 }
 
 ###############################################################################
-# retriveJob
+# retriveJob - OBSOLETE, please use getJob($config)
 #  like getJob but flags the job as retrieved
 #  kept for backward compatibility
 # args: see getJob
-sub retrieveJob($;$)
+sub retrieveJob($)
 {
   my $self      = shift || return undef;
   my $config    = shift || {};
@@ -63,7 +63,7 @@ sub retrieveJob($;$)
 #      true if set to 1, false otherwise ; only supported in getJob()
 #   * "selectAll" : fetch all data of that job, not only the queried from the config hash
 #
-sub getJob($;$)
+sub getJob($)
 {
   my $self      = shift || return undef;
   my $config    = shift || {};
@@ -98,25 +98,25 @@ sub getJob($;$)
 #  like getJob but does not require an id (read jobID), it will query the next ID automatically
 #
 # args: config hash: see getJob
-sub getNextJob($;$)
+sub getNextJob($)
 {
   my $self      = shift || return undef;
   my $config    = shift || {};
-  my $guid      = $config->{guid} || undef;
+  my $guid      = $config->{GUID} || undef;
   return undef unless defined ($guid);
-  $config->{id} = $self->getNextJobID({ guid => $guid }) || undef;
+  $config->{id} = $self->getNextJobID({ GUID => $guid }) || undef;
 
   return $self->getJob( $config );
 }
 
 ###############################################################################
-# retrieveNextJob
+# retrieveNextJob - OBSOLETE, please use getJob($config)
 #  returns the next job either in xml format or as hash
 #  like getJob but does not require an id (read jobID), it will query the next ID automatically
 #  and the job will be flagged as retrieved
 #
 # args: config hash: see getJob
-sub retrieveNextJob($;$)
+sub retrieveNextJob($)
 {
   my $self      = shift || return undef;
   my $config    = shift || {};
@@ -135,7 +135,7 @@ sub retrieveNextJob($;$)
 #
 # args: guid
 #       xmlformat (default false)
-sub getNextJobID($;$)
+sub getNextJobID($)
 {
   my $self      = shift || return undef;
   my $config    = shift || {};
@@ -176,7 +176,7 @@ sub getNextJobID($;$)
 # returns a list of all following jobs either in xml format or as hash
 #
 # configured via a config hash, see getJob
-sub getJobList($;$)
+sub getJobList($)
 {
   my $self      = shift || return undef;
   my $config    = shift || {};
@@ -186,7 +186,7 @@ sub getJobList($;$)
 
 ###############################################################################
 # add a job to the database (arg = jobobject)
-sub addJob($$)
+sub addJob($)
 {
   my $self = shift || return undef;
   my $job  = shift || return undef;
@@ -197,7 +197,7 @@ sub addJob($$)
 
 # add jobs for multiple guids
 # args: jobobject, guidlist
-sub addJobForMultipleGUIDs($$@)
+sub addJobForMultipleGUIDs($@)
 {
   my $self  = shift || return undef;
   my $job   = shift || return undef;
@@ -217,7 +217,7 @@ sub addJobForMultipleGUIDs($$@)
 
 
 
-sub calcNextTargeted($;$)
+sub calcNextTargeted($)
 {
   my $self   = shift || return undef;
   my $config = shift || {};
@@ -240,7 +240,7 @@ sub calcNextTargeted($;$)
 }
 
 
-sub parentFinished($;$)
+sub parentFinished($)
 {
   my $self  = shift || return undef;
   my $config = shift || {};
@@ -262,7 +262,7 @@ sub parentFinished($;$)
 
 
 ###############################################################################
-sub finishJob($;$)
+sub finishJob($)
 {
   my $self   = shift || return undef;
   my $config = shift || {};
@@ -357,7 +357,7 @@ sub finishJob($;$)
   return $job->save();
 };
 
-sub deleteJob($$$)
+sub deleteJob($$)
 {
   my $self  = shift || return undef;
   my $jobid = shift || return undef;
@@ -451,7 +451,7 @@ sub in_Array($$)
 # create the SQL statement according to the filter
 # this is an internal function
 #
-sub createSQLStatement($$)
+sub createSQLStatement($)
 {
     my $self   = shift || return undef;
     my $filter = shift || return undef;
@@ -641,7 +641,7 @@ sub getJobsInfo_internal($)
 #    $self
 #    $filter (hash) : filter for the query
 #
-sub getJobsInfo($;$)
+sub getJobsInfo($)
 {
     my $self   = shift || return undef;
     my $filter = shift || {};
@@ -657,7 +657,7 @@ sub getJobsInfo($;$)
 #   parameter
 #    self
 #
-sub getAllJobsInfo($)
+sub getAllJobsInfo()
 {
     my $self = shift || return undef;
 
@@ -671,7 +671,7 @@ sub getAllJobsInfo($)
 #   get detailled information about all jobs with all information as XML
 #   parameter
 #    self
-sub getAllJobsInfoAsXML($)
+sub getAllJobsInfoAsXML()
 {
     my $self = shift || return undef;
 
