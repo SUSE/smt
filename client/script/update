@@ -96,26 +96,27 @@ sub jobhandler
   $mesg = "update successfully finished" if $retval == 0;
 
   my $exitcode = $retval;
+  my $statuscode = ($retval == 0) ? 1:2;
   my $doReboot = ($reboot eq 'enforce') ? 1:0;
-  if ($retval == 102)
+  if ($exitcode == 102)
   {
       if ($reboot eq 'never')
       {
           $mesg = "update successfully finished and reboot needed";
-          $retval = 6;
+          $statuscode = 6;
       }
       elsif ($reboot eq 'ifneeded' || $reboot eq 'enforce')
       {
           $mesg = "update successfully finished and reboot executed";
           $doReboot = 1;
-          $retval = 0;
+          $statuscode = 1;
       }
   }
 
   SMT::Agent::Utils::logger("job results: $mesg");
   SMT::Agent::Utils::logger("job statuscode: $retval, exitcode: $exitcode");
 
-  if ($doReboot && $retval == 0)
+  if ($doReboot && $statuscode == 1)
   {
       `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;
   }
@@ -124,7 +125,7 @@ sub jobhandler
     stdout => ((defined $stdout) && $verbose) ? $stdout : '',
     stderr => ((defined $stderr) && $verbose) ? $stderr : '',
     exitcode => $exitcode,
-    success => $retval,
+    success => $statuscode,
     message => $mesg,
     breakloop => $doReboot ? 'true':'false'
   );
