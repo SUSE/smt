@@ -31,6 +31,7 @@ SMT::Agent::Utils::logger ( "jobid: $jobid" );
 my $xmldata = SMT::Agent::RestXML::getjob( $jobid );
 my %jobdata = SMT::Agent::RestXML::parsejob( $xmldata );
 my $ret;
+my %retval;
 
 # always allow the job type servererror
 if ( (not SMT::Agent::Utils::isAgentAllowed($jobdata{type}))  &&  ($jobdata{type} ne 'servererror') )
@@ -44,7 +45,7 @@ else
 
   my $verbose = (defined $jobdata{verbose} && ($jobdata{verbose} =~ /^1$/ || $jobdata{verbose} =~ /^true$/)) ? 1 : 0;
 
-  my %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args}, $verbose );
+  %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args}, $verbose );
 
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. (( $retval{success} eq "true")?" successfully finished":" FAILED"), $jobdata{id} );
   if ($verbose)

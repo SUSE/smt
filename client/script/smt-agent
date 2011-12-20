@@ -63,7 +63,7 @@ while( (! $breakloop) &&  defined ( $jobid = SMT::Agent::RestXML::parsejobid( SM
   sleep (3);
 }
 
-SMT::Agent::Utils::logger("no jobs left. exit.") unless $retval == 8;
+SMT::Agent::Utils::logger("no jobs left. exit.") unless (defined $retval && $retval =~ /^8$/);
 
 if ( ! SMT::Agent::Utils::unLock("smt-agent") )
 {
