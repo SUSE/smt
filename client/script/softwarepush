@@ -94,7 +94,7 @@ sub jobhandler
   my @stdout=();
   my @stderr=();
   my @messages=();
-  my $success = 1;
+  my $statuscode = 1;
   my $doReboot = ($reboot eq 'enforce') ? 1:0;
   foreach my $IN ( qw(package patch pattern product) )
   {
@@ -117,7 +117,7 @@ sub jobhandler
       }
       else
       {
-        $success = ($success == 6 || $success == 0) ? 6:2;
+        $statuscode = ($statuscode == 6 || $statuscode == 1) ? 6:2;
         $retval += $_retval;
       }
     }
@@ -130,7 +130,7 @@ sub jobhandler
     {
       $retval += $_retval;
       $doReboot = 0;
-      $success = 2;
+      $statuscode = 2;
       push @messages, "$IN installation failed ($_retval)";
     }
     else
@@ -142,7 +142,7 @@ sub jobhandler
   # die if the job did not contain anything to be installed
   SMT::Agent::Utils::error( "too few arguments: need one or more of [packages, patches, patterns, products]", $jobid ) unless $argumentsok;
 
-  if ($doReboot && $retval == 0)
+  if ($doReboot && $statuscode == 1)
   {
       push @messages, "reboot executed";
       `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;
@@ -150,14 +150,15 @@ sub jobhandler
 
   my $msg = join(", ", @messages);
   SMT::Agent::Utils::logger("job results: $msg");
-  SMT::Agent::Utils::logger("job successcode: $success, exitcode: $retval");
+  SMT::Agent::Utils::logger("job statuscode: $statuscode, exitcode: $retval");
 
   return (
     stdout   => (scalar(@stdout) && $verbose) ? join("\n", @stdout) : '',
     stderr   => (scalar(@stderr) && $verbose) ? join("\n", @stderr) : '',
     exitcode => $retval,
-    success  => $success,
-    message  => "result: ".$msg
+    success  => $statuscode,
+    message  => "result: ".$msg,
+    breakloop => ($doReboot && $statuscode == 1) ? 'true':'false'
   );
 
 }
