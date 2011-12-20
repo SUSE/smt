@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Dec 20 21:34:06 CET 2011 - jdsn@suse.de
+
+- add reboot feature to softwarepush and update job (bnc#730469)
+- version 0.0.16
+
+-------------------------------------------------------------------
 Tue Oct 25 14:31:50 CEST 2011 - jdsn@suse.de
 
 - prevent SMT JobQueue from looping (bnc#723583)
