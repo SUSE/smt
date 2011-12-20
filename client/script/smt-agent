@@ -49,15 +49,19 @@ while( (! $breakloop) &&  defined ( $jobid = SMT::Agent::RestXML::parsejobid( SM
   #  0 : success
   #  1 : error -> report error and exit
   #  8 : success but break the smt-agent loop
-  if ( $retval == 1 )
+  if ( $retval == 0 )
+  {
+      SMT::Agent::Utils::logger("job $jobid finished successfully, see job message for details");
+  }
+  elsif ( $retval == 8 )
+  {
+      SMT::Agent::Utils::logger("info: the smt-agent loop was stopped by job $jobid");
+      $breakloop = 1;
+  }
+  else
   {
       SMT::Agent::Utils::error("error: job $jobid exited with $retval. stdout: '$stdout' stderr: '$stderr'", $jobid);
       # implicit exiting
-  }
-  elsif ( $retval != 8 )
-  {
-     SMT::Agent::Utils::logger("info: the smt-agent loop was stopped by job $jobid");
-     $breakloop = 1;
   }
 
   sleep (3);
