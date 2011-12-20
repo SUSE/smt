@@ -1214,6 +1214,11 @@ Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:
 
 Opposite of C<--autopatchstatus>
 
+=item --reboot <policy>
+
+Set the reboot policy for this job. The policy may be one of C<never, ifneeded, enforce>. If a reboot is triggered via B<ifneeded> or B<enforce> the client will interrupt the job queue, no following jobs will be executed. The client will perform the reboot as part of the job. After booting cron will trigger the next SMT job after the regular interval. Thus a job chain will take longer to finish if one of its jobs performs a reboot.
+Note: The reboot policy B<ifneeded> currently is supported for the job type B<update> only.
+
 =back
 
 =head3 createjob
@@ -1265,6 +1270,12 @@ Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:
 =item --no-autopatchstatus
 
 Opposite of C<--autopatchstatus>
+
+=item --reboot <policy>
+
+Set the reboot policy for this job. The policy may be one of C<never, ifneeded, enforce>. If a reboot is triggered via B<ifneeded> or B<enforce> the client will interrupt the job queue, no following jobs will be executed. The client will perform the reboot as part of the job. After booting cron will trigger the next SMT job after the regular interval. Thus a job chain will take longer to finish if one of its jobs performs a reboot
+.
+Note: The reboot policy B<ifneeded> currently is supported for the job type B<update> only.
 
 =back
 
