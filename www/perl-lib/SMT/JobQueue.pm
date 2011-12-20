@@ -345,7 +345,7 @@ sub finishJob($)
       if (defined $sval)
       {
           $sval =~ s/[^\d,]+//g;
-          %successIDs = map {$_ => ''} (split (",", $sval)) if ($sval != /^$/);
+          %successIDs = map {$_ => ''} (split (",", $sval)) if ($sval !~ /^$/);
       }
   }
   # ID 0 is reserved for "queued" jobs - they can not be finished before retrieval
