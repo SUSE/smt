@@ -47,7 +47,6 @@ else
 
   %retval = jobhandler ( $jobdata{type}, $jobdata{id}, $jobdata{args}, $verbose );
 
-  SMT::Agent::Utils::logger ( "job ". $jobdata{id}. (( $retval{success} eq "true")?" successfully finished":" FAILED"), $jobdata{id} );
   if ($verbose)
   {
     SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " stdout: ".$retval{stdout}, $jobdata{id} );
@@ -55,6 +54,7 @@ else
   }
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " message: ".$retval{message}, $jobdata{id} );
   SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " exitcode: ".$retval{exitcode}, $jobdata{id} );
+  SMT::Agent::Utils::logger ( "job ". $jobdata{id}. " statuscode: ".$retval{success}, $jobdata{id} );
 
   # transform success messages to IDs;
   #   0 is no reasonable success ID, thus it should also map to 2 (failed) like 'undef', (0 might lead to an infinit loop)
