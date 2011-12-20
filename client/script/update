@@ -113,7 +113,7 @@ sub jobhandler
   }
 
   SMT::Agent::Utils::logger("job results: $mesg");
-  SMT::Agent::Utils::logger("job statuscode: $retval, exitcode: $retval");
+  SMT::Agent::Utils::logger("job statuscode: $retval, exitcode: $exitcode");
 
   if ($doReboot && $retval == 0)
   {
