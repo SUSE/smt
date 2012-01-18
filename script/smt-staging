@@ -329,7 +329,7 @@ my %exists_category = (
 if ($command eq 'status')
 {
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    $filter->load($dbh, $repoid, $group);
 
     print __('Reading patches...') . "\n";
 
@@ -402,7 +402,7 @@ elsif ($command eq 'listupdates')
 
     # read filters
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    $filter->load($dbh, $repoid, $group);
 
     # read patches from all repos
 
@@ -559,7 +559,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         if (defined $canfilter && not $canfilter);
 
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    $filter->load($dbh, $repoid, $group);
 
     my $parser = SMT::Parser::RpmMdPatches->new(
         log => $log,
@@ -749,7 +749,7 @@ elsif ($command eq 'allow' || $command eq 'forbid')
         }
     }
 
-    $filter->save($dbh, $repoid);
+    $filter->save($dbh, $repoid, $group);
 
     print "\n";
     printPatchCounts($patches, $filter);
@@ -807,7 +807,7 @@ elsif ($command eq 'createrepo')
 
 
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);
-    $filter->load($dbh, $repoid);
+    $filter->load($dbh, $repoid, $group);
 
     my $mirror = undef;
     if ( exists $repo->{CATALOGTYPE} && defined $repo->{CATALOGTYPE} &&

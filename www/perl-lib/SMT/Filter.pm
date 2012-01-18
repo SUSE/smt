@@ -119,7 +119,7 @@ sub new
     return $self;
 }
 
-=item load($dbh, $repoid)
+=item load($dbh, $repoid, $group)
 
 Loads filters for given $repoid from database using the $dbh DB connection
 handle.
@@ -131,13 +131,19 @@ Returns false in case of error, true otherwise.
 =cut
 sub load
 {
-    my ($self, $dbh, $catalog) = @_;
+    my ($self, $dbh, $catalog, $group) = @_;
 
     if (%{$self->{FILTERS}}) { $self->{FILTERS} = {}; }
+    my $groupid = SMT::Utils::getStagingGroupID($dbh, $group);
 
     eval
     {
-        my $query = "select Filters.type, Filters.value from Filters, Catalogs where Filters.CATALOG_ID = Catalogs.ID and Catalogs.CATALOGID = '$catalog'";
+        my $query = sprintf("select Filters.type, Filters.value
+                             from Filters, Catalogs
+                             where STAGINGGROUP_ID = %s
+                             AND Filters.CATALOG_ID = Catalogs.ID
+                             AND Catalogs.CATALOGID = %s",
+                            $dbh->quote($groupid), $dbh->quote($catalog));
         my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
         foreach my $f (@{$array})
         {
@@ -155,7 +161,7 @@ sub load
     return 1;
 }
 
-=item save($dbh, $repoid)
+=item save($dbh, $repoid, $group)
 
 Saves current filter set to database and associates them to given $repoid.
 The $dbh argument is the DB connection handle.
@@ -165,11 +171,13 @@ Returns false in case of error, true otherwise.
 =cut
 sub save
 {
-    my ($self, $dbh, $catalog) = @_;
+    my ($self, $dbh, $catalog, $group) = @_;
 
     if (!$self->{DIRTY}) { return 1; }
+    my $groupid = SMT::Utils::getStagingGroupID($dbh, $group);
 
-    my $query = "select ID from Catalogs where CATALOGID = '$catalog'";
+    my $query = sprintf("select ID from Catalogs where CATALOGID = %s",
+                        $dbh->quote($catalog));
     my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
     my $cid = $array->[0]->{ID};
 
@@ -178,7 +186,11 @@ sub save
     my $dbfilters = {};
     eval
     {
-        my $query = "select ID, TYPE, VALUE from Filters where CATALOG_ID = '$cid'";
+        my $query = sprintf("select ID, TYPE, VALUE
+                             from Filters
+                             where STAGINGGROUP_ID = %s
+                             AND CATALOG_ID = '$cid'",
+                            $dbh->quote($groupid), $dbh->quote($cid));
         my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
         foreach my $f (@{$array})
         {
@@ -196,8 +208,9 @@ sub save
     {
         eval
         {
-            my $st = $dbh->prepare("delete from Filters where CATALOG_ID = ?");
+            my $st = $dbh->prepare("delete from Filters where CATALOG_ID = ? and STAGINGGROUP_ID = ?");
             $st->bind_param(1, $cid, SQL_INTEGER);
+            $st->bind_param(2, $groupid, SQL_INTEGER);
             my $cnt = $st->execute;
 
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$st->{Statement}\nRemoved all ($cnt) filters.", 0);
@@ -224,10 +237,11 @@ sub save
             {
                 # insert new subfilter
                 my $st = $dbh->prepare(
-                    "insert into Filters (CATALOG_ID, TYPE, VALUE) values(?,?,?)");
+                    "insert into Filters (CATALOG_ID, TYPE, VALUE, STAGINGGROUP_ID) values(?,?,?,?)");
                 $st->bind_param(1, $cid, SQL_INTEGER);
                 $st->bind_param(2, $f->[0], SQL_INTEGER);
                 $st->bind_param(3, $f->[1]); # value
+                $st->bind_param(4, $groupid, SQL_INTEGER);
                 my $cnt = $st->execute;
             };
             if($@)
@@ -247,8 +261,9 @@ sub save
             eval
             {
                 # delete it from DB
-                my $st = $dbh->prepare("delete from Filters where ID = ?");
+                my $st = $dbh->prepare("delete from Filters where ID = ? AND STAGINGGROUP_ID = ?");
                 $st->bind_param(1, $f->[2], SQL_INTEGER);
+                $st->bind_param(2, $groupid, SQL_INTEGER);
                 my $cnt = $st->execute;
             };
             if($@)
