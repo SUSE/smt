@@ -46,6 +46,10 @@ my $sortbycategory = 0;
 my $keyid = undef;
 my $keypass = undef;
 
+my $group = "default";
+my $testingdir = "testing";
+my $productiondir = "";
+
 my $optres = GetOptions("testing|t"    => \$gentest,
                         "production|p" => \$genprod,
                         "nohardlink"   => \$nohardlink,
@@ -65,6 +69,7 @@ my $optres = GetOptions("testing|t"    => \$gentest,
                         "verboselevel|v=i" => \$vblevel,
                         "logfile|L=s"  => \$logfile,
                         "help|h"       => \$help,
+                        "group|g=s"    => \$group
                        );
 
 sub printhelp
@@ -198,6 +203,19 @@ if(!$dbh)
     exit 1;
 }
 
+# get staging groups
+if ( $group && $group ne "" && $group ne "default" && 
+     $cfg->val("STAGING", $group))
+{
+    my $v = $cfg->val("STAGING", $group);
+    ($testingdir, $productiondir) = split(/\s*,\s*/, $v, 2);
+}
+else
+{
+    $testingdir = "testing";
+    $productiondir = "";
+}
+
 # get the repository from DB (all commands need it)
 
 my $rh = SMT::Repositories::new($dbh, $log);
@@ -293,12 +311,9 @@ if ($repo->{STAGING} ne 'Y')
 # now we're ready to do the real work
 
 my $basepath = $cfg->val("LOCAL", "MirrorTo");
-my $localfullrepopath = SMT::Utils::cleanPath(
-    $basepath, "repo/full", $repo->{LOCALPATH});
-my $localtestingrepopath = SMT::Utils::cleanPath(
-    $basepath, $rh->getTestingRepoPath($repoid));
-my $localproductionrepopath = SMT::Utils::cleanPath(
-    $basepath, $rh->getProductionRepoPath($repoid));
+my $localfullrepopath = $rh->getFullRepoPath($repoid, $basepath, $group);
+my $localtestingrepopath = $rh->getTestingRepoPath($repoid, $basepath, $group);
+my $localproductionrepopath = $rh->getProductionRepoPath($repoid, $basepath, $group);
 
 
 # list of known patch categories
@@ -788,8 +803,8 @@ elsif ($command eq 'createrepo')
     # target
 
     my $localtargetrepopath = ($gentest ?
-        $rh->getTestingRepoPath($repoid) :
-        $rh->getProductionRepoPath($repoid));
+        $rh->getTestingRepoPath($repoid, '', $group) :
+        $rh->getProductionRepoPath($repoid, '', $group));
 
 
     my $filter = SMT::Filter->new(log => $log, vblevel => $vblevel);

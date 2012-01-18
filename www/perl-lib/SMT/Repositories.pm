@@ -10,6 +10,8 @@ use Date::Parse;
 use SMT::Utils;
 use SMT::Mirror::Utils;
 
+use Config::IniFiles;
+
 # TODO seems we have a mess in logging and error reporting:
 # we should use
 # - newErrorMessage() to set __(translated) message to show to user
@@ -468,7 +470,7 @@ sub getStagingRepoPath($$$$)
     return SMT::Utils::cleanPath($basepath, 'repo', $prefix, $repopath);
 }
 
-=item getProductionRepoPath($repoid [, $basepath])
+=item getProductionRepoPath($repoid [, $basepath, $staginggroup])
 
 Returns path to production repository. This path is where
 the repository from which clients will get updates is meant to reside.
@@ -486,12 +488,12 @@ TODO: move to SMT::Common::Repos
 
 =cut
 
-sub getProductionRepoPath($$$)
+sub getProductionRepoPath($$$$)
 {
-    getStagingRepoPath(shift, shift, shift, '');
+    getStagingRepoPath(shift, shift, shift, _getGroupPath(shift, 'production'));
 }
 
-=item getFullRepoPath($repoid [, $basepath])
+=item getFullRepoPath($repoid [, $basepath, $staginggroup])
 
 Returns path to full (unfiltered) repository. This is the path where
 the repository is mirrored, without any filtering. This repository must not be
@@ -511,12 +513,12 @@ TODO: move to SMT::Common::Repos
 
 =cut
 
-sub getFullRepoPath($$$)
+sub getFullRepoPath($$$$)
 {
-    getStagingRepoPath(shift, shift, shift, 'full');
+    getStagingRepoPath(shift, shift, shift, _getGroupPath(shift, 'full'));
 }
 
-=item getTestingRepoPath($repoid [, $basepath])
+=item getTestingRepoPath($repoid [, $basepath, $staginggroup])
 
 Returns path to testing repository. This is the path where
 the repository is mirrored, eventually with filters applied, for testing.
@@ -536,9 +538,9 @@ TODO: move to SMT::Common::Repos
 
 =cut
 
-sub getTestingRepoPath($$$)
+sub getTestingRepoPath($$$$)
 {
-    getStagingRepoPath(shift, shift, shift, 'testing');
+    getStagingRepoPath(shift, shift, shift, _getGroupPath(shift, 'testing'));
 }
 
 =item changeRepoStatus ($arg)
@@ -659,20 +661,20 @@ sub isSnapshotUpToDate ($)
     }
 
     # Define the paths to full and selected subrepositories
-    my $full_repopath = $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+    my $full_repopath = $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
     my $subrepo_path = undef;
 
     # Testing subrepository is always compared with the full (mirrored) repository
     if ($arg->{'type'} eq 'testing')
     {
-	$subrepo_path = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+	$subrepo_path = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
     }
     # Production subrepository is compared either with the testing or the full repository
     elsif ($arg->{'type'} eq 'production')
     {
 	# Checking whether the testing repository exists
 	# See BNC #510314
-	my $fullrepo_tmp = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+	my $fullrepo_tmp = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
 	my $fullrepo_tmp_status = SMT::Mirror::Utils::getStatus($fullrepo_tmp);
 
 	# Will be compared with the testing repository
@@ -681,7 +683,7 @@ sub isSnapshotUpToDate ($)
 	    $full_repopath = $fullrepo_tmp;
 	}
 
-	$subrepo_path = $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+	$subrepo_path = $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
     }
     else
     {
@@ -753,9 +755,9 @@ sub getRepositoryDetails ($)
 	return undef;
     }
 
-    my $full_rp		= $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
-    my $testing_rp	= $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
-    my $production_rp	= $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'});
+    my $full_rp		= $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
+    my $testing_rp	= $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
+    my $production_rp	= $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
 
     my $ret = {
 	'full'		=> SMT::Mirror::Utils::getStatus($full_rp),
@@ -880,6 +882,40 @@ sub getRepositoryAsXML
     return XMLout($xdata,
         rootname => 'repo',
         xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
+}
+
+sub _getGroupPath($$)
+{
+    my $group = shift || "default";
+    my $type = shift;
+    my $cfg = undef;
+    my $testingdir = "testing";
+    my $productiondir = "";
+    eval
+    {
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        print STDERR sprintf(__("Cannot read the SMT configuration file: %s"), $@);
+    }
+
+    # get staging groups
+    if ( $group && $group ne "" && $group ne "default" &&
+         $cfg->val("STAGING", $group))
+    {
+        my $v = $cfg->val("STAGING", $group);
+        ($testingdir, $productiondir) = split(/\s*,\s*/, $v, 2);
+    }
+    else
+    {
+        $testingdir = "testing";
+        $productiondir = "";
+    }
+
+    return $testingdir if($type eq "testing");
+    return $productiondir if($type eq "production");
+    return "full" if($type eq "full");
 }
 
 =back
