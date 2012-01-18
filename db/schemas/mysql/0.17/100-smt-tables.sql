@@ -86,13 +86,13 @@ create table Catalogs(ID          INT AUTO_INCREMENT UNIQUE KEY,
                       UNIQUE(NAME, TARGET)
                      );
 
-create table StagingGroups(ID             INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                           NAME           VARCHAR(255) NOT NULL UNIQUE,
-                           TESTINGPATH    VARCHAR(255) NOT NULL UNIQUE,
-                           PRODUCTIONPATH VARCHAR(255) NOT NULL UNIQUE
+create table StagingGroups(ID            INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                           NAME          VARCHAR(255) NOT NULL UNIQUE,
+                           TESTINGDIR    VARCHAR(255) NOT NULL UNIQUE,
+                           PRODUCTIONDIR VARCHAR(255) NOT NULL UNIQUE
                           );
 
-insert into StagingGroups(ID, NAME, TESTINGPATH, PRODUCTIONPATH)
+insert into StagingGroups(ID, NAME, TESTINGDIR, PRODUCTIONDIR)
 values(1, "default", "testing", "");
 
 -- Package filters

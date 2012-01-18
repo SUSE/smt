@@ -1,2 +1,2 @@
-insert into StagingGroups(ID, NAME, TESTINGPATH, PRODUCTIONPATH)
+insert into StagingGroups(ID, NAME, TESTINGDIR, PRODUCTIONDIR)
 values(1, "default", "testing", "");
