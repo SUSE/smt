@@ -68,6 +68,17 @@ sub jobhandler
       push @{$installables{product}}, $_n->string_value() if (defined $_n);
   }
 
+  # reboot
+  my $reboot;
+  my $rebootSet;
+  eval { $rebootSet = $xpQuery->find('/arguments[1]/options[1]/reboot[1]') };
+  foreach my $_n ($rebootSet->get_nodelist()) {
+      $reboot = $_n->string_value() if (defined $_n);
+      last if defined $reboot;
+  }
+  $reboot = "never" unless defined $reboot;
+
+
   #==  create zypper base command ==
   my $command = "/usr/bin/zypper";
   my @zypperCmd;
@@ -83,6 +94,8 @@ sub jobhandler
   my @stdout=();
   my @stderr=();
   my @messages=();
+  my $statuscode = 1;
+  my $doReboot = ($reboot eq 'enforce') ? 1:0;
   foreach my $IN ( qw(package patch pattern product) )
   {
     next unless defined $installables{$IN};
@@ -91,28 +104,61 @@ sub jobhandler
 
     my @installCmd = ( @zypperCmd, '-t', $IN, @{$installables{$IN}} );
     (my $_retval, my $_stdout, my $_stderr) = SMT::Agent::Utils::executeCommand( $command, undef, @installCmd );
-    $retval |= $_retval;
     push @stdout, $_stdout;
     push @stderr, $_stderr;
-    unless ( $_retval == 0 )
+
+    if ($_retval == 102)
     {
+      push @messages, "$IN installation requires reboot ($_retval)";
+      if ($reboot eq 'ifneeded')
+      {
+        $doReboot = 1;
+        # retval remains untouched
+      }
+      else
+      {
+        $statuscode = ($statuscode == 6 || $statuscode == 1) ? 6:2;
+        $retval += $_retval;
+      }
+    }
+    elsif ($_retval == 103)
+    {
+      push @messages, "$IN installation succeeded (packagemanager restart needed) ($_retval)";
+      # retval remains untouched
+    }
+    elsif ($_retval != 0)
+    {
+      $retval += $_retval;
+      $doReboot = 0;
+      $statuscode = 2;
       push @messages, "$IN installation failed ($_retval)";
+    }
+    else
+    {
+      push @messages, "$IN installation succeeded";
     }
   }
 
   # die if the job did not contain anything to be installed
   SMT::Agent::Utils::error( "too few arguments: need one or more of [packages, patches, patterns, products]", $jobid ) unless $argumentsok;
 
-  my $mesg = '';
-  $mesg = "softwarepush successfully finished" if $retval == 0 ;
-  $mesg = "softwarepush successfully finished and reboot needed" if $retval == 102;
+  if ($doReboot && $statuscode == 1)
+  {
+      push @messages, "reboot executed";
+      `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;
+  }
+
+  my $msg = join(", ", @messages);
+  SMT::Agent::Utils::logger("job results: $msg");
+  SMT::Agent::Utils::logger("job statuscode: $statuscode, exitcode: $retval");
 
   return (
     stdout   => (scalar(@stdout) && $verbose) ? join("\n", @stdout) : '',
     stderr   => (scalar(@stderr) && $verbose) ? join("\n", @stderr) : '',
     exitcode => $retval,
-    success  => ($retval == 0) ? "true" : "false",
-    message  => $mesg || ("softwarepush failed: " . join(", ", @messages))
+    success  => $statuscode,
+    message  => "result: ".$msg,
+    breakloop => ($doReboot && $statuscode == 1) ? 'true':'false'
   );
 
 }

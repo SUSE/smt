@@ -1,4 +1,19 @@
 -------------------------------------------------------------------
+Wed Jan 18 18:02:01 CET 2012 - jdsn@suse.de
+
+- make the new feature available via smt.conf file (bnc#730469)
+- version 1.1.25
+
+-------------------------------------------------------------------
+Tue Dec 20 21:25:48 CET 2011 - jdsn@suse.de
+
+- add reboot feature to softwarepush and update job; let user
+  decide if a failed job blocks the SMT JobQueue (bnc#730469)
+- fix naming of job status to make it more obvious what the status
+  means; always show parent job ID (bnc#729542)
+- version 1.1.24
+
+-------------------------------------------------------------------
 Thu Oct 20 10:00:29 CEST 2011 - mc@suse.de
 
 - version 1.1.23

@@ -1124,7 +1124,7 @@ category (security, optional, etc.). The C<allow> and C<forbid> command together
 with I<--patch>, I<--category>, I<--all>, and I<--individually> options allows
 to do this.
 
-After making chnages with C<allow> or C<forbid>, make sure to use the
+After making changes with C<allow> or C<forbid>, make sure to use the
 C<listupdates> command to re-check which patches are scheduled to appear in or
 be removed from the testing snapshot.
 

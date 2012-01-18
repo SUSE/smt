@@ -43,6 +43,16 @@ sub jobhandler
   }
   $patchwithupdate = (defined $patchwithupdate && ($patchwithupdate =~ /^1$/ || $patchwithupdate =~ /^true$/)) ? 1 : 0;
 
+  # reboot
+  my $reboot;
+  my $rebootSet;
+  eval { $rebootSet = $xpQuery->find('/arguments[1]/options[1]/reboot[1]') };
+  foreach my $_n ($rebootSet->get_nodelist()) {
+      $reboot = $_n->string_value() if (defined $_n);
+      last if defined $reboot;
+  }
+  $reboot = "never" unless defined $reboot;
+
   #== ZYPPER
   my $command = "/usr/bin/zypper";
   my $retval;
@@ -83,17 +93,42 @@ sub jobhandler
   $stderr .= $stderrup if $stderrup;
 
   my $mesg = "update failed";
-  $mesg = "update successfully finished" if $retval == 0 ;
-  $mesg = "update successfully finished and reboot needed" if $retval == 102;
+  $mesg = "update successfully finished" if $retval == 0;
+
+  my $exitcode = $retval;
+  my $statuscode = ($retval == 0) ? 1:2;
+  my $doReboot = ($reboot eq 'enforce') ? 1:0;
+  if ($exitcode == 102)
+  {
+      if ($reboot eq 'never')
+      {
+          $mesg = "update successfully finished and reboot needed";
+          $statuscode = 6;
+      }
+      elsif ($reboot eq 'ifneeded' || $reboot eq 'enforce')
+      {
+          $mesg = "update successfully finished and reboot executed";
+          $doReboot = 1;
+          $statuscode = 1;
+      }
+  }
+
+  SMT::Agent::Utils::logger("job results: $mesg");
+  SMT::Agent::Utils::logger("job statuscode: $retval, exitcode: $exitcode");
+
+  if ($doReboot && $statuscode == 1)
+  {
+      `/sbin/shutdown -r +1 > /dev/null 2>&1 &`;
+  }
 
   return (
     stdout => ((defined $stdout) && $verbose) ? $stdout : '',
     stderr => ((defined $stderr) && $verbose) ? $stderr : '',
-    exitcode => $retval,
-    success => ($retval == 0 ) ? "true" : "false",
-    message => $mesg
+    exitcode => $exitcode,
+    success => $statuscode,
+    message => $mesg,
+    breakloop => ($doReboot && $statuscode == 1) ? 'true':'false'
   );
-
 }
 
 SMT::Agent::Utils::logger ("successfully loaded handler for jobtype \"update\"");

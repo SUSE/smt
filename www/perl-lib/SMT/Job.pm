@@ -194,7 +194,7 @@ sub save
        $self->{parent_id}  =~ /^\d+$/ &&  $self->{id} =~ /^\d+$/ &&
        $self->{parent_id}  == $self->{id} );
 
-  if ( defined $self->parent_id() )
+  if ( defined $self->parent_id() && $self->parent_id() !~ /^NULL$/ )
   {
       $self->checkparentisvalid( $self->parent_id(), $self->guid_id() ) || return undef;
   }
@@ -239,9 +239,23 @@ sub save
           # prevent that name is set to NULL, which is not allowed
           $self->{name} ||= '';
       }
-
       # no else section - all values need to be set
+
+
       push (@sqlkeys, uc($att));
+      # setting several values to NULL must be possible, thus we must not dbh->quote them if they match /^NULL$/
+      if ( lc($att) eq 'parent_id' || lc($att) eq 'targeted' || lc($att) eq 'expires' ||
+           lc($att) eq 'retrieved' || lc($att) eq 'finished' || lc($att) eq 'timelag'    )
+      {
+          if ( defined $self->{lc($att)} && $self->{lc($att)} =~ /^NULL$/)
+          {
+              push (@sqlvalues, 'NULL');
+              push (@updatesql, uc($att).' = NULL ');
+              next;
+          }
+          # else just use the quoting below
+      }
+
       push (@sqlvalues, $self->{dbh}->quote( $self->{lc($att)} ));
       push (@updatesql, uc($att).' = '.$self->{dbh}->quote( $self->{lc($att)} ));
   }
@@ -589,14 +603,6 @@ sub resolveJobType
   return SMT::Job::Constants::JOB_TYPE->{ $type };
 }
 
-sub resolveJobStatus
-{
-  my $self   = shift || return undef;
-  my $status = shift || return undef;
-
-  return SMT::Job::Constants::JOB_STATUS->{ $status };
-}
-
 #
 # jobTypeToName
 #
@@ -624,6 +630,36 @@ sub jobTypeToID
 
   return SMT::Job::Constants::JOB_TYPE->{$type} if $type !~ /^\d+$/;
   return ( exists SMT::Job::Constants::JOB_TYPE->{$type} ) ? $type : undef;
+}
+
+#
+# jobStatusToName
+#
+#   return string representation of a job status
+#   input can be ID or string
+#
+sub jobStatusToName
+{
+  my $self   = shift || return undef;
+  my $status = shift || return undef;
+
+  return SMT::Job::Constants::JOB_STATUS->{$status} if $status =~ /^\d+$/;
+  return ( exists SMT::Job::Constants::JOB_STATUS->{$status} ) ? $status : undef;
+}
+
+#
+# jobStatusToID
+#
+#   return ID of a job status
+#   input can be ID or string
+#
+sub jobStatusToID
+{
+  my $self   = shift || return undef;
+  my $status = shift || return undef;
+
+  return SMT::Job::Constants::JOB_STATUS->{$status} if $status !~ /^\d+$/;
+  return ( exists SMT::Job::Constants::JOB_STATUS->{$status} ) ? $status : undef;
 }
 
 

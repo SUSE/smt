@@ -9,17 +9,27 @@ use warnings;
 
 use constant
 {
+  # the status values 0, 4, 5 and 6 are interpreted as successful
+  # so chained jobs will be delivered, the only difference is that attention should be drawn to the message
   JOB_STATUS =>
   {
-      0  =>  'not yet worked on',
+      0  =>  'queued',
       1  =>  'successful',
       2  =>  'failed',
       3  =>  'denied by client',
+      4  =>  'warning',
+      5  =>  'action needed',
+      6  =>  'reboot needed',
+      7  =>  'disabled',
 
-      'not yet worked on' => 0,
-      'successful'    => 1,
+      'queued'            => 0,
+      'successful'        => 1,
       'failed'            => 2,
       'denied by client'  => 3,
+      'warning'           => 4,
+      'action needed'     => 5,
+      'reboot needed'     => 6,
+      'disabled'          => 7
   },
 
   # Job type ID range

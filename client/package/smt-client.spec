@@ -1,7 +1,7 @@
 #
 # spec file for package smt-client
 #
-# Copyright (c) 2008,2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2011 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -19,7 +19,7 @@
 
 
 Name:           smt-client
-Version:        0.0.15
+Version:        0.0.16
 Release:        0.1
 Requires:       perl = %{perl_version}
 Requires:       perl-XML-XPath
@@ -36,21 +36,27 @@ Requires:       suseRegister
 PreReq:         %fillup_prereq 
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
-License:        GPLv2
-Summary:        Client for Subscription Management Tool
+License:        GPL v2 or later
+Summary:        Subscription Management Tool
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.smt-client
 Source2:        smt-client-rpmlintrc
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
-This package provides a client for Subscription Management Tool
+This package provide everything you need to get a local NU and
+registration proxy.
+
+
 
 Authors:
 --------
-jdsn@suse.de
-tgoettlicher@suse.de
-
+    Authors:
+    --------
+        dmacvicar@suse.de
+        mc@suse.de
+        jdsn@suse.de
+        locilka@suse.cz
 
 %prep
 %setup -n %{name}-%{version}
@@ -80,7 +86,6 @@ touch $RPM_BUILD_ROOT/%{_sysconfdir}/cron.d/novell.com-smt-client
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
 
-
 %post
 if [ ! -s /etc/cron.d/novell.com-smt-client ]; then
     minute=`expr $RANDOM % 60`
@@ -106,7 +111,5 @@ exit 0
 %dir /var/run/smtclient
 %dir %{_docdir}/smt-client
 %{_docdir}/smt-client/*
-
-
 
 %changelog

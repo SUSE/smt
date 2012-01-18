@@ -48,7 +48,7 @@ if (! defined $dbh) {
 
 
 my ($verbose, $help, $quiet) = undef;
-my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $UPpatchwithupdate, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
+my ($create, $edit, $delete, $list, $construct, @guid, $jobid, $deleteall, $type, $name, $description, $targeted, $expires, $timelag, $finished, $upstream, $cacheresult, $verbosejob, $persistent, $parent, $parentreset, $enable, $disable, @SWpackagelist, @SWpatchlist, @SWpatternlist, @SWproductlist, $SWforce, $SWagree, $SWreboot, $UPpatchwithupdate, $EXECcommand, $WAITtime, $WAITstatus, $CDAction, $jobtemplate, @targetguid, @targetjob, $autoPatchstatus, $inventoryPackages, $inventoryPatches, @inventoryHWcommand) = undef;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_autoabbrev', 'no_ignore_case');
@@ -80,6 +80,9 @@ if (! &Getopt::Long::GetOptions(
          'verbosejob|V!' => \$verbosejob,
          'persistent!' => \$persistent,
          'parent=i' => \$parent,
+         'parentreset' => \$parentreset,
+         'enable' => \$enable,
+         'disable' => \$disable,
          # job specific arguments
          'package|P=s@' => \@SWpackagelist,
          'patch=s@' => \@SWpatchlist,
@@ -87,6 +90,7 @@ if (! &Getopt::Long::GetOptions(
          'product=s@' => \@SWproductlist,
          'forceinstall|F!' => \$SWforce,
          'agreelicense!' => \$SWagree,
+         'reboot=s' => \$SWreboot,
          'patchwithupdate' => \$UPpatchwithupdate,
          'exec|X=s' => \$EXECcommand,
          'waittime=i' => \$WAITtime,
@@ -139,6 +143,9 @@ if ( defined $help and ( $help == 1 ) )
   print "   --name        (-n) <name> : " . __("job name")."\n";
   print "   --description      <desc> : " . __("job description")."\n";
   print "   --parent           <id>   : " . __("parent job, describes a dependency")."\n";
+  print "   --parentreset             : " . __("reset the parent id of a job")."\n";
+  print "   --enable                  : " . __("(re)enable a job that was disabled or returned without success")."\n";
+  print "   --disable                 : " . __("disable a job")."\n";
   print "   --verbosejob  (-V)        : " . __("verbosity of job")."\n";
   print "   --persistent              : " . __("persistency of job")."\n";
   print "   --finished                : " . __("finds finished jobs")."\n";
@@ -161,10 +168,12 @@ if ( defined $help and ( $help == 1 ) )
   print "   --forceinstall (-F)       : " . __("enforce the installation")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
   print "   --autopatchstatus         : " . __("add a following patchstatus job automatically (enabled by default)")."\n";
+  print "   --reboot         <policy> : " . __("reboot policy: 'never'|'ifneeded'|'enforce'")."\n";
   print '  '.__("for update jobs")."\n";
   print "   --patchwithupdate         : " . __("patches the system and updates all packages")."\n";
   print "                               " . __("note: this will install new versions of packages if available")."\n";
   print "   --agreelicense            : " . __("auto-agree to licenses")."\n";
+  print "   --reboot         <policy> : " . __("reboot policy: 'never'|'ifneeded'|'enforce'")."\n";
   print '  '.__("for execute jobs")."\n";
   print "   --exec         (-X) <cmd> : " . __("the command to execute")."\n";
   print '  '.__("for wait jobs")."\n";
@@ -215,6 +224,17 @@ if ( defined $help and ( $help == 1 ) )
   print "  52 : report        : " . __("Retrieves the results of a job that was created via 'createjob'.") . "\n";
   print "  53 : inventory     : " . __("Collect system information.") . "\n";
   print "\n";
+  print __("job status IDs")."\n";
+
+  # dynamically list all available job status IDs
+  my $X=SMT::Job::Constants::JOB_STATUS;
+  foreach my $ID (sort keys %$X)
+  {
+      next unless $ID =~ /^\d+$/;
+      my $count = length("$ID");
+      print ((" " x (3 - $count))." $ID : ".SMT::Job::Constants::JOB_STATUS->{$ID}."\n");
+  }
+  print "\n";
   exit 0;
 }
 
@@ -242,11 +262,22 @@ else
 }
 $query{ID} = $jobid if (defined $jobid);
 
+if (defined $SWreboot)
+{
+    if ( $SWreboot ne 'never'    &&
+         $SWreboot ne 'ifneeded' &&
+         $SWreboot ne 'enforce'    )
+    {
+        print _("Invalid reboot policy. Possible values:")." (never, ifneeded, enforce)"."\n";
+        exit 4;
+    }
+}
+
 my $queryJob = SMT::Job->new({ 'dbh' => $dbh });
 my $typeID = $queryJob->jobTypeToID($type);
 if ( defined $type && not defined $typeID )
 {
-    print "Job type unkown.\n";
+    print _("Job type unkown.")."\n";
     exit 4;
 }
 $query{TYPE} = $typeID if (defined $typeID);
@@ -256,6 +287,8 @@ $query{DESCRIPTION} = $description if (defined $description);
 $query{TARGETED} = $targeted if (defined $targeted);
 $query{EXPIRES} = $expires if (defined $expires);
 $query{TIMELAG} = $timelag if (defined $timelag);
+$query{STATUS} = 0 if (defined $enable);
+$query{STATUS} = 7 if (defined $disable);
 
 
 if ( exists $query{TARGETED} )
@@ -307,6 +340,7 @@ if (defined $persistent)
     $query{PERSISTENT} = $persistent ? 1:0;
 }
 $query{PARENT_ID} = $parent if (defined $parent);
+$query{PARENT_ID} = 'NULL' if (defined $parentreset);
 
 my %para = ();
 $para{EXECCOMMAND} = $EXECcommand if (defined $EXECcommand);
@@ -398,6 +432,7 @@ if ( defined $create || defined $construct )
         my %options;
         $options{force} = 1 if defined $SWforce;
         $options{agreelicenses} = 1 if defined $SWagree;
+        $options{reboot} = $SWreboot if defined $SWreboot;
         $w->startTag('arguments', %options);
 
         # new arguments/options format:
@@ -473,6 +508,7 @@ if ( defined $create || defined $construct )
         my %options;
         $options{patchwithupdate} = 1 if $UPpatchwithupdate;
         $options{agreelicenses} = ($SWagree ? 1:0) if defined $SWagree;
+        $options{reboot} = $SWreboot if defined $SWreboot;
         $w->startTag('arguments', %options);
 
         # new arguments/options format:
@@ -739,7 +775,7 @@ elsif ( defined $edit )
     $Job->readJobFromDatabase($jobid, $GUID);
 
     # overwrite with new values
-    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT);
+    my @EditProps = qw(NAME DESCRIPTION VERBOSE PERSISTENT PARENT_ID TARGETED EXPIRES TIMELAG UPSTREAM CACHERESULT STATUS);
     foreach my $eprop (@EditProps)
     {
         $Job->{lc($eprop)} = $query{uc($eprop)} if ( exists $query{uc($eprop)}  && defined $query{uc($eprop)} );
@@ -833,13 +869,13 @@ else
     my $t = new Text::ASCIITable;
 
     # basic job list info - without a --verbose switch
-    my @DPROP = qw(ID GUID TYPE NAME STATUS UPSTREAM);
+    my @DPROP = qw(ID PARENT_ID GUID TYPE NAME STATUS UPSTREAM);
     $verbose = 0 if (not $verbose);
 
     # set the level of verbosity
     if ($verbose == 1)
     {
-        @DPROP = qw(ID GUID TYPE NAME PERSISTENT STATUS UPSTREAM FINISHED);
+        @DPROP = qw(ID PARENT_ID GUID TYPE NAME PERSISTENT STATUS UPSTREAM FINISHED);
     }
     elsif ($verbose == 2)
     {
@@ -1041,6 +1077,21 @@ Specifies a job description
 Specifies the job id of the parent job. This is used in order to describe a dependency.
 A job won't be processed until its parent has successfully finished.
 
+=item --parentreset
+
+Reset the parent id of a existing job. This removes the dependency on another job that was created with the C<--parent> parameter.
+Note: Useful only in editing mode. A job chain can be restarted with this, if one job in the chain failed.
+
+=item --enable
+
+Enable or reenable a job that is currently not queued. Jobs that are disabled or have already failed can be (re)enabled to add them to the queue. A job chain can be restarted with this, if one job in the chain failed.
+Note: Only in editing mode. The timing constraints are not touched when enabling a job. A failed and reenabled job might not get delivered due to expiry settings.
+
+=item --disable
+
+Disable a job. This prevents the job from being delivered to the client. A job chain would also be stopped if another job is relying on the disabled one.
+Note: Only in editing mode.
+
 =item -V, --verbosejob
 
 Specifies whether a job is verbose. Verbose jobs return stdout and stderr.
@@ -1163,6 +1214,11 @@ Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:
 
 Opposite of C<--autopatchstatus>
 
+=item --reboot <policy>
+
+Set the reboot policy for this job. The policy may be one of C<never, ifneeded, enforce>. If a reboot is triggered via B<ifneeded> or B<enforce> the client will interrupt the job queue, no following jobs will be executed. The client will perform the reboot as part of the job. After booting cron will trigger the next SMT job after the regular interval. Thus a job chain will take longer to finish if one of its jobs performs a reboot.
+Note: The reboot policy B<ifneeded> currently is supported for the job type B<update> only.
+
 =back
 
 =head3 createjob
@@ -1214,6 +1270,12 @@ Otherwise there might be a gap of upto 26 hours until it gets refreshed. B<Note:
 =item --no-autopatchstatus
 
 Opposite of C<--autopatchstatus>
+
+=item --reboot <policy>
+
+Set the reboot policy for this job. The policy may be one of C<never, ifneeded, enforce>. If a reboot is triggered via B<ifneeded> or B<enforce> the client will interrupt the job queue, no following jobs will be executed. The client will perform the reboot as part of the job. After booting cron will trigger the next SMT job after the regular interval. Thus a job chain will take longer to finish if one of its jobs performs a reboot
+.
+Note: The reboot policy B<ifneeded> currently is supported for the job type B<update> only.
 
 =back
 
