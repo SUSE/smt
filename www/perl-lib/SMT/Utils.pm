@@ -1184,6 +1184,25 @@ sub getStagingGroupPaths
     }
 }
 
+sub getStagingGroupID
+{
+    my $dbh = shift || db_connect();
+    my $group = shift;
+
+    $group = "default" if( ! $group || $group eq "");
+
+    my $statement = sprintf("SELECT ID FROM StagingGroups WHERE name = %s", $dbh->quote($group));
+    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
+    if (! @{$ref}[0])
+    {
+        return 1;
+    }
+    else
+    {
+        return @{$ref}[0]->{ID};
+    }
+}
+
 =back
 
 =head1 AUTHOR
