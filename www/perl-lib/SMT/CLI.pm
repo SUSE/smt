@@ -1120,7 +1120,7 @@ sub setMirrorableCatalogs
         my $useragent = SMT::Utils::createUserAgent(
                             log => $opt{log}, vblevel => $opt{vblevel});
         $indexfile = $destdir . '/repo/repoindex.xml';
-        SMT::Utils::getFile($useragent, $nuri . '/repo/repoindex.xml', $indexfile);
+        SMT::Utils::getFile($useragent, $nuri . '/repo/repoindex.xml', $indexfile, %opt);
     }
 
     if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})

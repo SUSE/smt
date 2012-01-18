@@ -883,7 +883,7 @@ Returns true on success, false if something goes wrong.
 
 sub getFile
 {
-    my ($userAgent, $srcUrl, $target) = @_;
+    my ($userAgent, $srcUrl, $target, %opt) = @_;
 
     # make sure the target dir exists
     &File::Path::mkpath(dirname($target));
@@ -1163,6 +1163,25 @@ sub runHook($)
   my $hook=$cfg->val("LOCAL", $hookname);
   return unless $hook;
   system($hook);
+}
+
+sub getStagingGroupPaths
+{
+    my $dbh = shift || db_connect();
+    my $group = shift;
+
+    $group = "default" if( ! $group || $group eq "");
+
+    my $statement = sprintf("SELECT TESTINGDIR, PRODUCTIONDIR FROM StagingGroups WHERE name = %s", $dbh->quote($group));
+    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
+    if (! @{$ref}[0])
+    {
+        return (undef, undef);
+    }
+    else
+    {
+        return (@{$ref}[0]->{TESTINGDIR}, @{$ref}[0]->{PRODUCTIONDIR});
+    }
 }
 
 =back

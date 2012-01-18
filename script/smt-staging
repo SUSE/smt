@@ -204,16 +204,15 @@ if(!$dbh)
 }
 
 # get staging groups
-if ( $group && $group ne "" && $group ne "default" && 
-     $cfg->val("STAGING", $group))
+($testingdir, $productiondir) = SMT::Utils::getStagingGroupPaths($dbh, $group);
+if(! $testingdir)
 {
-    my $v = $cfg->val("STAGING", $group);
-    ($testingdir, $productiondir) = split(/\s*,\s*/, $v, 2);
-}
-else
-{
-    $testingdir = "testing";
-    $productiondir = "";
+    if(!SMT::Utils::unLock("smt-staging"))
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+    }
+    SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Unknown staging group $group."));
+    exit 1;
 }
 
 # get the repository from DB (all commands need it)

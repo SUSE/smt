@@ -888,26 +888,12 @@ sub _getGroupPath($$)
 {
     my $group = shift || "default";
     my $type = shift;
-    my $cfg = undef;
+    my $dbh = SMT::Utils::db_connect();
     my $testingdir = "testing";
     my $productiondir = "";
-    eval
-    {
-        $cfg = SMT::Utils::getSMTConfig();
-    };
-    if($@ || !defined $cfg)
-    {
-        print STDERR sprintf(__("Cannot read the SMT configuration file: %s"), $@);
-    }
 
-    # get staging groups
-    if ( $group && $group ne "" && $group ne "default" &&
-         $cfg->val("STAGING", $group))
-    {
-        my $v = $cfg->val("STAGING", $group);
-        ($testingdir, $productiondir) = split(/\s*,\s*/, $v, 2);
-    }
-    else
+    ($testingdir, $productiondir) = SMT::Utils::getStagingGroupPaths($dbh, $group);
+    if(! $testingdir)
     {
         $testingdir = "testing";
         $productiondir = "";
