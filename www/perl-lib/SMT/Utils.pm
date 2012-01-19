@@ -1203,6 +1203,24 @@ sub getStagingGroupID
     }
 }
 
+sub getStagingGroupsForCatalogID
+{
+    my $dbh = shift || db_connect();
+    my $cid = shift;
+
+    my $statement = sprintf("SELECT distinct sg.name FROM StagingGroups sg, Filters f
+                             WHERE f.catalog_id = %s
+                             AND f.staginggroup_id = sg.id",
+                            $dbh->quote($cid));
+    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
+    my $res = [];
+    foreach my $name (@{$ref})
+    {
+        push @{$res}, $name->{name};
+    }
+    return $res;
+}
+
 =back
 
 =head1 AUTHOR
