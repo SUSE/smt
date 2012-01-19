@@ -16,10 +16,10 @@ SMT::Filter - reads/stores patch filters for repository and tells whether
 
   # to get a filter object
   my $filter = SMT::Filter->new();
-  my $success = SMT::Filte->load($dbh, $repoid);
+  my $success = $filter->load($dbh, $repoid, $group);
 
   # to store into db
-  my $success = $filter->save($dbh, $repoid);
+  my $success = $filter->save($dbh, $repoid, $group);
 
   # to edit existing filter
   $filter->add($filtertype, $value);
