@@ -16,7 +16,7 @@ url=
 nccEmail=
 MirrorTo=/srv/www/htdocs
 MirrorAll=false
-MirrorSRC=true
+MirrorSRC=false
 forwardRegistration=true
 rndRegister=0
 # The hook script that should be called before the smt-mirror script removes its lock
