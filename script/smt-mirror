@@ -442,14 +442,17 @@ foreach my $entry (@{$array})
                 if ($rh->filteringAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
                 {
                     my $newpatches = $zyppMirror->newpatches();
-                    my $filter = SMT::Filter->new();
-                    $filter->load($dbh, $entry->{CATALOGID});
-                    for (keys %$newpatches)
+                    foreach my $group (@{SMT::Utils::getStagingGroupsForCatalogID($dbh, $entry->{CATALOGID})})
                     {
-                        $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
-                            if (!$filter->matches($newpatches->{$_}));
+                        my $filter = SMT::Filter->new();
+                        $filter->load($dbh, $entry->{CATALOGID}, $group);
+                        for (keys %$newpatches)
+                        {
+                            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
+                                if (!$filter->matches($newpatches->{$_}));
+                        }
+                        $filter->save($dbh, $entry->{CATALOGID}, $group);
                     }
-                    $filter->save($dbh, $entry->{CATALOGID});
                 }
             }
         }
