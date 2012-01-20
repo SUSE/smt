@@ -260,7 +260,7 @@ sub getAllRepositories ($$) {
     return $ret;
 }
 
-=item getAllRepositories
+=item getAllRepository
 
 Returns a hash of repository data for given repository ID. The hash keys
 correspond to Catalogs database table.
