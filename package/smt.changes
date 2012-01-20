@@ -3,6 +3,8 @@ Fri Jan 20 15:37:05 CET 2012 - mc@suse.de
 
 - implement staging groups (FATE#308764)
 - disable mirroring of source RPMs to off by default (FATE#313095)
+- add commands listgroups, creategroup and removegroup to
+  smt-staging
 
 -------------------------------------------------------------------
 Wed Jan 18 18:02:01 CET 2012 - jdsn@suse.de
