@@ -1203,6 +1203,29 @@ sub getStagingGroupID
     }
 }
 
+sub getStagingGroupNames
+{
+    my $dbh = shift || db_connect();
+
+    my $statement = sprintf("SELECT name FROM StagingGroups");
+    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
+    my $groups = [];
+    my $foundDefault = 0;
+    foreach my $name (@{$ref})
+    {
+        if($name->{name} eq "default")
+        {
+            $foundDefault = 1;
+        }
+        push @{$groups}, $name->{name};
+    }
+    if(!$foundDefault)
+    {
+        push @{$groups}, "default";
+    }
+    return $groups;
+}
+
 sub getStagingGroupsForCatalogID
 {
     my $dbh = shift || db_connect();
