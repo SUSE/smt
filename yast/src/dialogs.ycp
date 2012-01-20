@@ -1054,9 +1054,9 @@ URL should start with 'http://' or 'https://'."));
 	list <term> items = maplist (string catalogid, map <string, any> one_catalog, catalogs_states, {
 	    if (catalog_filter != nil) {
 		if (regexpmatch (one_catalog["NAME"]:"", "^" + catalog_filter + "-")) {
-		    // ...
+		    y2debug ("match");
 		} else if (one_catalog["NAME"]:"" == catalog_filter) {
-		    // ...
+                    y2debug ("match");
 		} else {
 		    return nil;
 		}
@@ -1190,6 +1190,12 @@ URL should start with 'http://' or 'https://'."));
     string selected_catalog = "";
 
     /**
+     * Currently selected staging group.
+     * Variable is filled up when redrawing a table.
+     */
+    string selected_staging_group = "default";
+
+    /**
      * Returns whether a patch is filtered by any current 'category' filter.
      *
      * @param string patch ID
@@ -1199,6 +1205,7 @@ URL should start with 'http://' or 'https://'."));
 	map this_patch = $[
 	    "type" : current_patches[patchid, "type"]:"",
 	    "repositoryid" : selected_catalog,
+            "group" : selected_staging_group,
 	];
 
 	return ((boolean) SCR::Read (.smt.staging.category_filter, this_patch) == true);
@@ -1264,7 +1271,8 @@ URL should start with 'http://' or 'https://'."));
 	if (selected_catalog == nil || selected_catalog == "") {
 	    additional_info = add (additional_info, _("There are no repositories with staging enabled"));
 	} else {
-	    map details = (map) SCR::Read(.smt.staging.repository.details, $["repositoryid":selected_catalog]);
+	    map details = (map) SCR::Read(.smt.staging.repository.details, $["repositoryid":selected_catalog,
+	                                                                     "group" : selected_staging_group]);
 
 	    additional_info = add (additional_info, sformat (_("Mirror timestamp: %1"),
 		((details["full"]:"" != nil && size (details["full"]:"") > 0) ?
@@ -1307,8 +1315,18 @@ URL should start with 'http://' or 'https://'."));
 	// default
 	filtering_allowed_for_repository = false;
 
+        string selected_catalog_group = (string) UI::QueryWidget (`id (`catalogs), `Value);
 	// The currently selected catalog
-	selected_catalog = (string) UI::QueryWidget (`id (`catalogs), `Value);
+        list<string> l = splitstring(selected_catalog_group, "-");
+	selected_catalog = l[0]:"";
+
+        if(size(l) > 2)
+        {
+            l = remove(l, 0);
+            selected_staging_group = mergestring(l, "");
+        } else {
+            selected_staging_group = l[1]:"default";
+        }
 
 	// Better to evaluate boolen (for each patch)
 	boolean use_category_filter = (category_filter != nil && category_filter != "");
@@ -1328,7 +1346,8 @@ URL should start with 'http://' or 'https://'."));
 
 	    current_patches = $[];
 
-	    list <map> patches = (list <map>) SCR::Read (.smt.staging.patches, selected_catalog);
+	    list <map> patches = (list <map>) SCR::Read (.smt.staging.patches, $["repositoryid":selected_catalog,
+                                                                                 "group":selected_staging_group]);
 	    if (patches == nil) {
 		y2error ("Cannot get patches for catalog: %1", selected_catalog);
 	    } else {
@@ -1490,27 +1509,37 @@ URL should start with 'http://' or 'https://'."));
 
     void RedrawRepositoriesStagingMenu () {
 	map <string, map> catalogs = (map <string, map>) SCR::Read (.smt.staging.repositories);
+        list <string> staging_groups = (list <string>) SCR::Read (.smt.staging.groups);
 	boolean repository_uptodate = nil;
 
 	// Remember the selected value
 	string current_value = nil;
-	if (UI::WidgetExists (`catalogs))
-	    current_value = (string) UI::QueryWidget (`id (`catalogs), `Value);
+        if (UI::WidgetExists (`catalogs))
+            current_value = (string) UI::QueryWidget (`id (`catalogs), `Value);
 
-	list <term> items = maplist (string catalogid, map one_catalog, catalogs, {
-	    repository_uptodate = (boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":catalogid, "type":"testing"]) &&
-		(boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":catalogid, "type":"production"]);
+        list <term> items = [];
+        foreach (string catalogid, map one_catalog, catalogs, {
 
-	    return `item (`id (catalogid),
-		`icon(repository_uptodate ? smt_status_icons["repo-up-to-date"]:"":smt_status_icons["repo-not-up-to-date"]:""),
-		(one_catalog["TARGET"]:"" != "" ?
-		    // Catalog Name (Target)
-		    sformat (_("%1 (%2)"), one_catalog["NAME"]:"", one_catalog["TARGET"]:"")
-		    :
-		    one_catalog["NAME"]:""
-		),
-		(catalogid == current_value)
-	    );
+            foreach (string groupname, staging_groups, {
+                y2milestone("Checking: %1-%2", catalogid, groupname);
+                repository_uptodate = (boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":catalogid,
+                                                                                              "type":"testing",
+                                                                                              "group":groupname]) &&
+                    (boolean) SCR::Read(.smt.staging.repository.uptodate, $["repositoryid":catalogid,
+                                                                            "type":"production",
+                                                                            "group":groupname]);
+
+                items = add(items, `item (`id (catalogid + "-" + groupname),
+                           `icon(repository_uptodate ? smt_status_icons["repo-up-to-date"]:"":smt_status_icons["repo-not-up-to-date"]:""),
+                           (one_catalog["TARGET"]:"" != "" ?
+                           // Catalog Name (Target)
+                           sformat (_("%1 (%2)(%3)"), one_catalog["NAME"]:"", one_catalog["TARGET"]:"", groupname)
+                           :
+                           sformat (_("%1 (%2)"), one_catalog["NAME"]:"", groupname)
+                           ),
+                           ((catalogid + "-" + groupname) == current_value)
+                ));
+            });
 	});
 
 	items = sort (term x, term y, items, {
@@ -1566,6 +1595,7 @@ URL should start with 'http://' or 'https://'."));
 	    map query = $[
 		"type" : patch_type,
 		"repositoryid" : selected_catalog,
+                "group" : selected_staging_group,
 	    ];
 	    return `item (
 		`id (patch_type), type_translated,
@@ -1586,6 +1616,7 @@ URL should start with 'http://' or 'https://'."));
 		map command = $[
 		    "type" : patch_type,
 		    "repositoryid" : selected_catalog,
+                    "group" : selected_staging_group,
 		    "status" : contains (newly_active_filters, patch_type),
 		];
 
@@ -1599,7 +1630,8 @@ URL should start with 'http://' or 'https://'."));
     boolean SetPatchStatus (string patchid, boolean new_status) {
 	return SCR::Write (
 	    .smt.staging.patch.status,
-	    $["repositoryid" : selected_catalog, "patchid" : patchid, "status" : new_status]
+	    $["repositoryid" : selected_catalog, "group" : selected_staging_group,
+              "patchid" : patchid, "status" : new_status]
 	);
     }
 
@@ -1636,7 +1668,7 @@ and thus its status cannot be changed in this dialog."));
 
 	boolean current_status = (boolean) SCR::Read (
 	    .smt.staging.patch.status,
-	    $["repositoryid" : selected_catalog, "patchid" : sel_patchid]
+	    $["repositoryid" : selected_catalog, "group" : selected_staging_group, "patchid" : sel_patchid]
 	);
 
 	// update the cache
@@ -1786,7 +1818,9 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
     }
 
     boolean CreateSnapshot (string type) {
-	map <string, string> snapshot_settings = $["repositoryid":selected_catalog, "type":type];
+	map <string, string> snapshot_settings = $["repositoryid":selected_catalog,
+                                                   "group" : selected_staging_group,
+                                                   "type":type];
 	// Do not log any passwords!
 	y2milestone ("Creating snapshot: %1", snapshot_settings);
 
@@ -2080,7 +2114,7 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 	    );
 
 	    // BNC #519216: Purge cache right after mirroring
-	    SCR::Execute (.smt.repository.purge_cache, repository_id);
+	    SCR::Execute (.smt.repository.purge_cache, $["repositoryid":repository_id, "group":selected_staging_group]);
 
 	    UI::ChangeWidget (`id (`log), `LastLine, _("Finished\n"));
 	    UI::ReplaceWidget (`id (`button), `PushButton (`id (`ok), Label::OKButton()));
