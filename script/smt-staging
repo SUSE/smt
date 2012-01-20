@@ -13,6 +13,7 @@ use Text::ASCIITable;
 use Date::Format;
 
 use SMT::Utils;
+use SMT::CLI;
 use SMT::Repositories;
 use SMT::Filter;
 use SMT::Mirror::Utils;
@@ -94,6 +95,12 @@ sub printhelp
     print "\n";
     print $scriptname . " --help | -h\n";
     print "\n";
+    print $scriptname . " listgroups \n";
+    print "\n";
+    print $scriptname . " creategroup <name> <testing dirname> <production dirname> \n";
+    print "\n";
+    print $scriptname . " removegroup <name> \n";
+    print "\n";
     print __("Repository can be specified using its name and target or ID\n");
     print __("from 'smt-repos' output. See 'man smt-staging' for more deails.\n");
     print "\n";
@@ -108,6 +115,7 @@ sub printhelp
     print "--sort-by-category      " . __("Sort patch list by patch category.\n");
     #print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     #print "                        " . __("for them\n");
+    print "--group <name>     (-g) " . __("Specify a staging group name to work on (default is 'default'");
     print "--nohardlink            " . __("If a file already exists on local filesystem, do not\n");
     print "                        " . __("link it into the mirrored repository. Copy it instead.\n");
     print "--debug            (-d) " . __("Enable debug mode.\n");
@@ -130,7 +138,7 @@ if(!SMT::Utils::dropPrivileges())
 $SIG{INT}  = \&signal_handler;
 $SIG{TERM} = \&signal_handler;
 
-if (@ARGV < 2)
+if (@ARGV < 1 || ($ARGV[0] ne 'listgroups' && @ARGV < 2))
 {
     print STDERR __("Too few arguments. At least a command and repository ID are required.\n");
     print "\n";
@@ -146,7 +154,10 @@ if (not
     $ARGV[0] eq 'status' ||
     $ARGV[0] eq 'listupdates' ||
     $ARGV[0] eq 'forbid' ||
-    $ARGV[0] eq 'allow')
+    $ARGV[0] eq 'allow' ||
+    $ARGV[0] eq 'creategroup' ||
+    $ARGV[0] eq 'removegroup' ||
+    $ARGV[0] eq 'listgroups')
 {
     printf STDERR __("Unknown command '%s'\n"), $ARGV[0];
     print "\n";
@@ -157,12 +168,6 @@ else
 {
     $command = shift @ARGV;
 }
-
-# the second is the repository id or name (if there is the third argument)
-my $reponameid = shift @ARGV;
-
-# the third (optional) is always the repository target (from the smt-repos output)
-my $target = shift @ARGV;
 
 # get a lock
 
@@ -202,6 +207,54 @@ if(!$dbh)
     SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot connect to database."));
     exit 1;
 }
+
+if ($command eq 'creategroup')
+{
+    my $groupname = shift @ARGV;
+    my $testingdirname = shift @ARGV;
+    my $productiondirname = shift @ARGV;
+
+    my $ret = SMT::CLI::createGroup( $groupname, $testingdirname, $productiondirname,
+                                     dbh => $dbh, log => $log, vblevel => $vblevel );
+    if(!SMT::Utils::unLock("smt-staging"))
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+    }
+    if(!$ret)
+    {
+        exit 1;
+    }
+    exit 0;
+}
+elsif ($command eq 'removegroup')
+{
+    my $groupname = shift @ARGV;
+    my $ret = SMT::CLI::removeGroup( $groupname, dbh => $dbh, log => $log, vblevel => $vblevel );
+    if(!SMT::Utils::unLock("smt-staging"))
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+    }
+    if(!$ret)
+    {
+        exit 1;
+    }
+    exit 0;
+}
+elsif ($command eq 'listgroups')
+{
+    SMT::CLI::listGroups( dbh => $dbh, log => $log, vblevel => $vblevel );
+    if(!SMT::Utils::unLock("smt-staging"))
+    {
+        SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
+    }
+    exit 0;
+}
+
+# the second is the repository id or name (if there is the third argument)
+my $reponameid = shift @ARGV;
+
+# the third (optional) is always the repository target (from the smt-repos output)
+my $target = shift @ARGV;
 
 # get staging groups
 ($testingdir, $productiondir) = SMT::Utils::getStagingGroupPaths($dbh, $group);
@@ -953,6 +1006,12 @@ smt staging allow <repository> [general-options]
 smt staging createrepo <repository> [general-options]
     --testing|--production [--nohardlink]
 
+smt staging listgroups [general-options]
+
+smt staging creategroup <name> <testing dirname> <production dirname> [general-options]
+
+smt staging removegroup <name> [general-options]
+
 smt staging --help | -h
 
 =head1 DESCRIPTION
@@ -967,6 +1026,11 @@ specified patches, and, finally B<createrepo> to generate testing or production
 repository containing only allowed patches. The B<status> command gives
 information about testing and production snapshots up-to-date status and patch
 counts.
+
+The commands B<listgroups>, B<creategroup> and B<removegroup> can be used to
+list, create or remove staging groups. There is always one group available with
+the name I<default>. The default group has the path I<full>, I<testing> and I<''>.
+With creating a new group new pathes can be specified.
 
 =head1 TERMINOLOGY
 
@@ -1153,6 +1217,20 @@ the following in this case (if that is what you really want):
  $ smt staging forbid RepoID --category optional --individually
  $ smt staging allow RepoID --patch foo-3
 
+=item listgroups
+
+List all available staging groups. The values for B<Testing Directory Name> and
+B<Production Directory Name> are directoy names in I</srv/www/htdocs/repo/>.
+
+=item creategroup
+
+Create a new group. Required parameter are: B<group name>, B<Testing Directory Name>
+and B<Production Directory Name>.
+
+=item removegroup
+
+Remove a group. Required parameter is B<group name>.
+
 =back
 
 =head1 COMMAND-SPECIFIC OPTIONS
@@ -1206,6 +1284,11 @@ and written into <MirrorTo>/repo directory, where MirrorTo is the value taken
 from the smt.conf configuration file. If the testing repository does not exist,
 the production repository will be generated from the full unfiltered local
 mirror of the remote repository.
+
+=item --group
+
+Specify on which group the command should work on. The default for --group
+is B<default>.
 
 =item --nohardlink
 

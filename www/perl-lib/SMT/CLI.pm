@@ -2979,6 +2979,81 @@ sub _sha1sum
   return $digest;
 }
 
+sub listGroups
+{
+    my %opt = @_;
+    $opt{dbh} = SMT::Utils::db_connect() if(!$opt{dbh});
+    my $dbh = $opt{dbh};
+
+    my $res = $dbh->selectall_arrayref("SELECT ID, NAME, TESTINGDIR, PRODUCTIONDIR FROM StagingGroups",
+                                       { Slice => {} });
+
+    my $data = {
+        'cols' => [ "ID", __("Name"), __("Testing Directory Name"), __("Production Directory Name")],
+        'heading' => __("List of avilable Staging Groups"),
+        'vals' => []
+    };
+
+    foreach my $row (@{$res})
+    {
+        push @{$data->{'vals'}}, [$row->{ID}, $row->{NAME}, $row->{TESTINGDIR}, $row->{PRODUCTIONDIR}];
+    }
+    print renderReport($data, 'asciitable', undef);
+}
+
+sub createGroup
+{
+    my $groupname = shift;
+    my $testingdirname = shift;
+    my $productiondirname = shift;
+    my %opt = @_;
+    $opt{dbh} = SMT::Utils::db_connect() if(!$opt{dbh});
+    my $dbh = $opt{dbh};
+
+    if (!$groupname)
+    {
+        printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "Missing Group Name");
+        return 0;
+    }
+    if (!$testingdirname)
+    {
+        printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "A Testing Directoy Name is required.");
+        return 0;
+    }
+    if (!$productiondirname)
+    {
+        printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "A Production Directoy Name is required.");
+        return 0;
+    }
+    if ($testingdirname !~ /^[a-zA-Z0-9_-]+$/ || $productiondirname !~ /^[a-zA-Z0-9_-]+$/)
+    {
+        printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "Allowed characters in Directoy Names are [a-zA-Z0-9_-].");
+        return 0;
+    }
+
+    my $statement = sprintf("INSERT INTO StagingGroups (NAME, TESTINGDIR, PRODUCTIONDIR)
+                             VALUES(%s, %s, %s)",
+                             $dbh->quote($groupname),
+                             $dbh->quote($testingdirname),
+                             $dbh->quote($productiondirname));
+    my $res = $dbh->do($statement);
+
+    return ($res == 1);
+}
+
+sub removeGroup
+{
+    my $groupname = shift;
+    my %opt = @_;
+    $opt{dbh} = SMT::Utils::db_connect() if(!$opt{dbh});
+    my $dbh = $opt{dbh};
+
+    my $statement = sprintf("DELETE FROM StagingGroups WHERE NAME = %s",
+                             $dbh->quote($groupname));
+    my $res = $dbh->do($statement);
+
+    return ($res == 1);
+}
 
 1;
 
