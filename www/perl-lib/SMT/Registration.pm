@@ -104,6 +104,11 @@ sub register
     if(exists $hargs->{namespace} && defined $hargs->{namespace} && $hargs->{namespace} ne "")
     {
         $namespace = $hargs->{namespace};
+        if ( $namespace !~ /^[a-zA-z0-9_-]+$/ )
+        {
+            $namespace  = "";
+            $r->log->warn("Invalid Namespace in registration request. Reset to empty");
+        }
     }
 
     if( $namespace ne "" )
@@ -853,6 +858,7 @@ sub buildZmdConfig
     }
 
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
+    my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
     my $aliasChange = $cfg->val('NU', 'changeAlias');
     if(defined $aliasChange && $aliasChange eq "true")
     {
@@ -914,17 +920,25 @@ sub buildZmdConfig
                 next;
             }
 
-            my $catalogURL = "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH};
+            my $catalogPath = "repo/";
             my $catalogName = $catalogs->{$cat}->{NAME};
             if($namespace ne "" && uc($catalogs->{$cat}->{STAGING}) eq "Y")
             {
-                $catalogURL = "$LocalNUUrl/repo/$namespace/".$catalogs->{$cat}->{LOCALPATH};
-                $catalogName = $catalogs->{$cat}->{NAME};
+                $catalogPath = SMT::Utils::cleanPath( $catalogPath, $namespace );
                 if($aliasChange)
                 {
                     $catalogName .= ":$namespace";
                 }
             }
+            $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{LOCALPATH} );
+            if(! -d  $LocalBasePath$catalogPath )
+            {
+                # we print only a warning in the log, but return this repos.
+                # the user on the client should see immediately that he requested
+                # a repo which does not exist.
+                $r->log->warn("Returning not existing repositoriy: $LocalBasePath$catalogPath");
+            }
+            my $catalogURL = SMT::Utils::cleanPath( $LocalNUUrl, $catalogPath );
 
             $writer->startTag("param",
                               "name" => "catalog",
@@ -948,13 +962,22 @@ sub buildZmdConfig
             next;
         }
 
-        my $catalogURL = "$LocalNUUrl/repo/".$catalogs->{$cat}->{LOCALPATH};
+        my $catalogPath = SMT::Utils::cleanPath( "repo/" );
         my $catalogName = $catalogs->{$cat}->{NAME};
         if($namespace ne "" && uc($catalogs->{$cat}->{STAGING}) eq "Y")
         {
-            $catalogURL = "$LocalNUUrl/repo/$namespace/".$catalogs->{$cat}->{LOCALPATH};
+            $catalogPath = SMT::Utils::cleanPath( $catalogPath, $namespace );
             $catalogName = $catalogs->{$cat}->{NAME}.":$namespace";
         }
+        $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{LOCALPATH} );
+        if(! -d  $LocalBasePath$catalogPath )
+        {
+            # we print only a warning in the log, but return this repos.
+            # the user on the client should see immediately that he requested
+            # a repo which does not exist.
+            $r->log->warn("Returning not existing repositoriy: $LocalBasePath$catalogPath");
+        }
+        my $catalogURL = SMT::Utils::cleanPath( $LocalNUUrl, $catalogPath );
         #
         # this does not work
         # NCCcredentials are not known in SLE10 and not in RES
