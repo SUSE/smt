@@ -56,7 +56,7 @@ sub getUsernameFromRequest($)
 sub handler {
     my $r = shift;
     my $dbh = undef;
-    
+
     my $regtimestring = SMT::Utils::getDBTimestamp();
 
     my $LocalBasePath = "";
@@ -64,9 +64,9 @@ sub handler {
     $r->log->info("repoindex.xml requested");
 
     # try to connect to the database - else report server error
-    if ( ! ($dbh=SMT::Utils::db_connect()) ) 
-    {  
-        return Apache2::Const::SERVER_ERROR; 
+    if ( ! ($dbh=SMT::Utils::db_connect()) )
+    {
+        return Apache2::Const::SERVER_ERROR;
     }
 
     my $aliasChange = 0;
@@ -79,7 +79,7 @@ sub handler {
         {
             $LocalBasePath = "";
         }
-        
+
         $aliasChange = $cfg->val('NU', 'changeAlias');
         if(defined $aliasChange && $aliasChange eq "true")
         {
@@ -89,7 +89,7 @@ sub handler {
         {
             $aliasChange = 0;
         }
-        
+
         $mirroruser = $cfg->val('LOCAL', 'mirrorUser');
     };
     if($@)
@@ -99,7 +99,7 @@ sub handler {
         $r->log->error("Cannot read config file: $@");
         $LocalBasePath = "";
     }
-    
+
     $r->content_type('text/xml');
 
     $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
@@ -107,13 +107,13 @@ sub handler {
 
     my $username = getUsernameFromRequest($r);
     return Apache2::Const::SERVER_ERROR unless defined $username;
-    
+
     my $catalogs;
     # FATE #310105: return all repositories for the mirrorUser
     if ($mirroruser && $username eq $mirroruser)
     {
         my $rh = SMT::Repositories::new($dbh);
-        $catalogs = $rh->getAllRepositories(); 
+        $catalogs = $rh->getAllRepositories();
     }
     # for other users, return only relevant repos
     else
@@ -132,7 +132,7 @@ sub handler {
     {
         $namespace = "";
     }
-    
+
     eval
     {
         my $sth = $dbh->prepare("UPDATE Clients SET LASTCONTACT=? WHERE GUID=?");
@@ -167,7 +167,7 @@ sub handler {
             $LocalRepoPath = "$namespace/$LocalRepoPath";
             $catalogName = "$catalogName:$namespace" if($aliasChange);
         }
-        
+
         $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
         if(defined $LocalBasePath && $LocalBasePath ne "")
@@ -176,13 +176,13 @@ sub handler {
             {
                 next if ($mirroruser && $mirroruser eq $r->user);
 
-                # catalog does not exists on this server. Log it, that the admin has a chance 
+                # catalog does not exists on this server. Log it, that the admin has a chance
                 # to find the error.
                 $r->log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
                 $r->log->warn("Run smt-mirror to create this catalog.");
             }
         }
-        
+
         $writer->emptyTag('repo',
                           'name' => $catalogName,
                           'alias' => $catalogName,                 # Alias == Name
@@ -194,7 +194,7 @@ sub handler {
                          );
         # don't laugh, zmd requires a special look of the XML :-(
         print "\n";
-        
+
     }
 
     $writer->endTag("repoindex");
