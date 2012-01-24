@@ -931,12 +931,12 @@ sub buildZmdConfig
                 }
             }
             $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{LOCALPATH} );
-            if(! -d  $LocalBasePath$catalogPath )
+            if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $catalogPath ) )
             {
                 # we print only a warning in the log, but return this repos.
                 # the user on the client should see immediately that he requested
                 # a repo which does not exist.
-                $r->log->warn("Returning not existing repositoriy: $LocalBasePath$catalogPath");
+                $r->log->warn("Returning not existing repositoriy: ".SMT::Utils::cleanPath( $LocalBasePath, $catalogPath ));
             }
             my $catalogURL = SMT::Utils::cleanPath( $LocalNUUrl, $catalogPath );
 
@@ -970,12 +970,12 @@ sub buildZmdConfig
             $catalogName = $catalogs->{$cat}->{NAME}.":$namespace";
         }
         $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{LOCALPATH} );
-        if(! -d  $LocalBasePath$catalogPath )
+        if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $catalogPath) )
         {
             # we print only a warning in the log, but return this repos.
             # the user on the client should see immediately that he requested
             # a repo which does not exist.
-            $r->log->warn("Returning not existing repositoriy: $LocalBasePath$catalogPath");
+            $r->log->warn("Returning not existing repositoriy: ". SMT::Utils::cleanPath( $LocalBasePath, $catalogPath) );
         }
         my $catalogURL = SMT::Utils::cleanPath( $LocalNUUrl, $catalogPath );
         #
