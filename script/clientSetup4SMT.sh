@@ -29,13 +29,16 @@ function usage()
 
     cat << EOT >&2
 
-  Usage: $0 <registration URL> [--regcert <url>]
-  Usage: $0 --host <hostname of the SMT server> [--regcert <url>]
+  Usage: $0 <registration URL> [--regcert <url>] [--namespace <namespace>]
+  Usage: $0 --host <hostname of the SMT server> [--regcert <url>] [--namespace <namespace>]
          configures a SLE10 client to register against a different registration server
 
   Example: $0 https://smt.example.com/center/regsvc
-  Example: $0 --host smt.example.com
+  Example: $0 --host smt.example.com --namespace web
   Example: $0 --host smt.example.com --regcert http://smt.example.com/certs/smt.crt
+
+  If --namespace is omitted, no namespace is set and this results in using the
+  default production repositories.
 EOT
 
 exit 1
@@ -43,10 +46,12 @@ exit 1
 
 REGURL=""
 VARIABLE=""
+NAMESPACE=""
 while true ; do
     case "$1" in
         --host) VARIABLE=S_HOSTNAME;;
         --regcert) VARIABLE=REGCERT;;
+        --namespace) VARIABLE=NAMESPACE;;
         "") break ;;
         -h|--help) usage;;
         https*) REGURL=$1;;
@@ -77,6 +82,11 @@ fi
 
 if ! echo $REGURL | grep "^https" > /dev/null ; then
     echo "The registration URL must be a HTTPS URL. Abort."
+    exit 1
+fi
+
+if ! echo $NAMESPACE | grep -E "^[a-zA-Z0-9_-]*$" > /dev/null ; then
+    echo "Invalid characters in namespace. Allowed are [a-zA-Z0-9_-]. Abort."
     exit 1
 fi
 
@@ -193,10 +203,14 @@ fi
 
 SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
 
-
-$CAT $SRCONF | $GREP -v "^url" > $SRCTMP
+$CAT $SRCONF | $GREP -v "^url" | grep -v "^register" > $SRCTMP
 $CP $SRCONF ${SRCONF}-`date '+%F'`
 echo "url=$REGURL" > $SRCONF
+if [ -n "$NAMESPACE" ]; then
+    echo "register   = command=register&namespace=$NAMESPACE" >> $SRCONF
+else
+    echo "register   = command=register" >> $SRCONF
+fi
 $CAT $SRCTMP >> $SRCONF
 $RM $SRCTMP
 
