@@ -3041,16 +3041,52 @@ sub createGroup
     return ($res == 1);
 }
 
+
 sub removeGroup
 {
     my $groupname = shift;
     my %opt = @_;
     $opt{dbh} = SMT::Utils::db_connect() if(!$opt{dbh});
+    $opt{cfg} = SMT::Utils::getSMTConfig() if(!$opt{cfg});
     my $dbh = $opt{dbh};
+    my $sid = SMT::Utils::getStagingGroupID( $opt{dbh}, $groupname );
+    if ( ! $sid || $sid == 1 )
+    {
+        # sid == 1 is the default return value of getStagingGroupID and we
+        # never want to remove the default group which has id == 1
+        printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "Unable to remove staging group $groupname.");
+        return 0;
+    }
+    my ($testingdir, $productiondir) = SMT::Utils::getStagingGroupPaths( $opt{dbh}, $groupname );
 
     my $statement = sprintf("DELETE FROM StagingGroups WHERE NAME = %s",
                              $dbh->quote($groupname));
     my $res = $dbh->do($statement);
+
+    if ( $res == 1 )
+    {
+        # remove filters
+        $statement = sprintf("DELETE FROM Filters WHERE STAGINGGROUP_ID = %s",
+                             $dbh->quote($sid));
+        $dbh->do($statement);
+
+        # remove data from RepositoryContentData
+        my $basepath = $opt{cfg}->val("LOCAL", "MirrorTo");
+        my $teststagingdir = SMT::Utils::cleanPath( $basepath, 'repo', $testingdir);
+        my $prodstagingdir = SMT::Utils::cleanPath( $basepath, 'repo', $productiondir);
+        $statement = sprintf("DELETE FROM RepositoryContentData WHERE localpath like %s",
+                             $dbh->quote("$teststagingdir/%"));
+        $dbh->do($statement);
+        $statement = sprintf("DELETE FROM RepositoryContentData WHERE localpath like %s",
+                             $dbh->quote("$prodstagingdir/%"));
+        $dbh->do($statement);
+
+        # we do not remove the content on disk for now.
+        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "Group '$groupname' successfully removed.");
+        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "If wanted, the content from disk can be deleted now:");
+        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "$teststagingdir/");
+        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "$prodstagingdir/");
+    }
 
     return ($res == 1);
 }

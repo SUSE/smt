@@ -229,7 +229,7 @@ if ($command eq 'creategroup')
 elsif ($command eq 'removegroup')
 {
     my $groupname = shift @ARGV;
-    my $ret = SMT::CLI::removeGroup( $groupname, dbh => $dbh, log => $log, vblevel => $vblevel );
+    my $ret = SMT::CLI::removeGroup( $groupname, dbh => $dbh, log => $log, vblevel => $vblevel, cfg => $cfg );
     if(!SMT::Utils::unLock("smt-staging"))
     {
         SMT::Utils::printLog($log, $vblevel, LOG_ERROR, __("Cannot remove lockfile."));
