@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jan 24 12:39:09 CET 2012 - mc@suse.de
+
+- clientSetup4SMT.sh: add parameter --namespace to request a
+  staging repository during registration
+- remove also Filter and ContentData if a group is removed
+
+-------------------------------------------------------------------
 Fri Jan 20 15:37:05 CET 2012 - mc@suse.de
 
 - implement staging groups (FATE#308764)
