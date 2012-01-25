@@ -43,6 +43,7 @@ Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
 Requires:       logrotate
 Requires:       suseRegister
+Requires:       openssl-certs
 Requires:       htmldoc
 Requires:       createrepo
 Requires:       gpg2
