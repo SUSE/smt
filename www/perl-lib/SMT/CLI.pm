@@ -1319,7 +1319,7 @@ sub setupCustomCatalogs
                                     $dbh->quote($options{catalogid}),
                                     $dbh->quote($options{name}),
                                     $dbh->quote($options{description}),
-                                    "NULL",
+                                    (($options{target})?$dbh->quote($options{target}):"NULL"),
                                     $dbh->quote("/RPMMD/".$options{name}),
                                     $dbh->quote($exthost),
                                     $dbh->quote($options{exturl}),

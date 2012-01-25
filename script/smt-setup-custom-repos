@@ -29,6 +29,7 @@ my $catalogid = "";
 my $name = "";
 my $description = "";
 my $exturl = "";
+my $target = "";
 my @delete = ();
 
 use Getopt::Long;
@@ -38,6 +39,7 @@ my $optres = Getopt::Long::GetOptions(
                                       'name=s'        => \$name,
                                       'description=s' => \$description,
                                       'exturl=s'      => \$exturl,
+                                      'target=s'      => \$target,
                                       'delete=s'      => \@delete,
                                       'help|h'        => \$help
                                      );
@@ -51,6 +53,8 @@ if ( $help || !$optres )
     print "    --name  arg         " . __("The name of this repository.\n");
     print "    --description arg   " . __("A description\n");
     print "    --exturl arg        " . __("The URL where this repository can be mirrored from\n");
+    print "    --target arg        " . __("The target architecture of the repository\n");
+    print "                        " . __("(only usefull when the product itself has no target architecture)\n");
     print "    --delete arg        " . __("Remove custom repository with the given ID. You can use this option multiple times.\n");
     print "                        " . __("Call 'smt repos --verbose' to find out the Repository ID\n");
     print "                        " . __("of the repository you want to delete.\n");
@@ -119,6 +123,29 @@ if(@delete > 0)
         print __("Nothing deleted.\n");
     }
     exit 0;
+}
+
+if($target ne "")
+{
+       my $targets_avail = $dbh->selectcol_arrayref("select distinct TARGET from Targets order by TARGET asc");
+       my $found = 0;
+       my $alltargets = "";
+       foreach my $arch (@{$targets_avail})
+       {
+           if ($arch =~ /^$target$/i)
+           {
+               $target = $arch;
+               $found = 1;
+               last;
+           }
+       $alltargets .= $arch." ";
+       }
+       if ($found == 0)
+       {
+           print __("Unknown target architecture. Known architectures are:\n");
+           print $alltargets."\n";
+           exit 1;
+       }
 }
 
 while($name !~ /^[a-zA-Z\d_-]+$/)
@@ -205,7 +232,8 @@ my %options = (
                catalogid   => $catalogid,
                name        => $name,
                description => $description,
-               exturl      => $exturl
+               exturl      => $exturl,
+               target      => $target
               );
 
 my $success = SMT::CLI::setupCustomCatalogs( %options );
@@ -264,6 +292,11 @@ The description of the custom repository.
 =item --exturl <url>
 
 The URL where this repository can be mirrored from.
+
+=item --target arg
+
+The target architecture of the repository
+(only usefull when the product itself has no target architecture)
 
 =item --delete <Repository ID>
 
