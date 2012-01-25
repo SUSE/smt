@@ -23,6 +23,11 @@ my $authuser = $cfg->val('GLOBAL', 'user');
 my $authpass = $cfg->val('GLOBAL', 'pass');
 my $uri = $cfg->val('GLOBAL', 'url');
 
+# bnc#727988
+chomp($authuser);
+chomp($authpass);
+chomp($uri);
+
 if (!($uri && $authuser && $authpass))
 {
     die "Invalid values";

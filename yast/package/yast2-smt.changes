@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jan 25 16:16:49 CET 2012 - mc@suse.de
+
+- 2.17.25
+- strip trailing whitespaces from url and username/password
+  (bnc#trailing)
+
+-------------------------------------------------------------------
 Fri Jan 20 15:39:11 CET 2012 - mc@suse.de
 
 - implement staging groups (FATE#308764)
