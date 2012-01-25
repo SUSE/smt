@@ -23,6 +23,7 @@ use Data::Dumper;
 use DBI;
 use XML::Writer;
 use XML::Parser;
+use Date::Parse;
 
 sub handler {
     my $r = shift;
@@ -215,9 +216,11 @@ sub register
 
         my $catalogs = SMT::Registration::findCatalogs($r, $dbh, $target, $pidarr);
 
+        my $status = SMT::Registration::getRegistrationStatus($r, $dbh, $regroot->{register}->{guid});
+
         # send new <zmdconfig>
 
-        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $namespace);
+        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $status, $namespace);
 
         if( ! defined $zmdconfig )
         {
@@ -837,11 +840,68 @@ sub findCatalogs
     return $result;
 }
 
+sub getRegistrationStatus
+{
+    my $r    = shift;
+    my $dbh  = shift;
+    my $guid = shift;
+
+    my $statement = sprintf("SELECT r.GUID,
+                                    r.NCCREGERROR,
+                                    p.PRODUCT,
+                                    p.VERSION,
+                                    p.REL,
+                                    p.ARCH,
+                                    p.FRIENDLY,
+                                    s.SUBSTATUS STATUS,
+                                    s.SUBTYPE TYPE,
+                                    s.SUBENDDATE ENDDATE
+                               FROM Registration r
+                               JOIN Products p ON r.PRODUCTID = p.PRODUCTDATAID
+                          LEFT JOIN ClientSubscriptions cs ON cs.GUID = r.GUID
+                          LEFT JOIN Subscriptions s ON s.SUBID = cs.SUBID
+                              WHERE r.GUID = %s", $dbh->quote($guid));
+    my $status = $dbh->selectall_arrayref( $statement, {Slice=>{}});
+    foreach my $prodstatusentry (@{$status})
+    {
+        # By default it is a success. We set it to error only if we find one.
+        $prodstatusentry->{"RESULT"}    = "success";
+        $prodstatusentry->{"ERRORCODE"} = "OK";
+        $prodstatusentry->{"MESSAGE"}   = "Ok.";
+        if ($prodstatusentry->{"NCCREGERROR"})
+        {
+            $prodstatusentry->{"RESULT"}    = "error";
+            $prodstatusentry->{"ERRORCODE"} = "ERR_LOCKED";
+            $prodstatusentry->{"MESSAGE"}   = "The regcode is locked by another email address.";
+        }
+        if ($prodstatusentry->{"STATUS"})
+        {
+            if ( $prodstatusentry->{"ENDDATE"} )
+            {
+                $prodstatusentry->{"ENDDATE"} = int(str2time($prodstatusentry->{"ENDDATE"}, "GMT"));
+                if ( $prodstatusentry->{"ENDDATE"} < time() )
+                {
+                    $prodstatusentry->{"STATUS"} = "EXPIRED";
+                }
+            }
+            if ($prodstatusentry->{"STATUS"} eq "EXPIRED")
+            {
+                $prodstatusentry->{"RESULT"}    = "error";
+                $prodstatusentry->{"ERRORCODE"} = "ERR_SUB_EXP";
+                $prodstatusentry->{"MESSAGE"}   = "The subscription for ".$prodstatusentry->{"FRIENDLY"}." is expired.";
+            }
+        }
+    }
+
+    return $status;
+}
+
 sub buildZmdConfig
 {
     my $r          = shift;
     my $guid       = shift;
     my $catalogs   = shift;
+    my $status     = shift;
     my $namespace  = shift || '';
 
     my $cfg = undef;
@@ -999,7 +1059,33 @@ sub buildZmdConfig
 
         $writer->endTag("service");
     }
-
+    my $now = time();
+    $writer->startTag("status", "generated" => $now);
+    foreach my $prodstatusentry (@{$status})
+    {
+        $writer->startTag("productstatus",
+                          "product"   => $prodstatusentry->{"PRODUCT"},
+                          "version"   => $prodstatusentry->{"VERSION"},
+                          "release"   => $prodstatusentry->{"REL"},
+                          "arch"      => $prodstatusentry->{"ARCH"},
+                          "result"    => $prodstatusentry->{"RESULT"},
+                          "errorcode" => $prodstatusentry->{"ERRORCODE"});
+        if ($prodstatusentry->{"STATUS"})
+        {
+            $writer->emptyTag("subscription",
+                              "status"     => $prodstatusentry->{"STATUS"},
+                              "expiration" => $prodstatusentry->{"ENDDATE"},
+                              "type"       => $prodstatusentry->{"TYPE"});
+        }
+        if ($prodstatusentry->{"MESSAGE"})
+        {
+            $writer->startTag("message");
+            $writer->characters($prodstatusentry->{"MESSAGE"});
+            $writer->endTag("message");
+        }
+        $writer->endTag("productstatus");
+    }
+    $writer->endTag("status");
     $writer->endTag("zmdconfig");
 
     return $output;

@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jan 25 13:38:30 CET 2012 - mc@suse.de
+
+- implement providing a registration status (bnc#593607)
+
+-------------------------------------------------------------------
 Tue Jan 24 12:39:09 CET 2012 - mc@suse.de
 
 - clientSetup4SMT.sh: add parameter --namespace to request a
