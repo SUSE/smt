@@ -115,7 +115,7 @@ sub printhelp
     print "--sort-by-category      " . __("Sort patch list by patch category.\n");
     #print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
     #print "                        " . __("for them\n");
-    print "--group <name>     (-g) " . __("Specify a staging group name to work on (default is 'default'");
+    print "--group <name>     (-g) " . __("Specify a staging group name to work on (default is 'default')\n");
     print "--nohardlink            " . __("If a file already exists on local filesystem, do not\n");
     print "                        " . __("link it into the mirrored repository. Copy it instead.\n");
     print "--debug            (-d) " . __("Enable debug mode.\n");
