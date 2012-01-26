@@ -109,43 +109,46 @@ sub handler {
     return Apache2::Const::SERVER_ERROR unless defined $username;
 
     my $catalogs;
+    my $namespace = "";
     # FATE #310105: return all repositories for the mirrorUser
     if ($mirroruser && $username eq $mirroruser)
     {
         my $rh = SMT::Repositories::new($dbh);
+        # we do not filter, because we also want to return
+        # earlier mirrored repos which are now disabled for mirroring
         $catalogs = $rh->getAllRepositories();
     }
     # for other users, return only relevant repos
     else
     {
         $catalogs = getCatalogsByGUID($dbh, $username);
-    }
 
-    # see if the client uses a special namespace
-    my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($username));
-    my $namespace = $dbh->selectcol_arrayref($namespaceselect);
-    if (defined $namespace && defined ${$namespace}[0] )
-    {
-        $namespace = ${$namespace}[0];
-    }
-    else
-    {
-        $namespace = "";
-    }
+        # see if the client uses a special namespace
+        my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($username));
+        $namespace = $dbh->selectcol_arrayref($namespaceselect);
+        if (defined $namespace && defined ${$namespace}[0] )
+        {
+            $namespace = ${$namespace}[0];
+        }
+        else
+        {
+            $namespace = "";
+        }
 
-    eval
-    {
-        my $sth = $dbh->prepare("UPDATE Clients SET LASTCONTACT=? WHERE GUID=?");
-        $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
-        $sth->bind_param(2, $username);
-        $sth->execute;
+        eval
+        {
+            my $sth = $dbh->prepare("UPDATE Clients SET LASTCONTACT=? WHERE GUID=?");
+            $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
+            $sth->bind_param(2, $username);
+            $sth->execute;
 
-        #$dbh->do(sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", $dbh->quote($regtimestring), $dbh->quote($username)));
-    };
-    if($@)
-    {
-        # we log an error, but nothing else
-        $r->log_error("Update Clients table failed: ".$@);
+            #$dbh->do(sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", $dbh->quote($regtimestring), $dbh->quote($username)));
+        };
+        if($@)
+        {
+            # we log an error, but nothing else
+            $r->log_error("Update Clients table failed: ".$@);
+        }
     }
 
     my $writer = new XML::Writer(NEWLINES => 0);
