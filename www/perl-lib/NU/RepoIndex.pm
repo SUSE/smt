@@ -170,6 +170,13 @@ sub handler {
             $LocalRepoPath = "$namespace/$LocalRepoPath";
             $catalogName = "$catalogName:$namespace" if($aliasChange);
         }
+        elsif($mirroruser && $mirroruser eq $r->user && uc(${$val}{'STAGING'}) eq "Y")
+        {
+            # for mirror credentials always return full repos
+            # if staging is enabled switch to full
+            $LocalRepoPath = "full/$LocalRepoPath";
+            $catalogName = "$catalogName:full" if($aliasChange);
+        }
 
         $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
 
