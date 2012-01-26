@@ -833,6 +833,82 @@ sub resetCatalogsStatus
   $dbh->do("UPDATE Catalogs SET Mirrorable='N' WHERE CATALOGTYPE='nu'");
 }
 
+sub deleteCatalogs
+{
+    my %opt = @_;
+    my ($cfg, $dbh) = init();
+    my $basepath = $cfg->val("LOCAL", "MirrorTo");
+
+    my $sql = "SELECT ID, NAME, TARGET, DOMIRROR, LOCALPATH, STAGING FROM Catalogs WHERE 1 ";
+    if( $opt{name} )
+    {
+        $sql .= sprintf("AND NAME = %s ", $dbh->quote($opt{name}));
+    }
+    if( $opt{target} )
+    {
+        $sql .= sprintf("AND NAME = %s ", $dbh->quote($opt{target}));
+    }
+    if( $opt{id} )
+    {
+        $sql .= sprintf("AND CATALOGID = %s ", $dbh->quote($opt{id}));
+    }
+    my $ref = $dbh->selectall_arrayref($sql, {Slice => {}});
+    foreach my $row (@{$ref})
+    {
+        if ( $row->{DOMIRROR} eq "Y" )
+        {
+            print "Repository ".$row->{NAME}."/".$row->{TARGET}." is enabled for mirroring. Skip delete.\n";
+            next;
+        }
+        my $sid = undef;
+        if ( $opt{namespace} )
+        {
+            $sql = sprintf("SELECT ID FROM StagingGroups WHERE TESTINGDIR = %s OR PRODUCTIONDIR = %s",
+                           $dbh->quote($opt{namespace}), $dbh->quote($opt{namespace}));
+            my $ids = $dbh->selectall_arrayref($sql, {Slice => {}});
+            $sid = $ids->[0]->{ID} if (exists $ids->[0] && exists $ids->[0]->{ID});
+        }
+        else
+        {
+            # empty namespace is default group == 1
+            $sid = 1;
+        }
+
+        my $localpath = $row->{LOCALPATH};
+        my $fullrepopath = SMT::Utils::cleanPath( $basepath, 'repo', $opt{namespace}, $localpath );
+
+        print sprintf(__("Delete repository '%s'? (y/N) "), $fullrepopath);
+        my $answer = <STDIN>;
+        chomp($answer);
+        if ( lc($answer) ne "y" )
+        {
+            print "Skipped\n";
+            next;
+        }
+
+        $sql = sprintf("DELETE FROM RepositoryContentData WHERE localpath like %s",
+                       $dbh->quote("$fullrepopath/%"));
+        $dbh->do($sql);
+        if ( defined $sid )
+        {
+            $sql = sprintf("DELETE FROM Filters WHERE CATALOG_ID = %s AND STAGINGGROUP_ID = %s",
+                           $dbh->quote($row->{ID}), $dbh->quote($sid));
+            $dbh->do($sql);
+        }
+        if( ( $row->{STAGING} eq "Y" && $opt{namespace} eq "full" ) ||
+            ( $row->{STAGING} eq "N" && $opt{namespace} eq "" ) )
+        {
+            $sql = sprintf("UPDATE Catalogs SET LAST_MIRROR = NULL WHERE ID = %s",
+                           $dbh->quote($row->{ID}));
+            $dbh->do($sql);
+        }
+        rmtree("$fullrepopath", 0, 0) if (-d "$fullrepopath");
+        print "Repository ".(($opt{namespace})?$opt{namespace}."/":"").$row->{NAME}."/".$row->{TARGET}." successfully deleted.\n";
+    }
+    return 0;
+}
+
+
 =item setCatalogDoMirror
 
 Set the catalog mirror flag to enabled or disabled.
