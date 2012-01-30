@@ -1,7 +1,13 @@
 -------------------------------------------------------------------
-Thu Jan 26 16:01:43 CET 2012 - mc@suse.de
+Mon Jan 30 12:27:46 CET 2012 - mc@suse.de
 
 - version 1.2.0
+- remove content of staging groups on delete
+- let the user confirm removing a staging group
+
+-------------------------------------------------------------------
+Thu Jan 26 16:01:43 CET 2012 - mc@suse.de
+
 - return complete version of repositories in repoindex.xml
   - not the filtered ones - (FATE#310105)
 - implement delete repository 

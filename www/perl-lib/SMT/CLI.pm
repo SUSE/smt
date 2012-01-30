@@ -3107,14 +3107,33 @@ sub createGroup
         printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "Allowed characters in Directoy Names are [a-zA-Z0-9_-].");
         return 0;
     }
-
+    my $res = 0;
+    my $msg = "";
     my $statement = sprintf("INSERT INTO StagingGroups (NAME, TESTINGDIR, PRODUCTIONDIR)
                              VALUES(%s, %s, %s)",
                              $dbh->quote($groupname),
                              $dbh->quote($testingdirname),
                              $dbh->quote($productiondirname));
-    my $res = $dbh->do($statement);
+    eval
+    {
+        $res = $dbh->do($statement);
+    };
+    if($@)
+    {
+        if ($@ =~ /Duplicate/i)
+        {
+            $msg = "Duplicate entry";
+        }
+    }
 
+    if ($res == 1)
+    {
+        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "Group '$groupname' successfully created.");
+    }
+    else
+    {
+        printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "Creating Group '$groupname' failed ($msg).");
+    }
     return ($res == 1);
 }
 
@@ -3136,6 +3155,22 @@ sub removeGroup
     }
     my ($testingdir, $productiondir) = SMT::Utils::getStagingGroupPaths( $opt{dbh}, $groupname );
 
+    my $basepath = $opt{cfg}->val("LOCAL", "MirrorTo");
+    my $teststagingdir = SMT::Utils::cleanPath( $basepath, 'repo', $testingdir);
+    my $prodstagingdir = SMT::Utils::cleanPath( $basepath, 'repo', $productiondir);
+
+    print sprintf(__("Removing group '%s' will remove the complete content from:\n"), $groupname);
+    print "* $teststagingdir\n";
+    print "* $prodstagingdir\n";
+    print sprintf(__("Really delete group '%s'? (y/N) "), $groupname);
+    my $answer = <STDIN>;
+    chomp($answer);
+    if ( lc($answer) ne "y" )
+    {
+        print __("Aborted.\n");
+        return 0;
+    }
+
     my $statement = sprintf("DELETE FROM StagingGroups WHERE NAME = %s",
                              $dbh->quote($groupname));
     my $res = $dbh->do($statement);
@@ -3148,9 +3183,6 @@ sub removeGroup
         $dbh->do($statement);
 
         # remove data from RepositoryContentData
-        my $basepath = $opt{cfg}->val("LOCAL", "MirrorTo");
-        my $teststagingdir = SMT::Utils::cleanPath( $basepath, 'repo', $testingdir);
-        my $prodstagingdir = SMT::Utils::cleanPath( $basepath, 'repo', $productiondir);
         $statement = sprintf("DELETE FROM RepositoryContentData WHERE localpath like %s",
                              $dbh->quote("$teststagingdir/%"));
         $dbh->do($statement);
@@ -3158,11 +3190,15 @@ sub removeGroup
                              $dbh->quote("$prodstagingdir/%"));
         $dbh->do($statement);
 
-        # we do not remove the content on disk for now.
-        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "Group '$groupname' successfully removed.");
-        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "If wanted, the content from disk can be deleted now:");
-        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "$teststagingdir/");
-        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "$prodstagingdir/");
+        # remove files from disk
+        rmtree("$teststagingdir/", 0, 0) if (-d "$teststagingdir");
+        rmtree("$prodstagingdir/", 0, 0) if (-d "$prodstagingdir/");
+
+        printLog($opt{log}, $opt{vblevel}, LOG_INFO1, "Group '$groupname' successfully removed.\n");
+    }
+    else
+    {
+        printLog($opt{log}, $opt{vblevel}, LOG_ERROR, "Failed to remove group '$groupname' from Database");
     }
 
     return ($res == 1);
