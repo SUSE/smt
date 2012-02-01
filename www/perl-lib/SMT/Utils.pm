@@ -173,6 +173,7 @@ sub openLock
             $oldpid = <LOCK>;
             close LOCK;
         };
+        $oldpid = "" if(!defined $oldpid);
 
         chomp($oldpid);
 
