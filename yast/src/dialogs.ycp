@@ -146,12 +146,12 @@
 		    `VStretch(),
 
 		    `Left (`HSquash (`MinWidth (
-			32,
+			40,
 			// TRANSLATORS: password entry
 			`Password (`id ("DB-password-1"), _("Database &Password"))
 		    ))),
 		    `Left (`HSquash (`MinWidth (
-			32,
+			40,
 			// TRANSLATORS: password entry
 			`Password (`id ("DB-password-2"), _("C&onfirm Password"))
 		    ))),

@@ -1,7 +1,12 @@
 -------------------------------------------------------------------
-Wed Jan 25 16:16:49 CET 2012 - mc@suse.de
+Wed Feb  8 16:43:58 CET 2012 - mc@suse.de
 
 - 2.17.25
+- fix label text cut off (bnc#745861)
+
+-------------------------------------------------------------------
+Wed Jan 25 16:16:49 CET 2012 - mc@suse.de
+
 - strip trailing whitespaces from url and username/password
   (bnc#trailing)
 
