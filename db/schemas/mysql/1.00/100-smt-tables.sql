@@ -153,10 +153,11 @@ create table Targets (OS      VARCHAR(200) NOT NULL PRIMARY KEY,
                       SRC         CHAR(1) DEFAULT 'N'    -- N NCC   C Custom
                      );
 
-create table RepositoryContentData(localpath   VARCHAR(300) PRIMARY KEY,
-                                   name        VARCHAR(300) NOT NULL,
-                                   checksum    CHAR(50)     NOT NULL,
-                                   INDEX idx_repo_cont_data_name_checksum (name, checksum)
+create table RepositoryContentData(localpath     VARCHAR(300) PRIMARY KEY,
+                                   name          VARCHAR(300) NOT NULL,
+                                   checksum      CHAR(130)    NOT NULL,
+                                   checksum_type CHAR(20)     NOT NULL DEFAULT 'sha1',
+                                   INDEX idx_repo_cont_data_name_checksum (name, checksum, checksum_type)
                                   );
 -- end
 
