@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb 13 16:13:46 CET 2012 - mc@suse.de
+
+- version 1.2.0
+- support more checksum types to make hardlinking work with
+  checksums different than sha1 (bnc#746402)
+
+-------------------------------------------------------------------
 Wed Feb  8 11:09:45 CET 2012 - mc@suse.de
 
 - update vhost-ssl.conf to latest default configuration with
@@ -7,7 +14,6 @@ Wed Feb  8 11:09:45 CET 2012 - mc@suse.de
 -------------------------------------------------------------------
 Wed Feb  1 13:41:55 CET 2012 - mc@suse.de
 
-- version 1.2.0
 - fix uninitialized variables when creating staging group
   (bnc#744546)
 
