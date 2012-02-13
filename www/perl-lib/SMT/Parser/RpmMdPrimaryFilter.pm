@@ -268,7 +268,7 @@ sub handle_start_tag
     {
         if (lc($element) eq 'checksum')
         {
-            if(exists $attrs{type} && $attrs{type} eq "sha")
+            if(exists $attrs{pkgid} && uc($attrs{pkgid}) eq "YES")
             {
                 $self->{CURRENT}->{SUBELEMENT} = lc($element);
             }
@@ -321,7 +321,6 @@ sub handle_char_tag
     {
         if (lc($self->{CURRENT}->{SUBELEMENT}) eq 'checksum')
         {
-            # maybe a check for <... pkgid="NO"> would be in place
             $self->{CURRENT}->{PKGID} .= $string;
         }
         elsif (lc($self->{CURRENT}->{SUBELEMENT}) eq 'arch')

@@ -6,7 +6,7 @@ use File::Path;
 use File::Basename;
 use Date::Parse;
 use Crypt::SSLeay;
-use Digest::SHA1  qw(sha1 sha1_hex);
+use Digest;
 use SMT::Utils;
 use File::Basename;
 use File::Copy;
@@ -95,6 +95,7 @@ sub new
     $self->{REMOTEFILELOCATION} = undef;
 
     $self->{CHECKSUM}   = undef;
+    $self->{CHECKSUM_TYPE}   = undef;
     $self->{NO_CHECKSUM_CHECK}   = 0;
 
     $self->{MAX_REDIRECTS} = 5;
@@ -335,6 +336,21 @@ sub checksum()
     return $self->{CHECKSUM};
 }
 
+
+=item checksum_type([type])
+
+Set and get the checksum type
+
+=cut
+
+sub checksum_type()
+{
+    my $self = shift;
+    if (@_) { $self->{CHECKSUM_TYPE} = shift }
+    return $self->{CHECKSUM_TYPE};
+}
+
+
 =item noChecksumCheck([0|1])
 
 Enable or disable checksum check for this job.
@@ -444,7 +460,7 @@ sub verify
 
     return 1 if($self->{NO_CHECKSUM_CHECK} || !defined $self->checksum());
 
-    return 0 if ( $self->checksum() ne  $self->realchecksum() );
+    return 0 if ( $self->checksum() ne  $self->realchecksum($self->checksum_type()) );
     return 1;
 }
 
@@ -457,8 +473,40 @@ Calculate the real checksum of the file and return the value.
 sub realchecksum()
 {
     my $self = shift;
+    my $type = shift;
 
-    my $sha1;
+    my %TRANSLATION = (
+        'sha'     => 'SHA-1',
+        'sha1'    => 'SHA-1',
+        'sha224'  => 'SHA-224',
+        'sha256'  => 'SHA-256',
+        'sha384'  => 'SHA-384',
+        'sha512'  => 'SHA-512',
+        'md5'     => 'MD5',
+        'SHA'     => 'SHA-1',
+        'SHA1'    => 'SHA-1',
+        'SHA224'  => 'SHA-224',
+        'SHA256'  => 'SHA-256',
+        'SHA384'  => 'SHA-384',
+        'SHA512'  => 'SHA-512',
+        'MD5'     => 'MD5',
+        'SHA-1'   => 'SHA-1',
+        'SHA-224' => 'SHA-224',
+        'SHA-256' => 'SHA-256',
+        'SHA-384' => 'SHA-384',
+        'SHA-512' => 'SHA-512',
+    );
+    if (! $type || !exists $TRANSLATION{$type})
+    {
+        # default to sha1
+        $type = 'SHA-1';
+    }
+    else
+    {
+        $type = $TRANSLATION{$type};
+    }
+
+    my $module;
     my $digest;
     my $filename = $self->fullLocalPath();
     open(FILE, "< $filename") or do {
@@ -466,9 +514,17 @@ sub realchecksum()
         return "";
     };
 
-    $sha1 = Digest::SHA1->new;
-    $sha1->addfile(*FILE);
-    $digest = $sha1->hexdigest();
+    eval
+    {
+        $module = Digest->new("$type");
+        $module->addfile(*FILE);
+        $digest = $module->hexdigest();
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to calculate real checksum for '$filename': ".$@);
+        $digest = '';
+    }
     close FILE;
 
     return $digest;
@@ -491,28 +547,33 @@ sub updateDB
 
     eval
     {
-        if( defined $self->checksum() && $self->checksum() ne "")
+        if( $self->checksum() && $self->checksum_type() )
         {
-            my $statement = sprintf("SELECT checksum from RepositoryContentData where localpath = %s",
+            my $statement = sprintf("SELECT checksum, checksum_type from RepositoryContentData where localpath = %s",
                                     $self->{DBH}->quote( $self->fullLocalPath() ));
-            my $existChecksum = $self->{DBH}->selectcol_arrayref($statement);
+            my $existChecksum = $self->{DBH}->selectcol_arrayref($statement, {Slice=>{}});
 
 
             if( !exists $existChecksum->[0] || !defined $existChecksum->[0] )
             {
                 #insert
-                $self->{DBH}->do(sprintf("INSERT INTO RepositoryContentData (name, checksum, localpath) VALUES (%s, %s, %s)",
+                $self->{DBH}->do(sprintf("INSERT INTO RepositoryContentData (name, checksum, checksum_type, localpath)
+                                          VALUES (%s, %s, %s, %s)",
                                          $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
                                          $self->{DBH}->quote( $self->checksum() ),
+                                         $self->{DBH}->quote( $self->checksum_type() ),
                                          $self->{DBH}->quote( $self->fullLocalPath() )
                                         ));
             }
-            elsif( $existChecksum->[0] ne $self->checksum() )
+            elsif( $existChecksum->[0]->{checksum} ne $self->checksum() ||
+                   $existChecksum->[0]->{checksum_type} ne $self->checksum_type()
+                 )
             {
                 #update
-                $self->{DBH}->do(sprintf("UPDATE RepositoryContentData set name=%s, checksum=%s where localpath=%s",
+                $self->{DBH}->do(sprintf("UPDATE RepositoryContentData set name=%s, checksum=%s, checksum_type=%s where localpath=%s",
                                          $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
                                          $self->{DBH}->quote( $self->checksum() ),
+                                         $self->{DBH}->quote( $self->checksum_type() ),
                                          $self->{DBH}->quote( $self->fullLocalPath() )
                                         ));
             }
@@ -634,7 +695,7 @@ sub mirror
             else
             {
                 $errormsg = sprintf(__("E '%s': Checksum mismatch'"), $self->fullLocalPath() );
-                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum()) if($self->vblevel() & LOG_DEBUG);
+                $errormsg .= sprintf(" ('%s' vs '%s')", $self->checksum(), $self->realchecksum($self->checksum_type())) if($self->vblevel() & LOG_DEBUG);
 
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg." (Try $tries)", 0, 1);
                 if($tries > 0)
@@ -771,8 +832,9 @@ sub copyFromLocalIfAvailable
 
     my $name = basename( $self->localFileLocation() );
     my $checksum = $self->checksum();
+    my $checksum_type = $self->checksum_type();
 
-    return 0 if (!(defined $name && defined $checksum && $name && $checksum));
+    return 0 if (!(defined $name && defined $checksum && defined $checksum_type && $name && $checksum && $checksum_type));
 
     my $otherpath = undef; # source file path
 
@@ -780,9 +842,11 @@ sub copyFromLocalIfAvailable
 
     if (defined $self->{DBH})
     {
-        my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and localpath not like %s",
+        my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and
+                                 checksum_type = %s and localpath not like %s",
                                 $self->{DBH}->quote($name),
                                 $self->{DBH}->quote($checksum),
+                                $self->{DBH}->quote($checksum_type),
                                 $self->{DBH}->quote($self->fullLocalRepoPath()."%") );
 
         my $existingpath = $self->{DBH}->selectcol_arrayref($statement);

@@ -650,7 +650,7 @@ sub mirror()
     # create a hash with filename => checksum
     if ( defined $self->{DBH} )
     {
-        my $statement = sprintf("SELECT localpath, checksum from RepositoryContentData where localpath like %s",
+        my $statement = sprintf("SELECT localpath, checksum, checksum_type from RepositoryContentData where localpath like %s",
                                 $self->{DBH}->quote($self->fullLocalRepoPath()."%"));
         $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
         #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
@@ -914,7 +914,7 @@ sub mirror()
                     my $rjob = $self->{REPODATAJOBS}->{$key};
                     # change .repodata => repodata
                     $rjob->localFileLocation( $rjob->remoteFileLocation() );
-                    $rjob->checksum( $rjob->realchecksum() );
+                    $rjob->checksum( $rjob->realchecksum($rjob->checksum_type()) );
                     $rjob->updateDB();
                 }
             }
@@ -1100,7 +1100,8 @@ sub verify()
             }
             else
             {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Verify: ". $job->fullLocalPath() . ": ".sprintf("FAILED ( %s vs %s )", $job->checksum(), $job->realchecksum()));
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Verify: ". $job->fullLocalPath() .
+                         ": ".sprintf("FAILED ( %s vs %s )", $job->checksum(), $job->realchecksum($job->checksum_type())));
                 if ($removeinvalid)
                 {
                     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf(__("Deleting %s"), $job->fullLocalPath()));
@@ -1177,9 +1178,11 @@ sub download_handler
         $job->localRepoPath( $self->localRepoPath() );
         $job->localFileLocation( $data->{LOCATION} );
         $job->checksum( $data->{CHECKSUM} );
+        $job->checksum_type( $data->{CHECKSUM_TYPE} );
 
         if( exists $self->{EXISTS}->{$job->fullLocalPath()} &&
             $self->{EXISTS}->{$job->fullLocalPath()}->{checksum} eq $data->{CHECKSUM} &&
+            $self->{EXISTS}->{$job->fullLocalPath()}->{checksum_type} eq $data->{CHECKSUM_TYPE} &&
             -e $job->fullLocalPath() )
         {
             # file exists and is up-to-date.
@@ -1293,6 +1296,7 @@ sub verify_handler
             $job->localRepoPath( $self->localRepoPath() );
             $job->localFileLocation( $data->{LOCATION} );
             $job->checksum( $data->{CHECKSUM} );
+            $job->checksum_type( $data->{CHECKSUM_TYPE} );
 
             if(!exists $self->{VERIFYJOBS}->{$job->fullLocalPath()})
             {

@@ -19,6 +19,7 @@ SMT::Parser::RpmMdLocation - parsers rpm-md repodata files
     my $data = shift;
     print $data->{LOCALTION};
     print $data->{CHECKSUM};
+    print $data->{CHECKSUM_TYPE};
     print $data->{ARCH};
     print $data->{MAINELEMENT};
   }
@@ -202,6 +203,7 @@ sub handle_start_tag
         $self->{CURRENT}->{MAINELEMENT} = undef;
         $self->{CURRENT}->{SUBELEMENT} = undef;
         $self->{CURRENT}->{CHECKSUM} = undef;
+        $self->{CURRENT}->{CHECKSUM_TYPE} = undef;
         $self->{CURRENT}->{ARCH} = $self->{DEFAULTARCH};
         $self->{CURRENT}->{LOCATION} = undef;
     }
@@ -219,6 +221,7 @@ sub handle_start_tag
             $self->{CURRENT}->{MAINELEMENT} = undef;
             $self->{CURRENT}->{SUBELEMENT} = undef;
             $self->{CURRENT}->{CHECKSUM} = undef;
+            $self->{CURRENT}->{CHECKSUM_TYPE} = undef;
             $self->{CURRENT}->{ARCH} = ((defined $parentarch && $parentarch ne "")?"$parentarch":"$self->{DEFAULTARCH}");
             $self->{CURRENT}->{LOCATION} = undef;
         }
@@ -233,8 +236,10 @@ sub handle_start_tag
     elsif ( defined $self->{CURRENT}->{MAINELEMENT} && $self->{CURRENT}->{MAINELEMENT} ne "" &&
             lc($element) eq "checksum" )
     {
-        if(exists $attrs{type} && $attrs{type} eq "sha")
+        if(exists $attrs{type})
         {
+            $self->{CURRENT}->{CHECKSUM_TYPE} = $attrs{type};
+            $self->{CURRENT}->{CHECKSUM_TYPE} = 'sha1' if ($attrs{type} eq "sha");
             $self->{CURRENT}->{SUBELEMENT} = lc($element);
         }
     }
