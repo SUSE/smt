@@ -1067,6 +1067,7 @@ sub setCatalogStaging
                 rmtree($fullpath, 0, 0) if (-d $fullpath);
                 mkpath($fullpath);
                 move($productionpath, $fullpath) if (-d $productionpath);
+                _updateRepoContentData($productionpath, $fullpath, $dbh); 
             }
             # when disabling staging:
             # - remove repo/testing/$foo
@@ -1077,8 +1078,11 @@ sub setCatalogStaging
                 my $testingpath = SMT::Utils::cleanPath(
                     $basepath, 'repo/testing', $repopath);
                 rmtree($testingpath, 0, 0) if (-d $testingpath);
+                _cleanRepoContentData($testingpath, $dbh);
                 rmtree($productionpath, 0, 0) if (-d $productionpath);
+                _cleanRepoContentData($productionpath, $dbh);
                 move($fullpath, $productionpath) if (-d $fullpath);
+                _updateRepoContentData($fullpath, $productionpath, $dbh); 
             }
         }
 
@@ -1086,6 +1090,51 @@ sub setCatalogStaging
     }
 
     return 0;
+}
+
+sub _cleanRepoContentData
+{
+    my $path   = shift;
+    my $dbh    = shift;
+
+    die "Missing database handle" if(! $dbh );
+    $path =~ s/\/*$//;
+    my $statement = sprintf("DELETE FROM RepositoryContentData WHERE localpath like %s",
+                            $dbh->quote("$path/%"));
+    $dbh->do($statement);
+}
+
+sub _updateRepoContentData
+{
+    my $frompath = shift;
+    my $topath   = shift;
+    my $dbh      = shift;
+
+    die "Missing database handle" if(! $dbh );
+    $frompath =~ s/\/*$//;
+
+    my $statement = sprintf("SELECT localpath, name, checksum, checksum_type
+                               FROM RepositoryContentData
+                              WHERE localpath like %s", $dbh->quote($frompath."/%"));
+    my $rcdata = $dbh->selectall_arrayref($statement, { Slice => {} });
+    foreach my $row (@{$rcdata})
+    {
+        my $newpath = $row->{localpath};
+        if ($newpath =~ /^\Q$frompath\E(.*)$/ && $1)
+        {
+            $newpath = "$topath"."$1";
+            $statement = sprintf("UPDATE RepositoryContentData
+                                     SET localpath = %s
+                                   WHERE localpath = %s
+                                     AND checksum = %s",
+                                 $dbh->quote($newpath),
+                                 $dbh->quote($row->{localpath}),
+                                 $dbh->quote($row->{checksum}));
+            $dbh->do($statement);
+        }
+    }
+    # finally clean all data which could not be updated
+    _cleanRepoContentData($frompath, $dbh);
 }
 
 sub setDoMirrorFromXml
