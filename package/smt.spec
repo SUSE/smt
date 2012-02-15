@@ -127,7 +127,9 @@ cp -p %{S:1} .
 make
 mkdir man
 cd script
-for prog in smt* smt*.pod; do #processes *.pod twice, but this way they are processed after the real scripts and thir data does not get rewritten
+
+#processes *.pod twice, but this way they are processed after the real scripts and their data does not get rewritten
+for prog in smt* smt*.pod; do
     progfile=`echo "$prog" | sed 's/\(.*\)\.pod/\1/'`
     if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" $prog > $prog.$$$$ ; then
         perl -p -e 's/.if n .na/.\\\".if n .na/;' $prog.$$$$ > ../man/$progfile.1;
@@ -138,6 +140,11 @@ rm smt*.pod #don't package .pod-files
 # BNC #511168 (smt-catalogs is a symlink to smt-repos)
 ln -s smt-repos.1 ../man/smt-catalogs.1
 cd -
+progfile="SMT::RESTService"
+if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" www/perl-lib/SMT/RESTService.pm > www/perl-lib/SMT/RESTService.pm.$$$$ ; then
+    perl -p -e 's/.if n .na/.\\\".if n .na/;' www/perl-lib/SMT/RESTService.pm.$$$$ > man/$progfile.3pm;
+fi
+rm -f www/perl-lib/SMT/RESTService.pm.$$$$
 #make test
 # ---------------------------------------------------------------------------
 
@@ -151,9 +158,13 @@ make DESTDIR=$RPM_BUILD_ROOT install_conf
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
+mkdir -p $RPM_BUILD_ROOT%{_mandir}/man3
 cd man
 for manp in smt*.1; do
     install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man1/$manp
+done
+for manp in *.3pm; do
+    install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man3/$manp
 done
 mkdir -p $RPM_BUILD_ROOT/var/run/smt
 mkdir -p $RPM_BUILD_ROOT/var/log/smt
@@ -236,6 +247,7 @@ fi
 /usr/lib/SMT/bin/*
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
+%doc %attr(644, root, root) %{_mandir}/man3/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
 %doc %{_docdir}/smt/*
