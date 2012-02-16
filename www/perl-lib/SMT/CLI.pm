@@ -720,7 +720,7 @@ sub setMirrorableCatalogs
                 my $url = URI->new($catUrl);
                 if($url->host eq "nu.novell.com")
                 {
-                    my $uuri = URL->new($nuri);
+                    my $uuri = URI->new($nuri);
                     my $userinfo = $uuri->userinfo;
                     $url->userinfo($userinfo);
                 }
