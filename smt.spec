@@ -1,7 +1,7 @@
 #
-# spec file for package smt (Version 1.0.16)
+# spec file for package smt (Version 1.0.18)
 #
-# Copyright (c) 2010 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -20,7 +20,7 @@
 
 Name:           smt
 BuildRequires:  apache2 apache2-mod_perl
-Version:        1.0.17
+Version:        1.0.18
 Release:        0.<RELEASE4>
 Requires:       perl = %{perl_version}
 Requires:       apache2
