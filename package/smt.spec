@@ -47,6 +47,7 @@ Requires:       htmldoc
 Requires:       createrepo
 Requires:       gpg2
 Requires:       satsolver-tools perl-satsolver
+Requires:       openssl-certs
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
