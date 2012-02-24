@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Feb 24 11:53:38 CET 2012 - mc@suse.de
+
+- fix setMirrorableCatalogs to change the flag only for catalogs
+  with the same catalog type (bnc#748828)
+
+-------------------------------------------------------------------
 Thu Feb 16 10:30:41 CET 2012 - mc@suse.de
 
 - version 1.1.25
