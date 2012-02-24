@@ -690,7 +690,8 @@ sub setMirrorableCatalogs
                        my $repodata = shift;
                        printLog($opt{log}, "debug", sprintf(__("* set [%s %s] as mirrorable."), 
                                                            $repodata->{NAME}, $repodata->{DISTRO_TARGET})) if($opt{debug});
-                       my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s", 
+                       my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s
+                                                    AND (CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum')", 
                                                    $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                    }
     );
@@ -780,7 +781,7 @@ sub setMirrorableCatalogs
                 } while($response->is_redirect);
             }
             printLog($opt{log}, "debug", sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 0) ? '' : ' not' ))) if($opt{debug});
-            my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
+            my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND CATALOGTYPE = 'zypp' ",
                                     ( ($ret == 0) ? $dbh->quote('Y') : $dbh->quote('N') ), 
                                     $dbh->quote($catName)); 
             if(defined $catTarget && $catTarget ne "")
