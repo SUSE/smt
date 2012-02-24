@@ -1257,7 +1257,9 @@ sub setMirrorableCatalogs
 
     if ( -s $indexfile )
     {
-        my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'", ['Name', 'Target']);
+        my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs
+                                              where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
+                                             ['Name', 'Target']);
 
         my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
         $parser->parse($indexfile,
@@ -1270,8 +1272,10 @@ sub setMirrorableCatalogs
                                if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
                                {
                                    printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
-                                            sprintf(__("* New mirrorable repository '%s %s' ."), $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
-                                   my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s",
+                                            sprintf(__("* New mirrorable repository '%s %s' ."),
+                                                    $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                                   my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s
+                                                                AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
                                                                $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
                                }
                                delete $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}};
@@ -1287,7 +1291,8 @@ sub setMirrorableCatalogs
                 {
                     printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
                              sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
-                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s",
+                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s
+                                                 AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
                                                 $dbh->quote($cname), $dbh->quote($target) ));
                 }
             }
@@ -1354,7 +1359,7 @@ sub setMirrorableCatalogs
                                          catalogurl => $catUrl);
             }
             printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 1) ? '' : ' not' )));
-            my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s ",
+            my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s WHERE NAME=%s AND CATALOGTYPE = 'zypp' ",
                                     ( ($ret == 1) ? $dbh->quote('Y') : $dbh->quote('N') ),
                                     $dbh->quote($catName));
             if(defined $catTarget && $catTarget ne "")
