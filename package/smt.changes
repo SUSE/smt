@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Mar  8 14:59:59 CET 2012 - mc@suse.de
+
+- do not use cleanPath for URLs, it removes the double slash 
+  after the scheme (bnc#751222)
+
+-------------------------------------------------------------------
 Fri Feb 24 11:53:38 CET 2012 - mc@suse.de
 
 - fix setMirrorableCatalogs to change the flag only for catalogs

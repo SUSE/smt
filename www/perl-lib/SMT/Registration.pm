@@ -930,6 +930,7 @@ sub buildZmdConfig
     }
 
     $LocalNUUrl =~ s/\s*$//;
+    $LocalNUUrl =~ s/\/*$//;
     if(!defined $LocalNUUrl || $LocalNUUrl !~ /^http/)
     {
         $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
@@ -967,7 +968,7 @@ sub buildZmdConfig
                           "description" => "Local NU Server",
                           "type"        => "nu");
         $writer->startTag("param", "id" => "url");
-        $writer->characters($LocalNUUrl);
+        $writer->characters($LocalNUUrl."/");
         $writer->endTag("param");
 
         foreach my $cat (keys %{$catalogs})
@@ -998,7 +999,7 @@ sub buildZmdConfig
                 # a repo which does not exist.
                 $r->log->warn("Returning not existing repositoriy: ".SMT::Utils::cleanPath( $LocalBasePath, $catalogPath ));
             }
-            my $catalogURL = SMT::Utils::cleanPath( $LocalNUUrl, $catalogPath );
+            my $catalogURL = $LocalNUUrl."/".$catalogPath;
 
             $writer->startTag("param",
                               "name" => "catalog",
@@ -1037,7 +1038,7 @@ sub buildZmdConfig
             # a repo which does not exist.
             $r->log->warn("Returning not existing repositoriy: ". SMT::Utils::cleanPath( $LocalBasePath, $catalogPath) );
         }
-        my $catalogURL = SMT::Utils::cleanPath( $LocalNUUrl, $catalogPath );
+        my $catalogURL = $LocalNUUrl."/".$catalogPath;
         #
         # this does not work
         # NCCcredentials are not known in SLE10 and not in RES
