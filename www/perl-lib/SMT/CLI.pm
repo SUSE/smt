@@ -855,6 +855,7 @@ sub deleteCatalogs
     my $ref = $dbh->selectall_arrayref($sql, {Slice => {}});
     foreach my $row (@{$ref})
     {
+        $row->{TARGET} = "" if( ! defined $row->{TARGET} );
         if ( $row->{DOMIRROR} eq "Y" )
         {
             print "Repository ".$row->{NAME}."/".$row->{TARGET}." is enabled for mirroring. Skip delete.\n";
