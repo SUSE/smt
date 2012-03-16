@@ -93,7 +93,7 @@ Jason Record, Jiri Srain
 
 =head1 LICENSE
 
-Copyright (c) 2008 SUSE LINUX Products GmbH, Nuernberg, Germany.
+Copyright (c) 2008-2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

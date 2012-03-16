@@ -73,7 +73,7 @@ jkupec@suse.cz
 
 =head1 COPYRIGHT
 
-Copyright 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+Copyright 2009-2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 =cut
 

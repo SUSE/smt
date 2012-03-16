@@ -1253,7 +1253,7 @@ mc@suse.de, jdsn@suse.de, rhafer@suse.de, locilka@suse.cz
 
 =head1 COPYRIGHT
 
-Copyright 2007, 2008, 2009 SUSE LINUX Products GmbH, Nuernberg, Germany.
+Copyright 2007-2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 =cut
 

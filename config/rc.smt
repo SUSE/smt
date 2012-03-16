@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2008 SUSE Linux Products GmbH
+# Copyright (c) 2008-2012 SUSE Linux Products GmbH
 #
 # Authors:	Lukas Ocilka <locilka@suse.cz>
 #
