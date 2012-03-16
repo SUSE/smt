@@ -100,7 +100,7 @@ exit 0;
 
 =head1 NAME
 
-smt - "Subscroption Management Tool" for SLE 10 Maintenance
+smt - "Subscription Management Tool" for SLE Maintenance
 
 =head1 SYNOPSIS
 
