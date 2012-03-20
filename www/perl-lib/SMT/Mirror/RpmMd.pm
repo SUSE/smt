@@ -1549,6 +1549,8 @@ sub removePackages($$$)
             }
             else
             {
+                $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s",
+                                          $self->{DBH}->quote($tgtrepopath.$pkg->{loc}) ) );
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
                     "Deleted $tgtrepopath$pkg->{loc}");
             }
@@ -1651,8 +1653,9 @@ sub updateRepomd($$$)
     my $errc = 0;
 
     # update changed metadata files in repomd.xml
-    foreach my $mdfile (values %$mdfiles)
+    foreach my $key (keys %$mdfiles)
     {
+	my $mdfile = $mdfiles->{$key};
         # skip unchanged files
         next if not exists $mdfile->{changednew};
 
@@ -1668,6 +1671,20 @@ sub updateRepomd($$$)
                 $modifyrepopath, @args);
 
         $errc++ if ($exitcode || $exitcode == -1);
+
+        if( ! exists $self->{REPODATAJOBS}->{$key} )
+        {
+            # create a repodata job to update the checksum in DB
+            my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
+                                            dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
+            $job->uri( $self->{URI} );
+            $job->localBasePath( $self->localBasePath() );
+            $job->localRepoPath( $self->localRepoPath() );
+            $job->localFileLocation( $key );
+            $job->checksum_type( 'sha1' );
+            $job->checksum( $job->realchecksum() );
+            $self->{REPODATAJOBS}->{$key} = $job;
+        }
     }
 
     return 0 if ($errc);
