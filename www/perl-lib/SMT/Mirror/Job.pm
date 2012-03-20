@@ -551,7 +551,7 @@ sub updateDB
         {
             my $statement = sprintf("SELECT checksum, checksum_type from RepositoryContentData where localpath = %s",
                                     $self->{DBH}->quote( $self->fullLocalPath() ));
-            my $existChecksum = $self->{DBH}->selectcol_arrayref($statement, {Slice=>{}});
+            my $existChecksum = $self->{DBH}->selectall_arrayref($statement, {Slice=>{}});
 
 
             if( !exists $existChecksum->[0] || !defined $existChecksum->[0] )
