@@ -1373,6 +1373,7 @@ sub setMirrorableCatalogs
     }
 
     my $mirrorAll = $cfg->val("LOCAL", "MirrorAll");
+    chomp($mirrorAll);
     if(defined $mirrorAll && lc($mirrorAll) eq "true")
     {
         # set DOMIRROR to Y where MIRRORABLE = Y

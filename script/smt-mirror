@@ -273,7 +273,8 @@ else
 
 my $nuUser = $cfg->val("NU", "NUUser");
 my $nuPass = $cfg->val("NU", "NUPass");
-
+chomp($nuUser);
+chomp($nuPass);
 if(!defined $nuUser || $nuUser eq "" ||
    !defined $nuPass || $nuPass eq "")
 {
@@ -283,6 +284,7 @@ if(!defined $nuUser || $nuUser eq "" ||
 
 
 my $mirrorsrc = $cfg->val("LOCAL", "MirrorSRC");
+chomp($mirrorsrc);
 if(defined $mirrorsrc && lc($mirrorsrc) eq "false")
 {
     $mirrorsrc = 0;
