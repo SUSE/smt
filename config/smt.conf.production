@@ -72,8 +72,8 @@ signingKeyID=
 # from https://your.smt.url/repo/repoindex.xml
 # Note: if authenticated as a client machine instead of these mirrorUser,
 # the above URL returns only repositories relevant for that client.
-mirrorUser=
-mirrorPassword=
+#mirrorUser=
+#mirrorPassword=
 
 
 [REST]

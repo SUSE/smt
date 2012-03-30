@@ -90,7 +90,7 @@ sub handler {
             $aliasChange = 0;
         }
 
-        $mirroruser = $cfg->val('LOCAL', 'mirrorUser');
+        $mirroruser = $cfg->val('LOCAL', 'mirrorUser', '');
     };
     if($@)
     {
