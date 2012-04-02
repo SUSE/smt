@@ -78,6 +78,8 @@ sub jobhandler
   }
   $reboot = "never" unless defined $reboot;
 
+  my $rebootAllowed = SMT::Agent::Utils::isAgentAllowed('reboot') ? 1 : 0;
+  SMT::Agent::Utils::error("softwarepush with enforced reboot denied", $jobid) if ( ($reboot eq 'enforce') && ! $rebootAllowed );
 
   #==  create zypper base command ==
   my $command = "/usr/bin/zypper";
@@ -110,9 +112,9 @@ sub jobhandler
     if ($_retval == 102)
     {
       push @messages, "$IN installation requires reboot ($_retval)";
-      if ($reboot eq 'ifneeded')
+      if ($reboot eq 'ifneeded' || $reboot eq 'enforce')
       {
-        $doReboot = 1;
+        $doReboot = 1 if ($rebootAllowed);
         # retval remains untouched
       }
       else
