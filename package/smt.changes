@@ -1,7 +1,12 @@
 -------------------------------------------------------------------
-Fri Mar 30 12:38:30 CEST 2012 - mc@suse.de
+Mon Apr  2 18:02:01 CEST 2012 - mc@suse.de
 
 - version 1.2.0
+- use su option for logrotate (bnc#677335)
+
+-------------------------------------------------------------------
+Fri Mar 30 12:38:30 CEST 2012 - mc@suse.de
+
 - comment mirrorUser and Password out to avoid
   duplicate definition (bnc#751556)
 
