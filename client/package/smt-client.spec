@@ -19,7 +19,7 @@
 
 
 Name:           smt-client
-Version:        0.0.16
+Version:        0.0.17
 Release:        0.1
 Requires:       perl = %{perl_version}
 Requires:       perl-XML-XPath
@@ -33,7 +33,7 @@ Requires:       cron
 Requires:       zypper >= 1.3.14
 Requires:       libzypp >= 6.36.0
 Requires:       suseRegister
-PreReq:         %fillup_prereq 
+PreReq:         %fillup_prereq
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
 License:        GPL v2 or later

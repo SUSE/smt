@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Apr  2 12:14:32 CEST 2012 - jdsn@suse.de
+
+- check reboot permissions in swpush and update job (bnc#753255)
+- version 0.0.17
+
+-------------------------------------------------------------------
 Tue Dec 20 21:34:06 CET 2011 - jdsn@suse.de
 
 - add reboot feature to softwarepush and update job (bnc#730469)

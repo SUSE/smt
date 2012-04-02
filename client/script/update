@@ -53,6 +53,9 @@ sub jobhandler
   }
   $reboot = "never" unless defined $reboot;
 
+  my $rebootAllowed = SMT::Agent::Utils::isAgentAllowed('reboot') ? 1 : 0;
+  SMT::Agent::Utils::error("update with enforced reboot denied", $jobid) if ( ($reboot eq 'enforce') && ! $rebootAllowed );
+
   #== ZYPPER
   my $command = "/usr/bin/zypper";
   my $retval;
@@ -107,9 +110,18 @@ sub jobhandler
       }
       elsif ($reboot eq 'ifneeded' || $reboot eq 'enforce')
       {
-          $mesg = "update successfully finished and reboot executed";
-          $doReboot = 1;
-          $statuscode = 1;
+          if ($rebootAllowed)
+          {
+              $mesg = "update successfully finished and reboot executed";
+              $doReboot = 1;
+              $statuscode = 1;
+          }
+          else
+          {
+              $mesg = "update successfully finished and reboot needed, automatic reboot denied";
+              $doReboot = 0;
+              $statuscode = 6;
+          }
       }
   }
 
