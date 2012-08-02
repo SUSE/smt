@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Aug  2 15:48:44 UTC 2012 - jdsn@suse.de
+
+- add a missing conflicts statement to the package (bnc#768964)
+
+-------------------------------------------------------------------
 Mon Apr  2 12:14:32 CEST 2012 - jdsn@suse.de
 
 - check reboot permissions in swpush and update job (bnc#753255)
