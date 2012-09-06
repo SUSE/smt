@@ -288,8 +288,7 @@ sub createUserAgent
 
     $ua->protocols_allowed( [ 'https' ] );
 
-    # required to workaround a bug in LWP::UserAgent
-    $ua->no_proxy();
+    $ua->env_proxy();
 
     # reset to default redirect limit of 7
     $ua->max_redirect(7);
