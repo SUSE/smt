@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Sep  6 16:25:56 UTC 2012 - jdsn@suse.de
+
+- fix proxy configuration in smt-client (bnc#777755)
+
+-------------------------------------------------------------------
 Thu Aug  2 15:48:44 UTC 2012 - jdsn@suse.de
 
 - add a missing conflicts statement to the package (bnc#768964)
