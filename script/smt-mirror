@@ -138,7 +138,7 @@ if($help || !$optres)
     print "--mail -m               " . __("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
     print "                        " . __("The output on stdout and stderr will be suppressed.\n");
     print "--logfile -L file       " . __("Path to logfile\n");
-    print "--repository ID         " . __("Repository ID to mirror. By default, all repositories are selected.\n");
+    print "--repository ID         " . __("Repository ID to mirror. By default, all repositories are selected. Not allowed with --dbreplfile.\n");
     exit 0;
 }
 
@@ -261,6 +261,12 @@ if(!defined $dbreplfile)
 }
 else
 {
+    if(defined $repository)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_WARN, __("Option --repository not allowed together with --dbreplfile. Ignoring"));
+        $repository = undef;
+    }
+
     # add a parser
     $dbreplacement = [];
 
