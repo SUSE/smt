@@ -1212,12 +1212,15 @@ sub download_handler
             }
             else
             {
-                # hmmm, invalid. Remove it if we are not in dryrun mode or the file is metadata
+                # hmmm, invalid. Remove it if we are not in dryrun mode
 		$invalidFile = 1 if( !$dryrun );
             }
         }
-        # else mean wrong checksum. Can happen in the repodata case. Same filename with new checksum.
-        #      This will be detected and fixed later
+        elsif( -e $job->fullLocalPath() )
+        {
+            # wrong checksum. Can happen in the repodata case. Same filename with new checksum.
+            $invalidFile = 1 if( !$dryrun );
+        }
 
         # if it is an xml file we have to download it now and
         # process it
@@ -1233,7 +1236,7 @@ sub download_handler
 
 	    if( $invalidFile )
 	    {
-		    unlink ( $job->fullLocalPath() );
+                unlink ( $job->fullLocalPath() );
 	    }
 
             # mirror it first, so we can parse it
