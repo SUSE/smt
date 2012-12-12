@@ -483,6 +483,9 @@ Please, check your SMT installation."), path_to_sync_script));
         // randomize smt-repeated-register
         // 450 (seconds) == 7.5 minutes
         SetCredentials ("LOCAL", "rndRegister", tostring (random (450)));
+
+        // take care the the post script do not reschedule again
+        SCR::Execute (.target.bash, "touch /var/lib/smt/RESCHEDULE_SYNC_DONE");
     }
 
     global boolean WriteCronSettings () {
