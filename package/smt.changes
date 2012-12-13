@@ -3,7 +3,7 @@ Thu Dec 13 10:39:32 CET 2012 - mc@suse.de
 
 - version 1.2.1
 - Use a larger time window for the NCC sync to distribute load
-  (bnc#787129)
+  (bnc#787129,bnc#718000,bnc#779544)
 - Ignore option --repository, if --dbreplfile is given
   (bnc#784393)
 - mark files with wrong checksum as invalid and remove them
