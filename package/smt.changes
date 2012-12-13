@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Thu Dec 13 10:39:32 CET 2012 - mc@suse.de
+
+- version 1.2.1
+- Use a larger time window for the NCC sync to distribute load
+  (bnc#787129)
+- Ignore option --repository, if --dbreplfile is given
+  (bnc#784393)
+- mark files with wrong checksum as invalid and remove them
+  before mirror again
+
+-------------------------------------------------------------------
 Wed Apr  4 10:56:40 CEST 2012 - mc@suse.de
 
 - version 1.2.0

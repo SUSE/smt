@@ -1,5 +1,5 @@
 NAME          = smt
-VERSION       = 1.2.0
+VERSION       = 1.2.1
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
