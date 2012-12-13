@@ -106,6 +106,14 @@ done
 
 %post
 %{fillup_only -ans apache2 smt}
+
+if [ ! -e "/var/lib/smt/RESCHEDULE_SYNC_DONE" ]; then
+    /usr/lib/SMT/bin/reschedule-sync.sh
+    if [ "$?" = "0" ]; then
+        touch /var/lib/smt/RESCHEDULE_SYNC_DONE
+    fi
+fi
+
 exit 0
 
 %postun
