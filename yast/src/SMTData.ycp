@@ -430,52 +430,59 @@ Please, check your SMT installation."), path_to_sync_script));
     }
 
     global void CronRandomize () {
-	if (! IsFirstRun()) {
-	    return;
-	}
+        if (! IsFirstRun()) {
+            return;
+        }
 
-	y2milestone ("First-run: randomizing cron times");
+        y2milestone ("First-run: randomizing cron times");
 
-	// to get different 'random' numbers :->>>
-	srandom();
+        // to get different 'random' numbers :->>>
+        srandom();
 
-	integer hour_smt_daily = 1;
-	integer minute_smt_daily = 0;
+        integer hour_smt_daily = 20;
+        integer minute_smt_daily = 0;
 
-	// randomize smt-daily
-	integer counter = -1;
-	foreach (map one_cron_job, GetCronSettings(), {
-	    counter = counter + 1;
+        // randomize smt-daily
+        integer counter = -1;
+        foreach (map one_cron_job, GetCronSettings(), {
+            counter = counter + 1;
 
-	    if (regexpmatch (one_cron_job["command"]:"", "smt-daily")) {
-		// 00 - 02
-		hour_smt_daily = random (2);
-		minute_smt_daily = random (59);
+            if (regexpmatch (one_cron_job["command"]:"", "smt-daily")) {
+                // 20:00 - 02:59
+                integer hour_calc = random (7) - 4;
+                if (hour_calc >= 0) {
+                    hour_smt_daily = hour_calc;
+                } else {
+                    hour_smt_daily = 24 + hour_calc;
+                }
 
-		one_cron_job["hour"] = tostring (hour_smt_daily);
-		one_cron_job["minute"] = tostring (minute_smt_daily);
-		y2milestone ("smt-daily randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
-		ReplaceCronJob (counter, one_cron_job);
-	    }
-	});
+                minute_smt_daily = random (59);
 
-	// randomize smt-gen-report
-	counter = -1;
-	foreach (map one_cron_job, GetCronSettings(), {
-	    counter = counter + 1;
+                one_cron_job["hour"] = tostring (hour_smt_daily);
+                one_cron_job["minute"] = tostring (minute_smt_daily);
+                y2milestone ("smt-daily randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
+                ReplaceCronJob (counter, one_cron_job);
+            }
+        });
 
-	    if (regexpmatch (one_cron_job["command"]:"", "smt-gen-report")) {
-		// +4 hours to smt-daily
-		one_cron_job["hour"] = tostring (hour_smt_daily + 4);
-		one_cron_job["minute"] = tostring (minute_smt_daily);
-		y2milestone ("smt-gen-report randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
-		ReplaceCronJob (counter, one_cron_job);
-	    }
-	});
+        // randomize smt-gen-report
+        counter = -1;
+        foreach (map one_cron_job, GetCronSettings(), {
+            counter = counter + 1;
 
-	// randomize smt-repeated-register
-	// 450 (seconds) == 7.5 minutes
-	SetCredentials ("LOCAL", "rndRegister", tostring (random (450)));
+            if (regexpmatch (one_cron_job["command"]:"", "smt-gen-report")) {
+                // 4:00 - 6:59
+                integer hour_report = random(3) + 4;
+                one_cron_job["hour"] = tostring (hour_report);
+                one_cron_job["minute"] = tostring (minute_smt_daily);
+                y2milestone ("smt-gen-report randomized, hour: %1, minute: %2", one_cron_job["hour"]:"", one_cron_job["minute"]:"");
+                ReplaceCronJob (counter, one_cron_job);
+            }
+        });
+
+        // randomize smt-repeated-register
+        // 450 (seconds) == 7.5 minutes
+        SetCredentials ("LOCAL", "rndRegister", tostring (random (450)));
     }
 
     global boolean WriteCronSettings () {
