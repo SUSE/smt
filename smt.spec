@@ -96,6 +96,7 @@ cd man
 for manp in smt*.1; do
     install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man1/$manp
 done
+mkdir -p $RPM_BUILD_ROOT/var/lib/smt/
 # ---------------------------------------------------------------------------
 
 %clean
@@ -132,6 +133,7 @@ exit 0
 %dir /srv/www/perl-lib/SMT/
 %dir /usr/lib/SMT/
 %dir /usr/lib/SMT/bin/
+%dir /var/lib/smt
 %dir %{_datadir}/schemas/
 %dir %{_datadir}/schemas/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
