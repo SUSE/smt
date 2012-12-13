@@ -110,6 +110,7 @@ install:
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	cp db/smt-db $(DESTDIR)/usr/lib/SMT/bin/smt-db
 	chmod 0755 $(DESTDIR)/usr/lib/SMT/bin/smt-db
+	install -m 755 script/reschedule-sync.sh $(DESTDIR)/usr/lib/SMT/bin/
 	chmod 0755 $(DESTDIR)/etc/init.d/smt
 	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/
 	install -m 644 cron/smt-cron.conf $(DESTDIR)/etc/smt.d/
