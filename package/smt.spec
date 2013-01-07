@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.2.0)
+# spec file for package smt
 #
 # Copyright (c) 2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -48,6 +48,7 @@ Requires:       htmldoc
 Requires:       createrepo
 Requires:       gpg2
 Requires:       satsolver-tools perl-satsolver
+Requires:       bc
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
