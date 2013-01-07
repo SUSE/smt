@@ -1,5 +1,5 @@
 #
-# spec file for package smt (Version 1.0.18)
+# spec file for package smt
 #
 # Copyright (c) 2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -40,6 +40,7 @@ Requires:       limal-ca-mgm-perl
 Requires:       perl-DBIx-Migration-Directories
 Requires:       perl-DBIx-Transaction
 Requires:       openssl-certs
+Requires:       bc
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
