@@ -14,7 +14,7 @@ fi
 LINES=`grep $JOBNAME $CRONPATH | wc -l`
 CURRENT_HOUR=`grep $JOBNAME $CRONPATH | awk '{print $2}'`
 
-if [ "$LINES" != "1" -o "$CURRENT_HOUR" != "0" -a "$CURRENT_HOUR" != "1" ]; then
+if [ "$LINES" != "1" -o "$CURRENT_HOUR" != "0" -a "$CURRENT_HOUR" != "1" -a "$CURRENT_HOUR" != "*" ]; then
     # no need to reschedule
     echo "no reschedule needed"
     exit 0

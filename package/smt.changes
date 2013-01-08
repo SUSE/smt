@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jan  8 12:11:46 CET 2013 - mc@suse.de
+
+- let reschedule-sync.sh fix broken cron entries (bnc#796899)
+
+-------------------------------------------------------------------
 Mon Jan  7 09:49:55 CET 2013 - mc@suse.de
 
 - require bc, needed by reschedule-sync.sh (bnc#796899)
