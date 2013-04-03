@@ -5,7 +5,7 @@
     <proposals config:type="list">
 	<proposal>
 	    <name>smt_ca</name>
-	    <stage>continue,normal</stage>
+	    <stage>firstboot,continue,normal</stage>
 	    <proposal_modules config:type="list">
 		<proposal_module>ca_mgm</proposal_module>
 	    </proposal_modules>

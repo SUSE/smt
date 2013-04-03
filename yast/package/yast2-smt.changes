@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Apr  3 08:17:36 UTC 2013 - jsrain@suse.cz
+
+- allow to configure CA management when configuring SMT during
+  firstboot (bnc#812930)
+- 2.17.26
+
+-------------------------------------------------------------------
 Wed Feb  8 16:43:58 CET 2012 - mc@suse.de
 
 - 2.17.25
