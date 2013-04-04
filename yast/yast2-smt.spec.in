@@ -45,7 +45,7 @@ BuildArchitectures:	noarch
 Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
 
 %description
--
+Provides the YaST module for SMT configuration.
 
 @PREP@
 
