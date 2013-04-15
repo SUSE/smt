@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Apr 15 13:35:54 CEST 2013 - mc@suse.de
+
+- Require sudo to test file access (bnc#815235)
+- 2.17.27
+
+-------------------------------------------------------------------
 Wed Apr  3 08:17:36 UTC 2013 - jsrain@suse.cz
 
 - allow to configure CA management when configuring SMT during
