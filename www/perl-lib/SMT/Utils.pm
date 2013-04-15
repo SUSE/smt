@@ -847,7 +847,8 @@ sub getProxySettings
             $proxyUser = undef;
         }
     }
-
+    # remove escaped characters
+    $proxyUser =~ s/\\\\/\\/m if( defined $proxyUser );
     return ($httpProxy, $httpsProxy, $noProxy, $proxyUser);
 }
 
