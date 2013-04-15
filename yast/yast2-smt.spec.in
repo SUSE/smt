@@ -14,6 +14,7 @@ Requires:	/bin/chown
 Requires:	/bin/chmod
 # For checking whether the DB->user is available on the system
 Requires:	/usr/bin/getent
+Requires:       sudo
 # Modified smt-catalogs (added --batch-mode)
 # SMT::Client::getPatchStatusLabel returning two values
 # require smt version having SMT::Curl
