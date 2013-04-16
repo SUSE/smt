@@ -1,7 +1,12 @@
 -------------------------------------------------------------------
-Mon Apr 15 13:44:33 CEST 2013 - mc@suse.de
+Tue Apr 16 13:07:15 CEST 2013 - mc@suse.de
 
 - version 1.2.2
+- setting umask to default (bnc#814663)
+
+-------------------------------------------------------------------
+Mon Apr 15 13:44:33 CEST 2013 - mc@suse.de
+
 - fix unescape of proxy user and password (bnc#812475)
 - do not show errors before values are entered (bnc#815379)
 
