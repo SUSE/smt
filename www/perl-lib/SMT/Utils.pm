@@ -1028,6 +1028,8 @@ sub dropPrivileges
     {
         $ENV{'PWD'} = $pw->dir();
     }
+    # setting umask to default (bnc#814663)
+    umask 0022;
 
     return 1;
 }
