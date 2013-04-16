@@ -150,7 +150,9 @@ if($target ne "")
 
 while($name !~ /^[a-zA-Z\d_-]+$/)
 {
-    print __("Invalid repository name. Allowed characters are characters, numbers, - and _\n");
+    if ($name) {
+        print __("Invalid repository name. Allowed characters are characters, numbers, - and _\n");
+    }
 
     print __("Repository Name:");
     $name = <STDIN>;
@@ -159,7 +161,9 @@ chomp($name);
 
 while($exturl !~ /^(https?|file|ftp):\/\//)
 {
-    print __("Invalid URL. A http, https, ftp or file url is required.\n");
+    if ($exturl) {
+        print __("Invalid URL. A http, https, ftp or file url is required.\n");
+    }
 
     print __("URL:");
 
