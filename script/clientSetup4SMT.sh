@@ -8,6 +8,7 @@ SRCONF=/etc/suseRegister.conf
 CP=/bin/cp
 CAT=/bin/cat
 CHMOD=/bin/chmod
+CUT=/usr/bin/cut
 GREP=/usr/bin/grep
 RM=/bin/rm
 SUSEREGISTER=/usr/bin/suse_register
@@ -32,6 +33,7 @@ function usage()
   Usage: $0 <registration URL> [--regcert <url>] [--namespace <namespace>]
   Usage: $0 --host <hostname of the SMT server> [--regcert <url>] [--namespace <namespace>]
          configures a SLE10 client to register against a different registration server
+  Usage: $0 --host <hostname of the SMT server> [--fingerprint <fingerprint of server cert>] [--yes]
 
   Example: $0 https://smt.example.com/center/regsvc
   Example: $0 --host smt.example.com --namespace web
@@ -44,14 +46,18 @@ EOT
 exit 1
 }
 
+AUTOACCEPT=""
+FINGERPRINT=""
 REGURL=""
 VARIABLE=""
 NAMESPACE=""
 while true ; do
     case "$1" in
+        --fingerprint) VARIABLE=FINGERPRINT;;
         --host) VARIABLE=S_HOSTNAME;;
         --regcert) VARIABLE=REGCERT;;
         --namespace) VARIABLE=NAMESPACE;;
+        --yes) AUTOACCEPT="Y";;
         "") break ;;
         -h|--help) usage;;
         https*) REGURL=$1;;
@@ -105,6 +111,11 @@ else
     CERTURL="$REGCERT"
 fi
 
+if [ $AUTOACCEPT = "Y" ] && [ -z "$FINGERPRINT" ]; then
+    echo "Must specify fingerprint with auto accept and auto registration. Abort."
+    exit 1
+fi
+
 if [ ! -x $OPENSSL ]; then
 	echo "openssl command not found. Abort.";
 	exit 1;
@@ -117,6 +128,11 @@ fi
 
 if [ ! -x $CAT ]; then
 	echo "cat command not found. Abort.";
+	exit 1;
+fi
+
+if [ $AUTOACCEPT = "Y" ] && [ ! -x $CUT ]; then
+	echo "cut command not found. Abort.";
 	exit 1;
 fi
 
@@ -163,13 +179,23 @@ else
 	exit 1;
 fi
 
-$OPENSSL x509 -in $TEMPFILE -text -noout
+if [ $AUTOACCEPT = "Y" ]; then
+    SFPRINT=`/usr/bin/openssl x509 -in $TEMPFILE -noout -fingerprint | /usr/bin/cut -d= -f2`
+    MATCH=`/usr/bin/awk -vs1="$SFPRINT" -vs2="$FINGERPRINT" 'BEGIN { if ( tolower(s1) == tolower(s2) ){ print 1 } }'`
+    if [ "$MATCH" != "1" ]; then
+        echo "Server fingerprint: $SFPRINT and given fingerprint:  $FINGERPRINT do not match, not accepting cert. Abort."
+        exit 1
+    fi
+else
 
-read -p "Do you accept this certificate? [y/n] " YN
+    $OPENSSL x509 -in $TEMPFILE -text -noout
 
-if [ "$YN" != "Y" -a "$YN" != "y" ]; then
-	echo "Abort.";
-	exit 1;
+    read -p "Do you accept this certificate? [y/n] " YN
+
+    if [ "$YN" != "Y" -a "$YN" != "y" ]; then
+        echo "Abort.";
+        exit 1;
+    fi
 fi
 
 ISRES=0
@@ -245,10 +271,15 @@ for key in `ls $TMPDIR/*.key 2>/dev/null`; do
 
     $GPG --no-default-keyring --no-greeting --no-permission-warning --homedir $TMPDIR/.gnupg --list-public-keys --with-fingerprint
 
-    read -p "Trust and import this key? [y/n] " YN
-    rm -rf $TMPDIR/.gnupg/
-    if [ "$YN" != "Y" -a "$YN" != "y" ]; then
-        continue ;
+    if [ $AUTOACCEPT = "Y" ]; then
+        echo "Accepting key"
+        rm -rf $TMPDIR/.gnupg/
+    else
+        read -p "Trust and import this key? [y/n] " YN
+        rm -rf $TMPDIR/.gnupg/
+        if [ "$YN" != "Y" -a "$YN" != "y" ]; then
+            continue ;
+        fi
     fi
 
     rpm --import $key
@@ -258,10 +289,12 @@ rm -rf $TMPDIR/
 
 echo "Client setup finished."
 
-read -p "Start the registration now? [y/n] " YN
+if [ -z "$AUTOACCEPT" ]; then
+    read -p "Start the registration now? [y/n] " YN
 
-if [ "$YN" != "Y" -a "$YN" != "y" ]; then
-	exit 0;
+    if [ "$YN" != "Y" -a "$YN" != "y" ]; then
+        exit 0;
+    fi
 fi
 
 echo "$SUSEREGISTER -i -L /root/.suse_register.log"
