@@ -32,8 +32,8 @@ function usage()
 
   Usage: $0 <registration URL> [--regcert <url>] [--namespace <namespace>]
   Usage: $0 --host <hostname of the SMT server> [--regcert <url>] [--namespace <namespace>]
-         configures a SLE10 client to register against a different registration server
   Usage: $0 --host <hostname of the SMT server> [--fingerprint <fingerprint of server cert>] [--yes]
+         configures a SLE client to register against a different registration server
 
   Example: $0 https://smt.example.com/center/regsvc
   Example: $0 --host smt.example.com --namespace web
