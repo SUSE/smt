@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jun 11 13:17:38 CEST 2013 - mc@suse.de
+
+- version 1.2.3
+- Enhance clientSetup4SMT.sh to accept a CA certificate in a
+  non-interactive way by providing the fingerprint (bnc#821853)
+
+-------------------------------------------------------------------
 Tue Apr 16 13:07:15 CEST 2013 - mc@suse.de
 
 - version 1.2.2
