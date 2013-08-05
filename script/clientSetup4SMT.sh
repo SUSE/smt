@@ -169,7 +169,7 @@ fi
 TEMPFILE=`mktemp /tmp/smt.crt.XXXXXX`
 
 if [ -x $WGET ]; then
-	$WGET  --no-verbose -q --no-check-certificate --output-document $TEMPFILE $CERTURL
+	$WGET  --no-verbose -q --no-check-certificate --dns-timeout 10 --connect-timeout 10 --output-document $TEMPFILE $CERTURL
 	if [ $? -ne 0 ]; then
 		echo "Download failed. Abort.";
 		exit 1;
