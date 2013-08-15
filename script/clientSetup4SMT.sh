@@ -111,7 +111,7 @@ else
     CERTURL="$REGCERT"
 fi
 
-if [ $AUTOACCEPT = "Y" ] && [ -z "$FINGERPRINT" ]; then
+if [ "$AUTOACCEPT" = "Y" ] && [ -z "$FINGERPRINT" ]; then
     echo "Must specify fingerprint with auto accept and auto registration. Abort."
     exit 1
 fi
@@ -131,7 +131,7 @@ if [ ! -x $CAT ]; then
 	exit 1;
 fi
 
-if [ $AUTOACCEPT = "Y" ] && [ ! -x $CUT ]; then
+if [ "$AUTOACCEPT" = "Y" ] && [ ! -x $CUT ]; then
 	echo "cut command not found. Abort.";
 	exit 1;
 fi
@@ -179,7 +179,7 @@ else
 	exit 1;
 fi
 
-if [ $AUTOACCEPT = "Y" ]; then
+if [ "$AUTOACCEPT" = "Y" ]; then
     SFPRINT=`/usr/bin/openssl x509 -in $TEMPFILE -noout -fingerprint | /usr/bin/cut -d= -f2`
     MATCH=`/usr/bin/awk -vs1="$SFPRINT" -vs2="$FINGERPRINT" 'BEGIN { if ( tolower(s1) == tolower(s2) ){ print 1 } }'`
     if [ "$MATCH" != "1" ]; then
@@ -271,7 +271,7 @@ for key in `ls $TMPDIR/*.key 2>/dev/null`; do
 
     $GPG --no-default-keyring --no-greeting --no-permission-warning --homedir $TMPDIR/.gnupg --list-public-keys --with-fingerprint
 
-    if [ $AUTOACCEPT = "Y" ]; then
+    if [ "$AUTOACCEPT" = "Y" ]; then
         echo "Accepting key"
         rm -rf $TMPDIR/.gnupg/
     else
