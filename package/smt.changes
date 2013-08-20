@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Tue Aug 20 16:20:37 CEST 2013 - mc@suse.de
+
+- version 1.2.4
+- add 10 second timeout for dns and server connection to the wget
+  command, this prevents the registration script from hanging if there
+  is an issue with the network
+- make unescape more robust (bnc#834782)
+- fix syntax error while not using autoaccept (bnc#834801)
+
+-------------------------------------------------------------------
 Tue Jun 11 13:17:38 CEST 2013 - mc@suse.de
 
 - version 1.2.3
