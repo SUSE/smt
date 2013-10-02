@@ -1964,7 +1964,7 @@ sub productSubscriptionReport
             #
             $calchash->{$set->{PRODUCT_CLASS}}->{VMCOUNT} += 1;
             $calchash->{$set->{PRODUCT_CLASS}}->{VMCOUNT_TOTAL} += 1;
-
+            $dhash->{$key} = $set;
             next;
         }
         $dhash->{$key} = $set;
