@@ -157,7 +157,7 @@ sub mirror()
     else
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_WARN,
-            __("Cannot determine if 'header' directory needs mirroring. If this is a RES5 repository, this warning can be ignored."));
+            __("Cannot determine if 'header' directory needs mirroring. If this is a RES5 repository or higher, this warning can be ignored."));
         $self->job2statistic($job);
     }
 
