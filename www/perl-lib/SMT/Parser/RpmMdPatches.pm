@@ -334,6 +334,10 @@ sub handle_start_tag
             {
                 $attrs{'id'} = $1;
             }
+            elsif( $attrs{'href'} =~ /show_bug.cgi\?id=(.+)$/ )
+            {
+                $attrs{'id'} = $1;
+            }
         }
         push @{$self->{CURRENT}->{PATCHREFS}}, \%attrs;
     }
