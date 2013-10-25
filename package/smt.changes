@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Oct 25 12:16:38 CEST 2013 - mc@suse.de
+
+- rephrase warning message about missing header directory
+- Create a patch id also for normal bugzilla URLs (bnc#846620)
+
+-------------------------------------------------------------------
 Tue Aug 20 16:20:37 CEST 2013 - mc@suse.de
 
 - version 1.2.4
