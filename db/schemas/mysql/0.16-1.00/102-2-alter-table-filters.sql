@@ -1,6 +1,4 @@
 
-alter table Filters add column STAGINGGROUP_ID INT NOT NULL DEFAULT 1;
-
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS smt.drop_index_if_exists $$
