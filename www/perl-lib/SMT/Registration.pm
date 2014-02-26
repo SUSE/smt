@@ -112,21 +112,21 @@ sub register
         }
     }
 
+    my $cfg = undef;
+
+    eval
+    {
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        $r->log_error("Cannot read the SMT configuration file: ".$@);
+        return http_fail($r, 500,
+           "SMT server is missconfigured. Please contact your administrator.");
+    }
+
     if( $namespace ne "" )
     {
-        my $cfg = undef;
-
-        eval
-        {
-            $cfg = SMT::Utils::getSMTConfig();
-        };
-        if($@ || !defined $cfg)
-        {
-            $r->log_error("Cannot read the SMT configuration file: ".$@);
-            return http_fail($r, 500,
-                             "SMT server is missconfigured. Please contact your administrator.");
-        }
-
         my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
         if(! -d  "$LocalBasePath/repo/$namespace" )
         {
@@ -203,6 +203,31 @@ sub register
     else
     {
         # we have all data; store it and send <zmdconfig>
+        # for cloud quests verify they are authorized to access the server
+        my $verifyModule = $cfg->val('LOCAL', 'cloudGuestVerify');
+        if ($verifyModule && $verifyModule ne 'none')
+        {
+            my $module = "SMT::Client::$verifyModule";
+            (my $modFile = $module) =~ s|::|/|g;
+            eval
+            {
+                require $modFile . '.pm';
+            };
+            if ($@)
+            {
+                $r->log_error(
+                 "Failed to load guest verification module '$modFile.pm'\n$@");
+                return http_fail($r, 500,
+                  "Internal Server Error. Please contact your administrator.");
+            }
+            my $result = $module->verifyGuest($r, $regroot);
+            if (! $result)
+            {
+                $r->log_error("Guest verification failed\n");
+                return http_fail($r, 403,
+                     "Guest verification failed repository access denied");
+            }
+        }
 
         # get the os-target
 
