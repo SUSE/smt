@@ -1,4 +1,4 @@
-package SMT::SCCApi;
+package SMT::SCCAPI;
 
 use strict;
 use SMT::Curl;
@@ -98,6 +98,7 @@ sub request
         }
     }
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Unexpected Error");
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, Data::Dumper->Dump([$response]));
     return undef;
 }
 
@@ -105,27 +106,30 @@ sub announce
 {
     my $self = shift;
     my %opts = @_;
-    my $uri = $self->{URL}."/subscriptions/systems"
+    my $uri = $self->{URL}."/subscriptions/systems";
 
     my $body = {
         "email" => $opts{email},
         "hostname" => SMT::Utils::getFQDN(),
         "hwinfo" => ""
-      }
-      printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-               "Announce data: ".Data::Dumper->dump($body), 0);
+    };
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "Announce data: ".Data::Dumper->dump($body), 0);
 
-      my $headers = {"Authorization" => "Token token=\"".$opts{reg_code}."\""};
-      return $self->request($uri, "post", $headers, $body);
+    my $headers = {"Authorization" => "Token token=\"".$opts{reg_code}."\""};
+    return $self->request($uri, "post", $headers, $body);
 }
 
 sub products
 {
     my $self = shift;
-    my $uri = $self->{URL}."/products"
+    my $uri = $self->{URL}."/products";
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-        "list products", 0);
+             "list products", 0);
 
     return $self->request($uri, "get", {}, {});
 
 }
+
+1;
+

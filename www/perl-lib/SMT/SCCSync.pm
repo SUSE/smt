@@ -99,8 +99,8 @@ sub new
     $self->{AUTHUSER} = $user;
     $self->{AUTHPASS} = $pass;
 
-    $self->{API} = SMT::SCCAPI->new(vblevel => $vblevel,
-                                    log     => $LOG,
+    $self->{API} = SMT::SCCAPI->new(vblevel => $self->{VBLEVEL},
+                                    log     => $self->{LOG},
                                     useragent => $self->{USERAGENT});
     bless($self);
 
@@ -128,11 +128,11 @@ sub products
 
     if($self->{FROMDIR} && -d $self->{FROMDIR})
     {
-        open( my $fh, '<', $self->{FROMDIR}."/products.json" ) and do
+        open( FH, '<', $self->{FROMDIR}."/products.json" ) and do
         {
-            my $json_text   = <$fh>;
+            my $json_text   = <FH>;
             $input = JSON::decode_json( $json_text );
-            close $fh;
+            close FH;
         };
 
     }
@@ -146,19 +146,19 @@ sub products
     }
     if(defined $self->{TODIR})
     {
-        open( my $fh, '>', $self->{TODIR}."/products.json") or do
+        open( FH, '>', $self->{TODIR}."/products.json") or do
         {
             printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
             return 1;
-        }
+        };
         my $json_text = JSON::encode_json($input);
-        print $fh, "$json_text";
-        close $fh;
+        print FH "$json_text";
+        close FH;
         return 0;
     }
     else
     {
-        $ret = $self->_updateProducts($input);
+        my $ret = $self->_updateProducts($input);
         return $ret;
     }
 }
@@ -182,17 +182,17 @@ sub _updateProducts
                             FROM PRODUCTS
                            WHERE SRC='S'";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_products");
-    my $allProducts = $self->{DBH}->selectall_hashref($stm, ['PRODUCTDATAID']);
+    my $allProducts = $self->{DBH}->selectall_hashref($query_products, ['PRODUCTDATAID']);
 
     my $query_repositories = "SELECT ID, CATALOGID, NAME, TARGET FROM Catalogs WHERE SRC = 'S'";
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_catalogs");
-    my $allRepositories = $self->{DBH}->selectall_hashref($stm, ['CATALOGID']);
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_repositories");
+    my $allRepositories = $self->{DBH}->selectall_hashref($query_repositories, ['CATALOGID']);
 
 
     foreach my $product (@$json)
     {
         my $statement = "";
-        if (exists $allProducts-{$product->{product_id}})
+        if (exists $allProducts->{$product->{product_id}})
         {
             $statement = sprintf("UPDATE Products
                                      SET PRODUCT = %s,
@@ -207,18 +207,18 @@ sub _updateProducts
                                          PRODUCT_LIST = %s,
                                          PRODUCT_CLASS = %s
                                    WHERE PRODUCTDATAID = %s",
-                                   $self-{DBH}->quote($product->{name}),
-                                   $self-{DBH}->quote($product->{version}),
-                                   $self-{DBH}->quote($product->{rel}),
-                                   $self-{DBH}->quote($product->{arch}),
-                                   $self-{DBH}->quote(lc($product->{name})),
-                                   $self-{DBH}->quote(lc($product->{version})),
-                                   $self-{DBH}->quote(lc($product->{rel})),
-                                   $self-{DBH}->quote(lc($product->{arch})),
-                                   $self-{DBH}->quote($product->{friendly}),
-                                   $self-{DBH}->quote(($product->{product_list}?'Y':'N')),
-                                   $self-{DBH}->quote($product->{product_class}),
-                                   $self-{DBH}->quote($product->{product_id})
+                                   $self->{DBH}->quote($product->{name}),
+                                   $self->{DBH}->quote($product->{version}),
+                                   $self->{DBH}->quote($product->{rel}),
+                                   $self->{DBH}->quote($product->{arch}),
+                                   $self->{DBH}->quote(lc($product->{name})),
+                                   $self->{DBH}->quote(lc($product->{version})),
+                                   $self->{DBH}->quote(lc($product->{rel})),
+                                   $self->{DBH}->quote(lc($product->{arch})),
+                                   $self->{DBH}->quote($product->{friendly}),
+                                   $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
+                                   $self->{DBH}->quote($product->{product_class}),
+                                   $self->{DBH}->quote($product->{product_id})
                          );
         }
         else
@@ -227,18 +227,18 @@ sub _updateProducts
                                                         PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
                                                         FRIENDLY, PRODUCT_LIST, PRODUCT_CLASS, PRODUCTDATAID)
                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                                   $self-{DBH}->quote($product->{name}),
-                                   $self-{DBH}->quote($product->{version}),
-                                   $self-{DBH}->quote($product->{rel}),
-                                   $self-{DBH}->quote($product->{arch}),
-                                   $self-{DBH}->quote(lc($product->{name})),
-                                   $self-{DBH}->quote(lc($product->{version})),
-                                   $self-{DBH}->quote(lc($product->{rel})),
-                                   $self-{DBH}->quote(lc($product->{arch})),
-                                   $self-{DBH}->quote($product->{friendly}),
-                                   $self-{DBH}->quote(($product->{product_list}?'Y':'N')),
-                                   $self-{DBH}->quote($product->{product_class}),
-                                   $self-{DBH}->quote($product->{product_id}));
+                                   $self->{DBH}->quote($product->{name}),
+                                   $self->{DBH}->quote($product->{version}),
+                                   $self->{DBH}->quote($product->{rel}),
+                                   $self->{DBH}->quote($product->{arch}),
+                                   $self->{DBH}->quote(lc($product->{name})),
+                                   $self->{DBH}->quote(lc($product->{version})),
+                                   $self->{DBH}->quote(lc($product->{rel})),
+                                   $self->{DBH}->quote(lc($product->{arch})),
+                                   $self->{DBH}->quote($product->{friendly}),
+                                   $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
+                                   $self->{DBH}->quote($product->{product_class}),
+                                   $self->{DBH}->quote($product->{product_id}));
         }
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
         eval {
@@ -262,7 +262,7 @@ sub _updateProducts
             $exthost->fragment("");
             $exthost->query("");
 
-            if (exists $allRepositories-{$repo->{repo_id}})
+            if (exists $allRepositories->{$repo->{repo_id}})
             {
                 $statement = sprintf("UPDATE Catalogs
                                          SET NAME = %s,
@@ -273,14 +273,14 @@ sub _updateProducts
                                              EXTURL = %s,
                                              CATALOGTYPE = %s
                                        WHERE CATALOGID = %s",
-                                     $self-{DBH}->quote($repo->{name}),
-                                     $self-{DBH}->quote($repo->{description}),
-                                     $self-{DBH}->quote($repo->{distro_target}),
-                                     $self-{DBH}->quote($localpath),
-                                     $self-{DBH}->quote($exthost),
-                                     $self-{DBH}->quote($repo->{url}),
-                                     $self-{DBH}->quote('nu'),
-                                     $self-{DBH}->quote($repo->{repo_id})
+                                     $self->{DBH}->quote($repo->{name}),
+                                     $self->{DBH}->quote($repo->{description}),
+                                     $self->{DBH}->quote($repo->{distro_target}),
+                                     $self->{DBH}->quote($localpath),
+                                     $self->{DBH}->quote($exthost),
+                                     $self->{DBH}->quote($repo->{url}),
+                                     $self->{DBH}->quote('nu'),
+                                     $self->{DBH}->quote($repo->{repo_id})
                                     );
             }
             else
@@ -288,14 +288,14 @@ sub _updateProducts
                 $statement = sprintf("INSERT INTO Catalogs (NAME, DESCRIPTION, TARGET, LOCALPATH,
                                                             EXTHOST, EXTURL, CATALOGTYPE, CATALOGID, SRC)
                                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'S')",
-                                     $self-{DBH}->quote($repo->{name}),
-                                     $self-{DBH}->quote($repo->{description}),
-                                     $self-{DBH}->quote($repo->{distro_target}),
-                                     $self-{DBH}->quote($localpath),
-                                     $self-{DBH}->quote($exthost),
-                                     $self-{DBH}->quote($repo->{url}),
-                                     $self-{DBH}->quote('nu'),
-                                     $self-{DBH}->quote($repo->{repo_id})
+                                     $self->{DBH}->quote($repo->{name}),
+                                     $self->{DBH}->quote($repo->{description}),
+                                     $self->{DBH}->quote($repo->{distro_target}),
+                                     $self->{DBH}->quote($localpath),
+                                     $self->{DBH}->quote($exthost),
+                                     $self->{DBH}->quote($repo->{url}),
+                                     $self->{DBH}->quote('nu'),
+                                     $self->{DBH}->quote($repo->{repo_id})
                                     );
             }
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
@@ -310,8 +310,8 @@ sub _updateProducts
             $statement = sprintf("DELETE FROM ProductCatalogs
                                   WHERE PRODUCTDATAID = %s
                                     AND CATALOGID = %s",
-                                 $self-{DBH}->quote($product->{product_id}),
-                                 $self-{DBH}->quote($repo->{repo_id})
+                                 $self->{DBH}->quote($product->{product_id}),
+                                 $self->{DBH}->quote($repo->{repo_id})
                          );
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
             eval {
@@ -321,13 +321,13 @@ sub _updateProducts
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
             }
-            my $optional = ((grep $_ == 'optional', @{$repo->{flags}})?"Y":"N")
+            my $optional = ((grep $_ == 'optional', @{$repo->{flags}})?"Y":"N");
 
             $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTDATAID, CATALOGID, OPTIONAL, SRC)
                                   VALUES (%s, %s, %s, 'S')",
-                                 $self-{DBH}->quote($product->{product_id}),
-                                 $self-{DBH}->quote($repo->{repo_id}),
-                                 $self-{DBH}->quote($optional));
+                                 $self->{DBH}->quote($product->{product_id}),
+                                 $self->{DBH}->quote($repo->{repo_id}),
+                                 $self->{DBH}->quote($optional));
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
             eval {
                 $self->{DBH}->do($statement);
