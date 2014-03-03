@@ -105,7 +105,7 @@ if($fromdir ne "" && $todir ne "")
     $todir   = "";
 }
 
-if(!SMT::Utils::openLock("smt-ncc-sync"))
+if(!SMT::Utils::openLock("smt-sync"))
 {
     print __("Syncronization process is still running.\n");
     exit 0;
@@ -133,7 +133,7 @@ if($exportdir ne "" && $exportdir !~ /^\//)
 if($fromdir ne "" && ! -d $fromdir)
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Directory '%s' does not exist."), $fromdir));
-    SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+    SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
 }
 
 if( $exportdir ne "" )
@@ -142,7 +142,7 @@ if( $exportdir ne "" )
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
                 __("--exportdir and --todir or --fromdir cannot be used at the same time."));
-        SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+        SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
     }
     if ( ! -d $exportdir )
     {
@@ -152,7 +152,7 @@ if( $exportdir ne "" )
         if ($@)
         {
             SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
-            SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+            SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
         }
     }
 }
@@ -166,7 +166,7 @@ if($todir ne "" && ! -d $todir)
     if ($@)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
-        SMT::Utils::unLockAndExit( "smt-ncc-sync", 1, $LOG, $vblevel);
+        SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
     }
 }
 
@@ -236,7 +236,7 @@ if ( $exportdir ne "" )
     $writer->end();
     $output->close();
 
-    SMT::Utils::unLockAndExit( "smt-ncc-sync", 0, $LOG, $vblevel);
+    SMT::Utils::unLockAndExit( "smt-sync", 0, $LOG, $vblevel);
 }
 
 eval
@@ -322,7 +322,7 @@ eval
                                         log     => $LOG,
                                         vblevel => $vblevel);
         # if todir parameter is set, we can stop here. Everything is done.
-        SMT::Utils::unLockAndExit("smt-ncc-sync", 0, $LOG, $vblevel);
+        SMT::Utils::unLockAndExit("smt-sync", 0, $LOG, $vblevel);
     }
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
@@ -369,7 +369,7 @@ if($mail)
     SMT::Utils::sendMailToAdmins($subject, $body);
 }
 
-SMT::Utils::unLockAndExit("smt-ncc-sync", $exitcode, $LOG, $vblevel);
+SMT::Utils::unLockAndExit("smt-sync", $exitcode, $LOG, $vblevel);
 
 
 sub subscriptions_handler
