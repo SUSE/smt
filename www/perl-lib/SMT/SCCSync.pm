@@ -177,6 +177,64 @@ sub _updateProducts
     my $product = shift;
 
     my $statement = "";
+    my $paramlist =<<EOP
+<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0"
+lang="">
+  <guid description="" class="mandatory" />
+  <param id="secret" description="" command="zmd-secret"
+  class="mandatory" />
+  <host description="" />
+  <product description="" class="mandatory" />
+  <param id="ostarget" description="" command="zmd-ostarget"
+  class="mandatory" />
+  <param id="ostarget-bak" description="" command="lsb_release -sd"
+  class="mandatory" />
+  <param id="processor" description="" command="uname -p" />
+  <param id="platform" description="" command="uname -i" />
+  <param id="hostname" description="" command="uname -n" />
+  <param id="cpucount" description="" command="cpu-count" class="mandatory" />
+  <param id="cpu" description="" command="hwinfo --cpu" />
+  <param id="memory" description="" command="hwinfo --memory" />
+</paramlist>
+EOP
+;
+    my $needinfo =<<EON
+<?xml version="1.0" encoding="utf-8"?>
+<needinfo xmlns="http://www.novell.com/xml/center/regsvc-1_0"
+lang="" href="">
+  <guid description="" class="mandatory" />
+  <param id="secret" description="" command="zmd-secret"
+  class="mandatory" />
+  <host description="" />
+  <product description="" class="mandatory" />
+  <param id="ostarget" description="" command="zmd-ostarget"
+  class="mandatory" />
+  <param id="ostarget-bak" description="" command="lsb_release -sd"
+  class="mandatory" />
+  <param id="sysident" description="">
+    <param id="processor" description="" command="uname -p" />
+    <param id="platform" description="" command="uname -i" />
+    <param id="hostname" description="" command="uname -n" class="mandatory"/>
+    <param id="cpucount" description="" command="cpu-count" />
+  </param>
+  <param id="hw_inventory" description="">
+    <param id="cpu" description="" command="hwinfo --cpu" />
+    <param id="memory" description="" command="hwinfo --memory" />
+  </param>
+  <privacy url="http://www.novell.com/company/policies/privacy/textonly.html"
+  description="" class="informative" />
+</needinfo>
+EON
+;
+    my $service =<<EOS
+<service xmlns="http://www.novell.com/xml/center/regsvc-1_0"
+id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
+  <param id="url">\${mirror:url}</param>
+  <group-catalogs/>
+</service>
+EOS
+;
+
     if (exists $self->{ALLPRODUCTS}->{$product->{product_id}})
     {
         $statement = sprintf("UPDATE Products
@@ -205,6 +263,7 @@ sub _updateProducts
     {
         $statement = sprintf("INSERT INTO Products (PRODUCT, VERSION, REL, ARCH,
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
+                              PARAMLIST, NEEDINFO, SERVICE,
                               FRIENDLY, PRODUCT_LIST, PRODUCT_CLASS, PRODUCTDATAID)
                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                              $self->{DBH}->quote($product->{name}),
@@ -215,6 +274,9 @@ sub _updateProducts
                              $self->{DBH}->quote(lc($product->{version})),
                              $self->{DBH}->quote(lc($product->{rel})),
                              $self->{DBH}->quote(lc($product->{arch})),
+                             $self->{DBH}->quote($paramlist),
+                             $self->{DBH}->quote($needinfo),
+                             $self->{DBH}->quote($service),
                              $self->{DBH}->quote($product->{friendly}),
                              $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
                              $self->{DBH}->quote($product->{product_class}),
@@ -234,9 +296,10 @@ sub _updateRepositories
 {
     my $self = shift;
     my $repo = shift;
+    my $statement = "";
 
     my $localpath = "RPMMD/".$repo->{name};
-    if (grep $_ == 'nu', @{$repo->{flags}})
+    if (grep( ($_ == 'nu' || $_ == 'ris' || $_ == 'yum'), @{$repo->{flags}}))
     {
         $localpath = $repo->{name}."/".$repo->{distro_target};
     }
@@ -245,6 +308,17 @@ sub _updateRepositories
     $exthost->path("");
     $exthost->fragment("");
     $exthost->query("");
+
+    my $catalogtype = 'nu';
+    if (grep( ($_ == 'zypp' || $_ == 'repomd'), @{$repo->{flags}}))
+    {
+        $catalogtype = 'zypp';
+    }
+    elsif (grep( ($_ == 'yum'), @{$repo->{flags}}))
+    {
+        $catalogtype = 'yum';
+    }
+
 
     if (exists $self->{ALLREPOSITORIES}->{$repo->{repo_id}})
     {
@@ -260,7 +334,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
-                             $self->{DBH}->quote('nu'),
+                             $self->{DBH}->quote($catalogtype),
                              $self->{DBH}->quote($repo->{repo_id})
         );
     }
@@ -275,7 +349,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
-                             $self->{DBH}->quote('nu'),
+                             $self->{DBH}->quote($catalogtype),
                              $self->{DBH}->quote($repo->{repo_id})
         );
     }
@@ -295,9 +369,9 @@ sub _updateProductCatalogs
     my $product = shift;
     my $repo = shift;
 
-    $statement = sprintf("DELETE FROM ProductCatalogs
-                           WHERE PRODUCTDATAID = %s
-                             AND CATALOGID = %s",
+    my $statement = sprintf("DELETE FROM ProductCatalogs
+                              WHERE PRODUCTDATAID = %s
+                               AND CATALOGID = %s",
     $self->{DBH}->quote($product->{product_id}),
                          $self->{DBH}->quote($repo->{repo_id})
     );
