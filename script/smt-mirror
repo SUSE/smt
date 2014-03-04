@@ -429,7 +429,7 @@ foreach my $entry (@{$array})
                 {
                     # This date reflects the last successfull sync.
                     # Updated even if nothing changed.
-                    $rh->updateLastMirror ($entry->{CATALOGID});
+                    $rh->updateLastMirror ($entry->{ID});
                     # Something new has been downloaded, update the mirroring timestamp
                     # BNC #510320: Downloaded per repository, not a total download size
                     if ($s->{DOWNLOAD})
@@ -447,19 +447,19 @@ foreach my $entry (@{$array})
                 # s/he wants (maybe this should be configurable)
                 # Only add new filter for a new patch, if the current one does
                 # not match it, to avoid filling the DB unnecesarily.
-                if ($rh->filteringAllowed($entry->{CATALOGID}, $cfg->val("LOCAL", "MirrorTo")))
+                if ($rh->filteringAllowed($entry->{ID}, $cfg->val("LOCAL", "MirrorTo")))
                 {
                     my $newpatches = $zyppMirror->newpatches();
-                    foreach my $group (@{SMT::Utils::getStagingGroupsForCatalogID($dbh, $entry->{CATALOGID})})
+                    foreach my $group (@{SMT::Utils::getStagingGroupsForCatalogID($dbh, $entry->{ID})})
                     {
                         my $filter = SMT::Filter->new();
-                        $filter->load($dbh, $entry->{CATALOGID}, $group);
+                        $filter->load($dbh, $entry->{ID}, $group);
                         for (keys %$newpatches)
                         {
                             $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
                                 if (!$filter->matches($newpatches->{$_}));
                         }
-                        $filter->save($dbh, $entry->{CATALOGID}, $group);
+                        $filter->save($dbh, $entry->{ID}, $group);
                     }
                 }
             }
@@ -470,10 +470,10 @@ foreach my $entry (@{$array})
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
 if(!defined $dbreplfile)
 {
-    my $hash = $dbh->selectall_hashref( "select CATALOGID, NAME, TARGET, CATALOGTYPE ".
+    my $hash = $dbh->selectall_hashref( "select ID, NAME, TARGET, CATALOGTYPE ".
                                         "from Catalogs ".
                                         "where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
-                                        "CATALOGID" );
+                                        "ID" );
 
     if(keys %{$hash} > 0)
     {

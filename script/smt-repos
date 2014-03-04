@@ -183,7 +183,7 @@ $t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("D
 
 while ( my $v = $sth->fetchrow_hashref() ) {
     $count++;
-    my $catId = $v->{CATALOGID};
+    my $catId = $v->{ID};
     push(@idnumbers, $catId);
     my $catName = $v->{NAME};
     my $catTarget = $v->{TARGET};
@@ -193,7 +193,7 @@ while ( my $v = $sth->fetchrow_hashref() ) {
     my $catStaging = $v->{STAGING};
 
     if (defined($verbose)) {
-        my $st = sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.ARCH, p.REL, pc.OPTIONAL from Products p, ProductCatalogs pc where pc.CATALOGID=%s and p.PRODUCTDATAID = pc.PRODUCTDATAID order by p.PRODUCT, p.VERSION, p.ARCH, p.REL",
+        my $st = sprintf("select p.ID, p.PRODUCT, p.VERSION, p.ARCH, p.REL, pc.OPTIONAL from Products p, ProductCatalogs pc where pc.CATALOGID=%s and p.ID = pc.PRODUCTID order by p.PRODUCT, p.VERSION, p.ARCH, p.REL",
                          $dbh->quote($catId));
         my $products = $dbh->selectall_arrayref($st,{Slice=>{}} );
 
@@ -201,7 +201,7 @@ while ( my $v = $sth->fetchrow_hashref() ) {
         $output .= "          (" . $v->{DESCRIPTION} .")\n";
         $output .= "          " . $v->{EXTURL} ."\n";
         $output .= "          " . $v->{LOCALPATH} ."\n";
-        $output .= "          Repository ID: " . $v->{CATALOGID} ."\n";
+        $output .= "          Repository ID: " . $v->{ID} ."\n";
         $output .= "          Staging  : " . $catStaging ."\n";
         foreach my $h (@{$products}) {
             my $product = (defined $h->{PRODUCT}?$h->{PRODUCT}:"");

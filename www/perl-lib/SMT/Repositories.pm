@@ -116,7 +116,7 @@ use constant {
     NAME                => 'NAME',
     TARGET              => 'TARGET',
 
-    REPOSITORYID	=> 'CATALOGID',
+    REPOSITORYID	=> 'ID',
     REPOSITORIES	=> 'Catalogs',
 
     VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2,
@@ -250,7 +250,7 @@ sub getAllRepositories ($$) {
 	$row->{'TARGET'} = '' if (not defined $row->{'TARGET'});
 	$row->{'LAST_MIRROR'} = '' if (not defined $row->{'LAST_MIRROR'});
 	$row->{rownr} = $rownr;
-	$ret->{$row->{'CATALOGID'}} = $row;
+	$ret->{$row->{'ID'}} = $row;
 	$rownr++;
     }
 
@@ -444,7 +444,7 @@ sub updateLastMirror ($$)
 	return 0;
     };
 
-    $self->{'dbh'}->do('UPDATE Catalogs set LAST_MIRROR=now() where CATALOGID='.$self->{'dbh'}->quote($repositoryid));
+    $self->{'dbh'}->do('UPDATE Catalogs set LAST_MIRROR=now() where ID='.$self->{'dbh'}->quote($repositoryid));
 
     return 1;
 }
@@ -807,7 +807,7 @@ sub getProductReposAsXML
     my ($dbh, $productid) = @_;
 
     my $sql = 'select c.*, pc.OPTIONAL from Catalogs as c, ProductCatalogs as pc'
-        . ' where c.catalogid = pc.catalogid and productdataid = ?;';
+        . ' where c.id = pc.catalogid and pc.productid = ?;';
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $productid, SQL_INTEGER);
     $sth->execute();
