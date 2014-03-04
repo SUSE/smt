@@ -183,7 +183,7 @@ sub NCCRegister
             foreach my $guid (@guids)
             {
                 $regtimestring = SMT::Utils::getDBTimestamp();
-                my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID", $self->{DBH}->quote($guid)), {Slice => {}});
+                my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.ID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.ID", $self->{DBH}->quote($guid)), {Slice => {}});
 
                 my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s",
                                                                         $self->{DBH}->quote($guid)), {Slice => {}});
@@ -778,9 +778,9 @@ sub _bulkop_handler
         my @q_productids = ();
         foreach my $prod (@{$guidHash->{$guid}})
         {
-            if( exists $prod->{PRODUCTDATAID} && defined $prod->{PRODUCTDATAID} )
+            if( exists $prod->{ID} && defined $prod->{ID} )
             {
-                push @q_productids, $self->{DBH}->quote($prod->{PRODUCTDATAID});
+                push @q_productids, $self->{DBH}->quote($prod->{ID});
             }
         }
 
@@ -1144,30 +1144,30 @@ sub _buildRegisterXML
 
     foreach my $PHash (@{$products})
     {
-        if(!exists $PHash->{PRODUCTDATAID} || ! defined $PHash->{PRODUCTDATAID} ||
-           $PHash->{PRODUCTDATAID} eq "")
+        if(!exists $PHash->{ID} || ! defined $PHash->{ID} ||
+           $PHash->{ID} eq "")
         {
             next;
         }
 
         foreach my $pair (@{$regdata})
         {
-            if($pair->{KEYNAME} eq "product-name-".$PHash->{PRODUCTDATAID} &&
+            if($pair->{KEYNAME} eq "product-name-".$PHash->{ID} &&
                defined $pair->{VALUE} && $pair->{VALUE} ne "")
             {
                 $PHash->{PRODUCT} = $pair->{VALUE};
             }
-            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{PRODUCTDATAID} &&
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{ID} &&
                   defined $pair->{VALUE} && $pair->{VALUE} ne "")
             {
                 $PHash->{VERSION} = $pair->{VALUE};
             }
-            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{PRODUCTDATAID} &&
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{ID} &&
                   defined $pair->{VALUE} && $pair->{VALUE} ne "")
             {
                 $PHash->{ARCH} = $pair->{VALUE};
             }
-            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{PRODUCTDATAID} &&
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{ID} &&
                   defined $pair->{VALUE} && $pair->{VALUE} ne "")
             {
                 $PHash->{REL} = $pair->{VALUE};

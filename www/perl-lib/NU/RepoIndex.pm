@@ -27,16 +27,16 @@ sub getCatalogsByGUID($$)
     my $targetselect = sprintf("select TARGET from Clients c where c.GUID=%s", $dbh->quote($guid));
     my $target = $dbh->selectcol_arrayref($targetselect);
 
-    my $catalogselect = " select c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
+    my $catalogselect = " select c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
     $catalogselect   .= sprintf(" where r.GUID=%s ", $dbh->quote($guid));
-    $catalogselect   .= " and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.CATALOGTYPE='nu' and c.DOMIRROR like 'Y' ";
+    $catalogselect   .= " and r.PRODUCTID=pc.PRODUCTID and c.ID=pc.CATALOGID and c.CATALOGTYPE='nu' and c.DOMIRROR like 'Y' ";
     # add a filter by target architecture if it is defined
     if (defined $target && defined ${$target}[0] )
     {
         $catalogselect .= sprintf(" and c.TARGET=%s", $dbh->quote( ${$target}[0] ));
     }
 
-    return $dbh->selectall_hashref($catalogselect, "CATALOGID" );
+    return $dbh->selectall_hashref($catalogselect, "ID" );
 }
 
 sub getUsernameFromRequest($)

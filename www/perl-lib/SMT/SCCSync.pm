@@ -192,7 +192,6 @@ lang="">
   <param id="processor" description="" command="uname -p" />
   <param id="platform" description="" command="uname -i" />
   <param id="hostname" description="" command="uname -n" />
-  <param id="cpucount" description="" command="cpu-count" class="mandatory" />
   <param id="cpu" description="" command="hwinfo --cpu" />
   <param id="memory" description="" command="hwinfo --memory" />
 </paramlist>
@@ -215,7 +214,6 @@ lang="" href="">
     <param id="processor" description="" command="uname -p" />
     <param id="platform" description="" command="uname -i" />
     <param id="hostname" description="" command="uname -n" class="mandatory"/>
-    <param id="cpucount" description="" command="cpu-count" />
   </param>
   <param id="hw_inventory" description="">
     <param id="cpu" description="" command="hwinfo --cpu" />
@@ -244,7 +242,8 @@ EOS
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
                                      PRODUCT_CLASS = %s
-                               WHERE PRODUCTDATAID = %s",
+                               WHERE PRODUCTDATAID = %s
+                                 AND SRC = 'S'",
                              $self->{DBH}->quote($product->{name}),
                              $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{rel}),
@@ -264,8 +263,8 @@ EOS
         $statement = sprintf("INSERT INTO Products (PRODUCT, VERSION, REL, ARCH,
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
                               PARAMLIST, NEEDINFO, SERVICE,
-                              FRIENDLY, PRODUCT_LIST, PRODUCT_CLASS, PRODUCTDATAID)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                              FRIENDLY, PRODUCT_LIST, PRODUCT_CLASS, PRODUCTDATAID, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{name}),
                              $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{rel}),
@@ -327,7 +326,8 @@ sub _updateRepositories
                                      TARGET = %s, LOCALPATH = %s,
                                      EXTHOST = %s, EXTURL = %s,
                                      CATALOGTYPE = %s
-                               WHERE CATALOGID = %s",
+                               WHERE CATALOGID = %s
+                                 AND SRC = 'S'",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
                              $self->{DBH}->quote($repo->{distro_target}),
@@ -370,10 +370,10 @@ sub _updateProductCatalogs
     my $repo = shift;
 
     my $statement = sprintf("DELETE FROM ProductCatalogs
-                              WHERE PRODUCTDATAID = %s
-                               AND CATALOGID = %s",
-    $self->{DBH}->quote($product->{product_id}),
-                         $self->{DBH}->quote($repo->{repo_id})
+                              WHERE PRODUCTID = (select id from Products where PRODUCTDATAID = %s and SRC = 'S')
+                                AND CATALOGID = (select id from Catalogs where CATALOGID = %s and SRC = 'S')",
+                            $self->{DBH}->quote($product->{product_id}),
+                            $self->{DBH}->quote($repo->{repo_id})
     );
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
@@ -385,8 +385,11 @@ sub _updateProductCatalogs
     }
     my $optional = ((grep $_ == 'optional', @{$repo->{flags}})?"Y":"N");
 
-    $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTDATAID, CATALOGID, OPTIONAL, SRC)
-                          VALUES (%s, %s, %s, 'S')",
+    $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
+                          VALUES (
+                              (select id from Products where PRODUCTDATAID = %s and SRC = 'S'),
+                              (select id from Catalogs where CATALOGID = %s and SRC = 'S'),
+                              %s, 'S')",
                          $self->{DBH}->quote($product->{product_id}),
                          $self->{DBH}->quote($repo->{repo_id}),
                          $self->{DBH}->quote($optional));

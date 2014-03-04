@@ -561,7 +561,7 @@ sub getProducts
     my %options = @_;
     my ($cfg, $dbh) = init();
 
-    my $sql = "select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.PRODUCTDATAID and p2.PRODUCTDATAID=p.PRODUCTDATAID) AS registered_machines from Products p where 1 order by PRODUCT,VERSION,REL,ARCH";
+    my $sql = "select p.*,0+(select count(r.GUID) from Products p2, Registration r where r.PRODUCTID=p2.ID and p2.ID=p.ID) AS registered_machines from Products p where 1 order by PRODUCT,VERSION,REL,ARCH";
 
     my $sth = $dbh->prepare($sql);
     $sth->execute();
@@ -581,8 +581,8 @@ sub getProducts
 
         if(exists $options{catstat} && defined $options{catstat} && $options{catstat})
         {
-            my $statement = sprintf("select distinct c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTDATAID=%s and pc.CATALOGID = c.CATALOGID",
-                                    $dbh->quote($value->{PRODUCTDATAID}));
+            my $statement = sprintf("select distinct c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTID=%s and pc.CATALOGID = c.ID",
+                                    $dbh->quote($value->{ID}));
             my $arr = $dbh->selectall_arrayref($statement);
             my $cm = __("No");
 
@@ -603,7 +603,7 @@ sub getProducts
             # else some are available, some not => not all catalogs available
 
 
-            push @VALUES, [ $value->{PRODUCTDATAID},
+            push @VALUES, [ $value->{ID},
                             $value->{PRODUCT},
                             $value->{VERSION} || "-",
                             $value->{ARCH}    || "-",
@@ -613,7 +613,7 @@ sub getProducts
         }
         else
         {
-            push @VALUES, [ $value->{PRODUCTDATAID},
+            push @VALUES, [ $value->{ID},
                             $value->{PRODUCT},
                             $value->{VERSION} || "-",
                             $value->{ARCH}    || "-",
@@ -661,7 +661,7 @@ sub getRegistrations
 
     foreach my $clnt (@{$clients})
     {
-        my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID",
+        my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.ID",
                                                         $dbh->quote($clnt->{GUID})), {Slice => {}});
 
         my $prdstr = "";
@@ -703,7 +703,7 @@ sub listRegistrations
 
         foreach my $clnt (@{$clients})
         {
-            my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH, r.REGDATE, r.NCCREGDATE, r.NCCREGERROR from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.PRODUCTDATAID",
+            my $products = $dbh->selectall_arrayref(sprintf("SELECT p.PRODUCT, p.VERSION, p.REL, p.ARCH, r.REGDATE, r.NCCREGDATE, r.NCCREGERROR from Products p, Registration r WHERE r.GUID=%s and r.PRODUCTID=p.ID",
                                                             $dbh->quote($clnt->{GUID})), {Slice => {}});
 
             print __('Unique ID')." : $clnt->{GUID}\n";
@@ -775,7 +775,7 @@ sub setCatalogsByProduct
 
     my ($product, $version, $arch, $release) = split(/\s*,\s*/, $opts{prodStr}, 4);
 
-    my $st1 = sprintf("select PRODUCTDATAID from Products where PRODUCT=%s ", $dbh->quote($product));
+    my $st1 = sprintf("select ID from Products where PRODUCT=%s ", $dbh->quote($product));
 
     if(defined $version && $version ne "")
     {
@@ -797,7 +797,7 @@ sub setCatalogsByProduct
         return 1;
     }
 
-    my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where PRODUCTDATAID IN ($st1) and pc.CATALOGID = c.CATALOGID order by NAME,TARGET;";
+    my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTID IN ($st1) and pc.CATALOGID = c.ID order by NAME,TARGET;";
 
     #print "$statement \n";
 
@@ -850,7 +850,7 @@ sub deleteCatalogs
     }
     if( $opt{id} )
     {
-        $sql .= sprintf("AND CATALOGID = %s ", $dbh->quote($opt{id}));
+        $sql .= sprintf("AND ID = %s ", $dbh->quote($opt{id}));
     }
     my $ref = $dbh->selectall_arrayref($sql, {Slice => {}});
     foreach my $row (@{$ref})
@@ -956,7 +956,7 @@ sub setCatalogDoMirror
 
         if(exists $opt{id} && defined $opt{id} )
         {
-            $sql .= sprintf(" and CATALOGID=%s", $dbh->quote($opt{id}));
+            $sql .= sprintf(" and ID=%s", $dbh->quote($opt{id}));
         }
 
         #print $sql . "\n";
@@ -1025,7 +1025,7 @@ sub setCatalogStaging
     }
     if(defined $opt{id})
     {
-        $where .= sprintf(' and CATALOGID=%s', $dbh->quote($opt{id}));
+        $where .= sprintf(' and ID=%s', $dbh->quote($opt{id}));
     }
 
     # get local paths from the to-be-updated repositories
@@ -1068,7 +1068,7 @@ sub setCatalogStaging
                 rmtree($fullpath, 0, 0) if (-d $fullpath);
                 mkpath($fullpath);
                 move($productionpath, $fullpath) if (-d $productionpath);
-                _updateRepoContentData($productionpath, $fullpath, $dbh); 
+                _updateRepoContentData($productionpath, $fullpath, $dbh);
             }
             # when disabling staging:
             # - remove repo/testing/$foo
@@ -1083,7 +1083,7 @@ sub setCatalogStaging
                 rmtree($productionpath, 0, 0) if (-d $productionpath);
                 _cleanRepoContentData($productionpath, $dbh);
                 move($fullpath, $productionpath) if (-d $fullpath);
-                _updateRepoContentData($fullpath, $productionpath, $dbh); 
+                _updateRepoContentData($fullpath, $productionpath, $dbh);
             }
         }
 
@@ -1154,11 +1154,11 @@ sub setDoMirrorFromXml
         );
 
         # Delete mirror flag from catalogs that are not present in the mirrorinfo file
-        my $sth = $dbh->prepare("select CATALOGID from Catalogs where DOMIRROR = 'Y'");
+        my $sth = $dbh->prepare("select ID from Catalogs where DOMIRROR = 'Y'");
         $sth->execute();
         while (my $values = $sth->fetchrow_hashref())
         {
-            my $catalogid = $values->{CATALOGID};
+            my $catalogid = $values->{ID};
             if ( exists $enabledCatalogIds->{$catalogid} && $enabledCatalogIds->{$catalogid} == 1 )
             {
                 # Mirror Flag already set remove from hash
@@ -1167,13 +1167,13 @@ sub setDoMirrorFromXml
             else
             {
                 # Catalog no longer mirrorred remove from db
-                $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='N' WHERE CATALOGID=%s", $dbh->quote($catalogid)));
+                $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='N' WHERE ID=%s", $dbh->quote($catalogid)));
             }
         }
         # Enable the remaining catalogids for mirroring
         foreach my $id ( keys (%{$enabledCatalogIds}) )
         {
-            $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='Y' WHERE CATALOGID=%s", $dbh->quote($id)));
+            $dbh->do( sprintf("UPDATE Catalogs SET DOMIRROR='Y' WHERE ID=%s", $dbh->quote($id)));
         }
     }
     else
@@ -1319,7 +1319,7 @@ sub setMirrorableCatalogs
     }
 
     my $useragent = SMT::Utils::createUserAgent(log => $opt{log}, vblevel => $opt{vblevel});
-    my $sql = "select CATALOGID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
+    my $sql = "select ID, NAME, LOCALPATH, EXTURL, TARGET from Catalogs where CATALOGTYPE='zypp'";
     my $values = $dbh->selectall_arrayref($sql);
     foreach my $v (@{$values})
     {
@@ -1410,8 +1410,8 @@ sub removeCustomCatalog
 
     # delete existing catalogs with this id
 
-    my $affected1 = $dbh->do(sprintf("DELETE from Catalogs where CATALOGID=%s", $dbh->quote($options{catalogid})));
-    my $affected2 = $dbh->do(sprintf("DELETE from ProductCatalogs where CATALOGID=%s", $dbh->quote($options{catalogid})));
+    my $affected1 = $dbh->do(sprintf("DELETE from Catalogs where ID=%s", $dbh->quote($options{catalogid})));
+    my $affected2 = $dbh->do(sprintf("DELETE from ProductCatalogs where ID=%s", $dbh->quote($options{catalogid})));
 
     $affected1=0 if($affected1 != 1);
 
@@ -1461,7 +1461,10 @@ sub setupCustomCatalogs
                                     $dbh->quote("Y")));
     foreach my $pid (@{$options{productids}})
     {
-        $affected += $dbh->do(sprintf("INSERT INTO ProductCatalogs (PRODUCTDATAID, CATALOGID, OPTIONAL, SRC)VALUES(%s, %s, %s, 'C')",
+        $affected += $dbh->do(sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
+                                       VALUES(%s, (
+                                           select id from Catalogs where CATALOGID = %s and CATALOGTYPE = 'zypp'
+                                       ), %s, 'C')",
                                       $pid,
                                       $dbh->quote($options{catalogid}),
                                       $dbh->quote("N")));
@@ -1778,7 +1781,7 @@ sub productClassReport
         foreach my $archgroup (keys %groups)
         {
             my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
-            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s AND ",
+            $statement .= sprintf("SELECT ID from Products where PRODUCT_CLASS=%s AND ",
                                   $dbh->quote($class));
 
             if(@{$groups{$archgroup}} == 1)
@@ -1818,7 +1821,7 @@ sub productClassReport
         {
             # this select is for products which do not have an architecture set (ARCHLOWER is NULL)
             my $statement = "SELECT COUNT(DISTINCT GUID) from Registration where PRODUCTID IN (";
-            $statement .= sprintf("SELECT PRODUCTDATAID from Products where PRODUCT_CLASS=%s)",
+            $statement .= sprintf("SELECT ID from Products where PRODUCT_CLASS=%s)",
                                   $dbh->quote($class));
 
             printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
@@ -1925,7 +1928,7 @@ sub productSubscriptionReport
         $subhash->{$node->{PRODUCT_CLASS}}->{UNLIMITED_EXPSOON} = $node->{UNLIMITED_EXPSOON};
     }
 
-    $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.PRODUCTDATAID";
+    $statement = "SELECT PRODUCT_CLASS, r.GUID from Products p, Registration r where r.PRODUCTID=p.ID";
 
     printLog($options{log}, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
 
@@ -2324,7 +2327,7 @@ sub productSubscriptionReport
     my %ROPTIONS = ( 'headingText' => __("Registered Products without Subscriptions")." ($time)", drawRowLine => 1 );
 
     $statement  = "select p.PRODUCT_CLASS, p.PRODUCT, p.VERSION, p.ARCH, p.REL, count(r.GUID) as NUMBER ";
-    $statement .= "from Products p, Registration r where r.PRODUCTID = p.PRODUCTDATAID group by p.PRODUCT_CLASS;";
+    $statement .= "from Products p, Registration r where r.PRODUCTID = p.ID group by p.PRODUCT_CLASS;";
     $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
 
     foreach my $product_class (keys %{$res})
@@ -2887,7 +2890,7 @@ sub subscriptionReport
     my %ROPTIONS = ( 'headingText' => __("Registered Products without Subscriptions")." ($time)", drawRowLine => 1 );
 
     $statement  = "select p.PRODUCT_CLASS, p.PRODUCT, p.VERSION, p.ARCH, p.REL, count(r.GUID) as NUMBER from Products p, Registration r ";
-    $statement .= "where r.PRODUCTID = p.PRODUCTDATAID group by p.PRODUCT_CLASS;";
+    $statement .= "where r.PRODUCTID = p.ID group by p.PRODUCT_CLASS;";
     $res = $dbh->selectall_hashref($statement, "PRODUCT_CLASS");
 
     foreach my $product_class (keys %{$res})

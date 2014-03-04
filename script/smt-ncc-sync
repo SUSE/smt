@@ -186,7 +186,7 @@ if ( $exportdir ne "" )
     SMT::CLI::db2Xml(outfile => "$exportdir/catalogs.xml",
                      type => "catalogs",
                      table => "Catalogs",
-                     columns => [ 'CATALOGID', 'NAME', 'DESCRIPTION', 'TARGET', 'EXTHOST', 'EXTURL',
+                     columns => [ 'ID', 'CATALOGID', 'NAME', 'DESCRIPTION', 'TARGET', 'EXTHOST', 'EXTURL',
                                   'CATALOGTYPE', 'DOMIRROR' ],
                      row_handler => \&catalog_handler
                     );
@@ -195,7 +195,7 @@ if ( $exportdir ne "" )
     SMT::CLI::db2Xml(outfile => "$exportdir/productdata.xml",
                      type => "productdata",
                      table => "Products",
-                     columns => [ 'PRODUCTDATAID', 'PRODUCT', 'VERSION', 'REL', 'ARCH', 'FRIENDLY',
+                     columns => [ 'ID', 'PRODUCTDATAID', 'PRODUCT', 'VERSION', 'REL', 'ARCH', 'FRIENDLY',
                                   'PARAMLIST', 'NEEDINFO', 'SERVICE', 'PRODUCT_LIST', 'PRODUCT_CLASS' ]
                     );
 
@@ -203,7 +203,7 @@ if ( $exportdir ne "" )
     SMT::CLI::db2Xml(outfile => "$exportdir/productcatalogs.xml",
                      type => "productcatalogs",
                      table => "ProductCatalogs",
-                     columns => [ 'PRODUCTDATAID', 'CATALOGID', 'OPTIONAL' ]
+                     columns => [ 'PRODUCTID', 'CATALOGID', 'OPTIONAL' ]
                     );
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Target information"));
@@ -284,7 +284,7 @@ eval
 
     $rd->element("productcatalogs");
     $rd->table("ProductCatalogs");
-    $rd->key(['PRODUCTDATAID', 'CATALOGID']);
+    $rd->key(['PRODUCTID', 'CATALOGID']);
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product/Repository relations"));
     $res = $rd->sync();

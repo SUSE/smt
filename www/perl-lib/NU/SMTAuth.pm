@@ -14,7 +14,7 @@ sub handler {
     my $requiredAuth = "none";
     my $cfg = undef;
     my $requestedPath = $r->uri();
-    
+
     eval
     {
         $cfg = SMT::Utils::getSMTConfig();
@@ -41,8 +41,8 @@ sub handler {
 
     if( substr($requestedPath, -13) eq 'repoindex.xml' )
     {
-        if ( $r->user eq "" ) 
-        { 
+        if ( $r->user eq "" )
+        {
             $r->note_basic_auth_failure;
             #return Apache2::Const::HTTP_UNAUTHORIZED;
             return Apache2::Const::AUTH_REQUIRED;
@@ -81,14 +81,14 @@ sub handler {
         $r->log->error("Cannot connect to database");
         return Apache2::Const::SERVER_ERROR;
     }
-    
+
     my $statement = sprintf("SELECT SECRET from Clients where GUID = %s and SECRET = %s",
                             $dbh->quote($r->user()), $dbh->quote($password));
     my $existsecret = $dbh->selectcol_arrayref($statement);
-    
+
     if( !exists $existsecret->[0] || !defined $existsecret->[0] || $existsecret->[0] eq "" )
     {
-                            
+
         # Fallback to MachineData: secret in the clients table is very new and might be empty
         $statement = sprintf("SELECT GUID from MachineData where GUID = %s and KEYNAME = 'secret' and VALUE = %s",
                              $dbh->quote($r->user()), $dbh->quote($password));
@@ -101,13 +101,13 @@ sub handler {
             return Apache2::Const::AUTH_REQUIRED;
         }
     }
-    
+
     if($requiredAuth eq "lazy" )
     {
         $r->log->info("Access granted");
         return Apache2::Const::OK;
     }
-    
+
     #
     # credentials ok, now we need to check if this user should have
     # access to the requested URI
@@ -118,7 +118,7 @@ sub handler {
 
     $statement  = " select c.LOCALPATH, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
     $statement .= sprintf(" where r.GUID=%s ", $dbh->quote($r->user()) );
-    $statement .= " and r.PRODUCTID=pc.PRODUCTDATAID and c.CATALOGID=pc.CATALOGID and c.DOMIRROR like 'Y' ";
+    $statement .= " and r.PRODUCTID=pc.PRODUCTID and c.ID=pc.CATALOGID and c.DOMIRROR like 'Y' ";
     # add a filter by target architecture if it is defined
     if (exists $cdata->{$r->user()}->{TARGET} && defined $cdata->{$r->user()}->{TARGET} &&
         $cdata->{$r->user()}->{TARGET} ne "" )
@@ -126,7 +126,7 @@ sub handler {
         $statement .= sprintf(" and (c.TARGET=%s or c.TARGET IS NULL)", $dbh->quote( $cdata->{$r->user()}->{TARGET} ));
     }
     $r->log->info("STATEMENT: $statement");
-    
+
     # evil things like "dir/../../otherdir" are solved by apache.
     # we get here the resulting path
     # we only need to strip out "somedir////nextdir"
@@ -135,12 +135,12 @@ sub handler {
     $r->log->info($r->user()." requests path '$requestedPath'");
 
     my $namespace = "";
-    
+
     if(exists $cdata->{$r->user()}->{NAMESPACE} && defined $cdata->{$r->user()}->{NAMESPACE})
     {
         $namespace = $cdata->{$r->user()}->{NAMESPACE};
     }
-    
+
     my $localRepoPath = $dbh->selectall_hashref($statement, 'LOCALPATH');
     foreach my $path ( keys %{$localRepoPath} )
     {
@@ -152,9 +152,9 @@ sub handler {
         {
             $path = SMT::Utils::cleanPath("/repo", $path);
         }
-        
+
         $r->log->info($r->user()." has access to '$path'");
-        
+
         if( index($requestedPath, $path) == 0 )
         {
             $r->log->info("Access granted");

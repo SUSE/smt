@@ -376,9 +376,10 @@ sub _parseXML
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "File '$xmlfile' does not exist.");
         return 1;
     }
+    my $dbh = SMT::Utils::db_connect();
 
     my $parser = SMT::Parser::RegData->new();
-    my $err = $parser->parse($xmlfile, sub { ncc_handler($self, @_); });
+    my $err = $parser->parse($xmlfile, sub { ncc_handler($self, $dbh, @_); });
 
     return $err;
 }
@@ -386,6 +387,7 @@ sub _parseXML
 sub ncc_handler
 {
     my $self = shift;
+    my $dbh  = shift;
     my $data = shift;
 
     my $root = $data->{MAINELEMENT};
@@ -417,6 +419,29 @@ sub ncc_handler
         $data->{VERSIONLOWER} = lc($data->{VERSION}) if(exists $data->{VERSION} && defined $data->{VERSION});
         $data->{RELLOWER}     = lc($data->{REL}) if(exists $data->{REL} && defined $data->{REL});
         $data->{ARCHLOWER}    = lc($data->{ARCH}) if(exists $data->{ARCH} && defined $data->{ARCH});
+    }
+    elsif(lc($root) eq "productcatalogs")
+    {
+        # we now use the ID columns tso we need to translate first
+        if(exists $data->{PRODUCTDATAID} && $data->{PRODUCTDATAID})
+        {
+            my $x = $dbh->selectall_arrayref("select id from Products where PRODUCTDATAID = ".$dbh->quote($data->{PRODUCTDATAID}),
+                                             {Slice=>{}});
+            if (exists $x->[0] && $x->[0]->{id})
+            {
+                $data->{PRODUCTID} = $x->[0]->{id};
+                delete $data->{PRODUCTDATAID};
+            }
+        }
+        elsif(exists $data->{CATALOGID} && $data->{CATALOGID})
+        {
+            my $x = $dbh->selectall_arrayref("select id from Catalogs where CATALOGID = ".$dbh->quote($data->{CATALOGID}),
+                                             {Slice=>{}});
+            if (exists $x->[0] && $x->[0]->{id})
+            {
+                $data->{CATALOGID} = $x->[0]->{id};
+            }
+        }
     }
 
     push @{$self->{XML}->{DATA}->{$root}}, $data;

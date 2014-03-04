@@ -506,7 +506,7 @@ sub insertRegistration
     my $regtimestring = "";
     my $hostname = "";
 
-    my @list = findColumnsForProducts($r, $dbh, $regdata->{register}->{product}, "PRODUCTDATAID");
+    my @list = findColumnsForProducts($r, $dbh, $regdata->{register}->{product}, "ID");
 
     my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
     $r->log->info("STATEMENT: $statement");
@@ -832,8 +832,8 @@ sub findCatalogs
 
     # get catalog values (only for the once we DOMIRROR)
 
-    $statement  = "SELECT c.CATALOGID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc WHERE ";
-    $statement .= "pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.CATALOGID=pc.CATALOGID ";
+    $statement  = "SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc WHERE ";
+    $statement .= "pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.ID=pc.CATALOGID ";
     $statement .= "AND (c.TARGET IS NULL ";
     if(defined $target && $target ne "")
     {
@@ -843,11 +843,11 @@ sub findCatalogs
 
     if(@{$productids} > 1)
     {
-        $statement .= "pc.PRODUCTDATAID IN (".join(",", @q_pids).") ";
+        $statement .= "pc.PRODUCTID IN (".join(",", @q_pids).") ";
     }
     elsif(@{$productids} == 1)
     {
-        $statement .= "pc.PRODUCTDATAID = ".$q_pids[0]." ";
+        $statement .= "pc.PRODUCTID = ".$q_pids[0]." ";
     }
     else
     {
@@ -858,7 +858,7 @@ sub findCatalogs
 
     $r->log->info("STATEMENT: $statement");
 
-    $result = $dbh->selectall_hashref($statement, "CATALOGID");
+    $result = $dbh->selectall_hashref($statement, "ID");
 
     $r->log->info("RESULT: ".Data::Dumper->Dump([$result]));
 
@@ -882,7 +882,7 @@ sub getRegistrationStatus
                                     s.SUBTYPE TYPE,
                                     s.SUBENDDATE ENDDATE
                                FROM Registration r
-                               JOIN Products p ON r.PRODUCTID = p.PRODUCTDATAID
+                               JOIN Products p ON r.PRODUCTID = p.ID
                           LEFT JOIN ClientSubscriptions cs ON cs.GUID = r.GUID
                           LEFT JOIN Subscriptions s ON s.SUBID = cs.SUBID
                               WHERE r.GUID = %s", $dbh->quote($guid));
