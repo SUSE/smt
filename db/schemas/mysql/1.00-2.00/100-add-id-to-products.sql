@@ -1,0 +1,9 @@
+
+ALTER TABLE Products drop PRIMARY KEY;
+
+ALTER TABLE Products add column ID integer NOT NULL AUTO_INCREMENT FIRST, ADD primary KEY ID(ID);
+
+UPDATE Registration r
+   SET PRODUCTID = (select p.ID from Products p where p.PRODUCTDATAID = r.PRODUCTID);
+
+ALTER TABLE Products ADD UNIQUE KEY PDID_SRC (PRODUCTDATAID, SRC);
