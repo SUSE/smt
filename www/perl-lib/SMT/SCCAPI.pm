@@ -87,6 +87,7 @@ sub request
     }
     if($response->is_success)
     {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, Data::Dumper->Dump([$response]));
         if ($response->content_type() == "application/json")
         {
             return JSON::decode_json($response->content);
