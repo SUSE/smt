@@ -83,8 +83,9 @@ create table Catalogs(ID          INT AUTO_INCREMENT PRIMARY KEY,
                       SRC         CHAR(1) DEFAULT 'N',    -- N NCC    C Custom
                       STAGING     CHAR(1) DEFAULT 'N',    -- N No  Y Yes
                       LAST_MIRROR TIMESTAMP NULL DEFAULT NULL,
-                      UNIQUE(NAME, TARGET),
+                      UNIQUE(NAME, TARGET)
                      );
+alter table Catalogs add unique key CID_SRC (CATALOGID, SRC);
 
 create table StagingGroups(ID            INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                            NAME          VARCHAR(255) NOT NULL UNIQUE,
