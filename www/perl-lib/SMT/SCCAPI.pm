@@ -17,14 +17,29 @@ sub new
     $self->{LOG}   = undef;
     $self->{USERAGENT}  = undef;
     $self->{URL} = "https://scc.suse.com/connect";
+    $self->{AUTHUSER} = "";
+    $self->{AUTHPASS} = "";
+    $self->{IDENT} = "";
 
     if(exists $opt{url} && $opt{url})
     {
-        $self->{URL} = $opt{URL}
+        $self->{URL} = $opt{url};
     }
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
+    }
+    if(exists $opt{authuser} && $opt{authuser})
+    {
+        $self->{AUTHUSER} = $opt{authuser};
+    }
+    if(exists $opt{authpass} && $opt{authpass})
+    {
+        $self->{AUTHPASS} = $opt{authpass};
+    }
+    if(exists $opt{ident} && $opt{ident})
+    {
+        $self->{IDENT} = $opt{ident};
     }
 
     if(exists $opt{log} && defined $opt{log} && $opt{log})
@@ -59,9 +74,13 @@ sub request
 
     if ($url !~ /^http/)
     {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Invalid URL");
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Invalid URL: $url");
         return undef;
     }
+
+    $headers = {} if(ref($headers) != "HASH");
+    # generic identification header. Used for debugging in SCC
+    $headers->{SMT} = $self->{IDENT};
 
     my $response = undef;
     if ($method == "get")
