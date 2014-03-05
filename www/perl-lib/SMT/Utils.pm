@@ -1248,6 +1248,155 @@ sub getStagingGroupsForCatalogID
     return $res;
 }
 
+=item lookupProductIdByDataId($dbh, $id[, $src])
+
+Lookup the product ID using the external product ID. Providing the
+Source is optional.
+
+It returns the first ID found or undef.
+
+=cut
+
+sub lookupProductIdByDataId
+{
+    my $dbh = shift || return undef;
+    my $id = shift || return undef;
+    my $src = shift;
+
+    my $query_product = sprintf("SELECT ID FROM Products WHERE PRODUCTDATAID = %s",
+                                $dbh->quote($id));
+    $query_product .= sprintf(" AND SRC = %s", $dbh->quote($src)) if $src;
+
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $dbh->selectrow_hashref($query_product);
+    return $ref->{ID};
+}
+
+=item lookupProductIdByName($dbh, $name[, $version][, $arch][, $release])
+
+Lookup the product ID using name, version arch and release.
+This function return the best match or undef if nothing could be found.
+
+=cut
+
+sub lookupProductIdByName
+{
+    my $dbh = shift || return undef;
+    my $name = shift || return undef;
+    my $version = shift;
+    my $arch = shift;
+    my $release = shift;
+
+    my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
+
+    $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($name));
+
+    $statement .= " AND (";
+    $statement .= "VERSIONLOWER=".$dbh->quote(lc($version))." OR " if($version);
+    $statement .= "VERSIONLOWER IS NULL)";
+
+    $statement .= " AND (";
+    $statement .= "RELLOWER=".$dbh->quote(lc($release))." OR " if($release);
+    $statement .= "RELLOWER IS NULL)";
+
+    $statement .= " AND (";
+    $statement .= "ARCHLOWER=".$dbh->quote(lc($arch))." OR " if($arch);
+    $statement .= "ARCHLOWER IS NULL)";
+
+    # order by name,version,release,arch with NULL values at the end (bnc#659912)
+    $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
+
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
+
+    if(@$pl == 1)
+    {
+        # Only one match found.
+        return $pl->[0]->{ID};
+    }
+    elsif(@$pl > 1)
+    {
+        my $found = 0;
+        # Do we have an exact match?
+        foreach my $prod (@$pl)
+        {
+            if(lc($prod->{VERSIONLOWER}) eq lc($version) &&
+               lc($prod->{ARCHLOWER}) eq  lc($arch)&&
+               lc($prod->{RELLOWER}) eq lc($release))
+            {
+                # Exact match found.
+                return $prod->{ID};
+            }
+        }
+        #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
+        return $pl->[0]->{ID};
+    }
+    #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No Product match found for: $name $version $release $arch");
+    return undef;
+}
+
+=item lookupCatalogIdByDataId($dbh, $id[, $src])
+
+Lookup the catalog ID using the external catalog ID. Providing the
+Source is optional.
+
+It returns the first ID found or undef.
+
+=cut
+
+sub lookupCatalogIdByDataId
+{
+    my $dbh = shift || return undef;
+    my $id = shift || return undef;
+    my $src = shift;
+
+    my $query_product = sprintf("SELECT ID FROM Catalogs WHERE CATALOGID = %s",
+                                $dbh->quote($id));
+    $query_product .= sprintf(" AND SRC = %s", $dbh->quote($src)) if $src;
+
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $dbh->selectrow_hashref($query_product);
+    return $ref->{ID};
+}
+
+=item lookupCatalogIdByName($dbh, $name[, $target])
+
+Lookup the catalog ID using name and target.
+This function return the ID or undef.
+
+=cut
+
+sub lookupCatalogIdByName
+{
+    my $dbh = shift || return undef;
+    my $name = shift || return undef;
+    my $target = shift;
+
+    my $statement = "SELECT ID FROM Catalogs where ";
+
+    $statement .= "NAME = ".$dbh->quote($name);
+
+    if($target)
+    {
+        $statement .= " AND TARGET=".$dbh->quote($target);
+    }
+    else
+    {
+        $statement .= " AND TARGET IS NULL";
+    }
+
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
+
+    if(@$pl == 1)
+    {
+        # Only one match found.
+        return $pl->[0]->{ID};
+    }
+    #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No match found for: $name $target");
+    return undef;
+}
+
 =back
 
 =head1 AUTHOR

@@ -163,125 +163,6 @@ sub products
     }
 }
 
-sub lookupProductIdByDataId
-{
-    my $self = shift;
-    my $id = shift;
-    my $src = shift;
-
-    my $query_product = sprintf("SELECT ID FROM Products WHERE PRODUCTDATAID = %s",
-                                $self->{DBH}->quote($id));
-    $query_product .= sprintf(" AND SRC = %s", $self->{DBH}->quote($src)) if $src;
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
-    my $ref = $self->{DBH}->selectrow_hashref($query_product);
-    return $ref->{ID};
-}
-
-sub lookupProductIdByName
-{
-    my $self = shift;
-    my $name = shift;
-    my $version = shift;
-    my $arch = shift;
-    my $release = shift;
-
-    my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
-
-    $statement .= "PRODUCTLOWER = ".$self->{DBH}->quote(lc($name));
-
-    $statement .= " AND (";
-    $statement .= "VERSIONLOWER=".$self->{DBH}->quote(lc($version))." OR " if($version);
-    $statement .= "VERSIONLOWER IS NULL)";
-
-    $statement .= " AND (";
-    $statement .= "RELLOWER=".$self->{DBH}->quote(lc($release))." OR " if($release);
-    $statement .= "RELLOWER IS NULL)";
-
-    $statement .= " AND (";
-    $statement .= "ARCHLOWER=".$self->{DBH}->quote(lc($arch))." OR " if($arch);
-    $statement .= "ARCHLOWER IS NULL)";
-
-    # order by name,version,release,arch with NULL values at the end (bnc#659912)
-    $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
-    my $pl = $self->{DBH}->selectall_arrayref($statement, {Slice => {}});
-
-    if(@$pl == 1)
-    {
-        # Only one match found.
-        return $pl->[0]->{ID};
-    }
-    elsif(@$pl > 1)
-    {
-        my $found = 0;
-        # Do we have an exact match?
-        foreach my $prod (@$pl)
-        {
-            if(lc($prod->{VERSIONLOWER}) eq lc($version) &&
-               lc($prod->{ARCHLOWER}) eq  lc($arch)&&
-               lc($prod->{RELLOWER}) eq lc($release))
-            {
-                # Exact match found.
-                return $prod->{ID};
-            }
-        }
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
-        return $pl->[0]->{ID};
-    }
-    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No Product match found for: $name $version $release $arch");
-    return undef;
-}
-
-
-sub lookupCatalogIdByDataId
-{
-    my $self = shift;
-    my $id = shift;
-    my $src = shift;
-
-    my $query_product = sprintf("SELECT ID FROM Catalogs WHERE CATALOGID = %s",
-                                $self->{DBH}->quote($id));
-    $query_product .= sprintf(" AND SRC = %s", $self->{DBH}->quote($src)) if $src;
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
-    my $ref = $self->{DBH}->selectrow_hashref($query_product);
-    return $ref->{ID};
-}
-
-sub lookupCatalogIdByName
-{
-    my $self = shift;
-    my $name = shift;
-    my $target = shift;
-
-    my $statement = "SELECT ID FROM Catalogs where ";
-
-    $statement .= "NAME = ".$self->{DBH}->quote($name);
-
-    if($target)
-    {
-        $statement .= " AND TARGET=".$self->{DBH}->quote($target);
-    }
-    else
-    {
-        $statement .= " AND TARGET IS NULL";
-    }
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
-    my $pl = $self->{DBH}->selectall_arrayref($statement, {Slice => {}});
-
-    if(@$pl == 1)
-    {
-        # Only one match found.
-        return $pl->[0]->{ID};
-    }
-    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No match found for: $name $target");
-    return undef;
-}
-
-
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -349,7 +230,7 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 EOS
 ;
 
-    if ($self->lookupProductIdByDataId($product->{id}, 'S'))
+    if (SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S'))
     {
         $statement = sprintf("UPDATE Products
                                  SET PRODUCT = %s, VERSION = %s,
@@ -435,7 +316,7 @@ sub _updateRepositories
     }
 
 
-    if ($self->lookupCatalogIdByDataId($repo->{id}, 'S'))
+    if (SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S'))
     {
         $statement = sprintf("UPDATE Catalogs
                                  SET NAME = %s, DESCRIPTION = %s,
@@ -484,8 +365,8 @@ sub _updateProductCatalogs
     my $self = shift;
     my $product = shift;
     my $repo = shift;
-    my $product_id = $self->lookupProductIdByDataId($product->{id}, 'S');
-    my $repo_id = $self->lookupCatalogIdByDataId($repo->{id}, 'S');
+    my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S');
+    my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S');
     if (! $product_id)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$product->{id});
