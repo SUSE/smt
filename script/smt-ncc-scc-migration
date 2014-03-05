@@ -1,0 +1,82 @@
+#! /usr/bin/perl -w
+
+use strict;
+use SMT::Utils;
+use SMT::SCCSync;
+
+use Locale::gettext ();
+use POSIX ();     # Needed for setlocale()
+
+POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+my $debug = 1;
+my $logfile = "/var/log/smt/smt-ncc-scc-migration";
+my $exitcode = 0;
+
+my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
+
+# open the logfile
+
+my $LOG = SMT::Utils::openLog($logfile);
+
+my $cfg = undef;
+
+eval
+{
+    $cfg = SMT::Utils::getSMTConfig();
+};
+if($@ || !defined $cfg)
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    exit 1;
+}
+
+my $dbh = SMT::Utils::db_connect($cfg);
+
+if(!$dbh)
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,  __("Cannot connect to database"));
+    exit 1;
+}
+
+# re-write parts of the config file
+my $regurl = $cfg->val('NU', 'NURegUrl');
+if ( $regurl !~ /^https:\/\/secure-www\.novell\.com/ )
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Not connected to NCC");
+    exit 1;
+}
+$cfg->setval('NU', 'NURegUrl', 'https://scc.suse.com/connect');
+$cfg->RewriteConfig();
+my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
+chown 0, $gid, "/etc/smt.conf";
+
+# DB Products: migrate PRODUCTDATAIDs
+eval
+{
+    my $rd = SMT::SCCSync->new(vblevel => $vblevel,
+                               log     => $LOG);
+    printLog($LOG, $vblevel, LOG_INFO1, __("Migrating Product and Repository information"));
+    $rd->migrate(1);
+    my $res = $rd->products();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while migrating data."));
+        $exitcode = 1;
+    }
+};
+if ($@)
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, $@);
+    $exitcode = 1;
+}
+
+# DB Catalogs: migrate CATALOGIDs
+
+# DB ProductCatalogs: no ID changes needed, but set autorefresh correctly
+#                     and new product/catalogs needs to be added
+
+#
+
+exit $exitcode;
+

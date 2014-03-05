@@ -28,6 +28,8 @@ sub new
     $self->{AUTHUSER} = "";
     $self->{AUTHPASS} = "";
 
+    $self->{MIGRATE} = 0;
+
     $self->{HTTPSTATUS} = 0;
 
     if (! defined $opt{fromdir} ) {
@@ -47,12 +49,12 @@ sub new
 
     $self->{REPO_DONE} = {};
 
-    if(exists $opt{vblevel} && defined $opt{vblevel})
+    if(exists $opt{vblevel} && $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
     }
 
-    if(exists $opt{log} && defined $opt{log} && $opt{log})
+    if(exists $opt{log} && $opt{log})
     {
         $self->{LOG} = $opt{log};
     }
@@ -103,7 +105,12 @@ sub new
 
     $self->{API} = SMT::SCCAPI->new(vblevel => $self->{VBLEVEL},
                                     log     => $self->{LOG},
-                                    useragent => $self->{USERAGENT});
+                                    useragent => $self->{USERAGENT},
+                                    url => $self->{URI},
+                                    authuser => $self->{AUTHUSER},
+                                    autpass => $self->{AUTHPASS},
+                                    ident => $self->{SMTGUID}
+                                   );
     bless($self);
 
     return $self;
@@ -122,6 +129,12 @@ sub vblevel
     return $self->{VBLEVEL};
 }
 
+sub migrate
+{
+    my $self = shift;
+    if (@_) { $self->{MIGRATE} = shift }
+    return $self->{MIGRATE};
+}
 
 sub products
 {
@@ -232,7 +245,7 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 EOS
 ;
 
-    if (SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S'))
+    if (! $self->migrate() && (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S')))
     {
         $statement = sprintf("UPDATE Products
                                  SET PRODUCT = %s, VERSION = %s,
@@ -240,9 +253,8 @@ EOS
                                      PRODUCTLOWER = %s, VERSIONLOWER = %s,
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
-                                     PRODUCT_CLASS = %s
-                               WHERE PRODUCTDATAID = %s
-                                 AND SRC = 'S'",
+                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s
+                               WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
                              $self->{DBH}->quote($product->{release}),
@@ -254,7 +266,37 @@ EOS
                              $self->{DBH}->quote($product->{friendly}),
                              $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
                              $self->{DBH}->quote($product->{product_class}),
-                             $self->{DBH}->quote($product->{id})
+                             $self->{DBH}->quote($product->{id}),
+                             $self->{DBH}->quote($pid)
+        );
+    }
+    elsif ($self->migrate() && ($pid = SMT::Utils::lookupProductIdByName($self->{DBH}, $product->{zypper_name},
+                                                                            $product->{zypper_version},
+                                                                            $product->{release},
+                                                                            $product->{arch})))
+    {
+        $statement = sprintf("UPDATE Products
+                                 SET PRODUCT = %s, VERSION = %s,
+                                     REL = %s, ARCH = %s,
+                                     PRODUCTLOWER = %s, VERSIONLOWER = %s,
+                                     RELLOWER = %s, ARCHLOWER = %s,
+                                     FRIENDLY = %s, PRODUCT_LIST = %s,
+                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
+                                     SRC = 'S'
+                               WHERE ID = %s",
+                             $self->{DBH}->quote($product->{zypper_name}),
+                             $self->{DBH}->quote($product->{zypper_version}),
+                             $self->{DBH}->quote($product->{release}),
+                             $self->{DBH}->quote($product->{arch}),
+                             $self->{DBH}->quote(lc($product->{zypper_name})),
+                             $self->{DBH}->quote(lc($product->{zypper_version})),
+                             $self->{DBH}->quote(lc($product->{release})),
+                             $self->{DBH}->quote(lc($product->{arch})),
+                             $self->{DBH}->quote($product->{friendly}),
+                             $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
+                             $self->{DBH}->quote($product->{product_class}),
+                             $self->{DBH}->quote($product->{id}),
+                             $self->{DBH}->quote($pid)
         );
     }
     else
@@ -287,7 +329,9 @@ EOS
     if($@)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        return 1;
     }
+    return 0;
 }
 
 sub _updateRepositories
@@ -298,7 +342,7 @@ sub _updateRepositories
 
     # we inserted/update this repo already in this run
     # so let's skip it
-    return if(exists $self->{REPO_DONE}->{$repo->{id}});
+    return 0 if(exists $self->{REPO_DONE}->{$repo->{id}});
 
     my $localpath = "RPMMD/".$repo->{name};
     if (grep( ($_ == 'nu' || $_ == 'ris' || $_ == 'yum'), @{$repo->{flags}}))
@@ -321,16 +365,14 @@ sub _updateRepositories
         $catalogtype = 'yum';
     }
 
-
-    if (SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S'))
+    if (! $self->migrate() && (my $cid = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S')))
     {
         $statement = sprintf("UPDATE Catalogs
                                  SET NAME = %s, DESCRIPTION = %s,
                                      TARGET = %s, LOCALPATH = %s,
                                      EXTHOST = %s, EXTURL = %s,
-                                     CATALOGTYPE = %s
-                               WHERE CATALOGID = %s
-                                 AND SRC = 'S'",
+                                     CATALOGTYPE = %s, CATALOGID = %s
+                               WHERE ID = %s",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
                              $self->{DBH}->quote($repo->{distro_target}),
@@ -338,7 +380,28 @@ sub _updateRepositories
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
-                             $self->{DBH}->quote($repo->{id})
+                             $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote($cid)
+        );
+    }
+    elsif ($self->migrate() && ($cid = SMT::Utils::lookupCatalogIdByName($self->{DBH}, $repo->{name}, $repo->{distro_target})))
+    {
+        $statement = sprintf("UPDATE Catalogs
+                                 SET NAME = %s, DESCRIPTION = %s,
+                                     TARGET = %s, LOCALPATH = %s,
+                                     EXTHOST = %s, EXTURL = %s,
+                                     CATALOGTYPE = %s, CATALOGID = %s,
+                                     SRC = 'S'
+                               WHERE ID = %s",
+                             $self->{DBH}->quote($repo->{name}),
+                             $self->{DBH}->quote($repo->{description}),
+                             $self->{DBH}->quote($repo->{distro_target}),
+                             $self->{DBH}->quote($localpath),
+                             $self->{DBH}->quote($exthost),
+                             $self->{DBH}->quote($repo->{url}),
+                             $self->{DBH}->quote($catalogtype),
+                             $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote($cid)
         );
     }
     else
@@ -364,7 +427,9 @@ sub _updateRepositories
     if($@)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        return 1;
     }
+    return 0;
 }
 
 sub _updateProductCatalogs
@@ -372,18 +437,19 @@ sub _updateProductCatalogs
     my $self = shift;
     my $product = shift;
     my $repo = shift;
+    my $ret = 0;
     my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S');
     my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S');
     if (! $product_id)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$product->{id});
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Unable to find Product ID for: ".Data::Dumper->Dump([$product]));
-        return;
+        return 1;
     }
     if (! $repo_id)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Repository ID: ".$repo->{id});
-        return;
+        return 1;
     }
     my $statement = sprintf("DELETE FROM ProductCatalogs
                               WHERE PRODUCTID = %s AND CATALOGID = %s",
@@ -397,6 +463,7 @@ sub _updateProductCatalogs
     if($@)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
     }
     my $optional = ((grep $_ == 'optional', @{$repo->{flags}})?"Y":"N");
 
@@ -412,13 +479,16 @@ sub _updateProductCatalogs
     if($@)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
     }
+    return $ret;
 }
 
 sub _updateData
 {
     my $self = shift;
     my $json = shift;
+    my $ret = 0;
 
     if(!defined $self->{DBH})
     {
@@ -428,14 +498,15 @@ sub _updateData
 
     foreach my $product (@$json)
     {
-        $self->_updateProducts($product);
+        $ret += $self->_updateProducts($product);
 
         foreach my $repo (@{$product->{repos}})
         {
-            $self->_updateRepositories($repo);
-            $self->_updateProductCatalogs($product, $repo);
+            $ret += $self->_updateRepositories($repo);
+            $ret += $self->_updateProductCatalogs($product, $repo);
         }
     }
+    return $ret;
 }
 
 1;
