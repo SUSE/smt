@@ -45,9 +45,6 @@ sub new
 
     $self->{ERRORS} = 0;
 
-    $self->{ALLPRODUCTS} = {};
-    $self->{ALLREPOSITORIES} = {};
-
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -166,6 +163,125 @@ sub products
     }
 }
 
+sub lookupProductIdByDataId
+{
+    my $self = shift;
+    my $id = shift;
+    my $src = shift;
+
+    my $query_product = sprintf("SELECT ID FROM Products WHERE PRODUCTDATAID = %s",
+                                $self->{DBH}->quote($id));
+    $query_product .= sprintf(" AND SRC = %s", $self->{DBH}->quote($src)) if $src;
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $self->{DBH}->selectrow_hashref($query_product);
+    return $ref->{ID};
+}
+
+sub lookupProductIdByName
+{
+    my $self = shift;
+    my $name = shift;
+    my $version = shift;
+    my $arch = shift;
+    my $release = shift;
+
+    my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
+
+    $statement .= "PRODUCTLOWER = ".$self->{DBH}->quote(lc($name));
+
+    $statement .= " AND (";
+    $statement .= "VERSIONLOWER=".$self->{DBH}->quote(lc($version))." OR " if($version);
+    $statement .= "VERSIONLOWER IS NULL)";
+
+    $statement .= " AND (";
+    $statement .= "RELLOWER=".$self->{DBH}->quote(lc($release))." OR " if($release);
+    $statement .= "RELLOWER IS NULL)";
+
+    $statement .= " AND (";
+    $statement .= "ARCHLOWER=".$self->{DBH}->quote(lc($arch))." OR " if($arch);
+    $statement .= "ARCHLOWER IS NULL)";
+
+    # order by name,version,release,arch with NULL values at the end (bnc#659912)
+    $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    my $pl = $self->{DBH}->selectall_arrayref($statement, {Slice => {}});
+
+    if(@$pl == 1)
+    {
+        # Only one match found.
+        return $pl->[0]->{ID};
+    }
+    elsif(@$pl > 1)
+    {
+        my $found = 0;
+        # Do we have an exact match?
+        foreach my $prod (@$pl)
+        {
+            if(lc($prod->{VERSIONLOWER}) eq lc($version) &&
+               lc($prod->{ARCHLOWER}) eq  lc($arch)&&
+               lc($prod->{RELLOWER}) eq lc($release))
+            {
+                # Exact match found.
+                return $prod->{ID};
+            }
+        }
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
+        return $pl->[0]->{ID};
+    }
+    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No Product match found for: $name $version $release $arch");
+    return undef;
+}
+
+
+sub lookupCatalogIdByDataId
+{
+    my $self = shift;
+    my $id = shift;
+    my $src = shift;
+
+    my $query_product = sprintf("SELECT ID FROM Catalogs WHERE CATALOGID = %s",
+                                $self->{DBH}->quote($id));
+    $query_product .= sprintf(" AND SRC = %s", $self->{DBH}->quote($src)) if $src;
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $self->{DBH}->selectrow_hashref($query_product);
+    return $ref->{ID};
+}
+
+sub lookupCatalogIdByName
+{
+    my $self = shift;
+    my $name = shift;
+    my $target = shift;
+
+    my $statement = "SELECT ID FROM Catalogs where ";
+
+    $statement .= "NAME = ".$self->{DBH}->quote($name);
+
+    if($target)
+    {
+        $statement .= " AND TARGET=".$self->{DBH}->quote($target);
+    }
+    else
+    {
+        $statement .= " AND TARGET IS NULL";
+    }
+
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    my $pl = $self->{DBH}->selectall_arrayref($statement, {Slice => {}});
+
+    if(@$pl == 1)
+    {
+        # Only one match found.
+        return $pl->[0]->{ID};
+    }
+    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No match found for: $name $target");
+    return undef;
+}
+
+
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -233,7 +349,7 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 EOS
 ;
 
-    if (exists $self->{ALLPRODUCTS}->{$product->{product_id}})
+    if ($self->lookupProductIdByDataId($product->{id}, 'S'))
     {
         $statement = sprintf("UPDATE Products
                                  SET PRODUCT = %s, VERSION = %s,
@@ -244,18 +360,18 @@ EOS
                                      PRODUCT_CLASS = %s
                                WHERE PRODUCTDATAID = %s
                                  AND SRC = 'S'",
-                             $self->{DBH}->quote($product->{name}),
-                             $self->{DBH}->quote($product->{version}),
-                             $self->{DBH}->quote($product->{rel}),
+                             $self->{DBH}->quote($product->{zypper_name}),
+                             $self->{DBH}->quote($product->{zypper_version}),
+                             $self->{DBH}->quote($product->{release}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{name})),
-                             $self->{DBH}->quote(lc($product->{version})),
-                             $self->{DBH}->quote(lc($product->{rel})),
+                             $self->{DBH}->quote(lc($product->{zypper_name})),
+                             $self->{DBH}->quote(lc($product->{zypper_version})),
+                             $self->{DBH}->quote(lc($product->{release})),
                              $self->{DBH}->quote(lc($product->{arch})),
                              $self->{DBH}->quote($product->{friendly}),
                              $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
                              $self->{DBH}->quote($product->{product_class}),
-                             $self->{DBH}->quote($product->{product_id})
+                             $self->{DBH}->quote($product->{id})
         );
     }
     else
@@ -264,14 +380,14 @@ EOS
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
                               PARAMLIST, NEEDINFO, SERVICE,
                               FRIENDLY, PRODUCT_LIST, PRODUCT_CLASS, PRODUCTDATAID, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
-                             $self->{DBH}->quote($product->{name}),
-                             $self->{DBH}->quote($product->{version}),
-                             $self->{DBH}->quote($product->{rel}),
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                             $self->{DBH}->quote($product->{zypper_name}),
+                             $self->{DBH}->quote($product->{zypper_version}),
+                             $self->{DBH}->quote($product->{release}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{name})),
-                             $self->{DBH}->quote(lc($product->{version})),
-                             $self->{DBH}->quote(lc($product->{rel})),
+                             $self->{DBH}->quote(lc($product->{zypper_name})),
+                             $self->{DBH}->quote(lc($product->{zypper_version})),
+                             $self->{DBH}->quote(lc($product->{release})),
                              $self->{DBH}->quote(lc($product->{arch})),
                              $self->{DBH}->quote($paramlist),
                              $self->{DBH}->quote($needinfo),
@@ -279,7 +395,7 @@ EOS
                              $self->{DBH}->quote($product->{friendly}),
                              $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
                              $self->{DBH}->quote($product->{product_class}),
-                             $self->{DBH}->quote($product->{product_id}));
+                             $self->{DBH}->quote($product->{id}));
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
@@ -304,9 +420,9 @@ sub _updateRepositories
     }
     # FIXME: add sles10sp1 ATI and nVidia special
     my $exthost = URI->new($repo->{url});
-    $exthost->path("");
-    $exthost->fragment("");
-    $exthost->query("");
+    $exthost->path(undef);
+    $exthost->fragment(undef);
+    $exthost->query(undef);
 
     my $catalogtype = 'nu';
     if (grep( ($_ == 'zypp' || $_ == 'repomd'), @{$repo->{flags}}))
@@ -319,7 +435,7 @@ sub _updateRepositories
     }
 
 
-    if (exists $self->{ALLREPOSITORIES}->{$repo->{repo_id}})
+    if ($self->lookupCatalogIdByDataId($repo->{id}, 'S'))
     {
         $statement = sprintf("UPDATE Catalogs
                                  SET NAME = %s, DESCRIPTION = %s,
@@ -335,7 +451,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
-                             $self->{DBH}->quote($repo->{repo_id})
+                             $self->{DBH}->quote($repo->{id})
         );
     }
     else
@@ -350,7 +466,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
-                             $self->{DBH}->quote($repo->{repo_id})
+                             $self->{DBH}->quote($repo->{id})
         );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
@@ -368,12 +484,23 @@ sub _updateProductCatalogs
     my $self = shift;
     my $product = shift;
     my $repo = shift;
-
+    my $product_id = $self->lookupProductIdByDataId($product->{id}, 'S');
+    my $repo_id = $self->lookupCatalogIdByDataId($repo->{id}, 'S');
+    if (! $product_id)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$product->{id});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Unable to find Product ID for: ".Data::Dumper->Dump([$product]));
+        return;
+    }
+    if (! $repo_id)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Repository ID: ".$repo->{id});
+        return;
+    }
     my $statement = sprintf("DELETE FROM ProductCatalogs
-                              WHERE PRODUCTID = (select id from Products where PRODUCTDATAID = %s and SRC = 'S')
-                                AND CATALOGID = (select id from Catalogs where CATALOGID = %s and SRC = 'S')",
-                            $self->{DBH}->quote($product->{product_id}),
-                            $self->{DBH}->quote($repo->{repo_id})
+                              WHERE PRODUCTID = %s AND CATALOGID = %s",
+                            $self->{DBH}->quote($product_id),
+                            $self->{DBH}->quote($repo_id)
     );
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
@@ -386,12 +513,9 @@ sub _updateProductCatalogs
     my $optional = ((grep $_ == 'optional', @{$repo->{flags}})?"Y":"N");
 
     $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
-                          VALUES (
-                              (select id from Products where PRODUCTDATAID = %s and SRC = 'S'),
-                              (select id from Catalogs where CATALOGID = %s and SRC = 'S'),
-                              %s, 'S')",
-                         $self->{DBH}->quote($product->{product_id}),
-                         $self->{DBH}->quote($repo->{repo_id}),
+                          VALUES (%s, %s, %s, 'S')",
+                         $self->{DBH}->quote($product_id),
+                         $self->{DBH}->quote($repo_id),
                          $self->{DBH}->quote($optional));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
@@ -403,7 +527,6 @@ sub _updateProductCatalogs
     }
 }
 
-
 sub _updateData
 {
     my $self = shift;
@@ -414,16 +537,6 @@ sub _updateData
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
         return 1;
     }
-    my $query_products = "SELECT PRODUCTDATAID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER
-                            FROM PRODUCTS
-                           WHERE SRC='S'";
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_products");
-    my $self->{ALLPRODUCTS} = $self->{DBH}->selectall_hashref($query_products, ['PRODUCTDATAID']);
-
-    my $query_repositories = "SELECT ID, CATALOGID, NAME, TARGET FROM Catalogs WHERE SRC = 'S'";
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_repositories");
-    my $self->{ALLREPOSITORIES} = $self->{DBH}->selectall_hashref($query_repositories, ['CATALOGID']);
-
 
     foreach my $product (@$json)
     {
