@@ -425,22 +425,17 @@ sub ncc_handler
         # we now use the ID columns tso we need to translate first
         if(exists $data->{PRODUCTDATAID} && $data->{PRODUCTDATAID})
         {
-            my $x = $dbh->selectall_arrayref("select id from Products where PRODUCTDATAID = ".$dbh->quote($data->{PRODUCTDATAID}),
-                                             {Slice=>{}});
-            if (exists $x->[0] && $x->[0]->{id})
-            {
-                $data->{PRODUCTID} = $x->[0]->{id};
-                delete $data->{PRODUCTDATAID};
-            }
+            $data->{PRODUCTID} = SMT::Utils::lookupProductIdByDataId($dbh, $data->{PRODUCTDATAID});
+            delete $data->{PRODUCTDATAID};
         }
-        elsif(exists $data->{CATALOGID} && $data->{CATALOGID})
+        if(exists $data->{CATALOGID} && $data->{CATALOGID})
         {
-            my $x = $dbh->selectall_arrayref("select id from Catalogs where CATALOGID = ".$dbh->quote($data->{CATALOGID}),
-                                             {Slice=>{}});
-            if (exists $x->[0] && $x->[0]->{id})
-            {
-                $data->{CATALOGID} = $x->[0]->{id};
-            }
+            $data->{CATALOGID} = SMT::Utils::lookupCatalogIdByDataId($dbh, $data->{CATALOGID});
+        }
+        if (!($data->{PRODUCTID} && $data->{CATALOGID}))
+        {
+            # one value is undef, so skip the data set
+            return;
         }
     }
 
