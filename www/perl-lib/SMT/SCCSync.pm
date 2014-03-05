@@ -45,6 +45,8 @@ sub new
 
     $self->{ERRORS} = 0;
 
+    $self->{REPO_DONE} = {};
+
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -294,6 +296,10 @@ sub _updateRepositories
     my $repo = shift;
     my $statement = "";
 
+    # we inserted/update this repo already in this run
+    # so let's skip it
+    return if(exists $self->{REPO_DONE}->{$repo->{id}});
+
     my $localpath = "RPMMD/".$repo->{name};
     if (grep( ($_ == 'nu' || $_ == 'ris' || $_ == 'yum'), @{$repo->{flags}}))
     {
@@ -353,6 +359,7 @@ sub _updateRepositories
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
+        $self->{REPO_DONE}->{$repo->{id}} = 1;
     };
     if($@)
     {
