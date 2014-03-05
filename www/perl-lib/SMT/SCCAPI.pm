@@ -78,24 +78,24 @@ sub request
         return undef;
     }
 
-    $headers = {} if(ref($headers) != "HASH");
+    $headers = {} if(ref($headers) ne "HASH");
     # generic identification header. Used for debugging in SCC
     $headers->{SMT} = $self->{IDENT};
 
     my $response = undef;
-    if ($method == "get")
+    if ($method eq "get")
     {
         $response = $self->{USERAGENT}->get($url, %{$headers});
     }
-    elsif ($method == "head")
+    elsif ($method eq "head")
     {
         $response = $self->{USERAGENT}->head($url, %{$headers});
     }
-    elsif ($method == "post")
+    elsif ($method eq "post")
     {
         $response = $self->{USERAGENT}->post($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
-    elsif ($method == "put")
+    elsif ($method eq "put")
     {
         $response = $self->{USERAGENT}->put($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
@@ -107,7 +107,7 @@ sub request
     if($response->is_success)
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, Data::Dumper->Dump([$response]));
-        if ($response->content_type() == "application/json")
+        if ($response->content_type() eq "application/json")
         {
             return JSON::decode_json($response->content);
         }
