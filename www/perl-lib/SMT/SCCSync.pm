@@ -264,16 +264,16 @@ EOS
                              $self->{DBH}->quote(lc($product->{release})),
                              $self->{DBH}->quote(lc($product->{arch})),
                              $self->{DBH}->quote($product->{friendly_name}),
-                             $self->{DBH}->quote('Y')), # SCC give all products back - all are listed.
+                             $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($pid)
         );
     }
     elsif ($self->migrate() && ($pid = SMT::Utils::lookupProductIdByName($self->{DBH}, $product->{zypper_name},
-                                                                            $product->{zypper_version},
-                                                                            $product->{release},
-                                                                            $product->{arch})))
+                                                                         $product->{zypper_version},
+                                                                         $product->{release},
+                                                                         $product->{arch})))
     {
         $statement = sprintf("UPDATE Products
                                  SET PRODUCT = %s, VERSION = %s,
@@ -293,7 +293,7 @@ EOS
                              $self->{DBH}->quote(lc($product->{release})),
                              $self->{DBH}->quote(lc($product->{arch})),
                              $self->{DBH}->quote($product->{friendly_name}),
-                             $self->{DBH}->quote('Y')), # SCC give all products back - all are listed.
+                             $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($pid)
