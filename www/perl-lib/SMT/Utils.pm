@@ -1272,7 +1272,7 @@ sub lookupProductIdByDataId
     return $ref->{ID};
 }
 
-=item lookupProductIdByName($dbh, $name[, $version][, $arch][, $release])
+=item lookupProductIdByName($dbh, $name[, $version][, $release][, $arch])
 
 Lookup the product ID using name, version arch and release.
 This function return the best match or undef if nothing could be found.
@@ -1284,23 +1284,23 @@ sub lookupProductIdByName
     my $dbh = shift || return undef;
     my $name = shift || return undef;
     my $version = shift;
-    my $arch = shift;
     my $release = shift;
+    my $arch = shift;
 
     my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
 
     $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($name));
 
     $statement .= " AND (";
-    $statement .= "VERSIONLOWER=".$dbh->quote(lc($version))." OR " if($version);
+    $statement .= "VERSIONLOWER=".$dbh->quote(lc($version))." OR " if(defined $version);
     $statement .= "VERSIONLOWER IS NULL)";
 
     $statement .= " AND (";
-    $statement .= "RELLOWER=".$dbh->quote(lc($release))." OR " if($release);
+    $statement .= "RELLOWER=".$dbh->quote(lc($release))." OR " if(defined $release);
     $statement .= "RELLOWER IS NULL)";
 
     $statement .= " AND (";
-    $statement .= "ARCHLOWER=".$dbh->quote(lc($arch))." OR " if($arch);
+    $statement .= "ARCHLOWER=".$dbh->quote(lc($arch))." OR " if(defined $arch);
     $statement .= "ARCHLOWER IS NULL)";
 
     # order by name,version,release,arch with NULL values at the end (bnc#659912)
@@ -1382,7 +1382,7 @@ sub lookupCatalogIdByName
     }
     else
     {
-        $statement .= " AND TARGET IS NULL";
+        $statement .= " AND (TARGET IS NULL or TARGET = '')";
     }
 
     #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
