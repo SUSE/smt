@@ -263,8 +263,8 @@ EOS
                              $self->{DBH}->quote(lc($product->{zypper_version})),
                              $self->{DBH}->quote(lc($product->{release})),
                              $self->{DBH}->quote(lc($product->{arch})),
-                             $self->{DBH}->quote($product->{friendly}),
-                             $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
+                             $self->{DBH}->quote($product->{friendly_name}),
+                             $self->{DBH}->quote('Y')), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($pid)
@@ -292,8 +292,8 @@ EOS
                              $self->{DBH}->quote(lc($product->{zypper_version})),
                              $self->{DBH}->quote(lc($product->{release})),
                              $self->{DBH}->quote(lc($product->{arch})),
-                             $self->{DBH}->quote($product->{friendly}),
-                             $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
+                             $self->{DBH}->quote($product->{friendly_name}),
+                             $self->{DBH}->quote('Y')), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($pid)
@@ -317,8 +317,8 @@ EOS
                              $self->{DBH}->quote($paramlist),
                              $self->{DBH}->quote($needinfo),
                              $self->{DBH}->quote($service),
-                             $self->{DBH}->quote($product->{friendly}),
-                             $self->{DBH}->quote(($product->{product_list}?'Y':'N')),
+                             $self->{DBH}->quote($product->{friendly_name}),
+                             $self->{DBH}->quote('Y'),
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}));
     }
@@ -346,32 +346,42 @@ sub _updateRepositories
     # so let's skip it
     return 0 if(exists $self->{REPO_DONE}->{$repo->{id}});
 
-    # FIXME: add sles10sp1 ATI and nVidia special
     my $exthost = URI->new($repo->{url});
     $remotepath = $exthost->path();
     $exthost->path(undef);
     $exthost->fragment(undef);
     $exthost->query(undef);
 
-    if( $remotepath =~ /repo\/\$RCE/ )
+    # FIXME: as soon as the repos have the flag, we can remove the regexp
+    if( $remotepath =~ /repo\/\$RCE/ || grep( ($_ == 'nu'), @{$repo->{flags}}))
     {
         $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
         $catalogtype = 'nu';
     }
-    elsif( $remotepath =~ /suse/ )
+    elsif( $remotepath =~ /suse/ || grep( ($_ == 'ris'), @{$repo->{flags}}))
     {
         $localpath = 'suse/'.$repo->{name}."/".$repo->{distro_target};
         $catalogtype = 'ris';
     }
+    elsif( grep( ($_ == 'yum'), @{$repo->{flags}}))
+    {
+        $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
+        $catalogtype = 'yum';
+    }
     else
     {
+        # we need to check if this is ATI or NVidia SP1 repos and have to rename it
+
+        if($repo->{name} eq "ATI-Drivers" && $repo->{url} =~ /sle10sp1/)
+        {
+            $repo->{name} = $repo->{name}."-SP1";
+        }
+        elsif($repo->{name} eq "nVidia-Drivers" && $repo->{url} =~ /sle10sp1/)
+        {
+            $repo->{name} = $repo->{name}."-SP1";
+        }
         $localpath = "RPMMD/".$repo->{name};
         $catalogtype = 'zypp';
-    }
-
-    if (grep( ($_ == 'yum'), @{$repo->{flags}}))
-    {
-        $catalogtype = 'yum';
     }
 
     if (! $self->migrate() && (my $cid = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S')))
