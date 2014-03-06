@@ -61,7 +61,7 @@ eval
     my $res = $rd->products();
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while migrating data."));
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
         $exitcode = 1;
     }
 };
