@@ -21,6 +21,16 @@ my $LOG = SMT::Utils::openLog($logfile);
 
 my $cfg = undef;
 
+sub _writeConfig
+{
+    my $cfg = shift;
+    my ($section, $key, $value) = @_;
+    $cfg->setval($section, $key, $value);
+    $cfg->RewriteConfig();
+    my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
+    chown 0, $gid, "/etc/smt.conf";
+}
+
 eval
 {
     $cfg = SMT::Utils::getSMTConfig();
@@ -39,44 +49,55 @@ if(!$dbh)
     exit 1;
 }
 
+if(!SMT::Utils::openLock("smt-ncc-scc-migration"))
+{
+    print __("Migration process is still running.\n");
+    exit 0;
+}
+
 # re-write parts of the config file
 my $regurl = $cfg->val('NU', 'NURegUrl');
 if ( $regurl !~ /^https:\/\/secure-www\.novell\.com/ )
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Not connected to NCC");
-    exit 1;
+    SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
 }
-$cfg->setval('NU', 'NURegUrl', 'https://scc.suse.com/connect');
-$cfg->RewriteConfig();
-my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
-chown 0, $gid, "/etc/smt.conf";
+_writeConfig($cfg, 'NU', 'NURegUrl', 'https://scc.suse.com/connect');
 
-# DB Products: migrate PRODUCTDATAIDs
 eval
 {
-    my $rd = SMT::SCCSync->new(vblevel => $vblevel,
-                               log     => $LOG);
+    my $sccsync = SMT::SCCSync->new(vblevel => $vblevel,
+                                    log     => $LOG);
+    $sccsync->migrate(1);
+    printLog($LOG, $vblevel, LOG_INFO1, __("Checking if a migration is possible ..."));
+    if(not $sccsync->canMigrate())
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
+                             __("Products found which are not supported by SCC. Migration is not possible."));
+        _writeConfig($cfg, 'NU', 'NURegUrl', $regurl);
+        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
+    }
+
+    # DB Products, Catalogs and ProductCatalogs: migrate PRODUCTDATAIDs
     printLog($LOG, $vblevel, LOG_INFO1, __("Migrating Product and Repository information"));
-    $rd->migrate(1);
-    my $res = $rd->products();
+    my $res = $sccsync->products();
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
-        $exitcode = 1;
+        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
     }
 };
 if ($@)
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, $@);
-    $exitcode = 1;
+    SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
 }
 
-# DB Catalogs: migrate CATALOGIDs
 
 # DB ProductCatalogs: no ID changes needed, but set autorefresh correctly
 #                     and new product/catalogs needs to be added
 
 #
 
-exit $exitcode;
+SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 0, $LOG, $vblevel);
 

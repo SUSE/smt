@@ -136,25 +136,53 @@ sub migrate
     return $self->{MIGRATE};
 }
 
+#
+# Test if a migration is possible.
+# Return 1 if yes, 0 if the migration is not possible.
+#
+sub canMigrate
+{
+    my $self = shift;
+    my $input = $self->_getInput();
+
+    if (! $input)
+    {
+        return 0;
+    }
+    my $statement = "SELECT DISTINCT p.PRODUCT_CLASS
+                     FROM Products p, Registration r
+                     WHERE r.PRODUCTID=p.ID;";
+    my $classes = $self->{DBH}->selectall_arrayref($statement, {Slice => {}});
+    foreach my $c (@{$classes})
+    {
+        my $found = 0;
+        foreach my $product (@$input)
+        {
+            if ( $c->{PRODUCT_CLASS} eq $product->{product_class} )
+            {
+                $found = 1;
+                last;
+            }
+        }
+        if ( ! $found )
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
+                     sprintf("'%s' not found in registration server. Migration not possible.",
+                             $c->{PRODUCT_CLASS}));
+            return 0;
+        }
+    }
+    return 1;
+}
+
+#
+# Return number of errors.
+#
 sub products
 {
     my $self = shift;
-    my $input = undef;
+    my $input = $self->_getInput();
 
-    if($self->{FROMDIR} && -d $self->{FROMDIR})
-    {
-        open( FH, '<', $self->{FROMDIR}."/products.json" ) and do
-        {
-            my $json_text   = <FH>;
-            $input = JSON::decode_json( $json_text );
-            close FH;
-        };
-
-    }
-    else
-    {
-        $input = $self->{API}->products();
-    }
     if (! $input)
     {
         return 1;
@@ -182,6 +210,35 @@ sub products
 ###############################################################################
 ###############################################################################
 ###############################################################################
+
+#
+# read json file from "FROMDIR" or call API to fetch from SCC.
+# Return the decoded JSON structure or undef in case of an error.
+#
+sub _getInput
+{
+    my $self = shift;
+    my $input = undef;
+
+    if($self->{FROMDIR} && -d $self->{FROMDIR})
+    {
+        open( FH, '<', $self->{FROMDIR}."/products.json" ) and do
+        {
+            my $json_text   = <FH>;
+            $input = JSON::decode_json( $json_text );
+            close FH;
+        };
+    }
+    else
+    {
+        $input = $self->{API}->products();
+    }
+    if (! $input)
+    {
+        return undef;
+    }
+    return $input;
+}
 
 sub _updateProducts
 {
@@ -506,6 +563,8 @@ sub _updateProductCatalogs
     }
     return $ret;
 }
+
+
 
 sub _updateData
 {
