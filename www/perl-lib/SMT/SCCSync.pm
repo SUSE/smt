@@ -225,7 +225,7 @@ lang="" href="">
   <param id="sysident" description="">
     <param id="processor" description="" command="uname -p" />
     <param id="platform" description="" command="uname -i" />
-    <param id="hostname" description="" command="uname -n" class="mandatory"/>
+    <param id="hostname" description="" command="uname -n" />
   </param>
   <param id="hw_inventory" description="">
     <param id="cpu" description="" command="hwinfo --cpu" />
