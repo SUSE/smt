@@ -339,28 +339,37 @@ sub _updateRepositories
     my $self = shift;
     my $repo = shift;
     my $statement = "";
-
+    my $remotepath = "";
+    my $localpath = "";
+    my $catalogtype = "";
     # we inserted/update this repo already in this run
     # so let's skip it
     return 0 if(exists $self->{REPO_DONE}->{$repo->{id}});
 
-    my $localpath = "RPMMD/".$repo->{name};
-    if (grep( ($_ == 'nu' || $_ == 'ris' || $_ == 'yum'), @{$repo->{flags}}))
-    {
-        $localpath = $repo->{name}."/".$repo->{distro_target};
-    }
     # FIXME: add sles10sp1 ATI and nVidia special
     my $exthost = URI->new($repo->{url});
+    $remotepath = $exthost->path();
     $exthost->path(undef);
     $exthost->fragment(undef);
     $exthost->query(undef);
 
-    my $catalogtype = 'nu';
-    if (grep( ($_ == 'zypp' || $_ == 'repomd'), @{$repo->{flags}}))
+    if( $remotepath =~ /repo\/\$RCE/ )
     {
+        $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
+        $catalogtype = 'nu';
+    }
+    elsif( $remotepath =~ /suse/ )
+    {
+        $localpath = 'suse/'.$repo->{name}."/".$repo->{distro_target};
+        $catalogtype = 'ris';
+    }
+    else
+    {
+        $localpath = "RPMMD/".$repo->{name};
         $catalogtype = 'zypp';
     }
-    elsif (grep( ($_ == 'yum'), @{$repo->{flags}}))
+
+    if (grep( ($_ == 'yum'), @{$repo->{flags}}))
     {
         $catalogtype = 'yum';
     }
@@ -489,6 +498,8 @@ sub _updateData
     my $self = shift;
     my $json = shift;
     my $ret = 0;
+    my $retprd = 0;
+    my $retcat = 0;
 
     if(!defined $self->{DBH})
     {
@@ -498,11 +509,16 @@ sub _updateData
 
     foreach my $product (@$json)
     {
-        $ret += $self->_updateProducts($product);
-
+        $retprd = $self->_updateProducts($product);
+        $ret += $retprd;
         foreach my $repo (@{$product->{repos}})
         {
-            $ret += $self->_updateRepositories($repo);
+            $retcat = $self->_updateRepositories($repo);
+            $ret += $retcat;
+
+            # if either product or catalogs could not be added,
+            # we will fail to add the relation.
+            next if ( $retprd || $retcat);
             $ret += $self->_updateProductCatalogs($product, $repo);
         }
     }
