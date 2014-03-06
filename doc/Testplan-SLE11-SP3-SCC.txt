@@ -1,0 +1,47 @@
+
+1)
+- install SMT (smt-1.2*.rpm)
+- sync with NCC
+- register clients (only SUSE Products)
+- dump product <=> catalog relations
+  https://raw.github.com/SUSE/smt/master/devel-scripts/relations-compare.pl
+- install update to new version (smt-2.0*.rpm)
+
+  Expected Result:
+  * DB schema migration is running and update the schema successfully
+
+- dump product <=> catalog relations
+  https://raw.github.com/SUSE/smt/master/devel-scripts/relations-compare.pl
+- compare relation dumps
+
+  Expected Result:
+  * no differences
+
+- migrate to SCC using "smt-ncc-scc-migration" script
+
+  Expected Result:
+  * no errors
+
+- dump product <=> catalog relations
+  https://raw.github.com/SUSE/smt/master/devel-scripts/relations-compare.pl
+- compare relation dumps
+
+  Expected Result:
+  * no differences
+
+
+2)
+- install SMT (smt-1.2*.rpm)
+- sync with NCC
+- register clients (at least one Novell/NetIQ Product like OES)
+- install update to new version (smt-2.0*.rpm)
+  Expected Result:
+  * DB schema migration is running and update the schema successfully
+
+- migrate to SCC using "smt-ncc-scc-migration" script
+
+  Expected Result:
+  * The script exit with a message that you cannot migrate to SCC, because
+    you have clients registered using products which are not supported by SCC.
+
+
