@@ -245,6 +245,10 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 EOS
 ;
 
+    # FIXME: Temporary product fix. Remove, if SCC send products correctly
+    $product->{release} = "" if($product->{release} eq "GA");
+    $product->{arch} = "" if($product->{arch} eq "unknown");
+
     if (! $self->migrate() && (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S')))
     {
         $statement = sprintf("UPDATE Products
