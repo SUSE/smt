@@ -1397,6 +1397,71 @@ sub lookupCatalogIdByName
     return undef;
 }
 
+=item lookupSubscriptionByRegcode($dbh, $regcode)
+
+Lookup the Subscription using the registration code.
+
+It returns a hash reference with all values for a Subscription or undef if not found.
+
+=cut
+
+sub lookupSubscriptionByRegcode
+{
+    my $dbh = shift || return undef;
+    my $regcode = shift || return undef;
+
+    my $query_subsc = sprintf("SELECT * FROM Subscriptions WHERE REGCODE = %s",
+                                $dbh->quote($regcode));
+
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $dbh->selectrow_hashref($query_subsc);
+    return $ref;
+}
+
+=item lookupRegistrationByGUID($dbh, $guid)
+
+Lookup the Product Registrations for a system specified by GUID.
+
+It returns a hash reference with the ProductID as key and a hash
+contains all values for the Registration.
+It returns undef if nothing was not found.
+
+=cut
+
+sub lookupRegistrationByGUID
+{
+    my $dbh = shift || return undef;
+    my $guid = shift || return undef;
+
+    my $query_reg = sprintf("SELECT * FROM Registration WHERE GUID = %s",
+                                $dbh->quote($guid));
+
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $dbh->selectall_hashref($query_reg, 'PRODUCTID');
+    return $ref;
+}
+
+=item lookupTargetForClient($dbh, $guid)
+
+Lookup the distro target for a System specified by GUID.
+
+It returns the target as string or it returns an empty string if nothing was not found.
+
+=cut
+
+sub lookupTargetForClient
+{
+    my $dbh = shift || return undef;
+    my $guid = shift || return undef;
+
+    my $query_target = sprintf("SELECT TARGET FROM Clients WHERE GUID = %s",
+                               $dbh->quote($guid));
+
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $dbh->selectrow_hashref($query_target);
+    return ($ref->{TARGET}?$ref->{TARGET}:"");
+}
+
 =back
 
 =head1 AUTHOR
