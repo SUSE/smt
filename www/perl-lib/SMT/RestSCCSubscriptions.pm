@@ -76,7 +76,7 @@ sub announce($$$)
     }
     chomp($guid);
     $guid =~ s/-//g;  # remove the -
-    $result->{login} = $guid;
+    $result->{login} = "SCC_$guid"; # SUSEConnect always add this prefix
     my $secret = `/usr/bin/uuidgen 2>/dev/null`;
     if (!$secret)
     {
@@ -95,12 +95,11 @@ sub announce($$$)
     $r->log->info("STATEMENT: $statement");
     eval
     {
-        $aff = $dbh->do($statement);
+        $dbh->do($statement);
     };
     if ($@)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
-        $aff = 0;
     }
     return $result;
 }
@@ -122,7 +121,7 @@ sub subscriptions_handler($$)
     }
     elsif ( $r->method() =~ /^POST$/i )
     {
-        if ( $path =~ /^connect\/subscriptions\/announce/ )
+        if ( $path =~ /^subscriptions\/systems/ )
         {
             my $c = JSON::decode_json(read_post($r));
             return announce($r, $dbh, $c);
@@ -161,7 +160,6 @@ sub subscriptions_handler($$)
 #
 sub handler {
     my $r = shift;
-    $r->log->info("REST service request");
     my $path = sub_path($r);
     my $res = undef;
 
@@ -177,6 +175,7 @@ sub handler {
 
     if (not defined $res)
     {
+        $r->log->info("NOT FOUND");
         # errors are logged in each handler
         # returning undef from a handler is allowed, this will result in a 404 response, just as if no handler was defined for the request
         return Apache2::Const::NOT_FOUND;
@@ -197,7 +196,7 @@ sub handler {
 
 #
 # get the proper sub-path info part
-#  cropps the prefix of the path: "/=/1/"
+#  cropps the prefix of the path: "/connect/"
 #
 sub sub_path($)
 {
@@ -205,10 +204,12 @@ sub sub_path($)
 
     # get the path_info
     my $path = $r->path_info();
-    # crop the prefix: '/=' rest service identifier, '/1' version number (currently there is only 1)
-    $path =~ s/^\/(=\/)?1\///;
+    # crop the prefix: '/'connect rest service identifier
+    $path =~ s/^\/connect\/+//;
     # crop the trailing slash
     $path =~ s/\/?$//;
+    # crop the beginning slash
+    $path =~ s/^\/?//;
 
     return $path;
 }
@@ -243,20 +244,6 @@ sub read_post {
     $r->log->info("Got content: $data");
     return $data;
 }
-
-
-#
-# update_last_contact
-#
-sub update_last_contact($$)
-{
-    my $r = shift || return undef;
-    my $dbh = shift || return undef;
-
-    my $client = SMT::Client->new({ 'dbh' => $dbh });
-    return $client->updateLastContact($r->user);
-}
-
 
 1;
 

@@ -26,6 +26,78 @@ use SMT::Registration;
 use DBI qw(:sql_types);
 use Data::Dumper;
 
+sub _registrationResult
+{
+    my $r   = shift || return undef;
+    my $dbh = shift || return undef;
+    my $catalogs = shift || return undef;
+    my $namespace  = shift || '';
+
+    my $cfg = undef;
+
+    eval
+    {
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        $r->log_error("Cannot read the SMT configuration file: ".$@);
+        return ( Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
+    }
+
+    my $LocalNUUrl = $cfg->val('LOCAL', 'url');
+    my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
+    my $aliasChange = $cfg->val('NU', 'changeAlias');
+    if(defined $aliasChange && $aliasChange eq "true")
+    {
+        $aliasChange = 1;
+    }
+    else
+    {
+        $aliasChange = 0;
+    }
+
+    $LocalNUUrl =~ s/\s*$//;
+    $LocalNUUrl =~ s/\/*$//;
+    if(! $LocalNUUrl || $LocalNUUrl !~ /^http/)
+    {
+        $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
+        return (Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
+    }
+    my $localID = "SMT-".$LocalNUUrl;
+    $localID =~ s/:*\/+/_/g;
+    $localID =~ s/\./_/g;
+    $localID =~ s/_$//;
+
+    my ($status, $password) = $r->get_basic_auth_pw;
+    my @enabled = ();
+    my @norefresh = ();
+
+    foreach my $catid (keys %{$catalogs})
+    {
+        my $catname = $catalogs->{$catid}->{NAME};
+        if ($namespace && uc($catalogs->{$catid}->{STAGING}) eq "Y" &&
+            $aliasChange)
+        {
+            $catname .= ":$namespace";
+        }
+        push @enabled, $catname if (uc($catalogs->{$catid}->{OPTIONAL}) eq "N");
+        push @norefresh, $catname if (uc($catalogs->{$catid}->{AUTOREFRESH}) eq "N");
+    }
+    my $response = {
+        'sources' => {
+            $localID => "$LocalNUUrl?credentials=NCCcredentials"
+        },
+        'login' => $r->user,
+        'password' => $password,
+        'norefresh' => \@norefresh,
+        'enabled' => \@enabled,
+        'subscription' => undef,
+        'location' => undef
+    };
+    return (Apache2::Const::OK, $response);
+}
+
 #
 # announce a system. This call create a system object in the DB
 # and return system username and password to the client.
@@ -59,21 +131,22 @@ sub products($$$)
             # FIXME: should we abort with an error? SMT do not need a regcode,
             #        but if we get one and it is wrong?
             ;
+        }
     }
 
     if ( ! (exists $c->{product_ident} && $c->{product_ident}))
     {
-        return (HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: product_ident");
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: product_ident");
     }
 
     if ( ! (exists $c->{product_version} && $c->{product_version}))
     {
-        return (HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: product_version");
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: product_version");
     }
 
     if ( ! (exists $c->{arch} && $c->{arch}))
     {
-        return (HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: arch");
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: arch");
     }
 
     if ( ! (exists $c->{release} && $c->{release}))
@@ -83,7 +156,7 @@ sub products($$$)
         $c->{release} = "";
     }
 
-    if ( exists $c->{email} && $c->{email}))
+    if ( exists $c->{email} && $c->{email})
     {
         $email = $c->{email};
     }
@@ -92,13 +165,13 @@ sub products($$$)
                                                       $c->{release}, $c->{arch});
     if(not $productId)
     {
-        return (HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
     }
 
     #
     # insert registration
     #
-    my $existingregs = SMT::Utils::lookupRegistrationsByGUID($dbh, $guid);
+    my $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid);
     if(exists $existingregs->{$productId} && $existingregs->{$productId})
     {
         $statement = sprintf("UPDATE Registration SET REGDATE=%s WHERE GUID=%s AND PRODUCTID=%s",
@@ -116,12 +189,11 @@ sub products($$$)
     $r->log->info("STATEMENT: $statement");
     eval
     {
-        $aff = $dbh->do($statement);
+        $dbh->do($statement);
     };
     if ($@)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
-        $aff = 0;
     }
 
     #
@@ -132,16 +204,21 @@ sub products($$$)
     #
     # find Catalogs
     #
-    $existingregs = SMT::Utils::lookupRegistrationsByGUID($dbh, $guid);
+    $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid);
     my @pidarr = keys %{$existingregs};
     my $catalogs = SMT::Registration::findCatalogs($r, $dbh, $target, \@pidarr);
 
-    # TODO: get status
+    if ( (keys %{$catalogs}) == 0)
+    {
+        $r->log->info("No repositories found");
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
+    }
+
+    # TODO: get status - from SMT?
 
     # TODO: return result
 
-
-    return (OK, $result);
+    return _registrationResult($r, $dbh, $catalogs);
 }
 
 #
@@ -161,7 +238,7 @@ sub systems_handler($$)
     }
     elsif ( $r->method() =~ /^POST$/i )
     {
-        if ( $path =~ /^connect\/systems\/products/ )
+        if ( $path =~ /^systems\/products/ )
         {
             my $c = JSON::decode_json(read_post($r));
             return products($r, $dbh, $c);
@@ -200,9 +277,9 @@ sub systems_handler($$)
 #
 sub handler {
     my $r = shift;
-    $r->log->info("REST service request");
     my $path = sub_path($r);
-    my $res = undef;
+    my $code = Apache2::Const::SERVER_ERROR;
+    my $data = "";
 
     # try to connect to the database - else report server error
     my $dbh = undef;
@@ -224,6 +301,7 @@ sub handler {
     my $auth = $client->authenticateByGUIDAndSecret($r->user, $password);
     if ( keys %{$auth} != 1 )
     {
+        $r->log->error("No client authentication provided");
         return Apache2::Const::FORBIDDEN;
     }
 
@@ -237,13 +315,11 @@ sub handler {
         $r->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.", $r->user) );
     }
 
-    if    ( $path =~ qr{^systems?}    ) {  $res = systems_handler($r, $dbh); }
+    if    ( $path =~ qr{^systems?}    ) {  ($code, $data) = systems_handler($r, $dbh); }
 
-    if (not defined $res)
+    if (! defined $code || $code != Apache2::Const::OK)
     {
-        # errors are logged in each handler
-        # returning undef from a handler is allowed, this will result in a 404 response, just as if no handler was defined for the request
-        return Apache2::Const::NOT_FOUND;
+        return respond_with_error($r, $code, $data);
     }
     else
     {
@@ -251,17 +327,15 @@ sub handler {
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $r->err_headers_out->add('Pragma' => "no-cache");
 
-        print encode_json($res);
-    }
+        print encode_json($data);
+   }
 
-    # return a 200 response
-    return Apache2::Const::OK;
+    return $code;
 }
-
 
 #
 # get the proper sub-path info part
-#  cropps the prefix of the path: "/=/1/"
+#  cropps the prefix of the path: "/connect/"
 #
 sub sub_path($)
 {
@@ -269,14 +343,15 @@ sub sub_path($)
 
     # get the path_info
     my $path = $r->path_info();
-    # crop the prefix: '/=' rest service identifier, '/1' version number (currently there is only 1)
-    $path =~ s/^\/(=\/)?1\///;
+    # crop the prefix: '/'connect rest service identifier
+    $path =~ s/^\/connect\/+//;
     # crop the trailing slash
     $path =~ s/\/?$//;
+    # crop the beginning slash
+    $path =~ s/^\/?//;
 
     return $path;
 }
-
 
 #
 # read the content of a POST and return the data
@@ -321,6 +396,22 @@ sub update_last_contact($$)
     return $client->updateLastContact($r->user);
 }
 
+sub respond_with_error
+{
+    my ($r, $code, $msg) = @_;
+    if (! $code)
+    {
+        $code = Apache2::Const::NOT_FOUND;
+        $msg  = "Not Found";
+    }
+    # errors are logged in each handler
+    # returning undef from a handler is allowed, this will result in a 404 response, just as if no handler was defined for the request
+    $r->status($code);
+    $r->content_type('application/json');
+    $r->custom_response($code, "");
+    print encode_json({ 'error' => $msg,  'localized_error' => $msg, 'status' => $code });
+    return $code;
+}
 
 1;
 
