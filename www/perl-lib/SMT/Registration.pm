@@ -832,8 +832,10 @@ sub findCatalogs
 
     # get catalog values (only for the once we DOMIRROR)
 
-    $statement  = "SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc WHERE ";
-    $statement .= "pc.OPTIONAL='N' AND c.DOMIRROR='Y' AND c.ID=pc.CATALOGID ";
+    $statement  = "SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, ";
+    $statement .= "c.CATALOGTYPE, c.STAGING, pc.OPTIONAL, pc.AUTOREFRESH ";
+    $statement .= "from Catalogs c, ProductCatalogs pc WHERE ";
+    $statement .= "c.DOMIRROR='Y' AND c.ID=pc.CATALOGID ";
     $statement .= "AND (c.TARGET IS NULL ";
     if(defined $target && $target ne "")
     {
@@ -998,6 +1000,7 @@ sub buildZmdConfig
 
         foreach my $cat (keys %{$catalogs})
         {
+            next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "y");
             next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
             if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
                $catalogs->{$cat}->{LOCALPATH} eq "")
