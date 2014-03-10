@@ -27,7 +27,7 @@ sub handler {
     return $status unless $status == Apache2::Const::OK;
 
     if ( not defined $r->user  ||  $r->user eq '' )
-    { 
+    {
         $r->note_basic_auth_failure;
         return Apache2::Const::AUTH_REQUIRED;
     }
@@ -40,13 +40,13 @@ sub handler {
         $r->log->error("Cannot connect to database");
         return Apache2::Const::SERVER_ERROR;
     }
-    
+
     my $statement = sprintf("SELECT SECRET from Clients where GUID = %s and SECRET = %s",
                             $dbh->quote($r->user()), $dbh->quote($password));
     my $existsecret = $dbh->selectcol_arrayref($statement);
 
     if( !exists $existsecret->[0] || !defined $existsecret->[0] || $existsecret->[0] eq "" )
-    {                         
+    {
         # Fallback to MachineData: secret in the clients table is very new and might be empty
         $statement = sprintf("SELECT GUID from MachineData where GUID = %s and KEYNAME = 'secret' and VALUE = %s",
                              $dbh->quote($r->user()), $dbh->quote($password));
@@ -54,15 +54,21 @@ sub handler {
 
         if( !exists $existuser->[0] || !defined $existuser->[0] || $existuser->[0] ne $r->user() )
         {
-            # last chance of authentication: RESTAdmin - administrative access to all REST ressources
-            my $restEnable = $cfg->val('REST', 'enableRESTAdminAccess');
-            if ( defined $restEnable && $restEnable =~ /^1$/ )
+            # connect/system requires a system authentication
+            # generic REST authentication is not allowed here
+            if ($r->path_info() !~ /\/systems\//)
             {
-                my $RAU = $cfg->val('REST', 'RESTAdminUser');
-                my $RAP = $cfg->val('REST', 'RESTAdminPassword');
-                if ( defined $RAU  &&  defined $RAP  &&  $RAU eq $r->user()  &&  $RAP  eq  $password  &&  $RAP ne '' )
+
+                # last chance of authentication: RESTAdmin - administrative access to all REST ressources
+                my $restEnable = $cfg->val('REST', 'enableRESTAdminAccess');
+                if ( defined $restEnable && $restEnable =~ /^1$/ )
                 {
-                   return Apache2::Const::OK;
+                    my $RAU = $cfg->val('REST', 'RESTAdminUser');
+                    my $RAP = $cfg->val('REST', 'RESTAdminPassword');
+                    if ( defined $RAU  &&  defined $RAP  &&  $RAU eq $r->user()  &&  $RAP  eq  $password  &&  $RAP ne '' )
+                    {
+                        return Apache2::Const::OK;
+                    }
                 }
             }
 
