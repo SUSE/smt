@@ -303,8 +303,8 @@ EOS
 ;
 
     # FIXME: Temporary product fix. Remove, if SCC send products correctly
-    $product->{release} = "" if($product->{release} eq "GA");
-    $product->{arch} = "" if($product->{arch} eq "unknown");
+    $product->{release} = undef if($product->{release} eq "GA");
+    $product->{arch} = undef if($product->{arch} eq "unknown");
 
     if (! $self->migrate() && (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S')))
     {
@@ -583,6 +583,7 @@ sub _updateData
 
     foreach my $product (@$json)
     {
+        print ".";
         $retprd = $self->_updateProducts($product);
         $ret += $retprd;
         foreach my $repo (@{$product->{repos}})
@@ -609,7 +610,7 @@ sub _migrateMachineData
     my $query_productdataid = sprintf("SELECT PRODUCTDATAID FROM Products WHERE ID = %s AND SRC = 'N'",
                                       $self->{DBH}->quote($pid));
 
-    my $ref = $dbh->selectrow_hashref($query_producdataid);
+    my $ref = $self->{DBH}->selectrow_hashref($query_productdataid);
     my $old_productdataid = $ref->{PRODUCTDATAID};
 
     ;
