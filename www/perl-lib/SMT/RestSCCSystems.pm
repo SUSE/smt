@@ -150,11 +150,9 @@ sub products($$$)
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: arch");
     }
 
-    if ( ! (exists $c->{release} && $c->{release}))
+    if ( ! (exists $c->{release_type} && $c->{release_type}))
     {
-        #return (HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: release");
-        $r->log->info("Required Parameter release not found");
-        $c->{release} = "";
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: release");
     }
 
     if ( exists $c->{email} && $c->{email})
@@ -163,7 +161,7 @@ sub products($$$)
     }
 
     my $productId = SMT::Utils::lookupProductIdByName($dbh, $c->{product_ident}, $c->{product_version},
-                                                      $c->{release}, $c->{arch});
+                                                      $c->{release_type}, $c->{arch});
     if(not $productId)
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
@@ -249,7 +247,7 @@ sub products($$$)
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $dbh->quote($guid),
                          $dbh->quote("product-rel-$productId"),
-                         $dbh->quote($c->{release}));
+                         $dbh->quote($c->{release_type}));
     $r->log->info("STATEMENT: $statement");
     eval {
         $cnt = $dbh->do($statement);
