@@ -303,7 +303,6 @@ EOS
 ;
 
     # FIXME: Temporary product fix. Remove, if SCC send products correctly
-    $product->{release} = undef if($product->{release} eq "GA");
     $product->{arch} = undef if($product->{arch} eq "unknown");
 
     if (! $self->migrate() && (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S')))
@@ -318,12 +317,12 @@ EOS
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
-                             $self->{DBH}->quote($product->{release}),
+                             $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
                              $self->{DBH}->quote(lc($product->{zypper_name})),
-                             $self->{DBH}->quote(lc($product->{zypper_version})),
-                             $self->{DBH}->quote(lc($product->{release})),
-                             $self->{DBH}->quote(lc($product->{arch})),
+                             $self->{DBH}->quote(($product->{zypper_version}?lc($product->{zypper_version}):undef)),
+                             $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
+                             $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($product->{friendly_name}),
                              $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
@@ -333,7 +332,7 @@ EOS
     }
     elsif ($self->migrate() && ($pid = SMT::Utils::lookupProductIdByName($self->{DBH}, $product->{zypper_name},
                                                                          $product->{zypper_version},
-                                                                         $product->{release},
+                                                                         $product->{release_type},
                                                                          $product->{arch})))
     {
         $self->_migrateMachineData($pid, $product->{id});
@@ -348,12 +347,12 @@ EOS
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
-                             $self->{DBH}->quote($product->{release}),
+                             $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
                              $self->{DBH}->quote(lc($product->{zypper_name})),
-                             $self->{DBH}->quote(lc($product->{zypper_version})),
-                             $self->{DBH}->quote(lc($product->{release})),
-                             $self->{DBH}->quote(lc($product->{arch})),
+                             $self->{DBH}->quote(($product->{zypper_version}?lc($product->{zypper_version}):undef)),
+                             $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
+                             $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($product->{friendly_name}),
                              $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
@@ -370,12 +369,12 @@ EOS
                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
-                             $self->{DBH}->quote($product->{release}),
+                             $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
                              $self->{DBH}->quote(lc($product->{zypper_name})),
-                             $self->{DBH}->quote(lc($product->{zypper_version})),
-                             $self->{DBH}->quote(lc($product->{release})),
-                             $self->{DBH}->quote(lc($product->{arch})),
+                             $self->{DBH}->quote(($product->{zypper_version}?lc($product->{zypper_version}):undef)),
+                             $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
+                             $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($paramlist),
                              $self->{DBH}->quote($needinfo),
                              $self->{DBH}->quote($service),
