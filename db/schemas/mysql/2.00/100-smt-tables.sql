@@ -121,7 +121,7 @@ create table Filters(ID              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 
 -- copy of NNW_PRODUCT_DATA
 create table Products (
-                ID              integer NOT NULL PRIMARY KEY,
+                ID              integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 PRODUCTDATAID   integer NOT NULL,
                 PRODUCT         VARCHAR(500) NOT NULL,
                 VERSION         VARCHAR(100),
@@ -141,7 +141,7 @@ create table Products (
                 UNIQUE(PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER),
                 UNIQUE(PRODUCTDATAID, SRC),
                 INDEX idx_prod_product_class (PRODUCT_CLASS)
-                );
+            ) AUTO_INCREMENT = 100000;
 
 
 create table ProductCatalogs(PRODUCTID   integer NOT NULL,

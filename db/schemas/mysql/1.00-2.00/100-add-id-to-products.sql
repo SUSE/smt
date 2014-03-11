@@ -1,7 +1,7 @@
 
 ALTER TABLE Products drop PRIMARY KEY;
 
-ALTER TABLE Products add column ID integer NOT NULL AUTO_INCREMENT FIRST, ADD primary KEY ID(ID);
+ALTER TABLE Products add column ID integer NOT NULL AUTO_INCREMENT FIRST, AUTO_INCREMENT = 100000 , ADD primary KEY ID(ID);
 
 UPDATE Registration r
    SET PRODUCTID = (select p.ID from Products p where p.PRODUCTDATAID = r.PRODUCTID);
