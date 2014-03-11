@@ -9,11 +9,35 @@ use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-my $debug = 1;
+my $debug = 0;
+my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $logfile = "/var/log/smt/smt-ncc-scc-migration";
 my $exitcode = 0;
+my $help = 0;
 
-my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
+use Getopt::Long;
+Getopt::Long::Configure( 'no_auto_abbrev');
+my $optres = Getopt::Long::GetOptions(
+                                      "logfile|L=s" => \$logfile,
+                                      'debug|d'     => \$debug,
+                                      "verboselevel|v=i" => \$vblevel,
+                                      'help|h'      => \$help
+                                     );
+
+if ( (defined $help && $help == 1 ) || !$optres )
+{
+    print basename($0) . " : " . __("Migrate SMT from NCC to SCC.\n\n");
+    print __("Usage:\n");
+    print basename($0) . " [options]";
+    print "\n\n";
+    print __("Options:\n");
+    print "--logfile -L file         ".__("Path to logfile\n");
+    print "--debug                   ".__("Enable debug mode\n");
+    print "--verboselevel -v level   ".__("set the verbose level\n");
+    exit 0;
+}
+
+$vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
 # open the logfile
 
