@@ -3,6 +3,7 @@
 use strict;
 use SMT::Utils;
 use SMT::SCCSync;
+use File::Basename;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
