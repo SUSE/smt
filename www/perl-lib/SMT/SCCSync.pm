@@ -336,6 +336,7 @@ EOS
                                                                          $product->{release},
                                                                          $product->{arch})))
     {
+        $self->_migrateMachineData($pid, $product->{id});
         $statement = sprintf("UPDATE Products
                                  SET PRODUCT = %s, VERSION = %s,
                                      REL = %s, ARCH = %s,
@@ -594,6 +595,42 @@ sub _updateData
             next if ( $retprd || $retcat);
             $ret += $self->_updateProductCatalogs($product, $repo);
         }
+    }
+    return $ret;
+}
+
+sub _migrateMachineData
+{
+    my $self = shift;
+    my $pid = shift;
+    my $new_productid = shift;
+    my $ret = 0;
+
+    my $query_productdataid = sprintf("SELECT PRODUCTDATAID FROM Products WHERE ID = %s AND SRC = 'N'",
+                                      $self->{DBH}->quote($pid));
+
+    my $ref = $dbh->selectrow_hashref($query_producdataid);
+    my $old_productdataid = $ref->{PRODUCTDATAID};
+
+    ;
+    eval {
+        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
+                                 $self->{DBH}->quote("product-name-$new_productid"),
+                                 $self->{DBH}->quote("product-name-$old_productdataid")));
+        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
+                                 $self->{DBH}->quote("product-version-$new_productid"),
+                                 $self->{DBH}->quote("product-version-$old_productdataid")));
+        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
+                                 $self->{DBH}->quote("product-arch-$new_productid"),
+                                 $self->{DBH}->quote("product-arch-$old_productdataid")));
+        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
+                                 $self->{DBH}->quote("product-rel-$new_productid"),
+                                 $self->{DBH}->quote("product-rel-$old_productdataid")));
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
     }
     return $ret;
 }
