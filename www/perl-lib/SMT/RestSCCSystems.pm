@@ -195,6 +195,68 @@ sub products($$$)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
+    #
+    # insert product info into MachineData
+    #
+    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME LIKE %s",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-%-$productId"));
+    eval {
+        $cnt = $dbh->do($statement);
+        $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-name-$productId"),
+                         $dbh->quote($product_ident));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-version-$productId"),
+                         $dbh->quote($product_version));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-arch-$productId"),
+                         $dbh->quote($arch));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-rel-$productId"),
+                         $dbh->quote($release));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
 
     #
     # lookup the Clients target
@@ -216,8 +278,7 @@ sub products($$$)
 
     # TODO: get status - from SMT?
 
-    # TODO: return result
-
+    # return result
     return _registrationResult($r, $dbh, $catalogs);
 }
 
