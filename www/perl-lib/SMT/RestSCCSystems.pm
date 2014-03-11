@@ -112,6 +112,7 @@ sub products($$$)
     my $dbh = shift || return undef;
     my $c   = shift || return undef;
     my $result = {};
+    my $cnt = 0;
 
     # We are sure, that user is a system GUID
     my $guid = $r->user;
@@ -212,7 +213,7 @@ sub products($$$)
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $dbh->quote($guid),
                          $dbh->quote("product-name-$productId"),
-                         $dbh->quote($product_ident));
+                         $dbh->quote($c->{product_ident}));
     $r->log->info("STATEMENT: $statement");
     eval {
         $cnt = $dbh->do($statement);
@@ -224,7 +225,7 @@ sub products($$$)
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $dbh->quote($guid),
                          $dbh->quote("product-version-$productId"),
-                         $dbh->quote($product_version));
+                         $dbh->quote($c->{product_version}));
     $r->log->info("STATEMENT: $statement");
     eval {
         $cnt = $dbh->do($statement);
@@ -236,7 +237,7 @@ sub products($$$)
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $dbh->quote($guid),
                          $dbh->quote("product-arch-$productId"),
-                         $dbh->quote($arch));
+                         $dbh->quote($c->{arch}));
     $r->log->info("STATEMENT: $statement");
     eval {
         $cnt = $dbh->do($statement);
@@ -248,7 +249,7 @@ sub products($$$)
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $dbh->quote($guid),
                          $dbh->quote("product-rel-$productId"),
-                         $dbh->quote($release));
+                         $dbh->quote($c->{release}));
     $r->log->info("STATEMENT: $statement");
     eval {
         $cnt = $dbh->do($statement);
