@@ -183,7 +183,7 @@ sub NCCRegister
             foreach my $guid (@guids)
             {
                 $regtimestring = SMT::Utils::getDBTimestamp();
-                my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.ID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.ID", $self->{DBH}->quote($guid)), {Slice => {}});
+                my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.ID, p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.ID", $self->{DBH}->quote($guid)), {Slice => {}});
 
                 my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s",
                                                                         $self->{DBH}->quote($guid)), {Slice => {}});
@@ -1152,30 +1152,43 @@ sub _buildRegisterXML
 
         foreach my $pair (@{$regdata})
         {
-            if($pair->{KEYNAME} eq "product-name-".$PHash->{ID} &&
-               defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            if($pair->{KEYNAME} eq "product-name-".$PHash->{ID} && $pair->{VALUE})
             {
                 $PHash->{PRODUCT} = $pair->{VALUE};
             }
-            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{ID} &&
-                  defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{ID} && $pair->{VALUE})
             {
                 $PHash->{VERSION} = $pair->{VALUE};
             }
-            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{ID} &&
-                  defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{ID} && $pair->{VALUE})
             {
                 $PHash->{ARCH} = $pair->{VALUE};
             }
-            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{ID} &&
-                  defined $pair->{VALUE} && $pair->{VALUE} ne "")
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $PHash->{REL} = $pair->{VALUE};
+            }
+            # testing PRODUCTDATAID for compatibility reason
+            # ID > 10000 - NCC productdataid starts with 1
+            elsif($pair->{KEYNAME} eq "product-name-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $PHash->{PRODUCT} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $PHash->{VERSION} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $PHash->{ARCH} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
             {
                 $PHash->{REL} = $pair->{VALUE};
             }
         }
 
-        if(defined $PHash->{PRODUCT} && $PHash->{PRODUCT} ne "" &&
-           defined $PHash->{VERSION} && $PHash->{VERSION} ne "")
+        if($PHash->{PRODUCT} && $PHash->{VERSION})
         {
             $writer->startTag("product",
                               "version" => $PHash->{VERSION},
