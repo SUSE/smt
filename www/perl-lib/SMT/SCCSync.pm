@@ -9,6 +9,8 @@ use DBI qw(:sql_types);
 
 use Data::Dumper;
 
+# force autoflush on stdout write
+$|++;
 
 # constructor
 sub new
@@ -413,18 +415,18 @@ sub _updateRepositories
     $exthost->fragment(undef);
     $exthost->query(undef);
 
-    # FIXME: as soon as the repos have the flag, we can remove the regexp
-    if( $remotepath =~ /repo\/\$RCE/ || grep( ($_ == 'nu'), @{$repo->{flags}}))
+    # FIXME: as soon as the repos have the (right) format, we can remove the regexp
+    if( $remotepath =~ /repo\/\$RCE/ || ($repo->{format} && $repo->{format} eq "nu"))
     {
         $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
         $catalogtype = 'nu';
     }
-    elsif( $remotepath =~ /suse/ || grep( ($_ == 'ris'), @{$repo->{flags}}))
+    elsif( ($remotepath =~ /suse/ && $repo->{distro_target}) || ($repo->{format} && $repo->{format} eq "ris"))
     {
         $localpath = 'suse/'.$repo->{name}."/".$repo->{distro_target};
         $catalogtype = 'ris';
     }
-    elsif( grep( ($_ == 'yum'), @{$repo->{flags}}))
+    elsif( $repo->{format} && $repo->{format} eq "yum")
     {
         $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
         $catalogtype = 'yum';
@@ -612,7 +614,7 @@ sub _migrateMachineData
     my $ref = $self->{DBH}->selectrow_hashref($query_productdataid);
     my $old_productdataid = $ref->{PRODUCTDATAID};
 
-    ;
+    return $ret if ( not $old_productdataid);
     eval {
         $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
                                  $self->{DBH}->quote("product-name-$new_productid"),
