@@ -547,12 +547,26 @@ sub printLog
     my $vblevel  = shift;
     my $category = shift || 0;
     my $message  = shift || '';
+    my $apachelog = 0;
+    $apachelog = 1 if($LOG && ref($LOG) ne "GLOB" && $LOG->can('log'));
     my $doprint  = shift;
     $doprint = 1 if (not defined $doprint);
+    $doprint = 0 if ($apachelog);
     my $dolog    = shift;
     $dolog = 1 if (not defined $dolog);
     $vblevel = 3 if (not defined $vblevel);
-
+    if($apachelog && $LOG->server->loglevel() >= 6 )
+    {
+        $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2|LOG_DEBUG3;
+    }
+    elsif($apachelog && $LOG->server->loglevel() >= 4 && $LOG->server->loglevel() <= 5)
+    {
+        $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
+    }
+    elsif($apachelog)
+    {
+        $vblevel = LOG_ERROR;
+    }
     return if( !($vblevel & $category) );
     $category = ($vblevel & $category);
 
@@ -578,7 +592,26 @@ sub printLog
 
         foreach $line (split(/\n/, $message))
         {
-            print $LOG getDBTimestamp().' '.$package.' - ['.TOK2STRING->{$category}.']  '.$line."\n";
+            if(ref($LOG) eq "GLOB")
+            {
+                print $LOG getDBTimestamp().' '.$package.' - ['.TOK2STRING->{$category}.']  '.$line."\n";
+            }
+            elsif($LOG->can('log'))
+            {
+                my $msg = "$package - $line";
+                if(($category & LOG_ERROR))
+                {
+                    $LOG->log->error($msg);
+                }
+                elsif(($category & LOG_WARN))
+                {
+                    $LOG->log->warn($msg);
+                }
+                else
+                {
+                    $LOG->log->info($msg);
+                }
+            }
         }
     }
     return;
@@ -1262,12 +1295,14 @@ sub lookupProductIdByDataId
     my $dbh = shift || return undef;
     my $id = shift || return undef;
     my $src = shift;
+    my $log = shift;
+    my $vblevel = shift;
 
     my $query_product = sprintf("SELECT ID FROM Products WHERE PRODUCTDATAID = %s",
                                 $dbh->quote($id));
     $query_product .= sprintf(" AND SRC = %s", $dbh->quote($src)) if $src;
 
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product");
     my $ref = $dbh->selectrow_hashref($query_product);
     return $ref->{ID};
 }
@@ -1286,6 +1321,8 @@ sub lookupProductIdByName
     my $version = shift;
     my $release = shift;
     my $arch = shift;
+    my $log = shift;
+    my $vblevel = shift;
 
     my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
 
@@ -1306,7 +1343,7 @@ sub lookupProductIdByName
     # order by name,version,release,arch with NULL values at the end (bnc#659912)
     $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
 
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
     my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
 
     if(@$pl == 1)
@@ -1328,10 +1365,10 @@ sub lookupProductIdByName
                 return $prod->{ID};
             }
         }
-        #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
+        printLog($log, $vblevel, LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
         return $pl->[0]->{ID};
     }
-    #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No Product match found for: $name $version $release $arch");
+    printLog($log, $vblevel, LOG_ERROR, "No Product match found for: $name $version $release $arch");
     return undef;
 }
 
@@ -1349,12 +1386,14 @@ sub lookupCatalogIdByDataId
     my $dbh = shift || return undef;
     my $id = shift || return undef;
     my $src = shift;
+    my $log = shift;
+    my $vblevel = shift;
 
     my $query_product = sprintf("SELECT ID FROM Catalogs WHERE CATALOGID = %s",
                                 $dbh->quote($id));
     $query_product .= sprintf(" AND SRC = %s", $dbh->quote($src)) if $src;
 
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product");
     my $ref = $dbh->selectrow_hashref($query_product);
     return $ref->{ID};
 }
@@ -1371,6 +1410,8 @@ sub lookupCatalogIdByName
     my $dbh = shift || return undef;
     my $name = shift || return undef;
     my $target = shift;
+    my $log = shift;
+    my $vblevel = shift;
 
     my $statement = "SELECT ID FROM Catalogs where ";
 
@@ -1385,7 +1426,7 @@ sub lookupCatalogIdByName
         $statement .= " AND (TARGET IS NULL or TARGET = '')";
     }
 
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
     my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
 
     if(@$pl == 1)
@@ -1393,7 +1434,7 @@ sub lookupCatalogIdByName
         # Only one match found.
         return $pl->[0]->{ID};
     }
-    #printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "No match found for: $name $target");
+    printLog($log, $vblevel, LOG_ERROR, "No match found for: $name $target");
     return undef;
 }
 
@@ -1409,11 +1450,13 @@ sub lookupSubscriptionByRegcode
 {
     my $dbh = shift || return undef;
     my $regcode = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
 
     my $query_subsc = sprintf("SELECT * FROM Subscriptions WHERE REGCODE = %s",
                                 $dbh->quote($regcode));
 
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_subsc");
     my $ref = $dbh->selectrow_hashref($query_subsc);
     return $ref;
 }
@@ -1432,11 +1475,13 @@ sub lookupRegistrationByGUID
 {
     my $dbh = shift || return undef;
     my $guid = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
 
     my $query_reg = sprintf("SELECT * FROM Registration WHERE GUID = %s",
                                 $dbh->quote($guid));
 
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_reg");
     my $ref = $dbh->selectall_hashref($query_reg, 'PRODUCTID');
     return $ref;
 }
@@ -1453,11 +1498,13 @@ sub lookupTargetForClient
 {
     my $dbh = shift || return undef;
     my $guid = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
 
     my $query_target = sprintf("SELECT TARGET FROM Clients WHERE GUID = %s",
                                $dbh->quote($guid));
 
-    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $query_product");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_target");
     my $ref = $dbh->selectrow_hashref($query_target);
     return ($ref->{TARGET}?$ref->{TARGET}:"");
 }
