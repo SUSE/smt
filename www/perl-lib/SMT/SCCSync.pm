@@ -1,3 +1,15 @@
+=head1 NAME
+
+SMT::SCCSync - Module to sync from SCC
+
+=head1 DESCRIPTION
+
+Module to sync from SCC
+
+=over 4
+
+=cut
+
 package SMT::SCCSync;
 use strict;
 
@@ -12,7 +24,19 @@ use Data::Dumper;
 # force autoflush on stdout write
 $|++;
 
-# constructor
+=item constructor
+
+  SMT::SCCSync->new(...)
+
+  * fromdir
+  * todir
+  * log
+  * vblevel
+  * dbh
+  * useragent
+
+=cut
+
 sub new
 {
     my $pkgname = shift;
@@ -131,6 +155,13 @@ sub vblevel
     return $self->{VBLEVEL};
 }
 
+=item migrate(1/0)
+
+Enable or disable migration mode. The migration mode
+convert NCC data existing in DB into SCC data.
+
+=cut
+
 sub migrate
 {
     my $self = shift;
@@ -138,10 +169,13 @@ sub migrate
     return $self->{MIGRATE};
 }
 
-#
-# Test if a migration is possible.
-# Return 1 if yes, 0 if the migration is not possible.
-#
+=item canMigrate
+
+Test if a migration is possible.
+Return 1 if yes, 0 if the migration is not possible.
+
+=cut
+
 sub canMigrate
 {
     my $self = shift;
@@ -177,9 +211,13 @@ sub canMigrate
     return 1;
 }
 
-#
-# Return number of errors.
-#
+=item products
+
+Update Products, Repository and and the relations between these two.
+Return number of errors.
+
+=cut
+
 sub products
 {
     my $self = shift;
@@ -307,7 +345,8 @@ EOS
     # FIXME: Temporary product fix. Remove, if SCC send products correctly
     $product->{arch} = undef if($product->{arch} eq "unknown");
 
-    if (! $self->migrate() && (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S')))
+    if (! $self->migrate() &&
+        (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
         $statement = sprintf("UPDATE Products
                                  SET PRODUCT = %s, VERSION = %s,
@@ -335,7 +374,8 @@ EOS
     elsif ($self->migrate() && ($pid = SMT::Utils::lookupProductIdByName($self->{DBH}, $product->{zypper_name},
                                                                          $product->{zypper_version},
                                                                          $product->{release_type},
-                                                                         $product->{arch})))
+                                                                         $product->{arch},
+                                                                         $self->{LOG}, $self->vblevel)))
     {
         $self->_migrateMachineData($pid, $product->{id});
         $statement = sprintf("UPDATE Products
@@ -447,7 +487,8 @@ sub _updateRepositories
         $catalogtype = 'zypp';
     }
 
-    if (! $self->migrate() && (my $cid = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S')))
+    if (! $self->migrate() &&
+        (my $cid = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
         $statement = sprintf("UPDATE Catalogs
                                  SET NAME = %s, DESCRIPTION = %s,
@@ -466,7 +507,8 @@ sub _updateRepositories
                              $self->{DBH}->quote($cid)
         );
     }
-    elsif ($self->migrate() && ($cid = SMT::Utils::lookupCatalogIdByName($self->{DBH}, $repo->{name}, $repo->{distro_target})))
+    elsif ($self->migrate() &&
+           ($cid = SMT::Utils::lookupCatalogIdByName($self->{DBH}, $repo->{name}, $repo->{distro_target}, $self->{LOG}, $self->vblevel)))
     {
         $statement = sprintf("UPDATE Catalogs
                                  SET NAME = %s, DESCRIPTION = %s,
@@ -520,8 +562,8 @@ sub _updateProductCatalogs
     my $product = shift;
     my $repo = shift;
     my $ret = 0;
-    my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S');
-    my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S');
+    my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel);
+    my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel);
     if (! $product_id)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$product->{id});
@@ -638,3 +680,15 @@ sub _migrateMachineData
 }
 
 1;
+
+=back
+
+=head1 AUTHOR
+
+mc@suse.de
+
+=head1 COPYRIGHT
+
+Copyright 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
+
+=cut
