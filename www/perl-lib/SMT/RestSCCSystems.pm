@@ -123,7 +123,7 @@ sub products($$$)
     if ( exists $c->{token} && $c->{token})
     {
         # Token in SMT is not a required parameter
-        if(not SMT::Utils::lookupSubscriptionByRegcode($dbh, $c->{token}))
+        if(not SMT::Utils::lookupSubscriptionByRegcode($dbh, $c->{token}, $r))
         {
             $token = $c->{token};
         }
@@ -170,7 +170,7 @@ sub products($$$)
     #
     # insert registration
     #
-    my $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid);
+    my $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid, $r);
     if(exists $existingregs->{$productId} && $existingregs->{$productId})
     {
         $statement = sprintf("UPDATE Registration SET REGDATE=%s WHERE GUID=%s AND PRODUCTID=%s",
@@ -260,12 +260,12 @@ sub products($$$)
     #
     # lookup the Clients target
     #
-    my $target = SMT::Utils::lookupTargetForClient($dbh, $guid);
+    my $target = SMT::Utils::lookupTargetForClient($dbh, $guid, $r);
 
     #
     # find Catalogs
     #
-    $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid);
+    $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid, $r);
     my @pidarr = keys %{$existingregs};
     my $catalogs = SMT::Registration::findCatalogs($r, $dbh, $target, \@pidarr);
 
