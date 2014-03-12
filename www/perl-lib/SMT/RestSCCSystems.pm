@@ -353,7 +353,7 @@ sub handler {
     return Apache2::Const::AUTH_REQUIRED unless ( defined $r->user  &&  $r->user ne '' );
 
     my ($status, $password) = $r->get_basic_auth_pw;
-    return $status unless $status == Apache2::Const::OK;
+    return respond_with_error($r, $status, "unauthorized") unless $status == Apache2::Const::OK;
 
     # to be sure that the authentication happens with GUID/SECRET and not with
     # mirror credentails
@@ -362,7 +362,7 @@ sub handler {
     if ( keys %{$auth} != 1 )
     {
         $r->log->error("No client authentication provided");
-        return Apache2::Const::FORBIDDEN;
+        return respond_with_error($r, Apache2::Const::FORBIDDEN, "No client authentication provided") ;
     }
 
     my $update_last_contact = update_last_contact($r, $dbh);
