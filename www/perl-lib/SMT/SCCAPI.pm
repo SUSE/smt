@@ -1,3 +1,15 @@
+=head1 NAME
+
+SMT::SCCAPI - Module to use the SCC REST API
+
+=head1 DESCRIPTION
+
+Module to use the SCC REST API
+
+=over 4
+
+=cut
+
 package SMT::SCCAPI;
 
 use strict;
@@ -6,7 +18,19 @@ use SMT::Utils;
 use JSON;
 use Data::Dumper;
 
-# constructor
+=item constructor
+
+  SMT::SCCSync->new(...)
+
+  * url
+  * authuser
+  * authpass
+  * log
+  * vblevel
+  * useragent
+
+=cut
+
 sub new
 {
     my $pkgname = shift;
@@ -64,7 +88,137 @@ sub new
     return $self;
 }
 
-sub request
+=item announce([@opts])
+
+Announce a system at SCC.
+
+Options:
+
+  * email
+  * reg_code
+
+In case of an error it returns "undef".
+
+=cut
+
+sub announce
+{
+    my $self = shift;
+    my %opts = @_;
+    my $uri = $self->{URL}."/subscriptions/systems";
+
+    my $body = {
+        "email" => $opts{email},
+        "hostname" => SMT::Utils::getFQDN(),
+        "hwinfo" => ""
+    };
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "Announce data: ".Data::Dumper->dump($body), 0);
+
+    my $headers = {"Authorization" => "Token token=\"".$opts{reg_code}."\""};
+    return $self->_request($uri, "post", $headers, $body);
+}
+
+=item products
+
+List all products.
+
+Returns json structure containing all products with its repositories.
+In case of an error it returns "undef".
+
+Example:
+
+    [
+      {
+        'release_type' => undef,
+        'zypper_name' => 'SLES',
+        'repos' => [
+                     {
+                       'format' => undef,
+                       'name' => 'SLES12-Pool',
+                       'distro_target' => 'sle-12-x86_64',
+                       'url' => 'https://nu.novell.com/suse/x86_64/update/SLE-SERVER/12-POOL',
+                       'id' => 1150,
+                       'description' => 'SLES12-Pool for sle-12-x86_64',
+                       'tags' => [
+                                   'enabled',
+                                   'autorefresh'
+                                 ]
+                     },
+                     {
+                       'format' => undef,
+                       'name' => 'SLES12-Updates',
+                       'distro_target' => 'sle-12-x86_64',
+                       'url' => 'https://nu.novell.com/suse/x86_64/update/SLE-SERVER/12',
+                       'id' => 1151,
+                       'description' => 'SLES12-Updates for sle-12-x86_64',
+                       'tags' => [
+                                   'enabled',
+                                   'autorefresh'
+                                 ]
+                     }
+                   ],
+        'arch' => 'x86_64',
+        'zypper_version' => '12',
+        'id' => 1117,
+        'friendly_name' => 'SUSE Linux Enterprise Server BETA TEST 12 x86_64',
+        'product_class' => '7261'
+      }
+    ]
+
+=cut
+
+sub products
+{
+    my $self = shift;
+    my $uri = $self->{URL}."/products";
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "list products", 0);
+
+    return $self->_request($uri, "get", {}, {});
+}
+
+=item services
+
+List all services.
+
+Returns json structure containing all services with its repositories.
+In case of an error it returns "undef".
+
+Example:
+
+
+
+=cut
+
+sub services
+{
+    my $self = shift;
+    my $uri = $self->{URL}."/services";
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "list services", 0);
+
+    return $self->_request($uri, "get", {}, {});
+}
+
+##########################################################################
+### private methods
+##########################################################################
+
+# _request($url, $method, {headers}, body)
+#
+# Issue a REST request to <url> using <method>.
+#
+# <method> should be one of get, head, post or put
+#
+# With the hash reference <headers> you can add additionly HTTP headers to
+# the request.
+#
+# With the body reference you can define the body to send.
+# The body will be JSON encoded before it is send. The body is
+# only added if the method is post or put.
+#
+sub _request
 {
     my $self = shift;
     my $url = shift;
@@ -122,44 +276,17 @@ sub request
     return undef;
 }
 
-sub announce
-{
-    my $self = shift;
-    my %opts = @_;
-    my $uri = $self->{URL}."/subscriptions/systems";
+=back
 
-    my $body = {
-        "email" => $opts{email},
-        "hostname" => SMT::Utils::getFQDN(),
-        "hwinfo" => ""
-    };
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-             "Announce data: ".Data::Dumper->dump($body), 0);
+=head1 AUTHOR
 
-    my $headers = {"Authorization" => "Token token=\"".$opts{reg_code}."\""};
-    return $self->request($uri, "post", $headers, $body);
-}
+mc@suse.de
 
-sub products
-{
-    my $self = shift;
-    my $uri = $self->{URL}."/products";
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-             "list products", 0);
+=head1 COPYRIGHT
 
-    return $self->request($uri, "get", {}, {});
-}
+Copyright 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
-sub services
-{
-    my $self = shift;
-    my $uri = $self->{URL}."/services";
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-             "list services", 0);
-
-    return $self->request($uri, "get", {}, {});
-}
-
+=cut
 
 1;
 
