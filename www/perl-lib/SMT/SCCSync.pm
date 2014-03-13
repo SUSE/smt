@@ -74,6 +74,7 @@ sub new
     $self->{ERRORS} = 0;
 
     $self->{REPO_DONE} = {};
+    $self->{TARGET_DONE} = {};
 
     if(exists $opt{vblevel} && $opt{vblevel})
     {
@@ -179,7 +180,7 @@ Return 1 if yes, 0 if the migration is not possible.
 sub canMigrate
 {
     my $self = shift;
-    my $input = $self->_getInput();
+    my $input = $self->_getInput("products");
 
     if (! $input)
     {
@@ -221,7 +222,8 @@ Return number of errors.
 sub products
 {
     my $self = shift;
-    my $input = $self->_getInput();
+    my $name = "products";
+    my $input = $self->_getInput($name);
 
     if (! $input)
     {
@@ -229,7 +231,7 @@ sub products
     }
     if(defined $self->{TODIR})
     {
-        open( FH, '>', $self->{TODIR}."/products.json") or do
+        open( FH, '>', $self->{TODIR}."/$name.json") or do
         {
             printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
             return 1;
@@ -241,10 +243,47 @@ sub products
     }
     else
     {
-        my $ret = $self->_updateData($input);
+        my $ret = $self->_updateProductData($input);
         return $ret;
     }
 }
+
+=item services
+
+Update distro_targets.
+Return number of errors.
+
+=cut
+
+sub services
+{
+    my $self = shift;
+    my $name = "services";
+    my $input = $self->_getInput($name);
+
+    if (! $input)
+    {
+        return 1;
+    }
+    if(defined $self->{TODIR})
+    {
+        open( FH, '>', $self->{TODIR}."/$name.json") or do
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
+            return 1;
+        };
+        my $json_text = JSON::encode_json($input);
+        print FH "$json_text";
+        close FH;
+        return 0;
+    }
+    else
+    {
+        my $ret = $self->_updateServiceData($input);
+        return $ret;
+    }
+}
+
 
 ###############################################################################
 ###############################################################################
@@ -258,11 +297,26 @@ sub products
 sub _getInput
 {
     my $self = shift;
+    my $what = shift;
     my $input = undef;
+    my $func = undef;
+
+    if($what eq "products")
+    {
+        $func = sub{$self->{API}->products()};
+    }
+    elsif($what eq "services")
+    {
+        $func = sub{$self->{API}->services()};
+    }
+    else
+    {
+        return undef;
+    }
 
     if($self->{FROMDIR} && -d $self->{FROMDIR})
     {
-        open( FH, '<', $self->{FROMDIR}."/products.json" ) and do
+        open( FH, '<', $self->{FROMDIR}."/$what.json" ) and do
         {
             my $json_text   = <FH>;
             $input = JSON::decode_json( $json_text );
@@ -271,7 +325,7 @@ sub _getInput
     }
     else
     {
-        $input = $self->{API}->products();
+        $input = &$func();
     }
     if (! $input)
     {
@@ -608,9 +662,65 @@ sub _updateProductCatalogs
     return $ret;
 }
 
+sub _updateTargets
+{
+    my $self = shift;
+    my $service = shift;
+    my $ret = 0;
+    my $statement = "";
 
+    my $distro_target = $service->{distro_target};
+    foreach my $distro_description (@{$service->{distro_description}})
+    {
+        if(exists $self->{TARGET_DONE}->{$distro_description})
+        {
+            if($self->{TARGET_DONE}->{$distro_description} ne "$distro_target")
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                         "ambiguous distribution target data: '$distro_description' is $distro_target and ".
+                         $self->{TARGET_DONE}->{$distro_description});
+            }
+            next;
+        }
 
-sub _updateData
+        my $rows = 0;
+        if ($self->migrate())
+        {
+            $statement = sprintf("UPDATE Targets SET SRC = 'S' WHERE OS = %s AND TARGET = %s",
+                                 $self->{DBH}->quote($distro_description),
+                                 $self->{DBH}->quote($distro_target));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+            eval {
+                $rows = $self->{DBH}->do($statement);
+                $self->{TARGET_DONE}->{$distro_description} = $distro_target if($rows > 0);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                $ret += 1;
+            }
+        }
+
+        if ((not $self->migrate()) || ($rows < 1))
+        {
+            $statement = sprintf("INSERT INTO Targets (OS, TARGET, SRC) VALUES (%s, %s, 'S')",
+                                 $self->{DBH}->quote($distro_description),
+                                 $self->{DBH}->quote($distro_target));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+            eval {
+                $self->{DBH}->do($statement);
+                $self->{TARGET_DONE}->{$distro_description} = $distro_target;
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                $ret += 1;
+            }
+        }
+    }
+}
+
+sub _updateProductData
 {
     my $self = shift;
     my $json = shift;
@@ -642,6 +752,41 @@ sub _updateData
     }
     return $ret;
 }
+
+sub _updateServiceData
+{
+    my $self = shift;
+    my $json = shift;
+    my $ret = 0;
+
+    if(!defined $self->{DBH})
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
+        return 1;
+    }
+
+    if (not $self->migrate())
+    {
+        my $statement = "DELETE FROM Targets WHERE SRC = 'S'";
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+        eval {
+            $self->{DBH}->do($statement);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $ret += 1;
+        }
+    }
+
+    foreach my $service (@$json)
+    {
+        print ".";
+        $ret += $self->_updateTargets($service);
+    }
+    return $ret;
+}
+
 
 sub _migrateMachineData
 {
