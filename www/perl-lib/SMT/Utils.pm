@@ -1496,8 +1496,8 @@ It returns the target as string or it returns an empty string if nothing was not
 
 sub lookupTargetForClient
 {
-    my $dbh = shift || return undef;
-    my $guid = shift || return undef;
+    my $dbh = shift || return '';
+    my $guid = shift || return '';
     my $log = shift;
     my $vblevel = shift;
 
@@ -1508,6 +1508,35 @@ sub lookupTargetForClient
     my $ref = $dbh->selectrow_hashref($query_target);
     return ($ref->{TARGET}?$ref->{TARGET}:"");
 }
+
+=item lookupTargetByOS($dbh, $os[, $src])
+
+Lookup the distro target for a System specified by OS string.
+
+It returns the target as string or it returns undef if nothing was not found.
+
+=cut
+
+sub lookupTargetByOS
+{
+    my $dbh = shift || return undef;
+    my $os  = shift || return undef;
+    my $src = shift;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $query_target = sprintf("SELECT TARGET FROM Clients WHERE OS = %s",
+                               $dbh->quote($os));
+    if($src)
+    {
+        $query_target .= sprintf(" AND SRC = %s", $dbh->quote($src));
+    }
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_target");
+    my $ref = $dbh->selectrow_hashref($query_target);
+    return $ref->{TARGET};
+}
+
 
 =back
 
