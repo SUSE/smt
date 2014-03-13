@@ -148,8 +148,18 @@ sub products
              "list products", 0);
 
     return $self->request($uri, "get", {}, {});
-
 }
+
+sub services
+{
+    my $self = shift;
+    my $uri = $self->{URL}."/services";
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "list services", 0);
+
+    return $self->request($uri, "get", {}, {});
+}
+
 
 1;
 
