@@ -254,14 +254,6 @@ eval
         $exitcode = 1;
     }
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Target information"));
-    $res = $rd->services();
-    if ($res)
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Target data."));
-        $exitcode = 1;
-    }
-
     if( $fromdir ne "" && -d $fromdir )
     {
         my $mirrorinfofile = $fromdir."/mirrorinfo.xml";

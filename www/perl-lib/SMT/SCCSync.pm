@@ -250,6 +250,8 @@ sub products
 
 =item services
 
+NOT YET IMPLEMENTED
+
 Update distro_targets.
 Return number of errors.
 
@@ -279,7 +281,7 @@ sub services
     }
     else
     {
-        my $ret = $self->_updateServiceData($input);
+        my $ret = undef;
         return $ret;
     }
 }
@@ -607,7 +609,59 @@ sub _updateRepositories
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
         return 1;
     }
+    $self->_updateTargets($repo->{distro_target}, $repo->{distro_target});
     return 0;
+}
+
+sub _updateTargets
+{
+    my $self = shift;
+    my $distro_description = shift || return;
+    my $distro_target = shift || return;
+    my $ret = 0;
+    my $statement = "";
+
+    if(exists $self->{TARGET_DONE}->{$distro_description})
+    {
+        if($self->{TARGET_DONE}->{$distro_description} ne "$distro_target")
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                     "ambiguous distribution target data: '$distro_description' is $distro_target and ".
+                     $self->{TARGET_DONE}->{$distro_description});
+        }
+        next;
+    }
+    my $rows = 0;
+    $statement = sprintf("UPDATE Targets SET TARGET = %s, SRC = 'S' WHERE OS = %s",
+                         $self->{DBH}->quote($distro_target),
+                         $self->{DBH}->quote($distro_description));
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    eval {
+        $rows = $self->{DBH}->do($statement);
+        $self->{TARGET_DONE}->{$distro_description} = $distro_target if($rows > 0);
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
+    }
+
+    if ($rows < 1)
+    {
+        $statement = sprintf("INSERT INTO Targets (OS, TARGET, SRC) VALUES (%s, %s, 'S')",
+                             $self->{DBH}->quote($distro_description),
+                             $self->{DBH}->quote($distro_target));
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+        eval {
+            $self->{DBH}->do($statement);
+            $self->{TARGET_DONE}->{$distro_description} = $distro_target;
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $ret += 1;
+        }
+    }
 }
 
 sub _updateProductCatalogs
@@ -662,64 +716,6 @@ sub _updateProductCatalogs
     return $ret;
 }
 
-sub _updateTargets
-{
-    my $self = shift;
-    my $service = shift;
-    my $ret = 0;
-    my $statement = "";
-
-    my $distro_target = $service->{distro_target};
-    foreach my $distro_description (@{$service->{distro_description}})
-    {
-        if(exists $self->{TARGET_DONE}->{$distro_description})
-        {
-            if($self->{TARGET_DONE}->{$distro_description} ne "$distro_target")
-            {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                         "ambiguous distribution target data: '$distro_description' is $distro_target and ".
-                         $self->{TARGET_DONE}->{$distro_description});
-            }
-            next;
-        }
-
-        my $rows = 0;
-        if ($self->migrate())
-        {
-            $statement = sprintf("UPDATE Targets SET SRC = 'S' WHERE OS = %s AND TARGET = %s",
-                                 $self->{DBH}->quote($distro_description),
-                                 $self->{DBH}->quote($distro_target));
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
-            eval {
-                $rows = $self->{DBH}->do($statement);
-                $self->{TARGET_DONE}->{$distro_description} = $distro_target if($rows > 0);
-            };
-            if($@)
-            {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-                $ret += 1;
-            }
-        }
-
-        if ((not $self->migrate()) || ($rows < 1))
-        {
-            $statement = sprintf("INSERT INTO Targets (OS, TARGET, SRC) VALUES (%s, %s, 'S')",
-                                 $self->{DBH}->quote($distro_description),
-                                 $self->{DBH}->quote($distro_target));
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
-            eval {
-                $self->{DBH}->do($statement);
-                $self->{TARGET_DONE}->{$distro_description} = $distro_target;
-            };
-            if($@)
-            {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-                $ret += 1;
-            }
-        }
-    }
-}
-
 sub _updateProductData
 {
     my $self = shift;
@@ -750,43 +746,9 @@ sub _updateProductData
             $ret += $self->_updateProductCatalogs($product, $repo);
         }
     }
+    $self->_staticTargets();
     return $ret;
 }
-
-sub _updateServiceData
-{
-    my $self = shift;
-    my $json = shift;
-    my $ret = 0;
-
-    if(!defined $self->{DBH})
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
-        return 1;
-    }
-
-    if (not $self->migrate())
-    {
-        my $statement = "DELETE FROM Targets WHERE SRC = 'S'";
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
-        eval {
-            $self->{DBH}->do($statement);
-        };
-        if($@)
-        {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-            $ret += 1;
-        }
-    }
-
-    foreach my $service (@$json)
-    {
-        print ".";
-        $ret += $self->_updateTargets($service);
-    }
-    return $ret;
-}
-
 
 sub _migrateMachineData
 {
@@ -822,6 +784,69 @@ sub _migrateMachineData
         $ret += 1;
     }
     return $ret;
+}
+
+sub _staticTargets
+{
+    my $self = shift;
+
+    my %staticTargets = (
+        'i486' => 'i386',
+        'i586' => 'i386',
+        'i686' => 'i386',
+        'SUSE edition of Moblin 2 (i586)' => 'sle-11-i586',
+        'SUSE Linux Enterprise Desktop 11 (i586)' => 'sle-11-i586',
+        'SUSE Linux Enterprise Server 11 (i586)' => 'sle-11-i586',
+        'SUSE Linux Enterprise Server 11 (ia64)' => 'sle-11-ia64',
+        'SUSE Linux Enterprise Server 11 (ppc64)' => 'sle-11-ppc64',
+        'SUSE Linux Enterprise Server 11 (s390)' => 'sle-11-s390x',
+        'SUSE Linux Enterprise Server 11 (s390x)' => 'sle-11-s390x',
+        'SUSE Linux Enterprise Desktop 11 (x86_64)' => 'sle-11-x86_64',
+        'SUSE Linux Enterprise Server 11 (x86_64)' => 'sle-11-x86_64',
+        'SUSE Linux Enterprise Desktop 10 (i586)' => 'sled-10-i586',
+        'SUSE Linux Enterprise Desktop 10.2 (i586)' => 'sled-10-i586',
+        'SUSE Linux Enterprise Desktop 10.3 (i586)' => 'sled-10-i586',
+        'SUSE Linux Enterprise Desktop 10.4 (i586)' => 'sled-10-i586',
+        'SUSE Linux Enterprise Desktop 10 (x86_64)' => 'sled-10-x86_64',
+        'SUSE Linux Enterprise Desktop 10.2 (x86_64)' => 'sled-10-x86_64',
+        'SUSE Linux Enterprise Desktop 10.3 (x86_64)' => 'sled-10-x86_64',
+        'SUSE Linux Enterprise Desktop 10.4 (x86_64)' => 'sled-10-x86_64',
+        'Novell Open Enterprise Server 10 (i586)' => 'sles-10-i586',
+        'SUSE Linux Enterprise Server 10 (i586)' => 'sles-10-i586',
+        'SUSE Linux Enterprise Server 10.2 (i586)' => 'sles-10-i586',
+        'SUSE Linux Enterprise Server 10.3 (i586)' => 'sles-10-i586',
+        'SUSE Linux Enterprise Server 10.4 (i586)' => 'sles-10-i586',
+        'Novell Open Enterprise Server 10 (ia64)' => 'sles-10-ia64',
+        'SUSE Linux Enterprise Server 10 (ia64)' => 'sles-10-ia64',
+        'SUSE Linux Enterprise Server 10.2 (ia64)' => 'sles-10-ia64',
+        'SUSE Linux Enterprise Server 10.3 (ia64)' => 'sles-10-ia64',
+        'SUSE Linux Enterprise Server 10.4 (ia64)' => 'sles-10-ia64',
+        'Novell Open Enterprise Server 10 (ppc)' => 'sles-10-ppc',
+        'SUSE Linux Enterprise Server 10 (ppc)' => 'sles-10-ppc',
+        'SUSE Linux Enterprise Server 10.2 (ppc)' => 'sles-10-ppc',
+        'SUSE Linux Enterprise Server 10.3 (ppc)' => 'sles-10-ppc',
+        'SUSE Linux Enterprise Server 10.4 (ppc)' => 'sles-10-ppc',
+        'Novell Open Enterprise Server 10 (s390)' => 'sles-10-s390',
+        'SUSE Linux Enterprise Server 10 (s390)' => 'sles-10-s390',
+        'SUSE Linux Enterprise Server 10.2 (s390)' => 'sles-10-s390',
+        'SUSE Linux Enterprise Server 10.3 (s390)' => 'sles-10-s390',
+        'SUSE Linux Enterprise Server 10.4 (s390)' => 'sles-10-s390',
+        'Novell Open Enterprise Server 10 (s390x)' => 'sles-10-s390x',
+        'SUSE Linux Enterprise Server 10 (s390x)' => 'sles-10-s390x',
+        'SUSE Linux Enterprise Server 10.2 (s390x)' => 'sles-10-s390x',
+        'SUSE Linux Enterprise Server 10.3 (s390x)' => 'sles-10-s390x',
+        'SUSE Linux Enterprise Server 10.4 (s390x)' => 'sles-10-s390x',
+        'Novell Open Enterprise Server 10 (x86_64)' => 'sles-10-x86_64',
+        'SUSE Linux Enterprise Server 10 (x86_64)' => 'sles-10-x86_64',
+        'SUSE Linux Enterprise Server 10.2 (x86_64)' => 'sles-10-x86_64',
+        'SUSE Linux Enterprise Server 10.3 (x86_64)' => 'sles-10-x86_64',
+        'SUSE Linux Enterprise Server 10.4 (x86_64)' => 'sles-10-x86_64',
+        'SuSE Linux Enterprise Server 9 (x86_64)' => 'sles-10-x86_64',
+        );
+    foreach my $distro_description (keys %staticTargets)
+    {
+        $self->_updateTargets($distro_description, $staticTargets{$distro_description});
+    }
 }
 
 1;

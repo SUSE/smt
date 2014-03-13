@@ -112,14 +112,6 @@ eval
         SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
     }
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Migrating Target information"));
-    $res = $sccsync->services();
-    if ($res)
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
-        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
-    }
-
 };
 if ($@)
 {
