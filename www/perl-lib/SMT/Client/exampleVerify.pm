@@ -12,6 +12,7 @@ sub verifyGuest {
     my $r       = shift;
     my $regroot = shift;
     # Insert code to connect to cloud framework and verify the guest
+    # return 1 for successful verification, undef for verification failure
     return 1;
 }
 
