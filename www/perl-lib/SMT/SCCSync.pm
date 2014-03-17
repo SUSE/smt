@@ -324,6 +324,34 @@ sub subscriptions
     }
 }
 
+sub mark_repos_mirrorable
+{
+    my $self = shift;
+    my $name = "organization_repositories";
+    my $input = $self->_getInput($name);
+
+    if (! $input)
+    {
+        return 1;
+    }
+    if(defined $self->{TODIR})
+    {
+        open( FH, '>', $self->{TODIR}."/$name.json") or do
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
+            return 1;
+        };
+        my $json_text = JSON::encode_json($input);
+        print FH "$json_text";
+        close FH;
+        return 0;
+    }
+    else
+    {
+        my $ret = $self->_markReposMirrorable($input);
+        return $ret;
+    }
+}
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -351,6 +379,10 @@ sub _getInput
     elsif($what eq "subscriptions")
     {
         $func = sub{$self->{API}->org_subscriptions()};
+    }
+    elsif($what eq "organization_repositories")
+    {
+        $func = sub{$self->{API}->org_repos()};
     }
     else
     {
@@ -908,6 +940,57 @@ sub _updateSubscriptionData
         }
     }
     return $ret;
+}
+
+sub _markReposMirrorable
+{
+    my $self   = shift;
+    my $json   = shift || return 1;
+    my $ret    = 0;
+
+    if(!defined $self->{DBH})
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
+        return 1;
+    }
+
+    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable from Catalogs
+                                          where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
+                                         ['Name', 'Target']);
+    foreach my $repo (@{$json})
+    {
+        if(exists $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable} )
+        {
+            if( uc($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable}) ne "Y")
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+                         sprintf(__("* New mirrorable repository '%s %s' ."),
+                                 $repo->{name}, $repo->{distro_target}));
+                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s
+                                                     AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
+                                                    $self->{DBH}->quote($repo->{name}),
+                                                    $self->{DBH}->quote($repo->{distro_target}) ));
+            }
+            delete $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}};
+        }
+    }
+
+    foreach my $cname ( keys %{$sqlres})
+    {
+        foreach my $target ( keys %{$sqlres->{$cname}})
+        {
+            if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
+                         sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
+                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s
+                                                     AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
+                                                    $self->{DBH}->quote($cname),
+                                                    $self->{DBH}->quote($target) ));
+            }
+        }
+    }
+    return 0;
 }
 
 sub _migrateMachineData
