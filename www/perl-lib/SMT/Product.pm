@@ -69,7 +69,7 @@ use constant SERVERCLASSDEFAULT => {
               "ZOS"=>"ADDON",
               "10040"=>"ADDON",
               "13319"=>"ADDON",
-              #"13319"=>"OS",   # old 
+              #"13319"=>"OS",   # old
               "18962"=>"OS",
               "20082"=>"ADDON",
               "7260"=>"OS",
@@ -80,6 +80,7 @@ sub new
 {
     my $self = {
         dbid => undef,
+        productdataid => undef,
         name => undef,
         version => undef,
         rel => undef,
@@ -99,6 +100,13 @@ sub dbId
     my ($self, $value) = @_;
     $self->{dbid} = $value if ($value);
     return $self->{dbid};
+}
+
+sub productDataId
+{
+    my ($self, $value) = @_;
+    $self->{productdataid} = $value if ($value);
+    return $self->{productdataid};
 }
 
 sub name
@@ -165,7 +173,8 @@ sub findById
 {
     my ($dbh, $id) = @_;
 
-    my $sql = "select p.productdataid,
+    my $sql = "select p.id,
+                      p.productdataid,
                       p.product,
                       p.version,
                       p.rel,
@@ -174,7 +183,7 @@ sub findById
                       p.product_class,
                       (select distinct s.serverclass from Subscriptions s where s.product_class = p.product_class) as serverclass
                  from Products p
-                where productdataid = ?;";
+                where p.id = ?;";
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $id, SQL_INTEGER);
     $sth->execute();
@@ -183,7 +192,8 @@ sub findById
     return undef if (not $pdata);
 
     my $p = new;
-    $p->dbId($pdata->{productdataid});
+    $p->dbId($pdata->{id});
+    $p->productDataId($pdata->{productdataid});
     $p->name($pdata->{product});
     $p->version($pdata->{version});
     $p->release($pdata->{rel});
@@ -202,6 +212,7 @@ sub asXML
     my $xdata =
     {
         id => $self->dbId,
+        productdataid => $self->productDataId,
         name => $self->name,
         version => $self->version,
         rel => $self->release,
@@ -222,7 +233,8 @@ sub getAllAsXML
 {
     my $dbh = shift;
 
-    my $sql = "select p.productdataid,
+    my $sql = "select p.id,
+                      p.productdataid,
                       p.product,
                       p.version,
                       p.rel,
@@ -240,7 +252,8 @@ sub getAllAsXML
     {
         # <product id="%s" name="%s" version="%s" rel="%s" arch="%s" uiname="%s" class="%s" serverclass="%s"/>
         my $entry = {
-            id => $p->{productdataid},
+            id => $p->{id},
+            productdataid => $p->{productdataid},
             name => $p->{product},
             version => $p->{version},
             rel => $p->{rel},
@@ -253,12 +266,27 @@ sub getAllAsXML
         {
             $entry->{serverclass} = SERVERCLASSDEFAULT->{$p->{product_class}};
         }
-       
+
         push @{$data->{product}}, $entry;
     }
     return XMLout($data,
         rootname => 'products',
         xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
 }
+
+#
+# Returns the default server class from a given product class
+# or empty string if not found
+#
+sub defaultServerClass
+{
+    my $product_class = shift || return '';
+    if(exists SERVERCLASSDEFAULT->{$product_class})
+    {
+        return SERVERCLASSDEFAULT->{$product_class};
+    }
+    return '';
+}
+
 
 1;
