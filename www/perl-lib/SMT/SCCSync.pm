@@ -763,16 +763,19 @@ sub _addSubscription
     my $self = shift;
     my $subscr = shift || return 1;
 
-    my $startdate = Date::Parse::str2time($subscr->{starts_at});
-    my $enddate = Date::Parse::str2time($subscr->{expires_at});
-    my $duration =  (($startdate - $enddate) / 60*60*24) ;
+    my $startdate = 0;
+    $startdate = Date::Parse::str2time($subscr->{starts_at}) if($subscr->{starts_at});
+    my $enddate = 0;
+    $enddate = Date::Parse::str2time($subscr->{expires_at}) if($subscr->{expires_at});
+    my $duration = 0;
+    $duration =  (($startdate - $enddate) / 60*60*24) if($startdate && $enddate);
     my $product_classes = join(',', @{$subscr->{product_classes}});
     my $server_class = '';
     if (exists $subscr->{product_classes}->[0])
     {
         $server_class = SMT::Product::defaultServerClass($subscr->{product_classes}->[0]);
     }
-    $server_class = 'ADDDON' if(not $server_class);
+    $server_class = 'ADDON' if(not $server_class);
 
     my $statement = sprintf("INSERT INTO Subscriptions VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                          $self->{DBH}->quote($subscr->{id}),
@@ -780,8 +783,8 @@ sub _addSubscription
                          $self->{DBH}->quote($subscr->{name}),
                          $self->{DBH}->quote($subscr->{type}),
                          $self->{DBH}->quote($subscr->{status}),
-                         $self->{DBH}->quote(SMT::Utils::getDBTimestamp($startdate)),
-                         $self->{DBH}->quote(SMT::Utils::getDBTimestamp($enddate)),
+                         $self->{DBH}->quote(($startdate?SMT::Utils::getDBTimestamp($startdate):undef)),
+                         $self->{DBH}->quote(($enddate?SMT::Utils::getDBTimestamp($enddate):undef)),
                          $self->{DBH}->quote($duration),
                          $self->{DBH}->quote($server_class),
                          $self->{DBH}->quote($product_classes),
