@@ -137,7 +137,7 @@ sub new
                                     useragent => $self->{USERAGENT},
                                     url => $self->{URI},
                                     authuser => $self->{AUTHUSER},
-                                    autpass => $self->{AUTHPASS},
+                                    authpass => $self->{AUTHPASS},
                                     ident => $self->{SMTGUID}
                                    );
     bless($self);
