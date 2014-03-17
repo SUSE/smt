@@ -88,6 +88,7 @@ if ( $regurl !~ /^https:\/\/secure-www\.novell\.com/ )
     SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
 }
 _writeConfig($cfg, 'NU', 'NURegUrl', 'https://scc.suse.com/connect');
+_writeConfig($cfg, 'NU', 'ApiType', 'SCC');
 
 eval
 {
