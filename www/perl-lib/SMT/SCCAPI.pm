@@ -226,6 +226,33 @@ sub org_subscriptions
     return $self->_request($uri->as_string(), "get", {}, {});
 }
 
+=item org_repos
+
+List repositories accessible by an organization.
+
+Returns json structure containing repositories accessible by an organization.
+In case of an error it returns "undef".
+
+Example:
+
+
+
+=cut
+
+sub org_repos
+{
+    my $self = shift;
+    my $uri = URI->new($self->{URL}."/organizations/repos");
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "list organization repositories", 0);
+
+    return $self->_request($uri->as_string(), "get", {}, {});
+}
+
 
 ##########################################################################
 ### private methods
