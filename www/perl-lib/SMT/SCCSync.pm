@@ -324,7 +324,6 @@ sub subscriptions
     }
 }
 
-
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -806,29 +805,25 @@ sub _addSubscription
 sub _addClientSubscription
 {
     my $self = shift;
-    my $id = shift || return 1;
-    my $clients = shift || return 0;
-    my $ret = 0;
+    my $subscriptionId = shift || return 1;
+    my $guid = shift || return 1;
 
-    foreach my $guid (@{$clients})
+    # skip it, if the client does not exist
+    return 0 if(not SMT::Utils::lookupClientByGUID( $self->{DBH}, $guid, $self->{LOG}, $self->vblevel() ));
+
+    my $statement = sprintf("INSERT INTO ClientSubscriptions (SUBID, GUID) VALUES (%s,%s)",
+                            $self->{DBH}->quote($subscriptionId),
+                            $self->{DBH}->quote($guid));
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    eval {
+        $self->{DBH}->do($statement);
+    };
+    if($@)
     {
-        # skip it, if the client does not exist
-        return 0 if(SMT::Utils::lookupRegistrationByGUID($id, $self->{LOG}, $self->vblevel()));
-
-        my $statement = sprintf("INSERT INTO ClientSubscriptions (SUBID, GUID) VALUES (%s,%s)",
-                                $self->{DBH}->quote($id),
-                                $self->{DBH}->quote($guid));
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
-        eval {
-            $self->{DBH}->do($statement);
-        };
-        if($@)
-        {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-            $ret += 1;
-        }
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        return 1;
     }
-    return $ret;
+    return 0;
 }
 
 sub _updateProductData
@@ -906,9 +901,9 @@ sub _updateSubscriptionData
         $retsub = $self->_addSubscription($subscr);
         $ret += $retsub;
         next if (not exists $subscr->{systems});
-        foreach my $reg (@{$subscr->{systems}})
+        foreach my $system (@{$subscr->{systems}})
         {
-            $retreg = $self->_addClientSubscription($subscr->{id}, $reg);
+            $retreg = $self->_addClientSubscription($subscr->{id}, $system->{login});
             $ret += $retreg;
         }
     }
