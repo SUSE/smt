@@ -1486,6 +1486,31 @@ sub lookupRegistrationByGUID
     return $ref;
 }
 
+=item lookupClientByGUID($dbh, $guid)
+
+Lookup Client specified by GUID.
+
+It returns a hash contains all values for the Client.
+It returns undef if nothing was not found.
+
+=cut
+
+sub lookupClientByGUID
+{
+    my $dbh = shift || return undef;
+    my $guid = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $query_reg = sprintf("SELECT * FROM Clients WHERE GUID = %s",
+                                $dbh->quote($guid));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_reg");
+    my $ref = $dbh->selectrow_hashref($query_reg);
+    return $ref;
+}
+
+
 =item lookupTargetForClient($dbh, $guid)
 
 Lookup the distro target for a System specified by GUID.
