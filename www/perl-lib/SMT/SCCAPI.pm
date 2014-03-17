@@ -16,6 +16,7 @@ use strict;
 use SMT::Curl;
 use SMT::Utils;
 use JSON;
+use URI;
 use Data::Dumper;
 
 =item constructor
@@ -214,7 +215,7 @@ Example:
 sub org_subscriptions
 {
     my $self = shift;
-    my $uri = $self->{URL}."/organizations/subscriptions";
+    my $uri = URI->new($self->{URL}."/organizations/subscriptions");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
@@ -222,7 +223,7 @@ sub org_subscriptions
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
              "list organization subscriptions", 0);
 
-    return $self->_request($uri, "get", {}, {});
+    return $self->_request($uri->as_string(), "get", {}, {});
 }
 
 
@@ -260,6 +261,11 @@ sub _request
     $headers = {} if(ref($headers) ne "HASH");
     # generic identification header. Used for debugging in SCC
     $headers->{SMT} = $self->{IDENT};
+
+    if(not exists $headers->{'Content-Type'})
+    {
+        $headers->{'Content-Type'} = 'application/json; charset=utf-8';
+    }
 
     my $response = undef;
     if ($method eq "get")
