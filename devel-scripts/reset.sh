@@ -1,5 +1,8 @@
 #! /bin/sh -x
 
+if [ -z "$1" ]; then
+    echo "Password required as first parameter"
+fi
 
 rpm -Uhv --force OLD/*.rpm
 
@@ -11,4 +14,5 @@ sed -i 's/^NURegUrl=.*/NURegUrl = https:\/\/secure-www.novell.com\/center\/regsv
 
 /etc/init.d/smt restart
 
+smt-ncc-sync
 
