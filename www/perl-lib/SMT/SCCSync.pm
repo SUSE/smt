@@ -17,6 +17,8 @@ use URI;
 use SMT::SCCAPI;
 use SMT::Utils;
 use File::Temp;
+use Date::Parse;
+use SMT::Product;
 use DBI qw(:sql_types);
 
 use Data::Dumper;
@@ -286,6 +288,42 @@ sub services
     }
 }
 
+=item subscriptions
+
+Update subscriptions and connect them to the registered clients.
+Return number of errors.
+
+=cut
+
+sub subscriptions
+{
+    my $self = shift;
+    my $name = "subscriptions";
+    my $input = $self->_getInput($name);
+
+    if (! $input)
+    {
+        return 1;
+    }
+    if(defined $self->{TODIR})
+    {
+        open( FH, '>', $self->{TODIR}."/$name.json") or do
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
+            return 1;
+        };
+        my $json_text = JSON::encode_json($input);
+        print FH "$json_text";
+        close FH;
+        return 0;
+    }
+    else
+    {
+        my $ret = $self->_updateSubscriptionData($input);
+        return $ret;
+    }
+}
+
 
 ###############################################################################
 ###############################################################################
@@ -310,6 +348,10 @@ sub _getInput
     elsif($what eq "services")
     {
         $func = sub{$self->{API}->services()};
+    }
+    elsif($what eq "subscriptions")
+    {
+        $func = sub{$self->{API}->org_subscriptions()};
     }
     else
     {
@@ -716,6 +758,76 @@ sub _updateProductCatalogs
     return $ret;
 }
 
+sub _addSubscription
+{
+    my $self = shift;
+    my $subscr = shift || return 1;
+
+    my $startdate = Date::Parse::str2time($subscr->{starts_at});
+    my $enddate = Date::Parse::str2time($subscr->{expires_at});
+    my $duration =  (($startdate - $enddate) / 60*60*24) ;
+    my $product_classes = join(',', @{$subscr->{product_classes}});
+    my $server_class = '';
+    if (exists $subscr->{product_classes}->[0])
+    {
+        $server_class = SMT::Product::defaultServerClass($subscr->{product_classes}->[0]);
+    }
+    $server_class = 'ADDDON' if(not $server_class);
+
+    my $statement = sprintf("INSERT INTO Subscriptions VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                         $self->{DBH}->quote($subscr->{id}),
+                         $self->{DBH}->quote($subscr->{regcode}),
+                         $self->{DBH}->quote($subscr->{name}),
+                         $self->{DBH}->quote($subscr->{type}),
+                         $self->{DBH}->quote($subscr->{status}),
+                         $self->{DBH}->quote(SMT::Utils::getDBTimestamp($startdate)),
+                         $self->{DBH}->quote(SMT::Utils::getDBTimestamp($enddate)),
+                         $self->{DBH}->quote($duration),
+                         $self->{DBH}->quote($server_class),
+                         $self->{DBH}->quote($product_classes),
+                         $self->{DBH}->quote($subscr->{system_limit}),
+                         $self->{DBH}->quote($subscr->{systems_count}),
+                         $self->{DBH}->quote($subscr->{virtual_count}));
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    eval {
+        $self->{DBH}->do($statement);
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        return 1;
+    }
+    return 0;
+}
+
+sub _addClientSubscription
+{
+    my $self = shift;
+    my $id = shift || return 1;
+    my $clients = shift || return 0;
+    my $ret = 0;
+
+    foreach my $guid (@{$clients})
+    {
+        # skip it, if the client does not exist
+        return 0 if(SMT::Utils::lookupRegistrationByGUID($id, $self->{LOG}, $self->vblevel()));
+
+        my $statement = sprintf("INSERT INTO ClientSubscriptions (SUBID, GUID) VALUES (%s,%s)",
+                                $self->{DBH}->quote($id),
+                                $self->{DBH}->quote($guid));
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+        eval {
+            $self->{DBH}->do($statement);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $ret += 1;
+        }
+    }
+    return $ret;
+}
+
 sub _updateProductData
 {
     my $self = shift;
@@ -747,6 +859,56 @@ sub _updateProductData
         }
     }
     $self->_staticTargets();
+    return $ret;
+}
+
+sub _updateSubscriptionData
+{
+    my $self   = shift;
+    my $json   = shift;
+    my $ret    = 0;
+    my $retsub = 0;
+    my $retreg = 0;
+
+    if(!defined $self->{DBH})
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
+        return 1;
+    }
+
+    # cleanup Subscriptions and ClientSubscriptions table
+    # we always do a delete all and a new full insert.
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM Subscriptions");
+    eval {
+        $self->{DBH}->do("DELETE FROM Subscriptions");
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
+    }
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ClientSubscriptions");
+    eval {
+        $self->{DBH}->do("DELETE FROM ClientSubscriptions");
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
+    }
+
+    foreach my $subscr (@$json)
+    {
+        print ".";
+        $retsub = $self->_addSubscription($subscr);
+        $ret += $retsub;
+        next if (not exists $subscr->{systems});
+        foreach my $reg (@{$subscr->{systems}})
+        {
+            $retreg = $self->_addClientSubscription($subscr->{id}, $reg);
+            $ret += $retreg;
+        }
+    }
     return $ret;
 }
 
