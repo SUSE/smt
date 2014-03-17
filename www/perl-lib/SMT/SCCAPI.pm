@@ -262,26 +262,37 @@ sub _request
     # generic identification header. Used for debugging in SCC
     $headers->{SMT} = $self->{IDENT};
 
-    if(not exists $headers->{'Content-Type'})
-    {
-        $headers->{'Content-Type'} = 'application/json; charset=utf-8';
-    }
-
     my $response = undef;
     if ($method eq "get")
     {
+        if(not exists $headers->{'Accept'})
+        {
+            $headers->{'Accept'} = 'application/json; charset=utf-8';
+        }
         $response = $self->{USERAGENT}->get($url, %{$headers});
     }
     elsif ($method eq "head")
     {
+        if(not exists $headers->{'Accept'})
+        {
+            $headers->{'Accept'} = 'application/json; charset=utf-8';
+        }
         $response = $self->{USERAGENT}->head($url, %{$headers});
     }
     elsif ($method eq "post")
     {
+        if(not exists $headers->{'Content-Type'})
+        {
+            $headers->{'Content-Type'} = 'application/json; charset=utf-8';
+        }
         $response = $self->{USERAGENT}->post($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     elsif ($method eq "put")
     {
+        if(not exists $headers->{'Content-Type'})
+        {
+            $headers->{'Content-Type'} = 'application/json; charset=utf-8';
+        }
         $response = $self->{USERAGENT}->put($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     else
