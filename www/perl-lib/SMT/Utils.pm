@@ -529,7 +529,7 @@ Debug message. ( 16 )
 
 Debug message 2. ( 32 )
 
-=item LOG_DEBUG2 ( 0x0040 )
+=item LOG_DEBUG3 ( 0x0040 )
 
 Debug message 3. ( 64 )
 
