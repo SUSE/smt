@@ -253,6 +253,13 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Product and Repository data."));
         $exitcode = 1;
     }
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
+    $res = $rd->subscriptions();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscriptions data."));
+        $exitcode = 1;
+    }
 
     if( $fromdir ne "" && -d $fromdir )
     {
