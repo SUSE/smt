@@ -1207,8 +1207,8 @@ sub _getRepoindex
         return $opt{fromdir}."/repo/repoindex.xml";
     }
 
-    my $nuUser = ($opt{nuuser}?$opt{nuuser}:"");
-    my $nuPass = ($opt{nupass}?$opt{nupass}:"");
+    my $nuUser = $opt{cfg}->val("NU", "NUUser");
+    my $nuPass = $opt{cfg}->val("NU", "NUPass");
 
     if(! ($nuUser && $nuPass) )
     {
@@ -1227,7 +1227,7 @@ sub _getRepoindex
     my $useragent = SMT::Utils::createUserAgent(
         log => $opt{log}, vblevel => $opt{vblevel});
     $indexfile = $destdir . '/repo/repoindex.xml';
-    SMT::Utils::getFile($useragent, $nuri . '/repo/repoindex.xml', $indexfile, %opt);
+    SMT::Utils::getFile($useragent, $uri . '/repo/repoindex.xml', $indexfile, %opt);
 }
 
 
@@ -1271,11 +1271,11 @@ sub setMirrorableCatalogs
 
     if($cfg->val('NU', 'ApiType', 'NCC') eq "SCC")
     {
-        _getSCCRepoList(%opt, dbh => $dbh);
+        _getSCCRepoList(%opt, dbh => $dbh, cfg => $cfg);
     }
     else
     {
-        $indexfile = _getRepoindex($nuri, %opt);
+        $indexfile = _getRepoindex($nuri, %opt, cfg => $cfg);
         if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
         {
             # with todir we only want to mirror repoindex to todir

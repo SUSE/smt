@@ -971,7 +971,7 @@ sub _markReposMirrorable
                                                     $self->{DBH}->quote($repo->{name}),
                                                     $self->{DBH}->quote($repo->{distro_target}) ));
             }
-            delete $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}};
+            delete $sqlres->{$repo->{name}}->{$repo->{distro_target}};
         }
     }
 
