@@ -1182,13 +1182,63 @@ sub setDoMirrorFromXml
     }
 }
 
+sub _getSCCRepoList
+{
+    my %opt = @_;
+    my $indexfile = "";
+
+    my $sccsync = SMT::SCCSync->new(vblevel => $opt{vblevel},
+                                   log     => $opt{log},
+                                   fromdir => $opt{fromdir},
+                                   todir   => $opt{todir},
+                                   dbh     => $opt{dbh}
+    );
+    $sccsync->mark_repos_mirrorable();
+}
+
+sub _getRepoindex
+{
+    my $uri = shift;
+    my %opt = @_;
+    my $indexfile = "";
+
+    if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
+    {
+        return $opt{fromdir}."/repo/repoindex.xml";
+    }
+
+    my $nuUser = ($opt{nuuser}?$opt{nuuser}:"");
+    my $nuPass = ($opt{nupass}?$opt{nupass}:"");
+
+    if(! ($nuUser && $nuPass) )
+    {
+        die __("Cannot read the Mirror Credentials");
+    }
+    $uri->userinfo("$nuUser:$nuPass");
+
+    # create a tmpdir to store repoindex.xml
+    my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+    if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
+    {
+        $destdir = $opt{todir};
+    }
+
+    # get the file
+    my $useragent = SMT::Utils::createUserAgent(
+        log => $opt{log}, vblevel => $opt{vblevel});
+    $indexfile = $destdir . '/repo/repoindex.xml';
+    SMT::Utils::getFile($useragent, $nuri . '/repo/repoindex.xml', $indexfile, %opt);
+}
+
+
+
 sub setMirrorableCatalogs
 {
     my %opt = @_;
     my ($cfg, $dbh) = ();
     my $nuri = undef;
 
-    if(defined $opt{todir} && $opt{todir} ne "")
+    if($opt{todir})
     {
         $cfg = SMT::Utils::getSMTConfig();
 
@@ -1206,7 +1256,7 @@ sub setMirrorableCatalogs
         # TODO: what, if we have more then one NU server?
         my $array = $dbh->selectall_arrayref("select distinct EXTHOST from Catalogs where CATALOGTYPE = 'nu'", {Slice =>{}});
         if(exists $array->[0] && exists $array->[0]->{EXTHOST} &&
-           defined $array->[0]->{EXTHOST} && $array->[0]->{EXTHOST} =~ /^http/)
+           $array->[0]->{EXTHOST} && $array->[0]->{EXTHOST} =~ /^http/)
         {
             $nuri = URI->new( $array->[0]->{EXTHOST} );
         }
@@ -1219,82 +1269,60 @@ sub setMirrorableCatalogs
 
     my $indexfile = "";
 
-    if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
+    if($cfg->val('NU', 'ApiType', 'NCC') eq "SCC")
     {
-        $indexfile = $opt{fromdir}."/repo/repoindex.xml";
+        _getSCCRepoList(%opt, dbh => $dbh);
     }
-    elsif( defined $nuri )
+    else
     {
-        my $nuUser = $cfg->val("NU", "NUUser");
-        my $nuPass = $cfg->val("NU", "NUPass");
-
-        if(!defined $nuUser || $nuUser eq "" ||
-           !defined $nuPass || $nuPass eq "")
-        {
-            die __("Cannot read the Mirror Credentials");
-        }
-        $nuri->userinfo("$nuUser:$nuPass");
-
-
-        # create a tmpdir to store repoindex.xml
-        my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+        $indexfile = _getRepoindex($nuri, %opt);
         if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
         {
-            $destdir = $opt{todir};
+            # with todir we only want to mirror repoindex to todir
+            return;
         }
 
-        # get the file
-        my $useragent = SMT::Utils::createUserAgent(
-                            log => $opt{log}, vblevel => $opt{vblevel});
-        $indexfile = $destdir . '/repo/repoindex.xml';
-        SMT::Utils::getFile($useragent, $nuri . '/repo/repoindex.xml', $indexfile, %opt);
-    }
-
-    if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
-    {
-        # with todir we only want to mirror repoindex to todir
-        return;
-    }
-
-    if ( -s $indexfile )
-    {
-        my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs
-                                              where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
-                                             ['Name', 'Target']);
-
-        my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
-        $parser->parse($indexfile,
-                       sub
-                       {
-                           my $repodata = shift;
-
-                           if(exists $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable} )
-                           {
-                               if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
-                               {
-                                   printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
-                                            sprintf(__("* New mirrorable repository '%s %s' ."),
-                                                    $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
-                                   my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s
-                                                                AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
-                                                               $dbh->quote($repodata->{NAME}), $dbh->quote($repodata->{DISTRO_TARGET}) ));
-                               }
-                               delete $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}};
-                           }
-                       }
-                      );
-
-        foreach my $cname ( keys %{$sqlres})
+        if ( -s $indexfile )
         {
-            foreach my $target ( keys %{$sqlres->{$cname}})
+            my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs
+                                                  where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
+                                                 ['Name', 'Target']);
+
+            my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
+            $parser->parse($indexfile,
+                           sub
+                           {
+                               my $repodata = shift;
+
+                               if(exists $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable} )
+                               {
+                                   if( uc($sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}}->{Mirrorable}) ne "Y")
+                                   {
+                                       printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
+                                                sprintf(__("* New mirrorable repository '%s %s' ."),
+                                                        $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
+                                       my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s
+                                                                    AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
+                                                                   $dbh->quote($repodata->{NAME}),
+                                                                   $dbh->quote($repodata->{DISTRO_TARGET}) ));
+                                   }
+                                   delete $sqlres->{$repodata->{NAME}}->{$repodata->{DISTRO_TARGET}};
+                               }
+                           }
+            );
+
+            foreach my $cname ( keys %{$sqlres})
             {
-                if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
+                foreach my $target ( keys %{$sqlres->{$cname}})
                 {
-                    printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
-                             sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
-                    my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s
-                                                 AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
-                                                $dbh->quote($cname), $dbh->quote($target) ));
+                    if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
+                    {
+                        printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
+                                 sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
+                        my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s
+                                                     AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
+                                                    $dbh->quote($cname), $dbh->quote($target) ));
+                    }
                 }
             }
         }
