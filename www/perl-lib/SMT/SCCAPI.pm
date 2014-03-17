@@ -185,21 +185,46 @@ List all services.
 Returns json structure containing all services with its repositories.
 In case of an error it returns "undef".
 
+=cut
+
+sub services
+{
+    my $self = shift;
+    my $uri = URI->new($self->{URL}."/services");
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "list services", 0);
+
+    return $self->_request($uri, "get", {}, {});
+}
+
+=item org_subscriptions
+
+List subscriptions of an organization.
+
+Returns json structure containing subscriptions of an organization with its
+system ids consuming it.
+In case of an error it returns "undef".
+
 Example:
 
 
 
 =cut
 
-sub services
+sub org_subscriptions
 {
     my $self = shift;
-    my $uri = $self->{URL}."/services";
+    my $uri = $self->{URL}."/organizations/subscriptions";
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-             "list services", 0);
+             "list organization subscriptions", 0);
 
     return $self->_request($uri, "get", {}, {});
 }
+
 
 ##########################################################################
 ### private methods
