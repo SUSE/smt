@@ -120,6 +120,7 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
                              __("Products found which are not supported by SCC. Migration is not possible."));
         _writeConfig($cfg, 'NU', 'NURegUrl', $regurl);
+        _writeConfig($cfg, 'NU', 'ApiType', 'NCC');
         SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
     }
 
