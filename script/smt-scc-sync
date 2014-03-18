@@ -12,7 +12,7 @@ use SMT::SCCAPI;
 use SMT::SCCSync;
 use File::Basename;
 use File::Temp;
-
+use Config::IniFiles;
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
@@ -114,6 +114,23 @@ if(!SMT::Utils::openLock("smt-sync"))
 # open the logfile
 
 my $LOG = SMT::Utils::openLog($logfile);
+
+my $cfg = undef;
+eval
+{
+    $cfg = SMT::Utils::getSMTConfig();
+};
+if($@ || !defined $cfg)
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
+}
+
+if ( $cfg->val('NU', 'ApiType', 'NCC') ne 'SCC')
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Not connected to SCC");
+    SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
+}
 
 if($fromdir ne "" && $fromdir !~ /^\//)
 {

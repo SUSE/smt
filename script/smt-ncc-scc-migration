@@ -4,6 +4,7 @@ use strict;
 use SMT::Utils;
 use SMT::SCCSync;
 use File::Basename;
+use Config::IniFiles;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -50,7 +51,10 @@ sub _writeConfig
 {
     my $cfg = shift;
     my ($section, $key, $value) = @_;
-    $cfg->setval($section, $key, $value);
+    if(not $cfg->setval($section, $key, $value))
+    {
+        $cfg->newval($section, $key, $value);
+    }
     $cfg->RewriteConfig();
     my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
     chown 0, $gid, "/etc/smt.conf";
@@ -82,7 +86,8 @@ if(!SMT::Utils::openLock("smt-ncc-scc-migration"))
 
 # re-write parts of the config file
 my $regurl = $cfg->val('NU', 'NURegUrl');
-if ( $regurl !~ /^https:\/\/secure-www\.novell\.com/ )
+my $regapi = $cfg->val('NU', 'ApiType', 'NCC');
+if ( $regurl !~ /^https:\/\/secure-www\.novell\.com/ || $regapi ne 'NCC')
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Not connected to NCC");
     SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);

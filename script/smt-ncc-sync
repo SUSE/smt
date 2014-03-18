@@ -12,7 +12,7 @@ use SMT::Mirror::RegData;
 use SMT::NCCRegTools;
 use File::Basename;
 use File::Temp;
-
+use Config::IniFiles;
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
@@ -105,6 +105,7 @@ if($fromdir ne "" && $todir ne "")
     $todir   = "";
 }
 
+
 if(!SMT::Utils::openLock("smt-sync"))
 {
     print __("Syncronization process is still running.\n");
@@ -114,6 +115,23 @@ if(!SMT::Utils::openLock("smt-sync"))
 # open the logfile
 
 my $LOG = SMT::Utils::openLog($logfile);
+
+my $cfg = undef;
+eval
+{
+    $cfg = SMT::Utils::getSMTConfig();
+};
+if($@ || !defined $cfg)
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
+}
+
+if ( $cfg->val('NU', 'ApiType', 'NCC') ne 'NCC')
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Not connected to NCC");
+    SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
+}
 
 if($fromdir ne "" && $fromdir !~ /^\//)
 {
