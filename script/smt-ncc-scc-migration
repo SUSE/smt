@@ -64,7 +64,7 @@ sub _testDbSchema
 {
     my $dbh = shift;
 
-    my $v = $dbh->selectrow_hashref("SELECT version FROM migration_schema_version");
+    my $v = $dbh->selectrow_hashref("SELECT version FROM migration_schema_version WHERE name = 'smt'");
     if(!$v || !$v->{version} || $v->{version} < 2.00)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Unable to migrate. DB schema missmatch.");
