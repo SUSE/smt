@@ -887,6 +887,7 @@ sub _updateProductData
         }
     }
     $self->_staticTargets();
+    print "\n";
     return $ret;
 }
 
@@ -937,6 +938,7 @@ sub _updateSubscriptionData
             $ret += $retreg;
         }
     }
+    print "\n";
     return $ret;
 }
 
