@@ -471,9 +471,6 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 EOS
 ;
 
-    # FIXME: Temporary product fix. Remove, if SCC send products correctly
-    $product->{arch} = undef if($product->{arch} eq "unknown");
-
     if (! $self->migrate() &&
         (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
