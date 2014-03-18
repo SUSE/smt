@@ -1365,10 +1365,15 @@ sub lookupProductIdByName
                 return $prod->{ID};
             }
         }
+        $release = "" if(not defined $release);
+        $arch = "" if(not defined $arch);
         printLog($log, $vblevel, LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
         return $pl->[0]->{ID};
     }
-    printLog($log, $vblevel, LOG_ERROR, "No Product match found for: $name $version $release $arch");
+    $release = "" if(not defined $release);
+    $arch = "" if(not defined $arch);
+    # Do not find a product is not an error. It is a valid result of a lookup function
+    printLog($log, $vblevel, LOG_INFO2, "No Product match found for: $name $version $release $arch");
     return undef;
 }
 
@@ -1434,7 +1439,9 @@ sub lookupCatalogIdByName
         # Only one match found.
         return $pl->[0]->{ID};
     }
-    printLog($log, $vblevel, LOG_ERROR, "No match found for: $name $target");
+    $target = "" if(not defined $target);
+    # Do not find a catalog is not an error. It is a valid result of a lookup function
+    printLog($log, $vblevel, LOG_INFO2, "No match found for: $name $target");
     return undef;
 }
 
