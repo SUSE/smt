@@ -148,9 +148,8 @@ eval
     else
     {
         # SCC registration not yet implemented
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Forward registration to SCC not yet implemented");
-        my $res = $dbh->do("Update Registration SET NCCREGERROR=1");
-        $exitcode = 1;
+        SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Forward registration to SCC not yet implemented");
+        $exitcode = 0;
     }
 };
 
