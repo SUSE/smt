@@ -27,7 +27,8 @@ create table Clients(ID          INT UNSIGNED AUTO_INCREMENT UNIQUE KEY,
                      DESCRIPTION VARCHAR(500) DEFAULT '',
                      LASTCONTACT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                      NAMESPACE   VARCHAR(300) NOT NULL DEFAULT '',
-                     SECRET      CHAR(50) NOT NULL DEFAULT ''
+                     SECRET      CHAR(50) NOT NULL DEFAULT '',
+                     REGTYPE     CHAR(10) NOT NULL DEFAULT 'SR' -- SR = SuseRegister, SC = SUSEConnect
                     );
 
 

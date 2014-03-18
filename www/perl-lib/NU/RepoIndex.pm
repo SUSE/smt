@@ -24,16 +24,26 @@ sub getCatalogsByGUID($$)
     return {} unless (defined $dbh && defined $guid);
 
     # see if the client has a target architecture
-    my $targetselect = sprintf("select TARGET from Clients c where c.GUID=%s", $dbh->quote($guid));
-    my $target = $dbh->selectcol_arrayref($targetselect);
+    my $sql = sprintf("select TARGET, REGTYPE from Clients c where c.GUID=%s", $dbh->quote($guid));
+    my $cnt = $dbh->selectrow_hashref($sql);
 
-    my $catalogselect = " select c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, c.CATALOGTYPE, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
-    $catalogselect   .= sprintf(" where r.GUID=%s ", $dbh->quote($guid));
-    $catalogselect   .= " and r.PRODUCTID=pc.PRODUCTID and c.ID=pc.CATALOGID and c.CATALOGTYPE='nu' and c.DOMIRROR like 'Y' ";
+    my $catalogselect = sprintf("SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET,
+                                        c.LOCALPATH, c.CATALOGTYPE, c.STAGING
+                                   FROM Catalogs c, ProductCatalogs pc, Registration r
+                                  WHERE r.GUID=%s
+                                    AND r.PRODUCTID=pc.PRODUCTID
+                                    AND c.ID=pc.CATALOGID
+                                    AND c.DOMIRROR like 'Y'",
+                                $dbh->quote($guid));
     # add a filter by target architecture if it is defined
-    if (defined $target && defined ${$target}[0] )
+    if ($cnt->{TARGET})
     {
-        $catalogselect .= sprintf(" and c.TARGET=%s", $dbh->quote( ${$target}[0] ));
+        $catalogselect .= sprintf(" AND c.TARGET=%s", $dbh->quote( $cnt->{TARGET} ));
+    }
+    # REGTYPE 'SR' only get CATALOGTYPE 'nu'
+    if ($cnt->{REGTYPE} && $cnt->{REGTYPE} eq "SR")
+    {
+        $catalogselect .= " AND c.CATALOGTYPE='nu'";
     }
 
     return $dbh->selectall_hashref($catalogselect, "ID" );

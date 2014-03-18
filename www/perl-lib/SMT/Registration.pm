@@ -742,7 +742,7 @@ sub insertRegistration
     if ($aff == 0)
     {
         # New registration; we need an insert
-        $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET) VALUES (%s, %s, %s, %s, %s)",
+        $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET, REGTYPE) VALUES (%s, %s, %s, %s, %s, 'SR')",
                              $dbh->quote($regdata->{register}->{guid}),
                              $dbh->quote($hostname),
                              $dbh->quote($target),

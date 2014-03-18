@@ -86,7 +86,8 @@ sub announce($$$)
     $secret =~ s/-//g;  # remove the -
     $result->{password} = $secret;
 
-    my $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET) VALUES (%s, %s, %s, %s, %s)",
+    my $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET, REGTYPE)
+                             VALUES (%s, %s, %s, %s, %s, 'SC')",
                              $dbh->quote($result->{login}),
                              $dbh->quote($hostname),
                              $dbh->quote($target),
