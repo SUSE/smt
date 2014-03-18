@@ -2,6 +2,7 @@
 
 if [ -z "$1" ]; then
     echo "Password required as first parameter"
+    exit 1
 fi
 
 rpm -Uhv --force OLD/*.rpm
