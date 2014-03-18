@@ -702,7 +702,7 @@ sub _updateTargets
                      "ambiguous distribution target data: '$distro_description' is $distro_target and ".
                      $self->{TARGET_DONE}->{$distro_description});
         }
-        next;
+        return $ret;
     }
     my $rows = 0;
     $statement = sprintf("UPDATE Targets SET TARGET = %s, SRC = 'S' WHERE OS = %s",
@@ -735,6 +735,7 @@ sub _updateTargets
             $ret += 1;
         }
     }
+    return $ret;
 }
 
 sub _updateProductCatalogs
