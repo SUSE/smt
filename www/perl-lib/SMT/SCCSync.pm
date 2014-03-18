@@ -582,7 +582,7 @@ sub _updateRepositories
     $exthost->query(undef);
 
     # FIXME: as soon as the repos have the (right) format, we can remove the regexp
-    if( $remotepath =~ /repo\/\$RCE/ || ($repo->{format} && $repo->{format} eq "nu"))
+    if( $repo->{format} && $repo->{format} eq "nu")
     {
         $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
         $catalogtype = 'nu';
