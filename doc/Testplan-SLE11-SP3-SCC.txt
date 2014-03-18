@@ -1,8 +1,11 @@
+Prepare test:
 
-1)
 - install SMT (smt-1.2*.rpm)
 - sync with NCC
 - register clients (only SUSE Products)
+
+
+1) After: Prepare test
 - dump product <=> catalog relations
   https://raw.github.com/SUSE/smt/master/devel-scripts/relations-compare.pl
 - install update to new version (smt-2.0*.rpm)
@@ -17,6 +20,26 @@
   Expected Result:
   * no differences
 
+2) After "1"
+- run smt-ncc-syn
+
+  Expected Result:
+  * run successfull
+
+- dump product <=> catalog relations
+  https://raw.github.com/SUSE/smt/master/devel-scripts/relations-compare.pl
+- compare relation dumps
+
+  Expected Result:
+  * no differences
+
+- run smt-scc-sync
+
+  Expected Result:
+  Exit with error message "Not connected to SCC"
+
+
+3) After "1"
 - migrate to SCC using "smt-ncc-scc-migration" script
 
   Expected Result:
@@ -29,10 +52,19 @@
   Expected Result:
   * no differences
 
+4) After "3"
+- run smt-ncc-sync
 
-2)
-- install SMT (smt-1.2*.rpm)
-- sync with NCC
+  Expected Result:
+  * exit with error message "Not connected to NCC"
+
+5) After "3"
+- run "smt-ncc-scc-migration"
+
+  Expected Result:
+  * exit with error message "Not connected to NCC"
+
+6) After: Prepare Test
 - register clients (at least one Novell/NetIQ Product like OES)
 - install update to new version (smt-2.0*.rpm)
   Expected Result:
