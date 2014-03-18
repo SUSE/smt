@@ -38,11 +38,19 @@ sub getCatalogsByGUID($$)
     # add a filter by target architecture if it is defined
     if ($cnt->{TARGET})
     {
-        $catalogselect .= sprintf(" AND c.TARGET=%s", $dbh->quote( $cnt->{TARGET} ));
+        if ($cnt->{REGTYPE} && $cnt->{REGTYPE} eq "SC")
+        {
+            # REGTYPE SC get all repostypes, also zypp which has target = NULL
+            $catalogselect .= sprintf(" AND (c.TARGET IS NULL OR c.TARGET=%s)", $dbh->quote( $cnt->{TARGET} ));
+        }
+        else
+        {
+            $catalogselect .= sprintf(" AND c.TARGET=%s", $dbh->quote( $cnt->{TARGET} ));
+        }
     }
-    # REGTYPE 'SR' only get CATALOGTYPE 'nu'
     if ($cnt->{REGTYPE} && $cnt->{REGTYPE} eq "SR")
     {
+        # REGTYPE 'SR' only get CATALOGTYPE 'nu'
         $catalogselect .= " AND c.CATALOGTYPE='nu'";
     }
 
