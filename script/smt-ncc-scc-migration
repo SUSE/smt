@@ -60,6 +60,18 @@ sub _writeConfig
     chown 0, $gid, "/etc/smt.conf";
 }
 
+sub _testDbSchema
+{
+    my $dbh = shift;
+
+    my $v = $dbh->selectrow_hashref("SELECT version FROM migration_schema_version");
+    if(!$v || !$v->{version} || $v->{version} < 2.00)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Unable to migrate. DB schema missmatch.");
+        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
+    }
+}
+
 eval
 {
     $cfg = SMT::Utils::getSMTConfig();
@@ -83,6 +95,8 @@ if(!SMT::Utils::openLock("smt-ncc-scc-migration"))
     print __("Migration process is still running.\n");
     exit 0;
 }
+
+_testDbSchema($dbh);
 
 # re-write parts of the config file
 my $regurl = $cfg->val('NU', 'NURegUrl');
