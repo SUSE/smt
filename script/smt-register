@@ -135,12 +135,20 @@ eval
         my $res = $dbh->do("Update Registration SET NCCREGERROR=0");
         SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Reset NCC Registration Errors. Result: $res");
     }
-
-    my $nccreg = SMT::NCCRegTools->new(vblevel => $vblevel, useragent => $useragent, dbh => $dbh,
-                                       log => $LOG, nccemail => $nccEmail);
-    my $err = $nccreg->NCCRegister($sleeptime);
-    if($err != 0)
+    if($cfg->val("NU", "ApiType", "NCC") eq "NCC")
     {
+        my $nccreg = SMT::NCCRegTools->new(vblevel => $vblevel, useragent => $useragent, dbh => $dbh,
+                                           log => $LOG, nccemail => $nccEmail);
+        my $err = $nccreg->NCCRegister($sleeptime);
+        if($err != 0)
+        {
+            $exitcode = 1;
+        }
+    }
+    else
+    {
+        # SCC registration not yet implemented
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Forward registration to SCC not yet implemented");
         $exitcode = 1;
     }
 };
