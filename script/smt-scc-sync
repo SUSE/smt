@@ -278,6 +278,14 @@ eval
         $exitcode = 1;
     }
 
+    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
+    $res = $sccsync->mark_repos_mirrorable();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
+        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
+    }
+
     if( $fromdir ne "" && -d $fromdir )
     {
         my $mirrorinfofile = $fromdir."/mirrorinfo.xml";
@@ -327,15 +335,15 @@ SMT::Utils::unLockAndExit("smt-sync", $exitcode, $LOG, $vblevel);
 
 =head1 NAME
 
-smt ncc-sync -
+smt scc-sync -
 
 =head1 SYNOPSIS
 
-smt ncc-sync [options]
+smt scc-sync [options]
 
 =head1 DESCRIPTION
 
-C<smt ncc-sync> gets data from Novell Customer Center and updates the local database.
+C<smt scc-sync> gets data from SUSE Customer Center and updates the local database.
 
 =head1 OPTIONS
 
@@ -418,11 +426,11 @@ C<smt ncc-sync --fromdir directory>.
 
 =head1 AUTHORS and CONTRIBUTORS
 
-Duncan Mac-Vicar Prett, Lukas Ocilka, Jens Daniel Schmidt, Michael Calmer
+Duncan Mac-Vicar Prett, Jens Daniel Schmidt, Michael Calmer
 
 =head1 LICENSE
 
-Copyright (c) 2007-2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
+Copyright (c) 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
