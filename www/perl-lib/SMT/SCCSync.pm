@@ -236,12 +236,13 @@ sub canMigrate
         return 0;
     }
     #
-    # All locally mirrored repos need to be accessible via
+    # All locally mirrored NCC repos need to be accessible via
     # the new registration server
     #
     $statement = "SELECT ID, NAME, TARGET FROM Catalogs
                    WHERE DOMIRROR='Y'
-                     AND MIRRORABLE='Y'";
+                     AND MIRRORABLE='Y'
+                     AND SRC = 'N'";
     my $catalogs = $self->{DBH}->selectall_hashref($statement, 'ID');
     foreach my $needed_cid (keys %{$catalogs})
     {
