@@ -183,9 +183,12 @@ sub canMigrate
 {
     my $self = shift;
     my $input = $self->_getInput("products");
+    my $errors = 0;
 
     if (! $input)
     {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Failed to get product information from SCC. Migration is not possible."));
         return 0;
     }
 
@@ -210,17 +213,26 @@ sub canMigrate
         }
         if ( ! $found )
         {
-            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
                      sprintf("'%s' not found in registration server. Migration not possible.",
-                             $c->{PRODUCT_CLASS}));
-            return 0;
+                             $c->{PRODUCT_CLASS}), 0, 1);
+            $errors++;
         }
+    }
+
+    if ($errors)
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Products found which are not supported by SCC. Migration is not possible."));
+        return 0;
     }
 
     $input = $self->_getInput("organization_repositories");
 
     if (! $input)
     {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Failed to get repository information from SCC. Migration is not possible."));
         return 0;
     }
     #
@@ -245,14 +257,21 @@ sub canMigrate
         }
         if ( ! $found )
         {
-            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
                      sprintf("Repository '%s-%s' not found in registration server. Migration not possible.",
                              $catalogs->{$needed_cid}->{NAME},
                              $catalogs->{$needed_cid}->{TARGET}
-                     ));
-            return 0;
+                     ), 0, 1);
+            $errors++;
         }
     }
+    if ($errors)
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Used repositories found which are not supported by SCC. Migration is not possible."));
+        return 0;
+    }
+
     return 1;
 }
 
