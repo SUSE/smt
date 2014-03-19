@@ -340,8 +340,7 @@ sub _request
             return undef;
         }
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Unexpected Error");
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG, Data::Dumper->Dump([$response]));
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Connection to registration server failed with: ".$response->status_line);
     return undef;
 }
 
