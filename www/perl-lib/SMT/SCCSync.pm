@@ -188,9 +188,14 @@ sub canMigrate
     {
         return 0;
     }
+
+    #
+    # new registration server need to support all locally used
+    # products. SCC will import all products of a product_class
+    #
     my $statement = "SELECT DISTINCT p.PRODUCT_CLASS
                      FROM Products p, Registration r
-                     WHERE r.PRODUCTID=p.ID;";
+                     WHERE r.PRODUCTID=p.ID";
     my $classes = $self->{DBH}->selectall_arrayref($statement, {Slice => {}});
     foreach my $c (@{$classes})
     {
@@ -208,6 +213,43 @@ sub canMigrate
             printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
                      sprintf("'%s' not found in registration server. Migration not possible.",
                              $c->{PRODUCT_CLASS}));
+            return 0;
+        }
+    }
+
+    $input = $self->_getInput("organization_repositories");
+
+    if (! $input)
+    {
+        return 0;
+    }
+    #
+    # All locally mirrored repos need to be accessible via
+    # the new registration server
+    #
+    $statement = "SELECT ID, NAME, TARGET FROM Catalogs
+                   WHERE DOMIRROR='Y'
+                     AND MIRRORABLE='Y'";
+    my $catalogs = $self->{DBH}->selectall_hashref($statement, 'ID');
+    foreach my $needed_cid (keys %{$catalogs})
+    {
+        my $found = 0;
+        foreach my $repo (@$input)
+        {
+            if ($catalogs->{$needed_cid}->{NAME} eq $repo->{name} &&
+                $catalogs->{$needed_cid}->{TARGET} eq $repo->{target})
+            {
+                $found = 1;
+                last;
+            }
+        }
+        if ( ! $found )
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
+                     sprintf("Repository '%s-%s' not found in registration server. Migration not possible.",
+                             $catalogs->{$needed_cid}->{NAME},
+                             $catalogs->{$needed_cid}->{TARGET}
+                     ));
             return 0;
         }
     }
@@ -351,6 +393,25 @@ sub mark_repos_mirrorable
         my $ret = $self->_markReposMirrorable($input);
         return $ret;
     }
+}
+
+sub cleanup_db
+{
+    my $self = shift;
+    return 0 if (not $self->migrate());
+
+    eval
+    {
+        my $res = $self->{DBH}->do("DELETE FROM Products WHERE SRC='N'");
+        $res = $self->{DBH}->do("DELETE FROM Catalogs WHERE SRC='N'");
+        $res = $self->{DBH}->do("DELETE FROM ProductCatalogs WHERE SRC='N'");
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        return 1;
+    }
+    return 0;
 }
 ###############################################################################
 ###############################################################################
@@ -863,6 +924,8 @@ sub _updateProductData
     my $ret = 0;
     my $retprd = 0;
     my $retcat = 0;
+    my $count = 0;
+    my $sum = @$json;
 
     if(!defined $self->{DBH})
     {
@@ -872,7 +935,8 @@ sub _updateProductData
 
     foreach my $product (@$json)
     {
-        print ".";
+        $count++;
+        print "(".int(($count/$sum*100))."%)\r";
         $retprd = $self->_updateProducts($product);
         $ret += $retprd;
         foreach my $repo (@{$product->{repos}})
@@ -898,6 +962,8 @@ sub _updateSubscriptionData
     my $ret    = 0;
     my $retsub = 0;
     my $retreg = 0;
+    my $count = 0;
+    my $sum = @$json;
 
     if(!defined $self->{DBH})
     {
@@ -928,7 +994,8 @@ sub _updateSubscriptionData
 
     foreach my $subscr (@$json)
     {
-        print ".";
+        $count++;
+        print "(".int(($count/$sum*100))."%)\r";
         $retsub = $self->_addSubscription($subscr);
         $ret += $retsub;
         next if (not exists $subscr->{systems});
