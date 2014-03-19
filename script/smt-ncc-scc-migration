@@ -140,18 +140,27 @@ eval
         SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
     }
 
+    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
+    $res = $sccsync->mark_repos_mirrorable();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
+        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
+    }
+
+    printLog($LOG, $vblevel, LOG_INFO1, __("Cleanup Database"));
+    $res = $sccsync->cleanup_db();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
+        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
+    }
+
 };
 if ($@)
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, $@);
     SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
 }
-
-
-# DB ProductCatalogs: no ID changes needed, but set autorefresh correctly
-#                     and new product/catalogs needs to be added
-
-#
-print "\n";
 SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 0, $LOG, $vblevel);
 
