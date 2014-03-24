@@ -1088,11 +1088,11 @@ URL should start with 'http://' or 'https://'."));
 		"target"	: (regexpmatch (one_catalog["TARGET"]:"", "^-+$") ? "" : one_catalog["TARGET"]:""),
 	    ];
 
-	    if (current_item == one_catalog["CATALOGID"]:"")
+	    if (current_item == one_catalog["ID"]:"")
 		current_item_present = true;
 
 	    return `item (
-		`id (one_catalog["CATALOGID"]:""),
+		`id (one_catalog["ID"]:""),
 		one_catalog["NAME"]:_("Unknown"),
 		one_catalog["TARGET"]:_("Unknown"),
 		(mirroring ? yes : no),
