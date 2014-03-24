@@ -259,19 +259,19 @@ if ( $exportdir ne "" )
 
 eval
 {
-    my $rd = SMT::SCCSync->new(vblevel => $vblevel,
-                               log     => $LOG,
-                               fromdir => (($fromdir ne "")?$fromdir:undef),
-                               todir   => (($todir ne "")?$todir:undef));
+    my $sccsync = SMT::SCCSync->new(vblevel => $vblevel,
+                                    log     => $LOG,
+                                    fromdir => (($fromdir ne "")?$fromdir:undef),
+                                    todir   => (($todir ne "")?$todir:undef));
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product and Repository information"));
-    my $res = $rd->products();
+    my $res = $sccsync->products();
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Product and Repository data."));
         $exitcode = 1;
     }
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
-    $res = $rd->subscriptions();
+    $res = $sccsync->subscriptions();
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscriptions data."));
