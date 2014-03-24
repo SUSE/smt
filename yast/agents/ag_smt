@@ -763,7 +763,7 @@ while (<STDIN>) {
 
     if ($command eq 'Read') {
         if ($path eq '.staging.repositories') {
-            ycp::Return ($repositories->getAllRepositories (MIRRORED_REPO_FILTER));
+            ycp::Return ($repositories->getAllRepositories (MIRRORED_REPO_FILTER), 1);
         } elsif ($path eq '.staging.groups') {
             ycp::Return (SMT::Utils::getStagingGroupNames());
         } elsif ($path eq '.staging.patches') {
@@ -777,7 +777,7 @@ while (<STDIN>) {
         } elsif ($path eq '.staging.repository.details') {
             ycp::Return (GetRepositoryDetails ($arg));
         } elsif ($path eq '.repositories.all') {
-            ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER));
+            ycp::Return ($repositories->getAllRepositories (ALL_REPO_FILTER), 1);
         } elsif ($path eq '.repository.staging_allowed') {
             ycp::Return (GetStagingAllowed ($arg));
         } elsif ($path eq '.clients.status') {
