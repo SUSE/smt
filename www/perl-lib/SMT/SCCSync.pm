@@ -1046,6 +1046,9 @@ sub _markReposMirrorable
                                          ['Name', 'Target']);
     foreach my $repo (@{$json})
     {
+        # zypp repos have no target
+        next if (not $repo->{distro_target});
+
         if(exists $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable} )
         {
             if( uc($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable}) ne "Y")
