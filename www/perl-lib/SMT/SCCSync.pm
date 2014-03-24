@@ -1041,8 +1041,9 @@ sub _markReposMirrorable
         return 1;
     }
 
-    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable from Catalogs
-                                          where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
+    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID from Catalogs
+                                          where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'
+                                             or CATALOGTYPE = 'ris'",
                                          ['Name', 'Target']);
     foreach my $repo (@{$json})
     {
@@ -1056,10 +1057,8 @@ sub _markReposMirrorable
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
                          sprintf(__("* New mirrorable repository '%s %s' ."),
                                  $repo->{name}, $repo->{distro_target}));
-                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s
-                                                     AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
-                                                    $self->{DBH}->quote($repo->{name}),
-                                                    $self->{DBH}->quote($repo->{distro_target}) ));
+                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE ID = %s",
+                                                    $self->{DBH}->quote($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{ID}) ));
             }
             delete $sqlres->{$repo->{name}}->{$repo->{distro_target}};
         }
@@ -1073,10 +1072,8 @@ sub _markReposMirrorable
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
                          sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
-                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s
-                                                     AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
-                                                    $self->{DBH}->quote($cname),
-                                                    $self->{DBH}->quote($target) ));
+                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE ID=%s",
+                                                    $self->{DBH}->quote($sqlres->{$cname}->{$target}->{ID}) ));
             }
         }
     }
