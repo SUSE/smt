@@ -36,7 +36,6 @@ my $logfile = "/dev/null";
 my $help    = 0;
 my $fromdir = "";
 my $todir   = "";
-my $exportdir = "";
 my $createdbreplfile = "";
 my $mail     = 0;
 my $mailtempfile = undef;
@@ -53,7 +52,6 @@ my $optres = Getopt::Long::GetOptions(
                                       'debug|d'     => \$debug,
                                       "verboselevel|v=i" => \$vblevel,
                                       "mail|m"      => \$mail,
-                                      "export=s"    => \$exportdir,
                                       'help|h'      => \$help
                                      );
 
@@ -71,8 +69,6 @@ if ( (defined $help && $help == 1 ) || !$optres )
     print "--logfile -L file         ".__("Path to logfile\n");
     print "--debug                   ".__("Enable debug mode\n");
     print "--verboselevel -v level   ".__("set the verbose level\n");
-    print "--export                  ".__("export SCC informations from the local database to a directory of XML files, the\n");
-    print "                          ".__("resulting files can be imported on another SMT instance with --fromdir\n");
     print "--mail -m                 ".__("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
     print "                          ".__("The output on stdout and stderr will be suppressed.\n");
   exit 0;
@@ -142,36 +138,10 @@ if($todir ne "" && $todir !~ /^\//)
     $todir = SMT::Utils::cleanPath($ENV{'PWD'}, $todir);
 }
 
-if($exportdir ne "" && $exportdir !~ /^\//)
-{
-    $exportdir = SMT::Utils::cleanPath($ENV{'PWD'}, $exportdir);
-}
-
 if($fromdir ne "" && ! -d $fromdir)
 {
     SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Directory '%s' does not exist."), $fromdir));
     SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
-}
-
-if( $exportdir ne "" )
-{
-    if ( $todir ne "" || $fromdir ne "" )
-    {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR,
-                __("--exportdir and --todir or --fromdir cannot be used at the same time."));
-        SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
-    }
-    if ( ! -d $exportdir )
-    {
-        eval {
-                &File::Path::mkpath($exportdir);
-        };
-        if ($@)
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot create %s: %s"), $todir, $@));
-            SMT::Utils::unLockAndExit( "smt-sync", 1, $LOG, $vblevel);
-        }
-    }
 }
 
 if($todir ne "" && ! -d $todir)
@@ -194,67 +164,6 @@ if($fromdir ne "")
 if($todir ne "")
 {
     printLog($LOG, $vblevel, LOG_INFO1, sprintf(__("Write to directory: %s"), $todir));
-}
-
-# FIXME: unsure, if we keep this.
-if ( $exportdir ne "" )
-{
-
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting repository information"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/catalogs.xml",
-                     type => "catalogs",
-                     table => "Catalogs",
-                     columns => [ 'ID', 'CATALOGID', 'NAME', 'DESCRIPTION', 'TARGET', 'EXTHOST', 'EXTURL',
-                                  'CATALOGTYPE', 'DOMIRROR' ],
-                     row_handler => \&catalog_handler
-                    );
-
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Product information"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/productdata.xml",
-                     type => "productdata",
-                     table => "Products",
-                     columns => [ 'ID', 'PRODUCTDATAID', 'PRODUCT', 'VERSION', 'REL', 'ARCH', 'FRIENDLY',
-                                  'PARAMLIST', 'NEEDINFO', 'SERVICE', 'PRODUCT_LIST', 'PRODUCT_CLASS' ]
-                    );
-
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting product/repository relations"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/productcatalogs.xml",
-                     type => "productcatalogs",
-                     table => "ProductCatalogs",
-                     columns => [ 'PRODUCTID', 'CATALOGID', 'OPTIONAL' ]
-                    );
-
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Target information"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/targets.xml",
-                     type => "targets",
-                     table => "Targets",
-                     columns => [ 'OS', 'TARGET' ]
-                    );
-
-    printLog($LOG, $vblevel, LOG_INFO1, __("Exporting Subscription information"));
-    SMT::CLI::db2Xml(outfile => "$exportdir/listsubscriptions.xml",
-                     type => "subscriptionlist",
-                     table => "Subscriptions",
-                     columns => [ "SUBID", "REGCODE", "SUBNAME", "SUBTYPE", "SUBSTATUS",
-                                  "SUBSTARTDATE", "SUBENDDATE", "SUBDURATION", "SERVERCLASS",
-                                  "PRODUCT_CLASS" , "NODECOUNT", "CONSUMED", "CONSUMEDVIRT"],
-                     row_handler => \&subscriptions_handler );
-
-    # an empty registrations file should be enough for our purposes (later import into
-    # an isolated SMT)
-    my $output = new IO::File("> $exportdir/listregistrations.xml");
-    if(!defined $output)
-    {
-        die "Cannot open file '$exportdir/listregistrations.xml':$!";
-    }
-    my $writer = new XML::Writer(OUTPUT => $output);
-    $writer->xmlDecl("UTF-8");
-    $writer->startTag("registration", xmlns => "http://www.novell.com/xml/center/regsvc-1_0");
-    $writer->endTag("registration");
-    $writer->end();
-    $output->close();
-
-    SMT::Utils::unLockAndExit( "smt-sync", 0, $LOG, $vblevel);
 }
 
 eval
@@ -415,12 +324,6 @@ B<--debug> set the verbose level to 63.
 
 Send output as e-mail to the administrators defined in reportEmail in smt.conf .
 The output on stdout and stderr will be suppressed in this mode.
-
-=item --export directory
-
-Export the NCC informations from the local database to a directory of XML files,
-that directory can later be imported on another SMT instance with
-C<smt ncc-sync --fromdir directory>.
 
 =back
 
