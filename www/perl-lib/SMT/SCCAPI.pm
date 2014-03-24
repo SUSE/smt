@@ -242,7 +242,7 @@ Example:
 sub org_repos
 {
     my $self = shift;
-    my $uri = URI->new($self->{URL}."/organizations/repos");
+    my $uri = URI->new($self->{URL}."/organizations/repositories");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
