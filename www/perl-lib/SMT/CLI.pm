@@ -1511,7 +1511,8 @@ sub createDBReplacementFile
         die "No filename given.";
     }
 
-    my $dbout = $dbh->selectall_arrayref("SELECT CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE, STAGING from Catalogs where DOMIRROR = 'Y' order by CATALOGTYPE, NAME",
+    my $dbout = $dbh->selectall_arrayref("SELECT ID, CATALOGID, NAME, DESCRIPTION, TARGET, EXTURL, LOCALPATH, CATALOGTYPE, STAGING
+                                          from Catalogs where DOMIRROR = 'Y' order by CATALOGTYPE, NAME",
                                         { Slice => {} });
 
     my $output = new IO::File("> $xmlfile");
