@@ -145,6 +145,13 @@ create table Products (
             ) AUTO_INCREMENT = 100000;
 
 
+create table ProductExtensions (
+    PRODUCTID   integer NOT NULL,
+    EXTENSIONID integer NOT NULL,
+    SRC         CHAR(1) DEFAULT 'S',
+    UNIQUE pdid_extid_unq (PRODUCTID, EXTENSIONID)
+);
+
 create table ProductCatalogs(PRODUCTID   integer NOT NULL,
                              CATALOGID   integer NOT NULL,
                              OPTIONAL    CHAR(1) DEFAULT 'N',
