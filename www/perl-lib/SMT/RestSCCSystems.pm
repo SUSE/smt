@@ -86,7 +86,7 @@ sub _registrationResult
     }
     my $response = {
         'sources' => {
-            $localID => "$LocalNUUrl?credentials=NCCcredentials"
+            $localID => "$LocalNUUrl?credentials=$localID"
         },
         'login' => $r->user,
         'password' => $password,
@@ -96,6 +96,39 @@ sub _registrationResult
         'location' => undef
     };
     return (Apache2::Const::OK, $response);
+}
+
+sub get_extensions($$)
+{
+    my $r   = shift || return undef;
+    my $dbh = shift || return undef;
+    my $result = undef;
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+
+    my $sql = sprintf(
+        "SELECT e.PRODUCT zypper_name,
+                e.VERSION zypper_version,
+                e.REL release_type,
+                e.ARCH arch
+           FROM Registration r
+           JOIN ProductExtensions pe ON r.PRODUCTID = pe.PRODUCTID
+           JOIN Products e ON pe.EXTENSIONID = e.ID
+          WHERE r.GUID = %s
+            AND e.PRODUCT_LIST = 'Y'",
+            $dbh->quote($guid));
+
+    $r->log->info("STATEMENT: $sql");
+    eval
+    {
+        $result = $dbh->selectall_arrayref($sql, {Slice => {}});
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+
+    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), $result);
 }
 
 #
@@ -293,8 +326,11 @@ sub systems_handler($$)
     # map the requests to the functions
     if    ( $r->method() =~ /^GET$/i )
     {
-        $r->log->error("GET request to the jobs interface. This is not supported.");
-        return undef;
+        if ( $path =~ /^systems\/products/ )
+        {
+            return get_extensions($r, $dbh);
+        }
+        else { return undef; }
     }
     elsif ( $r->method() =~ /^POST$/i )
     {
@@ -310,7 +346,7 @@ sub systems_handler($$)
         # This request type is not (yet) supported
         # POSTing to the "jobs" interface (which is only used by smt-clients) means "creating a job"
         # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("PUT request to the jobs interface. This is not supported.");
+        $r->log->error("PUT request to the systems interface. This is not supported.");
         return undef;
     }
     elsif ( $r->method() =~ /^DELETE$/i )
@@ -318,12 +354,12 @@ sub systems_handler($$)
         # This request type is not (yet) supported
         # DELETEing to the "jobs" interface (which is only used by smt-clients) means "deleting a job"
         # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("DELETE request to the jobs interface. This is not supported.");
+        $r->log->error("DELETE request to the systems interface. This is not supported.");
         return undef;
     }
     else
     {
-        $r->log->error("Unknown request to the jobs interface.");
+        $r->log->error("Unknown request to the systems interface.");
         return undef;
     }
 
