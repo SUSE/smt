@@ -35,7 +35,8 @@
     // cron
     string path_to_cron = "/etc/smt.d/novell.com-smt";
 
-    string path_to_sync_script = "/usr/sbin/smt-ncc-sync";
+    string path_to_ncc_sync_script = "/usr/sbin/smt-ncc-sync";
+    string path_to_scc_sync_script = "/usr/sbin/smt-scc-sync";
     string user_for_sync_script = "root";
 
     string server_cert = "/etc/ssl/certs/YaST-CA.pem";
@@ -574,6 +575,10 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
     }
 
     global boolean RunSmallSync () {
+        string path_to_sync_script = path_to_ncc_sync_script;
+        if (GetCredentials ("NU","ApiType") == "SCC") {
+            path_to_sync_script = path_to_scc_sync_script;
+        }
         if (! FileUtils::Exists (path_to_sync_script)) {
             y2error ("Sync script doesn't exist");
             Report::Error (sformat (_("Synchronization script %1 does not exist.

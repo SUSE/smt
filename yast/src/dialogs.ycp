@@ -78,64 +78,73 @@
     string default_mirrroring_log = "/var/log/smt/smt-mirror.log";
 
     term CredentialsDialogContent () {
-	return `HBox (
-		`HStretch(),
-		`HSquash (
-		    `VBox (
-			`VWeight(2, `VStretch()),
-			// TRANSLATORS: check box
-			`Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Management Tool Service (SMT)"))),
-			`Left ("firewall"),
+        return `HBox (
+            `HStretch(),
+                      `HSquash (
+                          `VBox (
+                              `VWeight(2, `VStretch()),
+                                 // TRANSLATORS: check box
+                                 `Left (`CheckBox (`id ("enable_smt_service"), _("&Enable Subscription Management Tool Service (SMT)"))),
+                                 `Left ("firewall"),
 
-			`VWeight(1, `VStretch()),
-
-			`Left (`Frame (_("NCC Mirroring Credentials"), (`VBox (
-			    `HSquash (`MinWidth (
-				40,
-				// TRANSLATORS: text entry
-				`InputField (`id ("NURegUrl"), _("&Registration Server Url"))
-			    )),
-                `HSquash (`MinWidth (
-                40,
-                // TRANSLATORS: text entry
-                `InputField (`id ("NUUrl"), _("&Download Server Url"))
-                )),
-                `HSquash (`MinWidth (
-                40,
-                // TRANSLATORS: text entry (User name)
-                `InputField (`id ("NUUser"), _("&User"))
-                )),
-			    `HSquash (`MinWidth (
-				40,
-				// TRANSLATORS: password entry
-				`Password (`id ("NUPass"), _("&Password"))
-			    )),
-			    `VSpacing (1),
-			    // TRANSLATORS: push button
-			    `PushButton (`id ("test_NU_credentials"), `opt(`key_F6), _("&Test..."))
-			)))),
-
-			`VWeight(1, `VStretch()),
-
-			`Left (`HSquash (`MinWidth (
-			    45,
-			    // TRANSLATORS: text entry (e-mail)
-			    `InputField (`id ("nccEmail"), _("&NCC E-mail Used for Registration"))
-			))),
-
-			`Left (`HSquash (`MinWidth (
-			    45,
-			    // TRANSLATORS: text entry (URL)
-			    `InputField (`id ("url"), _("&Your SMT Server URL"))
-			))),
-
-			`VWeight(1, `VStretch()),
-
-			`VWeight(2, `VStretch())
-		    )
-		),
-		`HStretch()
-	    );
+                                 `VWeight(1, `VStretch()),
+                                 `Left (`Frame (_("Customer Center Configuration"), (`VBox (
+                                     `HSquash (`MinWidth (
+                                         40,
+                                         `RadioButtonGroup (`id(`protocol),
+                                                        `HBox (`HSpacing (0.2),
+                                                               `RadioButton(`id("scc"), `opt (`notify),
+                                                                            // radio button label
+                                                                            _("SCC")),
+                                                               `RadioButton(`id("ncc"), `opt (`notify),
+                                                                            // radio button label
+                                                                            _("NCC")),
+                                                               `RadioButton(`id("custom"), `opt (`notify),
+                                                                            // radio button label
+                                                                            _("Custom"))
+                                                        ))
+                                     )),
+                                     `HSquash (`MinWidth (
+                                         40,
+                                         // TRANSLATORS: text entry
+                                         `InputField (`id ("NURegUrl"), _("&Registration Server Url"))
+                                     )),
+                                     `HSquash (`MinWidth (
+                                         40,
+                                         // TRANSLATORS: text entry
+                                         `InputField (`id ("NUUrl"), _("&Download Server Url"))
+                                     )),
+                                     `HSquash (`MinWidth (
+                                         40,
+                                         // TRANSLATORS: text entry (User name)
+                                         `InputField (`id ("NUUser"), _("&User"))
+                                     )),
+                                     `HSquash (`MinWidth (
+                                         40,
+                                         // TRANSLATORS: password entry
+                                         `Password (`id ("NUPass"), _("&Password"))
+                                     )),
+                                     `VSpacing (1),
+                                     // TRANSLATORS: push button
+                                     `PushButton (`id ("test_NU_credentials"), `opt(`key_F6), _("&Test..."))
+                                 )))),
+                                 `VWeight(1, `VStretch()),
+                                 `Left (`HSquash (`MinWidth (
+                                     45,
+                                     // TRANSLATORS: text entry (e-mail)
+                                     `InputField (`id ("nccEmail"), _("&NCC E-mail Used for Registration"))
+                                 ))),
+                                 `Left (`HSquash (`MinWidth (
+                                     45,
+                                     // TRANSLATORS: text entry (URL)
+                                     `InputField (`id ("url"), _("&Your SMT Server URL"))
+                                 ))),
+                                 `VWeight(1, `VStretch()),
+                                 `VWeight(2, `VStretch())
+                          )
+                      ),
+                      `HStretch()
+        );
     }
 
     term DatabaseDialogContent () {
@@ -818,6 +827,22 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 	    }
 	}
 
+	string regurl = SMTData::GetCredentials ("NU", "NURegUrl");
+        if (regurl == "https://scc.suse.com/connect") {
+            UI::ChangeWidget (`id (`protocol), `CurrentButton, "scc");
+            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
+            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+        }
+        else if (String::StartsWith(regurl, "https://secure-www.novell.com/center/regsvc")) {
+            UI::ChangeWidget (`id (`protocol), `CurrentButton, "ncc");
+            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
+            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+        }
+        else {
+            UI::ChangeWidget (`id (`protocol), `CurrentButton, "custom");
+            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, true);
+            UI::ChangeWidget (`id ("NUUrl"), `Enabled, true);
+        }
 	UI::ChangeWidget (`id ("enable_smt_service"), `Value, SMTData::GetSMTServiceStatus());
     }
 
@@ -830,6 +855,12 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 	    SMTData::SetCredentials ("LOCAL", one_entry, (string) UI::QueryWidget (`id (one_entry), `Value));
 	});
 
+        if (UI::QueryWidget (`id (`protocol), `CurrentButton) == "scc") {
+            SMTData::SetCredentials ("NU", "ApiType", "SCC");
+        } else {
+            /* SLMS "speak" NCC protocol */
+            SMTData::SetCredentials ("NU", "ApiType", "NCC");
+        }
 	boolean new_service_status = (boolean) UI::QueryWidget (`id ("enable_smt_service"), `Value);
 	y2milestone ("New SMT status: %1", (new_service_status == true ? "enabled":"disabled"));
 	SMTData::SetSMTServiceStatus (new_service_status);
@@ -951,6 +982,24 @@ URL should start with 'http://' or 'https://'."));
 	    StoreCredentialsDialog (id, event);
 	    TestCredentials();
 	}
+	else if (action == "scc") {
+            UI::ChangeWidget (`id ("NURegUrl"), `Value, "https://scc.suse.com/connect");
+            UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
+            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
+            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+        }
+        else if (action == "ncc") {
+            UI::ChangeWidget (`id ("NURegUrl"), `Value, "https://secure-www.novell.com/center/regsvc/");
+            UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
+            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
+            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+        }
+        else if (action == "custom") {
+            UI::ChangeWidget (`id ("NURegUrl"), `Value, "");
+            UI::ChangeWidget (`id ("NUUrl"), `Value, "");
+            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, true);
+            UI::ChangeWidget (`id ("NUUrl"), `Enabled, true);
+        }
 
 	return nil;
     }
