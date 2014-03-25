@@ -40,6 +40,7 @@
 	string user = SMTData::GetCredentials ("NU", "NUUser");
 	string pass = SMTData::GetCredentials ("NU", "NUPass");
 	string url  = SMTData::GetCredentials ("NU", "NURegUrl");
+        string api  = SMTData::GetCredentials ("NU", "ApiType");
 
 	if (user == nil) user = "";
 	if (pass == nil) pass = "";
@@ -69,7 +70,8 @@ url=%1?command=regdata&lang=en-US&version=1.0
 # user/pass to be used for downloading
 user=%2
 pass=%3
-\" > '%4'", url, user, pass, String::Quote (test_file)));
+apitype=%4
+\" > '%5'", url, user, pass, api, String::Quote (test_file)));
 
 	if (cmd_exit != 0) {
 	    // TRANSLATORS: LogView line

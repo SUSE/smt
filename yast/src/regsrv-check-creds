@@ -3,6 +3,7 @@
 use strict;
 use SMT::Utils;
 use XML::Writer;
+use URI;
 
 my $config = $ARGV[0];
 
@@ -22,11 +23,12 @@ my $smtguid = SMT::Utils::getSMTGuid();
 my $authuser = $cfg->val('GLOBAL', 'user');
 my $authpass = $cfg->val('GLOBAL', 'pass');
 my $uri = $cfg->val('GLOBAL', 'url');
-
+my $apitype = $cfg->val('GLOBAL', 'apitype');
 # bnc#727988
 chomp($authuser);
 chomp($authpass);
 chomp($uri);
+chomp($apitype);
 
 if (!($uri && $authuser && $authpass))
 {
@@ -37,65 +39,101 @@ if(!$smtguid)
     $smtguid = "1234567890";
 }
 
+$apitype = 'NCC' if(!$apitype);
+
 my $ua = SMT::Utils::createUserAgent();
 $ua->protocols_allowed( [ 'https'] );
 
-my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
-         "client_version" => "1.2.3",
-         "lang" => "en");
-
-my $content = "";
-my $writer = new XML::Writer(NEWLINES => 0, OUTPUT => \$content);
-$writer->xmlDecl();
-$writer->startTag('targets', %a);
-
-$writer->startTag("authuser");
-$writer->characters($authuser);
-$writer->endTag("authuser");
-
-$writer->startTag("authpass");
-$writer->characters($authpass);
-$writer->endTag("authpass");
-
-$writer->startTag("smtguid");
-$writer->characters($smtguid);
-$writer->endTag("smtguid");
-
-$writer->endTag('targets');
-
 my $response;
 my $redirects = 0;
-do
-{
-    #print "SEND TO: $uri\n";
-    #print "$content\n";
-    eval
-    {
-        $response = $ua->post( $uri, 'Content-Type' => 'text/xml',
-                               'Content' => $content);
-    };
-    if($@)
-    {
-        die "$@";
-    }
 
-    if ( $response->is_redirect )
+if (uc($apitype) eq "NCC")
+{
+    my %a = ("xmlns" => "http://www.novell.com/xml/center/regsvc-1_0",
+             "client_version" => "1.2.3",
+             "lang" => "en");
+
+    my $content = "";
+    my $writer = new XML::Writer(NEWLINES => 0, OUTPUT => \$content);
+    $writer->xmlDecl();
+    $writer->startTag('targets', %a);
+
+    $writer->startTag("authuser");
+    $writer->characters($authuser);
+    $writer->endTag("authuser");
+
+    $writer->startTag("authpass");
+    $writer->characters($authpass);
+    $writer->endTag("authpass");
+
+    $writer->startTag("smtguid");
+    $writer->characters($smtguid);
+    $writer->endTag("smtguid");
+
+    $writer->endTag('targets');
+
+    do
     {
-        $redirects++;
-        if($redirects > 10)
+        #print "SEND TO: $uri\n";
+        #print "$content\n";
+        eval
         {
-            die "Reach maximal redirects. Abort";
+            $response = $ua->post( $uri, 'Content-Type' => 'text/xml',
+                                   'Content' => $content);
+        };
+        if($@)
+        {
+            die "$@";
         }
 
-        $uri = $response->header("location");
-    }
-} while($response->is_redirect);
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > 10)
+            {
+                die "Reach maximal redirects. Abort";
+            }
 
+            $uri = $response->header("location");
+        }
+    } while($response->is_redirect);
+}
+else # SCC
+{
+    my $u = URI->new($uri);
+    $u->query(undef);
+    $u->path($u->path."/organizations/subscriptions");
+    $u->userinfo("$authuser:$authpass");
+    do
+    {
+        eval
+        {
+            $response = $ua->get( $u->as_string, 'Accept' => "application/json");
+        };
+        if($@)
+        {
+            die "$@";
+        }
+
+        if ( $response->is_redirect )
+        {
+            $redirects++;
+            if($redirects > 10)
+            {
+                die "Reach maximal redirects. Abort";
+            }
+
+            $uri = $response->header("location");
+        }
+    } while($response->is_redirect);
+
+}
 if( $response->is_success)
 {
     exit 0;
 }
+print STDERR "ERROR: Registration Server returned: ".$response->status_line."\n";
 #require Data::Dumper;
-#print "response: ".Data::Dumper->Dump([$response])."\n";
+#print STDERR "response: ".Data::Dumper->Dump([$response])."\n";
 exit 1;
 
