@@ -86,6 +86,7 @@ sub new
     $self->{URI}   = undef;
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
+    $self->{MIGRATE} = 0;
 
     $self->{MAX_REDIRECTS} = 5;
 
@@ -174,6 +175,19 @@ sub vblevel
     return $self->{VBLEVEL};
 }
 
+=item migrate(1/0)
+
+Enable or disable migration mode. The migration mode
+convert NCC data existing in DB into SCC data.
+
+=cut
+
+sub migrate
+{
+    my $self = shift;
+    if (@_) { $self->{MIGRATE} = shift }
+    return $self->{MIGRATE};
+}
 
 =item element([name])
 
@@ -263,6 +277,170 @@ sub sync
         delete $self->{XML}->{DATA}->{$self->{ELEMENT}};
         return $ret;
     }
+}
+
+=item canMigrate
+
+Check, if SMT could be migrated back to NCC
+Return 1 if a migration is possible otherwise 0.
+
+=cut
+sub canMigrate
+{
+    my $self = shift;
+    my $xmlfile = "";
+    my $errors = 0;
+
+    my $dbh = SMT::Utils::db_connect();
+    if(!defined $dbh)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
+        return 0;
+    }
+
+    my $element = $self->element();
+    my $table = $self->table();
+    my $key = $self->key();
+    $self->element("productdata");
+    $self->table("Products");
+    $self->key("PRODUCTDATAID");
+
+    if(defined $self->{FROMDIR} && -d $self->{FROMDIR})
+    {
+        $xmlfile = $self->{FROMDIR}."/".$self->{ELEMENT}.".xml";
+    }
+    else
+    {
+        $xmlfile = $self->_requestData();
+        if(!$xmlfile)
+        {
+            $self->element($element);
+            $self->table($table);
+            $self->key($key);
+            return 0;
+        }
+    }
+
+    my $ret = $self->_parseXML($xmlfile);
+    if($ret)
+    {
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 0;
+    }
+
+    #
+    # new registration server need to support all locally used
+    # products. SCC will import all products of a product_class
+    #
+    my $sql = "SELECT DISTINCT p.PRODUCT_CLASS
+    FROM Products p, Registration r
+    WHERE r.PRODUCTID=p.ID";
+    my $classes = $dbh->selectall_arrayref($sql, {Slice => {}});
+
+    foreach my $c (@{$classes})
+    {
+        my $found = 0;
+        foreach my $product (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
+        {
+            if ( $c->{PRODUCT_CLASS} eq $product->{PRODUCT_CLASS} )
+            {
+                $found = 1;
+                last;
+            }
+        }
+        if ( ! $found )
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+                     sprintf("'%s' not found in registration server. Migration not possible.",
+                             $c->{PRODUCT_CLASS}), 0, 1);
+            $errors++;
+        }
+    }
+    if ($errors)
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Products found which are not supported by NCC. Migration is not possible."));
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 0;
+    }
+
+    $rd->element("catalogs");
+    $rd->table("Catalogs");
+    $rd->key("CATALOGID");
+
+    if(defined $self->{FROMDIR} && -d $self->{FROMDIR})
+    {
+        $xmlfile = $self->{FROMDIR}."/".$self->{ELEMENT}.".xml";
+    }
+    else
+    {
+        $xmlfile = $self->_requestData();
+        if(!$xmlfile)
+        {
+            $self->element($element);
+            $self->table($table);
+            $self->key($key);
+            return 0;
+        }
+    }
+
+    my $ret = $self->_parseXML($xmlfile);
+    if($ret)
+    {
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 0;
+    }
+
+    #
+    # All locally mirrored SCC repos need to be accessible via
+    # the new registration server
+    #
+    $statement = "SELECT ID, NAME, TARGET FROM Catalogs
+                   WHERE DOMIRROR='Y'
+                     AND MIRRORABLE='Y'
+                     AND SRC = 'N'";
+    my $catalogs = $dbh->selectall_hashref($statement, 'ID');
+    foreach my $needed_cid (keys %{$catalogs})
+    {
+        my $found = 0;
+        foreach my $repo (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
+        {
+            if ($catalogs->{$needed_cid}->{NAME} eq $repo->{NAME} &&
+                $catalogs->{$needed_cid}->{TARGET} eq $repo->{TARGET})
+            {
+                $found = 1;
+                last;
+            }
+        }
+        if ( ! $found )
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+                     sprintf("Repository '%s-%s' not found in registration server. Migration not possible.",
+                             $catalogs->{$needed_cid}->{NAME},
+                             $catalogs->{$needed_cid}->{TARGET}
+                     ), 0, 1);
+            $errors++;
+        }
+    }
+    if ($errors)
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Used repositories found which are not supported by NCC. Migration is not possible."));
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 0;
+    }
+    $self->element($element);
+    $self->table($table);
+    $self->key($key);
+    return 1;
 }
 
 
@@ -484,6 +662,10 @@ sub _updateDB
 
     # get all datasets which are from NCC
     my $stm = sprintf("SELECT %s FROM %s WHERE SRC='N'", join(',', @q_key),  $dbh->quote_identifier($table));
+    if ($self->migrate)
+    {
+        $stm = sprintf("SELECT %s FROM %s WHERE SRC='S'", join(',', @q_key),  $dbh->quote_identifier($table));
+    }
 
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $stm") ;
 
@@ -557,7 +739,7 @@ sub _updateDB
         # PRIMARY KEY exists in DB, do update
         if(@$all == 1)
         {
-            my $statement = sprintf("UPDATE %s SET ", $dbh->quote_identifier($table));
+            my $statement = sprintf("UPDATE %s SET SRC='N' ", $dbh->quote_identifier($table));
             my @pairs = ();
             foreach my $cn (keys %$row)
             {
