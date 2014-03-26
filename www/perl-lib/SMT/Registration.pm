@@ -836,20 +836,17 @@ sub findCatalogs
     $statement .= "c.CATALOGTYPE, c.STAGING, pc.OPTIONAL, pc.AUTOREFRESH ";
     $statement .= "from Catalogs c, ProductCatalogs pc WHERE ";
     $statement .= "c.DOMIRROR='Y' AND c.ID=pc.CATALOGID ";
-    $statement .= "AND (c.TARGET IS NULL ";
-    if(defined $target && $target ne "")
+    if($target)
     {
-        $statement .= sprintf("OR c.TARGET=%s", $dbh->quote($target));
-    }
-    $statement .= ") AND ";
-
+        $statement .= sprintf("AND (c.TARGET IS NULL OR c.TARGET=%s)", $dbh->quote($target));
+    } # if we do not have the target we use all catalogs assigned to a product
     if(@{$productids} > 1)
     {
-        $statement .= "pc.PRODUCTID IN (".join(",", @q_pids).") ";
+        $statement .= "AND pc.PRODUCTID IN (".join(",", @q_pids).") ";
     }
     elsif(@{$productids} == 1)
     {
-        $statement .= "pc.PRODUCTID = ".$q_pids[0]." ";
+        $statement .= "AND pc.PRODUCTID = ".$q_pids[0]." ";
     }
     else
     {
