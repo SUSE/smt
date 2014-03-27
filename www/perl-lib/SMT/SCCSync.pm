@@ -175,7 +175,12 @@ sub migrate
 =item canMigrate
 
 Test if a migration is possible.
-Return 1 if yes, 0 if the migration is not possible.
+Return:
+0 if the migration is possible.
+1 internal server error
+3 migration not possible because clients exists which uses products not provided by NCC
+4 migration not possible because clients exists which uses repositories not provided by NCC
+
 
 =cut
 
@@ -189,7 +194,7 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Failed to get product information from SCC. Migration is not possible."));
-        return 0;
+        return 1;
     }
 
     #
@@ -224,7 +229,7 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Products found which are not supported by SCC. Migration is not possible."));
-        return 0;
+        return 3;
     }
 
     $input = $self->_getInput("organization_repositories");
@@ -233,7 +238,7 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Failed to get repository information from SCC. Migration is not possible."));
-        return 0;
+        return 1;
     }
     #
     # All locally mirrored NCC repos need to be accessible via
@@ -270,10 +275,10 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Used repositories found which are not supported by SCC. Migration is not possible."));
-        return 0;
+        return 4;
     }
 
-    return 1;
+    return 0;
 }
 
 =item products
