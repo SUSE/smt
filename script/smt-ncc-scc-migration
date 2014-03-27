@@ -16,6 +16,7 @@ my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $logfile = "/var/log/smt/smt-ncc-scc-migration";
 my $exitcode = 0;
 my $help = 0;
+my $check_only = 0;
 
 use Getopt::Long;
 Getopt::Long::Configure( 'no_auto_abbrev');
@@ -23,7 +24,8 @@ my $optres = Getopt::Long::GetOptions(
                                       "logfile|L=s" => \$logfile,
                                       'debug|d'     => \$debug,
                                       "verboselevel|v=i" => \$vblevel,
-                                      'help|h'      => \$help
+                                      'help|h'      => \$help,
+                                      'check-only|c'=> \$check_only
                                      );
 
 if ( (defined $help && $help == 1 ) || !$optres )
@@ -36,6 +38,7 @@ if ( (defined $help && $help == 1 ) || !$optres )
     print "--logfile -L file         ".__("Path to logfile\n");
     print "--debug                   ".__("Enable debug mode\n");
     print "--verboselevel -v level   ".__("set the verbose level\n");
+    print "--check-only              ",__("Only check whether migration is possible\n");
     exit 0;
 }
 
@@ -120,6 +123,13 @@ eval
         _writeConfig($cfg, 'NU', 'NURegUrl', $regurl);
         _writeConfig($cfg, 'NU', 'ApiType', 'NCC');
         SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", $exitcode, $LOG, $vblevel);
+    }
+
+    if ( defined $check_only && $check_only == 1 )
+    {
+        _writeConfig($cfg, 'NU', 'NURegUrl', $regurl);
+        _writeConfig($cfg, 'NU', 'ApiType', 'NCC');
+	SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 0, $LOG, $vblevel);
     }
 
     # DB Products, Catalogs and ProductCatalogs: migrate PRODUCTDATAIDs
