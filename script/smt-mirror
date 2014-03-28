@@ -274,6 +274,7 @@ else
     $parser->parse( $dbreplfile, sub { catalog_handler($dbreplacement, @_); });
 }
 
+my $useragent = SMT::Utils::createUserAgent(log => $LOG, vblevel => $vblevel);
 
 #print Data::Dumper->Dump([$dbreplacement]);
 
@@ -364,17 +365,19 @@ foreach my $entry (@{$array})
         &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $entry->{LOCALPATH} ) );
 
         my $zyppMirror = undef;
-        if( lc($entry->{CATALOGTYPE}) eq "yum")
+        if( SMT::Utils::doesFileExist($useragent, $zuri->as_string."/headers/header.info"))
         {
             $zyppMirror = SMT::Mirror::Yum->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                 mirrorsrc => $mirrorsrc, nohardlink => $nohardlink,
-                                                cfg => $cfg, repoid => $entry->{ID});
+                                                cfg => $cfg, repoid => $entry->{ID},
+                                                useragent => $useragent);
         }
         else
         {
             $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                   mirrorsrc => $mirrorsrc, nohardlink => $nohardlink,
-                                                  cfg => $cfg, repoid => $entry->{ID});
+                                                  cfg => $cfg, repoid => $entry->{ID},
+                                                  useragent => $useragent);
         }
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
         $zyppMirror->localRepoPath( $entry->{LOCALPATH} );

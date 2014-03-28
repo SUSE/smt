@@ -640,7 +640,14 @@ sub ncc_handler
             return;
         }
     }
-
+    elsif(lc($root) eq "catalogs")
+    {
+        if(exists $data->{CATALOGTYPE} && $data->{CATALOGTYPE} && lc($data->{CATALOGTYPE}) eq "yum")
+        {
+            # type yum is handled in smt-mirror
+            $data->{CATALOGTYPE} = "nu";
+        }
+    }
     push @{$self->{XML}->{DATA}->{$root}}, $data;
 }
 
@@ -750,7 +757,7 @@ sub _updateDB
         # LOCALPATH is required
         if(lc($table) eq "catalogs")
         {
-            if(lc($row->{CATALOGTYPE}) eq "nu" || lc($row->{CATALOGTYPE}) eq "yum")
+            if(lc($row->{CATALOGTYPE}) eq "nu")
             {
                 $row->{LOCALPATH} = '$RCE/'.$row->{NAME}."/".$row->{TARGET};
             }

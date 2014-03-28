@@ -998,7 +998,7 @@ sub buildZmdConfig
         foreach my $cat (keys %{$catalogs})
         {
             next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "y");
-            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
+            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu" || SMT::Utils::isRES($guid));
             if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
                $catalogs->{$cat}->{LOCALPATH} eq "")
             {
@@ -1040,7 +1040,8 @@ sub buildZmdConfig
 
     foreach my $cat (keys %{$catalogs})
     {
-        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "zypp" && lc($catalogs->{$cat}->{CATALOGTYPE}) ne "yum");
+        next if (not ( lc($catalogs->{$cat}->{CATALOGTYPE}) eq "zypp" || SMT::Utils::isRES($guid)) );
+
         if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
            $catalogs->{$cat}->{LOCALPATH} eq "")
         {

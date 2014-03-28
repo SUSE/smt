@@ -1285,7 +1285,7 @@ sub setMirrorableCatalogs
         if ( -s $indexfile )
         {
             my $sqlres = $dbh->selectall_hashref("select Name, Target, Mirrorable from Catalogs
-                                                  where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'",
+                                                  where CATALOGTYPE = 'nu'",
                                                  ['Name', 'Target']);
 
             my $parser = SMT::Parser::NU->new(vblevel => $opt{vblevel}, log => $opt{log});
@@ -1302,7 +1302,7 @@ sub setMirrorableCatalogs
                                                 sprintf(__("* New mirrorable repository '%s %s' ."),
                                                         $repodata->{NAME}, $repodata->{DISTRO_TARGET}));
                                        my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE NAME=%s AND TARGET=%s
-                                                                    AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
+                                                                    AND CATALOGTYPE = 'nu'",
                                                                    $dbh->quote($repodata->{NAME}),
                                                                    $dbh->quote($repodata->{DISTRO_TARGET}) ));
                                    }
@@ -1320,7 +1320,7 @@ sub setMirrorableCatalogs
                         printLog($opt{log}, $opt{vblevel}, LOG_INFO1,
                                  sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
                         my $sth = $dbh->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE NAME=%s AND TARGET=%s
-                                                     AND (CATALOGTYPE = 'nu' OR CATALOGTYPE = 'yum')",
+                                                     AND CATALOGTYPE = 'nu'",
                                                     $dbh->quote($cname), $dbh->quote($target) ));
                     }
                 }
