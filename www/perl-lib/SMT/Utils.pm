@@ -1569,6 +1569,31 @@ sub lookupTargetByOS
     return $ref->{TARGET};
 }
 
+=item isRES($dbh, $guid[, $log, vblevel])
+
+Return true if the client has RES installed, otherwise false
+
+=cut
+
+sub isRES
+{
+    my $dbh = shift || return 0;
+    my $guid = shift || return 0;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $sql = sprintf("
+        select r.GUID
+          from Registration r
+          join Products p on r.PRODUCTID = p.PRODUCTDATAID
+         where r.GUID = %s
+           AND p.PRODUCT = 'RES'",
+           $dbh->quote($guid));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $sql");
+    my $ref = $dbh->selectrow_hashref($sql);
+    return ($ref->{GUID}?1:0);
+}
 
 =back
 
