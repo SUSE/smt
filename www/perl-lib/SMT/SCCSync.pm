@@ -50,6 +50,7 @@ sub new
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
     $self->{USERAGENT}  = undef;
+    $self->{CFG} = undef;
 
     $self->{MAX_REDIRECTS} = 5;
 
@@ -75,12 +76,23 @@ sub new
 
     $self->{ERRORS} = 0;
 
+    # temporarily used variables
     $self->{REPO_DONE} = {};
     $self->{TARGET_DONE} = {};
+    $self->{NUHOST} = "";
 
     if(exists $opt{vblevel} && $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
+    }
+
+    if(exists $opt{cfg} && $opt{cfg})
+    {
+        $self->{CFG} = $opt{cfg};
+    }
+    else
+    {
+        $self->{CFG} = SMT::Utils::getSMTConfig();
     }
 
     if(exists $opt{log} && $opt{log})
@@ -668,20 +680,17 @@ sub _updateRepositories
     $exthost->query(undef);
 
     # FIXME: as soon as the repos have the (right) format, we can remove the regexp
-    if( $repo->{format} && $repo->{format} eq "nu")
+    if( $exthost->host eq $self->{NUHOST} )
     {
-        $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
+        if( $remotepath =~ /suse/ )
+        {
+            $localpath = 'suse/'.$repo->{name}."/".$repo->{distro_target};
+        }
+        else
+        {
+            $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
+        }
         $catalogtype = 'nu';
-    }
-    elsif( ($remotepath =~ /suse/ && $repo->{distro_target}) || ($repo->{format} && $repo->{format} eq "ris"))
-    {
-        $localpath = 'suse/'.$repo->{name}."/".$repo->{distro_target};
-        $catalogtype = 'ris';
-    }
-    elsif( $repo->{format} && $repo->{format} eq "yum")
-    {
-        $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
-        $catalogtype = 'yum';
     }
     else
     {
@@ -957,6 +966,8 @@ sub _updateProductData
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
         return 1;
     }
+    my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://nu.novell.com"));
+    $self->{NUHOST} = $nuurl->host;
 
     foreach my $product (@$json)
     {
@@ -1046,10 +1057,10 @@ sub _markReposMirrorable
         return 1;
     }
 
-    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID from Catalogs
-                                          where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'
-                                             or CATALOGTYPE = 'ris'",
-                                         ['Name', 'Target']);
+    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID
+                                                    from Catalogs
+                                                   where CATALOGTYPE = 'nu'",
+                                                 ['Name', 'Target']);
     foreach my $repo (@{$json})
     {
         # zypp repos have no target

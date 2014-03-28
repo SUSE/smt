@@ -170,6 +170,7 @@ eval
 {
     my $sccsync = SMT::SCCSync->new(vblevel => $vblevel,
                                     log     => $LOG,
+                                    cfg     => $cfg,
                                     fromdir => (($fromdir ne "")?$fromdir:undef),
                                     todir   => (($todir ne "")?$todir:undef));
     printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Product and Repository information"));

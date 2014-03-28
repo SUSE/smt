@@ -115,7 +115,9 @@ _writeConfig($cfg, 'NU', 'ApiType', 'SCC');
 eval
 {
     my $sccsync = SMT::SCCSync->new(vblevel => $vblevel,
-                                    log     => $LOG);
+                                    log     => $LOG,
+                                    cfg     => $cfg
+                                   );
     $sccsync->migrate(1);
     printLog($LOG, $vblevel, LOG_INFO1, __("Checking if a migration is possible ..."));
     if(($exitcode = $sccsync->canMigrate()) > 0)
