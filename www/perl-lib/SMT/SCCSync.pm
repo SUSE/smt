@@ -267,7 +267,7 @@ sub canMigrate
         foreach my $repo (@$input)
         {
             if ($catalogs->{$needed_cid}->{NAME} eq $repo->{name} &&
-                $catalogs->{$needed_cid}->{TARGET} eq $repo->{target})
+                $catalogs->{$needed_cid}->{TARGET} eq $repo->{distro_target})
             {
                 $found = 1;
                 last;
