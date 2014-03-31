@@ -15,7 +15,6 @@ drop table ProductCatalogs;
 create table ProductCatalogs(PRODUCTID integer NOT NULL,
                              CATALOGID integer NOT NULL,
                              OPTIONAL  CHAR(1) DEFAULT 'N',
-                             AUTOREFRESH CHAR(1) DEFAULT 'Y',
                              SRC       CHAR(1) DEFAULT 'N',    -- N NCC   C Custom
                              PRIMARY KEY(PRODUCTID, CATALOGID)
                             );
