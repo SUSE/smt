@@ -715,7 +715,8 @@ sub _updateRepositories
                                  SET NAME = %s, DESCRIPTION = %s,
                                      TARGET = %s, LOCALPATH = %s,
                                      EXTHOST = %s, EXTURL = %s,
-                                     CATALOGTYPE = %s, CATALOGID = %s
+                                     CATALOGTYPE = %s, CATALOGID = %s,
+                                     AUTOREFRESH = %s
                                WHERE ID = %s",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
@@ -725,6 +726,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
                              $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N')),
                              $self->{DBH}->quote($cid)
         );
     }
@@ -736,6 +738,7 @@ sub _updateRepositories
                                      TARGET = %s, LOCALPATH = %s,
                                      EXTHOST = %s, EXTURL = %s,
                                      CATALOGTYPE = %s, CATALOGID = %s,
+                                     AUTOREFRESH = %s,
                                      SRC = 'S'
                                WHERE ID = %s",
                              $self->{DBH}->quote($repo->{name}),
@@ -746,14 +749,15 @@ sub _updateRepositories
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
                              $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N')),
                              $self->{DBH}->quote($cid)
         );
     }
     else
     {
         $statement = sprintf("INSERT INTO Catalogs (NAME, DESCRIPTION, TARGET, LOCALPATH,
-                              EXTHOST, EXTURL, CATALOGTYPE, CATALOGID, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                              EXTHOST, EXTURL, CATALOGTYPE, CATALOGID, AUTOREFRESH, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
                              $self->{DBH}->quote($repo->{distro_target}),
@@ -761,7 +765,8 @@ sub _updateRepositories
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
-                             $self->{DBH}->quote($repo->{id})
+                             $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N'))
         );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
@@ -863,13 +868,13 @@ sub _updateProductCatalogs
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
         $ret += 1;
     }
-    my $optional = ((grep $_ == 'optional', @{$repo->{flags}})?"Y":"N");
+    my $enabled = (grep $_  == $repo->{id}, @{$product->{enabled_repositories}});
 
     $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
                           VALUES (%s, %s, %s, 'S')",
                          $self->{DBH}->quote($product_id),
                          $self->{DBH}->quote($repo_id),
-                         $self->{DBH}->quote($optional));
+                         $self->{DBH}->quote(($enabled?'N':'Y')));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
