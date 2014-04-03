@@ -256,6 +256,10 @@ sub request
         open (my $buf, "<", ${$request->content});
         $self->setopt(CURLOPT_READDATA, $buf);
     }
+    elsif ($request->method eq 'DELETE')
+    {
+        $self->setopt(CURLOPT_CUSTOMREQUEST, "DELETE");
+    }
 
     my @req_headers;
     foreach my $h ($request->headers->header_field_names)
@@ -399,8 +403,18 @@ sub post
 
 sub put
 {
-    my ($self, $uri, $form) = @_;
-    return $self->request(HTTP::Request->new(PUT => $uri, undef, $form));
+    require HTTP::Request::Common;
+    my ($self, @opt) = @_;
+    my @suff = $self->_process_colonic_headers(\@opt, (ref($opt[1]) ? 2 : 1));
+    return $self->request( HTTP::Request::Common::PUT( @opt ), @suff );
+}
+
+sub delete
+{
+    require HTTP::Request::Common;
+    my ($self, @opt) = @_;
+    my @suff = $self->_process_colonic_headers(\@opt,1);
+    return $self->request( HTTP::Request::Common::DELETE( @opt ), @suff );
 }
 
 1;
