@@ -833,7 +833,7 @@ sub findCatalogs
     # get catalog values (only for the once we DOMIRROR)
 
     $statement  = "SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, ";
-    $statement .= "c.CATALOGTYPE, c.STAGING, pc.OPTIONAL, pc.AUTOREFRESH ";
+    $statement .= "c.CATALOGTYPE, c.STAGING, pc.OPTIONAL, c.AUTOREFRESH ";
     $statement .= "from Catalogs c, ProductCatalogs pc WHERE ";
     $statement .= "c.DOMIRROR='Y' AND c.ID=pc.CATALOGID ";
     if($target)
