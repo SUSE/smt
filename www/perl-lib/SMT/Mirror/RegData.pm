@@ -711,7 +711,7 @@ sub _updateDB
         foreach my $k (@$key)
         {
             $str .= "=-=" if($j > 0);
-            $str .= $sv->{$k};
+            $str .= ($sv->{$k}?$sv->{$k}:'');
             $j++;
         }
         $allhash->{$str} = 1;
@@ -733,7 +733,7 @@ sub _updateDB
                 push @primkeys_where, $dbh->quote_identifier($_)." is NULL";
             }
             $str .= '=-=' if($j > 0);
-            $str .= $row->{$_};
+            $str .= ($row->{$_}?$row->{$_}:'');
             $j++;
         }
 
