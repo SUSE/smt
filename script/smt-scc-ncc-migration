@@ -205,6 +205,12 @@ eval
     SMT::CLI::setMirrorableCatalogs(log     => $LOG,
                                     vblevel => $vblevel);
 
+    if($cfg->val("LOCAL", "forwardRegistration", "true") eq "true")
+    {
+        printLog($LOG, $vblevel, LOG_INFO1, __("Schedule client registration"));
+        $res = $dbh->do("UPDATE Registration SET NCCREGERROR = 0, REGDATE = CURRENT_TIMESTAMP");
+    }
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Cleanup Database"));
     $res = $dbh->do("DELETE FROM Products WHERE SRC='S'");
     $res = $dbh->do("DELETE FROM Catalogs WHERE SRC='S'");
