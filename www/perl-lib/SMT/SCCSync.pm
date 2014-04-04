@@ -666,7 +666,6 @@ sub _updateRepositories
     my $self = shift;
     my $repo = shift;
     my $statement = "";
-    my $remotepath = "";
     my $localpath = "";
     my $catalogtype = "";
     # we inserted/update this repo already in this run
@@ -674,7 +673,7 @@ sub _updateRepositories
     return 0 if(exists $self->{REPO_DONE}->{$repo->{id}});
 
     my $exthost = URI->new($repo->{url});
-    $remotepath = $exthost->path();
+    $localpath = $exthost->path();
     $exthost->path(undef);
     $exthost->fragment(undef);
     $exthost->query(undef);
@@ -682,13 +681,10 @@ sub _updateRepositories
     # FIXME: as soon as the repos have the (right) format, we can remove the regexp
     if( $exthost->host eq $self->{NUHOST} )
     {
-        if( $remotepath =~ /suse/ )
+        $localpath =~ s/^\///;
+        if($localpath =~ /^repo\//)
         {
-            $localpath = 'suse/'.$repo->{name}."/".$repo->{distro_target};
-        }
-        else
-        {
-            $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
+            $localpath =~ s/^repo\///;
         }
         $catalogtype = 'nu';
     }
