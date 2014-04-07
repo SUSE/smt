@@ -386,17 +386,28 @@ sub filteringAllowed($$$)
         return undef;
     }
 
-    my $absrepopath =
-        SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
-    return 1 if (
-        -d $absrepopath &&
-        -e $absrepopath.'/repodata/updateinfo.xml.gz');
+    my $absrepopath = SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
+    my $p = SMT::Parser::RpmMdRepomd->new();
+    $p->resource($absrepopath);
+    my $repomd = $p->parse("repodata/repomd.xml");
 
-    $absrepopath =
-        SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
     return 1 if (
         -d $absrepopath &&
-        -e $absrepopath.'/repodata/updateinfo.xml.gz');
+        $repomd &&
+        exists $repomd->{data}->{updateinfo}->{location}->{href} &&
+        $repomd->{data}->{updateinfo}->{location}->{href} &&
+        -e $absrepopath.'/'.$repomd->{data}->{updateinfo}->{location}->{href});
+
+    $absrepopath = SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
+    $p->resource($absrepopath);
+    $repomd = $p->parse("repodata/repomd.xml");
+
+    return 1 if (
+        -d $absrepopath &&
+        $repomd &&
+        exists $repomd->{data}->{updateinfo}->{location}->{href} &&
+        $repomd->{data}->{updateinfo}->{location}->{href} &&
+        -e $absrepopath.'/'.$repomd->{data}->{updateinfo}->{location}->{href});
 
     printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
         "filteringAllowed(): updateinfo.xml.gz not found in local" .
@@ -410,7 +421,7 @@ sub filteringAllowed($$$)
     {
         my $useragent = SMT::Utils::createUserAgent(
                             log => $self->{LOG}, vblevel => VBLEVEL);
-        return SMT::Utils::doesFileExist($useragent, $url . '/repodata/updateinfo.xml.gz');
+        return (grep (($_ eq "updateinfo"), SMT::Utils::getFile($useragent, $url . '/repodata/repomd.xml'))?1:0);
     }
     else
     {

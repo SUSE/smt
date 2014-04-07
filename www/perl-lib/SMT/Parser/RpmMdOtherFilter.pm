@@ -154,6 +154,32 @@ sub parse($$$$)
     $self->{CURRENT}->{PKGID} = undef;
     $self->{REMOVED} = {};
 
+    my $prefix = ($file =~ /^\./?".":"");
+    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
+                                          vblevel => $self->vblevel());
+    $p->resource($self->{RESOURCE});
+    my $repomd = $p->parse($prefix."repodata/repomd.xml");
+    if ($file =~ /other\.xml/ &&
+        $repomd &&
+        exists $repomd->{data}->{other}->{location}->{href} &&
+        $repomd->{data}->{other}->{location}->{href})
+    {
+        $file = $prefix.$repomd->{data}->{other}->{location}->{href};
+    }
+    elsif ($file =~ /filelists\.xml/ &&
+           $repomd &&
+           exists $repomd->{data}->{filelists}->{location}->{href} &&
+           $repomd->{data}->{filelists}->{location}->{href})
+    {
+        $file = $prefix.$repomd->{data}->{filelists}->{location}->{href};
+    }
+    elsif ($file =~ /susedata\.xml/ &&
+           $repomd &&
+           exists $repomd->{data}->{susedata}->{location}->{href} &&
+           $repomd->{data}->{susedata}->{location}->{href})
+    {
+        $file = $prefix.$repomd->{data}->{susedata}->{location}->{href};
+    }
     my $path = SMT::Utils::cleanPath($self->{RESOURCE}, $file);
 
     # for security reason strip all | characters.
