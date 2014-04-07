@@ -7,6 +7,7 @@ use File::Path;
 use File::Find;
 use File::Temp qw/ tempdir /;
 use File::Copy;
+use File::Basename;
 use Crypt::SSLeay;
 use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -1685,6 +1686,7 @@ sub updateRepomd($$$)
         # unlink the original file first - we do not want to modify all the
         # aliases with modifyrepo
         unlink ($mdfile->{changedorig});
+        unlink (SMT::Utils::cleanPath($repodatadir, basename($key)));
 
         # note: modifyrepo needs unzipped unpdateinfo.xml
         my @args = ($mdfile->{changednew}, $repodatadir);
