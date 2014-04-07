@@ -913,6 +913,7 @@ Simple file getter which uses $userAgent to get file from $srcUrl to local
 file with path $target.
 
 Returns true on success, false if something goes wrong.
+If target is undef, it returns the content directly
 
 =cut
 
@@ -921,7 +922,10 @@ sub getFile
     my ($userAgent, $srcUrl, $target, %opt) = @_;
 
     # make sure the target dir exists
-    &File::Path::mkpath(dirname($target));
+    if ($target)
+    {
+        &File::Path::mkpath(dirname($target));
+    }
 
     my $redirects = 0;
     my $ret = 0;
@@ -931,7 +935,14 @@ sub getFile
     {
         eval
         {
-            $response = $userAgent->get( $srcUrl, ':content_file' => $target );
+            if ($target)
+            {
+                $response = $userAgent->get( $srcUrl, ':content_file' => $target );
+            }
+            else
+            {
+                $response = $userAgent->get( $srcUrl);
+            }
         };
         if($@)
         {
@@ -955,6 +966,7 @@ sub getFile
         elsif($response->is_success)
         {
             $ret = 1;
+            $ret = $response->content() if(!$target);
         }
     } while($response->is_redirect);
 
