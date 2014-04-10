@@ -939,7 +939,7 @@ Migrate SMT from NCC to SCC now?")))
 	else if (was_scc && ! is_scc)
 	{
 	    Popup::ShowFeedback("", "Checking if migration to NCC is possible...");
-	    integer test_ret = 1; // FIXME (integer)SCR::Execute (.target.bash, "smt-ncc-scc-switch --check-only");
+	    integer test_ret = (integer)SCR::Execute (.target.bash, "smt-scc-ncc-migration --check-only");
 	    Popup::ClearFeedback();
 	    if (test_ret != 0)
 	    {
