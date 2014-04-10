@@ -98,75 +98,118 @@ sub _registrationResult
     return (Apache2::Const::OK, $response);
 }
 
+sub _extensions_for_products
+{
+    my $r   = shift || return {};
+    my $dbh = shift || return {};
+    my $result = shift || return {};
+    my $productids = shift || return $result;
+
+    if (scalar(@{$productids}) == 0)
+    {
+        $r->log->info("no more extensions");
+        return $result;
+    }
+    foreach (@{$productids})
+    {
+        $_ = $dbh->quote($_);
+    }
+    my $sql = sprintf("
+        SELECT e.id id,
+               e.FRIENDLY name,
+               '' description,
+               e.PRODUCT zypper_name,
+               e.VERSION zypper_version,
+               e.REL release_type,
+               e.ARCH architecture,
+               0 requires_regcode,
+               ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
+                   FROM ProductCatalogs pc
+                   JOIN Catalogs c ON pc.CATALOGID = c.ID
+                  WHERE pc.PRODUCTID = e.ID
+                    AND c.MIRRORABLE ='N'
+               GROUP BY c.MIRRORABLE
+               ) available
+          FROM Products p
+          JOIN ProductExtensions pe ON p.ID = pe.PRODUCTID
+          JOIN Products e ON pe.EXTENSIONID = e.ID
+          WHERE p.ID in (%s)
+          AND e.PRODUCT_LIST = 'Y'
+    ", join(',', @{$productids}));
+    $r->log->info("STATEMENT: $sql");
+    eval
+    {
+        my $new_ids = [];
+        my $res = $dbh->selectall_hashref($sql, 'id');
+        foreach my $product (values %{$res})
+        {
+            # skip already existsing extensions
+            next if (exists $result->{$product->{id}});
+
+            $result->{$product->{id}} = $product;
+
+            $sql = sprintf(
+                "SELECT e.PRODUCTID
+                   FROM ProductExtensions e
+                  WHERE e.EXTENSIONID = %s"
+                , $dbh->quote($product->{id}));
+            $product->{requires} = [];
+            $r->log->info("STATEMENT: $sql");
+            foreach my $extid (@{$dbh->selectcol_arrayref($sql)})
+            {
+                if (exists $result->{$extid})
+                {
+                    # we add only IDs which exists in the result
+                    push @{$product->{requires}}, int($extid);
+                }
+            }
+            $product->{requires_regcode} = ($product->{requires_regcode} eq "0"?JSON::false:JSON::true);
+            $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
+            $product->{id} = int($product->{id});
+            push @{$new_ids}, $product->{id};
+        }
+        $result = _extensions_for_products($r, $dbh, $result, $new_ids);
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    return $result;
+}
+
 sub get_extensions($$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
-    my $result = undef;
+    my $result = {};
     my $sql = "";
     # We are sure, that user is a system GUID
     my $guid = $r->user;
 
     my $args = parse_args($r);
-    # FIXME: maybe we need a recursive select to show extensions of extensions
     $sql = sprintf(
-        "SELECT e.id id,
-                e.FRIENDLY name,
-                '' description,
-                e.PRODUCT zypper_name,
-                e.VERSION zypper_version,
-                e.REL release_type,
-                e.ARCH architecture,
-                0 requires_regcode,
-                ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
-                    FROM ProductCatalogs pc
-                    JOIN Catalogs c ON pc.CATALOGID = c.ID
-                   WHERE pc.PRODUCTID = e.ID
-                     AND c.MIRRORABLE ='N'
-                   GROUP BY c.MIRRORABLE
-                ) available
+        "SELECT p.ID id
            FROM Registration r
-           JOIN Products p on r.PRODUCTID = p.ID
-           JOIN ProductExtensions pe ON p.ID = pe.PRODUCTID
-           JOIN Products e ON pe.EXTENSIONID = e.ID
+           JOIN Products p ON r.PRODUCTID = p.ID
           WHERE r.GUID = %s
-            AND e.PRODUCT_LIST = 'Y'
-            AND e.ID != r.PRODUCTID
-            "
-            , $dbh->quote($guid));
+        ", $dbh->quote($guid));
 
     if(exists $args->{product_ident} && $args->{product_ident})
     {
-        $sql .= sprintf("AND p.PRODUCT = %s", $dbh->quote($args->{product_ident}));
+        $sql .= sprintf(" AND p.PRODUCT = %s", $dbh->quote($args->{product_ident}));
     }
     $r->log->info("STATEMENT: $sql");
     eval
     {
-        $result = $dbh->selectall_arrayref($sql, {Slice => {}});
+        $result = _extensions_for_products($r, $dbh, $result,
+                                           $dbh->selectcol_arrayref($sql));
     };
     if ($@)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
 
-    foreach my $product (@{$result})
-    {
-        $sql = sprintf(
-            "SELECT e.EXTENSIONID
-               FROM ProductExtensions e
-              WHERE e.PRODUCTID = %s"
-              , $dbh->quote($product->{id}));
-        $product->{extensions} = [];
-        foreach my $extids (@{$dbh->selectcol_arrayref($sql)})
-        {
-            push @{$product->{extensions}}, int($extids);
-        }
-        $product->{requires_regcode} = ($product->{requires_regcode} eq "0"?JSON::false:JSON::true);
-        $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
-        $product->{id} = int($product->{id});
-    }
-
-    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), $result);
+    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
 }
 
 #
