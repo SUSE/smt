@@ -912,6 +912,57 @@ Would you like to continue nevertheless?")))
     }
 
     boolean ValidateCredentialsDialog (string id, map event) {
+	string orig_url = SMTData::GetCredentials ("NU", "NURegUrl");
+        boolean was_scc = (orig_url == "https://scc.suse.com/connect");
+	boolean is_scc = (UI::QueryWidget (`id (`protocol), `CurrentButton) ==  "scc");
+        y2milestone ("Previous CC: %1, new CC: %2", was_scc, is_scc);
+	if (is_scc && ! was_scc)
+	{
+	    Popup::ShowFeedback("", "Checking if migration to SCC is possible...");
+	    integer test_ret = (integer)SCR::Execute (.target.bash, "/usr/sbin/smt-ncc-scc-migration --check-only");
+	    Popup::ClearFeedback();
+	    if (test_ret != 0)
+	    {
+		Report::Message(_("Cannot migrate SMT to SCC because not all products,
+which are registered against this instance of SMT,
+are available also via SCC"));
+		return false;
+	    }
+	    if (! Popup::ContinueCancel(_("The migration to SCC will take some time, during which
+SMT will not be able to serve its clients.
+
+Migrate SMT from NCC to SCC now?")))
+	    {
+		return false;
+	    }
+	}
+	else if (was_scc && ! is_scc)
+	{
+	    Popup::ShowFeedback("", "Checking if migration to NCC is possible...");
+	    integer test_ret = 1; // FIXME (integer)SCR::Execute (.target.bash, "smt-ncc-scc-switch --check-only");
+	    Popup::ClearFeedback();
+	    if (test_ret != 0)
+	    {
+		Report::Message(_("Cannot migrate SMT to NCC because not all products,
+which are registered against this instance of SMT,
+are available also via NCC"));
+		return false;
+	    }
+	    if (! Popup::ContinueCancel(_("You are about to switch this instance of SMT from SCC
+back to NCC. SCC is the default registration server for
+SUSE products. Using SCC is recommended.
+
+The migration to NCC will take some time, during which
+SMT will not be able to serve its clients.
+
+Migrate SMT from SCC to NCC now?")))
+	    {
+		return false;
+	    }
+	    Report::Error("Switching to NCC not yet implemented");
+            return false;
+	}
+
 	string url = (string) UI::QueryWidget (`id ("url"), `Value);
 
 	if (url == nil || url == "") {
