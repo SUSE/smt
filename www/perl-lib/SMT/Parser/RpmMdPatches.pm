@@ -3,6 +3,7 @@ use strict;
 use URI;
 use XML::Parser;
 use SMT::Utils;
+use SMT::Parser::RpmMdRepomd;
 use IO::Zlib;
 use Date::Parse;
 
@@ -165,7 +166,11 @@ sub parse
 
     $self->{PACKAGES} = [];
     $self->{PATCHES} = {};
-
+    my $prefix = ($self->specialmdlocation()?".":"");
+    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
+                                          vblevel => $self->vblevel());
+    $p->resource($self->{RESOURCE});
+    my $repomd = $p->parse($prefix."repodata/repomd.xml");
     foreach my $start (@repodata)
     {
         if ($start =~ /updateinfo\.xml/ && defined $self->{OUT})
@@ -177,8 +182,20 @@ sub parse
             $self->{WRITE_OUT} = 0;
         }
 
-        $self->{STACK} = [];
-
+        if ($start =~ /updateinfo\.xml/ &&
+            $repomd &&
+            exists $repomd->{data}->{updateinfo}->{location}->{href} &&
+            $repomd->{data}->{updateinfo}->{location}->{href})
+        {
+            $start = $prefix.$repomd->{data}->{updateinfo}->{location}->{href};
+        }
+        elsif ($start =~ /patches\.xml/ &&
+               $repomd &&
+               exists $repomd->{data}->{patches}->{location}->{href} &&
+               $repomd->{data}->{patches}->{location}->{href})
+        {
+            $start = $prefix.$repomd->{data}->{patches}->{location}->{href};
+        }
         $path = $self->{RESOURCE}."/$start";
 
         # for security reason strip all | characters.
@@ -190,6 +207,8 @@ sub parse
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "File not found $path", 0);
             next;
         }
+
+        $self->{STACK} = [];
 
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Found $path. Parsing...", 0);
 

@@ -253,6 +253,50 @@ sub org_repos
     return $self->_request($uri->as_string(), "get", {}, {});
 }
 
+sub org_systems_list
+{
+    my $self = shift;
+    my $uri = URI->new($self->{URL}."/organizations/systems");
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "list organization systems", 0);
+
+    return $self->_request($uri->as_string(), "get", {}, {});
+}
+
+sub org_systems_show
+{
+    my $self = shift;
+    my $id = shift || return undef;
+    my $uri = URI->new($self->{URL}."/organizations/systems/".$id);
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "show system with id: $id", 0);
+
+    return $self->_request($uri->as_string(), "get", {}, {});
+}
+
+sub org_systems_delete
+{
+    my $self = shift;
+    my $id = shift || return undef;
+    my $uri = URI->new($self->{URL}."/organizations/systems/".$id);
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "delete syste with id: $id", 0);
+
+    return $self->_request($uri->as_string(), "delete", {}, {});
+}
+
 
 ##########################################################################
 ### private methods
@@ -321,6 +365,14 @@ sub _request
             $headers->{'Content-Type'} = 'application/json; charset=utf-8';
         }
         $response = $self->{USERAGENT}->put($url, %{$headers}, 'content' => JSON::encode_json($body));
+    }
+    elsif ($method eq "delete")
+    {
+        if(not exists $headers->{'Accept'})
+        {
+            $headers->{'Accept'} = 'application/json; charset=utf-8';
+        }
+        $response = $self->{USERAGENT}->delete($url, %{$headers});
     }
     else
     {

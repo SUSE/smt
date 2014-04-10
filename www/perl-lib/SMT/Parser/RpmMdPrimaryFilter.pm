@@ -6,6 +6,7 @@ use XML::Parser;
 use IO::Zlib;
 
 use SMT::Utils;
+use SMT::Parser::RpmMdRepomd;
 
 use Data::Dumper;
 
@@ -173,8 +174,22 @@ sub parse($$)
         $self->{UNWANTED_GIVEN}->{$nvra} = 1;
     }
 
+    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
+                                          vblevel => $self->vblevel());
+    $p->resource($self->{RESOURCE});
+    my $repomd = $p->parse(($self->{LOCATIONHACK} ? '.' : '')."repodata/repomd.xml");
+
+    if( (not $repomd) ||
+        (not exists $repomd->{data}->{primary}->{location}->{href}) ||
+        (not $repomd->{data}->{primary}->{location}->{href}))
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "primary not found.");
+        $self->{ERRORS} += 1;
+        return $self->{ERRORS};
+    }
     my $path = SMT::Utils::cleanPath($self->{RESOURCE},
-        $self->{LOCATIONHACK} ? '.repodata' : 'repodata', 'primary.xml.gz');
+        ($self->{LOCATIONHACK} ? '.' : '').$repomd->{data}->{primary}->{location}->{href}
+    );
 
     # for security reason strip all | characters.
     # XML::Parser ->parsefile( $path ) might be problematic

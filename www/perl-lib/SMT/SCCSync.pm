@@ -50,6 +50,7 @@ sub new
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
     $self->{USERAGENT}  = undef;
+    $self->{CFG} = undef;
 
     $self->{MAX_REDIRECTS} = 5;
 
@@ -75,12 +76,23 @@ sub new
 
     $self->{ERRORS} = 0;
 
+    # temporarily used variables
     $self->{REPO_DONE} = {};
     $self->{TARGET_DONE} = {};
+    $self->{NUHOST} = "";
 
     if(exists $opt{vblevel} && $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
+    }
+
+    if(exists $opt{cfg} && $opt{cfg})
+    {
+        $self->{CFG} = $opt{cfg};
+    }
+    else
+    {
+        $self->{CFG} = SMT::Utils::getSMTConfig();
     }
 
     if(exists $opt{log} && $opt{log})
@@ -175,7 +187,12 @@ sub migrate
 =item canMigrate
 
 Test if a migration is possible.
-Return 1 if yes, 0 if the migration is not possible.
+Return:
+0 if the migration is possible.
+1 internal server error
+3 migration not possible because clients exists which uses products not provided by NCC
+4 migration not possible because clients exists which uses repositories not provided by NCC
+
 
 =cut
 
@@ -189,7 +206,7 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Failed to get product information from SCC. Migration is not possible."));
-        return 0;
+        return 1;
     }
 
     #
@@ -224,7 +241,7 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Products found which are not supported by SCC. Migration is not possible."));
-        return 0;
+        return 3;
     }
 
     $input = $self->_getInput("organization_repositories");
@@ -233,7 +250,7 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Failed to get repository information from SCC. Migration is not possible."));
-        return 0;
+        return 1;
     }
     #
     # All locally mirrored NCC repos need to be accessible via
@@ -250,7 +267,7 @@ sub canMigrate
         foreach my $repo (@$input)
         {
             if ($catalogs->{$needed_cid}->{NAME} eq $repo->{name} &&
-                $catalogs->{$needed_cid}->{TARGET} eq $repo->{target})
+                $catalogs->{$needed_cid}->{TARGET} eq $repo->{distro_target})
             {
                 $found = 1;
                 last;
@@ -270,10 +287,10 @@ sub canMigrate
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
                  __("Used repositories found which are not supported by SCC. Migration is not possible."));
-        return 0;
+        return 4;
     }
 
-    return 1;
+    return 0;
 }
 
 =item products
@@ -649,7 +666,6 @@ sub _updateRepositories
     my $self = shift;
     my $repo = shift;
     my $statement = "";
-    my $remotepath = "";
     my $localpath = "";
     my $catalogtype = "";
     # we inserted/update this repo already in this run
@@ -657,26 +673,20 @@ sub _updateRepositories
     return 0 if(exists $self->{REPO_DONE}->{$repo->{id}});
 
     my $exthost = URI->new($repo->{url});
-    $remotepath = $exthost->path();
+    $localpath = $exthost->path();
     $exthost->path(undef);
     $exthost->fragment(undef);
     $exthost->query(undef);
 
     # FIXME: as soon as the repos have the (right) format, we can remove the regexp
-    if( $repo->{format} && $repo->{format} eq "nu")
+    if( $exthost->host eq $self->{NUHOST} )
     {
-        $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
+        $localpath =~ s/^\///;
+        if($localpath =~ /^repo\//)
+        {
+            $localpath =~ s/^repo\///;
+        }
         $catalogtype = 'nu';
-    }
-    elsif( ($remotepath =~ /suse/ && $repo->{distro_target}) || ($repo->{format} && $repo->{format} eq "ris"))
-    {
-        $localpath = 'suse/'.$repo->{name}."/".$repo->{distro_target};
-        $catalogtype = 'ris';
-    }
-    elsif( $repo->{format} && $repo->{format} eq "yum")
-    {
-        $localpath = '$RCE/'.$repo->{name}."/".$repo->{distro_target};
-        $catalogtype = 'yum';
     }
     else
     {
@@ -701,7 +711,8 @@ sub _updateRepositories
                                  SET NAME = %s, DESCRIPTION = %s,
                                      TARGET = %s, LOCALPATH = %s,
                                      EXTHOST = %s, EXTURL = %s,
-                                     CATALOGTYPE = %s, CATALOGID = %s
+                                     CATALOGTYPE = %s, CATALOGID = %s,
+                                     AUTOREFRESH = %s
                                WHERE ID = %s",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
@@ -711,6 +722,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
                              $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N')),
                              $self->{DBH}->quote($cid)
         );
     }
@@ -722,6 +734,7 @@ sub _updateRepositories
                                      TARGET = %s, LOCALPATH = %s,
                                      EXTHOST = %s, EXTURL = %s,
                                      CATALOGTYPE = %s, CATALOGID = %s,
+                                     AUTOREFRESH = %s,
                                      SRC = 'S'
                                WHERE ID = %s",
                              $self->{DBH}->quote($repo->{name}),
@@ -732,14 +745,15 @@ sub _updateRepositories
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
                              $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N')),
                              $self->{DBH}->quote($cid)
         );
     }
     else
     {
         $statement = sprintf("INSERT INTO Catalogs (NAME, DESCRIPTION, TARGET, LOCALPATH,
-                              EXTHOST, EXTURL, CATALOGTYPE, CATALOGID, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                              EXTHOST, EXTURL, CATALOGTYPE, CATALOGID, AUTOREFRESH, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
                              $self->{DBH}->quote($repo->{distro_target}),
@@ -747,7 +761,8 @@ sub _updateRepositories
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
                              $self->{DBH}->quote($catalogtype),
-                             $self->{DBH}->quote($repo->{id})
+                             $self->{DBH}->quote($repo->{id}),
+                             $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N'))
         );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
@@ -849,13 +864,13 @@ sub _updateProductCatalogs
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
         $ret += 1;
     }
-    my $optional = ((grep $_ == 'optional', @{$repo->{flags}})?"Y":"N");
+    my $enabled = (grep $_  == $repo->{id}, @{$product->{enabled_repositories}});
 
     $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
                           VALUES (%s, %s, %s, 'S')",
                          $self->{DBH}->quote($product_id),
                          $self->{DBH}->quote($repo_id),
-                         $self->{DBH}->quote($optional));
+                         $self->{DBH}->quote(($enabled?'N':'Y')));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
@@ -952,6 +967,8 @@ sub _updateProductData
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
         return 1;
     }
+    my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://nu.novell.com"));
+    $self->{NUHOST} = $nuurl->host;
 
     foreach my $product (@$json)
     {
@@ -1041,10 +1058,10 @@ sub _markReposMirrorable
         return 1;
     }
 
-    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID from Catalogs
-                                          where CATALOGTYPE = 'nu' or CATALOGTYPE = 'yum'
-                                             or CATALOGTYPE = 'ris'",
-                                         ['Name', 'Target']);
+    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID
+                                                    from Catalogs
+                                                   where CATALOGTYPE = 'nu'",
+                                                 ['Name', 'Target']);
     foreach my $repo (@{$json})
     {
         # zypp repos have no target

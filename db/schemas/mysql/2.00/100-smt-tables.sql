@@ -83,6 +83,7 @@ create table Catalogs(ID          INT AUTO_INCREMENT PRIMARY KEY,
                       MIRRORABLE  CHAR(1) DEFAULT 'N',
                       SRC         CHAR(1) DEFAULT 'N',    -- N NCC    C Custom
                       STAGING     CHAR(1) DEFAULT 'N',    -- N No  Y Yes
+                      AUTOREFRESH CHAR(1) DEFAULT 'Y',
                       LAST_MIRROR TIMESTAMP NULL DEFAULT NULL,
                       UNIQUE(NAME, TARGET)
                      );
@@ -155,7 +156,6 @@ create table ProductExtensions (
 create table ProductCatalogs(PRODUCTID   integer NOT NULL,
                              CATALOGID   integer NOT NULL,
                              OPTIONAL    CHAR(1) DEFAULT 'N',
-                             AUTOREFRESH CHAR(1) DEFAULT 'Y',
                              SRC         CHAR(1) DEFAULT 'N',    -- N NCC   C Custom
                              PRIMARY KEY(PRODUCTID, CATALOGID)
                             );

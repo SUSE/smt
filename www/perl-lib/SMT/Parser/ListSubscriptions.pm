@@ -156,7 +156,7 @@ sub handle_end_tag
 {
     my( $self, $expat, $element ) = @_;
 
-    if(lc($element) eq "subscription")
+    if($element && lc($element) eq "subscription")
     {
         # first call the callback
         $self->{HANDLER}->($self->{CURRENT});

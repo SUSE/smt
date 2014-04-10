@@ -208,6 +208,8 @@ if(!$dbh)
     exit 1;
 }
 
+my $useragent = SMT::Utils::createUserAgent(log => $log, vblevel => $vblevel);
+
 if ($command eq 'creategroup')
 {
     my $groupname = shift @ARGV;
@@ -863,8 +865,7 @@ elsif ($command eq 'createrepo')
     $filter->load($dbh, $repoid, $group);
 
     my $mirror = undef;
-    if ( exists $repo->{CATALOGTYPE} && defined $repo->{CATALOGTYPE} &&
-         lc($repo->{CATALOGTYPE}) eq "yum")
+    if ( SMT::Utils::doesFileExist($useragent, "$sourcerepourl/headers/header.info"))
     {
         $mirror = SMT::Mirror::Yum->new(
             log        => $log,
@@ -872,7 +873,8 @@ elsif ($command eq 'createrepo')
             vblevel    => $vblevel,
             filter     => $gentest ? $filter : undef,
             nohardlink => $nohardlink,
-            mirrorsrc  => $mirrorsrc);
+            mirrorsrc  => $mirrorsrc,
+            useragent  => $useragent);
     }
     else
     {
@@ -882,7 +884,8 @@ elsif ($command eq 'createrepo')
             vblevel    => $vblevel,
             filter     => $gentest ? $filter : undef,
             nohardlink => $nohardlink,
-            mirrorsrc  => $mirrorsrc);
+            mirrorsrc  => $mirrorsrc,
+            useragent  => $useragent);
     }
 
 

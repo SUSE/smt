@@ -86,6 +86,7 @@ sub new
     $self->{URI}   = undef;
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
+    $self->{MIGRATE} = 0;
 
     $self->{MAX_REDIRECTS} = 5;
 
@@ -174,6 +175,19 @@ sub vblevel
     return $self->{VBLEVEL};
 }
 
+=item migrate(1/0)
+
+Enable or disable migration mode. The migration mode
+convert NCC data existing in DB into SCC data.
+
+=cut
+
+sub migrate
+{
+    my $self = shift;
+    if (@_) { $self->{MIGRATE} = shift }
+    return $self->{MIGRATE};
+}
 
 =item element([name])
 
@@ -265,6 +279,194 @@ sub sync
     }
 }
 
+=item canMigrate
+
+Check, if SMT could be migrated back to NCC
+Return:
+0 if a migration is possible.
+1 internal server error
+2 migration not possible because clients exists with incompatible GUID
+3 migration not possible because clients exists which uses products not provided by NCC
+4 migration not possible because clients exists which uses repositories not provided by NCC
+
+=cut
+sub canMigrate
+{
+    my $self = shift;
+    my $xmlfile = "";
+    my $errors = 0;
+
+    my $dbh = SMT::Utils::db_connect();
+    if(!defined $dbh)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
+        return 1;
+    }
+
+    #
+    # registration with SUSEConnect cannot be migrated to NCC.
+    # The UUID with SCC_ prefix is not accepted by NCC.
+    #
+    my $sql = "SELECT r.GUID
+                 FROM Registration r
+                WHERE r.GUID like 'SCC_%'";
+    my $guids = $dbh->selectcol_arrayref($sql);
+
+    if(exists $guids->[0])
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Found registrations with SUSEConnect which are not supported by NCC. Migration is not possible."));
+        return 2;
+    }
+
+    my $element = $self->element();
+    my $table = $self->table();
+    my $key = $self->key();
+    $self->element("productdata");
+    $self->table("Products");
+    $self->key("PRODUCTDATAID");
+
+    if(defined $self->{FROMDIR} && -d $self->{FROMDIR})
+    {
+        $xmlfile = $self->{FROMDIR}."/".$self->{ELEMENT}.".xml";
+    }
+    else
+    {
+        $xmlfile = $self->_requestData();
+        if(!$xmlfile)
+        {
+            $self->element($element);
+            $self->table($table);
+            $self->key($key);
+            return 1;
+        }
+    }
+
+    my $ret = $self->_parseXML($xmlfile);
+    if($ret)
+    {
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 1;
+    }
+
+    #
+    # new registration server need to support all locally used
+    # products. SCC will import all products of a product_class
+    #
+    $sql = "SELECT DISTINCT p.PRODUCT_CLASS
+              FROM Products p, Registration r
+             WHERE r.PRODUCTID=p.ID";
+    my $classes = $dbh->selectall_arrayref($sql, {Slice => {}});
+
+    foreach my $c (@{$classes})
+    {
+        my $found = 0;
+        foreach my $product (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
+        {
+            $c->{PRODUCT_CLASS} = "" if(not $c->{PRODUCT_CLASS});
+            if ( $c->{PRODUCT_CLASS} eq $product->{PRODUCT_CLASS} )
+            {
+                $found = 1;
+                last;
+            }
+        }
+        if ( ! $found )
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+                     sprintf("'%s' not found in registration server. Migration not possible.",
+                             $c->{PRODUCT_CLASS}), 0, 1);
+            $errors++;
+        }
+    }
+    if ($errors)
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Products found which are not supported by NCC. Migration is not possible."));
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 3;
+    }
+    delete $self->{XML}->{DATA}->{$self->{ELEMENT}};
+
+    $self->element("catalogs");
+    $self->table("Catalogs");
+    $self->key("CATALOGID");
+
+    if(defined $self->{FROMDIR} && -d $self->{FROMDIR})
+    {
+        $xmlfile = $self->{FROMDIR}."/".$self->{ELEMENT}.".xml";
+    }
+    else
+    {
+        $xmlfile = $self->_requestData();
+        if(!$xmlfile)
+        {
+            $self->element($element);
+            $self->table($table);
+            $self->key($key);
+            return 1;
+        }
+    }
+
+    $ret = $self->_parseXML($xmlfile);
+    if($ret)
+    {
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 1;
+    }
+
+    #
+    # All locally mirrored SCC repos need to be accessible via
+    # the new registration server
+    #
+    $sql = "SELECT ID, NAME, TARGET FROM Catalogs
+             WHERE DOMIRROR='Y'
+               AND MIRRORABLE='Y'
+               AND SRC = 'S'";
+    my $catalogs = $dbh->selectall_hashref($sql, 'ID');
+    foreach my $needed_cid (keys %{$catalogs})
+    {
+        my $found = 0;
+        foreach my $repo (@{$self->{XML}->{DATA}->{$self->{ELEMENT}}})
+        {
+            if ($catalogs->{$needed_cid}->{NAME} eq $repo->{NAME} &&
+                $catalogs->{$needed_cid}->{TARGET} eq $repo->{TARGET})
+            {
+                $found = 1;
+                last;
+            }
+        }
+        if ( ! $found )
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+                     sprintf("Repository '%s-%s' not found in registration server. Migration not possible.",
+                             $catalogs->{$needed_cid}->{NAME},
+                             $catalogs->{$needed_cid}->{TARGET}
+                     ), 0, 1);
+            $errors++;
+        }
+    }
+    if ($errors)
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
+                 __("Used repositories found which are not supported by NCC. Migration is not possible."));
+        $self->element($element);
+        $self->table($table);
+        $self->key($key);
+        return 4;
+    }
+    delete $self->{XML}->{DATA}->{$self->{ELEMENT}};
+    $self->element($element);
+    $self->table($table);
+    $self->key($key);
+    return 0;
+}
+
 
 sub _requestData
 {
@@ -312,7 +514,7 @@ sub _requestData
         eval
         {
             $response = $self->{USERAGENT}->post( $uri->as_string(), 'Content-Type' => 'text/xml',
-		                                  'Content' => $content,
+                                                  'Content' => $content,
                                                   ':content_file' => $destdir."/".$self->{ELEMENT}.".xml");
         };
         if($@)
@@ -438,7 +640,14 @@ sub ncc_handler
             return;
         }
     }
-
+    elsif(lc($root) eq "catalogs")
+    {
+        if(exists $data->{CATALOGTYPE} && $data->{CATALOGTYPE} && lc($data->{CATALOGTYPE}) eq "yum")
+        {
+            # type yum is handled in smt-mirror
+            $data->{CATALOGTYPE} = "nu";
+        }
+    }
     push @{$self->{XML}->{DATA}->{$root}}, $data;
 }
 
@@ -484,6 +693,10 @@ sub _updateDB
 
     # get all datasets which are from NCC
     my $stm = sprintf("SELECT %s FROM %s WHERE SRC='N'", join(',', @q_key),  $dbh->quote_identifier($table));
+    if ($self->migrate)
+    {
+        $stm = sprintf("SELECT %s FROM %s WHERE SRC='S'", join(',', @q_key),  $dbh->quote_identifier($table));
+    }
 
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $stm") ;
 
@@ -497,8 +710,8 @@ sub _updateDB
         my $j=0;
         foreach my $k (@$key)
         {
-            $str .= "-" if($j > 0);
-            $str .= $sv->{$k};
+            $str .= "=-=" if($j > 0);
+            $str .= ($sv->{$k}?$sv->{$k}:'');
             $j++;
         }
         $allhash->{$str} = 1;
@@ -511,17 +724,29 @@ sub _updateDB
         my $j=0;
         foreach (@$key)
         {
-            push @primkeys_where, $dbh->quote_identifier($_)."=".$dbh->quote($row->{$_});
-            $str .= "-" if($j > 0);
-            $str .= $row->{$_};
+            if ($row->{$_})
+            {
+                push @primkeys_where, $dbh->quote_identifier($_)."=".$dbh->quote($row->{$_});
+            }
+            else
+            {
+                push @primkeys_where, $dbh->quote_identifier($_)." is NULL";
+            }
+            $str .= '=-=' if($j > 0);
+            $str .= ($row->{$_}?$row->{$_}:'');
             $j++;
         }
+
         delete $allhash->{$str} if(exists $allhash->{$str});
 
         # does the key exists in the db?
         my $st = sprintf("SELECT %s FROM %s WHERE %s",
                          join(',', @q_key), $dbh->quote_identifier($table), join(' AND ', @primkeys_where));
-
+        #if ($self->migrate())
+        #{
+            # migrate from SCC to NCC so lets search for SCC entries
+        #    $st .= " AND SRC = 'S'";
+        #}
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st") ;
 
         my $all = $dbh->selectall_arrayref($st);
@@ -532,7 +757,7 @@ sub _updateDB
         # LOCALPATH is required
         if(lc($table) eq "catalogs")
         {
-            if(lc($row->{CATALOGTYPE}) eq "nu" || lc($row->{CATALOGTYPE}) eq "yum")
+            if(lc($row->{CATALOGTYPE}) eq "nu")
             {
                 $row->{LOCALPATH} = '$RCE/'.$row->{NAME}."/".$row->{TARGET};
             }
@@ -557,7 +782,7 @@ sub _updateDB
         # PRIMARY KEY exists in DB, do update
         if(@$all == 1)
         {
-            my $statement = sprintf("UPDATE %s SET ", $dbh->quote_identifier($table));
+            my $statement = sprintf("UPDATE %s SET SRC='N', ", $dbh->quote_identifier($table));
             my @pairs = ();
             foreach my $cn (keys %$row)
             {
@@ -643,15 +868,23 @@ sub _updateDB
         my @primkeys_where = ();
         if(@$key > 1)
         {
-            my @vals = split(/-/, $set);
+            my @vals = split(/=-=/, $set);
 
             for(my $j=0; $j < @vals; $j++)
             {
-                push @primkeys_where, $dbh->quote_identifier($key->[$j])." = ".$dbh->quote($vals[$j]);
+                if ($vals[$j])
+                {
+                    push @primkeys_where, $dbh->quote_identifier($key->[$j])." = ".$dbh->quote($vals[$j]);
+                }
+                else
+                {
+                    push @primkeys_where, $dbh->quote_identifier($key->[$j])." is NULL";
+                }
             }
         }
         elsif(@$key == 1)
         {
+            # primary key == NULL should not happen :-)
             push @primkeys_where, $dbh->quote_identifier($key->[0])." = ".$dbh->quote($set);
         }
 

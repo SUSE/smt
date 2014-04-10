@@ -139,10 +139,9 @@ sub load
     eval
     {
         my $query = sprintf("select Filters.type, Filters.value
-                             from Filters, Catalogs
+                             from Filters
                              where STAGINGGROUP_ID = %s
-                             AND Filters.CATALOG_ID = Catalogs.ID
-                             AND Catalogs.CATALOGID = %s",
+                             AND Filters.CATALOG_ID = %s",
                             $dbh->quote($groupid), $dbh->quote($catalog));
         my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
         foreach my $f (@{$array})
@@ -176,12 +175,7 @@ sub save
     if (!$self->{DIRTY}) { return 1; }
     my $groupid = SMT::Utils::getStagingGroupID($dbh, $group);
 
-    my $query = sprintf("select ID from Catalogs where CATALOGID = %s",
-                        $dbh->quote($catalog));
-    my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
-    my $cid = $array->[0]->{ID};
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "got repo id '$cid'", 0);
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "got repo id '$catalog'", 0);
 
     my $dbfilters = {};
     eval
@@ -189,8 +183,8 @@ sub save
         my $query = sprintf("select ID, TYPE, VALUE
                              from Filters
                              where STAGINGGROUP_ID = %s
-                             AND CATALOG_ID = '$cid'",
-                            $dbh->quote($groupid), $dbh->quote($cid));
+                             AND CATALOG_ID = %s",
+                            $dbh->quote($groupid), $dbh->quote($catalog));
         my $array = $dbh->selectall_arrayref($query, { Slice => {} } );
         foreach my $f (@{$array})
         {
@@ -209,7 +203,7 @@ sub save
         eval
         {
             my $st = $dbh->prepare("delete from Filters where CATALOG_ID = ? and STAGINGGROUP_ID = ?");
-            $st->bind_param(1, $cid, SQL_INTEGER);
+            $st->bind_param(1, $catalog, SQL_INTEGER);
             $st->bind_param(2, $groupid, SQL_INTEGER);
             my $cnt = $st->execute;
 
@@ -238,7 +232,7 @@ sub save
                 # insert new subfilter
                 my $st = $dbh->prepare(
                     "insert into Filters (CATALOG_ID, TYPE, VALUE, STAGINGGROUP_ID) values(?,?,?,?)");
-                $st->bind_param(1, $cid, SQL_INTEGER);
+                $st->bind_param(1, $catalog, SQL_INTEGER);
                 $st->bind_param(2, $f->[0], SQL_INTEGER);
                 $st->bind_param(3, $f->[1]); # value
                 $st->bind_param(4, $groupid, SQL_INTEGER);

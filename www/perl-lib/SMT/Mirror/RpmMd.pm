@@ -7,6 +7,7 @@ use File::Path;
 use File::Find;
 use File::Temp qw/ tempdir /;
 use File::Copy;
+use File::Basename;
 use Crypt::SSLeay;
 use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -656,6 +657,11 @@ sub mirror()
         #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
     }
 
+    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
+                                          vblevel => $self->vblevel());
+    $p->resource($self->fullLocalRepoPath());
+    my $repomd = $p->parse(".repodata/repomd.xml");
+
     # parse it and find more resources
     # download metadata right away and enqueue the rest of the files for later download
     my $parser = SMT::Parser::RpmMdLocation->new(log => $self->{LOG}, vblevel => $self->vblevel() );
@@ -678,7 +684,7 @@ sub mirror()
     $self->{TMPDIR} = my $tmpdir = tempdir(CLEANUP => 1);
 
     # updateinfo.xml.gz file path
-    my $olduifname = $self->fullLocalRepoPath().'/.repodata/updateinfo.xml.gz';
+    my $olduifname = $self->fullLocalRepoPath().'/.'.$repomd->{data}->{updateinfo}->{location}->{href};
 
     # with filtering (will generate new metadata later)
     if (defined $self->{FILTER} && !$self->{FILTER}->empty() && -e $olduifname)
@@ -1168,7 +1174,12 @@ sub download_handler
         }
 
         # save locations of metadata files found in repomd.xml's <data> elements
-        $self->{MDFILES}->{$data->{LOCATION}} = undef if ($data->{MAINELEMENT} eq 'data');
+        if ($data->{MAINELEMENT} eq 'data')
+        {
+            my $locationKey = $data->{LOCATION};
+            $locationKey =~ s/^(repodata\/)[0-9a-f]*-(.+)$/$1$2/;
+            $self->{MDFILES}->{$locationKey} = undef;
+        }
 
         # get the repository index
         my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
@@ -1451,6 +1462,11 @@ sub removePackages($$$)
     my $errc = 0;
     my $tgtrepopath = $self->fullLocalRepoPath();
 
+    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
+                                          vblevel => $self->vblevel());
+    $p->resource($tgtrepopath);
+    my $repomd = $p->parse(".repodata/repomd.xml");
+
     # first, remove the unwanted packages from primary.xml.gz
 
     # file to write the new primary.xml
@@ -1459,7 +1475,9 @@ sub removePackages($$$)
     $primaryfh->open('>' . $primarynew);
 
     # update primary
-    my $parser = SMT::Parser::RpmMdPrimaryFilter->new(out => $primaryfh);
+    my $parser = SMT::Parser::RpmMdPrimaryFilter->new(log => $self->{LOG},
+                                                      vblevel => $self->vblevel(),
+                                                      out => $primaryfh);
     $parser->resource($tgtrepopath);
     $parser->specialmdlocation(1);
     $errc = $parser->parse($pkgstoremove);
@@ -1475,7 +1493,7 @@ sub removePackages($$$)
     else
     {
         $mdfiles->{'repodata/primary.xml.gz'}->{changednew} = "$primarynew";
-        $mdfiles->{'repodata/primary.xml.gz'}->{changedorig} = $tgtrepopath . "/.repodata/primary.xml.gz";
+        $mdfiles->{'repodata/primary.xml.gz'}->{changedorig} = $tgtrepopath."/.".$repomd->{data}->{primary}->{location}->{href};
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
             'Packages successfully removed from primary.xml.gz.');
     }
@@ -1487,16 +1505,19 @@ sub removePackages($$$)
     # now remove corresponding package data from the following metadata files
 
     my %mdtoupdate = (
-        'repodata/other.xml.gz' =>
-            {'new' => 'other.xml',     'orig' => '.repodata/other.xml.gz' },
+        'repodata/other.xml.gz' => {
+            'new' => 'other.xml',
+            'orig' => (exists $repomd->{data}->{other}->{location}->{href}?".".$repomd->{data}->{other}->{location}->{href}:'.repodata/other.xml.gz') },
         # this takes too long and is not used in SUSE tools (bnc #510300),
         # so we'll ignore it. Should we need it in the future, we'll need to
         # optimize.
         #
-        #'repodata/filelists.xml.gz' =>
-        #    {'new' => 'filelists.xml', 'orig' => '.repodata/filelists.xml.gz' },
-        'repodata/susedata.xml.gz' =>
-            {'new' => 'susedata.xml',  'orig' => '.repodata/susedata.xml.gz' }
+        #'repodata/filelists.xml.gz' => {
+        #   'new' => 'filelists.xml',
+        #   'orig' => (exists $repomd->{data}->{filelists}->{location}->{href}?".".$repomd->{data}->{filelists}->{location}->{href}:'.repodata/filelists.xml.gz') },
+        'repodata/susedata.xml.gz' => {
+            'new' => 'susedata.xml',
+            'orig' => (exists $repomd->{data}->{susedata}->{location}->{href}?".".$repomd->{data}->{susedata}->{location}->{href}: '.repodata/susedata.xml.gz')}
         );
 
     foreach my $mdfile (keys %mdtoupdate)
@@ -1665,6 +1686,7 @@ sub updateRepomd($$$)
         # unlink the original file first - we do not want to modify all the
         # aliases with modifyrepo
         unlink ($mdfile->{changedorig});
+        unlink (SMT::Utils::cleanPath($repodatadir, basename($key)));
 
         # note: modifyrepo needs unzipped unpdateinfo.xml
         my @args = ($mdfile->{changednew}, $repodatadir);

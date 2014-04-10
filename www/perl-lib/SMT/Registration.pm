@@ -833,7 +833,7 @@ sub findCatalogs
     # get catalog values (only for the once we DOMIRROR)
 
     $statement  = "SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, ";
-    $statement .= "c.CATALOGTYPE, c.STAGING, pc.OPTIONAL, pc.AUTOREFRESH ";
+    $statement .= "c.CATALOGTYPE, c.STAGING, pc.OPTIONAL, c.AUTOREFRESH ";
     $statement .= "from Catalogs c, ProductCatalogs pc WHERE ";
     $statement .= "c.DOMIRROR='Y' AND c.ID=pc.CATALOGID ";
     if($target)
@@ -998,7 +998,7 @@ sub buildZmdConfig
         foreach my $cat (keys %{$catalogs})
         {
             next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "y");
-            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
+            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu" || SMT::Utils::isRES($guid));
             if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
                $catalogs->{$cat}->{LOCALPATH} eq "")
             {
@@ -1040,7 +1040,8 @@ sub buildZmdConfig
 
     foreach my $cat (keys %{$catalogs})
     {
-        next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "zypp" && lc($catalogs->{$cat}->{CATALOGTYPE}) ne "yum");
+        next if (not ( lc($catalogs->{$cat}->{CATALOGTYPE}) eq "zypp" || SMT::Utils::isRES($guid)) );
+
         if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
            $catalogs->{$cat}->{LOCALPATH} eq "")
         {

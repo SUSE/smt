@@ -115,14 +115,16 @@ _writeConfig($cfg, 'NU', 'ApiType', 'SCC');
 eval
 {
     my $sccsync = SMT::SCCSync->new(vblevel => $vblevel,
-                                    log     => $LOG);
+                                    log     => $LOG,
+                                    cfg     => $cfg
+                                   );
     $sccsync->migrate(1);
     printLog($LOG, $vblevel, LOG_INFO1, __("Checking if a migration is possible ..."));
-    if(not $sccsync->canMigrate())
+    if(($exitcode = $sccsync->canMigrate()) > 0)
     {
         _writeConfig($cfg, 'NU', 'NURegUrl', $regurl);
         _writeConfig($cfg, 'NU', 'ApiType', 'NCC');
-        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
+        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", $exitcode, $LOG, $vblevel);
     }
 
     if ( defined $check_only && $check_only == 1 )

@@ -30,9 +30,9 @@ function usage()
 
     cat << EOT >&2
 
-  Usage: $0 <registration URL> [--regcert <url>] [--namespace <namespace>]
-  Usage: $0 --host <hostname of the SMT server> [--regcert <url>] [--namespace <namespace>]
-  Usage: $0 --host <hostname of the SMT server> [--fingerprint <fingerprint of server cert>] [--yes]
+  Usage: $0 <registration URL> [--regcert <url>] [--namespace <namespace>] [--regdata <filename>]
+  Usage: $0 --host <hostname of the SMT server> [--regcert <url>] [--namespace <namespace>] [--regdata <filename>]
+  Usage: $0 --host <hostname of the SMT server> [--fingerprint <fingerprint of server cert>] [--yes] [--regdata <filename>]
          configures a SLE client to register against a different registration server
 
   Example: $0 https://smt.example.com/center/regsvc
@@ -48,6 +48,7 @@ exit 1
 
 AUTOACCEPT=""
 FINGERPRINT=""
+REGDATA=""
 REGURL=""
 VARIABLE=""
 NAMESPACE=""
@@ -56,6 +57,7 @@ while true ; do
         --fingerprint) VARIABLE=FINGERPRINT;;
         --host) VARIABLE=S_HOSTNAME;;
         --regcert) VARIABLE=REGCERT;;
+        --regdata) VARIABLE=REGDATA;;
         --namespace) VARIABLE=NAMESPACE;;
         --yes) AUTOACCEPT="Y";;
         "") break ;;
@@ -115,6 +117,12 @@ if [ "$AUTOACCEPT" = "Y" ] && [ -z "$FINGERPRINT" ]; then
     echo "Must specify fingerprint with auto accept and auto registration. Abort."
     exit 1
 fi
+
+if [ ! -z "$REGDATA" ] && [ ! -f "$REGDATA" ]; then
+    echo "Specified file $REGDATA not found."
+    exit 1
+fi
+
 
 if [ ! -x $OPENSSL ]; then
 	echo "openssl command not found. Abort.";
@@ -239,6 +247,10 @@ else
 fi
 $CAT $SRCTMP >> $SRCONF
 $RM $SRCTMP
+
+if [ ! -z "$REGDATA" ]; then
+    echo "addregdata=$REGDATA" >> $SRCONF
+fi
 
 #
 # check for keys on the smt server to import
