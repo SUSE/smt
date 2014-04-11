@@ -623,54 +623,70 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
     }
 
     symbol WriteDialog() {
+	list<string> stages = [
+                // TRANSLATORS: Progress stage
+                _("Adjust SMT configuration"),
+                // TRANSLATORS: Progress stage
+                _("Adjust database configuration"),
+                // TRANSLATORS: Progress stage
+                _("Migrate the customer center"),
+                // TRANSLATORS: Progress stage
+                _("Check and install server certificate"),
+                // TRANSLATORS: Progress stage
+                _("Adjust Web-server configuration"),
+                // TRANSLATORS: Progress stage
+                _("Adjust SMT service"),
+                // TRANSLATORS: Progress stage
+                _("Write firewall settings"),
+                // TRANSLATORS: Progress stage
+                _("Write cron settings"),
+                // TRANSLATORS: Progress stage
+                _("Check mirrored repositories"),
+                // TRANSLATORS: Progress stage
+                _("Run synchronization check"),
+	];
+	list<string> steps = [
+                // TRANSLATORS: Bussy message /progress/
+                _("Adjusting SMT configuration..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Adjusting database configuration..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Migrating the customer center..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Checking and installing server certificate..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Adjusting Web server configuration..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Adjusting SMT service..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Writing firewall settings..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Writing cron settings..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Checking mirrored repositories..."),
+                // TRANSLATORS: Bussy message /progress/
+                _("Running synchronization check..."),
+                Message::Finished(),
+	];
+
+	if (! SMTData::ApiTypeChanged())
+	{
+	    stages[2] = nil;
+	    steps[2] = nil;
+	    stages = filter (string s, stages, ``{ return s != nil; });
+	    steps = filter (string s, steps, ``{ return s != nil; });
+	}
+
 	Progress::New (
 	    // TRANSLATORS: Dialog caption
 	    _("Writing SMT Configuration"),
 	    " ",
-	    9,
-	    [
-		// TRANSLATORS: Progress stage
-		_("Adjust SMT configuration"),
-		// TRANSLATORS: Progress stage
-		_("Adjust database configuration"),
-		// TRANSLATORS: Progress stage
-		_("Check and install server certificate"),
-		// TRANSLATORS: Progress stage
-		_("Adjust Web-server configuration"),
-		// TRANSLATORS: Progress stage
-		_("Adjust SMT service"),
-		// TRANSLATORS: Progress stage
-		_("Write firewall settings"),
-		// TRANSLATORS: Progress stage
-		_("Write cron settings"),
-		// TRANSLATORS: Progress stage
-		_("Check mirrored repositories"),
-		// TRANSLATORS: Progress stage
-		_("Run synchronization check"),
-	    ],
-	    [
-		// TRANSLATORS: Bussy message /progress/
-		_("Adjusting SMT configuration..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Adjusting database configuration..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Checking and installing server certificate..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Adjusting Web server configuration..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Adjusting SMT service..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Writing firewall settings..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Writing cron settings..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Checking mirrored repositories..."),
-		// TRANSLATORS: Bussy message /progress/
-		_("Running synchronization check..."),
-		Message::Finished(),
-	    ],
+	    size(stages),
+	    stages,
+	    steps,
 	    ""
 	);
+
 	Wizard::SetTitleIcon("yast-smt");
 	Wizard::RestoreHelp(HELPS["write"]:"");
 
@@ -686,6 +702,13 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 	SMTData::StartDatabaseIfNeeded();
 	SMTData::WriteDatabaseSettings();
 	SMTData::ChangePasswordIfDifferent();
+
+	if (SMTData::ApiTypeChanged())
+	{
+	    Progress::NextStage();
+	    sleep (sl);
+	    SMTData::MigrateCustomerCenter();
+	}
 
 	Progress::NextStage();
 	sleep (sl);
@@ -912,6 +935,59 @@ Would you like to continue nevertheless?")))
     }
 
     boolean ValidateCredentialsDialog (string id, map event) {
+	string orig_url = SMTData::GetCredentials ("NU", "NURegUrl");
+        boolean was_scc = (orig_url == "https://scc.suse.com/connect");
+	boolean is_scc = (UI::QueryWidget (`id (`protocol), `CurrentButton) ==  "scc");
+        y2milestone ("Previous CC: %1, new CC: %2, initial config: %3", was_scc, is_scc, SMTData::InitialConfig());
+	if (! SMTData::InitialConfig())
+	{
+	    y2milestone ("Initial configuration, skipping migration checks");
+	}
+	else if (is_scc && ! was_scc)
+	{
+	    Popup::ShowFeedback("", "Checking if migration to SCC is possible...");
+	    integer test_ret = (integer)SCR::Execute (.target.bash, "/usr/sbin/smt-ncc-scc-migration --check-only");
+	    Popup::ClearFeedback();
+	    if (test_ret != 0)
+	    {
+		Report::Message(_("Cannot migrate SMT to SCC because not all products,
+which are registered against this instance of SMT,
+are available also via SCC"));
+		return false;
+	    }
+	    if (! Popup::ContinueCancel(_("The migration to SCC will take some time, during which
+SMT will not be able to serve its clients.
+
+Migrate SMT from NCC to SCC now?")))
+	    {
+		return false;
+	    }
+	}
+	else if (was_scc && ! is_scc)
+	{
+	    Popup::ShowFeedback("", "Checking if migration to NCC is possible...");
+	    integer test_ret = (integer)SCR::Execute (.target.bash, "smt-scc-ncc-migration --check-only");
+	    Popup::ClearFeedback();
+	    if (test_ret != 0)
+	    {
+		Report::Message(_("Cannot migrate SMT to NCC because not all products,
+which are registered against this instance of SMT,
+are available also via NCC"));
+		return false;
+	    }
+	    if (! Popup::ContinueCancel(_("You are about to switch this instance of SMT from SCC
+back to NCC. SCC is the default registration server for
+SUSE products. Using SCC is recommended.
+
+The migration to NCC will take some time, during which
+SMT will not be able to serve its clients.
+
+Migrate SMT from SCC to NCC now?")))
+	    {
+		return false;
+	    }
+	}
+
 	string url = (string) UI::QueryWidget (`id ("url"), `Value);
 
 	if (url == nil || url == "") {

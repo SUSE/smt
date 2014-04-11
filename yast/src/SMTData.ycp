@@ -59,12 +59,26 @@
 
     string NCCcredentials_file = "/etc/zypp/credentials.d/NCCcredentials";
 
+    string read_api_type = "NCC";
+
+    boolean initial_config = false;
+
     global string GetNCCcredentialsFile () {
         return NCCcredentials_file;
     }
 
     global boolean SystemIsRegistered () {
         return (FileUtils::Exists (NCCcredentials_file) == true);
+    }
+
+    global boolean InitialConfig() {
+	return initial_config;
+    }
+
+    global boolean ApiTypeChanged () {
+	if (InitialConfig())
+	    return false;
+        return read_api_type != all_credentials["NU", "ApiType"]:"NCC";
     }
 
     global string GetCredentials (string location, string entry_name);
@@ -474,6 +488,10 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
             });
         });
 
+	read_api_type = all_credentials["NU", "ApiType"]:"NCC";
+	if (all_credentials["NU", "NUUser"]:"MIRRORUSER" == "MIRRORUSER")
+	    initial_config = true;
+
         return true;
     }
 
@@ -487,7 +505,10 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
 
         foreach (string base_key, map <string, string> current_credentials, all_credentials, {
             foreach (string key, string value, current_credentials, {
-                if (! (boolean) SCR::Write (add (add (.smt_conf.value, base_key), key), value)) {
+		if ( ApiTypeChanged() && contains(["NUUrl", "NURegUrl", "ApiType"], key )) {
+		    // avoid writing these options, they get written by the migratino script
+		    y2debug ("Not changing API information before customer center switch");
+                } else if (! (boolean) SCR::Write (add (add (.smt_conf.value, base_key), key), value)) {
                     y2error ("Cannot write to smt.conf/%1/%2", base_key, key);
                     failed = true;
                 }
@@ -795,6 +816,33 @@ The server certificate is vitally important for the NU server to support SSL.
                 y2warning ("User doesn't want to run CA management.");
                 return true;
             }
+    }
+
+
+    /**
+     * Function migrates SMT between NCC and SCC
+     *
+     * @return boolean if successful
+     */
+    global boolean MigrateCustomerCenter () {
+	map<string,any> ret = $[];
+	if (all_credentials["NU", "ApiType"]:"NCC" == "NCC")
+	{
+	    ret = (map<string,any>)SCR::Execute (.target.bash_output, "/usr/sbin/smt-scc-ncc-migration");
+	}
+	else
+	{
+	    ret = (map<string,any>)SCR::Execute (.target.bash_output, "/usr/sbin/smt-ncc-scc-migration");
+
+	}
+	if (ret["exit"]:-1 != 0)
+	{
+	    Report::Error (_("Changing the customer center back-end failed"));
+	    y2error ("Customer center back-end migration output: %1", ret);
+	    return false;
+	}
+	y2debug ("Customer center back-end migration output: %1", ret);
+	return true;
     }
 
     /**
