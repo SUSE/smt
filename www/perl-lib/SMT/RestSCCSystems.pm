@@ -264,9 +264,9 @@ sub products($$$)
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: arch");
     }
 
-    if ( ! (exists $c->{release_type} && $c->{release_type}))
+    if ( ! (exists $c->{release_type}))
     {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: release");
+        $c->{release_type} = undef;
     }
 
     if ( exists $c->{email} && $c->{email})
