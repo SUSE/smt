@@ -328,6 +328,9 @@ sub _request
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Invalid URL: $url");
         return undef;
     }
+    my $saveurl = $url;
+    $saveurl =~ s/:[^:@]+@/:<secret>@/;
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG2, "$method $saveurl");
 
     $headers = {} if(ref($headers) ne "HASH");
     # generic identification header. Used for debugging in SCC
