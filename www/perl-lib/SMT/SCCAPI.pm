@@ -169,14 +169,18 @@ Example:
 
 =cut
 
-sub products
+sub org_products
 {
     my $self = shift;
-    my $uri = $self->{URL}."/products";
+    my $uri = URI->new($self->{URL}."/organizations/products");
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
              "list products", 0);
 
-    return $self->_request($uri, "get", {}, {});
+    return $self->_request($uri->as_string(), "get", {}, {});
 }
 
 =item services
@@ -195,7 +199,7 @@ sub services
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
              "list services", 0);
 
-    return $self->_request($uri, "get", {}, {});
+    return $self->_request($uri->as_string(), "get", {}, {});
 }
 
 =item org_subscriptions

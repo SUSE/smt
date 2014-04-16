@@ -303,7 +303,7 @@ Return number of errors.
 sub products
 {
     my $self = shift;
-    my $name = "products";
+    my $name = "org_products";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -466,9 +466,9 @@ sub _getInput
     my $input = undef;
     my $func = undef;
 
-    if($what eq "products")
+    if($what eq "org_products")
     {
-        $func = sub{$self->{API}->products()};
+        $func = sub{$self->{API}->org_products()};
     }
     elsif($what eq "services")
     {
