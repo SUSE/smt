@@ -370,6 +370,23 @@ sub products($$$)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
+    if ( exists $c->{token} && $c->{token})
+    {
+        # if we got a tokem, store it for later transfer to SCC.
+        $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                            $dbh->quote($guid),
+                            $dbh->quote("product-token-$productId"),
+                            $dbh->quote($c->{token}));
+        $r->log->info("STATEMENT: $statement");
+        eval {
+            $cnt = $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+    }
+
 
     #
     # lookup the Clients target
