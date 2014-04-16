@@ -212,6 +212,86 @@ sub get_extensions($$)
     return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
 }
 
+sub update_system($$$)
+{
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
+    my $c = shift || return undef;
+    my $q_target = "";
+    my $q_namespace = "";
+    my $hostname = "";
+
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+
+    if ( exists $c->{hostname} && $c->{hostname})
+    {
+        $hostname = $c->{hostname};
+    }
+    else
+    {
+        $hostname = $r->connection()->remote_host();
+    }
+    if (! $hostname)
+    {
+        $hostname = $r->connection()->remote_ip();
+    }
+
+    if ( exists $c->{distro_target} && $c->{distro_target})
+    {
+        $q_target = ", TARGET = ".$dbh->quote($c->{distro_target});
+    }
+
+    if ( exists $c->{namespace} && $c->{namespace})
+    {
+        $q_namespace = ", NAMESPACE = ".$dbh->quote($c->{namespace});
+    }
+
+    my $statement = sprintf("UPDATE Clients SET
+                             HOSTNAME = %s %s %s
+                             WHERE GUID = %s",
+                             $dbh->quote($hostname),
+                             $q_target,
+                             $q_namespace,
+                             $dbh->quote($guid));
+    $r->log->info("STATEMENT: $statement");
+    eval
+    {
+        $dbh->do($statement);
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+
+    #
+    # insert product info into MachineData
+    #
+    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME = 'machinedata'",
+                        $dbh->quote($guid));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, 'machinedata', %s)",
+                        $dbh->quote($guid),
+                        $dbh->quote(encode_json($c)));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    return (Apache2::Const::OK, {});
+}
+
+
 #
 # announce a system. This call create a system object in the DB
 # and return system username and password to the client.
@@ -439,13 +519,14 @@ sub systems_handler($$)
         }
         else { return undef; }
     }
-    elsif ( $r->method() =~ /^PUT$/i )
+    elsif ( $r->method() =~ /^PUT$/i || $r->method() =~ /^PATCH$/i)
     {
-        # This request type is not (yet) supported
-        # POSTing to the "jobs" interface (which is only used by smt-clients) means "creating a job"
-        # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("PUT request to the systems interface. This is not supported.");
-        return undef;
+        if ( $path =~ /^systems\/?$/ )
+        {
+            my $c = JSON::decode_json(read_post($r));
+            return update_system($r, $dbh, $c);
+        }
+        else { return undef; }
     }
     elsif ( $r->method() =~ /^DELETE$/i )
     {
