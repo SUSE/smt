@@ -121,7 +121,7 @@ sub _extensions_for_products
                e.PRODUCT zypper_name,
                e.VERSION zypper_version,
                e.REL release_type,
-               e.ARCH architecture,
+               e.ARCH arch,
                0 requires_regcode,
                ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
                    FROM ProductCatalogs pc
