@@ -15,7 +15,7 @@ use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::Access ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_UNPROCESSABLE_ENTITY :log);
+use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_UNPROCESSABLE_ENTITY :log HTTP_NO_CONTENT);
 use Apache2::RequestUtil;
 
 use JSON;
@@ -492,6 +492,58 @@ sub products($$$)
     return _registrationResult($r, $dbh, $catalogs);
 }
 
+sub delete_system($$)
+{
+    my $r   = shift || return undef;
+    my $dbh = shift || return undef;
+
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+
+    my $sql = sprintf("DELETE from MachineData where GUID=%s",
+                      $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $sql = sprintf("DELETE from Registration where GUID=%s",
+                   $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $sql = sprintf("DELETE from Clients where GUID=%s",
+                   $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $sql = sprintf("DELETE from ClientSubscriptions where GUID=%s",
+                   $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+
+    return (Apache2::Const::HTTP_NO_CONTENT, "");
+}
+
 #
 # the handler for requests to the jobs ressource
 #
@@ -530,11 +582,11 @@ sub systems_handler($$)
     }
     elsif ( $r->method() =~ /^DELETE$/i )
     {
-        # This request type is not (yet) supported
-        # DELETEing to the "jobs" interface (which is only used by smt-clients) means "deleting a job"
-        # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("DELETE request to the systems interface. This is not supported.");
-        return undef;
+        if ( $path =~ /^systems\/?$/ )
+        {
+            return delete_system($r, $dbh);
+        }
+        else { return undef; }
     }
     else
     {
@@ -592,20 +644,20 @@ sub handler {
 
     if    ( $path =~ qr{^systems?}    ) {  ($code, $data) = systems_handler($r, $dbh); }
 
-    if (! defined $code || $code != Apache2::Const::OK)
+    if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
         return respond_with_error($r, $code, $data);
     }
-    else
+    elsif ($code != Apache2::Const::HTTP_NO_CONTENT)
     {
         $r->content_type('application/json');
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $r->err_headers_out->add('Pragma' => "no-cache");
 
         print encode_json($data);
-   }
+    }
 
-    return $code;
+   return $code;
 }
 
 #
