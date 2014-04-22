@@ -199,7 +199,7 @@ Return:
 sub canMigrate
 {
     my $self = shift;
-    my $input = $self->_getInput("products");
+    my $input = $self->_getInput("org_products");
     my $errors = 0;
 
     if (! $input)
