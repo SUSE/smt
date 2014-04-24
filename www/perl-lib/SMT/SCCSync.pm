@@ -578,7 +578,8 @@ EOS
                                      PRODUCTLOWER = %s, VERSIONLOWER = %s,
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
-                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s
+                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
+                                     CPE = %s
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
@@ -592,6 +593,7 @@ EOS
                              $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
+                             $self->{DBH}->quote($product->{cpe}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -609,7 +611,7 @@ EOS
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
-                                     SRC = 'S'
+                                     CPE = %s, SRC = 'S'
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
@@ -623,6 +625,7 @@ EOS
                              $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
+                             $self->{DBH}->quote($product->{cpe}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -630,9 +633,9 @@ EOS
     {
         $statement = sprintf("INSERT INTO Products (PRODUCT, VERSION, REL, ARCH,
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
-                              PARAMLIST, NEEDINFO, SERVICE,
-                              FRIENDLY, PRODUCT_LIST, PRODUCT_CLASS, PRODUCTDATAID, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                              PARAMLIST, NEEDINFO, SERVICE, FRIENDLY, PRODUCT_LIST,
+                              PRODUCT_CLASS, CPE, PRODUCTDATAID, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
                              $self->{DBH}->quote($product->{release_type}),
@@ -647,7 +650,9 @@ EOS
                              $self->{DBH}->quote($product->{friendly_name}),
                              $self->{DBH}->quote('Y'),
                              $self->{DBH}->quote($product->{product_class}),
-                             $self->{DBH}->quote($product->{id}));
+                             $self->{DBH}->quote($product->{cpe}),
+                             $self->{DBH}->quote($product->{id})
+        );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
