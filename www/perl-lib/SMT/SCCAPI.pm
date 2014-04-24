@@ -18,6 +18,7 @@ use SMT::Utils;
 use JSON;
 use URI;
 use Data::Dumper;
+use File::Temp qw/ :mktemp  /;
 
 =item constructor
 
@@ -326,6 +327,7 @@ sub _request
     my $method = shift;
     my $headers = shift;
     my $body = shift;
+    my $dataTempFile = SMT::Utils::cleanPath("/var/tmp/", mktemp( "smtXXXXXXXX" ));
 
     if ($url !~ /^http/)
     {
@@ -347,6 +349,7 @@ sub _request
         {
             $headers->{'Accept'} = 'application/json; charset=utf-8';
         }
+        $headers->{':content_file'} = $dataTempFile;
         $response = $self->{USERAGENT}->get($url, %{$headers});
     }
     elsif ($method eq "head")
@@ -391,7 +394,19 @@ sub _request
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, Data::Dumper->Dump([$response]));
         if ($response->content_type() eq "application/json")
         {
-            return JSON::decode_json($response->content);
+            if(-s $dataTempFile)
+            {
+                open( FH, '<', $dataTempFile ) and do
+                {
+                    my $json_text   = <FH>;
+                    close FH;
+                    return JSON::decode_json($json_text);
+                };
+            }
+            else
+            {
+                return JSON::decode_json($response->content);
+            }
         }
         else
         {
