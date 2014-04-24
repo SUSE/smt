@@ -400,6 +400,7 @@ sub _request
                 {
                     my $json_text   = <FH>;
                     close FH;
+                    unlink ($dataTempFile);
                     return JSON::decode_json($json_text);
                 };
             }
