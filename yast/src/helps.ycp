@@ -16,14 +16,20 @@
 	    _("<p><big><b>Customer Center Access</b></big><br>
 Enter the credentials for Novell Updates (NU) here.</p>
 ") +
+
 	    // TRANSLATORS: help a2
-	    _("<p><b>User</b> and <b>Password</b> is needed for Novell Customer Center authentication.
+	    _("<p>It is important to select properly the protocol to communicate with the Customer Center,
+since the SUSE Customer Center uses different communication protocol than the
+Novell Customer Center.</p>
+") +
+	    // TRANSLATORS: help a3
+	    _("<p><b>User</b> and <b>Password</b> are needed for Customer Center authentication.
 To test the credentials you entered, click <b>Test</b>.
 SMT then connects to the Customer Center server for authentication and download of
 test data.</p>
 ") +
-	    // TRANSLATORS: help a3
-	    _("<p>E-mail should be the one you used to register to NCC.</p>"),
+	    // TRANSLATORS: help a4
+	    _("<p>E-mail should be the one you used to register to the customer center.</p>"),
 
 	"database" :
 	    // TRANSLATORS: help b1
