@@ -98,17 +98,56 @@ sub _registrationResult
     return (Apache2::Const::OK, $response);
 }
 
+sub _repositories_for_product
+{
+    my $r   = shift || return ([], []);
+    my $dbh = shift || return ([], []);
+    my $productid = shift || return ([], []);
+    my $enabled_repositories = [];
+    my $repositories = [];
+
+    my $sql = sprintf("
+        select c.id,
+               c.name,
+               c.target distro_target,
+               c.description,
+               c.exturl url,
+               c.autorefresh,
+               pc.OPTIONAL
+          from ProductCatalogs pc
+          join Catalogs c ON pc.catalogid = c.id
+         where pc.productid = %s",
+         $dbh->quote($productid));
+    $r->log->info("STATEMENT: $sql");
+    eval
+    {
+        foreach my $repo (@{$dbh->selectall_arrayref($sql, {Slice => {}})})
+        {
+            $r->log->info("REPO: $repo");
+            push @{$enabled_repositories}, $repo->{id} if ($repo->{OPTIONAL} eq 'N');
+            delete $repo->{OPTIONAL};
+            push @{$repositories}, $repo;
+        }
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: $@ ".$dbh->errstr);
+    }
+    return ($enabled_repositories, $repositories);
+}
+
+
 sub _extensions_for_products
 {
     my $r   = shift || return {};
     my $dbh = shift || return {};
-    my $result = shift || return {};
-    my $productids = shift || return $result;
+    my $productids = shift || return {};
+    my $result = {};
 
     if (scalar(@{$productids}) == 0)
     {
         $r->log->info("no more extensions");
-        return $result;
+        return {};
     }
     foreach (@{$productids})
     {
@@ -116,13 +155,15 @@ sub _extensions_for_products
     }
     my $sql = sprintf("
         SELECT e.id id,
-               e.FRIENDLY name,
-               '' description,
+               e.FRIENDLY friendly_name,
                e.PRODUCT zypper_name,
+               -- '' description,
                e.VERSION zypper_version,
                e.REL release_type,
                e.ARCH arch,
-               0 requires_regcode,
+               e.PRODUCT_CLASS product_class,
+               e.CPE cpe,
+               1 free,
                ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
                    FROM ProductCatalogs pc
                    JOIN Catalogs c ON pc.CATALOGID = c.ID
@@ -143,32 +184,18 @@ sub _extensions_for_products
         my $res = $dbh->selectall_hashref($sql, 'id');
         foreach my $product (values %{$res})
         {
-            # skip already existsing extensions
-            next if (exists $result->{$product->{id}});
-
-            $result->{$product->{id}} = $product;
-
-            $sql = sprintf(
-                "SELECT e.PRODUCTID
-                   FROM ProductExtensions e
-                  WHERE e.EXTENSIONID = %s"
-                , $dbh->quote($product->{id}));
-            $product->{requires} = [];
-            $r->log->info("STATEMENT: $sql");
-            foreach my $extid (@{$dbh->selectcol_arrayref($sql)})
+            $product->{extensions} = [];
+            foreach my $ext ( values %{_extensions_for_products($r, $dbh, [int($product->{id})])})
             {
-                if (exists $result->{$extid})
-                {
-                    # we add only IDs which exists in the result
-                    push @{$product->{requires}}, int($extid);
-                }
+                push @{$product->{extensions}}, $ext;
             }
-            $product->{requires_regcode} = ($product->{requires_regcode} eq "0"?JSON::false:JSON::true);
+            $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
             $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
             $product->{id} = int($product->{id});
-            push @{$new_ids}, $product->{id};
+            ($product->{enabled_repositories}, $product->{repositories}) =
+                _repositories_for_product($r, $dbh, $product->{id});
+            $result->{$product->{id}} = $product;
         }
-        $result = _extensions_for_products($r, $dbh, $result, $new_ids);
     };
     if ($@)
     {
@@ -201,8 +228,7 @@ sub get_extensions($$)
     $r->log->info("STATEMENT: $sql");
     eval
     {
-        $result = _extensions_for_products($r, $dbh, $result,
-                                           $dbh->selectcol_arrayref($sql));
+        $result = _extensions_for_products($r, $dbh, $dbh->selectcol_arrayref($sql));
     };
     if ($@)
     {
