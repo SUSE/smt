@@ -78,6 +78,8 @@ sub new
 
     # temporarily used variables
     $self->{REPO_DONE} = {};
+    $self->{PROD_DONE} = {};
+    $self->{EXT_DONE} = {};
     $self->{TARGET_DONE} = {};
     $self->{NUHOST} = "";
 
@@ -513,6 +515,8 @@ sub _updateProducts
     my $product = shift;
 
     my $statement = "";
+    my $ret = 0;
+    my $retprd = 0;
     my $paramlist =<<EOP
 <paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0"
 lang="">
@@ -568,6 +572,10 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 </service>
 EOS
 ;
+
+    # we inserted/update this product already in this run
+    # so let's skip it
+    return 0 if(exists $self->{PROD_DONE}->{$product->{id}});
 
     if (! $self->migrate() &&
         (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel)))
@@ -657,6 +665,57 @@ EOS
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
+        $self->{PROD_DONE}->{$product->{id}} = 1;
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $retprd = 1;
+    }
+
+    foreach my $repo (@{$product->{repos}})
+    {
+        my $retcat = $self->_updateRepositories($repo);
+        $ret += $retcat;
+
+        # if either product or catalogs could not be added,
+        # we will fail to add the relation.
+        next if ( $retprd || $retcat);
+        $ret += $self->_updateProductCatalogs($product, $repo);
+    }
+    $ret += $retprd;
+
+    foreach my $ext (@{$product->{extensions}})
+    {
+        $ret += $self->_updateExtension($product->{id}, $ext->{id});
+        $ret += $self->_updateProducts($ext);
+    }
+
+    return $ret;
+}
+
+sub _updateExtension
+{
+    my $self  = shift || return 1;
+    my $prdid = shift || return 1;
+    my $extid = shift || return 1;
+
+    # we inserted/update this product already in this run
+    # so let's skip it
+    return 0 if(exists $self->{EXT_DONE}->{"$prdid-$extid"});
+
+
+    my $sql = sprintf("
+        INSERT INTO ProductExtensions VALUES (
+            (SELECT id from Products WHERE PRODUCTDATAID = %s),
+            (SELECT id from Products WHERE PRODUCTDATAID = %s),
+            'S')",
+            $self->{DBH}->quote($prdid),
+            $self->{DBH}->quote($extid));
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+    eval {
+        $self->{DBH}->do($sql);
+        $self->{EXT_DONE}->{"$prdid-$extid"} = 1;
     };
     if($@)
     {
@@ -962,8 +1021,6 @@ sub _updateProductData
     my $self = shift;
     my $json = shift;
     my $ret = 0;
-    my $retprd = 0;
-    my $retcat = 0;
     my $count = 0;
     my $sum = @$json;
 
@@ -975,22 +1032,21 @@ sub _updateProductData
     my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://nu.novell.com"));
     $self->{NUHOST} = $nuurl->host;
 
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
+    eval {
+        $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
+    }
+
     foreach my $product (@$json)
     {
         $count++;
         print "(".int(($count/$sum*100))."%)\r";
-        $retprd = $self->_updateProducts($product);
-        $ret += $retprd;
-        foreach my $repo (@{$product->{repos}})
-        {
-            $retcat = $self->_updateRepositories($repo);
-            $ret += $retcat;
-
-            # if either product or catalogs could not be added,
-            # we will fail to add the relation.
-            next if ( $retprd || $retcat);
-            $ret += $self->_updateProductCatalogs($product, $repo);
-        }
+        $ret += $self->_updateProducts($product);
     }
     $self->_staticTargets();
     print "\n";
