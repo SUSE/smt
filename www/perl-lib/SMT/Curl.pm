@@ -245,6 +245,7 @@ sub request
     elsif ($request->method eq 'GET')
     {
         $self->setopt(CURLOPT_HTTPGET, 1);
+        $self->setopt(CURLOPT_ENCODING, "gzip");
     }
     elsif ($request->method eq 'HEAD')
     {
