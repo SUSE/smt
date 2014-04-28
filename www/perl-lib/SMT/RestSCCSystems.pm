@@ -157,7 +157,7 @@ sub _extensions_for_products
         SELECT e.id id,
                e.FRIENDLY friendly_name,
                e.PRODUCT zypper_name,
-               -- '' description,
+               e.DESCRIPTION description,
                e.VERSION zypper_version,
                e.REL release_type,
                e.ARCH arch,

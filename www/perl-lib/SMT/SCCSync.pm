@@ -587,7 +587,7 @@ EOS
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
-                                     CPE = %s
+                                     CPE = %s, DESCRIPTION = %s
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
@@ -602,6 +602,7 @@ EOS
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($product->{cpe}),
+                             $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -619,7 +620,7 @@ EOS
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
-                                     CPE = %s, SRC = 'S'
+                                     CPE = %s, DESCRIPTION = %s, SRC = 'S'
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
@@ -634,6 +635,7 @@ EOS
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($product->{cpe}),
+                             $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -642,8 +644,8 @@ EOS
         $statement = sprintf("INSERT INTO Products (PRODUCT, VERSION, REL, ARCH,
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
                               PARAMLIST, NEEDINFO, SERVICE, FRIENDLY, PRODUCT_LIST,
-                              PRODUCT_CLASS, CPE, PRODUCTDATAID, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                              PRODUCT_CLASS, CPE, DESCRIPTION, PRODUCTDATAID, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
                              $self->{DBH}->quote($product->{release_type}),
@@ -659,6 +661,7 @@ EOS
                              $self->{DBH}->quote('Y'),
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{cpe}),
+                             $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($product->{id})
         );
     }
@@ -742,7 +745,6 @@ sub _updateRepositories
     $exthost->fragment(undef);
     $exthost->query(undef);
 
-    # FIXME: as soon as the repos have the (right) format, we can remove the regexp
     if( $exthost->host eq $self->{NUHOST} )
     {
         $localpath =~ s/^\///;

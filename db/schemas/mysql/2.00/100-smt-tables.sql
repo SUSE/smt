@@ -138,6 +138,7 @@ create table Products (
                 PARAMLIST       TEXT,
                 NEEDINFO        TEXT,
                 SERVICE         TEXT,
+                DESCRIPTION     TEXT,
                 PRODUCT_LIST    CHAR(1),
                 PRODUCT_CLASS   CHAR(50),
                 SRC         CHAR(1) DEFAULT 'N',    -- N NCC   C Custom
