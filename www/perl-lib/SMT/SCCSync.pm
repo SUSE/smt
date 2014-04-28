@@ -673,7 +673,7 @@ EOS
         $retprd = 1;
     }
 
-    foreach my $repo (@{$product->{repos}})
+    foreach my $repo (@{$product->{repositories}})
     {
         my $retcat = $self->_updateRepositories($repo);
         $ret += $retcat;
@@ -687,8 +687,8 @@ EOS
 
     foreach my $ext (@{$product->{extensions}})
     {
-        $ret += $self->_updateExtension($product->{id}, $ext->{id});
         $ret += $self->_updateProducts($ext);
+        $ret += $self->_updateExtension($product->{id}, $ext->{id});
     }
 
     return $ret;
@@ -707,8 +707,8 @@ sub _updateExtension
 
     my $sql = sprintf("
         INSERT INTO ProductExtensions VALUES (
-            (SELECT id from Products WHERE PRODUCTDATAID = %s),
-            (SELECT id from Products WHERE PRODUCTDATAID = %s),
+            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
+            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
             'S')",
             $self->{DBH}->quote($prdid),
             $self->{DBH}->quote($extid));
