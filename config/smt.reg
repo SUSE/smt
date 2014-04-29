@@ -1,0 +1,13 @@
+#############################################################################
+#
+# OpenSLP registration file
+#
+# register Subscription Management Tool registration service
+#
+#############################################################################
+
+# Register the SUSE Manager server, if it is running
+service:registration.suse:smt:https://$HOSTNAME/connect,en,65535
+tcp-port=443
+type=server
+description=Subscription Management Tool registration URL for clients

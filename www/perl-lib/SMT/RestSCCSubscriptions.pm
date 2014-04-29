@@ -24,6 +24,41 @@ use SMT::Utils;
 use DBI qw(:sql_types);
 use Data::Dumper;
 
+sub _storeMachineData($$$$)
+{
+    my $r = shift || return;
+    my $dbh = shift || return;
+    my $guid = shift || return;
+    my $c = shift || return;
+
+    #
+    # insert product info into MachineData
+    #
+    my $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME = %s",
+                           $dbh->quote($guid),
+                           $dbh->quote("machinedata"));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                        $dbh->quote($guid),
+                        $dbh->quote("machinedata"),
+                        $dbh->quote(encode_json($c)));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+}
+
 #
 # announce a system. This call create a system object in the DB
 # and return system username and password to the client.
@@ -102,6 +137,9 @@ sub announce($$$)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
+
+    _storeMachineData($r, $dbh, $result->{login}, $c);
+
     return $result;
 }
 

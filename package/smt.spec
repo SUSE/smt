@@ -213,6 +213,7 @@ fi
 %dir %{perl_vendorarch}/auto/Sys/
 %dir %{perl_vendorarch}/auto/Sys/GRP
 %dir /etc/smt.d
+%dir /etc/slp.reg.d
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/tools
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/keys
@@ -232,6 +233,7 @@ fi
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
 %config /etc/smt.d/*.conf
+%config /etc/slp.reg.d/smt.reg
 %exclude /etc/smt.d/smt_support.conf
 %config /etc/smt.d/novell.com-smt
 %config /etc/logrotate.d/smt

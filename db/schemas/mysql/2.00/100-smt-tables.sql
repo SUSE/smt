@@ -134,9 +134,11 @@ create table Products (
                 RELLOWER        VARCHAR(100),
                 ARCHLOWER       VARCHAR(100),
                 FRIENDLY        VARCHAR(700),
+                CPE             VARCHAR(255),
                 PARAMLIST       TEXT,
                 NEEDINFO        TEXT,
                 SERVICE         TEXT,
+                DESCRIPTION     TEXT,
                 PRODUCT_LIST    CHAR(1),
                 PRODUCT_CLASS   CHAR(50),
                 SRC         CHAR(1) DEFAULT 'N',    -- N NCC   C Custom

@@ -15,7 +15,7 @@ use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::Access ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_UNPROCESSABLE_ENTITY :log);
+use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_UNPROCESSABLE_ENTITY :log HTTP_NO_CONTENT);
 use Apache2::RequestUtil;
 
 use JSON;
@@ -98,76 +98,225 @@ sub _registrationResult
     return (Apache2::Const::OK, $response);
 }
 
+sub _repositories_for_product
+{
+    my $r   = shift || return ([], []);
+    my $dbh = shift || return ([], []);
+    my $productid = shift || return ([], []);
+    my $enabled_repositories = [];
+    my $repositories = [];
+
+    my $sql = sprintf("
+        select c.id,
+               c.name,
+               c.target distro_target,
+               c.description,
+               c.exturl url,
+               c.autorefresh,
+               pc.OPTIONAL
+          from ProductCatalogs pc
+          join Catalogs c ON pc.catalogid = c.id
+         where pc.productid = %s",
+         $dbh->quote($productid));
+    $r->log->info("STATEMENT: $sql");
+    eval
+    {
+        foreach my $repo (@{$dbh->selectall_arrayref($sql, {Slice => {}})})
+        {
+            $r->log->info("REPO: $repo");
+            push @{$enabled_repositories}, $repo->{id} if ($repo->{OPTIONAL} eq 'N');
+            delete $repo->{OPTIONAL};
+            push @{$repositories}, $repo;
+        }
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: $@ ".$dbh->errstr);
+    }
+    return ($enabled_repositories, $repositories);
+}
+
+
+sub _extensions_for_products
+{
+    my $r   = shift || return {};
+    my $dbh = shift || return {};
+    my $productids = shift || return {};
+    my $result = {};
+
+    if (scalar(@{$productids}) == 0)
+    {
+        $r->log->info("no more extensions");
+        return {};
+    }
+    foreach (@{$productids})
+    {
+        $_ = $dbh->quote($_);
+    }
+    my $sql = sprintf("
+        SELECT e.id id,
+               e.FRIENDLY friendly_name,
+               e.PRODUCT zypper_name,
+               e.DESCRIPTION description,
+               e.VERSION zypper_version,
+               e.REL release_type,
+               e.ARCH arch,
+               e.PRODUCT_CLASS product_class,
+               e.CPE cpe,
+               1 free,
+               ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
+                   FROM ProductCatalogs pc
+                   JOIN Catalogs c ON pc.CATALOGID = c.ID
+                  WHERE pc.PRODUCTID = e.ID
+                    AND c.MIRRORABLE ='N'
+               GROUP BY c.MIRRORABLE
+               ) available
+          FROM Products p
+          JOIN ProductExtensions pe ON p.ID = pe.PRODUCTID
+          JOIN Products e ON pe.EXTENSIONID = e.ID
+          WHERE p.ID in (%s)
+          AND e.PRODUCT_LIST = 'Y'
+    ", join(',', @{$productids}));
+    $r->log->info("STATEMENT: $sql");
+    eval
+    {
+        my $new_ids = [];
+        my $res = $dbh->selectall_hashref($sql, 'id');
+        foreach my $product (values %{$res})
+        {
+            $product->{extensions} = [];
+            foreach my $ext ( values %{_extensions_for_products($r, $dbh, [int($product->{id})])})
+            {
+                push @{$product->{extensions}}, $ext;
+            }
+            $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
+            $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
+            $product->{id} = int($product->{id});
+            ($product->{enabled_repositories}, $product->{repositories}) =
+                _repositories_for_product($r, $dbh, $product->{id});
+            $result->{$product->{id}} = $product;
+        }
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    return $result;
+}
+
 sub get_extensions($$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
-    my $result = undef;
+    my $result = {};
     my $sql = "";
     # We are sure, that user is a system GUID
     my $guid = $r->user;
 
     my $args = parse_args($r);
-    # FIXME: maybe we need a recursive select to show extensions of extensions
     $sql = sprintf(
-        "SELECT e.id id,
-                e.FRIENDLY name,
-                '' description,
-                e.PRODUCT zypper_name,
-                e.VERSION zypper_version,
-                e.REL release_type,
-                e.ARCH architecture,
-                0 requires_regcode,
-                ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
-                    FROM ProductCatalogs pc
-                    JOIN Catalogs c ON pc.CATALOGID = c.ID
-                   WHERE pc.PRODUCTID = e.ID
-                     AND c.MIRRORABLE ='N'
-                   GROUP BY c.MIRRORABLE
-                ) available
+        "SELECT p.ID id
            FROM Registration r
-           JOIN Products p on r.PRODUCTID = p.ID
-           JOIN ProductExtensions pe ON p.ID = pe.PRODUCTID
-           JOIN Products e ON pe.EXTENSIONID = e.ID
+           JOIN Products p ON r.PRODUCTID = p.ID
           WHERE r.GUID = %s
-            AND e.PRODUCT_LIST = 'Y'
-            AND e.ID != r.PRODUCTID
-            "
-            , $dbh->quote($guid));
+        ", $dbh->quote($guid));
 
     if(exists $args->{product_ident} && $args->{product_ident})
     {
-        $sql .= sprintf("AND p.PRODUCT = %s", $dbh->quote($args->{product_ident}));
+        $sql .= sprintf(" AND p.PRODUCT = %s", $dbh->quote($args->{product_ident}));
     }
     $r->log->info("STATEMENT: $sql");
     eval
     {
-        $result = $dbh->selectall_arrayref($sql, {Slice => {}});
+        $result = _extensions_for_products($r, $dbh, $dbh->selectcol_arrayref($sql));
     };
     if ($@)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
 
-    foreach my $product (@{$result})
+    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
+}
+
+sub update_system($$$)
+{
+    my $r = shift || return undef;
+    my $dbh = shift || return undef;
+    my $c = shift || return undef;
+    my $q_target = "";
+    my $q_namespace = "";
+    my $hostname = "";
+
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+
+    if ( exists $c->{hostname} && $c->{hostname})
     {
-        $sql = sprintf(
-            "SELECT e.EXTENSIONID
-               FROM ProductExtensions e
-              WHERE e.PRODUCTID = %s"
-              , $dbh->quote($product->{id}));
-        $product->{extensions} = [];
-        foreach my $extids (@{$dbh->selectcol_arrayref($sql)})
-        {
-            push @{$product->{extensions}}, int($extids);
-        }
-        $product->{requires_regcode} = ($product->{requires_regcode} eq "0"?JSON::false:JSON::true);
-        $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
-        $product->{id} = int($product->{id});
+        $hostname = $c->{hostname};
+    }
+    else
+    {
+        $hostname = $r->connection()->remote_host();
+    }
+    if (! $hostname)
+    {
+        $hostname = $r->connection()->remote_ip();
     }
 
-    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), $result);
+    if ( exists $c->{distro_target} && $c->{distro_target})
+    {
+        $q_target = ", TARGET = ".$dbh->quote($c->{distro_target});
+    }
+
+    if ( exists $c->{namespace} && $c->{namespace})
+    {
+        $q_namespace = ", NAMESPACE = ".$dbh->quote($c->{namespace});
+    }
+
+    my $statement = sprintf("UPDATE Clients SET
+                             HOSTNAME = %s %s %s
+                             WHERE GUID = %s",
+                             $dbh->quote($hostname),
+                             $q_target,
+                             $q_namespace,
+                             $dbh->quote($guid));
+    $r->log->info("STATEMENT: $statement");
+    eval
+    {
+        $dbh->do($statement);
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+
+    #
+    # insert product info into MachineData
+    #
+    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME = 'machinedata'",
+                        $dbh->quote($guid));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, 'machinedata', %s)",
+                        $dbh->quote($guid),
+                        $dbh->quote(encode_json($c)));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    return (Apache2::Const::OK, {});
 }
+
 
 #
 # announce a system. This call create a system object in the DB
@@ -221,9 +370,9 @@ sub products($$$)
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: arch");
     }
 
-    if ( ! (exists $c->{release_type} && $c->{release_type}))
+    if ( ! (exists $c->{release_type}))
     {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: release");
+        $c->{release_type} = undef;
     }
 
     if ( exists $c->{email} && $c->{email})
@@ -327,6 +476,23 @@ sub products($$$)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
+    if ( exists $c->{token} && $c->{token})
+    {
+        # if we got a tokem, store it for later transfer to SCC.
+        $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                            $dbh->quote($guid),
+                            $dbh->quote("product-token-$productId"),
+                            $dbh->quote($c->{token}));
+        $r->log->info("STATEMENT: $statement");
+        eval {
+            $cnt = $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+    }
+
 
     #
     # lookup the Clients target
@@ -350,6 +516,58 @@ sub products($$$)
 
     # return result
     return _registrationResult($r, $dbh, $catalogs);
+}
+
+sub delete_system($$)
+{
+    my $r   = shift || return undef;
+    my $dbh = shift || return undef;
+
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+
+    my $sql = sprintf("DELETE from MachineData where GUID=%s",
+                      $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $sql = sprintf("DELETE from Registration where GUID=%s",
+                   $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $sql = sprintf("DELETE from Clients where GUID=%s",
+                   $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $sql = sprintf("DELETE from ClientSubscriptions where GUID=%s",
+                   $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $dbh->do($sql);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+
+    return (Apache2::Const::HTTP_NO_CONTENT, "");
 }
 
 #
@@ -379,21 +597,22 @@ sub systems_handler($$)
         }
         else { return undef; }
     }
-    elsif ( $r->method() =~ /^PUT$/i )
+    elsif ( $r->method() =~ /^PUT$/i || $r->method() =~ /^PATCH$/i)
     {
-        # This request type is not (yet) supported
-        # POSTing to the "jobs" interface (which is only used by smt-clients) means "creating a job"
-        # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("PUT request to the systems interface. This is not supported.");
-        return undef;
+        if ( $path =~ /^systems\/?$/ )
+        {
+            my $c = JSON::decode_json(read_post($r));
+            return update_system($r, $dbh, $c);
+        }
+        else { return undef; }
     }
     elsif ( $r->method() =~ /^DELETE$/i )
     {
-        # This request type is not (yet) supported
-        # DELETEing to the "jobs" interface (which is only used by smt-clients) means "deleting a job"
-        # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("DELETE request to the systems interface. This is not supported.");
-        return undef;
+        if ( $path =~ /^systems\/?$/ )
+        {
+            return delete_system($r, $dbh);
+        }
+        else { return undef; }
     }
     else
     {
@@ -451,20 +670,20 @@ sub handler {
 
     if    ( $path =~ qr{^systems?}    ) {  ($code, $data) = systems_handler($r, $dbh); }
 
-    if (! defined $code || $code != Apache2::Const::OK)
+    if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
         return respond_with_error($r, $code, $data);
     }
-    else
+    elsif ($code != Apache2::Const::HTTP_NO_CONTENT)
     {
         $r->content_type('application/json');
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $r->err_headers_out->add('Pragma' => "no-cache");
 
         print encode_json($data);
-   }
+    }
 
-    return $code;
+   return $code;
 }
 
 #

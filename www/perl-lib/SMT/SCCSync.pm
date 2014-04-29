@@ -78,6 +78,8 @@ sub new
 
     # temporarily used variables
     $self->{REPO_DONE} = {};
+    $self->{PROD_DONE} = {};
+    $self->{EXT_DONE} = {};
     $self->{TARGET_DONE} = {};
     $self->{NUHOST} = "";
 
@@ -199,7 +201,7 @@ Return:
 sub canMigrate
 {
     my $self = shift;
-    my $input = $self->_getInput("products");
+    my $input = $self->_getInput("organization_products");
     my $errors = 0;
 
     if (! $input)
@@ -303,7 +305,7 @@ Return number of errors.
 sub products
 {
     my $self = shift;
-    my $name = "products";
+    my $name = "organization_products";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -377,7 +379,7 @@ Return number of errors.
 sub subscriptions
 {
     my $self = shift;
-    my $name = "subscriptions";
+    my $name = "organization_subscriptions";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -466,15 +468,15 @@ sub _getInput
     my $input = undef;
     my $func = undef;
 
-    if($what eq "products")
+    if($what eq "organization_products")
     {
-        $func = sub{$self->{API}->products()};
+        $func = sub{$self->{API}->org_products()};
     }
     elsif($what eq "services")
     {
         $func = sub{$self->{API}->services()};
     }
-    elsif($what eq "subscriptions")
+    elsif($what eq "organization_subscriptions")
     {
         $func = sub{$self->{API}->org_subscriptions()};
     }
@@ -513,6 +515,8 @@ sub _updateProducts
     my $product = shift;
 
     my $statement = "";
+    my $ret = 0;
+    my $retprd = 0;
     my $paramlist =<<EOP
 <paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0"
 lang="">
@@ -569,6 +573,10 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 EOS
 ;
 
+    # we inserted/update this product already in this run
+    # so let's skip it
+    return 0 if(exists $self->{PROD_DONE}->{$product->{id}});
+
     if (! $self->migrate() &&
         (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
@@ -578,7 +586,8 @@ EOS
                                      PRODUCTLOWER = %s, VERSIONLOWER = %s,
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
-                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s
+                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
+                                     CPE = %s, DESCRIPTION = %s
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
@@ -592,6 +601,8 @@ EOS
                              $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
+                             $self->{DBH}->quote($product->{cpe}),
+                             $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -609,7 +620,7 @@ EOS
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
-                                     SRC = 'S'
+                                     CPE = %s, DESCRIPTION = %s, SRC = 'S'
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
@@ -623,6 +634,8 @@ EOS
                              $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
+                             $self->{DBH}->quote($product->{cpe}),
+                             $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -630,9 +643,9 @@ EOS
     {
         $statement = sprintf("INSERT INTO Products (PRODUCT, VERSION, REL, ARCH,
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
-                              PARAMLIST, NEEDINFO, SERVICE,
-                              FRIENDLY, PRODUCT_LIST, PRODUCT_CLASS, PRODUCTDATAID, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                              PARAMLIST, NEEDINFO, SERVICE, FRIENDLY, PRODUCT_LIST,
+                              PRODUCT_CLASS, CPE, DESCRIPTION, PRODUCTDATAID, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{zypper_name}),
                              $self->{DBH}->quote($product->{zypper_version}),
                              $self->{DBH}->quote($product->{release_type}),
@@ -647,11 +660,65 @@ EOS
                              $self->{DBH}->quote($product->{friendly_name}),
                              $self->{DBH}->quote('Y'),
                              $self->{DBH}->quote($product->{product_class}),
-                             $self->{DBH}->quote($product->{id}));
+                             $self->{DBH}->quote($product->{cpe}),
+                             $self->{DBH}->quote($product->{description}),
+                             $self->{DBH}->quote($product->{id})
+        );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
+        $self->{PROD_DONE}->{$product->{id}} = 1;
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $retprd = 1;
+    }
+
+    foreach my $repo (@{$product->{repositories}})
+    {
+        my $retcat = $self->_updateRepositories($repo);
+        $ret += $retcat;
+
+        # if either product or catalogs could not be added,
+        # we will fail to add the relation.
+        next if ( $retprd || $retcat);
+        $ret += $self->_updateProductCatalogs($product, $repo);
+    }
+    $ret += $retprd;
+
+    foreach my $ext (@{$product->{extensions}})
+    {
+        $ret += $self->_updateProducts($ext);
+        $ret += $self->_updateExtension($product->{id}, $ext->{id});
+    }
+
+    return $ret;
+}
+
+sub _updateExtension
+{
+    my $self  = shift || return 1;
+    my $prdid = shift || return 1;
+    my $extid = shift || return 1;
+
+    # we inserted/update this product already in this run
+    # so let's skip it
+    return 0 if(exists $self->{EXT_DONE}->{"$prdid-$extid"});
+
+
+    my $sql = sprintf("
+        INSERT INTO ProductExtensions VALUES (
+            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
+            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
+            'S')",
+            $self->{DBH}->quote($prdid),
+            $self->{DBH}->quote($extid));
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+    eval {
+        $self->{DBH}->do($sql);
+        $self->{EXT_DONE}->{"$prdid-$extid"} = 1;
     };
     if($@)
     {
@@ -678,7 +745,6 @@ sub _updateRepositories
     $exthost->fragment(undef);
     $exthost->query(undef);
 
-    # FIXME: as soon as the repos have the (right) format, we can remove the regexp
     if( $exthost->host eq $self->{NUHOST} )
     {
         $localpath =~ s/^\///;
@@ -957,8 +1023,6 @@ sub _updateProductData
     my $self = shift;
     my $json = shift;
     my $ret = 0;
-    my $retprd = 0;
-    my $retcat = 0;
     my $count = 0;
     my $sum = @$json;
 
@@ -970,22 +1034,21 @@ sub _updateProductData
     my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://nu.novell.com"));
     $self->{NUHOST} = $nuurl->host;
 
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
+    eval {
+        $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $ret += 1;
+    }
+
     foreach my $product (@$json)
     {
         $count++;
         print "(".int(($count/$sum*100))."%)\r";
-        $retprd = $self->_updateProducts($product);
-        $ret += $retprd;
-        foreach my $repo (@{$product->{repos}})
-        {
-            $retcat = $self->_updateRepositories($repo);
-            $ret += $retcat;
-
-            # if either product or catalogs could not be added,
-            # we will fail to add the relation.
-            next if ( $retprd || $retcat);
-            $ret += $self->_updateProductCatalogs($product, $repo);
-        }
+        $ret += $self->_updateProducts($product);
     }
     $self->_staticTargets();
     print "\n";

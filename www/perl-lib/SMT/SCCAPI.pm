@@ -18,6 +18,7 @@ use SMT::Utils;
 use JSON;
 use URI;
 use Data::Dumper;
+use File::Temp qw/ :mktemp  /;
 
 =item constructor
 
@@ -169,14 +170,18 @@ Example:
 
 =cut
 
-sub products
+sub org_products
 {
     my $self = shift;
-    my $uri = $self->{URL}."/products";
+    my $uri = URI->new($self->{URL}."/organizations/products");
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
              "list products", 0);
 
-    return $self->_request($uri, "get", {}, {});
+    return $self->_request($uri->as_string(), "get", {}, {});
 }
 
 =item services
@@ -195,7 +200,7 @@ sub services
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
              "list services", 0);
 
-    return $self->_request($uri, "get", {}, {});
+    return $self->_request($uri->as_string(), "get", {}, {});
 }
 
 =item org_subscriptions
@@ -322,12 +327,16 @@ sub _request
     my $method = shift;
     my $headers = shift;
     my $body = shift;
+    my $dataTempFile = SMT::Utils::cleanPath("/var/tmp/", mktemp( "smtXXXXXXXX" ));
 
     if ($url !~ /^http/)
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Invalid URL: $url");
         return undef;
     }
+    my $saveurl = $url;
+    $saveurl =~ s/:[^:@]+@/:<secret>@/;
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG2, "$method $saveurl");
 
     $headers = {} if(ref($headers) ne "HASH");
     # generic identification header. Used for debugging in SCC
@@ -340,6 +349,7 @@ sub _request
         {
             $headers->{'Accept'} = 'application/json; charset=utf-8';
         }
+        $headers->{':content_file'} = $dataTempFile;
         $response = $self->{USERAGENT}->get($url, %{$headers});
     }
     elsif ($method eq "head")
@@ -384,7 +394,20 @@ sub _request
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, Data::Dumper->Dump([$response]));
         if ($response->content_type() eq "application/json")
         {
-            return JSON::decode_json($response->content);
+            if(-s $dataTempFile)
+            {
+                open( FH, '<', $dataTempFile ) and do
+                {
+                    my $json_text   = <FH>;
+                    close FH;
+                    unlink ($dataTempFile);
+                    return JSON::decode_json($json_text);
+                };
+            }
+            else
+            {
+                return JSON::decode_json($response->content);
+            }
         }
         else
         {

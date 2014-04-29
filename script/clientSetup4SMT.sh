@@ -2,7 +2,6 @@
 
 WGET=/usr/bin/wget
 OPENSSL=/usr/bin/openssl
-CREHASH=/usr/bin/c_rehash
 ZMDINIT=/etc/init.d/novell-zmd
 SRCONF=/etc/suseRegister.conf
 CP=/bin/cp
@@ -12,13 +11,25 @@ CUT=/usr/bin/cut
 GREP=/usr/bin/grep
 RM=/bin/rm
 SUSEREGISTER=/usr/bin/suse_register
+SUSECONNECT=/usr/bin/SUSEConnect
 GPG=/usr/bin/gpg
-SSLDIR=/etc/ssl/certs/
-CAFILE=("/etc/pki/tls/cert.pem" "/usr/share/ssl/cert.pem")
-ZMDSSLDIR=/etc/zmd/trusted-certs/
 SUPPORTCONFIG=/etc/supportconfig.conf
 SUPPORTCONFIGENTRY=VAR_OPTION_UPLOAD_TARGET
 SED=/usr/bin/sed
+
+CA_TRUSTSTORE="/etc/ssl/certs/"
+CA_GEN_TRUSTSTORE_CMD="/usr/bin/c_rehash"
+
+if [ -d "/usr/share/pki/trust/anchors/" ] && [ -x "/usr/sbin/update-ca-certificates" ]; then
+    CA_TRUSTSTORE="/usr/share/pki/trust/anchors/"
+    CA_GEN_TRUSTSTORE_CMD="/usr/sbin/update-ca-certificates"
+elif [ -d $CA_TRUSTSTORE ] && [ -x $CA_GEN_TRUSTSTORE_CMD ]; then
+    CA_GEN_TRUSTSTORE_CMD="$CA_GEN_TRUSTSTORE_CMD $CA_TRUSTSTORE"
+fi
+
+# lagacy
+CAFILE=("/etc/pki/tls/cert.pem" "/usr/share/ssl/cert.pem")
+ZMDSSLDIR=/etc/zmd/trusted-certs/
 
 
 function usage()
@@ -79,8 +90,10 @@ if [ `id -u` != 0 ]; then
     exit 1;
 fi
 
-if [ -n "$S_HOSTNAME" ]; then
+if [ -n "$S_HOSTNAME" -a -e $SUSEREGISTER ]; then
     REGURL="https://$S_HOSTNAME/center/regsvc"
+elif [ -n "$S_HOSTNAME" -a -e $SUSECONNECT ]; then
+    REGURL="https://$S_HOSTNAME/"
 fi
 
 if [ -z "$REGURL" ]; then
@@ -101,9 +114,9 @@ fi
 # BNC #516495: Changing supportconfig URL for uploading tarbals
 if [ "${S_HOSTNAME}" != "" ]; then
     if [ -e "${SUPPORTCONFIG}" ]; then
-	S_ENTRY="http://${S_HOSTNAME}/upload?appname=supportconfig\&file={tarball}"
+        S_ENTRY="http://${S_HOSTNAME}/upload?appname=supportconfig\&file={tarball}"
 
-	${SED} --in-place "s|${SUPPORTCONFIGENTRY}[ \t]*=.*$|${SUPPORTCONFIGENTRY}='${S_ENTRY}'|" ${SUPPORTCONFIG}
+        ${SED} --in-place "s|${SUPPORTCONFIGENTRY}[ \t]*=.*$|${SUPPORTCONFIGENTRY}='${S_ENTRY}'|" ${SUPPORTCONFIG}
     fi
 fi
 
@@ -125,46 +138,46 @@ fi
 
 
 if [ ! -x $OPENSSL ]; then
-	echo "openssl command not found. Abort.";
-	exit 1;
+    echo "openssl command not found. Abort."
+    exit 1
 fi
 
 if [ ! -x $CP ]; then
-	echo "cp command not found. Abort.";
-	exit 1;
+    echo "cp command not found. Abort."
+    exit 1
 fi
 
 if [ ! -x $CAT ]; then
-	echo "cat command not found. Abort.";
-	exit 1;
+    echo "cat command not found. Abort."
+    exit 1
 fi
 
 if [ "$AUTOACCEPT" = "Y" ] && [ ! -x $CUT ]; then
-	echo "cut command not found. Abort.";
-	exit 1;
+    echo "cut command not found. Abort."
+    exit 1
 fi
 
 if [ ! -x $GREP ]; then
     if [ -x "/bin/grep" ]; then
         GREP=/bin/grep
     else
-        echo "grep command not found. Abort.";
-        exit 1;
+        echo "grep command not found. Abort."
+        exit 1
     fi
 fi
 
 if [ ! -x $RM ]; then
-	echo "rm command not found. Abort.";
-	exit 1;
+    echo "rm command not found. Abort."
+    exit 1
 fi
 
 if [ ! -x $CHMOD ]; then
-	echo "chmod command not found. Abort.";
-	exit 1;
+    echo "chmod command not found. Abort."
+    exit 1
 fi
 
-if [ ! -x $SUSEREGISTER ]; then
-    echo "suse_register command not found. Abort."
+if [ ! -x $SUSEREGISTER ] && [ ! -x $SUSECONNECT ]; then
+    echo "registration command not found. Abort."
     exit 1
 fi
 
@@ -177,14 +190,14 @@ fi
 TEMPFILE=`mktemp /tmp/smt.crt.XXXXXX`
 
 if [ -x $WGET ]; then
-	$WGET  --no-verbose -q --no-check-certificate --dns-timeout 10 --connect-timeout 10 --output-document $TEMPFILE $CERTURL
-	if [ $? -ne 0 ]; then
-		echo "Download failed. Abort.";
-		exit 1;
-	fi
+    $WGET  --no-verbose -q --no-check-certificate --dns-timeout 10 --connect-timeout 10 --output-document $TEMPFILE $CERTURL
+    if [ $? -ne 0 ]; then
+        echo "Download failed. Abort."
+        exit 1
+    fi
 else
-	echo "Binary to download the certificate not found. Please install wget. Abort."
-	exit 1;
+    echo "Binary to download the certificate not found. Please install wget. Abort."
+    exit 1
 fi
 
 if [ "$AUTOACCEPT" = "Y" ]; then
@@ -201,22 +214,18 @@ else
     read -p "Do you accept this certificate? [y/n] " YN
 
     if [ "$YN" != "Y" -a "$YN" != "y" ]; then
-        echo "Abort.";
-        exit 1;
+        echo "Abort."
+        exit 1
     fi
 fi
 
 ISRES=0
 
-if [ -d $SSLDIR ]; then
-    $CP $TEMPFILE $SSLDIR/registration-server.pem
-    $CHMOD 0644 $SSLDIR/registration-server.pem
+if [ -d $CA_TRUSTSTORE ]; then
+    $CP $TEMPFILE $CA_TRUSTSTORE/registration-server.pem
+    $CHMOD 0644 $CA_TRUSTSTORE/registration-server.pem
 
-    if [ ! -x $CREHASH ]; then
-        echo "c_rehash command not found.";
-    else
-        $CREHASH $SSLDIR > /dev/null
-    fi
+    $CA_GEN_TRUSTSTORE_CMD > /dev/null
 else
     for f in "${CAFILE[@]}"; do
         if [ -e $f ]; then
@@ -235,21 +244,23 @@ if [ -d $ZMDSSLDIR ]; then
     fi
 fi
 
-SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
+if [ -x "$SUSEREGISTER" ]; then
+    SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
 
-$CAT $SRCONF | $GREP -v "^url" | grep -v "^register" > $SRCTMP
-$CP $SRCONF ${SRCONF}-`date '+%F'`
-echo "url=$REGURL" > $SRCONF
-if [ -n "$NAMESPACE" ]; then
-    echo "register   = command=register&namespace=$NAMESPACE" >> $SRCONF
-else
-    echo "register   = command=register" >> $SRCONF
-fi
-$CAT $SRCTMP >> $SRCONF
-$RM $SRCTMP
+    $CAT $SRCONF | $GREP -v "^url" | grep -v "^register" > $SRCTMP
+    $CP $SRCONF ${SRCONF}-`date '+%F'`
+    echo "url=$REGURL" > $SRCONF
+    if [ -n "$NAMESPACE" ]; then
+        echo "register   = command=register&namespace=$NAMESPACE" >> $SRCONF
+    else
+        echo "register   = command=register" >> $SRCONF
+    fi
+    $CAT $SRCTMP >> $SRCONF
+    $RM $SRCTMP
 
-if [ ! -z "$REGDATA" ]; then
-    echo "addregdata=$REGDATA" >> $SRCONF
+    if [ ! -z "$REGDATA" ]; then
+        echo "addregdata=$REGDATA" >> $SRCONF
+    fi
 fi
 
 #
@@ -309,5 +320,14 @@ if [ -z "$AUTOACCEPT" ]; then
     fi
 fi
 
-echo "$SUSEREGISTER -i -L /root/.suse_register.log"
-$SUSEREGISTER -i -L /root/.suse_register.log
+if [ -x "$SUSEREGISTER" ]; then
+    echo "$SUSEREGISTER -i -L /root/.suse_register.log"
+    $SUSEREGISTER -i -L /root/.suse_register.log
+elif [ -x "$SUSECONNECT" ]; then
+    echo "$SUSECONNECT --url $REGURL"
+    $SUSECONNECT --url $REGURL
+else
+    echo "No registration client found."
+    exit 1
+fi
+

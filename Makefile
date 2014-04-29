@@ -70,6 +70,7 @@ install:
 	mkdir -p $(DESTDIR)/etc/init.d
 	mkdir -p $(DESTDIR)/etc/smt.d/
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
+	mkdir -p $(DESTDIR)/etc/slp.reg.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/tools
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/keys
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/testing
@@ -128,6 +129,7 @@ install:
                   -o \
                   \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \)
 	install -m 755 config/rc.smt $(DESTDIR)/etc/init.d/smt
+	install -m 755 config/smt.reg $(DESTDIR)/etc/slp.reg.d/
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
@@ -202,6 +204,7 @@ dist: clean
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
 	@cp config/rc.smt $(NAME)-$(VERSION)/config/
+	@cp config/smt.reg $(NAME)-$(VERSION)/config/
 	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
 	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
 	find db -name ".svn" -prune -o \
