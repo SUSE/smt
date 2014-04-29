@@ -20,7 +20,7 @@ Enter the credentials for Novell Updates (NU) here.</p>
 	    // TRANSLATORS: help a2
 	    _("<p>It is important to select properly the protocol to communicate with the Customer Center,
 since the SUSE Customer Center uses different communication protocol than the
-Novell Customer Center.</p>
+Novell Customer Center. We recommend to use SUSE Customer Center where possible.</p>
 ") +
 	    // TRANSLATORS: help a3
 	    _("<p><b>User</b> and <b>Password</b> are needed for Customer Center authentication.
