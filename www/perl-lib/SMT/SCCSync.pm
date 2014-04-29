@@ -201,7 +201,7 @@ Return:
 sub canMigrate
 {
     my $self = shift;
-    my $input = $self->_getInput("org_products");
+    my $input = $self->_getInput("organization_products");
     my $errors = 0;
 
     if (! $input)
@@ -305,7 +305,7 @@ Return number of errors.
 sub products
 {
     my $self = shift;
-    my $name = "org_products";
+    my $name = "organization_products";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -379,7 +379,7 @@ Return number of errors.
 sub subscriptions
 {
     my $self = shift;
-    my $name = "subscriptions";
+    my $name = "organization_subscriptions";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -468,7 +468,7 @@ sub _getInput
     my $input = undef;
     my $func = undef;
 
-    if($what eq "org_products")
+    if($what eq "organization_products")
     {
         $func = sub{$self->{API}->org_products()};
     }
@@ -476,7 +476,7 @@ sub _getInput
     {
         $func = sub{$self->{API}->services()};
     }
-    elsif($what eq "subscriptions")
+    elsif($what eq "organization_subscriptions")
     {
         $func = sub{$self->{API}->org_subscriptions()};
     }
