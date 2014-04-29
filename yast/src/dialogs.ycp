@@ -959,15 +959,17 @@ Would you like to continue nevertheless?")))
 	    Popup::ClearFeedback();
 	    if (test_ret != 0)
 	    {
+		// report message
 		Report::Message(_("Cannot migrate SMT to SCC because not all products,
 which are registered against this instance of SMT,
-are available also via SCC"));
+are available also via SCC."));
 		return false;
 	    }
+	    // continue / cancel pop-up
 	    if (! Popup::ContinueCancel(_("The migration to SCC will take some time, during which
-SMT will not be able to serve its clients. After the
-migration is finished, you cannot register products
-which are not served by SCC against this SMT.
+SMT will not be able to serve its clients. After
+the migration is finished, you will be able to serve
+only products available in SCC.
 
 Migrate SMT from NCC to SCC now?")))
 	    {
@@ -981,19 +983,23 @@ Migrate SMT from NCC to SCC now?")))
 	    Popup::ClearFeedback();
 	    if (test_ret != 0)
 	    {
+		// report message
 		Report::Message(_("Cannot migrate SMT to NCC because not all products,
 which are registered against this instance of SMT,
-are available also via NCC"));
+are available also via NCC."));
 		return false;
 	    }
+	    // continue / cancel pop-up
 	    if (! Popup::ContinueCancel(_("You are about to switch this instance of SMT from SCC
-back to NCC. SCC is the default registration server for
-SUSE products. Using SCC is recommended.
+back to NCC. SCC is the default registration server
+for SUSE products. Using SCC is recommended.
 
 The migration to NCC will take some time, during which
-SMT will not be able to serve its clients. After the
-migration is finished, you cannot register products
-which are not served by NCC against this SMT.
+SMT will not be able to serve its clients. After
+the migration is finished, you will be able to serve
+SUSE products released before September 2014.
+SUSE products released after September 2014 will not
+be available.
 
 Migrate SMT from SCC to NCC now?")))
 	    {
