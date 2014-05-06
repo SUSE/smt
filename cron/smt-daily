@@ -40,18 +40,18 @@ fi
 unset PROXY_ENABLED
 
 NCC_SYNC_RC=0
-if [ -x ${SMTCMD}-ncc-sync ]
+if [ -x ${SMTCMD}-sync ]
 then
-    ${SMTCMD}-ncc-sync ${NCC_SYNC_PARAMS}
+    ${SMTCMD}-sync ${NCC_SYNC_PARAMS}
     NCC_SYNC_RC=$?
 else
-    echo "WARNING: Could not find the SMT binary ${SMTCMD}-ncc-sync"
+    echo "WARNING: Could not find the SMT binary ${SMTCMD}-sync"
     echo "         Please make sure SMT is properly installed."
 fi
 
 if [ $NCC_SYNC_RC -ne 0 ]
 then
-    echo "WARNING: smt-ncc-sync exited with error."
+    echo "WARNING: smt-sync exited with error."
 fi
 
 if [ -x ${SMTCMD}-report ]
@@ -68,7 +68,7 @@ then
     then
         ${SMTCMD}-mirror ${MIRROR_PARAMS}
     else
-        echo "Skipping smt-mirror because previous run of smt-ncc-sync failed."
+        echo "Skipping smt-mirror because previous run of smt-sync failed."
     fi
 else
     echo "WARNING: Could not find the SMT binary ${SMTCMD}-mirror"
