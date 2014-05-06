@@ -502,7 +502,7 @@ if ( $cfg->val('NU', 'ApiType', 'NCC') eq 'SCC')
 if(!$nonccsync)
 {
     my $maxwait = 0;
-    while(!SMT::Utils::openLock("smt-ncc-sync") && $maxwait <= 60 )
+    while(!SMT::Utils::openLock("smt-sync") && $maxwait <= 60 )
     {
         # wait for the lock
         $maxwait++;
@@ -536,7 +536,7 @@ if(!$nonccsync)
     }
     # else $maxwait > 0 and <=60 means ncc-sync was running. we do not need to sync again.
 
-    SMT::Utils::unLock("smt-ncc-sync");
+    SMT::Utils::unLock("smt-sync");
 }
 
 
