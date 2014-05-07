@@ -1047,11 +1047,11 @@ sub _updateProductData
     foreach my $product (@$json)
     {
         $count++;
-        print "(".int(($count/$sum*100))."%)\r";
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "(".int(($count/$sum*100))."%)\r", 1, 0);
         $ret += $self->_updateProducts($product);
     }
     $self->_staticTargets();
-    print "\n";
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "\n", 1, 0);
     return $ret;
 }
 
@@ -1095,7 +1095,7 @@ sub _updateSubscriptionData
     foreach my $subscr (@$json)
     {
         $count++;
-        print "(".int(($count/$sum*100))."%)\r";
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "(".int(($count/$sum*100))."%)\r", 1, 0);
         $retsub = $self->_addSubscription($subscr);
         $ret += $retsub;
         next if (not exists $subscr->{systems});
@@ -1105,7 +1105,7 @@ sub _updateSubscriptionData
             $ret += $retreg;
         }
     }
-    print "\n";
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "\n", 1, 0);
     return $ret;
 }
 

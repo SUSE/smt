@@ -580,6 +580,10 @@ sub printLog
         {
             print STDERR $message."\n";
         }
+        elsif(substr($message,-1,1) eq "\r" || substr($message,-1,1) eq "\n")
+        {
+            print $message;
+        }
         else
         {
             print $message."\n";

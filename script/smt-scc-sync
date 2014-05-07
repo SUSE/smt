@@ -31,7 +31,7 @@ my $mirrorable;
 my $domirror;
 
 my $debug   = 0;
-my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
+my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $logfile = "/dev/null";
 my $help    = 0;
 my $fromdir = "";
@@ -86,6 +86,7 @@ if($mail)
     select STDERR; $| = 1;      # make unbuffered
     select STDOUT; $| = 1;      # make unbuffered
     select MAILTEMPFILE; $| = 1;        # make unbuffered
+    $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1 if(!$debug);
 }
 
 if($createdbreplfile ne "")
