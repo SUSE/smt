@@ -494,7 +494,7 @@ my $cfg = SMT::Utils::getSMTConfig();
 
 if ( $cfg->val('NU', 'ApiType', 'NCC') eq 'SCC')
 {
-    printLog($LOG, $vblevel, LOG_INFO1, _("Reports are currently not supported while connected to SCC."));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Reports are currently not supported while connected to SCC."));
     exit 0;
 }
 
