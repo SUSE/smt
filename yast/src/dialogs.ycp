@@ -98,12 +98,14 @@
                                                                             _("SCC")),
                                                                `RadioButton(`id("ncc"), `opt (`notify),
                                                                             // radio button label
-                                                                            _("NCC")),
-                                                               `RadioButton(`id("custom"), `opt (`notify),
-                                                                            // radio button label
-                                                                            _("Custom"))
+                                                                            _("NCC"))
                                                         ))
                                      )),
+				     `HSquash (`MinWidth (
+					40,
+					// TRANSLATORS: check box
+					`CheckBox (`id ("custom"), `opt(`notify), _("&Use Custom Server"))
+				     )),
                                      `HSquash (`MinWidth (
                                          40,
                                          // TRANSLATORS: text entry
@@ -851,20 +853,27 @@ or remove the file. Otherwise SMT server might not work properly."), mirror_to))
 	}
 
 	string regurl = SMTData::GetCredentials ("NU", "NURegUrl");
-        if (regurl == "https://scc.suse.com/connect") {
+	string api_type = SMTData::GetCredentials ("NU", "ApiType");
+	if (regurl == "https://scc.suse.com/connect" || String::StartsWith(regurl, "https://secure-www.novell.com/center/regsvc"))
+	{
+	    UI::ChangeWidget (`id ("custom"), `Value, false);
+	    UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
+	    UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+	}
+	else
+	{
+	    UI::ChangeWidget (`id ("custom"), `Value, true);
+	    UI::ChangeWidget (`id ("NURegUrl"), `Enabled, true);
+	    UI::ChangeWidget (`id ("NUUrl"), `Enabled, true);
+	}
+
+        if (api_type == "SCC")
+	{
             UI::ChangeWidget (`id (`protocol), `CurrentButton, "scc");
-            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
-            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
         }
-        else if (String::StartsWith(regurl, "https://secure-www.novell.com/center/regsvc")) {
+        else
+	{
             UI::ChangeWidget (`id (`protocol), `CurrentButton, "ncc");
-            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
-            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
-        }
-        else {
-            UI::ChangeWidget (`id (`protocol), `CurrentButton, "custom");
-            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, true);
-            UI::ChangeWidget (`id ("NUUrl"), `Enabled, true);
         }
 	UI::ChangeWidget (`id ("enable_smt_service"), `Value, SMTData::GetSMTServiceStatus());
     }
@@ -939,7 +948,7 @@ Would you like to continue nevertheless?")))
         boolean was_scc = (orig_url == "https://scc.suse.com/connect");
 	boolean is_scc = (UI::QueryWidget (`id (`protocol), `CurrentButton) ==  "scc");
         y2milestone ("Previous CC: %1, new CC: %2, initial config: %3", was_scc, is_scc, SMTData::InitialConfig());
-	if (! SMTData::InitialConfig())
+	if (SMTData::InitialConfig())
 	{
 	    y2milestone ("Initial configuration, skipping migration checks");
 	}
@@ -950,13 +959,17 @@ Would you like to continue nevertheless?")))
 	    Popup::ClearFeedback();
 	    if (test_ret != 0)
 	    {
+		// report message
 		Report::Message(_("Cannot migrate SMT to SCC because not all products,
 which are registered against this instance of SMT,
-are available also via SCC"));
+are available also via SCC."));
 		return false;
 	    }
+	    // continue / cancel pop-up
 	    if (! Popup::ContinueCancel(_("The migration to SCC will take some time, during which
-SMT will not be able to serve its clients.
+SMT will not be able to serve its clients. After
+the migration is finished, you will be able to serve
+only products available in SCC.
 
 Migrate SMT from NCC to SCC now?")))
 	    {
@@ -970,17 +983,23 @@ Migrate SMT from NCC to SCC now?")))
 	    Popup::ClearFeedback();
 	    if (test_ret != 0)
 	    {
+		// report message
 		Report::Message(_("Cannot migrate SMT to NCC because not all products,
 which are registered against this instance of SMT,
-are available also via NCC"));
+are available also via NCC."));
 		return false;
 	    }
+	    // continue / cancel pop-up
 	    if (! Popup::ContinueCancel(_("You are about to switch this instance of SMT from SCC
-back to NCC. SCC is the default registration server for
-SUSE products. Using SCC is recommended.
+back to NCC. SCC is the default registration server
+for SUSE products. Using SCC is recommended.
 
 The migration to NCC will take some time, during which
-SMT will not be able to serve its clients.
+SMT will not be able to serve its clients. After
+the migration is finished, you will be able to serve
+SUSE products released before September 2014.
+SUSE products released after September 2014 will not
+be available.
 
 Migrate SMT from SCC to NCC now?")))
 	    {
@@ -1053,28 +1072,45 @@ URL should start with 'http://' or 'https://'."));
 
     symbol HandleCredentialsDialog (string id, map event) {
 	any action = event["ID"]:nil;
+	boolean custom = (boolean)UI::QueryWidget (`id ("custom"), `Value);
+	string cc = (string)UI::QueryWidget (`id (`protocol), `CurrentButton);
 
 	if (action == "test_NU_credentials") {
 	    StoreCredentialsDialog (id, event);
 	    TestCredentials();
 	}
 	else if (action == "scc") {
-            UI::ChangeWidget (`id ("NURegUrl"), `Value, "https://scc.suse.com/connect");
-            UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
-            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
-            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+	    if (! custom)
+	    {
+	        UI::ChangeWidget (`id ("NURegUrl"), `Value, "https://scc.suse.com/connect");
+	        UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
+	    }
         }
         else if (action == "ncc") {
-            UI::ChangeWidget (`id ("NURegUrl"), `Value, "https://secure-www.novell.com/center/regsvc/");
-            UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
-            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
-            UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+	    if (! custom)
+	    {
+	        UI::ChangeWidget (`id ("NURegUrl"), `Value, "https://secure-www.novell.com/center/regsvc/");
+	        UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
+	    }
         }
         else if (action == "custom") {
-            UI::ChangeWidget (`id ("NURegUrl"), `Value, "");
-            UI::ChangeWidget (`id ("NUUrl"), `Value, "");
-            UI::ChangeWidget (`id ("NURegUrl"), `Enabled, true);
-            UI::ChangeWidget (`id ("NUUrl"), `Enabled, true);
+	    if ((boolean)UI::QueryWidget (`id ("custom"), `Value))
+	    {
+	        UI::ChangeWidget (`id ("NURegUrl"), `Enabled, true);
+	        UI::ChangeWidget (`id ("NUUrl"), `Enabled, true);
+	        UI::ChangeWidget (`id ("NURegUrl"), `Value, "");
+	        UI::ChangeWidget (`id ("NUUrl"), `Value, "");
+	    }
+	    else
+	    {
+	        UI::ChangeWidget (`id ("NURegUrl"), `Enabled, false);
+	        UI::ChangeWidget (`id ("NUUrl"), `Enabled, false);
+	        UI::ChangeWidget (`id ("NURegUrl"), `Value, cc == "scc"
+		    ? "https://scc.suse.com/connect"
+		    : "https://secure-www.novell.com/center/regsvc/");
+	        UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
+
+	    }
         }
 
 	return nil;
