@@ -28,7 +28,8 @@ sub getCatalogsByGUID($$)
     my $cnt = $dbh->selectrow_hashref($sql);
 
     my $catalogselect = sprintf("SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET,
-                                        c.LOCALPATH, c.CATALOGTYPE, c.STAGING
+                                        c.LOCALPATH, c.CATALOGTYPE, c.STAGING,
+                                        c.AUTOREFRESH, pc.OPTIONAL
                                    FROM Catalogs c, ProductCatalogs pc, Registration r
                                   WHERE r.GUID=%s
                                     AND r.PRODUCTID=pc.PRODUCTID
@@ -183,6 +184,7 @@ sub handler {
     {
         my $LocalRepoPath = ${$val}{'LOCALPATH'};
         my $catalogName = ${$val}{'NAME'};
+
         if($namespace ne "" && uc(${$val}{'STAGING'}) eq "Y")
         {
             $LocalRepoPath = "$namespace/$LocalRepoPath";
@@ -211,6 +213,18 @@ sub handler {
             }
         }
 
+        my $autorefresh = 1;
+        if(exists $val->{AUTOREFRESH} && $val->{AUTOREFRESH} eq 'N')
+        {
+            $autorefresh = 0;
+        }
+
+        my $enabled = 0;
+        if(exists $val->{OPTIONAL} && $val->{OPTIONAL} eq 'N')
+        {
+            $enabled = 1;
+        }
+
         $writer->emptyTag('repo',
                           'name' => $catalogName,
                           'alias' => $catalogName,                 # Alias == Name
@@ -218,7 +232,9 @@ sub handler {
                           'distro_target' => ${$val}{'TARGET'},
                           'path' => $LocalRepoPath,
                           'priority' => 0,
-                          'pub' => 0
+                          'pub' => 0,
+                          'autorefresh' => $autorefresh,
+                          'enabled' => $enabled
                          );
         # don't laugh, zmd requires a special look of the XML :-(
         print "\n";
