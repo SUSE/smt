@@ -1,7 +1,7 @@
 #
 # spec file for package smt-client
 #
-# Copyright (c) 2011 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -19,7 +19,7 @@
 
 
 Name:           smt-client
-Version:        0.0.17
+Version:        0.0.18
 Release:        0.1
 Requires:       perl = %{perl_version}
 Requires:       perl-XML-XPath
