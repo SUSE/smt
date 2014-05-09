@@ -54,7 +54,12 @@ sub updatejob
   $req->content( $xmlout );
 
   my $response ;
-  eval { $response = $ua->request( $req ); };
+  eval {
+    local $SIG{ALRM} = sub { die "Error: Connection to server timed out.\n" };
+    alarm(310);
+    $response = $ua->request( $req );
+    alarm(0);
+  };
   SMT::Agent::Utils::error( "Unable to update job : $@" ) if ( $@ );
 
   if (! $response->is_success )
@@ -83,7 +88,12 @@ sub getjob
   my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_GET_JOB.$id);
   $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   my $response ;
-  eval { $response = $ua->request( $req ); };
+  eval {
+    local $SIG{ALRM} = sub { die "Error: Connection to server timed out.\n" };
+    alarm(310);
+    $response = $ua->request( $req );
+    alarm(0);
+  };
   SMT::Agent::Utils::error( "Unable to request job $id : $@" ) if ( $@ );
 
   if (! $response->is_success )
@@ -106,7 +116,12 @@ sub getnextjob
   my $req = HTTP::Request->new(GET => SMT::Agent::Config::smtUrl().SMT::Agent::Constants::REST_NEXT_JOB);
   $req->authorization_basic(SMT::Agent::Config::getGuid(), SMT::Agent::Config::getSecret());
   my $response ;
-  eval { $response = $ua->request( $req ); };
+  eval {
+    local $SIG{ALRM} = sub { die "Error: Connection to server timed out.\n" };
+    alarm(310);
+    $response = $ua->request( $req );
+    alarm(0);
+  };
   SMT::Agent::Utils::error( "Unable to request next job : $@" ) if ( $@ );
 
   if (! $response->is_success )
