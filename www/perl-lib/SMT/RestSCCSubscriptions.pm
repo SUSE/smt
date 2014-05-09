@@ -162,6 +162,7 @@ sub subscriptions_handler($$)
     {
         if ( $path =~ /^subscriptions\/systems/ )
         {
+            $r->log->info("GET connect/subscriptions/systems (announce)");
             my $c = JSON::decode_json(read_post($r));
             return announce($r, $dbh, $c);
         }

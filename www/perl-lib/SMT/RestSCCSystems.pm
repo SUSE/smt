@@ -123,7 +123,6 @@ sub _repositories_for_product
     {
         foreach my $repo (@{$dbh->selectall_arrayref($sql, {Slice => {}})})
         {
-            $r->log->info("REPO: $repo");
             push @{$enabled_repositories}, $repo->{id} if ($repo->{OPTIONAL} eq 'N');
             delete $repo->{OPTIONAL};
             push @{$repositories}, $repo;
@@ -156,6 +155,7 @@ sub _extensions_for_products
     my $sql = sprintf("
         SELECT e.id id,
                e.FRIENDLY friendly_name,
+               e.FRIENDLY name,
                e.PRODUCT zypper_name,
                e.DESCRIPTION description,
                e.VERSION zypper_version,
@@ -234,6 +234,8 @@ sub get_extensions($$)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
+    # log->info is limited in strlen. If you want to see all, you need to print to STDERR
+    print STDERR "REPO: ".Data::Dumper->Dump([$result])."\n";
 
     return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
 }
@@ -584,6 +586,7 @@ sub systems_handler($$)
     {
         if ( $path =~ /^systems\/products/ )
         {
+            $r->log->info("GET connect/systems/products (get extensions)");
             return get_extensions($r, $dbh);
         }
         else { return undef; }
@@ -592,6 +595,7 @@ sub systems_handler($$)
     {
         if ( $path =~ /^systems\/products/ )
         {
+            $r->log->info("POST connect/systems/products (register a product)");
             my $c = JSON::decode_json(read_post($r));
             return products($r, $dbh, $c);
         }
@@ -601,6 +605,7 @@ sub systems_handler($$)
     {
         if ( $path =~ /^systems\/?$/ )
         {
+            $r->log->info("PUT connect/systems");
             my $c = JSON::decode_json(read_post($r));
             return update_system($r, $dbh, $c);
         }
@@ -610,6 +615,7 @@ sub systems_handler($$)
     {
         if ( $path =~ /^systems\/?$/ )
         {
+            $r->log->info("DELETE connect/systems");
             return delete_system($r, $dbh);
         }
         else { return undef; }
