@@ -1235,7 +1235,8 @@ sub download_handler
 
         # if it is an xml file we have to download it now and
         # process it
-        if (  $job->localFileLocation() =~ /(.+)\.xml(.*)/ )
+        # any fine in repodata needs to be donloaded here
+        if (  $job->localFileLocation() =~ /(.+)\.xml(.*)/ || $data->{LOCATION} =~ /^\/?repodata\// )
         {
             # metadata! change the download area
 
