@@ -86,7 +86,7 @@ sub _getProxySettings
 
 
 #
-# return: 0 == ok, -1 == called without key or value, >0 == curl error code
+# return: 0 == ok, -1 == called without key, >0 == curl error code
 #
 sub setopt
 {
@@ -94,7 +94,7 @@ sub setopt
     my $key   = shift;
     my $value = shift;
     my $curlcode = -1;
-    if ( defined $key && $key ne "" && defined $value && $value ne "")
+    if ( $key )
     {
         $curlcode = $self->{curlobj}->setopt($key, $value);
     }
@@ -235,6 +235,7 @@ sub request
         $self->setopt(CURLOPT_PROXYUSERPWD, $self->{PROXYUSER});
     }
 
+    $self->setopt(CURLOPT_ENCODING, undef);
     if ($request->method eq 'POST')
     {
         $self->setopt(CURLOPT_POST, 1);
