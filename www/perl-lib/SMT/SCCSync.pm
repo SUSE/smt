@@ -838,8 +838,19 @@ sub _updateRepositories
     };
     if($@)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        return 1;
+        if( $@ =~ /Duplicate entry/i )
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found. Try migration.");
+            $self->migrate(1);
+            my $ret = $self->_updateRepositories($repo);
+            $self->migrate(0);
+            return $ret;
+        }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            return 1;
+        }
     }
     $self->_updateTargets($repo->{distro_target}, $repo->{distro_target});
     return 0;
