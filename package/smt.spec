@@ -1,7 +1,7 @@
 #
 # spec file for package smt
 #
-# Copyright (c) 2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -15,39 +15,40 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
-# norootforbuild
-
 
 Name:           smt
-BuildRequires:  apache2 apache2-mod_perl swig
-Version:        1.2.4
+BuildRequires:  apache2
+BuildRequires:  apache2-mod_perl
+BuildRequires:  swig
+Version:        1.2.5
 Release:        0.<RELEASE6>
-Requires:       perl = %{perl_version}
-Requires:       perl-DBI
-Requires:       perl-Crypt-SSLeay
-Requires:       perl-Config-IniFiles
-Requires:       perl-gettext
-Requires:       perl-XML-Simple
-Requires:       perl-XML-Parser
-Requires:       perl-XML-Writer
-Requires:       perl-XML-XPath
-Requires:       perl-libwww-perl
-Requires:       perl-WWW-Curl
-Requires:       perl-URI
-Requires:       perl-TimeDate
-Requires:       perl-Text-ASCIITable
-Requires:       perl-MIME-Lite
-Requires:       perl-Digest-SHA1
-Requires:       limal-ca-mgm-perl
-Requires:       perl-DBIx-Migration-Directories
-Requires:       perl-DBIx-Transaction
-Requires:       logrotate
-Requires:       suseRegister
-Requires:       openssl-certs
-Requires:       htmldoc
 Requires:       createrepo
 Requires:       gpg2
-Requires:       satsolver-tools perl-satsolver
+Requires:       htmldoc
+Requires:       limal-ca-mgm-perl
+Requires:       logrotate
+Requires:       openssl-certs
+Requires:       perl = %{perl_version}
+Requires:       perl-Config-IniFiles
+Requires:       perl-Crypt-SSLeay
+Requires:       perl-DBI
+Requires:       perl-DBIx-Migration-Directories
+Requires:       perl-DBIx-Transaction
+Requires:       perl-Digest-SHA1
+Requires:       perl-MIME-Lite
+Requires:       perl-Text-ASCIITable
+Requires:       perl-TimeDate
+Requires:       perl-URI
+Requires:       perl-WWW-Curl
+Requires:       perl-XML-Parser
+Requires:       perl-XML-Simple
+Requires:       perl-XML-Writer
+Requires:       perl-XML-XPath
+Requires:       perl-gettext
+Requires:       perl-libwww-perl
+Requires:       perl-satsolver
+Requires:       satsolver-tools
+Requires:       suseRegister
 Requires(pre):  bc
 Recommends:     mysql
 Recommends:     perl-DBD-mysql
@@ -55,10 +56,9 @@ Recommends:     yast2-smt
 Conflicts:      slms-registration
 Conflicts:      smt-client <= 0.0.14
 PreReq:         %fillup_prereq apache2 apache2-mod_perl pwdutils
-AutoReqProv:    on
-Group:          Productivity/Networking/Web/Proxy
-License:        GPL v2 or later
 Summary:        Subscription Management Tool
+License:        GPL-2.0+
+Group:          Productivity/Networking/Web/Proxy
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.apache2-smt
 Source2:        smt-rpmlintrc
@@ -80,7 +80,6 @@ Authors:
         locilka@suse.cz
 
 %package -n res-signingkeys
-License:        GPL v2 or later
 Summary:        Signing Key for RES
 Group:          Productivity/Security
 PreReq:         smt = %version
@@ -100,7 +99,6 @@ Authors:
         locilka@suse.cz
 
 %package support
-License:        GPL v2 or later
 Summary:        SMT support proxy
 Group:          Productivity/Networking/Web/Proxy
 PreReq:         smt = %version
