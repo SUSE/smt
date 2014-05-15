@@ -224,9 +224,14 @@ sub handle_start_tag
             $self->{CURRENT}->{CHECKSUM_TYPE} = undef;
             $self->{CURRENT}->{ARCH} = ((defined $parentarch && $parentarch ne "")?"$parentarch":"$self->{DEFAULTARCH}");
             $self->{CURRENT}->{LOCATION} = undef;
+            $self->{CURRENT}->{DATATYPE} = undef;
         }
 
         $self->{CURRENT}->{MAINELEMENT} = lc($element);
+        if(lc($element) eq "data" && exists $attrs{type})
+        {
+            $self->{CURRENT}->{DATATYPE} = $attrs{type};
+        }
     }
     elsif ( defined $self->{CURRENT}->{MAINELEMENT} && $self->{CURRENT}->{MAINELEMENT} ne "" &&
             lc($element) eq "location" )

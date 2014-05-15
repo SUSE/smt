@@ -248,6 +248,55 @@ sub fullLocalRepoPath
     return SMT::Utils::cleanPath($self->localBasePath(), $self->localRepoPath());
 }
 
+=item localLicenseDir
+
+Return the full local path to the license directory
+
+=cut
+
+sub localLicenseDir
+{
+    my $self = shift;
+    my $path = $self->fullLocalRepoPath();
+    $path =~ s/\/$//;
+    $path .= ".license";
+    return $path;
+}
+
+sub updateLicenseDir
+{
+    my $self = shift;
+    my $licenseFile = shift;
+
+    my $licdir = $self->localLicenseDir();
+    return 0 if (not $licdir);
+    return 0 if( ! -r $licenseFile || $licenseFile !~ /\.tar\./);
+    if (-d "$licdir")
+    {
+        rmtree($licdir, 0, 0);
+    }
+    mkpath($licdir, {error => \my $err});
+    if (@$err)
+    {
+        my ($file, $emsg) = each %{$err->[0]};
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                 "Could not create the destination directory '$licdir': $emsg");
+        $self->{STATISTIC}->{ERROR} += 1;
+        return $self->{STATISTIC}->{ERROR};
+    }
+    my @cargs = ("-x", "-f", $licenseFile, "-C", $licdir);
+    my ($exitcode, $out, $err) = SMT::Utils::executeCommand(
+        {log => $self->{LOG}, vblevel => $self->vblevel()}, "/bin/tar", @cargs);
+    if ($exitcode || $exitcode == -1)
+    {
+        $self->{STATISTIC}->{ERROR} += 1;
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                 "Failed to unpack license: $out\n$err");
+        return 0;
+    }
+    return 1;
+}
+
 =item deepverify()
 
 Enable or disable deepverify mode.
@@ -1261,6 +1310,10 @@ sub download_handler
             }
             $self->job2statistic($job);
             $self->{REPODATAJOBS}->{$data->{LOCATION}} = $job;
+            if ($data->{MAINELEMENT} eq 'data' && lc($data->{DATATYPE}) eq "license")
+            {
+                $self->updateLicenseDir($job->fullLocalPath());
+            }
         }
         else
         {
