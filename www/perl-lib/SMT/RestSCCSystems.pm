@@ -30,20 +30,9 @@ sub _registrationResult
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
     my $catalogs = shift || return undef;
     my $namespace  = shift || '';
-
-    my $cfg = undef;
-
-    eval
-    {
-        $cfg = SMT::Utils::getSMTConfig();
-    };
-    if($@ || !defined $cfg)
-    {
-        $r->log_error("Cannot read the SMT configuration file: ".$@);
-        return ( Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
-    }
 
     my $LocalNUUrl = $cfg->val('LOCAL', 'url');
     my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
@@ -102,6 +91,7 @@ sub _repositories_for_product
 {
     my $r   = shift || return ([], []);
     my $dbh = shift || return ([], []);
+    my $baseURL = shift || return ([], []);
     my $productid = shift || return ([], []);
     my $enabled_repositories = [];
     my $repositories = [];
@@ -111,12 +101,13 @@ sub _repositories_for_product
                c.name,
                c.target distro_target,
                c.description,
-               c.exturl url,
+               CONCAT(%s, '/repo/', c.localpath) url,
                c.autorefresh,
                pc.OPTIONAL
           from ProductCatalogs pc
           join Catalogs c ON pc.catalogid = c.id
          where pc.productid = %s",
+         $dbh->quote($baseURL),
          $dbh->quote($productid));
     $r->log->info("STATEMENT: $sql");
     eval
@@ -140,6 +131,7 @@ sub _extensions_for_products
 {
     my $r   = shift || return {};
     my $dbh = shift || return {};
+    my $cfg = shift || return {};
     my $productids = shift || return {};
     my $result = {};
 
@@ -180,12 +172,15 @@ sub _extensions_for_products
     $r->log->info("STATEMENT: $sql");
     eval
     {
+        my $baseURL = $cfg->val('LOCAL', 'url');
+        $baseURL =~ s/\/*$//;
+
         my $new_ids = [];
         my $res = $dbh->selectall_hashref($sql, 'id');
         foreach my $product (values %{$res})
         {
             $product->{extensions} = [];
-            foreach my $ext ( values %{_extensions_for_products($r, $dbh, [int($product->{id})])})
+            foreach my $ext ( values %{_extensions_for_products($r, $dbh, $cfg, [int($product->{id})])})
             {
                 push @{$product->{extensions}}, $ext;
             }
@@ -193,7 +188,7 @@ sub _extensions_for_products
             $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
             $product->{id} = int($product->{id});
             ($product->{enabled_repositories}, $product->{repositories}) =
-                _repositories_for_product($r, $dbh, $product->{id});
+                _repositories_for_product($r, $dbh, $baseURL, $product->{id});
             $result->{$product->{id}} = $product;
         }
     };
@@ -204,10 +199,11 @@ sub _extensions_for_products
     return $result;
 }
 
-sub get_extensions($$)
+sub get_extensions($$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
     my $result = {};
     my $sql = "";
     # We are sure, that user is a system GUID
@@ -228,7 +224,7 @@ sub get_extensions($$)
     $r->log->info("STATEMENT: $sql");
     eval
     {
-        $result = _extensions_for_products($r, $dbh, $dbh->selectcol_arrayref($sql));
+        $result = _extensions_for_products($r, $dbh, $cfg, $dbh->selectcol_arrayref($sql));
     };
     if ($@)
     {
@@ -328,10 +324,11 @@ sub update_system($$$)
 # QUESTION: no chance to check duplicate clients?
 #           Every client should call this only once?
 #
-sub products($$$)
+sub products($$$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
     my $c   = shift || return undef;
     my $result = {};
     my $cnt = 0;
@@ -517,7 +514,7 @@ sub products($$$)
     # TODO: get status - from SMT?
 
     # return result
-    return _registrationResult($r, $dbh, $catalogs);
+    return _registrationResult($r, $dbh, $cfg, $catalogs);
 }
 
 sub delete_system($$)
@@ -575,10 +572,11 @@ sub delete_system($$)
 #
 # the handler for requests to the jobs ressource
 #
-sub systems_handler($$)
+sub systems_handler($$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
     my $path = sub_path($r);
 
     # map the requests to the functions
@@ -587,7 +585,7 @@ sub systems_handler($$)
         if ( $path =~ /^systems\/products/ )
         {
             $r->log->info("GET connect/systems/products (get extensions)");
-            return get_extensions($r, $dbh);
+            return get_extensions($r, $dbh, $cfg);
         }
         else { return undef; }
     }
@@ -597,7 +595,7 @@ sub systems_handler($$)
         {
             $r->log->info("POST connect/systems/products (register a product)");
             my $c = JSON::decode_json(read_post($r));
-            return products($r, $dbh, $c);
+            return products($r, $dbh, $cfg, $c);
         }
         else { return undef; }
     }
@@ -639,13 +637,23 @@ sub handler {
     my $path = sub_path($r);
     my $code = Apache2::Const::SERVER_ERROR;
     my $data = "";
+    my $dbh = undef;
+    my $cfg = undef;
 
     # try to connect to the database - else report server error
-    my $dbh = undef;
     if ( ! ($dbh=SMT::Utils::db_connect()) )
     {
         $r->log->error("RESTService could not connect to database.");
         return Apache2::Const::SERVER_ERROR;
+    }
+    eval
+    {
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        $r->log_error("Cannot read the SMT configuration file: ".$@);
+        return ( Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
     }
 
     # REST Services need authentication
@@ -674,7 +682,7 @@ sub handler {
         $r->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.", $r->user) );
     }
 
-    if    ( $path =~ qr{^systems?}    ) {  ($code, $data) = systems_handler($r, $dbh); }
+    if    ( $path =~ qr{^systems?}    ) {  ($code, $data) = systems_handler($r, $dbh, $cfg); }
 
     if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
