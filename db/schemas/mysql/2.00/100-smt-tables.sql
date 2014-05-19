@@ -135,6 +135,7 @@ create table Products (
                 ARCHLOWER       VARCHAR(100),
                 FRIENDLY        VARCHAR(700),
                 CPE             VARCHAR(255),
+                EULA_URL        VARCHAR(255),
                 PARAMLIST       TEXT,
                 NEEDINFO        TEXT,
                 SERVICE         TEXT,
