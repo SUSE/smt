@@ -155,6 +155,7 @@ sub _extensions_for_products
                e.ARCH arch,
                e.PRODUCT_CLASS product_class,
                e.CPE cpe,
+               e.EULA_URL eula_url,
                1 free,
                ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
                    FROM ProductCatalogs pc
