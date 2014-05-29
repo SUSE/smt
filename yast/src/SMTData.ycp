@@ -489,9 +489,10 @@ LOCAL->smtUser %1 defined in %2 does not exist on the system."), _smt_user, smt_
         });
 
 	read_api_type = all_credentials["NU", "ApiType"]:"NCC";
-	if (all_credentials["NU", "NUUser"]:"MIRRORUSER" == "MIRRORUSER")
+	if (all_credentials["NU", "NUUser"]:"MIRRORUSER" == "")
 	    initial_config = true;
 
+        y2milestone ("Initial configuration: %1", initial_config);
         return true;
     }
 

@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon May 26 12:50:54 UTC 2014 - jsrain@suse.cz
+
+- adapted to work also against SCC
+- 2.17.28
+
+-------------------------------------------------------------------
 Mon Apr 15 13:35:54 CEST 2013 - mc@suse.de
 
 - Require sudo to test file access (bnc#815235)
