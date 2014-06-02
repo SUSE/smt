@@ -146,10 +146,11 @@ sub announce($$$)
 #
 # the handler for requests to the jobs ressource
 #
-sub subscriptions_handler($$)
+sub subscriptions_handler($$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $apiVersion = shift || return undef;
     my $path = sub_path($r);
 
     # map the requests to the functions
@@ -203,6 +204,12 @@ sub handler {
     my $path = sub_path($r);
     my $res = undef;
 
+    my $apiVersion = SMT::Utils::requestedAPIVersion($r);
+    if (not $apiVersion)
+    {
+        return respond_with_error($r, Apache2::Const::HTTP_NOT_ACCEPTABLE, "API version not supported") ;
+    }
+
     # try to connect to the database - else report server error
     my $dbh = undef;
     if ( ! ($dbh=SMT::Utils::db_connect()) )
@@ -211,7 +218,7 @@ sub handler {
         return Apache2::Const::SERVER_ERROR;
     }
 
-    if    ( $path =~ qr{^subscriptions?}    ) {  $res = subscriptions_handler($r, $dbh); }
+    if ( $path =~ qr{^subscriptions?}    ) {  $res = subscriptions_handler($r, $dbh, $apiVersion); }
 
     if (not defined $res)
     {
