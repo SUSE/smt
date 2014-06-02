@@ -1611,6 +1611,40 @@ sub isRES
     return ($ref->{GUID}?1:0);
 }
 
+=item requestedAPIVersion($r)
+
+Returns a short string with the requested API version (e.g. v1, v2, etc).
+In case an unsupported version is requested, this function return undef
+
+=cut
+
+sub requestedAPIVersion
+{
+    my $r = shift;
+    my $latestVersion = "v1";
+    my $versionHeader = "application/vnd.scc.suse.com";
+    my %supportedVersions = ( "application/vnd.scc.suse.com.v1+json" => "v1" );
+
+    my $accepts = $r->headers_in->{Accept} || '';
+
+    foreach my $accept (split(/\s*,\s*/, $accepts))
+    {
+        printLog($r, undef, LOG_DEBUG, "Accept: $accept");
+        if ($accept =~ /^$versionHeader/)
+        {
+            if (exists $supportedVersions{$accept})
+            {
+                return $supportedVersions{$accept}
+            }
+            else
+            {
+                return undef;
+            }
+        }
+    }
+    return $latestVersion;
+}
+
 =back
 
 =head1 AUTHOR
