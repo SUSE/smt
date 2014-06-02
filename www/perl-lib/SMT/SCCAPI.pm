@@ -343,45 +343,30 @@ sub _request
     $headers->{SMT} = $self->{IDENT};
 
     my $response = undef;
+    if(not exists $headers->{'Accept'})
+    {
+        # Request API version v1
+        $headers->{'Accept'} = 'application/vnd.scc.suse.com.v1+json';
+    }
     if ($method eq "get")
     {
-        if(not exists $headers->{'Accept'})
-        {
-            $headers->{'Accept'} = 'application/json; charset=utf-8';
-        }
         $headers->{':content_file'} = $dataTempFile;
         $response = $self->{USERAGENT}->get($url, %{$headers});
     }
     elsif ($method eq "head")
     {
-        if(not exists $headers->{'Accept'})
-        {
-            $headers->{'Accept'} = 'application/json; charset=utf-8';
-        }
         $response = $self->{USERAGENT}->head($url, %{$headers});
     }
     elsif ($method eq "post")
     {
-        if(not exists $headers->{'Content-Type'})
-        {
-            $headers->{'Content-Type'} = 'application/json; charset=utf-8';
-        }
         $response = $self->{USERAGENT}->post($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     elsif ($method eq "put")
     {
-        if(not exists $headers->{'Content-Type'})
-        {
-            $headers->{'Content-Type'} = 'application/json; charset=utf-8';
-        }
         $response = $self->{USERAGENT}->put($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     elsif ($method eq "delete")
     {
-        if(not exists $headers->{'Accept'})
-        {
-            $headers->{'Accept'} = 'application/json; charset=utf-8';
-        }
         $response = $self->{USERAGENT}->delete($url, %{$headers});
     }
     else
