@@ -155,6 +155,7 @@ install:
 	install -m 644 doc/Server-Tuning.txt $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 doc/SMT-Database-Schema.txt $(DESTDIR)$(DOCDIR)/smt/
 	install -m 644 doc/SMT-REST-API.txt $(DESTDIR)$(DOCDIR)/smt/
+        install -m 644 doc/README-SCC $(DESTDIR)$(DOCDIR)/smt/
 	make -C swig $@
 
 	mkdir -p $(DESTDIR)/var/spool/smt-support
