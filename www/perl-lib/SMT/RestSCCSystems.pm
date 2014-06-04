@@ -15,7 +15,7 @@ use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::Access ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_UNPROCESSABLE_ENTITY :log HTTP_NO_CONTENT);
+use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED HTTP_NOT_ACCEPTABLE NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_UNPROCESSABLE_ENTITY :log HTTP_NO_CONTENT);
 use Apache2::RequestUtil;
 
 use JSON;
@@ -573,11 +573,12 @@ sub delete_system($$)
 #
 # the handler for requests to the jobs ressource
 #
-sub systems_handler($$$)
+sub systems_handler($$$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
     my $cfg = shift || return undef;
+    my $apiVersion = shift || return undef;
     my $path = sub_path($r);
 
     # map the requests to the functions
@@ -641,6 +642,12 @@ sub handler {
     my $dbh = undef;
     my $cfg = undef;
 
+    my $apiVersion = SMT::Utils::requestedAPIVersion($r);
+    if (not $apiVersion)
+    {
+        return respond_with_error($r, Apache2::Const::HTTP_NOT_ACCEPTABLE, "API version not supported") ;
+    }
+
     # try to connect to the database - else report server error
     if ( ! ($dbh=SMT::Utils::db_connect()) )
     {
@@ -683,7 +690,7 @@ sub handler {
         $r->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.", $r->user) );
     }
 
-    if    ( $path =~ qr{^systems?}    ) {  ($code, $data) = systems_handler($r, $dbh, $cfg); }
+    if  ( $path =~ qr{^systems?}    ) {  ($code, $data) = systems_handler($r, $dbh, $cfg, $apiVersion); }
 
     if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
