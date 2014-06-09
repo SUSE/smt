@@ -15,7 +15,7 @@ use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::Access ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES :log);
+use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_NOT_ACCEPTABLE :log);
 use Apache2::RequestUtil;
 
 use JSON;
