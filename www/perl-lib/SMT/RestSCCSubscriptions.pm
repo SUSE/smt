@@ -121,6 +121,33 @@ sub announce($$$)
     $secret =~ s/-//g;  # remove the -
     $result->{password} = $secret;
 
+    # we have all data; store it and send <zmdconfig>
+    # for cloud quests verify they are authorized to access the server
+    my $verifyModule = $cfg->val('LOCAL', 'cloudGuestVerify');
+    if ($verifyModule && $verifyModule ne 'none')
+    {
+        my $module = "SMT::Client::$verifyModule";
+        (my $modFile = $module) =~ s|::|/|g;
+        eval
+        {
+            require $modFile . '.pm';
+        };
+        if ($@)
+        {
+            $r->log_error(
+             "Failed to load guest verification module '$modFile.pm'\n$@");
+           return (Apache2::Const::SERVER_ERROR,
+              "Internal Server Error. Please contact your administrator.");
+        }
+        my $result = $module->verifySCCGuest($r, $c, $result);
+        if (! $result)
+        {
+            $r->log_error("Guest verification failed\n");
+            return (Apache2::Const::FORBIDDEN,
+                 "Guest verification failed repository access denied");
+        }
+    }
+
     my $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET, REGTYPE)
                              VALUES (%s, %s, %s, %s, %s, 'SC')",
                              $dbh->quote($result->{login}),
@@ -140,7 +167,7 @@ sub announce($$$)
 
     _storeMachineData($r, $dbh, $result->{login}, $c);
 
-    return $result;
+    return (Apache2::Const::OK, $result);
 }
 
 #
@@ -163,7 +190,7 @@ sub subscriptions_handler($$$)
     {
         if ( $path =~ /^subscriptions\/systems/ )
         {
-            $r->log->info("GET connect/subscriptions/systems (announce)");
+            $r->log->info("POST connect/subscriptions/systems (announce)");
             my $c = JSON::decode_json(read_post($r));
             return announce($r, $dbh, $c);
         }
@@ -202,7 +229,8 @@ sub subscriptions_handler($$$)
 sub handler {
     my $r = shift;
     my $path = sub_path($r);
-    my $res = undef;
+    my $code = Apache2::Const::SERVER_ERROR;
+    my $data = "";
 
     my $apiVersion = SMT::Utils::requestedAPIVersion($r);
     if (not $apiVersion)
@@ -218,16 +246,13 @@ sub handler {
         return Apache2::Const::SERVER_ERROR;
     }
 
-    if ( $path =~ qr{^subscriptions?}    ) {  $res = subscriptions_handler($r, $dbh, $apiVersion); }
+    if ( $path =~ qr{^subscriptions?}    ) {  ($code, $data) = subscriptions_handler($r, $dbh, $apiVersion); }
 
-    if (not defined $res)
+    if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
-        $r->log->info("NOT FOUND");
-        # errors are logged in each handler
-        # returning undef from a handler is allowed, this will result in a 404 response, just as if no handler was defined for the request
-        return Apache2::Const::NOT_FOUND;
+        return respond_with_error($r, $code, $data);
     }
-    else
+    elsif ($code != Apache2::Const::HTTP_NO_CONTENT)
     {
         $r->content_type('application/json');
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
@@ -290,6 +315,23 @@ sub read_post {
     $bb->destroy;
     $r->log->info("Got content: $data");
     return $data;
+}
+
+sub respond_with_error
+{
+    my ($r, $code, $msg) = @_;
+    if (! $code)
+    {
+        $code = Apache2::Const::NOT_FOUND;
+        $msg  = "Not Found";
+    }
+    # errors are logged in each handler
+    # returning undef from a handler is allowed, this will result in a 404 response, just as if no handler was defined for the request
+    $r->status($code);
+    $r->content_type('application/json');
+    $r->custom_response($code, "");
+    print encode_json({ 'error' => $msg,  'localized_error' => $msg, 'status' => $code });
+    return $code;
 }
 
 1;
