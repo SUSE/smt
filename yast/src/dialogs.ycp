@@ -2246,8 +2246,10 @@ otherwise press Cancel to skip the signing procedure."), key_description))),
 		    _("Aborting the Mirroring"),
 		    // a pop-up question
 		    _("Are you sure you want to abort the current mirroring process?"),
-		    Label::AbortButton(),
-		    Label::CancelButton(),
+		    // push button
+		    _("Abort Mirroring"),
+		    // push button
+		    _("Continue Mirroring"),
 		    `focus_no
 		)) {
 		    UI::ChangeWidget (`id (`log), `LastLine, _("Aborting...\n"));
