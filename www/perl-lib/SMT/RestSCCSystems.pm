@@ -122,7 +122,7 @@ sub _registrationResult_v2
         'id' => 1,
         'name' =>  $localID,
         'url'  =>  "$LocalNUUrl?credentials=$localID",
-        'product' => undef
+        'product' => {}
     };
     return (Apache2::Const::OK, $response);
 }
@@ -370,6 +370,12 @@ sub get_extensions_v2($$$)
     my $guid = $r->user;
 
     my $args = parse_args($r);
+    if(!$args || scalar(keys %{$args}) == 0)
+    {
+        # try to read from body
+        $args = JSON::decode_json(read_post($r));
+    }
+    $r->log->info(Data::Dumper->Dump([$args]));
     if (!exists $args->{identifier} || !exists $args->{version} || !exists $args->{arch})
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No product specified");
