@@ -174,7 +174,7 @@ sub announce($$$$)
 #
 # the handler for requests to the jobs ressource
 #
-sub subscriptions_handler($$$)
+sub subscriptions_handler($$$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
@@ -190,7 +190,7 @@ sub subscriptions_handler($$$)
     }
     elsif ( $r->method() =~ /^POST$/i )
     {
-        if ( $path =~ /^subscriptions\/systems/ && ($apiVersion > 1))
+        if ( $path =~ /^subscriptions\/systems\/?$/ && ($apiVersion > 1))
         {
             $r->log->info("POST connect/subscriptions/systems (announce)");
             my $c = JSON::decode_json(read_post($r));
@@ -258,7 +258,11 @@ sub handler {
         return ( Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
     }
 
-    if ( $path =~ qr{^subscriptions?}    ) {  ($code, $data) = subscriptions_handler($r, $dbh, $apiVersion); }
+    $r->log->info("$path called with API version $apiVersion");
+    if ( $path =~ qr{^subscriptions?}    )
+    {
+        $r->log->info("call sunscription handler");
+        ($code, $data) = subscriptions_handler($r, $dbh, $cfg, $apiVersion); }
 
     if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
