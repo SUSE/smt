@@ -282,6 +282,7 @@ sub _extensions_for_products_v2
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
                             WHERE pc.PRODUCTID = e.ID
                               AND c.DOMIRROR = 'N'
+                              AND pc.OPTIONAL = 'N'
                          GROUP BY c.DOMIRROR) = 'N'
                 THEN 0 ELSE 1 END ) available
           FROM Products p
