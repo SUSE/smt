@@ -277,13 +277,13 @@ sub _extensions_for_products_v2
                e.CPE cpe,
                e.EULA_URL eula_url,
                1 free,
-               ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
-                   FROM ProductCatalogs pc
-                   JOIN Catalogs c ON pc.CATALOGID = c.ID
-                  WHERE pc.PRODUCTID = e.ID
-                    AND c.MIRRORABLE = 'N'
-               GROUP BY c.MIRRORABLE
-               ) available
+               (CASE WHEN (SELECT c.DOMIRROR
+                             FROM ProductCatalogs pc
+                             JOIN Catalogs c ON pc.CATALOGID = c.ID
+                            WHERE pc.PRODUCTID = e.ID
+                              AND c.DOMIRROR = 'N'
+                         GROUP BY c.DOMIRROR) = 'N'
+                THEN 0 ELSE 1 END ) available
           FROM Products p
           JOIN ProductExtensions pe ON p.ID = pe.PRODUCTID
           JOIN Products e ON pe.EXTENSIONID = e.ID
