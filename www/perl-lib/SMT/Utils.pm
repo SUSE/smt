@@ -1621,9 +1621,11 @@ In case an unsupported version is requested, this function return undef
 sub requestedAPIVersion
 {
     my $r = shift;
-    my $latestVersion = "v1";
+    my $latestVersion = 2;
     my $versionHeader = "application/vnd.scc.suse.com";
-    my %supportedVersions = ( "application/vnd.scc.suse.com.v1+json" => "v1" );
+    my %supportedVersions = ( "application/vnd.scc.suse.com.v1+json" => 1,
+                              "application/vnd.scc.suse.com.v2+json" => 2
+    );
 
     my $accepts = $r->headers_in->{Accept} || '';
 
