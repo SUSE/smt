@@ -15,7 +15,7 @@ use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 use Apache2::Access ();
 
-use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_NOT_ACCEPTABLE :log);
+use Apache2::Const -compile => qw(OK SERVER_ERROR HTTP_UNAUTHORIZED NOT_FOUND FORBIDDEN AUTH_REQUIRED MODE_READBYTES HTTP_NOT_ACCEPTABLE :log HTTP_NO_CONTENT);
 use Apache2::RequestUtil;
 
 use JSON;
@@ -67,10 +67,11 @@ sub _storeMachineData($$$$)
 # QUESTION: no chance to check duplicate clients?
 #           Every client should call this only once?
 #
-sub announce($$$)
+sub announce($$$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
     my $c   = shift || return undef;
     my $result = {};
     my $hostname = "";
@@ -177,6 +178,7 @@ sub subscriptions_handler($$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
     my $apiVersion = shift || return undef;
     my $path = sub_path($r);
 
@@ -192,7 +194,7 @@ sub subscriptions_handler($$$)
         {
             $r->log->info("POST connect/subscriptions/systems (announce)");
             my $c = JSON::decode_json(read_post($r));
-            return announce($r, $dbh, $c);
+            return announce($r, $dbh, $cfg, $c);
         }
         else { return undef; }
     }
@@ -231,6 +233,7 @@ sub handler {
     my $path = sub_path($r);
     my $code = Apache2::Const::SERVER_ERROR;
     my $data = "";
+    my $cfg = undef;
 
     my $apiVersion = SMT::Utils::requestedAPIVersion($r);
     if (not $apiVersion)
@@ -245,6 +248,15 @@ sub handler {
         $r->log->error("RESTService could not connect to database.");
         return Apache2::Const::SERVER_ERROR;
     }
+    eval
+    {
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        $r->log_error("Cannot read the SMT configuration file: ".$@);
+        return ( Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
+    }
 
     if ( $path =~ qr{^subscriptions?}    ) {  ($code, $data) = subscriptions_handler($r, $dbh, $apiVersion); }
 
@@ -258,7 +270,7 @@ sub handler {
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $r->err_headers_out->add('Pragma' => "no-cache");
 
-        print encode_json($res);
+        print encode_json($data);
     }
 
     # return a 200 response
@@ -336,310 +348,3 @@ sub respond_with_error
 
 1;
 
-=head1 NAME
-
-SMT::RESTService - REST service documentation
-
-=head1 DESCRIPTION
-
-To access the REST interface all URLs start with /=/1/ path.
-
-=head1 Jobs Interface
-
-=over 4
-
-=item GET /jobs
-
-Returns a list of all jobs
-
-=item GET /jobs/@next
-
-Return the next job
-
-=item GET /jobs/<ID>
-
-Return job information of the specified ID
-
-=item PUT /jobs/<ID>
-
-Finish job with the given ID
-
-=back
-
-=head1 Clients Interface
-
-=over 4
-
-=item GET /clients
-
-Return a list of all clients
-
- <clients>
-   <client id="1" description="" guid="bb75d9deb4724a0c937f018a45f2bf34"
-           hostname="www" lastcontact="2010-04-15 17:18:03" namespace=""
-           patchstatus_date="" patchstatus_o="" patchstatus_p=""
-           patchstatus_r="" patchstatus_s="" target="sle-11-x86_64"/>
-   <client id="1" .... />
- </clients>
-
-=item GET /clients/<GUID>
-
-Return client information of this GUID
-
-   <client id="1" description="" guid="bb75d9deb4724a0c937f018a45f2bf34"
-           hostname="www" lastcontact="2010-04-15 17:18:03" namespace=""
-           patchstatus_date="" patchstatus_o="" patchstatus_p=""
-           patchstatus_r="" patchstatus_s="" target="sle-11-x86_64"/>
-   <client id="1" .... />
-
-=item GET /clients/@all/jobs
-
-Return a list of jobs of all clients
-
- <jobs>
-   <job id="71" type="patchstatus" name="Patchstatus Job"
-        description="Patchstatus Job for Client 4b4608ddc16e4b3fa1271df903056b3a"
-        status="0" created="2011-07-25 12:19:42" upstream="0"
-        cacheresult="0" verbose="0" timelag="23:00:00" persistent="1">
-     <arguments/>
-   </job>
-   <job id="42" guid="123" type="patchstatus" name="Patchstatus Job"
-        description="Patchstatus Job for Client 123" status="0" exitcode="0"
-        created="2010-07-12 17:20:27" targeted="2012-02-03 11:36:02"
-        retrieved="2012-02-02 12:36:01" finished="2012-02-02 12:36:02"
-        upstream="0" cacheresult="0" verbose="0" timelag="23:00:00"
-        message="0:0:0:0 # PackageManager=0 Security=0 Recommended=0
-        Optional=0" persistent="1">
-     <stdout>
-       <![CDATA[ ]]>
-     </stdout>
-     <stderr>
-       <![CDATA[ ]]>
-     </stderr>
-     <arguments/>
-   </job>
-   ...
- </jobs>
-
-=item GET /clients/<GUID>/jobs
-
-Return a list of jobs for the client specified by GUID
-
- <jobs>
-   <job id="42" guid="123" type="patchstatus" name="Patchstatus Job"
-        description="Patchstatus Job for Client 123" status="0" exitcode="0"
-        created="2010-07-12 17:20:27" targeted="2012-02-03 11:36:02"
-        retrieved="2012-02-02 12:36:01" finished="2012-02-02 12:36:02"
-        upstream="0" cacheresult="0" verbose="0" timelag="23:00:00"
-        message="0:0:0:0 # PackageManager=0 Security=0 Recommended=0
-        Optional=0" persistent="1">
-     <stdout>
-       <![CDATA[ ]]>
-     </stdout>
-     <stderr>
-       <![CDATA[ ]]>
-     </stderr>
-     <arguments/>
-   </job>
-   ...
- </jobs>
-
-=item GET /clients/<GUID>/jobs/@next
-
-Return the next job of the client specified by GUID.
-
-=item GET /clients/<GUID>/jobs/<ID>
-
-Return job information of a specific client and a specific job
-
-=item GET /clients/@all/patchstatus
-
-Return the patchstatus of all clients
-
- <clients>
-   <client id="1" guid="f9c48ef7ae0c4ed39294f96715d36b50" patchstatus_date=""
-           patchstatus_o="" patchstatus_p="" patchstatus_r="" patchstatus_s=""/>
-   <client id=2" ... />
- </clients>
-
-=item GET /clients/<GUID>/patchstatus
-
-Return the patchstatus of the client specified by GUID
-
- <client id="1" guid="f9c48ef7ae0c4ed39294f96715d36b50" patchstatus_date=""
-         patchstatus_o="" patchstatus_p="" patchstatus_r="" patchstatus_s=""/>
-
-=back
-
-=head1 Products Interface
-
-=over 4
-
-=item GET /products
-
-Return a list of all products
-
- <products>
-   <product name="SUSE_SLES" arch="x86_64" class="7261" id="3009" rel=""
-            serverclass="OS" uiname="SUSE Linux Enterprise Server 11 SP2"
-            version="11.2"/>
-   <product name="SUSE_SLES" arch="i586" class="7261" id="3006" rel=""
-            serverclass="OS" uiname="SUSE Linux Enterprise Server 11 SP2"
-            version="11.2"/>
-   ...
- </products>
-
-=item GET /products/<ID>
-
-Return the product specified by ID
-
- <product name="SUSE_SLES" arch="x86_64" class="7261" id="3009" rel=""
-          serverclass="OS" uiname="SUSE Linux Enterprise Server 11 SP2"
-          version="11.2"/>
-
-=item GET /products/<ID>/repos
-
-Return repositories of a specific product id
-
- <repos>
-   <repo name="SLES11-SP1-Updates" id="1094" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-WebYaST-SP2-Pool" id="1218" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP1-Debuginfo-Pool" id="1396" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-WebYaST-SP2-Updates" id="984" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP2-Core" id="1032" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-Extras" id="998" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP1-Pool" id="1053" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP2-Debuginfo-Updates" id="1269" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP2-Extension-Store" id="1401" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP2-Updates" id="1296" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP1-Debuginfo-Updates" id="845" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP2-Debuginfo-Core" id="934" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
- </repos>
-
-=back
-
-=head1 Repository Interface
-
-=over 4
-
-=item GET /repos
-
-Return a list of all repositories
-
- <repos>
-   <repo name="SLES11-SP1-Updates" id="1094" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-WebYaST-SP2-Pool" id="1218" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP1-Debuginfo-Pool" id="1396" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-WebYaST-SP2-Updates" id="984" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP2-Core" id="1032" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-Extras" id="998" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP1-Pool" id="1053" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP2-Debuginfo-Updates" id="1269" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP2-Extension-Store" id="1401" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLES11-SP2-Updates" id="1296" mirrored="" optional="N"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP1-Debuginfo-Updates" id="845" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   <repo name="SLE11-SP2-Debuginfo-Core" id="934" mirrored="" optional="Y"
-         target="sle-11-x86_64"/>
-   ...
- </repos>
-
-
-=item GET /repos/<ID>
-
-Return the repository specified by ID
-
- <repo name="SLE11-SP2-Debuginfo-Core" id="934" target="sle-11-x86_64"
-       type="nu">
-   <description>SLE11-SP2-Debuginfo-Core for sle-11-x86_64</description>
-   <localpath>
-     /space/mirror/repo/$RCE/SLE11-SP2-Debuginfo-Core/sle-11-x86_64
-   </localpath>
-   <mirrored date=""/>
-   <url>
-     https://nu.novell.com/repo/$RCE/SLE11-SP2-Debuginfo-Core/sle-11-x86_64/
-   </url>
- </repo>
-
-=item GET /repos/<ID>/patches
-
-Return a list of patches in the repository specified with ID
-
- <patches>
-   <patch name="slessp1-sle-apparmor-quick_en-pdf" category="recommended"
-          id="4591" version="3885"/>
-   <patch name="slessp1-apache2-mod_php5" category="recommended"
-          id="4842" version="3264"/>
-   <patch name="slessp1-at" category="recommended" id="4513"
-          version="4571"/>
-   ...
- </patches>
-
-=back
-
-=head1 Patches Interface
-
-=over 4
-
-=item GET /patches/<ID>
-
-Return information about a specific patch defined by ID
-
- <patch name="slessp1-sle-apparmor-quick_en-pdf" category="recommended" id="4591" version="3885">
-   <description>
-     This update provides the latest corrections and addtions to the SLES Manuals. In addition, it provides a new chapter about KVM.
-   </description>
-   <issued date="1296214440"/>
-   <packages>
-     <package name="sles-admin_en-pdf" arch="noarch" epoch="" release="16.25.1" version="11.1">
-       <origlocation>
-         https://nu.novell.com/repo/$RCE/SLES11-SP1-Updates/sle-11-x86_64/rpm/noarch/sles-admin_en-pdf-11.1-16.25.1.noarch.rpm
-       </origlocation>
-       <smtlocation>
-         https://smt.example.com/repo/$RCE/SLES11-SP1-Updates/sle-11-x86_64/rpm/noarch/sles-admin_en-pdf-11.1-16.25.1.noarch.rpm
-       </smtlocation>
-     </package>
-     <package>
-     ...
-   </package>
-   <references>
-     <reference id="664232" href="https://bugzilla.novell.com/show_bug.cgi?id=664232" title="bug number 664232" type="bugzilla"/>
-   </references>
-   <title>
-     Recommended update for SLES Manual Update and KVM User Guide
-   </title>
- </patch>
-
-=back
-
-=head1 AUTHOR
-
-mc@suse.de, jdsn@suse.de
-
-=head1 COPYRIGHT
-
-Copyright 2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
-
-=cut
