@@ -26,7 +26,7 @@ use SMT::Registration;
 use DBI qw(:sql_types);
 use Data::Dumper;
 
-sub _registrationResult
+sub _registrationResult_v1
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
@@ -87,6 +87,46 @@ sub _registrationResult
     return (Apache2::Const::OK, $response);
 }
 
+sub _registrationResult_v2
+{
+    my $r   = shift || return undef;
+    my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
+    my $namespace  = shift || '';
+
+    my $LocalNUUrl = $cfg->val('LOCAL', 'url');
+    my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
+    my $aliasChange = $cfg->val('NU', 'changeAlias');
+    if(defined $aliasChange && $aliasChange eq "true")
+    {
+        $aliasChange = 1;
+    }
+    else
+    {
+        $aliasChange = 0;
+    }
+
+    $LocalNUUrl =~ s/\s*$//;
+    $LocalNUUrl =~ s/\/*$//;
+    if(! $LocalNUUrl || $LocalNUUrl !~ /^http/)
+    {
+        $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
+        return (Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
+    }
+    my $localID = "SMT-".$LocalNUUrl;
+    $localID =~ s/:*\/+/_/g;
+    $localID =~ s/\./_/g;
+    $localID =~ s/_$//;
+
+    my $response = {
+        'id' => 1,
+        'name' =>  $localID,
+        'url'  =>  "$LocalNUUrl?credentials=$localID",
+        'product' => undef
+    };
+    return (Apache2::Const::OK, $response);
+}
+
 sub _repositories_for_product
 {
     my $r   = shift || return ([], []);
@@ -127,7 +167,7 @@ sub _repositories_for_product
 }
 
 
-sub _extensions_for_products
+sub _extensions_for_products_v1
 {
     my $r   = shift || return {};
     my $dbh = shift || return {};
@@ -181,7 +221,87 @@ sub _extensions_for_products
         foreach my $product (values %{$res})
         {
             $product->{extensions} = [];
-            foreach my $ext ( values %{_extensions_for_products($r, $dbh, $cfg, [int($product->{id})])})
+            foreach my $ext ( values %{_extensions_for_products_v1($r, $dbh, $cfg, [int($product->{id})])})
+            {
+                push @{$product->{extensions}}, $ext;
+            }
+            $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
+            $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
+            $product->{id} = int($product->{id});
+            ($product->{enabled_repositories}, $product->{repositories}) =
+                _repositories_for_product($r, $dbh, $baseURL, $product->{id});
+            $result->{$product->{id}} = $product;
+        }
+    };
+    if ($@)
+    {
+        if($dbh->errstr)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+        else
+        {
+            $r->log_error("ERROR: $@");
+        }
+    }
+    return $result;
+}
+
+sub _extensions_for_products_v2
+{
+    my $r   = shift || return {};
+    my $dbh = shift || return {};
+    my $cfg = shift || return {};
+    my $productids = shift || return {};
+    my $result = {};
+
+    if (scalar(@{$productids}) == 0)
+    {
+        $r->log->info("no more extensions");
+        return {};
+    }
+    foreach (@{$productids})
+    {
+        $_ = $dbh->quote($_);
+    }
+    my $sql = sprintf("
+        SELECT e.id id,
+               e.FRIENDLY friendly_name,
+               e.FRIENDLY name,
+               e.PRODUCT identifier,
+               e.DESCRIPTION description,
+               e.VERSION version,
+               e.REL release_type,
+               e.ARCH arch,
+               e.PRODUCT_CLASS product_class,
+               e.CPE cpe,
+               e.EULA_URL eula_url,
+               1 free,
+               ( SELECT (CASE c.MIRRORABLE WHEN 'N' THEN 0 ELSE 1 END)
+                   FROM ProductCatalogs pc
+                   JOIN Catalogs c ON pc.CATALOGID = c.ID
+                  WHERE pc.PRODUCTID = e.ID
+                    AND c.MIRRORABLE = 'N'
+               GROUP BY c.MIRRORABLE
+               ) available
+          FROM Products p
+          JOIN ProductExtensions pe ON p.ID = pe.PRODUCTID
+          JOIN Products e ON pe.EXTENSIONID = e.ID
+          WHERE p.ID in (%s)
+          AND e.PRODUCT_LIST = 'Y'
+    ", join(',', @{$productids}));
+    $r->log->info("STATEMENT: $sql");
+    eval
+    {
+        my $baseURL = $cfg->val('LOCAL', 'url');
+        $baseURL =~ s/\/*$//;
+
+        my $new_ids = [];
+        my $res = $dbh->selectall_hashref($sql, 'id');
+        foreach my $product (values %{$res})
+        {
+            $product->{extensions} = [];
+            foreach my $ext ( values %{_extensions_for_products_v2($r, $dbh, $cfg, [int($product->{id})])})
             {
                 push @{$product->{extensions}}, $ext;
             }
@@ -200,7 +320,7 @@ sub _extensions_for_products
     return $result;
 }
 
-sub get_extensions($$$)
+sub get_extensions_v1($$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
@@ -225,7 +345,7 @@ sub get_extensions($$$)
     $r->log->info("STATEMENT: $sql");
     eval
     {
-        $result = _extensions_for_products($r, $dbh, $cfg, $dbh->selectcol_arrayref($sql));
+        $result = _extensions_for_products_v1($r, $dbh, $cfg, $dbh->selectcol_arrayref($sql));
     };
     if ($@)
     {
@@ -236,6 +356,56 @@ sub get_extensions($$$)
 
     return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
 }
+
+sub get_extensions_v2($$$)
+{
+    my $r   = shift || return undef;
+    my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
+    my $result = {};
+    my $sql = "";
+    my $productids = [];
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+
+    my $args = parse_args($r);
+    if (!exists $args->{identifier} || !exists $args->{version} || !exists $args->{arch})
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No product specified");
+    }
+
+    my $release = ((exists $args->{release_type})?$args->{release_type}:"");
+    my $req_pdid = SMT::Utils::lookupProductIdByName($dbh, $args->{identifier},
+                                                     $args->{version}, $release,
+                                                     $args->{arch}, $r);
+
+    $sql = sprintf(
+        "SELECT r.PRODUCTID id
+           FROM Registration r
+          WHERE r.GUID = %s
+            AND r.PRODUCTID = %s
+        ", $dbh->quote($guid), $dbh->quote($req_pdid));
+
+    $r->log->info("STATEMENT: $sql");
+    eval
+    {
+        $productids = $dbh->selectcol_arrayref($sql);
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    if (scalar(@{$productids}) == 0)
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "The requested product is not activated on this system.");
+    }
+    $result = _extensions_for_products_v2($r, $dbh, $cfg, $productids);
+    # log->info is limited in strlen. If you want to see all, you need to print to STDERR
+    print STDERR "REPO: ".Data::Dumper->Dump([$result])."\n";
+
+    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
+}
+
 
 sub update_system($$$)
 {
@@ -318,14 +488,14 @@ sub update_system($$$)
 
 
 #
-# announce a system. This call create a system object in the DB
+# announce a system (V1). This call create a system object in the DB
 # and return system username and password to the client.
 # all params are optional.
 #
 # QUESTION: no chance to check duplicate clients?
 #           Every client should call this only once?
 #
-sub products($$$$)
+sub products_v1($$$$)
 {
     my $r   = shift || return undef;
     my $dbh = shift || return undef;
@@ -515,7 +685,283 @@ sub products($$$$)
     # TODO: get status - from SMT?
 
     # return result
-    return _registrationResult($r, $dbh, $cfg, $catalogs);
+    return _registrationResult_v1($r, $dbh, $cfg, $catalogs);
+}
+
+#
+# announce a system (V2). This call create a system object in the DB
+# and return system username and password to the client.
+# all params are optional.
+#
+# QUESTION: no chance to check duplicate clients?
+#           Every client should call this only once?
+#
+sub products_v2($$$$)
+{
+    my $r   = shift || return undef;
+    my $dbh = shift || return undef;
+    my $cfg = shift || return undef;
+    my $c   = shift || return undef;
+    my $result = {};
+    my $cnt = 0;
+
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+    my $token = "";
+    my $email = "";
+    my $statement = "";
+
+    if ( exists $c->{token} && $c->{token})
+    {
+        # Token in SMT is not a required parameter
+        if(not SMT::Utils::lookupSubscriptionByRegcode($dbh, $c->{token}, $r))
+        {
+            $token = $c->{token};
+        }
+        else
+        {
+            # FIXME: should we abort with an error? SMT do not need a regcode,
+            #        but if we get one and it is wrong?
+            ;
+        }
+    }
+
+    if ( ! (exists $c->{identifier} && $c->{identifier}))
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: identifier");
+    }
+
+    if ( ! (exists $c->{version} && $c->{version}))
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: version");
+    }
+
+    if ( ! (exists $c->{arch} && $c->{arch}))
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: arch");
+    }
+
+    if ( ! (exists $c->{release_type}))
+    {
+        $c->{release_type} = undef;
+    }
+
+    if ( exists $c->{email} && $c->{email})
+    {
+        $email = $c->{email};
+    }
+
+    my $productId = SMT::Utils::lookupProductIdByName($dbh, $c->{identifier}, $c->{version},
+                                                      $c->{release_type}, $c->{arch});
+    if(not $productId)
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
+    }
+
+    #
+    # insert registration
+    #
+    my $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid, $r);
+    if(exists $existingregs->{$productId} && $existingregs->{$productId})
+    {
+        $statement = sprintf("UPDATE Registration SET REGDATE=%s WHERE GUID=%s AND PRODUCTID=%s",
+                             $dbh->quote( SMT::Utils::getDBTimestamp()),
+                             $dbh->quote($guid),
+                             $dbh->quote($productId));
+    }
+    else
+    {
+        $statement = sprintf("INSERT INTO Registration (GUID, PRODUCTID, REGDATE) VALUES (%s, %s, %s)",
+                             $dbh->quote($guid),
+                             $dbh->quote($productId),
+                             $dbh->quote( SMT::Utils::getDBTimestamp()));
+    }
+    $r->log->info("STATEMENT: $statement");
+    eval
+    {
+        $dbh->do($statement);
+    };
+    if ($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    #
+    # insert product info into MachineData
+    #
+    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME LIKE %s",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-%-$productId"));
+    eval {
+        $cnt = $dbh->do($statement);
+        $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-name-$productId"),
+                         $dbh->quote($c->{identifier}));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-version-$productId"),
+                         $dbh->quote($c->{version}));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-arch-$productId"),
+                         $dbh->quote($c->{arch}));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                         $dbh->quote($guid),
+                         $dbh->quote("product-rel-$productId"),
+                         $dbh->quote($c->{release_type}));
+    $r->log->info("STATEMENT: $statement");
+    eval {
+        $cnt = $dbh->do($statement);
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    if ( exists $c->{token} && $c->{token})
+    {
+        # if we got a tokem, store it for later transfer to SCC.
+        $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                            $dbh->quote($guid),
+                            $dbh->quote("product-token-$productId"),
+                            $dbh->quote($c->{token}));
+        $r->log->info("STATEMENT: $statement");
+        eval {
+            $cnt = $dbh->do($statement);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+    }
+
+
+    #
+    # lookup the Clients target
+    #
+    my $target = SMT::Utils::lookupTargetForClient($dbh, $guid, $r);
+
+    #
+    # find Catalogs
+    #
+    $existingregs = SMT::Utils::lookupRegistrationByGUID($dbh, $guid, $r);
+    my @pidarr = keys %{$existingregs};
+    my $catalogs = SMT::Registration::findCatalogs($r, $dbh, $target, \@pidarr);
+
+    if ( (keys %{$catalogs}) == 0)
+    {
+        $r->log->info("No repositories found");
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
+    }
+
+    # TODO: get status - from SMT?
+
+    # return result
+    return _registrationResult_v2($r, $dbh, $cfg);
+}
+
+sub update_product_v2($$$$)
+{
+    my $r    = shift || return undef;
+    my $dbh  = shift || return undef;
+    my $cfg  = shift || return undef;
+    my $args = shift || return undef;
+    my $product_classes = {};
+    my $old_pdid = undef;
+
+    if (!exists $args->{identifier} || !exists $args->{version} || !exists $args->{arch})
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No product specified");
+    }
+
+    # We are sure, that user is a system GUID
+    my $guid = $r->user;
+
+    my $sql = sprintf("SELECT p.id, p.PRODUCT_CLASS
+                         FROM Products p
+                         JOIN Registration r ON r.PRODUCTID = p.ID
+                        WHERE r.GUID = %s
+                          AND p.PRODUCT_CLASS is not NULL
+                      ", $dbh->quote($guid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        $product_classes = $dbh->selectall_hashref($sql, "PRODUCT_CLASS");
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+
+    my $release = ((exists $args->{release_type})?$args->{release_type}:"");
+    my $req_pdid = SMT::Utils::lookupProductIdByName($dbh, $args->{identifier},
+                                                     $args->{version}, $release,
+                                                     $args->{arch}, $r);
+    $sql = sprintf("SELECT PRODUCT_CLASS FROM Products WHERE ID = %s", $dbh->quote($req_pdid));
+    $r->log->info("STATEMENT: $sql");
+    eval {
+        my $new_class = $dbh->selectcol_arrayref($sql)->[0];
+        if(not exists $product_classes->{$new_class})
+        {
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+                    "No installed product with requested update product found");
+        }
+        else
+        {
+            $old_pdid = $product_classes->{$new_class}->{ID};
+        }
+    };
+    if($@)
+    {
+        $r->log_error("DBERROR: ".$dbh->errstr);
+    }
+    if($old_pdid && $req_pdid)
+    {
+        $sql = sprintf("UPDATE Registration
+                           SET PRODUCTID = %s
+                         WHERE GUID = %s
+                           AND PRODUCTID = %s",
+                       $dbh->quote($req_pdid),
+                       $dbh->quote($guid),
+                       $dbh->quote($old_pdid));
+        $r->log->info("STATEMENT: $sql");
+        eval {
+            $dbh->do($sql);
+        };
+        if($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+        }
+    }
+    return _registrationResult_v2($r, $dbh, $cfg);
 }
 
 sub delete_system($$)
@@ -587,7 +1033,14 @@ sub systems_handler($$$$)
         if ( $path =~ /^systems\/products/ )
         {
             $r->log->info("GET connect/systems/products (get extensions)");
-            return get_extensions($r, $dbh, $cfg);
+            if ($apiVersion == 1)
+            {
+                return get_extensions_v1($r, $dbh, $cfg);
+            }
+            else
+            {
+                return get_extensions_v2($r, $dbh, $cfg);
+            }
         }
         else { return undef; }
     }
@@ -595,9 +1048,16 @@ sub systems_handler($$$$)
     {
         if ( $path =~ /^systems\/products/ )
         {
-            $r->log->info("POST connect/systems/products (register a product)");
             my $c = JSON::decode_json(read_post($r));
-            return products($r, $dbh, $cfg, $c);
+            $r->log->info("POST connect/systems/products (register a product)");
+            if ($apiVersion == 1)
+            {
+                return products_v1($r, $dbh, $cfg, $c);
+            }
+            else # v2
+            {
+                return products_v2($r, $dbh, $cfg, $c);
+            }
         }
         else { return undef; }
     }
@@ -608,6 +1068,12 @@ sub systems_handler($$$$)
             $r->log->info("PUT connect/systems");
             my $c = JSON::decode_json(read_post($r));
             return update_system($r, $dbh, $c);
+        }
+        elsif ( $path =~ /^systems\/products\/?$/ && $apiVersion >= 2)
+        {
+            $r->log->info("PUT connect/systems/products");
+            my $c = JSON::decode_json(read_post($r));
+            return update_product_v2($r, $dbh, $cfg, $c);
         }
         else { return undef; }
     }

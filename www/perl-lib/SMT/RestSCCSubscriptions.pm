@@ -188,7 +188,7 @@ sub subscriptions_handler($$$)
     }
     elsif ( $r->method() =~ /^POST$/i )
     {
-        if ( $path =~ /^subscriptions\/systems/ )
+        if ( $path =~ /^subscriptions\/systems/ && ($apiVersion > 1))
         {
             $r->log->info("POST connect/subscriptions/systems (announce)");
             my $c = JSON::decode_json(read_post($r));
