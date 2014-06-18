@@ -353,7 +353,7 @@ sub get_extensions_v1($$$)
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
     # log->info is limited in strlen. If you want to see all, you need to print to STDERR
-    print STDERR "REPO: ".Data::Dumper->Dump([$result])."\n";
+    print STDERR "PRODUCTS: ".Data::Dumper->Dump([$result])."\n";
 
     return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
 }
@@ -387,8 +387,28 @@ sub get_extensions_v2($$$)
                                                      $args->{arch}, $r);
 
     $sql = sprintf(
-        "SELECT r.PRODUCTID id
+        "SELECT p.id id,
+               p.FRIENDLY friendly_name,
+               p.FRIENDLY name,
+               p.PRODUCT identifier,
+               p.DESCRIPTION description,
+               p.VERSION version,
+               p.REL release_type,
+               p.ARCH arch,
+               p.PRODUCT_CLASS product_class,
+               p.CPE cpe,
+               p.EULA_URL eula_url,
+               1 free,
+               (CASE WHEN (SELECT c.DOMIRROR
+                             FROM ProductCatalogs pc
+                             JOIN Catalogs c ON pc.CATALOGID = c.ID
+                            WHERE pc.PRODUCTID = p.ID
+                              AND c.DOMIRROR = 'N'
+                              AND pc.OPTIONAL = 'N'
+                         GROUP BY c.DOMIRROR) = 'N'
+                THEN 0 ELSE 1 END ) available
            FROM Registration r
+           JOIN Products p ON r.PRODUCTID = p.ID
           WHERE r.GUID = %s
             AND r.PRODUCTID = %s
         ", $dbh->quote($guid), $dbh->quote($req_pdid));
@@ -396,21 +416,41 @@ sub get_extensions_v2($$$)
     $r->log->info("STATEMENT: $sql");
     eval
     {
-        $productids = $dbh->selectcol_arrayref($sql);
+        my $baseURL = $cfg->val('LOCAL', 'url');
+        $baseURL =~ s/\/*$//;
+
+        my $new_ids = [];
+        my $res = $dbh->selectall_hashref($sql, 'id');
+        if (scalar(keys %{$res}) == 0)
+        {
+            $r->log_error("The requested product is not activated on this system.");
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "The requested product is not activated on this system.");
+        }
+
+        foreach my $product (values %{$res})
+        {
+            $product->{extensions} = [];
+            foreach my $ext ( values %{_extensions_for_products_v2($r, $dbh, $cfg, [int($product->{id})])})
+            {
+                push @{$product->{extensions}}, $ext;
+            }
+            $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
+            $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
+            $product->{id} = int($product->{id});
+            ($product->{enabled_repositories}, $product->{repositories}) =
+                _repositories_for_product($r, $dbh, $baseURL, $product->{id});
+            $result->{$product->{id}} = $product;
+        }
     };
     if ($@)
     {
         $r->log_error("DBERROR: ".$dbh->errstr);
     }
-    if (scalar(@{$productids}) == 0)
-    {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "The requested product is not activated on this system.");
-    }
-    $result = _extensions_for_products_v2($r, $dbh, $cfg, $productids);
-    # log->info is limited in strlen. If you want to see all, you need to print to STDERR
-    print STDERR "REPO: ".Data::Dumper->Dump([$result])."\n";
 
-    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
+    # log->info is limited in strlen. If you want to see all, you need to print to STDERR
+    print STDERR "PRODUCTS: ".Data::Dumper->Dump([$result->{$req_pdid}])."\n";
+
+    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), $result->{$req_pdid});
 }
 
 
