@@ -262,7 +262,7 @@ sub handler {
     $r->log->info("$path called with API version $apiVersion");
     if ( $path =~ qr{^subscriptions?}    )
     {
-        $r->log->info("call sunscription handler");
+        $r->log->info("call subscription handler");
         ($code, $data) = subscriptions_handler($r, $dbh, $cfg, $apiVersion); }
 
     if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
