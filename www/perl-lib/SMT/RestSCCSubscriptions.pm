@@ -240,6 +240,7 @@ sub handler {
     {
         return respond_with_error($r, Apache2::Const::HTTP_NOT_ACCEPTABLE, "API version not supported") ;
     }
+    $r->err_headers_out->add('scc-api-version' => "v$apiVersion");
 
     # try to connect to the database - else report server error
     my $dbh = undef;
@@ -273,7 +274,6 @@ sub handler {
         $r->content_type('application/json');
         $r->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $r->err_headers_out->add('Pragma' => "no-cache");
-
         print encode_json($data);
     }
 

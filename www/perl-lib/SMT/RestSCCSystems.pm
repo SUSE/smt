@@ -1160,6 +1160,7 @@ sub handler {
     {
         return respond_with_error($r, Apache2::Const::HTTP_NOT_ACCEPTABLE, "API version not supported") ;
     }
+    $r->err_headers_out->add('scc-api-version' => "v$apiVersion");
 
     # try to connect to the database - else report server error
     if ( ! ($dbh=SMT::Utils::db_connect()) )
