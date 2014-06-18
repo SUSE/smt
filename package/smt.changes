@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jun 18 15:05:37 CEST 2014 - mc@suse.de
+
+- implement SCC API v2
+
+-------------------------------------------------------------------
 Mon Jun  9 08:19:46 UTC 2014 - jsrain@suse.cz
 
 - fixed crash on registering against SMT
