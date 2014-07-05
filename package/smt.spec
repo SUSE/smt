@@ -207,6 +207,7 @@ fi
 %dir %{perl_vendorlib}/SMT/Utils
 %dir %{perl_vendorlib}/SMT/Mirror
 %dir %{perl_vendorlib}/SMT/Parser
+%dir %{perl_vendorlib}/SMT/Rest
 %dir %{perl_vendorarch}/Sys
 %dir %{perl_vendorarch}/auto/Sys/
 %dir %{perl_vendorarch}/auto/Sys/GRP
@@ -243,6 +244,7 @@ fi
 %{perl_vendorlib}/SMT/Utils/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm
 %{perl_vendorlib}/SMT/Parser/*.pm
+%{perl_vendorlib}/SMT/Rest/*.pm
 %{perl_vendorarch}/Sys/*.pm
 %{perl_vendorarch}/auto/Sys/GRP/*.so
 /srv/www/perl-lib/NU/*.pm

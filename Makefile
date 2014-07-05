@@ -82,6 +82,7 @@ install:
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Parser
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Utils
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Job
+	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Rest
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
@@ -119,8 +120,10 @@ install:
 	install -m 644 www/perl-lib/SMT/SCC*.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/RESTService.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/RESTInfo.pm $(DESTDIR)/srv/www/perl-lib/SMT/
-	install -m 644 www/perl-lib/SMT/RestSCCSystems.pm $(DESTDIR)/srv/www/perl-lib/SMT/
-	install -m 644 www/perl-lib/SMT/RestSCCSubscriptions.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	#install -m 644 www/perl-lib/SMT/RestSCCSystems.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	#install -m 644 www/perl-lib/SMT/RestSCCSubscriptions.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	install -m 644 www/perl-lib/SMT/Rest/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Rest/
+	install -m 644 www/perl-lib/SMT/ConnectAPI.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Utils/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Utils/
 	install -m 644 www/perl-lib/SMT/Job/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Job/
 	cd db/schemas; \
