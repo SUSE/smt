@@ -62,7 +62,7 @@ sub systems_handler
     my $self = shift;
 
     # systems handler requires authentication
-    return Apache2::Const::AUTH_REQUIRED unless ( defined $self->request()->user  &&  $self->request()->user ne '' );
+    return Apache2::Const::AUTH_REQUIRED unless ( defined $self->user()  &&  $self->user() ne '' );
 
     my ($status, $password) = $self->request()->get_basic_auth_pw;
     return $self->respond_with_error($status, "unauthorized") unless $status == Apache2::Const::OK;
@@ -70,7 +70,7 @@ sub systems_handler
     # to be sure that the authentication happens with GUID/SECRET and not with
     # mirror credentails
     my $client = SMT::Client->new({ 'dbh' => $self->dbh() });
-    my $auth = $client->authenticateByGUIDAndSecret($self->request()->user, $password);
+    my $auth = $client->authenticateByGUIDAndSecret($self->user(), $password);
     if ( keys %{$auth} != 1 )
     {
         $self->request()->log->error("No client authentication provided");
@@ -81,12 +81,12 @@ sub systems_handler
     if ( $update_last_contact )
     {
         $self->request()->log->info(sprintf("Request from client (%s). Updated its last contact timestamp.",
-                                            $self->request()->user) );
+                                            $self->user()) );
     }
     else
     {
         $self->request()->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.",
-                                            $self->request()->user) );
+                                            $self->user()) );
     }
     my $path = $self->sub_path();
 
@@ -145,7 +145,7 @@ sub get_extensions
     my $result = {};
     my $sql = "";
     # We are sure, that user is a system GUID
-    my $guid = $self->request()->user;
+    my $guid = $self->user();
 
     my $args = $self->parse_args();
     $sql = sprintf(
@@ -190,7 +190,7 @@ sub products
     my $cnt = 0;
 
     # We are sure, that user is a system GUID
-    my $guid = $self->request()->user;
+    my $guid = $self->user();
     my $token = "";
     my $email = "";
     my $statement = "";
@@ -382,7 +382,7 @@ sub update_system
     my $hostname = "";
 
     # We are sure, that user is a system GUID
-    my $guid = $self->request()->user;
+    my $guid = $self->user();
 
     if ( exists $c->{hostname} && $c->{hostname})
     {
@@ -456,7 +456,7 @@ sub delete_system
     my $self = shift || return (undef, undef);
 
     # We are sure, that user is a system GUID
-    my $guid = $self->request()->user;
+    my $guid = $self->user();
 
     my $sql = sprintf("DELETE from MachineData where GUID=%s",
                       $self->dbh()->quote($guid));
@@ -783,7 +783,7 @@ sub _registrationResult
         'sources' => {
             $localID => "$LocalNUUrl?credentials=$localID"
         },
-        'login' => $self->request()->user,
+        'login' => $self->user(),
         'password' => $password,
         'norefresh' => \@norefresh,
         'enabled' => \@enabled,

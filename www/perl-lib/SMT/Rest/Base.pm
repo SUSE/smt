@@ -51,7 +51,8 @@ sub new
 
     my $self = {'_req' => $r,
                 '_dbh' => $dbh,
-                '_cfg' => $cfg
+                '_cfg' => $cfg,
+                '_usr' => $r->user
     };
     bless $self, $class;
     return $self;
@@ -73,6 +74,12 @@ sub cfg
 {
     my $self = shift;
     return $self->{'_cfg'};
+}
+
+sub user
+{
+    my $self = shift;
+    return $self->{'_usr'};
 }
 
 #
