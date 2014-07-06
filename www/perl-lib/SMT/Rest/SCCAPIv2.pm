@@ -27,11 +27,13 @@ sub systems_handler()
     my ($code, $data) = (undef, undef);
 
     ($code, $data) = $self->SUPER::systems_handler();
-    my $path = $self->sub_path();
     if (!defined $code && !defined $data)
     {
+        my $path = $self->sub_path();
+
         if     ( $self->request()->method() =~ /^GET$/i )
         {
+            if     ( $path =~ /^systems\/activations\/?$/ ) { return $self->get_activations(); }
         }
         elsif ( $self->request()->method() =~ /^POST$/i )
         {
@@ -54,7 +56,7 @@ sub get_extensions
     my $sql = "";
     my $productids = [];
     # We are sure, that user is a system GUID
-    my $guid = $self->request()->user;
+    my $guid = $self->user();
 
     my $args = $self->parse_args();
     if(!$args || scalar(keys %{$args}) == 0)
@@ -156,7 +158,7 @@ sub products
     my $cnt = 0;
 
     # We are sure, that user is a system GUID
-    my $guid = $self->request()->user;
+    my $guid = $self->user();
     my $token = "";
     my $email = "";
     my $statement = "";
@@ -336,7 +338,7 @@ sub products
     # TODO: get status - from SMT?
 
     # return result
-    return $self->_registrationResult();
+    return $self->_registrationResult($productId);
 }
 
 sub update_product
@@ -352,7 +354,7 @@ sub update_product
     }
 
     # We are sure, that user is a system GUID
-    my $guid = $self->request()->user;
+    my $guid = $self->user();
 
     my $sql = sprintf("SELECT p.id, p.PRODUCT_CLASS
                          FROM Products p
@@ -409,9 +411,60 @@ sub update_product
             $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
         }
     }
-    return $self->_registrationResult();
+    return $self->_registrationResult($req_pdid);
 }
 
+sub get_activations
+{
+    my $self = shift || return (undef, undef);
+    my $activations = [];
+
+    # We are sure, that user is a system GUID
+    my $guid = $self->user();
+
+    my $sql = "SELECT c.ID system_id,
+                      s.REGCODE regcode,
+                      s.SUBTYPE type,
+                      s.SUBSTATUS status,
+                      DATE_FORMAT(s.SUBSTARTDATE, '%Y-%m-%dT%TZ') starts_at,
+                      DATE_FORMAT(s.SUBENDDATE, '%Y-%m-%dT%TZ') expires_at,
+                      r.PRODUCTID product_id
+                 FROM Registration r
+                 JOIN Clients c ON r.GUID = c.GUID
+            LEFT JOIN ClientSubscriptions cs ON r.GUID = cs.GUID
+            LEFT JOIN Subscriptions s on cs.SUBID = s.SUBID
+                WHERE r.GUID = ".$self->dbh()->quote($guid);
+
+    $self->request()->log->info("STATEMENT: $sql");
+    eval
+    {
+        my $baseURL = $self->cfg()->val('LOCAL', 'url');
+        $baseURL =~ s/\/*$//;
+
+        my $res = $self->dbh()->selectall_hashref($sql, 'product_id');
+        if (scalar(keys %{$res}) == 0)
+        {
+            $self->request()->log_error("No products activated on this system.");
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No products activated on this system.");
+        }
+
+        foreach my $activation (values %{$res})
+        {
+            my($dummy, $service) = $self->_registrationResult($activation->{product_id});
+            delete $activation->{product_id};
+            $activation->{service} = $service;
+            push @{$activations}, $activation;
+        }
+    };
+    if ($@)
+    {
+        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+    }
+    # log->info is limited in strlen. If you want to see all, you need to print to STDERR
+    print STDERR "ACTIVATIONS: ".Data::Dumper->Dump([$activations])."\n";
+
+    return (Apache2::Const::OK, $activations);
+}
 
 ################ PRIVATE ####################
 
@@ -490,7 +543,7 @@ sub _extensions_for_products
 sub _registrationResult
 {
     my $self = shift || return (undef, undef);
-    my $namespace  = shift || '';
+    my $product_id  = shift || undef;
 
     my $LocalNUUrl = $self->cfg()->val('LOCAL', 'url');
     my $LocalBasePath = $self->cfg()->val('LOCAL', 'MirrorTo');
@@ -516,13 +569,73 @@ sub _registrationResult
     $localID =~ s/\./_/g;
     $localID =~ s/_$//;
 
+    my $p = $self->_getProduct($product_id);
+
     my $response = {
         'id' => 1,
         'name' =>  $localID,
         'url'  =>  "$LocalNUUrl?credentials=$localID",
-        'product' => {}
+        'product' => $p
     };
     return (Apache2::Const::OK, $response);
+}
+
+sub _getProduct
+{
+    my $self = shift || return {};
+    my $product_id  = shift || return {};
+
+    my $sql = sprintf("
+        SELECT p.id id,
+               p.FRIENDLY friendly_name,
+               p.FRIENDLY name,
+               p.PRODUCT identifier,
+               p.DESCRIPTION description,
+               p.VERSION version,
+               p.REL release_type,
+               p.ARCH arch,
+               p.PRODUCT_CLASS product_class,
+               p.CPE cpe,
+               p.EULA_URL eula_url,
+               1 free,
+               (CASE WHEN (SELECT c.DOMIRROR
+                             FROM ProductCatalogs pc
+                             JOIN Catalogs c ON pc.CATALOGID = c.ID
+                            WHERE pc.PRODUCTID = p.ID
+                              AND c.DOMIRROR = 'N'
+                              AND pc.OPTIONAL = 'N'
+                         GROUP BY c.DOMIRROR) = 'N'
+                THEN 0 ELSE 1 END ) available
+          FROM Products p
+         WHERE p.ID = %s
+    ", $self->dbh()->quote($product_id));
+    $self->request()->log->info("STATEMENT: $sql");
+
+    my $result = {};
+    eval
+    {
+        my $baseURL = $self->cfg()->val('LOCAL', 'url');
+        $baseURL =~ s/\/*$//;
+
+        my $new_ids = [];
+        my $res = $self->dbh()->selectall_hashref($sql, 'id');
+
+        # the result should contain maximal 1 product
+        foreach my $product (values %{$res})
+        {
+            $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
+            $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
+            $product->{id} = int($product->{id});
+            ($product->{enabled_repositories}, $product->{repositories}) =
+                $self->_repositories_for_product($baseURL, $product->{id});
+            $result = $product;
+        }
+    };
+    if ($@)
+    {
+        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+    }
+    return $result;
 }
 
 1;
