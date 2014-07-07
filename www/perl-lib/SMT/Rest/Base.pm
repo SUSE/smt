@@ -141,6 +141,8 @@ sub read_post
     } while (!$seen_eos);
 
     $bb->destroy;
+    # Fake an empty hash in case we get no data
+    $data = '{}' if ! $data;
     $self->request()->log->info("Got content: $data");
     return $data;
 }
