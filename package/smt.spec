@@ -20,7 +20,7 @@ Name:           smt
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
-Version:        1.2.5
+Version:        1.2.6
 Release:        0.<RELEASE6>
 Requires:       createrepo
 Requires:       gpg2

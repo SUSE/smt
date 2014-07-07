@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jul  7 10:06:30 CEST 2014 - mc@suse.de
+
+- version 1.2.6
+- Comments always start at the beginning of a line (bnc#881728)
+
+-------------------------------------------------------------------
 Mon May 12 15:45:53 CEST 2014 - mc@suse.de
 
 - drop index only if it exists (bnc#852632)
