@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jul  7 13:40:54 CEST 2014 - mc@suse.de
+
+- 2.17.29
+- Comments always start at the beginning of a line (bnc#881728)
+
+-------------------------------------------------------------------
 Thu Jun 12 11:46:19 UTC 2014 - jsrain@suse.cz
 
 - improved confusing wording when aborging repo mirroring
