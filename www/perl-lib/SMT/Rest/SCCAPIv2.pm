@@ -109,26 +109,25 @@ sub get_extensions
         $baseURL =~ s/\/*$//;
 
         my $new_ids = [];
-        my $res = $self->dbh()->selectall_hashref($sql, 'id');
-        if (scalar(keys %{$res}) == 0)
+        $result = $self->dbh()->selectall_hashref($sql, 'id');
+        if (scalar(keys %{$result}) == 0)
         {
             $self->request()->log_error("The requested product is not activated on this system.");
             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "The requested product is not activated on this system.");
         }
 
-        foreach my $product (values %{$res})
+        foreach my $pdid (keys %{$result})
         {
-            $product->{extensions} = [];
-            foreach my $ext ( values %{$self->_extensions_for_products([int($product->{id})])})
+            $result->{$pdid}->{extensions} = [];
+            $result->{$pdid}->{id} = int($result->{$pdid}->{id});
+            $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
+            ($result->{$pdid}->{enabled_repositories}, $result->{$pdid}->{repositories}) =
+                $self->_repositories_for_product($baseURL, $result->{$pdid}->{id});
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}])})
             {
-                push @{$product->{extensions}}, $ext;
+                push @{$result->{$pdid}->{extensions}}, $ext;
             }
-            $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
-            $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
-            $product->{id} = int($product->{id});
-            ($product->{enabled_repositories}, $product->{repositories}) =
-                $self->_repositories_for_product($baseURL, $product->{id});
-            $result->{$product->{id}} = $product;
         }
     };
     if ($@)
@@ -517,20 +516,19 @@ sub _extensions_for_products
         $baseURL =~ s/\/*$//;
 
         my $new_ids = [];
-        my $res = $self->dbh()->selectall_hashref($sql, 'id');
-        foreach my $product (values %{$res})
+        $result = $self->dbh()->selectall_hashref($sql, 'id');
+        foreach my $pdid (keys %{$result})
         {
-            $product->{extensions} = [];
-            foreach my $ext ( values %{$self->_extensions_for_products([int($product->{id})])})
+            $result->{$pdid}->{extensions} = [];
+            $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{id} = int($result->{$pdid}->{id});
+            ($result->{$pdid}->{enabled_repositories}, $result->{$pdid}->{repositories}) =
+                $self->_repositories_for_product($baseURL, $result->{$pdid}->{id});
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}])})
             {
-                push @{$product->{extensions}}, $ext;
+                push @{$result->{$pdid}->{extensions}}, $ext;
             }
-            $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
-            $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
-            $product->{id} = int($product->{id});
-            ($product->{enabled_repositories}, $product->{repositories}) =
-                $self->_repositories_for_product($baseURL, $product->{id});
-            $result->{$product->{id}} = $product;
         }
     };
     if ($@)
