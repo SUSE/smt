@@ -598,14 +598,15 @@ EOS
                                      RELLOWER = %s, ARCHLOWER = %s,
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
-                                     CPE = %s, DESCRIPTION = %s, EULA_URL = %s
+                                     CPE = %s, DESCRIPTION = %s, EULA_URL = %s,
+                                     FORMER_IDENTIFIER = %s
                                WHERE ID = %s",
-                             $self->{DBH}->quote($product->{zypper_name}),
-                             $self->{DBH}->quote($product->{zypper_version}),
+                             $self->{DBH}->quote($product->{identifier}),
+                             $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{zypper_name})),
-                             $self->{DBH}->quote(($product->{zypper_version}?lc($product->{zypper_version}):undef)),
+                             $self->{DBH}->quote(lc($product->{identifier})),
+                             $self->{DBH}->quote(($product->{version}?lc($product->{version}):undef)),
                              $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
                              $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($product->{friendly_name}),
@@ -615,11 +616,12 @@ EOS
                              $self->{DBH}->quote($product->{cpe}),
                              $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($product->{eula_url}),
+                             $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($pid)
         );
     }
-    elsif ($self->migrate() && ($pid = SMT::Utils::lookupProductIdByName($self->{DBH}, $product->{zypper_name},
-                                                                         $product->{zypper_version},
+    elsif ($self->migrate() && ($pid = SMT::Utils::lookupProductIdByName($self->{DBH}, $product->{identifier},
+                                                                         $product->{version},
                                                                          $product->{release_type},
                                                                          $product->{arch},
                                                                          $self->{LOG}, $self->vblevel)))
@@ -633,14 +635,14 @@ EOS
                                      FRIENDLY = %s, PRODUCT_LIST = %s,
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
                                      CPE = %s, DESCRIPTION = %s, EULA_URL = %s,
-                                     SRC = 'S'
+                                     FORMER_IDENTIFIER = %s, SRC = 'S'
                                WHERE ID = %s",
-                             $self->{DBH}->quote($product->{zypper_name}),
-                             $self->{DBH}->quote($product->{zypper_version}),
+                             $self->{DBH}->quote($product->{identifier}),
+                             $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{zypper_name})),
-                             $self->{DBH}->quote(($product->{zypper_version}?lc($product->{zypper_version}):undef)),
+                             $self->{DBH}->quote(lc($product->{identifier})),
+                             $self->{DBH}->quote(($product->{version}?lc($product->{version}):undef)),
                              $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
                              $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($product->{friendly_name}),
@@ -650,6 +652,7 @@ EOS
                              $self->{DBH}->quote($product->{cpe}),
                              $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($product->{eula_url}),
+                             $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -658,14 +661,15 @@ EOS
         $statement = sprintf("INSERT INTO Products (PRODUCT, VERSION, REL, ARCH,
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
                               PARAMLIST, NEEDINFO, SERVICE, FRIENDLY, PRODUCT_LIST,
-                              PRODUCT_CLASS, CPE, DESCRIPTION, EULA_URL, PRODUCTDATAID, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
-                             $self->{DBH}->quote($product->{zypper_name}),
-                             $self->{DBH}->quote($product->{zypper_version}),
+                              PRODUCT_CLASS, CPE, DESCRIPTION, EULA_URL, PRODUCTDATAID,
+                              FORMER_IDENTIFIER, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                             $self->{DBH}->quote($product->{identifier}),
+                             $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{zypper_name})),
-                             $self->{DBH}->quote(($product->{zypper_version}?lc($product->{zypper_version}):undef)),
+                             $self->{DBH}->quote(lc($product->{identifier})),
+                             $self->{DBH}->quote(($product->{version}?lc($product->{version}):undef)),
                              $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
                              $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($paramlist),
@@ -677,7 +681,8 @@ EOS
                              $self->{DBH}->quote($product->{cpe}),
                              $self->{DBH}->quote($product->{description}),
                              $self->{DBH}->quote($product->{eula_url}),
-                             $self->{DBH}->quote($product->{id})
+                             $self->{DBH}->quote($product->{id}),
+                             $self->{DBH}->quote($product->{former_identifier})
         );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");

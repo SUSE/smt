@@ -133,7 +133,8 @@ Example:
     [
       {
         'release_type' => undef,
-        'zypper_name' => 'SLES',
+        'identifier' => 'SLES',
+        'former_identifier' => 'SUSE_SLES',
         'repos' => [
                      {
                        'format' => undef,
@@ -161,7 +162,7 @@ Example:
                      }
                    ],
         'arch' => 'x86_64',
-        'zypper_version' => '12',
+        'version' => '12',
         'id' => 1117,
         'friendly_name' => 'SUSE Linux Enterprise Server BETA TEST 12 x86_64',
         'product_class' => '7261'
@@ -345,8 +346,8 @@ sub _request
     my $response = undef;
     if(not exists $headers->{'Accept'})
     {
-        # Request API version v1
-        $headers->{'Accept'} = 'application/vnd.scc.suse.com.v1+json';
+        # Request API version v2
+        $headers->{'Accept'} = 'application/vnd.scc.suse.com.v2+json';
     }
     if ($method eq "get")
     {
