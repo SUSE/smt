@@ -676,6 +676,7 @@ sub _listreg_handler
     my $data     = shift;
 
     my $statement = "";
+    my $duplicate = {};
 
     if(!exists $data->{GUID} || !defined $data->{GUID})
     {
@@ -692,12 +693,15 @@ sub _listreg_handler
 
             foreach my $subid (@{$data->{SUBREF}})
             {
+                # we already have this combination. Prevent Duplicate Entry error in DB
+                next if(exists $duplicate->{$data->{GUID}."-".$subid});
                 $statement = sprintf("INSERT INTO ClientSubscriptions (GUID, SUBID) VALUES(%s, %s)",
                                      $self->{DBH}->quote($data->{GUID}),
                                      $self->{DBH}->quote($subid));
 
                 $self->{DBH}->do($statement);
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$statement") ;
+                $duplicate->{$data->{GUID}."-".$subid} = 1;
             }
         }
     };
