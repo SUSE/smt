@@ -225,7 +225,7 @@ sub canMigrate
         my $found = 0;
         foreach my $product (@$input)
         {
-            if ( $c->{PRODUCT_CLASS} eq $product->{product_class} )
+            if ( $c->{PRODUCT_CLASS} eq ($product->{product_class}||'') )
             {
                 $found = 1;
                 last;
@@ -270,7 +270,7 @@ sub canMigrate
         foreach my $repo (@$input)
         {
             if ($catalogs->{$needed_cid}->{NAME} eq $repo->{name} &&
-                $catalogs->{$needed_cid}->{TARGET} eq $repo->{distro_target})
+                ($catalogs->{$needed_cid}->{TARGET}||'') eq ($repo->{distro_target}||''))
             {
                 $found = 1;
                 last;
