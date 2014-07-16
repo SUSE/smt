@@ -285,13 +285,13 @@ sub updateLicenseDir
         return $self->{STATISTIC}->{ERROR};
     }
     my @cargs = ("-x", "-f", $licenseFile, "-C", $licdir);
-    my ($exitcode, $out, $err) = SMT::Utils::executeCommand(
+    my ($exitcode, $out, $error) = SMT::Utils::executeCommand(
         {log => $self->{LOG}, vblevel => $self->vblevel()}, "/bin/tar", @cargs);
     if ($exitcode || $exitcode == -1)
     {
         $self->{STATISTIC}->{ERROR} += 1;
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                 "Failed to unpack license: $out\n$err");
+                 "Failed to unpack license: $out\n$error");
         return 0;
     }
     return 1;
