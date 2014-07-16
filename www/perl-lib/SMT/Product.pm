@@ -241,7 +241,10 @@ sub getAllAsXML
                       p.arch,
                       p.friendly,
                       p.product_class,
-                      (select distinct s.serverclass from Subscriptions s where s.product_class = p.product_class) as serverclass
+                      (select distinct s.serverclass from Subscriptions s where s.product_class = p.product_class) as serverclass,
+                      p.description,
+                      p.cpe,
+                      p.eula_url
                  from Products p
              order by p.product, p.version, p.rel, p.arch;";
 
@@ -250,7 +253,9 @@ sub getAllAsXML
     my $data = { product => []};
     while (my $p = $sth->fetchrow_hashref())
     {
-        # <product id="%s" name="%s" version="%s" rel="%s" arch="%s" uiname="%s" class="%s" serverclass="%s"/>
+        # <product id="%s" name="%s" version="%s" rel="%s" arch="%s" uiname="%s" class="%s" serverclass="%s" cpe="%s", eulaurl="%s">
+        # description
+        # </product>
         my $entry = {
             id => $p->{id},
             productdataid => $p->{productdataid},
@@ -260,7 +265,10 @@ sub getAllAsXML
             arch => $p->{arch},
             uiname => $p->{friendly},
             class => $p->{product_class},
-            serverclass => $p->{serverclass}
+            serverclass => $p->{serverclass},
+            cpe => $p->{cpe},
+            eulaurl => $p->{eula_url},
+            description => [$p->{description}]
             };
         if(! $entry->{serverclass} && exists SERVERCLASSDEFAULT->{$p->{product_class}})
         {
