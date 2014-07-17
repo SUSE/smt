@@ -84,6 +84,8 @@ sub new
     $self->{NUHOST} = "";
     $self->{LOCALHOST} = "";
 
+    $self->{CACHE} = {};
+
     if(exists $opt{vblevel} && $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -462,12 +464,20 @@ sub cleanup_db
 # read json file from "FROMDIR" or call API to fetch from SCC.
 # Return the decoded JSON structure or undef in case of an error.
 #
+# This method cache the API result in memory. Every API will be called
+# only once.
+#
 sub _getInput
 {
     my $self = shift;
     my $what = shift;
     my $input = undef;
     my $func = undef;
+
+    if (exists $self->{CACHE}->{$what})
+    {
+        return $self->{CACHE}->{$what};
+    }
 
     if($what eq "organization_products")
     {
@@ -507,6 +517,8 @@ sub _getInput
     {
         return undef;
     }
+    $self->{CACHE}->{$what} = $input;
+
     return $input;
 }
 
