@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jul 23 10:30:11 CEST 2014 - mc@suse.de
+
+- fix creating stored proceedure with DBIx (bnc#884574)
+- fix double declaration (bnc#887133)
+- encode product id in json as number (bnc#885966)
+- prevent dublicate entry errors if NCC report registrations double
+
+-------------------------------------------------------------------
 Wed Jul  9 12:45:25 CEST 2014 - mc@suse.de
 
 - version 2.0.1
