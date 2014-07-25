@@ -32,7 +32,6 @@ Requires:       logrotate
 Requires:       cron
 Requires:       zypper >= 1.3.14
 Requires:       libzypp >= 6.36.0
-Requires:       suseRegister
 Conflicts:      smt <= 1.1.21
 PreReq:         %fillup_prereq
 AutoReqProv:    on

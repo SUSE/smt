@@ -52,7 +52,7 @@ sub readSmtUrl
   open(FH, "< ".SMT::Agent::Constants::SUSEREGISTER_CONF) or SMT::Agent::Utils::error("Cannot open ".SMT::Agent::Constants::SUSEREGISTER_CONF);
   while(<FH>)
   {
-    if($_ =~ /^url\s*=\s*(\S*)\s*/ && defined $1 && $1 ne "")
+    if($_ =~ /^url\s*[=:]\s*(\S*)\s*/ && defined $1 && $1 ne "")
     {
       $uri = $1;
       last;

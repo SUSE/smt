@@ -10,7 +10,7 @@ use warnings;
 use constant PROCESSJOB 	=> '/usr/lib/SMT/bin/processjob';
 
 # config file for smt server url
-use constant SUSEREGISTER_CONF	=> '/etc/suseRegister.conf';
+use constant SUSEREGISTER_CONF	=> '/etc/SUSEConnect';
 
 # path for job handlers (like softwarepush) 
 use constant JOB_HANDLER_PATH	=> '/usr/lib/SMT/bin/job';
