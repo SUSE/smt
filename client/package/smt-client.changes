@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu Jul 24 13:51:24 UTC 2014 - jdsn@suse.de
+
+- adapt smt-client for SLE12
+  drop hardware inventory feature from inentory job
+  switch to use /etc/SUSEConnect as config file
+- bumb version for SLE12 release
+- version 1.0.0
+
+-------------------------------------------------------------------
 Mon May 12 13:56:38 UTC 2014 - jdsn@suse.de
 
 - bump version to prevent collisions with maintenance updates
