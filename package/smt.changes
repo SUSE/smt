@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jul 30 17:00:45 CEST 2014 - mc@suse.de
+
+- improve error handling
+
+-------------------------------------------------------------------
 Wed Jul 23 10:30:11 CEST 2014 - mc@suse.de
 
 - fix creating stored proceedure with DBIx (bnc#884574)
