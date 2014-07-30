@@ -54,7 +54,7 @@ sub handler
     }
 
     # return a 200 response
-    return Apache2::Const::OK;
+    return $code;
 }
 
 sub systems_handler
