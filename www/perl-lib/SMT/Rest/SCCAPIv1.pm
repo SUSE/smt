@@ -166,7 +166,7 @@ sub get_extensions
     };
     if ($@)
     {
-        $self->request->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     # log->info is limited in strlen. If you want to see all, you need to print to STDERR
     print STDERR "PRODUCTS: ".Data::Dumper->Dump([$result])."\n";
@@ -267,7 +267,7 @@ sub products
     };
     if ($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     #
     # insert product info into MachineData
@@ -281,7 +281,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -293,7 +293,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -305,7 +305,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -317,7 +317,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -329,7 +329,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     if ( exists $c->{token} && $c->{token})
     {
@@ -344,7 +344,7 @@ sub products
         };
         if($@)
         {
-            $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
         }
     }
 
@@ -363,7 +363,6 @@ sub products
 
     if ( (keys %{$catalogs}) == 0)
     {
-        $self->request()->log->info("No repositories found");
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
     }
 
@@ -421,7 +420,7 @@ sub update_system
     };
     if ($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
 
     #
@@ -435,7 +434,7 @@ sub update_system
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, 'machinedata', %s)",
                         $self->dbh()->quote($guid),
@@ -446,7 +445,7 @@ sub update_system
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     return (Apache2::Const::OK, {});
 }
@@ -466,7 +465,7 @@ sub delete_system
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $sql = sprintf("DELETE from Registration where GUID=%s",
                    $self->dbh()->quote($guid));
@@ -476,7 +475,7 @@ sub delete_system
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $sql = sprintf("DELETE from Clients where GUID=%s",
                    $self->dbh()->quote($guid));
@@ -486,7 +485,7 @@ sub delete_system
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $sql = sprintf("DELETE from ClientSubscriptions where GUID=%s",
                    $self->dbh()->quote($guid));
@@ -496,7 +495,7 @@ sub delete_system
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
 
     return (Apache2::Const::HTTP_NO_CONTENT, "");
@@ -607,7 +606,7 @@ sub announce
     };
     if ($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
 
     $self->_storeMachineData($result->{login}, $c);

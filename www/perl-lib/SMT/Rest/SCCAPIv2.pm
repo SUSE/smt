@@ -113,7 +113,6 @@ sub get_extensions
         $result = $self->dbh()->selectall_hashref($sql, 'id');
         if (scalar(keys %{$result}) == 0)
         {
-            $self->request()->log_error("The requested product is not activated on this system.");
             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "The requested product is not activated on this system.");
         }
 
@@ -133,7 +132,7 @@ sub get_extensions
     };
     if ($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
 
     # log->info is limited in strlen. If you want to see all, you need to print to STDERR
@@ -235,7 +234,7 @@ sub products
     };
     if ($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     #
     # insert product info into MachineData
@@ -249,7 +248,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -261,7 +260,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -273,7 +272,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -285,7 +284,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                          $self->dbh()->quote($guid),
@@ -297,7 +296,7 @@ sub products
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     if ( exists $c->{token} && $c->{token})
     {
@@ -331,7 +330,6 @@ sub products
 
     if ( (keys %{$catalogs}) == 0)
     {
-        $self->request()->log->info("No repositories found");
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
     }
 
@@ -372,7 +370,6 @@ sub update_product
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
         return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr)
     }
 
@@ -396,7 +393,7 @@ sub update_product
     };
     if($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     if($old_pdid && $req_pdid)
     {
@@ -413,7 +410,7 @@ sub update_product
         };
         if($@)
         {
-            $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
         }
     }
     else
@@ -454,7 +451,6 @@ sub get_activations
         my $res = $self->dbh()->selectall_hashref($sql, 'product_id');
         if (scalar(keys %{$res}) == 0)
         {
-            $self->request()->log_error("No products activated on this system.");
             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No products activated on this system.");
         }
 
@@ -468,7 +464,7 @@ sub get_activations
     };
     if ($@)
     {
-        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     # log->info is limited in strlen. If you want to see all, you need to print to STDERR
     print STDERR "ACTIVATIONS: ".Data::Dumper->Dump([$activations])."\n";
