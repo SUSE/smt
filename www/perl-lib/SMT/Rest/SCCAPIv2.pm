@@ -356,6 +356,10 @@ sub update_product
     # We are sure, that user is a system GUID
     my $guid = $self->user();
 
+    # comparing if the destination product has the same PRODUCT_CLASS
+    # as one of the registered products. To prevent updating incompatible
+    # products
+
     my $sql = sprintf("SELECT p.id, p.PRODUCT_CLASS
                          FROM Products p
                          JOIN Registration r ON r.PRODUCTID = p.ID
@@ -369,6 +373,7 @@ sub update_product
     if($@)
     {
         $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr)
     }
 
     my $release = ((exists $args->{release_type})?$args->{release_type}:"");
@@ -379,10 +384,10 @@ sub update_product
     $self->request()->log->info("STATEMENT: $sql");
     eval {
         my $new_class = $self->dbh()->selectcol_arrayref($sql)->[0];
-        if(not exists $product_classes->{$new_class})
+        if((!$new_class) || (!exists $product_classes->{$new_class}))
         {
             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
-                    "No installed product with requested update product found");
+                    "Destination Product requires a different subscription");
         }
         else
         {
@@ -410,6 +415,11 @@ sub update_product
         {
             $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
         }
+    }
+    else
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+                "No installed product with requested update product found");
     }
     return $self->_registrationResult($req_pdid);
 }
