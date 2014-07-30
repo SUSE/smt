@@ -161,6 +161,7 @@ sub respond_with_error
     $self->request()->content_type('application/json');
     $self->request()->custom_response($code, "");
     print encode_json({ 'error' => $msg,  'localized_error' => $msg, 'status' => $code });
+    $self->request()->log_error("Return error: [$code] $msg");
     return $code;
 }
 
