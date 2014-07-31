@@ -350,51 +350,90 @@ sub update_product
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No product specified");
     }
+    my $former_identifier = $args->{identifier};
 
     # We are sure, that user is a system GUID
     my $guid = $self->user();
 
-    # comparing if the destination product has the same PRODUCT_CLASS
-    # as one of the registered products. To prevent updating incompatible
-    # products
-
-    my $sql = sprintf("SELECT p.id, p.PRODUCT_CLASS
-                         FROM Products p
-                         JOIN Registration r ON r.PRODUCTID = p.ID
-                        WHERE r.GUID = %s
-                          AND p.PRODUCT_CLASS is not NULL
-                      ", $self->dbh()->quote($guid));
+    my $release = ((exists $args->{release_type})?$args->{release_type}:"");
+    my $req_pdid = SMT::Utils::lookupProductIdByName($self->dbh(), $args->{identifier},
+                                                     $args->{version}, $release,
+                                                     $args->{arch}, $self->request());
+    my $sql = sprintf("SELECT FORMER_IDENTIFIER FROM Products WHERE ID = %s", $self->dbh()->quote($req_pdid));
     $self->request()->log->info("STATEMENT: $sql");
     eval {
-        $product_classes = $self->dbh()->selectall_hashref($sql, "PRODUCT_CLASS");
+        my $fident = $self->dbh()->selectcol_arrayref($sql)->[0];
+        if ($fident && $fident ne $former_identifier)
+        {
+            $former_identifier = $fident;
+        }
     };
     if($@)
     {
         return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr)
     }
 
-    my $release = ((exists $args->{release_type})?$args->{release_type}:"");
-    my $req_pdid = SMT::Utils::lookupProductIdByName($self->dbh(), $args->{identifier},
-                                                     $args->{version}, $release,
-                                                     $args->{arch}, $self->request());
-    $sql = sprintf("SELECT PRODUCT_CLASS FROM Products WHERE ID = %s", $self->dbh()->quote($req_pdid));
+    # FIXME: start workaround
+    my $reg_products = [];
+    my $sql = sprintf("SELECT p.id
+                         FROM Products p
+                         JOIN Registration r ON r.PRODUCTID = p.ID
+                        WHERE r.GUID = %s
+                          AND (p.PRODUCT = %s OR p.PRODUCT = %s)
+                      ",
+                      $self->dbh()->quote($guid),
+                      $self->dbh()->quote($args->{identifier}),
+                      $self->dbh()->quote($former_identifier)
+    );
     $self->request()->log->info("STATEMENT: $sql");
     eval {
-        my $new_class = $self->dbh()->selectcol_arrayref($sql)->[0];
-        if((!$new_class) || (!exists $product_classes->{$new_class}))
-        {
-            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
-                    "Destination Product requires a different subscription");
-        }
-        else
-        {
-            $old_pdid = $product_classes->{$new_class}->{ID};
-        }
+        $old_pdid = $self->dbh()->selectcol_arrayref($sql)->[0];
     };
     if($@)
     {
-        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr)
     }
+
+    # FIXME: this is how it should be when SCC provide complete data
+    #        but we need a workaround until then
+
+    # comparing if the destination product has the same PRODUCT_CLASS
+    # as one of the registered products. To prevent updating incompatible
+    # products
+#
+#     my $sql = sprintf("SELECT p.id, p.PRODUCT_CLASS
+#                          FROM Products p
+#                          JOIN Registration r ON r.PRODUCTID = p.ID
+#                         WHERE r.GUID = %s
+#                           AND p.PRODUCT_CLASS is not NULL
+#                       ", $self->dbh()->quote($guid));
+#     $self->request()->log->info("STATEMENT: $sql");
+#     eval {
+#         $product_classes = $self->dbh()->selectall_hashref($sql, "PRODUCT_CLASS");
+#     };
+#     if($@)
+#     {
+#         return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr)
+#     }
+#
+#     $sql = sprintf("SELECT PRODUCT_CLASS FROM Products WHERE ID = %s", $self->dbh()->quote($req_pdid));
+#     $self->request()->log->info("STATEMENT: $sql");
+#     eval {
+#         my $new_class = $self->dbh()->selectcol_arrayref($sql)->[0];
+#         if((!$new_class) || (!exists $product_classes->{$new_class}))
+#         {
+#             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+#                     "Destination Product requires a different subscription");
+#         }
+#         else
+#         {
+#             $old_pdid = $product_classes->{$new_class}->{ID};
+#         }
+#     };
+#     if($@)
+#     {
+#         return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+#     }
     if($old_pdid && $req_pdid)
     {
         $sql = sprintf("UPDATE Registration
