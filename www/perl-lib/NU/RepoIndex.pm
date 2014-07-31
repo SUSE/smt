@@ -15,10 +15,13 @@ use SMT::Repositories;
 use DBI qw(:sql_types);
 
 
-sub getCatalogsByGUID($$)
+sub getCatalogsByGUID($$$)
 {
-    # first parameter:  DB handle
-    # second parameter: guid
+    # 1st parameter: apache handle
+    # 2nd parameter:  DB handle
+    # 3rd parameter: guid
+
+    my $r = shift;
     my $dbh  = shift;
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
@@ -55,6 +58,7 @@ sub getCatalogsByGUID($$)
         $catalogselect .= " AND c.CATALOGTYPE='nu'";
     }
 
+    $r->log->info("repoindex.xml STATEMENT: $catalogselect");
     return $dbh->selectall_hashref($catalogselect, "ID" );
 }
 
@@ -140,7 +144,7 @@ sub handler {
     # for other users, return only relevant repos
     else
     {
-        $catalogs = getCatalogsByGUID($dbh, $username);
+        $catalogs = getCatalogsByGUID($r, $dbh, $username);
 
         # see if the client uses a special namespace
         my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($username));
