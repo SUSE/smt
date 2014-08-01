@@ -165,7 +165,7 @@ sub isServerDenied
 
 =item openLock($progname)
 
-Try to create a lock file in /var/run/smtclient/$progname.pid .
+Try to create a lock file in /run/smtclient/$progname.pid .
 Return TRUE on success, otherwise FALSE.
 
 =cut
@@ -174,7 +174,8 @@ sub openLock
     my $progname = shift;
     my $pid = $$;
     
-    my $dir  = "/var/run/smtclient";
+    my $dir  = "/run/smtclient";
+    mkdir $dir;
     my $path = "$dir/$progname.pid";
     
     return 0 if( !-d $dir || !-w $dir );
@@ -236,7 +237,9 @@ sub unLock
     my $progname = shift;
     my $pid = $$;
     
-    my $path = "/var/run/smtclient/$progname.pid";
+    my $dir = "/run/smtclient";
+    mkdir $dir;
+    my $path = "$dir/$progname.pid";
     
     if(! -e $path )
     {
