@@ -36,12 +36,13 @@ Conflicts:      smt <= 1.1.21
 PreReq:         %fillup_prereq
 AutoReqProv:    on
 Group:          Productivity/Networking/Web/Proxy
-License:        GPL v2 or later
+License:        GPL-2.0+
 Summary:        Subscription Management Tool
 Source:         %{name}-%{version}.tar.bz2
 Source1:        sysconfig.smt-client
 Source2:        smt-client-rpmlintrc
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+URL:            https://github.com/SUSE/smt
 
 %description
 This package provide everything you need to get a local NU and
@@ -72,9 +73,6 @@ make DESTDIR=$RPM_BUILD_ROOT DOCDIR=%{_docdir} install
 
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.smt-client  $RPM_BUILD_ROOT/var/adm/fillup-templates/
-#mkdir -p $RPM_BUILD_ROOT/var/log/smt-client
-#mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt-client/
-#mkdir -p $RPM_BUILD_ROOT/var/lib/smt
 
 # touching the ghost
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.d/
