@@ -72,7 +72,6 @@ make DESTDIR=$RPM_BUILD_ROOT DOCDIR=%{_docdir} install
 
 mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
 install -m 644 sysconfig.smt-client  $RPM_BUILD_ROOT/var/adm/fillup-templates/
-mkdir -p $RPM_BUILD_ROOT/var/run/smtclient
 #mkdir -p $RPM_BUILD_ROOT/var/log/smt-client
 #mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt-client/
 #mkdir -p $RPM_BUILD_ROOT/var/lib/smt
@@ -108,7 +107,7 @@ exit 0
 /var/adm/fillup-templates/sysconfig.smt-client
 %ghost %{_sysconfdir}/cron.d/novell.com-smt-client
 %config /etc/logrotate.d/smt-client
-%dir /var/run/smtclient
+%ghost %dir /run/smtclient
 %dir %{_docdir}/smt-client
 %{_docdir}/smt-client/*
 

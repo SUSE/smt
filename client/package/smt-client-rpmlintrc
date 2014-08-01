@@ -1,4 +1,3 @@
 addFilter("no-binary")
 addFilter("non-standard-uid /var/log/smt.*")
-addFilter("non-standard-uid /var/run/smt.*")
 addFilter("perl5-naming-policy-not-applied .*")
