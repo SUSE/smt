@@ -1,3 +1,4 @@
 addFilter("no-binary")
 addFilter("non-standard-uid /var/log/smt.*")
+addFilter("no-manual-page-for-binary smt-agent")
 addFilter("perl5-naming-policy-not-applied .*")
