@@ -219,6 +219,12 @@ sub products
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: product_version");
     }
+    else
+    {
+        # sometimes people provide edition instead of version, so let's stip the release
+        my ($v, $r) = split(/-/, $c->{product_version}, 2);
+        $c->{product_version} = $v;
+    }
 
     if ( ! (exists $c->{arch} && $c->{arch}))
     {

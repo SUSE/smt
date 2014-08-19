@@ -186,6 +186,12 @@ sub products
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: version");
     }
+    else
+    {
+        # sometimes people provide edition instead of version, so let's stip the release
+        my ($v, $r) = split(/-/, $c->{version}, 2);
+        $c->{version} = $v;
+    }
 
     if ( ! (exists $c->{arch} && $c->{arch}))
     {
@@ -354,6 +360,10 @@ sub update_product
 
     # We are sure, that user is a system GUID
     my $guid = $self->user();
+
+    # sometimes people provide edition instead of version, so let's stip the release
+    my ($v, $r) = split(/-/, $args->{version}, 2);
+    $args->{version} = $v;
 
     my $release = ((exists $args->{release_type})?$args->{release_type}:"");
     my $req_pdid = SMT::Utils::lookupProductIdByName($self->dbh(), $args->{identifier},
