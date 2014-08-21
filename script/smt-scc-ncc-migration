@@ -1,6 +1,7 @@
 #! /usr/bin/perl -w
 
 use strict;
+use English;
 use SMT::Utils;
 use SMT::CLI;
 use SMT::Mirror::RegData;
@@ -12,6 +13,12 @@ use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
+
+if ($EFFECTIVE_USER_ID != 0)
+{
+    print "You must be root to run this program!\n";
+    exit 1;
+}
 
 my $debug = 0;
 my $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1;
