@@ -1216,8 +1216,7 @@ sub _getRepoindex
     }
     $uri->userinfo("$nuUser:$nuPass");
 
-    # create a tmpdir to store repoindex.xml
-    my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+    my $destdir = "/tmp";
     if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
     {
         $destdir = $opt{todir};
@@ -1228,6 +1227,7 @@ sub _getRepoindex
         log => $opt{log}, vblevel => $opt{vblevel});
     $indexfile = $destdir . '/repo/repoindex.xml';
     SMT::Utils::getFile($useragent, $uri . '/repo/repoindex.xml', $indexfile, %opt);
+    return $indexfile;
 }
 
 
@@ -1275,7 +1275,13 @@ sub setMirrorableCatalogs
     }
     else
     {
-        $indexfile = _getRepoindex($nuri, %opt, cfg => $cfg);
+        # create a tmpdir to store repoindex.xml
+        my $destdir = File::Temp::tempdir("smt-XXXXXXXX", CLEANUP => 1, TMPDIR => 1);
+        if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
+        {
+            $destdir = $opt{todir};
+        }
+        $indexfile = _getRepoindex($nuri, %opt, cfg => $cfg, todir => $destdir);
         if(exists $opt{todir} && defined $opt{todir} && -d $opt{todir})
         {
             # with todir we only want to mirror repoindex to todir
