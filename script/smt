@@ -81,6 +81,14 @@ if (defined $ARGV[0] )
             help();
         }
     }
+    elsif($cmd eq "ncc-scc-migration")
+    {
+        die "smt ncc-scc-migration requires root privilege. Please execute it directly at /usr/sbin/smt-ncc-scc-migration.\n";
+    }
+    elsif($cmd eq "scc-ncc-migration")
+    {
+        die "smt scc-ncc-migration requires root privilege. Please execute it directly at /usr/sbin/smt-scc-ncc-migration.\n";
+    }
     else
     {
         executeCommand($cmd, @ARGV)
