@@ -120,8 +120,6 @@ install:
 	install -m 644 www/perl-lib/SMT/SCC*.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/RESTService.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/RESTInfo.pm $(DESTDIR)/srv/www/perl-lib/SMT/
-	#install -m 644 www/perl-lib/SMT/RestSCCSystems.pm $(DESTDIR)/srv/www/perl-lib/SMT/
-	#install -m 644 www/perl-lib/SMT/RestSCCSubscriptions.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Rest/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Rest/
 	install -m 644 www/perl-lib/SMT/ConnectAPI.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Utils/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Utils/
