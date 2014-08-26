@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Aug 26 14:36:50 CEST 2014 - mc@suse.de
+
+- version 2.0.2
+- strip release part from version if edition was provided (bnc#891810)
+- fix fetching the repoindex file
+- check for beeing root during migration
+- use SCC API version 3
+
+-------------------------------------------------------------------
 Thu Jul 31 13:02:23 CEST 2014 - mc@suse.de
 
 - fix upgrade of products
