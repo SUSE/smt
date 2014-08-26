@@ -6,6 +6,7 @@ Tue Aug 26 14:36:50 CEST 2014 - mc@suse.de
 - fix fetching the repoindex file
 - check for beeing root during migration
 - use SCC API version 3
+- provide API version 3
 
 -------------------------------------------------------------------
 Thu Jul 31 13:02:23 CEST 2014 - mc@suse.de
