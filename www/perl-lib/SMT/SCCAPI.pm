@@ -346,8 +346,8 @@ sub _request
     my $response = undef;
     if(not exists $headers->{'Accept'})
     {
-        # Request API version v2
-        $headers->{'Accept'} = 'application/vnd.scc.suse.com.v2+json';
+        # Request API version v3
+        $headers->{'Accept'} = 'application/vnd.scc.suse.com.v3+json';
     }
     if ($method eq "get")
     {

@@ -973,13 +973,12 @@ sub _updateProductCatalogs
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
         $ret += 1;
     }
-    my $enabled = (grep $_  == $repo->{id}, @{$product->{enabled_repositories}});
 
     $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
                           VALUES (%s, %s, %s, 'S')",
                          $self->{DBH}->quote($product_id),
                          $self->{DBH}->quote($repo_id),
-                         $self->{DBH}->quote(($enabled?'N':'Y')));
+                         $self->{DBH}->quote(($repo->{enabled}?'N':'Y')));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
