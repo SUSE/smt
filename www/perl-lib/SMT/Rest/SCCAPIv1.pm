@@ -727,6 +727,7 @@ sub _repositories_for_product
     {
         foreach my $repo (@{$self->dbh()->selectall_arrayref($sql, {Slice => {}})})
         {
+            $repo->{autorefresh} = (($repo->{autorefresh} eq 'Y')?JSON::true:JSON::false);
             push @{$enabled_repositories}, $repo->{id} if ($repo->{OPTIONAL} eq 'N');
             delete $repo->{OPTIONAL};
             push @{$repositories}, $repo;

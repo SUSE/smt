@@ -2,6 +2,7 @@ package SMT::ConnectAPI;
 
 use SMT::Rest::SCCAPIv1;
 use SMT::Rest::SCCAPIv2;
+use SMT::Rest::SCCAPIv3;
 use SMT::Utils;
 use Apache2::Const -compile => qw(HTTP_NOT_ACCEPTABLE :log);
 use JSON;
@@ -32,10 +33,20 @@ sub handler {
         $api = SMT::Rest::SCCAPIv1->new($r);
         return $api->handler();
     }
-    #else - api version 2
-
-    $api = SMT::Rest::SCCAPIv2->new($r);
-    return $api->handler();
+    elsif ( $apiVersion == 2 )
+    {
+        $api = SMT::Rest::SCCAPIv2->new($r);
+        return $api->handler();
+    }
+    elsif ( $apiVersion == 3 )
+    {
+        $api = SMT::Rest::SCCAPIv3->new($r);
+        return $api->handler();
+    }
+    else
+    {
+        return Apache2::Const::HTTP_NOT_ACCEPTABLE;
+    }
 }
 
 1;
