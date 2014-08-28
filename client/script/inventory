@@ -27,9 +27,6 @@ sub jobhandler
   SMT::Agent::Utils::error("too many argument sections found for this job", $jobid) unless ( (defined $argSet) && ($argSet->size() == 1) );
   my $arg = $argSet->pop();
 
-  my $hardwareSet;
-  eval { $hardwareSet = $xp->findnodes('/arguments[1]/refresh-hardware/param', $jobTree) };
-
   my $w = undef;
   my $resxml = '';
   $w = new XML::Writer( OUTPUT => \$resxml, DATA_MODE => 1, DATA_INDENT => 2 );
