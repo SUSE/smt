@@ -101,7 +101,7 @@ sub jobhandler
   foreach my $IN ( qw(package patch pattern product) )
   {
     next unless defined $installables{$IN};
-    next unless isa($installables{$IN}, 'ARRAY');
+    next unless ( ref($installables{$IN}) eq 'ARRAY' );
     $argumentsok = 1;
 
     my @installCmd = ( @zypperCmd, '-t', $IN, @{$installables{$IN}} );
