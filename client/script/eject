@@ -34,7 +34,7 @@ sub jobhandler
   my $action = undef;
   foreach my $_a (@actions) {
       if ( (defined $_a) && ($_a !~ /^$/) &&
-           ($action eq 'open' || $action eq 'close' || $action eq 'toggle')) {
+           ($_a eq 'open' || $_a eq 'close' || $_a eq 'toggle')) {
           $action = $_a;
           last;
       }
@@ -42,10 +42,10 @@ sub jobhandler
   $action = 'open' unless defined $action;
 
   #==  run eject ==
-  my $command = "/bin/eject";
+  my $command = "/usr/bin/eject";
   my @cmdArgs;
-  push (@cmdArgs, "-T") if ( $action eq "toggle" );			
-  push (@cmdArgs, "-t") if ( $action eq "close" );			
+  push (@cmdArgs, "-T") if ( $action eq "toggle" );
+  push (@cmdArgs, "-t") if ( $action eq "close" );
 
   (my $retval, my $stdout, my $stderr) = SMT::Agent::Utils::executeCommand ( $command, undef, @cmdArgs );
   SMT::Agent::Utils::error ("eject failed", $jobid) if ( $retval != 0 );
