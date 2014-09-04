@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Sep  4 16:09:37 UTC 2014 - jdsn@suse.de
+
+- drop usage of deprecated code (bnc#894165)
+- fix smt-job type eject (bnc#895140)
+- version 1.0.1
+
+-------------------------------------------------------------------
 Thu Jul 24 13:51:24 UTC 2014 - jdsn@suse.de
 
 - adapt smt-client for SLE12
