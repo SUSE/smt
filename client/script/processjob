@@ -5,7 +5,6 @@ use SMT::Agent::Constants;
 use SMT::Agent::Config;
 use SMT::Agent::Utils;
 use SMT::Agent::RestXML;
-use UNIVERSAL 'isa';
 
 
 ###############################################################################

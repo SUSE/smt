@@ -5,7 +5,6 @@ package SMT::Agent::RestXML;
 use HTTP::Request;
 use HTTP::Request::Common;
 use LWP::UserAgent;
-use UNIVERSAL 'isa';
 use SMT::Agent::Constants;
 use SMT::Agent::Config;
 use SMT::Agent::Utils;
