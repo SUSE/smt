@@ -28,6 +28,7 @@ Requires:       perl-XML-Writer
 Requires:       perl-IO-Socket-SSL
 Requires:       perl-base
 Requires:       perl-libwww-perl
+Requires:       perl-LWP-Protocol-https
 Requires:       logrotate
 Requires:       cron
 Requires:       zypper >= 1.3.14
