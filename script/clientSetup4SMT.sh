@@ -324,8 +324,8 @@ if [ -x "$SUSEREGISTER" ]; then
     echo "$SUSEREGISTER -i -L /root/.suse_register.log"
     $SUSEREGISTER -i -L /root/.suse_register.log
 elif [ -x "$SUSECONNECT" ]; then
-    echo "$SUSECONNECT --url $REGURL"
-    $SUSECONNECT --url $REGURL
+    echo "$SUSECONNECT --write-config --url $REGURL"
+    $SUSECONNECT --write-config --url $REGURL
 else
     echo "No registration client found."
     exit 1
