@@ -122,7 +122,8 @@ sub verbose
                                 {
                                     my $pfx = (($type == 1)?"<":">");
                                     chomp($text);
-                                    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, "$pfx $text" );
+                                    # add \n to not having \r overwriting the same line
+                                    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, "$pfx $text\n" );
                                 }
                                 return 0;
                             });
