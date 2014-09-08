@@ -43,6 +43,13 @@ sub handler {
         $api = SMT::Rest::SCCAPIv3->new($r);
         return $api->handler();
     }
+    elsif ( $apiVersion == 4 )
+    {
+        # there is currently no difference between v3 and v4
+        # in the parts we provide. So also use v3 here.
+        $api = SMT::Rest::SCCAPIv3->new($r);
+        return $api->handler();
+    }
     else
     {
         return Apache2::Const::HTTP_NOT_ACCEPTABLE;
