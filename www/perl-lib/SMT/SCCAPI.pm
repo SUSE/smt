@@ -328,8 +328,9 @@ sub _request
     if(not exists $headers->{'Accept'})
     {
         # Request API version v3
-        $headers->{'Accept'} = 'application/vnd.scc.suse.com.v3+json';
+        $headers->{'Accept'} = 'application/vnd.scc.suse.com.v4+json';
     }
+    my $result = undef;
     if ($method eq "get")
     {
         $headers->{':content_file'} = $dataTempFile;
@@ -356,33 +357,85 @@ sub _request
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Invalid method");
         return undef;
     }
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, Data::Dumper->Dump([$response]));
     if($response->is_success)
     {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, Data::Dumper->Dump([$response]));
         if ($response->content_type() eq "application/json")
         {
-            if(-s $dataTempFile)
-            {
-                open( FH, '<', $dataTempFile ) and do
-                {
-                    my $json_text   = <FH>;
-                    close FH;
-                    unlink ($dataTempFile);
-                    return JSON::decode_json($json_text);
-                };
-            }
-            else
-            {
-                return JSON::decode_json($response->content);
-            }
+            $result = $self->_getDataFromResponse($response, $dataTempFile);
         }
         else
         {
             printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Unexpected Content Type");
             return undef;
         }
+        # pagination only with GET requests
+        if ($method eq "get")
+        {
+            while ( $url = $self->_getNextPage($response) )
+            {
+                my $uri = URI->new($url);
+                if($self->{AUTHUSER} && $self->{AUTHPASS})
+                {
+                    $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+                }
+                $headers->{':content_file'} = $dataTempFile;
+                $response = $self->{USERAGENT}->get($uri->as_string(), %{$headers});
+                printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG3, Data::Dumper->Dump([$response]));
+                if (ref($result) eq "ARRAY" && $response->content_type() eq "application/json")
+                {
+                    push @{$result}, @{$self->_getDataFromResponse($response, $dataTempFile)};
+                }
+                else
+                {
+                    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Unexpected Content Type");
+                    return undef;
+                }
+            }
+        }
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Connection to registration server failed with: ".$response->status_line);
+    else
+    {
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Connection to registration server failed with: ".$response->status_line);
+    }
+    return $result;
+}
+
+sub _getDataFromResponse
+{
+    my $self = shift;
+    my $response = shift;
+    my $dataTempFile = shift;
+
+    if($dataTempFile && -s $dataTempFile)
+    {
+        open( FH, '<', $dataTempFile ) and do
+        {
+            my $json_text   = <FH>;
+            close FH;
+            unlink ($dataTempFile);
+            return JSON::decode_json($json_text);
+        };
+    }
+    else
+    {
+        return JSON::decode_json($response->content);
+    }
+
+}
+
+sub _getNextPage
+{
+    my $self = shift;
+    my $response = shift;
+
+    return undef if (! $response || ! $response->header("Link"));
+
+    foreach my $link ( split(",", $response->header("Link")) )
+    {
+        my ($href, $name) = $link =~ /<(.+)>; rel=["'](\w+)["']/igs;
+        return $href if($name eq "next");
+    }
     return undef;
 }
 
