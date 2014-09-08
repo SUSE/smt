@@ -169,7 +169,7 @@ sub get_extensions
         return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
     # log->info is limited in strlen. If you want to see all, you need to print to STDERR
-    print STDERR "PRODUCTS: ".Data::Dumper->Dump([$result])."\n";
+    #print STDERR "PRODUCTS: ".Data::Dumper->Dump([$result])."\n";
 
     return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
 }
