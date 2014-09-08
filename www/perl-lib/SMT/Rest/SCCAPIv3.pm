@@ -61,6 +61,7 @@ sub get_extensions
                p.CPE cpe,
                p.EULA_URL eula_url,
                1 free,
+               p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
@@ -143,6 +144,7 @@ sub _extensions_for_products
                e.CPE cpe,
                e.EULA_URL eula_url,
                1 free,
+               e.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
@@ -204,6 +206,7 @@ sub _getProduct
                p.CPE cpe,
                p.EULA_URL eula_url,
                1 free,
+               p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
