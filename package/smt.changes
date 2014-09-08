@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Mon Sep  8 14:30:01 CEST 2014 - mc@suse.de
+
+- version 2.0.3
+- implement and use SCC API v4
+- add product_type to products
+- add --write-config to SUSEConnect command (bnc#894853)
+- fix curl debug output
+
+-------------------------------------------------------------------
 Tue Aug 26 14:36:50 CEST 2014 - mc@suse.de
 
 - version 2.0.2
