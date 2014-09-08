@@ -185,25 +185,6 @@ sub org_products
     return $self->_request($uri->as_string(), "get", {}, {});
 }
 
-=item services
-
-List all services.
-
-Returns json structure containing all services with its repositories.
-In case of an error it returns "undef".
-
-=cut
-
-sub services
-{
-    my $self = shift;
-    my $uri = URI->new($self->{URL}."/services");
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-             "list services", 0);
-
-    return $self->_request($uri->as_string(), "get", {}, {});
-}
-
 =item org_subscriptions
 
 List subscriptions of an organization.
