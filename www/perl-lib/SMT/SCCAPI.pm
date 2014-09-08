@@ -174,7 +174,7 @@ Example:
 sub org_products
 {
     my $self = shift;
-    my $uri = URI->new($self->{URL}."/organizations/products");
+    my $uri = URI->new($self->{URL}."/organizations/products/unscoped");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
