@@ -34,8 +34,21 @@ use constant LOG_FILE		=> '/var/log/smtclient.log';
 # client config file
 use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smt-client';
 
-# smt client credenitials file containing guid (SLE11)
-use constant CREDENTIALS_FILE	=> '/etc/zypp/credentials.d/NCCcredentials';
+# smt client credenitials file containing guid
+#  SLE11 => /etc/zypp/credentials.d/NCCcredentials
+#  SLE12 => /etc/zypp/credentials.d/SCCcredentials
+# SLE12 file may be missing due to update or missing SUSEConnect package
+#  in that case fallback to SLE11 file only if SLE11 file is present:
+sub CREDENTIALS_FILE() {
+  my $cred_path = '/etc/zypp/credentials.d';
+  my $cred_file_sle11 = 'NCCcredentials';
+  my $cred_file_sle12 = 'SCCcredentials';
+  my $cred_file = $cred_file_sle12;
+  if ( ! -e "$cred_path/$cred_file_sle12"  && -e "$cred_path/$cred_file_sle11"  ) {
+    $cred_file = $cred_file_sle11;
+  }
+  return "$cred_path/$cred_file";
+}
 
 # smt client credentials files (SLE10)
 use constant DEVICEID_FILE	=> '/etc/zmd/deviceid';
