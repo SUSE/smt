@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Sep 11 15:23:18 UTC 2014 - jdsn@suse.de
+
+- read registration server credentials from SUSEConnect
+  credentials file (bnc#896285)
+- version 1.0.2
+
+-------------------------------------------------------------------
 Thu Sep  4 16:09:37 UTC 2014 - jdsn@suse.de
 
 - drop usage of deprecated code (bnc#894165)
