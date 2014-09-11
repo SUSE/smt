@@ -90,6 +90,19 @@ sub new
     return $self;
 }
 
+=item vblevel([level])
+
+Set or get the verbose level.
+
+=cut
+
+sub vblevel
+{
+    my $self = shift;
+    if (@_) { $self->{VBLEVEL} = shift }
+    return $self->{VBLEVEL};
+}
+
 =item announce([@opts])
 
 Announce a system at SCC.
@@ -372,8 +385,11 @@ sub _request
         # pagination only with GET requests
         if ($method eq "get")
         {
+            my ($current, $last) = (1,1);
             while ( $url = $self->_getNextPage($response) )
             {
+                ($current, $last) = $self->_getPageNumberInfo($response);
+                printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Download  (".int(($current/$last*100))."%)\r", 1, 0);
                 my $uri = URI->new($url);
                 if($self->{AUTHUSER} && $self->{AUTHPASS})
                 {
@@ -392,6 +408,7 @@ sub _request
                     return undef;
                 }
             }
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Download  (100%)\n", 1, 0);
         }
     }
     else
@@ -437,6 +454,22 @@ sub _getNextPage
         return $href if($name eq "next");
     }
     return undef;
+}
+
+sub _getPageNumberInfo
+{
+    my $self = shift;
+    my $response = shift;
+    my ($current, $last) = (1,1);
+
+    return ($current, $last) if (! $response || ! $response->header("Link"));
+    foreach my $link ( split(",", $response->header("Link")) )
+    {
+        my ($pnum, $name) = $link =~ /<.+page=(\d+)>; rel=["'](\w+)["']/igs;
+        $last = $pnum if($name eq "last");
+        $current = $pnum-1 if($name eq "next");
+    }
+    return ($current, $last);
 }
 
 =back
