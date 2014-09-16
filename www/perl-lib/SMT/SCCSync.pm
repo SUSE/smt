@@ -408,7 +408,7 @@ sub subscriptions
     }
 }
 
-sub mark_repos_mirrorable
+sub finalize_mirrorable_repos
 {
     my $self = shift;
     my $name = "organization_repositories";
@@ -432,7 +432,7 @@ sub mark_repos_mirrorable
     }
     else
     {
-        my $ret = $self->_markReposMirrorable($input);
+        my $ret = $self->_finalizeMirrorableRepos($input);
         return $ret;
     }
 }
@@ -1157,7 +1157,7 @@ sub _updateSubscriptionData
     return $ret;
 }
 
-sub _markReposMirrorable
+sub _finalizeMirrorableRepos
 {
     my $self   = shift;
     my $json   = shift || return 1;
@@ -1169,7 +1169,7 @@ sub _markReposMirrorable
         return 1;
     }
 
-    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID
+    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID, AUTHTOKEN
                                                     from Catalogs
                                                    where CATALOGTYPE = 'nu'",
                                                  ['Name', 'Target']);
@@ -1177,7 +1177,9 @@ sub _markReposMirrorable
     {
         # zypp repos have no target
         next if (not $repo->{distro_target});
-
+        my $updateNeeded = 0;
+        my $mirrorable = 'N';
+        my $authtoken = '';
         if(exists $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable} )
         {
             if( uc($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable}) ne "Y")
@@ -1185,8 +1187,22 @@ sub _markReposMirrorable
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
                          sprintf(__("* New mirrorable repository '%s %s' ."),
                                  $repo->{name}, $repo->{distro_target}));
-                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='Y' WHERE ID = %s",
-                                                    $self->{DBH}->quote($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{ID}) ));
+                $mirrorable = 'Y';
+                $updateNeeded = 1;
+            }
+            $authtoken = URI->new($repo->{url})->query;
+            if( $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{AUTHTOKEN} ne "$authtoken")
+            {
+                $updateNeeded = 1;
+            }
+            if($updateNeeded)
+            {
+                my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s, AUTHTOKEN=%s  WHERE ID = %s",
+                                        $self->{DBH}->quote($mirrorable),
+                                        $self->{DBH}->quote($authtoken),
+                                        $self->{DBH}->quote($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{ID}));
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+                $self->{DBH}->do( $statement );
             }
             delete $sqlres->{$repo->{name}}->{$repo->{distro_target}};
         }
@@ -1196,12 +1212,20 @@ sub _markReposMirrorable
     {
         foreach my $target ( keys %{$sqlres->{$cname}})
         {
-            if( uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y" )
+            my $updateNeeded = 0;
+            if(uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y")
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
                          sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
-                my $sth = $self->{DBH}->do( sprintf("UPDATE Catalogs SET Mirrorable='N' WHERE ID=%s",
-                                                    $self->{DBH}->quote($sqlres->{$cname}->{$target}->{ID}) ));
+                $updateNeeded = 1;
+            }
+            $updateNeeded = 1 if ($sqlres->{$cname}->{$target}->{AUTHTOKEN});
+            if($updateNeeded)
+            {
+                my $statement = sprintf("UPDATE Catalogs SET Mirrorable='N', AUTHTOKEN='' WHERE ID=%s",
+                                          $self->{DBH}->quote($sqlres->{$cname}->{$target}->{ID}) );
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+                $self->{DBH}->do( $statement );
             }
         }
     }

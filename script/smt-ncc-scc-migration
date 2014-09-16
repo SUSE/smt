@@ -162,7 +162,7 @@ eval
     }
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
-    $res = $sccsync->mark_repos_mirrorable();
+    $res = $sccsync->finalize_mirrorable_repos();
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
