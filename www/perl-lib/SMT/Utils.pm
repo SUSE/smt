@@ -1097,7 +1097,33 @@ sub getSaveUri
     {
         $saveuri->userinfo(undef);
     }
+    # FIXME: remove the authtoken
     return $saveuri->as_string();
+}
+
+=item appendPathToURI($uri, $relative)
+
+Append $relative path to $uri. $uri can ether be a string
+or a URI object.
+
+Returns a new URI object
+
+=cut
+sub appendPathToURI
+{
+    my $uri = shift;
+    my $relative = shift;
+    my $newuri = URI->new($uri);
+    my $path = $newuri->path;
+    if (substr($path, -1) eq "/" || substr($relative, 0, 1) eq "/")
+    {
+        $newuri->path( $path . $relative);
+    }
+    else
+    {
+        $newuri->path( $path ."/". $relative);
+    }
+    return $newuri;
 }
 
 =item executeCommand($options, $command, @arguments)
