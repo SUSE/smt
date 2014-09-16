@@ -110,6 +110,7 @@ _testDbSchema($dbh);
 
 # re-write parts of the config file
 my $regurl = $cfg->val('NU', 'NURegUrl');
+my $nuurl = $cfg->val('NU', 'NUUrl');
 my $regapi = $cfg->val('NU', 'ApiType', 'NCC');
 if ( $regurl !~ /^https:\/\/secure-www\.novell\.com/ || $regapi ne 'NCC')
 {
@@ -117,6 +118,7 @@ if ( $regurl !~ /^https:\/\/secure-www\.novell\.com/ || $regapi ne 'NCC')
     SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
 }
 _writeConfig($cfg, 'NU', 'NURegUrl', 'https://scc.suse.com/connect');
+_writeConfig($cfg, 'NU', 'NUUrl', 'https://updates.suse.com/');
 _writeConfig($cfg, 'NU', 'ApiType', 'SCC');
 
 eval
@@ -130,6 +132,7 @@ eval
     if(($exitcode = $sccsync->canMigrate()) > 0)
     {
         _writeConfig($cfg, 'NU', 'NURegUrl', $regurl);
+        _writeConfig($cfg, 'NU', 'NUUrl', $nuurl);
         _writeConfig($cfg, 'NU', 'ApiType', 'NCC');
         SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", $exitcode, $LOG, $vblevel);
     }
@@ -137,6 +140,7 @@ eval
     if ( defined $check_only && $check_only == 1 )
     {
         _writeConfig($cfg, 'NU', 'NURegUrl', $regurl);
+        _writeConfig($cfg, 'NU', 'NUUrl', $nuurl);
         _writeConfig($cfg, 'NU', 'ApiType', 'NCC');
 	SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 0, $LOG, $vblevel);
     }
