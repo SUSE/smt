@@ -1077,7 +1077,7 @@ sub _updateProductData
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
         return 1;
     }
-    my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://nu.novell.com"));
+    my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://updates.suse.com/"));
     $self->{NUHOST} = $nuurl->host;
     my $localhost = URI->new($self->{CFG}->val("LOCAL", "url"));
     $self->{LOCALHOST} = $localhost->host;
