@@ -1086,7 +1086,8 @@ sub dropPrivileges
 =item getSaveUri($uriString)
 
 Create a URI string save for logging or printing (by removin username and password)
-from the URI. Returns the stripped down URI
+from the URI. It also removes query paramater which might contain auth tokens.
+Returns the stripped down URI as string
 
 =cut
 sub getSaveUri
@@ -1097,7 +1098,7 @@ sub getSaveUri
     {
         $saveuri->userinfo(undef);
     }
-    # FIXME: remove the authtoken
+    $saveuri->query(undef);
     return $saveuri->as_string();
 }
 
