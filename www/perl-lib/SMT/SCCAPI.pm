@@ -120,7 +120,7 @@ sub announce
 {
     my $self = shift;
     my %opts = @_;
-    my $uri = $self->{URL}."/subscriptions/systems";
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "subscriptions/systems");
 
     my $body = {
         "email" => $opts{email},
@@ -153,7 +153,7 @@ Example:
                        'format' => undef,
                        'name' => 'SLES12-Pool',
                        'distro_target' => 'sle-12-x86_64',
-                       'url' => 'https://nu.novell.com/suse/x86_64/update/SLE-SERVER/12-POOL',
+                       'url' => 'https://updates.suse.com/suse/x86_64/update/SLE-SERVER/12-POOL',
                        'id' => 1150,
                        'description' => 'SLES12-Pool for sle-12-x86_64',
                        'tags' => [
@@ -165,7 +165,7 @@ Example:
                        'format' => undef,
                        'name' => 'SLES12-Updates',
                        'distro_target' => 'sle-12-x86_64',
-                       'url' => 'https://nu.novell.com/suse/x86_64/update/SLE-SERVER/12',
+                       'url' => 'https://updates.suse.com/suse/x86_64/update/SLE-SERVER/12',
                        'id' => 1151,
                        'description' => 'SLES12-Updates for sle-12-x86_64',
                        'tags' => [
@@ -187,7 +187,7 @@ Example:
 sub org_products
 {
     my $self = shift;
-    my $uri = URI->new($self->{URL}."/organizations/products/unscoped");
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/products/unscoped");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
@@ -215,7 +215,7 @@ Example:
 sub org_subscriptions
 {
     my $self = shift;
-    my $uri = URI->new($self->{URL}."/organizations/subscriptions");
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/subscriptions");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
@@ -242,7 +242,7 @@ Example:
 sub org_repos
 {
     my $self = shift;
-    my $uri = URI->new($self->{URL}."/organizations/repositories");
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/repositories");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
@@ -256,7 +256,7 @@ sub org_repos
 sub org_systems_list
 {
     my $self = shift;
-    my $uri = URI->new($self->{URL}."/organizations/systems");
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/systems");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
@@ -271,7 +271,7 @@ sub org_systems_show
 {
     my $self = shift;
     my $id = shift || return undef;
-    my $uri = URI->new($self->{URL}."/organizations/systems/".$id);
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/systems/$id");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
@@ -286,7 +286,7 @@ sub org_systems_delete
 {
     my $self = shift;
     my $id = shift || return undef;
-    my $uri = URI->new($self->{URL}."/organizations/systems/".$id);
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}."/organizations/systems/$id");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});

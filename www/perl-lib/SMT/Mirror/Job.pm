@@ -301,9 +301,7 @@ uri() and remoteFileLocation().
 sub fullRemoteURI
 {
     my $self = shift;
-    my $url = $self->uri();
-    $url =~ s/\/*$//;
-    return "$url/".$self->remoteFileLocation();
+    return SMT::Utils::appendPathToURI($self->uri(), $self->remoteFileLocation());
 }
 
 =item fullUri2local()

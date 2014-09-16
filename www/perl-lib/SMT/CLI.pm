@@ -1226,7 +1226,7 @@ sub _getRepoindex
     my $useragent = SMT::Utils::createUserAgent(
         log => $opt{log}, vblevel => $opt{vblevel});
     $indexfile = $destdir . '/repo/repoindex.xml';
-    SMT::Utils::getFile($useragent, $uri . '/repo/repoindex.xml', $indexfile, %opt);
+    SMT::Utils::getFile($useragent, SMT::Utils::appendPathToURI($uri, 'repo/repoindex.xml'), $indexfile, %opt);
     return $indexfile;
 }
 
@@ -1422,6 +1422,7 @@ sub isZyppMirrorable
 
     # on nu.novell.com we need to authenticate, so put the
     # userinfo into this url
+    # on updates.suse.com we have token auth
     my $url = URI->new( $opt{catalogurl} );
     if($url->host eq "nu.novell.com")
     {
@@ -1432,7 +1433,7 @@ sub isZyppMirrorable
 
     my $useragent = SMT::Utils::createUserAgent(
                         log => $opt{log}, vblevel => $opt{vblevel});
-    my $remote = $url->as_string() . "/repodata/repomd.xml";
+    my $remote = SMT::Utils::appendPathToURI($url, "repodata/repomd.xml");
 
     return SMT::Utils::doesFileExist($useragent, $remote);
 }

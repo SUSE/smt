@@ -373,7 +373,7 @@ foreach my $entry (@{$array})
         &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $entry->{LOCALPATH} ) );
 
         my $zyppMirror = undef;
-        if( SMT::Utils::doesFileExist($useragent, $zuri->as_string."/headers/header.info"))
+        if( SMT::Utils::doesFileExist($useragent, SMT::Utils::appendPathToURI($zuri, "headers/header.info")))
         {
             $zyppMirror = SMT::Mirror::Yum->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                 mirrorsrc => $mirrorsrc, nohardlink => $nohardlink,
