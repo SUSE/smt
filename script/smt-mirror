@@ -314,7 +314,7 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING ".
+    $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING, AUTHTOKEN ".
                                        "from Catalogs ".
                                        "where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
                                        "order by CATALOGTYPE, NAME",
@@ -342,10 +342,18 @@ foreach my $entry (@{$array})
         }
         else
         {
+            # in case of SCC with updates.suse.com we use tokenauth
+            # no user/password needed
             $zuri = URI->new($entry->{EXTURL});
             if($zuri->host eq "nu.novell.com")
             {
                 $zuri->userinfo("$nuUser:$nuPass");
+            }
+            if ($entry->{AUTHTOKEN})
+            {
+                # if we have an authtoken, we overwrite everything.
+                # a repo URL should not have extra query params
+                $zuri->query($entry->{AUTHTOKEN});
             }
         }
 
