@@ -1193,7 +1193,7 @@ sub _getSCCRepoList
                                    todir   => $opt{todir},
                                    dbh     => $opt{dbh}
     );
-    $sccsync->mark_repos_mirrorable();
+    $sccsync->finalize_mirrorable_repos();
 }
 
 sub _getRepoindex
