@@ -418,6 +418,7 @@ sub finalize_mirrorable_repos
     {
         return 1;
     }
+
     if(defined $self->{TODIR})
     {
         open( FH, '>', $self->{TODIR}."/$name.json") or do
@@ -1178,7 +1179,6 @@ sub _finalizeMirrorableRepos
         # zypp repos have no target
         next if (not $repo->{distro_target});
         my $updateNeeded = 0;
-        my $mirrorable = 'N';
         my $authtoken = '';
         if(exists $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable} )
         {
@@ -1187,18 +1187,21 @@ sub _finalizeMirrorableRepos
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
                          sprintf(__("* New mirrorable repository '%s %s' ."),
                                  $repo->{name}, $repo->{distro_target}));
-                $mirrorable = 'Y';
                 $updateNeeded = 1;
             }
             $authtoken = URI->new($repo->{url})->query;
             if( $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{AUTHTOKEN} ne "$authtoken")
             {
+                printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG3,
+                         sprintf("Token differ for %s %s\n%s vs\n%s\n",
+                                 $repo->{name}, $repo->{distro_target},
+                                 $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{AUTHTOKEN},
+                                 $authtoken));
                 $updateNeeded = 1;
             }
             if($updateNeeded)
             {
-                my $statement = sprintf("UPDATE Catalogs SET Mirrorable=%s, AUTHTOKEN=%s  WHERE ID = %s",
-                                        $self->{DBH}->quote($mirrorable),
+                my $statement = sprintf("UPDATE Catalogs SET Mirrorable='Y', AUTHTOKEN=%s  WHERE ID = %s",
                                         $self->{DBH}->quote($authtoken),
                                         $self->{DBH}->quote($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{ID}));
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
