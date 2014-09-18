@@ -83,6 +83,7 @@ sub new
     $self->{TARGET_DONE} = {};
     $self->{NUHOST} = "";
     $self->{LOCALHOST} = "";
+    $self->{LOCALSCHEME} = "https";
 
     $self->{CACHE} = {};
 
@@ -598,6 +599,7 @@ EOS
         $eulaUrl->fragment(undef);
         $eulaUrl->query(undef);
         $eulaUrl->host($self->{LOCALHOST});
+        $eulaUrl->scheme($self->{LOCALSCHEME});
         $product->{eula_url} = $eulaUrl->as_string();
     }
 
@@ -1082,6 +1084,7 @@ sub _updateProductData
     $self->{NUHOST} = $nuurl->host;
     my $localhost = URI->new($self->{CFG}->val("LOCAL", "url"));
     $self->{LOCALHOST} = $localhost->host;
+    $self->{LOCALSCHEME} = $localhost->scheme;
 
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
     eval {
