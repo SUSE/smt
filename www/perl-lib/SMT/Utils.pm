@@ -961,7 +961,7 @@ sub getFile
             if($redirects > 15)
             {
                 $ret = 0;
-                last
+                last;
             }
 
             my $srcUrl = $response->header("location");
