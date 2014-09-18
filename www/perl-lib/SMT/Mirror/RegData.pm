@@ -562,7 +562,6 @@ sub _requestData
     }
     else
     {
-        # FIXME: was 'die'; check if we should stop if a download failed
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Failed to POST '".$uri->as_string()."': ".$response->status_line);
         return undef;
     }

@@ -284,7 +284,6 @@ sub getLocalRegInfos
     if(!defined $user || $user eq "" ||
        !defined $pass || $pass eq "")
     {
-        # FIXME: is die correct here?
         die __("Cannot read Mirror Credentials from SMT configuration file.");
     }
 
