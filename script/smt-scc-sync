@@ -190,11 +190,12 @@ eval
     }
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
-    $res = $sccsync->finalize_mirrorable_repos();
+    SMT::CLI::setMirrorableCatalogs(log     => $LOG,
+                                    vblevel => $vblevel);
     if ($res)
     {
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) while migrating data."), $res));
-        SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) during sync."), $res));
+        $exitcode = 1;
     }
 
     if( $fromdir ne "" && -d $fromdir )
