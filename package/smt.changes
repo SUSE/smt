@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Sep 18 10:02:07 CEST 2014 - mc@suse.de
+
+- make EULA urls available with the configured scheme (bnc#897250)
+- Check non "nu" repos for availability (bnc#897246)
+
+-------------------------------------------------------------------
 Tue Sep 16 14:53:25 CEST 2014 - mc@suse.de
 
 - version 2.0.4
