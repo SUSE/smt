@@ -88,7 +88,6 @@ sub categoryAsInt
     return $self->{category};
 }
 
-# FIXME set dirty flag
 sub category
 {
     my ($self, $value) = @_;
@@ -103,6 +102,7 @@ sub category
     }
     else
     {
+      my $oldcat = $self->{category};
       if    ($value eq 'security')    { $self->{category} = 1 }
       elsif ($value eq 'recommended') { $self->{category} = 2 }
       elsif ($value eq 'bugfix')      { $self->{category} = 2 }
@@ -115,6 +115,7 @@ sub category
         $self->{category} = 4; # default to 'optional'
         # FIXME enable logging here and log this
       }
+      $self->{DIRTY} = 1 if ($oldcat != $self->{category});
     }
 
     return undef;
