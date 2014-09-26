@@ -81,7 +81,7 @@ sub new
     $self->{PROD_DONE} = {};
     $self->{EXT_DONE} = {};
     $self->{TARGET_DONE} = {};
-    $self->{NUHOST} = "";
+    $self->{NUHOSTS} = ['nu.novell.com', 'updates.suse.com'];
     $self->{LOCALHOST} = "";
     $self->{LOCALSCHEME} = "https";
 
@@ -784,7 +784,7 @@ sub _updateRepositories
     $exthost->fragment(undef);
     $exthost->query(undef);
 
-    if( $exthost->host eq $self->{NUHOST} )
+    if( grep {$_ eq $exthost->host} @{$self->{NUHOSTS}} )
     {
         $localpath =~ s/^\///;
         if($localpath =~ /^repo\//)
@@ -1081,7 +1081,7 @@ sub _updateProductData
         return 1;
     }
     my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://updates.suse.com/"));
-    $self->{NUHOST} = $nuurl->host;
+    push @{$self->{NUHOST}}, $nuurl->host;
     my $localhost = URI->new($self->{CFG}->val("LOCAL", "url"));
     $self->{LOCALHOST} = $localhost->host;
     $self->{LOCALSCHEME} = $localhost->scheme;
