@@ -950,8 +950,7 @@ sub getFile
         if($@)
         {
             printLog($opt{log}, $opt{vblevel}, LOG_DEBUG2, $@);
-            $ret = 0;
-            last;
+            return 0;
         }
 
         if ( $response->is_redirect )
@@ -959,8 +958,7 @@ sub getFile
             $redirects++;
             if($redirects > 15)
             {
-                $ret = 0;
-                last;
+                return 0;
             }
 
             my $srcUrl = $response->header("location");
