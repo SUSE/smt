@@ -1334,6 +1334,8 @@ sub setMirrorableCatalogs
         }
     }
 
+    return if($opt{todir});
+
     my $mirrorable_idx = undef;
     if(exists $opt{fromdir} && defined $opt{fromdir} && -d $opt{fromdir})
     {

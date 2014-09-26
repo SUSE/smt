@@ -191,7 +191,9 @@ eval
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(log     => $LOG,
-                                    vblevel => $vblevel);
+                                    vblevel => $vblevel,
+                                    fromdir => (($fromdir ne "")?$fromdir:undef),
+                                    todir   => (($todir ne "")?$todir:undef));
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) during sync."), $res));
