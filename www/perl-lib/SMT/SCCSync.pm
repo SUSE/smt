@@ -879,7 +879,7 @@ sub _updateRepositories
     {
         if( $@ =~ /Duplicate entry/i )
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found. Try migration.");
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found, executing auto migration.", 0, 1);
             $self->migrate(1);
             my $ret = $self->_updateRepositories($repo);
             $self->migrate(0);
