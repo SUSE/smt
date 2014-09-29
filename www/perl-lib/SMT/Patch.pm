@@ -102,7 +102,7 @@ sub category
     }
     else
     {
-      my $oldcat = $self->{category};
+      my $oldcat = $self->{category} || 0;
       if    ($value eq 'security')    { $self->{category} = 1 }
       elsif ($value eq 'recommended') { $self->{category} = 2 }
       elsif ($value eq 'bugfix')      { $self->{category} = 2 }
