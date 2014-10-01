@@ -28,22 +28,22 @@ Repository structure
 
 The repository structure in the /srv/www/htdocs directory matches the structure as it comes from SCC. This directory structure differs from the structure coming from NCC. There are following directories in the structure (selected examples, similar for other products and architectures):
 
-repo/SUSE/Products/SLE-12/images/repo/SLE-12-SDK-POOL-x86_64-Media/
+repo/SUSE/Products/SLE-SDK/12/x86_64/product/
 
 - the -POOL repository of SDK (the GA version of all packages)
 
-repo/SUSE/Products/SLE-12/images/repo/SLE-12-SDK-POOL-x86_64-Media.license/
+repo/SUSE/Products/SLE-SDK/12/x86_64/product.license/
 
 - EULA associated with the product
 
-repo/SUSE/Updates/SLE-SDK/12/x86_64/standard/
-repo/SUSE/Updates/SLE-SDK/12/s390x/standard/
-repo/SUSE/Updates/SLE-SERVER/12/x86_64/standard/
+repo/SUSE/Updates/SLE-SDK/12/x86_64/update/
+repo/SUSE/Updates/SLE-SDK/12/s390x/update/
+repo/SUSE/Updates/SLE-SERVER/12/x86_64/update/
 
 - Update repositories for respective products
 
-repo/full/SUSE/Updates/SLE-SERVER/12/x86_64/standard/
-repo/testing/SUSE/Updates/SLE-SERVER/12/x86_64/standard/
+repo/full/SUSE/Updates/SLE-SERVER/12/x86_64/update/
+repo/testing/SUSE/Updates/SLE-SERVER/12/x86_64/update/
 
 - Repositories optionally created for staging of respecive repositories. The semantics is the same as with repositories from NCC
 
