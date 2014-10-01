@@ -1083,7 +1083,7 @@ URL should start with 'http://' or 'https://'."));
 	    if (! custom)
 	    {
 	        UI::ChangeWidget (`id ("NURegUrl"), `Value, "https://scc.suse.com/connect");
-	        UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
+	        UI::ChangeWidget (`id ("NUUrl"), `Value, "https://updates.suse.com/");
 	    }
         }
         else if (action == "ncc") {
@@ -1108,7 +1108,9 @@ URL should start with 'http://' or 'https://'."));
 	        UI::ChangeWidget (`id ("NURegUrl"), `Value, cc == "scc"
 		    ? "https://scc.suse.com/connect"
 		    : "https://secure-www.novell.com/center/regsvc/");
-	        UI::ChangeWidget (`id ("NUUrl"), `Value, "https://nu.novell.com/");
+	        UI::ChangeWidget (`id ("NUUrl"), `Value, cc == "scc"
+		    ? "https://updates.suse.com/"
+		    : "https://nu.novell.com/");
 
 	    }
         }
