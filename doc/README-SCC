@@ -1,36 +1,3 @@
-Installation of SCC-enabled SMT
-===============================
-
-Install and register SLES11-SP3. Afterwards, add the beta repository e.g. via zypper:
-
-  zypper ar <url> SMT-BETA
-
-You can verify that the repository is added correctly and can be refreshed via 
-
-  zypper ref
-
-Then you can follow either via standard installation of SMT (YaST add-on module, you will need the standard SNT media) or install the packages manually via zypper. Remember that to satisfy all dependencies, the standard SMT media is necessary, the BETA repository is not sufficient.. If needed, add it also via zypper for manual installation. If you install SMT via zypper, run the YaST smt-server module to perform initial configuration, which includes selecting the registration server (SCC or NCC).
-
-
-Upgrade to SCC-enabled SMT
-==========================
-
-To upgrade existing SMT, add the BETA repository via zypper
-
-  zypper ar <url> SMT-BETA
-
-and then upgrade packages, which are available via this repository
-
-  zypper dup --from SMT-BETA
-
-or use other tools to bring the packages 'smt' and 'yast2-smt' to the version available via the BETA repository. You can use
-
-  zypper search --version smt
-
-in order to check that the right versions are installed. Once SMT is upgraded, you can migrate it from NCC to SCC as described below.
-
-
-
 Migration between SCC and NCC
 =============================
 
@@ -61,22 +28,22 @@ Repository structure
 
 The repository structure in the /srv/www/htdocs directory matches the structure as it comes from SCC. This directory structure differs from the structure coming from NCC. There are following directories in the structure (selected examples, similar for other products and architectures):
 
-repo/SUSE:/Products:/SLE-12/images/repo/SLE-12-SDK-POOL-x86_64-Media/
+repo/SUSE/Products/SLE-SDK/12/x86_64/product/
 
 - the -POOL repository of SDK (the GA version of all packages)
 
-repo/SUSE:/Products:/SLE-12/images/repo/SLE-12-SDK-POOL-x86_64-Media.license/
+repo/SUSE/Products/SLE-SDK/12/x86_64/product.license/
 
 - EULA associated with the product
 
-repo/SUSE:/Updates:/SLE-SDK:/12:/x86_64/standard/
-repo/SUSE:/Updates:/SLE-SDK:/12:/s390x/standard/
-repo/SUSE:/Updates:/SLE-SERVER:/12:/x86_64/standard/
+repo/SUSE/Updates/SLE-SDK/12/x86_64/update/
+repo/SUSE/Updates/SLE-SDK/12/s390x/update/
+repo/SUSE/Updates/SLE-SERVER/12/x86_64/update/
 
 - Update repositories for respective products
 
-repo/full/SUSE:/Updates:/SLE-SERVER:/12:/x86_64/standard/
-repo/testing/SUSE:/Updates:/SLE-SERVER:/12:/x86_64/standard/
+repo/full/SUSE/Updates/SLE-SERVER/12/x86_64/update/
+repo/testing/SUSE/Updates/SLE-SERVER/12/x86_64/update/
 
 - Repositories optionally created for staging of respecive repositories. The semantics is the same as with repositories from NCC
 
