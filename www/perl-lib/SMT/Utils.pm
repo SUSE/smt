@@ -1650,7 +1650,7 @@ sub requestedAPIVersion
     my %supportedVersions = ( "application/vnd.scc.suse.com.v1+json" => 1,
                               "application/vnd.scc.suse.com.v2+json" => 2,
                               "application/vnd.scc.suse.com.v3+json" => 3,
-                              "application/vnd.scc.suse.com.v3+json" => 4
+                              "application/vnd.scc.suse.com.v4+json" => 4
     );
 
     my $accepts = $r->headers_in->{Accept} || '';
