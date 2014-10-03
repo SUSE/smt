@@ -812,7 +812,6 @@ sub getProxySettings
     {
         if(exists $ENV{https_proxy} && defined $ENV{https_proxy} && $ENV{https_proxy} =~ /^http/)
         {
-            # required for Crypt::SSLeay HTTPS Proxy support
             $httpsProxy = $ENV{https_proxy};
         }
     }

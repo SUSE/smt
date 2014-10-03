@@ -4,7 +4,6 @@ use strict;
 use URI;
 use SMT::Parser::RegData;
 use XML::Writer;
-use Crypt::SSLeay;
 use SMT::Utils;
 use File::Temp;
 

@@ -7,7 +7,6 @@ use File::Find;
 use File::Temp qw/ tempdir /;
 use File::Copy;
 use File::Basename;
-use Crypt::SSLeay;
 use IO::Zlib;
 use Time::HiRes qw(gettimeofday tv_interval);
 use Digest::SHA1  qw(sha1 sha1_hex);
