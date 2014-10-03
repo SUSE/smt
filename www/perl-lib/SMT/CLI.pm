@@ -26,8 +26,7 @@ use File::Basename;
 use Digest::SHA1  qw(sha1 sha1_hex);
 use Time::HiRes qw(gettimeofday tv_interval);
 
-use LIMAL;
-use LIMAL::CaMgm;
+use CaMgm;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -3019,7 +3018,7 @@ sub certificateExpireCheck
 
     return undef if(! defined $certfile);
 
-    my $certData = LIMAL::CaMgm::LocalManagement::getCertificate($certfile, $LIMAL::CaMgm::E_PEM);
+    my $certData = CaMgm::LocalManagement::getCertificate($certfile, $LIMAL::CaMgm::E_PEM);
 
     my $endtime = $certData->getEndDate();
     my $currentTime = time();
