@@ -1,0 +1,40 @@
+General:
+- using timestampTZ
+
+
+Subscriptions:
+- new id column
+- remove server_class
+- removed duration
+
+ClientSubscription:
+- references new id column of Subscriptions
+
+
+Repositories (was Catalogs):
+- removed staging
+
+Products:
+- removed all lower* columns
+- removed paramlist, needinfo and service
+- removed product_list
+
+ProductRepositories (was ProductCatalogs)
+
+Registrations (was Registration)
+- removed guid
+- rename nccregdate => sccregdate
+- rename nccregerror => sccregerror
+- new column client_id references Clients(id)
+
+
+MachineData
+- replace GUID with client_id
+- rename keyname with md_key
+- rename keyname with md_value
+
+Packages:
+- epoch change to not NULL default 0
+- patch_id NOT NULL
+
+
