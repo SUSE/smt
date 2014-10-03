@@ -1,9 +1,0 @@
-PRODUCT YaST_Enterprise_Proxy
-VERSION %{BASE_VERSION}
-DISTPRODUCT SUSE-SLE-YEP
-DISTVERSION %{BASE_VERSION}-%{VERSION}
-TYPE add-on
-VENDOR SUSE LINUX Products GmbH, Nuernberg, Germany
-RELNOTESURL %{RELNOTESURL}
-LABEL YaST Enterprise Proxy
-REQUIRES sles-release-10-sp1 pattern:yep-base
