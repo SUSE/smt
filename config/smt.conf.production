@@ -5,7 +5,7 @@ NUUser=
 NUPass=
 
 [DB]
-config=dbi:mysql:database=smt;host=localhost
+config=DBI:Pg:dbname=smt;host=localhost
 user=smt
 pass=
 

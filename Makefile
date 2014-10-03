@@ -1,5 +1,5 @@
 NAME          = smt
-VERSION       = 2.0.7
+VERSION       = 3.0.0
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -84,8 +84,7 @@ install:
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Job
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Rest
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
-	mkdir -p $(DESTDIR)/usr/share/schemas/smt/mysql
-	mkdir -p $(DESTDIR)/usr/share/schemas/smt/_common
+	mkdir -p $(DESTDIR)/usr/share/schemas/smt/Pg
 	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
 	mkdir -p $(DESTDIR)$(DOCDIR)/smt
 	install -m 644 apache2/smt-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
@@ -133,7 +132,9 @@ install:
 	install -m 755 config/smt.reg $(DESTDIR)/etc/slp.reg.d/
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
-	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 db/smt-setup-db $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 db/smt-sql $(DESTDIR)/usr/bin/
+	install -m 755 db/smt-schema-upgrade $(DESTDIR)/usr/bin/
 	install -m 755 script/changeSMTUserPermissions.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/reschedule-sync.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/srv/www/htdocs/repo/tools/
