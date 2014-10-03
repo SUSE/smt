@@ -21,81 +21,12 @@ use Apache2::RequestUtil;
 use XML::Writer;
 
 use SMT::Utils;
-use SMT::JobQueue;
-use SMT::Job;
 use SMT::Client;
 use SMT::Product;
 use SMT::Patch;
 use SMT::Repositories;
 use DBI qw(:sql_types);
 use Data::Dumper;
-
-
-#
-# the handler for requests to the jobs ressource
-#
-sub jobs_handler($$)
-{
-    my $r   = shift || return undef;
-    my $dbh = shift || return undef;
-    my $path = sub_path($r);
-    # username already checked in handler
-    my $username = $r->user;
-
-    # jobs (for authenticated client)
-    my $reJobs     = qr{^jobs?(/(\@all)?)?$};  # get list of all MY jobs
-    my $reJobsNext = qr{^jobs?/\@next$};       # get MY next job
-    my $reJobsId   = qr{^jobs?/([\d]+)$};      # get job information (GET) or finish job (PUT)
-
-    # get a job request object
-    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
-
-    # map the requests to the functions
-    if    ( $r->method() =~ /^GET$/i )
-    {
-        if    ( $path =~ $reJobs )     { return $jobq->getJobList({ asXML => '', short => 0, GUID => $username }) }
-        elsif ( $path =~ $reJobsNext ) { return $jobq->getJob    ({ asXML => '', short => 1, GUID => $username, ID => $jobq->getNextJobID({ GUID => $username }) }) }
-        elsif ( $path =~ $reJobsId )   { return $jobq->getJob    ({ asXML => '', short => 1, GUID => $username, ID => $1, retrieve => 1 }) }
-        else
-        {
-            $r->log->error("GET request to unknown jobs interface: $path");
-            return undef;
-        }
-    }
-    elsif ( $r->method() =~ /^PUT$/i )
-    {
-        if ( $path =~ $reJobsId )
-        {
-            my $c = read_post($r);
-            return $jobq->finishJob({ GUID => $username, xmldata => $c });
-        }
-        else { return undef; }
-    }
-    elsif ( $r->method() =~ /^POST$/i )
-    {
-        # This request type is not (yet) supported
-        # POSTing to the "jobs" interface (which is only used by smt-clients) means "creating a job"
-        # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("POST request to the jobs interface. This is not supported.");
-        return undef;
-    }
-    elsif ( $r->method() =~ /^DELETE$/i )
-    {
-        # This request type is not (yet) supported
-        # DELETEing to the "jobs" interface (which is only used by smt-clients) means "deleting a job"
-        # It may be implemented later for the "clients" interface (which is for administrator usage).
-        $r->log->error("DELETE request to the jobs interface. This is not supported.");
-        return undef;
-    }
-    else
-    {
-        $r->log->error("Unknown request to the jobs interface.");
-        return undef;
-    }
-
-    return undef;
-}
-
 
 #
 # the handler for requests to the clients ressource
@@ -138,38 +69,16 @@ sub clients_handler($$)
 
     # get a client request object
     my $client = SMT::Client->new({ 'dbh' => $dbh }) || return undef;
-    # get a job request object
-    my $jobq = SMT::JobQueue->new({ 'dbh' => $dbh }) || return undef;
 
     # clients
     my $reClients           = qr{^clients?(/(\@all)?)?$};               # get list of all clients
     my $reClientsId         = qr{^clients?/([\w]+)$};                   # get client information
-    # clients/jobs
-    my $reClientsAllJobs    = qr{^clients?/\@all/jobs?(/(\@all)?)?$};   # get list of jobs of all clients
-    my $reClientsIdJobs     = qr{^clients?/([\w]+)/jobs?(/(\@all)?)?$}; # get list of jobs of one client
-    my $reClientsIdJobsNext = qr{^clients?/([\w]+)/jobs?/\@next$};      # get next job for one client
-    my $reClientsIdJobsId   = qr{^clients?/([\w]+)/jobs?/(\d+)$};       # get job information of one job for one client
-    # clients/patchstatus
-    my $reClientsIdPatchstatus  = qr{^clients?/([\d\w]+)/patchstatus$}; # get patchstatus info for one client
-    my $reClientsAllPatchstatus = qr{^clients?/\@all/patchstatus$};     # get patchstatus info for all clients
 
     # map the requests to the functions
     if    ( $r->method() =~ /^GET$/i )
     {
-        if    ( $path =~ $reClients )              { return $client->getAllClientsInfoAsXML(); }
-        elsif ( $path =~ $reClientsId )            { return $client->getClientsInfo({'GUID' => $1, 'asXML' => 'one', 'selectAll' => '' }); }
-        elsif ( $path =~ $reClientsAllJobs )       { return $jobq->getAllJobsInfoAsXML(); }
-        elsif ( $path =~ $reClientsIdJobs )        { return $jobq->getJobList({ asXML => '', short => 0, GUID => $1, });  }
-        elsif ( $path =~ $reClientsIdJobsNext )    { return $jobq->getJob    ({ asXML => '', short => 0, GUID => $1, ID => $jobq->getNextJobID({ GUID => $1 }) }); }
-        elsif ( $path =~ $reClientsIdJobsId )      { return $jobq->getJob    ({ asXML => '', short => 0, GUID => $1, ID => $2 }); }
-        elsif ( $path =~ $reClientsIdPatchstatus )
-        {
-            return $client->getClientsInfo( { 'GUID' => $1, 'ID' => '', 'PATCHSTATUS' => '', 'asXML' => 'one' } );
-        }
-        elsif ( $path =~ $reClientsAllPatchstatus )
-        {
-            return $client->getClientsInfo( { 'GUID' => '', 'ID' => '', 'PATCHSTATUS' => '', 'asXML' => '' } );
-        }
+        if    ( $path =~ $reClients )   { return $client->getAllClientsInfoAsXML(); }
+        elsif ( $path =~ $reClientsId ) { return $client->getClientsInfo({'GUID' => $1, 'asXML' => 'one', 'selectAll' => '' }); }
         else
         {
             $r->log->error("GET request to unknown clients interface: $path");
@@ -406,14 +315,12 @@ sub handler {
         $r->log->info(sprintf("Request from client (%s). Could not updated its last contact timestamp.", $r->user) );
     }
 
-    my $JobsRequest         = qr{^jobs?};              # no trailing slash
     my $ClientsRequest      = qr{^clients?};           # no trailing slash
     my $ProductsRequest     = qr{^products?};          # products
     my $ReposRequest        = qr{^repos?};             # repos
     my $PatchesRequest      = qr{^patch(es)?};         # patches
 
-    if    ( $path =~ $JobsRequest           ) {  $res = jobs_handler($r, $dbh);          }
-    elsif ( $path =~ $ClientsRequest        ) {  $res = clients_handler($r, $dbh);       }
+    if    ( $path =~ $ClientsRequest        ) {  $res = clients_handler($r, $dbh);       }
     elsif ( $path =~ $ProductsRequest       ) {  $res = products_handler($r, $dbh);      }
     elsif ( $path =~ $ReposRequest          ) {  $res = repos_handler($r, $dbh);         }
     elsif ( $path =~ $PatchesRequest        ) {  $res = patches_handler($r, $dbh);       }
@@ -533,28 +440,6 @@ SMT::RESTService - REST service documentation
 
 To access the REST interface all URLs start with /=/1/ path.
 
-=head1 Jobs Interface
-
-=over 4
-
-=item GET /jobs
-
-Returns a list of all jobs
-
-=item GET /jobs/@next
-
-Return the next job
-
-=item GET /jobs/<ID>
-
-Return job information of the specified ID
-
-=item PUT /jobs/<ID>
-
-Finish job with the given ID
-
-=back
-
 =head1 Clients Interface
 
 =over 4
@@ -580,83 +465,6 @@ Return client information of this GUID
            patchstatus_date="" patchstatus_o="" patchstatus_p=""
            patchstatus_r="" patchstatus_s="" target="sle-11-x86_64"/>
    <client id="1" .... />
-
-=item GET /clients/@all/jobs
-
-Return a list of jobs of all clients
-
- <jobs>
-   <job id="71" type="patchstatus" name="Patchstatus Job"
-        description="Patchstatus Job for Client 4b4608ddc16e4b3fa1271df903056b3a"
-        status="0" created="2011-07-25 12:19:42" upstream="0"
-        cacheresult="0" verbose="0" timelag="23:00:00" persistent="1">
-     <arguments/>
-   </job>
-   <job id="42" guid="123" type="patchstatus" name="Patchstatus Job"
-        description="Patchstatus Job for Client 123" status="0" exitcode="0"
-        created="2010-07-12 17:20:27" targeted="2012-02-03 11:36:02"
-        retrieved="2012-02-02 12:36:01" finished="2012-02-02 12:36:02"
-        upstream="0" cacheresult="0" verbose="0" timelag="23:00:00"
-        message="0:0:0:0 # PackageManager=0 Security=0 Recommended=0
-        Optional=0" persistent="1">
-     <stdout>
-       <![CDATA[ ]]>
-     </stdout>
-     <stderr>
-       <![CDATA[ ]]>
-     </stderr>
-     <arguments/>
-   </job>
-   ...
- </jobs>
-
-=item GET /clients/<GUID>/jobs
-
-Return a list of jobs for the client specified by GUID
-
- <jobs>
-   <job id="42" guid="123" type="patchstatus" name="Patchstatus Job"
-        description="Patchstatus Job for Client 123" status="0" exitcode="0"
-        created="2010-07-12 17:20:27" targeted="2012-02-03 11:36:02"
-        retrieved="2012-02-02 12:36:01" finished="2012-02-02 12:36:02"
-        upstream="0" cacheresult="0" verbose="0" timelag="23:00:00"
-        message="0:0:0:0 # PackageManager=0 Security=0 Recommended=0
-        Optional=0" persistent="1">
-     <stdout>
-       <![CDATA[ ]]>
-     </stdout>
-     <stderr>
-       <![CDATA[ ]]>
-     </stderr>
-     <arguments/>
-   </job>
-   ...
- </jobs>
-
-=item GET /clients/<GUID>/jobs/@next
-
-Return the next job of the client specified by GUID.
-
-=item GET /clients/<GUID>/jobs/<ID>
-
-Return job information of a specific client and a specific job
-
-=item GET /clients/@all/patchstatus
-
-Return the patchstatus of all clients
-
- <clients>
-   <client id="1" guid="f9c48ef7ae0c4ed39294f96715d36b50" patchstatus_date=""
-           patchstatus_o="" patchstatus_p="" patchstatus_r="" patchstatus_s=""/>
-   <client id=2" ... />
- </clients>
-
-=item GET /clients/<GUID>/patchstatus
-
-Return the patchstatus of the client specified by GUID
-
- <client id="1" guid="f9c48ef7ae0c4ed39294f96715d36b50" patchstatus_date=""
-         patchstatus_o="" patchstatus_p="" patchstatus_r="" patchstatus_s=""/>
 
 =back
 

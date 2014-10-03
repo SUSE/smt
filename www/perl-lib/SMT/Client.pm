@@ -28,19 +28,6 @@ may contain the the keys that should be selected. If a value is assinged to the 
 the result will be filtered. Only DB entries with the fieldname matching the value
 will be selected.
 
-The patchstatus query string is different. It is a set of 4 values separated by one
-colon. Each value may be an exact number to query or an empty string if it should
-not be filtered by that value. Or it may be a string like "<100" or ">0", so its
-value will be checked if it is lower than or greater that the given number.
-The 4 sets represent the pending patches for 1. the packagemanager, 2. security
-updates, 3. recommended updates, 4. optional updates, in this order.
-If a string does not match a valid search pattern, undef will be returned.
-
-Patchstatus Query String Example:  ":>0::<100"
-  This queries for clients that have more than 0 security patches and less than
-  100 optional patches.
-
-
 Query Example: getClientsInfo({ 'GUID'        => '',
                                 'TARGET'      => 'foobar'
                                 'LASTCONTACT' => '' })
@@ -48,16 +35,13 @@ Query Example: getClientsInfo({ 'GUID'        => '',
   the TARGET equals 'foobar'.
 
 Possible query keys are:
-  ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE PATCHSTATUS
+  ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE
 
 
 
 The return value for all functions is a hash of hashes. The key is always the client ID
 (not GUID) and the value-hash is a hash similar to the filter hash. This is also valid for
-the functions that only select information about one client. Only the patchstatus information
-is split into 5 separate keys: PATCHSTATUS_P for packagemanager, PATCHSTATUS_S for security
-updates, PATCHSTATUS_R for recommended updates, PATCHSTATUS_O for optional patches and
-PATCHSTATUS_DATE for the date of the current patchstatus information.
+the functions that only select information about one client.
 
 The return value is empty for empty search results and it is undef for invaild
 search queries.
@@ -90,41 +74,12 @@ All current functions are:
 * getAllClientsInfo()             -  return all clients with all information
 * getClientGUIDByID($)            -  get the client's GUID by its ID (returns only the GUID)
 * getClientIDByGUID($)            -  get the client's ID by its GUID (returns only the ID)
-* getClientPatchstatusByID($)     -  get one client's patchstatus by ID
-* getClientPatchstatusByGUID($)   -  get one client's patchstatus by GUID
 * authenticateByGUIDAndSecret     -  authenticate a user via its GUID and SECRET (returns {} on error, and info hash on success)
 * authenticateByIDAndSecret       -  authenticate a user via its ID and SECRET (returns {} on error, and info hash on success)
 
 =back
 
 =cut
-
-use constant
-{
-    CLIENT_STATUS	=>
-    {
-	'PATCHSTATUS_S'	=> 'critical',
-	'PATCHSTATUS_P'	=> 'critical',
-	'PATCHSTATUS_R'	=> 'updates-available',
-	'PATCHSTATUS_O'	=> 'updates-available',
-	'OK'		=> 'up-to-date',
-	'UNKNOWN'	=> 'unknown',
-    },
-
-    # Defines a client status label according to the number of patches pending
-    CLIENT_STATUS_LABEL =>
-    {
-	'PATCHSTATUS_S'	=> __("Critical"),
-	'PATCHSTATUS_P'	=> __("Critical"),
-	'PATCHSTATUS_R'	=> __("Updates available"),
-	'PATCHSTATUS_O'	=> __("Updates available"),
-	'OK'		=> __("Up-to-date"),
-	'UNKNOWN'	=> __("Unknown"),
-    },
-};
-
-# Defines the patch status order, first hit wins
-my @STATUS_PRIO = ('PATCHSTATUS_P', 'PATCHSTATUS_S', 'PATCHSTATUS_R', 'PATCHSTATUS_O');
 
 #
 # constructor
@@ -160,74 +115,6 @@ sub in_Array($$)
     return 0;
 }
 
-
-#
-# parse Patchstatus Query String
-#
-sub createPatchstatusQuery($$)
-{
-    my $self = shift;
-    my $q = shift || '';
-
-    # these are the hardcoded keys for the MachineData table for the patchstatus (where TYPE is 1)
-    my @KEYS = qw[PKGMGR SECURITY RECOMMENDED OPTIONAL];
-    my @fields = ();
-    my @whereClause = ();
-
-    # check query string
-    if ( $q =~ /^$/ )
-    {
-        # allow empty query string
-        @fields = ('', '', '', '');
-    }
-    elsif ( $q =~ /^([^:]*):([^:]*):([^:]*):([^:]*)$/ )
-    {
-        # check if general pattern matches: set of 4 strings separated by colon (empty string is ok)
-        @fields = ( defined $1 ? "$1":'',
-                    defined $2 ? "$2":'',
-                    defined $3 ? "$3":'',
-                    defined $4 ? "$4":'',  );
-    }
-    else
-    {
-        # TODO log error: print filter pattern wrong
-        return undef;
-    }
-
-    # if there are 4 fields continue parsing
-    if ( scalar(@fields) == 4 )
-    {
-        for (my $i=0 ; $i<4 ; $i++)
-        {
-            # match valid query string and empty string (skip if empty)
-            if ( $fields[$i] =~ /^([<>])?(\d+)?$/ )
-            {
-                # if no number is given skip to next
-                next unless defined $2;
-                # if not lower or greater is defined it means equal
-                # $op should not be $self->{'dbh'}->quote~d so make sure only  <, >, = are possible
-                my $op = (defined $1) ?  ($1 eq '>' ? '>':'<' ) : '=';
-                # create where statement snippet
-                push(@whereClause, sprintf(" ps.$KEYS[$i] $op %s ", $self->{'dbh'}->quote($2) ));
-            }
-            elsif ( defined $fields[$i] )
-            {
-                # TODO log error: print "error in patchstatus query filter\n";
-                return undef;
-            }
-        }
-    }
-    else
-    {   # with the code above this else block will never be accessed
-        # TODO log error: print "error in creating the patchstatus query\n";
-        return undef;
-    }
-
-    # create where statement snippet for the patchstatus values
-    return join(' AND ', @whereClause);
-}
-
-
 #
 # create the SQL statement according to the filter
 # this is an internal function
@@ -239,15 +126,8 @@ sub createSQLStatement($$)
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
 
-    my %PSmap = ( 'PKGMGR' => 'PATCHSTATUS_P',
-                  'SECURITY' => 'PATCHSTATUS_S',
-                  'RECOMMENDED' => 'PATCHSTATUS_R',
-                  'OPTIONAL' => 'PATCHSTATUS_O',
-                  'PATCHSTATUS_DATE' => 'PATCHSTATUS_DATE' );
-
     my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
     my @ALLPROPS = @PROPS;
-    push( @ALLPROPS, 'PATCHSTATUS' );
     my $asXML = ( exists ${$filter}{'asXML'}  &&  defined ${$filter}{'asXML'} ) ? 1 : 0;
 
 
@@ -284,22 +164,6 @@ sub createSQLStatement($$)
     if ( exists ${$filter}{'SECRET'}  &&  defined ${$filter}{'SECRET'} )
     {
         push( @where, ' cl.SECRET = '. $self->{'dbh'}->quote(${$filter}{SECRET}) .' ' );
-    }
-
-    # add query for patchstatus if defined
-    if ( exists ${$filter}{'PATCHSTATUS'}  &&  defined ${$filter}{'PATCHSTATUS'} )
-    {
-        # parse and create the patchstatus query
-        my $patchstatusQuery = $self->createPatchstatusQuery(${$filter}{'PATCHSTATUS'});
-        return undef unless defined $patchstatusQuery;
-
-        $fromstr .= ' LEFT JOIN Patchstatus ps ON ( cl.ID = ps.CLIENT_ID ) ';
-        foreach my $PSkey (keys %PSmap)
-        {
-            # if XML gets exported then switch to lower case attributes
-            push( @PSselect, "  ps.$PSkey as  ".( $asXML ?  lc($PSmap{$PSkey}):$PSmap{$PSkey}).'  '  );
-        }
-        push( @where, $patchstatusQuery) unless ( $patchstatusQuery eq '');
     }
 
     # make sure the ID is in the select statement in any case
@@ -510,7 +374,7 @@ sub getClientGUIDByID($$)
 
     return undef unless (defined $id && $id !~ /^$/);
     my $res = $self->getClientsInfo_internal({ 'ID' => $id,
-                                        'GUID' => ''  });
+                                               'GUID' => ''  });
     if ( keys %{$res} == 1 )
     {
         foreach my $key (keys %{$res})
@@ -533,7 +397,7 @@ sub getClientIDByGUID($$)
 
     return undef unless (defined $guid && $guid !~ /^$/);
     my $res = $self->getClientsInfo_internal({ 'GUID' => $guid,
-                                        'ID' => ''  });
+                                               'ID' => ''  });
     if ( keys %{$res} == 1 )
     {
         foreach my $key (keys %{$res})
@@ -543,102 +407,6 @@ sub getClientIDByGUID($$)
     }
     return undef;
 }
-
-
-#
-# getPatchstatusByID
-#   get a client's patchstatus via its ID
-#   parameters:
-#    self
-#    ID
-#
-sub getClientPatchstatusByID($$)
-{
-    my $self = shift;
-    my $id = shift || '';
-
-    return undef unless (defined $id && $id !~ /^$/);
-    return $self->getClientsInfo_internal({'ID' => $id,
-                                    'PATCHSTATUS' => '' });
-}
-
-
-#
-# getPatchstatusByGUID
-#   get a client's patchstatus via its GUID
-#   parameters:
-#    self
-#    GUID
-sub getClientPatchstatusByGUID($$)
-{
-    my $self = shift;
-    my $guid = shift || '';
-
-    return undef unless (defined $guid && $guid !~ /^$/);
-    return $self->getClientsInfo_internal({'GUID' => $guid,
-                                    'PATCHSTATUS' => '' });
-}
-
-sub updatePatchstatus($$)
-{
-    my $self = shift;
-    my $guid = shift || return undef;
-    my $pInfo = shift || return undef;
-
-    # get Client id
-    my $cid = $self->getClientIDByGUID($guid) || return undef;
-
-    # crop spaces and comment information
-    $pInfo =~ s/^\s+//;
-    $pInfo =~ s/\s*#.*$//;
-    ## $pInfo may be 'failed' or 'denied', in that case the status info will be set to NULL
-
-    # check if exists PS
-    my $sql = ' INSERT INTO Patchstatus (CLIENT_ID, PKGMGR, SECURITY, RECOMMENDED, OPTIONAL, PATCHSTATUS_DATE) VALUES ';
-    if ( $pInfo =~ /^(\d+):(\d+):(\d+):(\d+)$/  )
-    {
-        my $PSp = $self->{'dbh'}->quote($1) || 'NULL';
-        my $PSs = $self->{'dbh'}->quote($2) || 'NULL';
-        my $PSr = $self->{'dbh'}->quote($3) || 'NULL';
-        my $PSo = $self->{'dbh'}->quote($4) || 'NULL';
-
-        $sql .= " ( $cid, $PSp, $PSs, $PSr, $PSo, CURRENT_TIMESTAMP ) ";
-        $sql .= ' ON DUPLICATE KEY UPDATE ';
-        $sql .= " PKGMGR = $PSp , SECURITY = $PSs , RECOMMENDED = $PSr , OPTIONAL = $PSo, PATCHSTATUS_DATE = CURRENT_TIMESTAMP ";
-    }
-    else
-    {
-        $sql .= " ( $cid, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP ) ";
-        $sql .= ' ON DUPLICATE KEY UPDATE ';
-        $sql .= " PKGMGR = NULL , SECURITY = NULL , RECOMMENDED = NULL , OPTIONAL = NULL, PATCHSTATUS_DATE = CURRENT_TIMESTAMP ";
-    }
-
-    return $self->{'dbh'}->do($sql);
-}
-
-#
-# insertPatchstatusJob
-#   Inserts (or updates) a patchstatus job for a client (by GUID)
-#   parameter:  guid
-#
-sub insertPatchstatusJob($)
-{
-    my $self = shift;
-    my $guid = shift || return undef;
-
-    my $cid = $self->getClientIDByGUID($guid) || return undef;
-
-    my $sqlFindJob = "SELECT ID FROM JobQueue where GUID_ID = '$cid' AND TYPE = 1";
-    my $findResult = $self->{'dbh'}->selectcol_arrayref($sqlFindJob);
-    if ( @{$findResult} == 0)
-    {
-        my $sql = "INSERT INTO JobQueue (GUID_ID, TYPE, PERSISTENT, NAME, DESCRIPTION, TIMELAG) ";
-        $sql .= " VALUES ( $cid, 1, 1, 'Patchstatus Job', 'Patchstatus Job for Client $guid' , '23:00:00' ) ";
-        $self->{'dbh'}->do($sql);
-    }
-    return 1;
-}
-
 
 #
 # updateLastContact
@@ -654,45 +422,6 @@ sub updateLastContact($)
 
     return 0 if ( defined $res  &&  $res =~ /^0E0$/ );
     return  $res ? 1:0;
-}
-
-
-#
-# Counts the number of patches of particular patch level
-# and returns an appropriate label that describes such status
-# and non-localized status string
-#
-# See CLIENT_STATUS_LABEL and CLIENT_STATUS constants
-#
-sub getPatchStatusLabel ($)
-{
-    my $client_data = shift || {};
-    my $status_key = '';
-
-    my $label	= CLIENT_STATUS_LABEL->{OK};
-    my $status	= CLIENT_STATUS->{OK};
-
-    foreach $status_key (@STATUS_PRIO)
-    {
-	if (! defined $client_data->{$status_key})
-	{
-	    $label	= (defined CLIENT_STATUS_LABEL->{'UNKNOWN'}
-			    ? CLIENT_STATUS_LABEL->{'UNKNOWN'}:__("Internal Error"));
-	    $status	= (defined CLIENT_STATUS->{'UNKNOWN'}
-			    ? CLIENT_STATUS->{'UNKNOWN'}:'internal-error');
-	    last;
-	}
-	elsif ($client_data->{$status_key} > 0)
-	{
-	    $label	= (CLIENT_STATUS_LABEL->{$status_key}
-			    ? CLIENT_STATUS_LABEL->{$status_key}:$status_key);
-	    $status	= (CLIENT_STATUS->{$status_key}
-			    ? CLIENT_STATUS->{$status_key}:$status_key);
-	    last;
-	}
-    }
-
-    return ($label, $status);
 }
 
 1;

@@ -34,8 +34,6 @@ install:
 	mkdir -p $(DESTDIR)/srv/www/perl-lib/SMT/Client
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Mirror
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Parser
-	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Utils
-	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Job
 	mkdir -p $(DESTDIR)$(PERLMODDIR)/SMT/Rest
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/Pg
@@ -47,10 +45,6 @@ install:
 	install -m 644 apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
 	install -m 755 script/smt $(DESTDIR)/usr/sbin/
 	install -m 755 script/smt-* $(DESTDIR)/usr/sbin/
-	if [ -e $(DESTDIR)/usr/sbin/smt-catalogs ]; then rm -f $(DESTDIR)/usr/sbin/smt-catalogs; fi
-	if [ -e $(DESTDIR)/usr/sbin/smt-setup-custom-catalogs ]; then rm -f $(DESTDIR)/usr/sbin/smt-setup-custom-catalogs; fi
-	ln -s smt-repos $(DESTDIR)/usr/sbin/smt-catalogs
-	ln -s smt-setup-custom-repos $(DESTDIR)/usr/sbin/smt-setup-custom-catalogs
 	install -m 644 www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	install -m 644 www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Support.pm $(DESTDIR)/srv/www/perl-lib/SMT/
@@ -61,10 +55,7 @@ install:
 	install -m 644 www/perl-lib/SMT/CLI.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Curl.pm /$(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT.pm $(DESTDIR)$(PERLMODDIR)
-	install -m 644 www/perl-lib/SMT/Filter.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Repositories.pm $(DESTDIR)$(PERLMODDIR)/SMT/
-	install -m 644 www/perl-lib/SMT/JobQueue.pm $(DESTDIR)$(PERLMODDIR)/SMT/
-	install -m 644 www/perl-lib/SMT/Job.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Client.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Package.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Patch.pm $(DESTDIR)$(PERLMODDIR)/SMT/
@@ -75,8 +66,6 @@ install:
 	install -m 644 www/perl-lib/SMT/RESTInfo.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Rest/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Rest/
 	install -m 644 www/perl-lib/SMT/ConnectAPI.pm $(DESTDIR)/srv/www/perl-lib/SMT/
-	install -m 644 www/perl-lib/SMT/Utils/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Utils/
-	install -m 644 www/perl-lib/SMT/Job/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Job/
 	cd db/schemas; \
 	find Pg/ \
                   -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \
@@ -88,7 +77,6 @@ install:
 	install -m 755 db/smt-sql $(DESTDIR)/usr/bin/
 	install -m 755 db/smt-schema-upgrade $(DESTDIR)/usr/bin/
 	install -m 755 script/changeSMTUserPermissions.sh $(DESTDIR)/usr/lib/SMT/bin/
-	install -m 755 script/reschedule-sync.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/srv/www/htdocs/repo/tools/
 	install -m 644 www/repo/res-signingkeys.key $(DESTDIR)/srv/www/htdocs/repo/keys/
 	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/cron.d/
@@ -148,9 +136,7 @@ dist: clean
 	@mkdir -p $(NAME)-$(VERSION)/doc
 	@mkdir -p $(NAME)-$(VERSION)/script
 	@mkdir -p $(NAME)-$(VERSION)/tests/SMT/Mirror
-	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/jobtest
 	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/rpmmdtest
-	@mkdir -p $(NAME)-$(VERSION)/tests/testdata/regdatatest
 	@mkdir -p $(NAME)-$(VERSION)/www
 	@mkdir -p $(NAME)-$(VERSION)/logrotate
 
@@ -179,7 +165,6 @@ dist: clean
 
 	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
 	@cp tests/SMT/Mirror/*.pl $(NAME)-$(VERSION)/tests/SMT/Mirror/
-	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
 	@cp script/* $(NAME)-$(VERSION)/script/
 	@cp logrotate/smt $(NAME)-$(VERSION)/logrotate/
 	find www -name ".svn" -prune -o \

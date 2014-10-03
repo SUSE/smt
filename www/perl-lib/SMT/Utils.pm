@@ -18,8 +18,6 @@ use POSIX ();     # Needed for setlocale()
 use User::pwent;
 use Sys::GRP;
 
-use SMT::Utils::RequestAgent;
-
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
 use English;
@@ -111,7 +109,7 @@ sub db_connect
         die __("Invalid Database configuration. Missing value for DB/config.");
     }
 
-    my $dbh    = DBI->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});
+    my $dbh    = DBI->connect($config, $user, $pass, {RaiseError => 0, AutoCommit => 0});
 
     return $dbh;
 }
@@ -322,8 +320,6 @@ sub getSMTGuid
     my $secret = "";
     my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
     my $CREDENTIAL_FILE = "NCCcredentials";
-    my $GUID_FILE = "/etc/zmd/deviceid";
-    my $SECRET_FILE = "/etc/zmd/secret";
     my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
     if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
@@ -1241,84 +1237,6 @@ sub runHook($)
   system($hook);
 }
 
-sub getStagingGroupPaths
-{
-    my $dbh = shift || db_connect();
-    my $group = shift;
-
-    $group = "default" if( ! $group || $group eq "");
-
-    my $statement = sprintf("SELECT TESTINGDIR, PRODUCTIONDIR FROM StagingGroups WHERE name = %s", $dbh->quote($group));
-    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
-    if (! @{$ref}[0])
-    {
-        return (undef, undef);
-    }
-    else
-    {
-        return (@{$ref}[0]->{TESTINGDIR}, @{$ref}[0]->{PRODUCTIONDIR});
-    }
-}
-
-sub getStagingGroupID
-{
-    my $dbh = shift || db_connect();
-    my $group = shift;
-
-    $group = "default" if( ! $group || $group eq "");
-
-    my $statement = sprintf("SELECT ID FROM StagingGroups WHERE name = %s", $dbh->quote($group));
-    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
-    if (! @{$ref}[0])
-    {
-        return 1;
-    }
-    else
-    {
-        return @{$ref}[0]->{ID};
-    }
-}
-
-sub getStagingGroupNames
-{
-    my $dbh = shift || db_connect();
-
-    my $statement = sprintf("SELECT name FROM StagingGroups");
-    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
-    my $groups = [];
-    my $foundDefault = 0;
-    foreach my $name (@{$ref})
-    {
-        if($name->{name} eq "default")
-        {
-            $foundDefault = 1;
-        }
-        push @{$groups}, $name->{name};
-    }
-    if(!$foundDefault)
-    {
-        push @{$groups}, "default";
-    }
-    return $groups;
-}
-
-sub getStagingGroupsForCatalogID
-{
-    my $dbh = shift || db_connect();
-    my $cid = shift;
-
-    my $statement = sprintf("SELECT distinct sg.name FROM StagingGroups sg, Filters f
-                             WHERE f.catalog_id = %s
-                             AND f.staginggroup_id = sg.id",
-                            $dbh->quote($cid));
-    my $ref = $dbh->selectall_arrayref($statement, {Slice => {}});
-    my $res = [];
-    foreach my $name (@{$ref})
-    {
-        push @{$res}, $name->{name};
-    }
-    return $res;
-}
 
 =item lookupProductIdByDataId($dbh, $id[, $src])
 
