@@ -21,14 +21,16 @@ Name:           smt
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
-Version:        2.0.12
+Version:        3.0.0
 Release:        0
 Requires:       createrepo
 Requires:       gpg2
-Requires:       htmldoc
-Requires:       limal-ca-mgm-perl
+#Requires:       htmldoc
+#Requires:       limal-ca-mgm-perl
+Requires:       perl-camgm
 Requires:       logrotate
-Requires:       openssl-certs
+#Requires:       openssl-certs
+Requires:       ca-certificates
 Requires:       perl = %{perl_version}
 Requires:       perl-Config-IniFiles
 Requires:       perl-Crypt-SSLeay
@@ -46,11 +48,11 @@ Requires:       perl-XML-Writer
 Requires:       perl-XML-XPath
 Requires:       perl-gettext
 Requires:       perl-libwww-perl
-Requires:       perl-satsolver
-Requires:       satsolver-tools
+#Requires:       perl-satsolver
+#Requires:       satsolver-tools
 Requires:       suseRegister
 Requires(pre):  bc
-Recommends:     mysql
+Recommends:     mariadb
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
 Conflicts:      slms-registration
