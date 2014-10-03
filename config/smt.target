@@ -1,0 +1,8 @@
+[Unit]
+Description=SMT
+Requires=cron.service
+Requires=postgresql.service
+Requires=apache2.service
+
+[Install]
+WantedBy=multi-user.target
