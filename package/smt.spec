@@ -22,20 +22,15 @@ BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
 Version:        3.0.0
 Release:        0
+Requires(pre):  apache2 apache2-mod_perl pwdutils
 Requires:       createrepo
 Requires:       gpg2
-#Requires:       htmldoc
-#Requires:       limal-ca-mgm-perl
 Requires:       perl-camgm
 Requires:       logrotate
-#Requires:       openssl-certs
 Requires:       ca-certificates
 Requires:       perl = %{perl_version}
 Requires:       perl-Config-IniFiles
-Requires:       perl-Crypt-SSLeay
 Requires:       perl-DBI
-Requires:       perl-DBIx-Migration-Directories
-Requires:       perl-DBIx-Transaction
 Requires:       perl-Digest-SHA1
 Requires:       perl-JSON
 Requires:       perl-MIME-Lite
@@ -49,23 +44,17 @@ Requires:       perl-XML-Writer
 Requires:       perl-XML-XPath
 Requires:       perl-gettext
 Requires:       perl-libwww-perl
-#Requires:       perl-satsolver
-#Requires:       satsolver-tools
-Requires:       suseRegister
-Requires(pre):  bc
 Recommends:     postgresql >= 9.2
 Recommends:     postgresql-server >= 9.2
 Recommends:     perl-DBD-Pg
 Recommends:     yast2-smt
 Conflicts:      slms-registration
 Conflicts:      smt-client <= 0.0.14
-PreReq:         %fillup_prereq apache2 apache2-mod_perl pwdutils
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
 Group:          Productivity/Networking/Web/Proxy
-Source:         %{name}-%{version}.tar.bz2
-Source1:        sysconfig.apache2-smt
-Source2:        smt-rpmlintrc
+Source0:         %{name}-%{version}.tar.bz2
+Source1:        smt-rpmlintrc
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -123,7 +112,6 @@ Authors:
 
 %prep
 %setup -n %{name}-%{version}
-cp -p %{S:1} .
 # ---------------------------------------------------------------------------
 
 %build
@@ -158,8 +146,6 @@ rm -f www/perl-lib/SMT/RESTService.pm.$$$$
 make DESTDIR=$RPM_BUILD_ROOT DOCDIR=%{_docdir} install
 make DESTDIR=$RPM_BUILD_ROOT install_conf
 
-mkdir -p $RPM_BUILD_ROOT/var/adm/fillup-templates/
-install -m 644 sysconfig.apache2-smt   $RPM_BUILD_ROOT/var/adm/fillup-templates/
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man3
 cd man
@@ -186,22 +172,10 @@ if ! usr/bin/getent passwd smt >/dev/null; then
   usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d /var/lib/smt smt 2> /dev/null || :
 fi
 
-%preun
-%stop_on_removal smt
-
 %post
-%{fillup_only -ans apache2 smt}
+sysconf_addword /etc/sysconfig/apache2 APACHE_MODULES perl
+sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 
-if [ ! -e "/var/lib/smt/RESCHEDULE_SYNC_DONE" ]; then
-    /usr/lib/SMT/bin/reschedule-sync.sh
-    if [ "$?" = "0" ]; then
-        touch /var/lib/smt/RESCHEDULE_SYNC_DONE
-    fi
-fi
-
-%postun
-%restart_on_update smt
-%insserv_cleanup
 
 %files
 %defattr(-,root,root)
@@ -234,13 +208,13 @@ fi
 %dir %attr(755, smt, www)/var/lib/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl
+%config /etc/apache2/conf.d/*.conf
+%config /etc/apache2/vhosts.d/*.conf
 %config /etc/smt.d/*.conf
 %config /etc/slp.reg.d/smt.reg
-%exclude /etc/smt.d/smt_support.conf
-%config /etc/smt.d/novell.com-smt
+%exclude /etc/apache2/conf.d/smt_support.conf
+%config /etc/cron.d/novell.com-smt
 %config /etc/logrotate.d/smt
-/etc/init.d/smt
-/usr/sbin/rcsmt
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Job/*.pm
@@ -257,8 +231,9 @@ fi
 /usr/sbin/smt-*
 %exclude /usr/sbin/smt-support
 /usr/sbin/smt
-/var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
+/usr/bin/smt*
+/usr/lib/systemd/system/smt.target
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man3/*
@@ -275,7 +250,7 @@ fi
 %defattr(-,root,root)
 /usr/sbin/smt-support
 /srv/www/perl-lib/SMT/Support.pm
-%config /etc/smt.d/smt_support.conf
+%config /etc/apache2/conf.d/smt_support.conf
 %dir %attr(775, smt, www)/var/spool/smt-support
 %doc %attr(644, root, root) %{_mandir}/man1/smt-support.1.gz
 

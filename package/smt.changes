@@ -219,7 +219,7 @@ Fri Mar 16 16:37:15 CET 2012 - mc@suse.de
 Thu Mar  8 14:59:59 CET 2012 - mc@suse.de
 
 - version 1.2.0
-- do not use cleanPath for URLs, it removes the double slash 
+- do not use cleanPath for URLs, it removes the double slash
   after the scheme (bnc#751222)
 
 -------------------------------------------------------------------
@@ -268,7 +268,7 @@ Thu Jan 26 16:01:43 CET 2012 - mc@suse.de
 
 - return complete version of repositories in repoindex.xml
   - not the filtered ones - (FATE#310105)
-- implement delete repository 
+- implement delete repository
   (FATE#308567, FATE#310207, FATE#312770)
 
 -------------------------------------------------------------------
@@ -389,12 +389,12 @@ Mon Feb  7 09:55:36 CET 2011 - mc@suse.de
 -------------------------------------------------------------------
 Fri Dec 17 14:48:47 CET 2010 - mc@suse.de
 
-- fix order when matching products (bnc#659912)  
+- fix order when matching products (bnc#659912)
 
 -------------------------------------------------------------------
 Mon Nov 29 14:52:11 CET 2010 - jdsn@suse.de
 
-- Fix use of uninitialized value during report generation (bnc#656254) 
+- Fix use of uninitialized value during report generation (bnc#656254)
 
 -------------------------------------------------------------------
 Fri Nov 26 16:16:27 CET 2010 - mc@suse.de
@@ -482,13 +482,13 @@ Wed Jul 21 11:16:27 CEST 2010 - jkupec@suse.cz
 -------------------------------------------------------------------
 Tue Jul  6 10:40:43 CEST 2010 - mc@suse.de
 
-- fix disabling of not mirrorable repositories (bnc#619314) 
+- fix disabling of not mirrorable repositories (bnc#619314)
 
 -------------------------------------------------------------------
 Tue Jul  6 09:54:10 CEST 2010 - mc@suse.de
 
 - increase timeout
-- insert the right value into the clients table 
+- insert the right value into the clients table
 
 -------------------------------------------------------------------
 Mon Apr 26 16:12:02 CEST 2010 - mc@suse.de
@@ -510,12 +510,12 @@ Wed Feb 10 15:58:22 CET 2010 - jsrain@suse.cz
 -------------------------------------------------------------------
 Wed Jan 20 09:48:26 CET 2010 - mc@suse.de
 
-- use the database for staging (bnc#572170) 
+- use the database for staging (bnc#572170)
 
 -------------------------------------------------------------------
 Wed Dec 16 13:40:09 CET 2009 - mc@suse.de
 
-- fix report generation (bnc#564788) 
+- fix report generation (bnc#564788)
 - version 1.1.17
 
 -------------------------------------------------------------------
@@ -539,14 +539,14 @@ Mon Nov 16 10:45:06 CET 2009 - mc@suse.de
 -------------------------------------------------------------------
 Thu Nov 12 10:21:34 CET 2009 - mc@suse.de
 
-- fix smt-mirror-sle9 (bnc#546132) 
+- fix smt-mirror-sle9 (bnc#546132)
 - send a user agent string in http requests (bnc#554856)
 
 -------------------------------------------------------------------
 Wed Nov 11 16:09:33 CET 2009 - mc@suse.de
 
-- honor no_proxy variable (bnc#543327) 
-- print only a warning if registration server returns no 
+- honor no_proxy variable (bnc#543327)
+- print only a warning if registration server returns no
   data during ncc-sync. (bnc#547653)
 - do not search for an repoindex file if no service is
   configured (bnc#547654)
@@ -555,7 +555,7 @@ Wed Nov 11 16:09:33 CET 2009 - mc@suse.de
 Tue Nov 10 16:20:39 CET 2009 - mc@suse.de
 
 - print error if wrong guid is used in delete-registration
-  (bnc#515590) 
+  (bnc#515590)
 
 -------------------------------------------------------------------
 Fri Jul 24 15:04:18 CEST 2009 - jkupec@suse.cz
@@ -565,9 +565,9 @@ Fri Jul 24 15:04:18 CEST 2009 - jkupec@suse.cz
 -------------------------------------------------------------------
 Mon Jul 13 15:44:58 CEST 2009 - mc@suse.de
 
-- version 1.1.16 
+- version 1.1.16
 - fix reporting registrations without Subscriptions in ncc mode
-  (bnc#521525) 
+  (bnc#521525)
 
 -------------------------------------------------------------------
 Thu Jul  9 18:33:19 CEST 2009 - jdsn@suse.de
@@ -589,7 +589,7 @@ Wed Jul  8 18:29:34 CEST 2009 - jkupec@suse.cz
 Wed Jul  8 15:25:03 CEST 2009 - mc@suse.de
 
 - more quoting changes (bnc#489645)
-- fix typo in ncc-sync (bnc#520177) 
+- fix typo in ncc-sync (bnc#520177)
 
 -------------------------------------------------------------------
 Wed Jul  8 13:21:23 CEST 2009 - jkupec@suse.cz
@@ -618,12 +618,12 @@ Tue Jul  7 16:28:00 CEST 2009 - locilka@suse.cz
 -------------------------------------------------------------------
 Tue Jul  7 16:13:59 CEST 2009 - mc@suse.de
 
-- fix some quoting issues in SQL statements. (bnc#489645) 
+- fix some quoting issues in SQL statements. (bnc#489645)
 
 -------------------------------------------------------------------
 Mon Jul  6 15:24:54 CEST 2009 - mc@suse.de
 
-- try to get the hostname for list-registration; 
+- try to get the hostname for list-registration;
   fallback to IP address (bnc#508291)
 
 -------------------------------------------------------------------
@@ -641,7 +641,7 @@ Thu Jul  2 17:52:49 CEST 2009 - locilka@suse.cz
 -------------------------------------------------------------------
 Thu Jul  2 15:24:13 CEST 2009 - mc@suse.de
 
-- drop privileges in smt-mirror-sl9 and print a warning, 
+- drop privileges in smt-mirror-sl9 and print a warning,
   if .wgetrc does not exist in the home diretcory of the
   smt user
 
@@ -678,7 +678,7 @@ Tue Jun 30 17:03:44 CEST 2009 - jkupec@suse.cz
 -------------------------------------------------------------------
 Tue Jun 30 12:23:15 CEST 2009 - mc@suse.de
 
-- add a table to the report with registrations which are not 
+- add a table to the report with registrations which are not
   assigned to subscriptions.
   This happens if a subscription is not necessary (e.g. SDK, SMT)
   or the subscriptions are not provided by the registration server.
@@ -686,9 +686,9 @@ Tue Jun 30 12:23:15 CEST 2009 - mc@suse.de
 -------------------------------------------------------------------
 Mon Jun 29 13:33:50 CEST 2009 - mc@suse.de
 
-- special handling of HTTP status code 501 -- not implemented. 
-  For listregistrations and listsubscriptions print a warning but 
-  return with success. 
+- special handling of HTTP status code 501 -- not implemented.
+  For listregistrations and listsubscriptions print a warning but
+  return with success.
 - add option --pdf and --xml to help (bnc#517263)
 - print out the full path to the report if --file is used.
 
@@ -701,7 +701,7 @@ Fri Jun 26 15:46:32 CEST 2009 - tgoettlicher@suse.de
 Fri Jun 26 10:20:00 CEST 2009 - mc@suse.de
 
 - rename option --nonccsync to --nosync in smt-report
-  keep --nonccsync hidden for compatibility reason 
+  keep --nonccsync hidden for compatibility reason
 - enable mail for registration via cron by default
 - put hostname in the subject of report mails
 
@@ -717,7 +717,7 @@ Wed Jun 24 15:44:45 CEST 2009 - jkupec@suse.cz
 -------------------------------------------------------------------
 Wed Jun 24 15:05:18 CEST 2009 - mc@suse.de
 
-- better messages for setup-custom-repo --delete (bnc#508505) 
+- better messages for setup-custom-repo --delete (bnc#508505)
 - fix output and logging of smt-delete-registration (bnc#515590)
 
 -------------------------------------------------------------------
@@ -753,7 +753,7 @@ Fri Jun 19 15:30:10 CEST 2009 - jkupec@suse.cz
 Fri Jun 19 11:32:46 CEST 2009 - mc@suse.de
 
 - do not ignore case of options (bnc#514637)
-- add --mail as default cronjob parameter to NCC_SYNC_PARAMS and 
+- add --mail as default cronjob parameter to NCC_SYNC_PARAMS and
   MIRROR_PARAMS (FATE#304513)
 
 -------------------------------------------------------------------
@@ -772,7 +772,7 @@ Thu Jun 18 14:55:33 CEST 2009 - jkupec@suse.cz
 Wed Jun 17 20:35:41 CEST 2009 - jdsn@suse.de
 
 - fixing smt-job script
-- 1.1.11 
+- 1.1.11
 
 -------------------------------------------------------------------
 Wed Jun 17 18:31:01 CEST 2009 - jkupec@suse.cz
@@ -791,8 +791,8 @@ Wed Jun 17 10:29:14 CEST 2009 - mc@suse.de
 -------------------------------------------------------------------
 Mon Jun 15 11:46:19 CEST 2009 - mc@suse.de
 
-- remove unsupported YOU9 mirror definitions 
-  YOU9-Novell-Linux-Desktop, YOU9-Novell-Linux-Desktop-SDK, 
+- remove unsupported YOU9 mirror definitions
+  YOU9-Novell-Linux-Desktop, YOU9-Novell-Linux-Desktop-SDK,
   YOU9-Novell-Linux-POS, YOU9-Open-Enterprise-Server (bnc#498614)
 - exit with error on unknown commandline parameter (bnc#513115)
 - add missing short options (bnc#513098)
@@ -800,7 +800,7 @@ Mon Jun 15 11:46:19 CEST 2009 - mc@suse.de
 -------------------------------------------------------------------
 Wed Jun 10 15:14:45 CEST 2009 - mc@suse.de
 
-- do not append queryparameter to zypp or yum URLs. 
+- do not append queryparameter to zypp or yum URLs.
   SLES10 and RES do not know them (bnc#511519).
 - fix invalid parameter (bnc#511289)
 - For y/n questions expect <enter> to finish the input (bnc#511496)
@@ -808,7 +808,7 @@ Wed Jun 10 15:14:45 CEST 2009 - mc@suse.de
 -------------------------------------------------------------------
 Tue Jun  9 14:50:46 CEST 2009 - mc@suse.de
 
-- re-write report based on local data to support multi productclass 
+- re-write report based on local data to support multi productclass
   subscriptions (bnc#507209)
 
 -------------------------------------------------------------------
@@ -827,7 +827,7 @@ Mon Jun  8 16:04:01 CEST 2009 - locilka@suse.cz
 -------------------------------------------------------------------
 Fri Jun  5 16:29:23 CEST 2009 - mc@suse.de
 
-- use a dynamic id for the NU service based on LocalNUUrl 
+- use a dynamic id for the NU service based on LocalNUUrl
   in smt.conf (bnc#510340)
 
 -------------------------------------------------------------------
@@ -881,7 +881,7 @@ Wed Jun  3 11:08:55 CEST 2009 - jkupec@suse.cz
   patches done (fate #306251).
 - SMT::Parser::RpmMdPrimaryFilter added
 - SMT::Parser::RpmMdOtherFilter added
-- SMT::Parser::RpmMdPatches 
+- SMT::Parser::RpmMdPatches
 - most of the testsuite fixed
 - Total number of files added to mirror statistics
 
@@ -938,8 +938,8 @@ Mon May  4 15:08:06 CEST 2009 - mc@suse.de
 
 - version 1.1.5
   * new rpmmd parser for locations and patches
-  * Initial revision of smt-catalogs-xml, works similar to smt-catalogs, 
-    but purely on XML files (Fate#306252) 
+  * Initial revision of smt-catalogs-xml, works similar to smt-catalogs,
+    but purely on XML files (Fate#306252)
   * Added --batch-mode into the smt-catalogs script
   * autoincrement ID column added to Catalogs
   * Filters table added
@@ -950,7 +950,7 @@ Mon May  4 15:08:06 CEST 2009 - mc@suse.de
 Thu Apr  2 16:18:42 CEST 2009 - mc@suse.de
 
 - version 1.1.4
-  * do not unlink files in repodata if we work in .repodata 
+  * do not unlink files in repodata if we work in .repodata
   * document the XML format in the manpage of smt-report
   * show local virtual machines in ncc report
   * make the unix user configurable under which the smt* commandline tools
@@ -962,7 +962,7 @@ Thu Apr  2 16:18:42 CEST 2009 - mc@suse.de
     (Fate#306252, partial)
   * smt-mirror allow to mirror from file:// URLs now, might
     come in handy for customer created catalogs
-  * allow file:// for custom catalogs 
+  * allow file:// for custom catalogs
   * print catalogs which can newly be mirrored and catalogs
     which cannot be mirrored anymore.
   * fix parsing of deltarpms (bnc#491403)
@@ -982,13 +982,13 @@ Thu Apr  2 16:18:42 CEST 2009 - mc@suse.de
 Thu Mar 26 15:17:34 CET 2009 - mc@suse.de
 
 - version 1.1.3
-  * FATE#304513: send subscription report every second day if alerts 
-    are detected. 
+  * FATE#304513: send subscription report every second day if alerts
+    are detected.
   * FATE#306254: Canonical location of package signing keys
     keys in repo/keys/ directory are checked by setupClient4SMT.sh
     and the user were asked to import them
   * FATE#306261: Canonical location for setupClient4SMT.sh
-    setupClient4SMT.sh can be downloaded from 
+    setupClient4SMT.sh can be downloaded from
     .../repo/tools/setupClient4SMT.sh
   * new package res-signingkeys which contain the RES key.
   * FATE#304511: SMT: report to include details on downloaded updates
@@ -1015,7 +1015,7 @@ Mon Mar 23 16:39:10 CET 2009 - mc@suse.de
 Fri Mar 20 11:42:38 CET 2009 - mc@suse.de
 
 - version 1.1.1
-  * speedup mirroring 
+  * speedup mirroring
   * seperate yum from rpmmd
   * show total mirror time in summary
   * use hardlink by default if files already exists in
@@ -1033,7 +1033,7 @@ Fri Mar 20 11:42:38 CET 2009 - mc@suse.de
   * store namespace and secret into the clients table
   * count linked and copied files and print them in the summary
   * print complete statistic; do not cut lines with value 0
-  * Fate#304872: Detailed view of custom catalogs; display assigned 
+  * Fate#304872: Detailed view of custom catalogs; display assigned
     products in --verbose mode
   * Catalogs enable/disable: report the number of changed catalogs.
   * Fate#304873: Provide informations about catalogs that is going to be
@@ -1043,7 +1043,7 @@ Fri Mar 20 11:42:38 CET 2009 - mc@suse.de
   * create special smt user in RPM pre script
   * all smt* commands drop the privileges and switch to
     smt user now
-  * change default permissions of some files and directories in 
+  * change default permissions of some files and directories in
     the smt package
   * add changeSMTUserPermissions.sh helper script
     to change directory and file permissions for the special
@@ -1071,18 +1071,18 @@ Tue Feb 10 12:21:11 CET 2009 - mc@suse.de
 
 - die, if product could not be found in the database
 - check node at generating XML
-- set TMPDIR => 1 if we use File::Temp::tempdir with a template 
+- set TMPDIR => 1 if we use File::Temp::tempdir with a template
 
 -------------------------------------------------------------------
 Mon Jan 26 16:40:47 CET 2009 - mc@suse.de
 
 - remove perl-IO-Zlib from Requires. It is now part
-  of perl itself 
+  of perl itself
 
 -------------------------------------------------------------------
 Thu Jan 22 18:16:54 CET 2009 - mc@suse.de
 
-- fix reading proxy credentials from .curlrc(bnc#468496) 
+- fix reading proxy credentials from .curlrc(bnc#468496)
 
 -------------------------------------------------------------------
 Tue Jan 20 10:42:24 CET 2009 - mc@suse.de
@@ -1092,7 +1092,7 @@ Tue Jan 20 10:42:24 CET 2009 - mc@suse.de
   * improve log output (fate#305537)
   * create tempdirs with smt prefix
   * put lock files into /var/run/smt/ (fate#305541)
-  * get SMT guid from new file and implement also creation 
+  * get SMT guid from new file and implement also creation
     and convert functionality.
 
 -------------------------------------------------------------------
@@ -1100,7 +1100,7 @@ Thu Jan 15 16:32:09 CET 2009 - mc@suse.de
 
 - version 1.0.9
   * store product informations seperate to be able to send the original
-    data to NCC. (bnc#450939 Comment #42) 
+    data to NCC. (bnc#450939 Comment #42)
   * fix copy CA in case of using chained CAs (bnc#466378)
   * fix smt-catalogs man page (bnc#449325)
 
@@ -1108,11 +1108,11 @@ Thu Jan 15 16:32:09 CET 2009 - mc@suse.de
 Thu Dec  4 12:29:46 CET 2008 - mc@suse.de
 
 - version 1.0.8
-  * do not suppress forbidden error when trying to mirror 
-    non-entitled catalogs with smt-mirror-sle9. (bnc#445607) 
+  * do not suppress forbidden error when trying to mirror
+    non-entitled catalogs with smt-mirror-sle9. (bnc#445607)
   * improve speed when copying metadata (bnc#430808)
   * parse virttype from host element
-  * improve clientSetup4SMT to detect several possible places 
+  * improve clientSetup4SMT to detect several possible places
     where the certificate has to be stored.
   * do not try to put a certificate to zmd/trusted-certs/ if zmd
     is not installed.
@@ -1134,7 +1134,7 @@ Thu Sep 11 14:42:02 CEST 2008 - mc@suse.de
   * create todir if it does not exists.(bnc#406328)
   * create extra mirror directory if it does not exists. (bnc#406304)
   * write logmessage if repoindex return a directory which is marked
-    for mirroring but is currently not available. (bnc#416737) 
+    for mirroring but is currently not available. (bnc#416737)
   * store repoindex.xml to a tmp directory (may fix bnc#416737)
   * add option --regcert to clientSetup4SMT.sh (bnc#421079)
   * fix local SMT Virtual Machine Report (bnc#413757)
@@ -1145,13 +1145,13 @@ Tue Jul  1 10:48:57 CEST 2008 - mc@suse.de
 
 - version 1.0.5
   * smt-ncc-sync: honor --help
-  * fix texts in report (bnc#405148, bnc#393776) 
+  * fix texts in report (bnc#405148, bnc#393776)
 
 -------------------------------------------------------------------
 Mon Jun 30 10:18:44 CEST 2008 - mc@suse.de
 
 - version 1.0.4
-  * get client IP if no hostname was send and store it in the 
+  * get client IP if no hostname was send and store it in the
     client table (bnc#403695)
   * smt-report: warnings should not drop alerts. (bnc#403703)
 
@@ -1159,8 +1159,8 @@ Mon Jun 30 10:18:44 CEST 2008 - mc@suse.de
 Tue Jun 24 15:10:41 CEST 2008 - mc@suse.de
 
 - version 1.0.3
-  * catch SSL errors on download and provide nice error message 
-    instead of a perl backtrace. (bnc#401607) 
+  * catch SSL errors on download and provide nice error message
+    instead of a perl backtrace. (bnc#401607)
   * add check for root user to clientSetup4SMT.sh
   * fix not running apache after rcsmt start (bnc#403104)
 
@@ -1168,7 +1168,7 @@ Tue Jun 24 15:10:41 CEST 2008 - mc@suse.de
 Wed Jun 18 13:39:55 CEST 2008 - mc@suse.de
 
 - version 1.0.2
-  * smt-setup-custom-catalog: enhance help text and man page: 
+  * smt-setup-custom-catalog: enhance help text and man page:
     add info about how to find out the Catalog ID (bnc#400501)
   * close filehandles if we do not need them anymore (bnc#399260)
 
@@ -1177,7 +1177,7 @@ Fri Jun 13 10:11:39 CEST 2008 - mc@suse.de
 
 - version 1.0.1
   * fix "unlimited" handling in the report summary table
-    (bnc#398875) 
+    (bnc#398875)
   * adding a DISCLAIMER to the bottom of a report
   * show also unused expired subscriptions in report
     to match NCC report (bnc#398120)
@@ -1185,7 +1185,7 @@ Fri Jun 13 10:11:39 CEST 2008 - mc@suse.de
     (first step to fix bnc#398130)
   * fix product detection (bnc#398817)
   * add verbose mode to list-registrations, which shows also
-    the subscriptions where this client is assigned to, if 
+    the subscriptions where this client is assigned to, if
     NCC registration is enabled. (bnc#398166)
 
 -------------------------------------------------------------------
@@ -1193,12 +1193,12 @@ Mon Jun  9 15:41:07 CEST 2008 - mc@suse.de
 
 - version 1.0.0
   * fix some per warnings
-  * set a UserAgent timeout 
-  * manually adding a header to an ASCIITable to speed up 
+  * set a UserAgent timeout
+  * manually adding a header to an ASCIITable to speed up
     rendering (bnc#396702)
   * reduce max register requests in one bulkop to 15.
   * small fixes in man pages and help texts
-  * fix return, in case of no catalog were removed 
+  * fix return, in case of no catalog were removed
     (part of bnc#397100)
   * move proxy settings into a seperate function
   * implement own proxy variables in smt.conf (bnc#397369)
@@ -1213,7 +1213,7 @@ Mon Jun  2 17:38:16 CEST 2008 - mc@suse.de
 
 - version 0.9.7
   * fix wrong SQL statement with NODCOUNT = -1 (bnc#396291)
-  * fix csv headlines 
+  * fix csv headlines
 
 -------------------------------------------------------------------
 Wed May 28 12:01:16 CEST 2008 - dmacvicar@suse.de
@@ -1250,7 +1250,7 @@ Tue May 13 10:07:53 CEST 2008 - mc@suse.de
 
 - version 0.9.3
   * do not send a NU service if we do not have a catalog for the
-    client (maybe fix bnc#388406) 
+    client (maybe fix bnc#388406)
 
 -------------------------------------------------------------------
 Fri May  9 13:22:48 CEST 2008 - mc@suse.de
@@ -1259,7 +1259,7 @@ Fri May  9 13:22:48 CEST 2008 - mc@suse.de
   * fix incorrect time stamps on mirrored files (bnc#388227)
   * change logging in SMT::Registration and NU::RepoIndex
     * use different logging function
-    * no informational logging by default(only errors) 
+    * no informational logging by default(only errors)
   * write Site ID and SMT ID into the report
   * second draft for the legend
   * fix help of smt scripts (bnc#387402)
@@ -1304,7 +1304,7 @@ Tue May  6 15:26:19 CEST 2008 - mc@suse.de
     The admin has now the possibility to change the parameters
   * add smt-gen-report to cron
   * rename YEP => SMT in smt help
-  * fixes to be able to run smt-ncc-sync --todir <dir> without 
+  * fixes to be able to run smt-ncc-sync --todir <dir> without
     database
   * fix parsing of <consumed>
   * If start-date and/or end-date of a subscription is 0, this
@@ -1313,12 +1313,12 @@ Tue May  6 15:26:19 CEST 2008 - mc@suse.de
   * generate PRODGROUP during listsubscriptions
   * modify report to use SUBID instead of REGCODE and PRODGROUP
     instead of SUBNAME
-  * strip | character from path before using it for XML::Parser 
+  * strip | character from path before using it for XML::Parser
     (bnc#383759)
   * add check of localdir() (bnc#383759)
 
   - Database version 0.08
-    - Subscription table: 
+    - Subscription table:
     - SUBSTARTDATE and SUBENDATE can be NULL
     - Add SUBID as primary key
     - add PRODGROUP
@@ -1334,7 +1334,7 @@ Mon Apr 28 11:05:51 CEST 2008 - mc@suse.de
   * set NCCREGERROR if registration at NCC failed
   * do not register clients at NCC which registration failed before
   * add --reseterror parameter to smt-register
-  * add alert to report, with the number of failed NCC registrations 
+  * add alert to report, with the number of failed NCC registrations
 
 -------------------------------------------------------------------
 Fri Apr 25 18:17:42 CEST 2008 - mc@suse.de
@@ -1344,7 +1344,7 @@ Fri Apr 25 18:17:42 CEST 2008 - mc@suse.de
   * implement mirror src rpms enable/disable (bnc#383191)
   * fix update Registration table
   * register maximal 25 clients in one bulkop call
-    if we need to register more, put them in a seperate call 
+    if we need to register more, put them in a seperate call
 
 -------------------------------------------------------------------
 Fri Apr 25 14:07:06 CEST 2008 - mc@suse.de
@@ -1357,7 +1357,7 @@ Fri Apr 25 14:07:06 CEST 2008 - mc@suse.de
 Fri Apr 25 11:52:18 CEST 2008 - mc@suse.de
 
 - version 0.6.1
-  * fix database setup 
+  * fix database setup
 
 -------------------------------------------------------------------
 Thu Apr 24 17:41:15 CEST 2008 - mc@suse.de
@@ -1367,7 +1367,7 @@ Thu Apr 24 17:41:15 CEST 2008 - mc@suse.de
   * change report behaviour to use the CONSUMED value
     from NCC if client registration is enabled and
     create a local report only if client registration
-    is disabled. 
+    is disabled.
   * Enable full NCC syncronization
   * bugfixes
   * remove temporary data from database
@@ -1376,8 +1376,8 @@ Thu Apr 24 17:41:15 CEST 2008 - mc@suse.de
 Tue Apr 22 13:26:29 CEST 2008 - mc@suse.de
 
 - version 0.5.0
-  * be sure that apache and (if required) mysql is running if 
-    'rcsmt start' is called(bnc#378701) 
+  * be sure that apache and (if required) mysql is running if
+    'rcsmt start' is called(bnc#378701)
   * add mirror script for sles9 repositories
   * changing ownership of smt.conf from 'wwwrun,root' to 'root,www'
   * implementation of bulk operation for registration
@@ -1391,8 +1391,8 @@ Fri Apr 11 16:35:28 CEST 2008 - mc@suse.de
 
 - version 0.4.1
   * only enable selected catalogs - fix cancel (bnc#378302)
-  * test correct error variable to make ncc-sync not fail silently 
-    (bnc#367678) 
+  * test correct error variable to make ncc-sync not fail silently
+    (bnc#367678)
   * prepare man pages
   * fix counting of recipient addresses
 
@@ -1438,15 +1438,15 @@ Mon Mar 31 17:57:21 CEST 2008 - mc@suse.de
   * copy certificate in init script
   * improve lock function
   * implement 'enable catalogs by product'
-  * enhance list-products with a catalog status. 
+  * enhance list-products with a catalog status.
   * several bugfixes
 
 -------------------------------------------------------------------
 Fri Mar  7 18:21:40 CET 2008 - mc@suse.de
 
 - version 0.2.1
-  * use NULL as default for NCCREGDATE 
-  * use no default for SUBSTARTDATE and SUBENDDATE 
+  * use NULL as default for NCCREGDATE
+  * use no default for SUBSTARTDATE and SUBENDDATE
   * registration return a error if [LOCAL] url is empty
   * skip catalogs where we do not have correct urls
   * try to make all statements database independent by using
@@ -1471,7 +1471,7 @@ Wed Feb 27 12:17:26 CET 2008 - mc@suse.de
 - rename yep => smt
   * version 0.1.0
   * strip whitespaces behind the url
-  * remove unused clients 
+  * remove unused clients
 
 -------------------------------------------------------------------
 Thu Feb 21 14:23:46 CET 2008 - mc@suse.de
@@ -1489,7 +1489,7 @@ Fri Feb  8 13:32:29 CET 2008 - mc@suse.de
   * Add database tables SubscriptionStatus and Clients
   * drop table ProductDependencies
   * lock support for yep-mirror and other client tools
-  * replace catalog-mirror-flags and list-catalogs with 
+  * replace catalog-mirror-flags and list-catalogs with
     simply yep-catalogs
   * implement first versions of client tools for NCC
     connection (yep-register, yep-delete-registration)
@@ -1518,7 +1518,7 @@ Mon Jan 21 16:13:56 CET 2008 - mc@suse.de
   * use XML::Writer module everywhere
   * RepoIndex.pm return no-cache header
   * find and use ostarget during registration
-  * restart apache on update 
+  * restart apache on update
   * move client tools to /usr/sbin
 
 -------------------------------------------------------------------
@@ -1527,10 +1527,10 @@ Thu Jan 17 17:44:32 CET 2008 - mc@suse.de
 - version 0.0.2
   * initial registration server
   * support SSL
-  * support testing enviroment 
+  * support testing enviroment
 
 -------------------------------------------------------------------
 Fri Jan 11 17:44:00 CET 2008 - mc@suse.de
 
-- version 0.0.1 - initial version 
+- version 0.0.1 - initial version
 

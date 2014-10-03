@@ -3,61 +3,13 @@ VERSION       = 3.0.0
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
-SMT_SQLITE_DB = $(DESTDIR)/var/lib/SMT/db/smt.db
 TEMPF         = $(shell mktemp)
 DOCDIR        = /usr/share/doc/packages
 
 all:
 	make -C swig
 
-install_all: install install_conf install_db
-	@echo "==========================================================="
-	@echo "Append 'perl' to APACHE_MODULES an 'SSL' to APACHE_SERVER_FLAGS"
-	@echo "in /etc/sysconfig/apache2 ."
-	@echo "Required packages:"
-	@echo "* apache2"
-	@echo "* apache2-mod_perl"
-	@echo "* mysql"
-	@echo "* perl-DBI"
-	@echo "* perl-DBD-mysql"
-	@echo "* perl-Crypt-SSLeay"
-	@echo "* perl-Config-IniFiles"
-	@echo "* perl-XML-Parser"
-	@echo "* perl-XML-Writer"
-	@echo "* perl-libwww-perl"
-	@echo "* perl-IO-Zlib"
-	@echo "* perl-URI"
-	@echo "* perl-TimeDate"
-	@echo "* perl-Text-ASCIITable"
-	@echo " "
-	@echo "Finaly start the web server with 'rcapache2 start'"
-	@echo "==========================================================="
-
-install_db: install_db_mysql
-
-install_db_sqlite:
-	mkdir -p $(DESTDIR)/var/lib/SMT/db/
-	cd db/
-	sqlite3 -line $(SMT_SQLITE_DB) ".read db/smt-tables_sqlite.sql"
-	sqlite3 -line $(SMT_SQLITE_DB) ".read db/products.sql"
-	sqlite3 -line $(SMT_SQLITE_DB) ".read db/targets.sql"
-	sqlite3 -line $(SMT_SQLITE_DB) ".read db/tmp-catalogs.sql"
-	sqlite3 -line $(SMT_SQLITE_DB) ".read db/tmp-productcatalogs.sql"
-	sqlite3 -line $(SMT_SQLITE_DB) ".read db/tmp-register.sql"
-# this table is dropped
-#	sqlite3 -line $(SMT_SQLITE_DB) ".read db/product_dependencies.sql"
-
-install_db_mysql:
-	echo "drop database if exists smt;" | mysql -u root
-	echo "create database if not exists smt;" | mysql -u root
-	cat db/smt-tables_mysql.sql | mysql -u root smt
-	cat db/products.sql | mysql -u root smt
-	cat db/targets.sql | mysql -u root smt
-	cat db/tmp-catalogs.sql | mysql -u root smt
-	cat db/tmp-productcatalogs.sql | mysql -u root smt
-	cat db/tmp-register.sql | mysql -u root smt
-# this table is dropped
-#	cat db/product_dependencies.sql | mysql -u root smt
+install_all: install install_conf
 
 install_conf:
 	mkdir -p $(DESTDIR)/etc/
@@ -66,8 +18,10 @@ install_conf:
 
 install:
 	mkdir -p $(DESTDIR)/usr/sbin/
-	mkdir -p $(DESTDIR)/etc/apache2
-	mkdir -p $(DESTDIR)/etc/init.d
+	mkdir -p $(DESTDIR)/usr/bin/
+	mkdir -p $(DESTDIR)/etc/apache2/conf.d
+	mkdir -p $(DESTDIR)/etc/apache2/vhosts.d
+	mkdir -p $(DESTDIR)/etc/cron.d/
 	mkdir -p $(DESTDIR)/etc/smt.d/
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
 	mkdir -p $(DESTDIR)/etc/slp.reg.d/
@@ -86,10 +40,11 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt
 	mkdir -p $(DESTDIR)/usr/share/schemas/smt/Pg
 	mkdir -p $(DESTDIR)/usr/lib/SMT/bin/
+	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
 	mkdir -p $(DESTDIR)$(DOCDIR)/smt
 	install -m 644 apache2/smt-mod_perl-startup.pl $(DESTDIR)/etc/apache2/
-	install -m 644 apache2/conf.d/*.conf $(DESTDIR)/etc/smt.d/
-	install -m 644 apache2/vhosts.d/*.conf $(DESTDIR)/etc/smt.d/
+	install -m 644 apache2/conf.d/*.conf $(DESTDIR)/etc/apache2/conf.d/
+	install -m 644 apache2/vhosts.d/*.conf $(DESTDIR)/etc/apache2/vhosts.d/
 	install -m 755 script/smt $(DESTDIR)/usr/sbin/
 	install -m 755 script/smt-* $(DESTDIR)/usr/sbin/
 	if [ -e $(DESTDIR)/usr/sbin/smt-catalogs ]; then rm -f $(DESTDIR)/usr/sbin/smt-catalogs; fi
@@ -100,7 +55,6 @@ install:
 	install -m 644 www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Support.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Utils.pm $(DESTDIR)$(PERLMODDIR)/SMT/
-	install -m 644 www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Mirror/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Mirror/
 	install -m 644 www/perl-lib/SMT/Parser/*.pm /$(DESTDIR)$(PERLMODDIR)/SMT/Parser/
 	install -m 644 www/perl-lib/SMT/Client/*.pm /$(DESTDIR)/srv/www/perl-lib/SMT/Client/
@@ -124,14 +78,12 @@ install:
 	install -m 644 www/perl-lib/SMT/Utils/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Utils/
 	install -m 644 www/perl-lib/SMT/Job/*.pm $(DESTDIR)$(PERLMODDIR)/SMT/Job/
 	cd db/schemas; \
-	find mysql/ \
+	find Pg/ \
                   -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \
                   -o \
                   \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \)
-	install -m 755 config/rc.smt $(DESTDIR)/etc/init.d/smt
+	install -m 755 config/smt.target $(DESTDIR)/usr/lib/systemd/system/
 	install -m 755 config/smt.reg $(DESTDIR)/etc/slp.reg.d/
-	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
-	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	install -m 755 db/smt-setup-db $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 db/smt-sql $(DESTDIR)/usr/bin/
 	install -m 755 db/smt-schema-upgrade $(DESTDIR)/usr/bin/
@@ -139,7 +91,7 @@ install:
 	install -m 755 script/reschedule-sync.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/srv/www/htdocs/repo/tools/
 	install -m 644 www/repo/res-signingkeys.key $(DESTDIR)/srv/www/htdocs/repo/keys/
-	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/
+	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/cron.d/
 	install -m 644 cron/smt-cron.conf $(DESTDIR)/etc/smt.d/
 	install -m 755 cron/smt-daily $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 cron/smt-run-jobqueue-cleanup $(DESTDIR)/usr/lib/SMT/bin/
@@ -206,7 +158,7 @@ dist: clean
 	@cp apache2/conf.d/*.conf $(NAME)-$(VERSION)/apache2/conf.d/
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
-	@cp config/rc.smt $(NAME)-$(VERSION)/config/
+	@cp config/smt.target $(NAME)-$(VERSION)/config/
 	@cp config/smt.reg $(NAME)-$(VERSION)/config/
 	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
 	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
@@ -238,7 +190,6 @@ dist: clean
                 \)
 	make -C swig NAME=$(NAME) VERSION=$(VERSION) $@
 	@cp Makefile README COPYING $(NAME)-$(VERSION)/
-	@rm $(NAME)-$(VERSION)/www/README
 
 	tar cfvj $(NAME)-$(VERSION).tar.bz2 $(NAME)-$(VERSION)/
 
