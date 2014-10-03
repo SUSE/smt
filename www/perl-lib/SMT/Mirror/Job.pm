@@ -4,7 +4,6 @@ use strict;
 use File::Path;
 use File::Basename;
 use Date::Parse;
-use Crypt::SSLeay;
 use Digest;
 use SMT::Utils;
 use File::Basename;
