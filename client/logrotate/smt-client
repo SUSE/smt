@@ -1,9 +1,0 @@
-/var/log/smtclient.log {
-    compress
-    missingok
-    notifempty
-    maxage 365
-    rotate 8
-    size 4096k
-    #create 0600 root root
-}
