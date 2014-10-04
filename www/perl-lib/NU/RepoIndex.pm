@@ -12,10 +12,10 @@ use XML::Writer;
 
 use SMT::Utils;
 use SMT::Repositories;
-use DBI qw(:sql_types);
+use SMT::DB qw(:sql_types);
 
 
-sub getCatalogsByGUID($$$)
+sub getReposByGUID($$$)
 {
     # 1st parameter: apache handle
     # 2nd parameter:  DB handle
@@ -26,40 +26,45 @@ sub getCatalogsByGUID($$$)
     my $guid = shift;
     return {} unless (defined $dbh && defined $guid);
 
-    # see if the client has a target architecture
-    my $sql = sprintf("select TARGET, REGTYPE from Clients c where c.GUID=%s", $dbh->quote($guid));
-    my $cnt = $dbh->selectrow_hashref($sql);
+    my $sth = $dbh->prepare("SELECT repository_id AS id,
+                                    repository_name AS name,
+                                    repository_description AS description,
+                                    repository_target AS target,
+                                    localpath,
+                                    repotype,
+                                    autorefresh,
+                                    optional,
+                                    regtype,
+                                    client_target
+                               FROM ClientRepositories
+                              WHERE guid = :guid
+                                AND domirror = 'Y'");
 
-    my $catalogselect = sprintf("SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET,
-                                        c.LOCALPATH, c.CATALOGTYPE, c.STAGING,
-                                        c.AUTOREFRESH, pc.OPTIONAL
-                                   FROM Catalogs c, ProductCatalogs pc, Registration r
-                                  WHERE r.GUID=%s
-                                    AND r.PRODUCTID=pc.PRODUCTID
-                                    AND c.ID=pc.CATALOGID
-                                    AND c.DOMIRROR like 'Y'",
-                                $dbh->quote($guid));
-    # add a filter by target architecture if it is defined
-    if ($cnt->{TARGET})
+    $sth->execute_h(guid => $guid);
+    my $ref = $sth->fetchall_hashref("id");
+    foreach my $id (keys %{$ref})
     {
-        if ($cnt->{REGTYPE} && $cnt->{REGTYPE} eq "SC")
+        if ($ref->{$id}->{regtype} eq "SC")
         {
-            # REGTYPE SC get all repostypes, also zypp which has target = NULL
-            $catalogselect .= sprintf(" AND (c.TARGET IS NULL OR c.TARGET=%s)", $dbh->quote( $cnt->{TARGET} ));
+            if ($ref->{$id}->{client_target} &&
+                $ref->{$id}->{target} &&
+                $ref->{$id}->{target} ne $ref->{$id}->{client_target})
+            {
+                # skip
+                delete $ref->{$id};
+            }
         }
         else
         {
-            $catalogselect .= sprintf(" AND c.TARGET=%s", $dbh->quote( $cnt->{TARGET} ));
+            if ($ref->{$id}->{target} ne $ref->{$id}->{client_target} ||
+                $ref->{$id}>{repotype} ne 'nu')
+            {
+                # skip
+                delete $ref->{$id};
+            }
         }
     }
-    if ($cnt->{REGTYPE} && $cnt->{REGTYPE} eq "SR")
-    {
-        # REGTYPE 'SR' only get CATALOGTYPE 'nu'
-        $catalogselect .= " AND c.CATALOGTYPE='nu'";
-    }
-
-    $r->log->info("repoindex.xml STATEMENT: $catalogselect");
-    return $dbh->selectall_hashref($catalogselect, "ID" );
+    return $ref;
 }
 
 sub getUsernameFromRequest($)
@@ -92,7 +97,6 @@ sub handler {
         return Apache2::Const::SERVER_ERROR;
     }
 
-    my $aliasChange = 0;
     my $mirroruser = undef;
     eval
     {
@@ -102,17 +106,6 @@ sub handler {
         {
             $LocalBasePath = "";
         }
-
-        $aliasChange = $cfg->val('NU', 'changeAlias');
-        if(defined $aliasChange && $aliasChange eq "true")
-        {
-            $aliasChange = 1;
-        }
-        else
-        {
-            $aliasChange = 0;
-        }
-
         $mirroruser = $cfg->val('LOCAL', 'mirrorUser', '');
     };
     if($@)
@@ -131,7 +124,7 @@ sub handler {
     my $username = getUsernameFromRequest($r);
     return Apache2::Const::SERVER_ERROR unless defined $username;
 
-    my $catalogs;
+    my $repos;
     my $namespace = "";
     # FATE #310105: return all repositories for the mirrorUser
     if ($mirroruser && $username eq $mirroruser)
@@ -139,33 +132,17 @@ sub handler {
         my $rh = SMT::Repositories::new($dbh);
         # we do not filter, because we also want to return
         # earlier mirrored repos which are now disabled for mirroring
-        $catalogs = $rh->getAllRepositories();
+        $repos = $rh->getAllRepositories();
     }
     # for other users, return only relevant repos
     else
     {
-        $catalogs = getCatalogsByGUID($r, $dbh, $username);
-
-        # see if the client uses a special namespace
-        my $namespaceselect = sprintf("select NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($username));
-        $namespace = $dbh->selectcol_arrayref($namespaceselect);
-        if (defined $namespace && defined ${$namespace}[0] )
-        {
-            $namespace = ${$namespace}[0];
-        }
-        else
-        {
-            $namespace = "";
-        }
+        $repos = getReposByGUID($r, $dbh, $username);
 
         eval
         {
-            my $sth = $dbh->prepare("UPDATE Clients SET LASTCONTACT=? WHERE GUID=?");
-            $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
-            $sth->bind_param(2, $username);
-            $sth->execute;
-
-            #$dbh->do(sprintf("UPDATE Clients SET LASTCONTACT=%s WHERE GUID=%s", $dbh->quote($regtimestring), $dbh->quote($username)));
+            my $sth = $dbh->prepare("UPDATE Clients SET lastcontact = CURRECT_TIMESTAMP WHERE guid = :guid");
+            $sth->execute_h(guid => $username);
         };
         if($@)
         {
@@ -184,25 +161,12 @@ sub handler {
     print "\n";
 
     # create repos
-    foreach my $val (values %{$catalogs})
+    foreach my $val (values %{$repos})
     {
-        my $LocalRepoPath = ${$val}{'LOCALPATH'};
-        my $catalogName = ${$val}{'NAME'};
+        my $LocalRepoPath = ${$val}{'localpath'};
+        my $repoName = ${$val}{'name'};
 
-        if($namespace ne "" && uc(${$val}{'STAGING'}) eq "Y")
-        {
-            $LocalRepoPath = "$namespace/$LocalRepoPath";
-            $catalogName = "$catalogName:$namespace" if($aliasChange);
-        }
-        elsif($mirroruser && $mirroruser eq $r->user && uc(${$val}{'STAGING'}) eq "Y")
-        {
-            # for mirror credentials always return full repos
-            # if staging is enabled switch to full
-            $LocalRepoPath = "full/$LocalRepoPath";
-            $catalogName = "$catalogName:full" if($aliasChange);
-        }
-
-        $r->log->info("repoindex return $username: ".${$val}{'NAME'}." - ".((defined ${$val}{'TARGET'})?${$val}{'TARGET'}:""));
+        $r->log->info("repoindex return $username: $repoName - ".((${$val}{'target'})?${$val}{'target'}:""));
 
         if(defined $LocalBasePath && $LocalBasePath ne "")
         {
@@ -212,28 +176,28 @@ sub handler {
 
                 # catalog does not exists on this server. Log it, that the admin has a chance
                 # to find the error.
-                $r->log->warn("Return a catalog, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
-                $r->log->warn("Run smt-mirror to create this catalog.");
+                $r->log->warn("Return a repo, which does not exists on this server ($LocalBasePath/repo/$LocalRepoPath/repodata/repomd.xml");
+                $r->log->warn("Run smt-mirror to create this repository.");
             }
         }
 
         my $autorefresh = 1;
-        if(exists $val->{AUTOREFRESH} && $val->{AUTOREFRESH} eq 'N')
+        if(exists $val->{autorefresh} && $val->{autorefresh} eq 'N')
         {
             $autorefresh = 0;
         }
 
         my $enabled = 0;
-        if(exists $val->{OPTIONAL} && $val->{OPTIONAL} eq 'N')
+        if(exists $val->{optional} && $val->{optional} eq 'N')
         {
             $enabled = 1;
         }
 
         $writer->emptyTag('repo',
-                          'name' => $catalogName,
-                          'alias' => $catalogName,                 # Alias == Name
-                          'description' => ${$val}{'DESCRIPTION'},
-                          'distro_target' => ${$val}{'TARGET'},
+                          'name' => $repoName,
+                          'alias' => $repoName,                 # Alias == Name
+                          'description' => ${$val}{'description'},
+                          'distro_target' => ${$val}{'target'},
                           'path' => $LocalRepoPath,
                           'priority' => 0,
                           'pub' => 0,
@@ -242,7 +206,6 @@ sub handler {
                          );
         # don't laugh, zmd requires a special look of the XML :-(
         print "\n";
-
     }
 
     $writer->endTag("repoindex");

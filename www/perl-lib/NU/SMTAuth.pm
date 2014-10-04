@@ -81,25 +81,19 @@ sub handler {
         $r->log->error("Cannot connect to database");
         return Apache2::Const::SERVER_ERROR;
     }
+    my $sth = $dbh->prepare("SELECT guid, client_target,
+                                    localpath, repository_target
+                               FROM ClientRepositories
+                               WHERE guid = :guid
+                                 AND secret = :secret");
+    $sth->execute_h(guid => $r->user, secret => $password);
+    my $cdata = $sth->fetchall_hashref(["guid", "localpath"]);
 
-    my $statement = sprintf("SELECT SECRET from Clients where GUID = %s and SECRET = %s",
-                            $dbh->quote($r->user()), $dbh->quote($password));
-    my $existsecret = $dbh->selectcol_arrayref($statement);
-
-    if( !exists $existsecret->[0] || !defined $existsecret->[0] || $existsecret->[0] eq "" )
+    if( !$cdata || !exists $cdata->{$r->user} )
     {
-
-        # Fallback to MachineData: secret in the clients table is very new and might be empty
-        $statement = sprintf("SELECT GUID from MachineData where GUID = %s and KEYNAME = 'secret' and VALUE = %s",
-                             $dbh->quote($r->user()), $dbh->quote($password));
-        my $existuser = $dbh->selectcol_arrayref($statement);
-
-        if( !exists $existuser->[0] || !defined $existuser->[0] || $existuser->[0] ne $r->user() )
-        {
-            $r->log->error( "Invalid user: ".$r->user() );
-            $r->note_basic_auth_failure;
-            return Apache2::Const::AUTH_REQUIRED;
-        }
+        $r->log->error( "Invalid user: ".$r->user() );
+        $r->note_basic_auth_failure;
+        return Apache2::Const::AUTH_REQUIRED;
     }
 
     if($requiredAuth eq "lazy" )
@@ -113,20 +107,6 @@ sub handler {
     # access to the requested URI
     #
 
-    $statement = sprintf("select GUID, TARGET, NAMESPACE from Clients c where c.GUID=%s", $dbh->quote($r->user()) );
-    my $cdata = $dbh->selectall_hashref($statement, "GUID");
-
-    $statement  = " select c.LOCALPATH, c.STAGING from Catalogs c, ProductCatalogs pc, Registration r ";
-    $statement .= sprintf(" where r.GUID=%s ", $dbh->quote($r->user()) );
-    $statement .= " and r.PRODUCTID=pc.PRODUCTID and c.ID=pc.CATALOGID and c.DOMIRROR like 'Y' ";
-    # add a filter by target architecture if it is defined
-    if (exists $cdata->{$r->user()}->{TARGET} && defined $cdata->{$r->user()}->{TARGET} &&
-        $cdata->{$r->user()}->{TARGET} ne "" )
-    {
-        $statement .= sprintf(" and (c.TARGET=%s or c.TARGET IS NULL)", $dbh->quote( $cdata->{$r->user()}->{TARGET} ));
-    }
-    $r->log->info("STATEMENT: $statement");
-
     # evil things like "dir/../../otherdir" are solved by apache.
     # we get here the resulting path
     # we only need to strip out "somedir////nextdir"
@@ -134,24 +114,17 @@ sub handler {
 
     $r->log->info($r->user()." requests path '$requestedPath'");
 
-    my $namespace = "";
-
-    if(exists $cdata->{$r->user()}->{NAMESPACE} && defined $cdata->{$r->user()}->{NAMESPACE})
+    foreach my $path ( keys %{$cdata->{$r->user}} )
     {
-        $namespace = $cdata->{$r->user()}->{NAMESPACE};
-    }
+        if ($cdata->{$r->user}->{$path}->{client_target} &&
+            $cdata->{$r->user}->{$path}->{repository_target} &&
+            $cdata->{$r->user}->{$path}->{client_target} ne
+                $cdata->{$r->user}->{$path}->{repository_target})
+        {
+            next;
+        }
 
-    my $localRepoPath = $dbh->selectall_hashref($statement, 'LOCALPATH');
-    foreach my $path ( keys %{$localRepoPath} )
-    {
-        if($namespace ne "" && uc($localRepoPath->{$path}->{STAGING}) eq "Y")
-        {
-            $path = SMT::Utils::cleanPath("/repo", $namespace, $path);
-        }
-        else
-        {
-            $path = SMT::Utils::cleanPath("/repo", $path);
-        }
+        $path = SMT::Utils::cleanPath("/repo", $path);
 
         $r->log->info($r->user()." has access to '$path'");
 
