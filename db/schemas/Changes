@@ -1,6 +1,8 @@
 General:
 - using timestampTZ
 
+Clients:
+- drop namespace
 
 Subscriptions:
 - new id column
@@ -10,9 +12,10 @@ Subscriptions:
 ClientSubscription:
 - references new id column of Subscriptions
 
-
 Repositories (was Catalogs):
 - removed staging
+- rename catalog_id to repo_id
+- rename catalogtype to repotype
 
 Products:
 - removed all lower* columns
