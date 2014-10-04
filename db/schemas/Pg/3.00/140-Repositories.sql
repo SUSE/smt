@@ -1,7 +1,7 @@
 
 create table Repositories(id          NUMERIC
                                       CONSTRAINT repos_id_pk PRIMARY KEY,
-                          catalog_id  NUMERIC NOT NULL,      -- internal CC id
+                          repo_id     NUMERIC NOT NULL,      -- internal CC id
                           name        VARCHAR(512) NOT NULL,
                           description VARCHAR(512) NOT NULL,
                           target      VARCHAR(512) NOT NULL, -- '' (empty) in case of single RPMMD source
@@ -9,7 +9,7 @@ create table Repositories(id          NUMERIC
                           exthost     VARCHAR(512) NOT NULL,
                           exturl      VARCHAR(512) NOT NULL,  -- where to mirror from
                           authtoken   VARCHAR(512) NOT NULL DEFAULT '',
-                          catalogtype VARCHAR(10) NOT NULL,
+                          repotype    VARCHAR(10) NOT NULL,
                           domirror    VARCHAR(1) NOT NULL DEFAULT 'N'
                                       CONSTRAINT repos_domirror_ck
                                         CHECK (domirror in ('Y', 'N')),
