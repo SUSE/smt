@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Config::IniFiles;
+use SMT::DB;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
 use IO::File;
@@ -109,7 +110,7 @@ sub db_connect
         die __("Invalid Database configuration. Missing value for DB/config.");
     }
 
-    my $dbh    = DBI->connect($config, $user, $pass, {RaiseError => 0, AutoCommit => 0});
+    my $dbh    = SMT::DB->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 0});
 
     return $dbh;
 }
