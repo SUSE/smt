@@ -6,7 +6,6 @@ create table Clients(id          NUMERIC
                      target      VARCHAR(100) NOT NULL,
                      description VARCHAR(500) NOT NULL DEFAULT '',
                      lastcontact TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-                     namespace   VARCHAR(300) NOT NULL DEFAULT '',
                      secret      VARCHAR(50) NOT NULL DEFAULT '',
                      regtype     VARCHAR(10) NOT NULL DEFAULT 'SR', -- SR = SuseRegister, SC = SUSEConnect
                      created     TIMESTAMPTZ DEFAULT (current_timestamp) NOT NULL,
