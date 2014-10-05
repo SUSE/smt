@@ -19,7 +19,7 @@ use SMT::Utils;
 use File::Temp;
 use Date::Parse;
 use SMT::Product;
-use DBI qw(:sql_types);
+use SMT::DB;
 
 use Data::Dumper;
 
@@ -190,123 +190,6 @@ sub migrate
     return $self->{MIGRATE};
 }
 
-=item canMigrate
-
-Test if a migration is possible.
-Return:
-0 if the migration is possible.
-1 internal server error
-3 migration not possible because clients exists which uses products not provided by NCC
-4 migration not possible because clients exists which uses repositories not provided by NCC
-
-
-=cut
-
-sub canMigrate
-{
-    my $self = shift;
-    my $input = $self->_getInput("organizations_products_unscoped");
-    my $errors = 0;
-
-    if (! $input)
-    {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
-                 __("Failed to get product information from SCC. Migration is not possible."));
-        return 1;
-    }
-
-    #
-    # new registration server need to support all locally used
-    # products. SCC will import all products of a product_class
-    #
-    my $statement = "SELECT DISTINCT p.PRODUCT_CLASS
-                     FROM Products p, Registration r
-                     WHERE r.PRODUCTID=p.ID";
-    my $classes = $self->{DBH}->selectall_arrayref($statement, {Slice => {}});
-    foreach my $c (@{$classes})
-    {
-        my $found = 0;
-        foreach my $product (@$input)
-        {
-            if ( $c->{PRODUCT_CLASS} eq ($product->{product_class}||'') )
-            {
-                $found = 1;
-                last;
-            }
-        }
-        if ( ! $found )
-        {
-            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-                     sprintf("'%s' not found in registration server. Migration not possible.",
-                             $c->{PRODUCT_CLASS}), 0, 1);
-            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
-                     sprintf("'%s' not found in registration server. Migration not possible.",
-                             $c->{PRODUCT_CLASS}), 1, 0);
-            $errors++;
-        }
-    }
-
-    if ($errors)
-    {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
-                 __("Products found which are not supported by SCC. Migration is not possible.")."\n".
-                 __("Please check the logfile for more information."));
-        return 3;
-    }
-
-    $input = $self->_getInput("organizations_repositories");
-
-    if (! $input)
-    {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
-                 __("Failed to get repository information from SCC. Migration is not possible."));
-        return 1;
-    }
-    #
-    # All locally mirrored NCC repos need to be accessible via
-    # the new registration server
-    #
-    $statement = "SELECT ID, NAME, TARGET FROM Catalogs
-                   WHERE DOMIRROR='Y'
-                     AND MIRRORABLE='Y'
-                     AND SRC = 'N'";
-    my $catalogs = $self->{DBH}->selectall_hashref($statement, 'ID');
-    foreach my $needed_cid (keys %{$catalogs})
-    {
-        my $found = 0;
-        foreach my $repo (@$input)
-        {
-            if ($catalogs->{$needed_cid}->{NAME} eq $repo->{name} &&
-                ($catalogs->{$needed_cid}->{TARGET}||'') eq ($repo->{distro_target}||''))
-            {
-                $found = 1;
-                last;
-            }
-        }
-        if ( ! $found )
-        {
-            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-                     sprintf("Repository '%s-%s' not found in registration server. Migration not possible.",
-                             $catalogs->{$needed_cid}->{NAME},
-                             $catalogs->{$needed_cid}->{TARGET}), 0, 1);
-            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
-                     sprintf("Repository '%s-%s' not found in registration server. Migration not possible.",
-                             $catalogs->{$needed_cid}->{NAME},
-                             $catalogs->{$needed_cid}->{TARGET}), 1, 0);
-            $errors++;
-        }
-    }
-    if ($errors)
-    {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
-                 __("Used repositories found which are not supported by SCC. Migration is not possible.")."\n".
-                 __("Please check the logfile for more information."));
-        return 4;
-    }
-
-    return 0;
-}
-
 =item products
 
 Update Products, Repository and and the relations between these two.
@@ -339,6 +222,44 @@ sub products
     else
     {
         my $ret = $self->_updateProductData($input);
+        return $ret;
+    }
+}
+
+=item services
+
+NOT YET IMPLEMENTED
+
+Update distro_targets.
+Return number of errors.
+
+=cut
+
+sub services
+{
+    my $self = shift;
+    my $name = "services";
+    my $input = $self->_getInput($name);
+
+    if (! $input)
+    {
+        return 1;
+    }
+    if(defined $self->{TODIR})
+    {
+        open( FH, '>', $self->{TODIR}."/$name.json") or do
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
+            return 1;
+        };
+        my $json_text = JSON::encode_json($input);
+        print FH "$json_text";
+        close FH;
+        return 0;
+    }
+    else
+    {
+        my $ret = undef;
         return $ret;
     }
 }
@@ -409,24 +330,6 @@ sub finalize_mirrorable_repos
     }
 }
 
-sub cleanup_db
-{
-    my $self = shift;
-    return 0 if (not $self->migrate());
-
-    eval
-    {
-        my $res = $self->{DBH}->do("DELETE FROM Products WHERE SRC='N'");
-        $res = $self->{DBH}->do("DELETE FROM Catalogs WHERE SRC='N'");
-        $res = $self->{DBH}->do("DELETE FROM ProductCatalogs WHERE SRC='N'");
-    };
-    if($@)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        return 1;
-    }
-    return 0;
-}
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -498,61 +401,6 @@ sub _updateProducts
     my $statement = "";
     my $ret = 0;
     my $retprd = 0;
-    my $paramlist =<<EOP
-<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0"
-lang="">
-  <guid description="" class="mandatory" />
-  <param id="secret" description="" command="zmd-secret"
-  class="mandatory" />
-  <host description="" />
-  <product description="" class="mandatory" />
-  <param id="ostarget" description="" command="zmd-ostarget"
-  class="mandatory" />
-  <param id="ostarget-bak" description="" command="lsb_release -sd"
-  class="mandatory" />
-  <param id="processor" description="" command="uname -p" />
-  <param id="platform" description="" command="uname -i" />
-  <param id="hostname" description="" command="uname -n" />
-  <param id="cpu" description="" command="hwinfo --cpu" />
-  <param id="memory" description="" command="hwinfo --memory" />
-</paramlist>
-EOP
-;
-    my $needinfo =<<EON
-<?xml version="1.0" encoding="utf-8"?>
-<needinfo xmlns="http://www.novell.com/xml/center/regsvc-1_0"
-lang="" href="">
-  <guid description="" class="mandatory" />
-  <param id="secret" description="" command="zmd-secret"
-  class="mandatory" />
-  <host description="" />
-  <product description="" class="mandatory" />
-  <param id="ostarget" description="" command="zmd-ostarget"
-  class="mandatory" />
-  <param id="ostarget-bak" description="" command="lsb_release -sd"
-  class="mandatory" />
-  <param id="sysident" description="">
-    <param id="processor" description="" command="uname -p" />
-    <param id="platform" description="" command="uname -i" />
-    <param id="hostname" description="" command="uname -n" />
-  </param>
-  <param id="hw_inventory" description="">
-    <param id="cpu" description="" command="hwinfo --cpu" />
-    <param id="memory" description="" command="hwinfo --memory" />
-  </param>
-  <privacy url="http://www.novell.com/company/policies/privacy/textonly.html"
-  description="" class="informative" />
-</needinfo>
-EON
-;
-    my $service =<<EOS
-<service xmlns="http://www.novell.com/xml/center/regsvc-1_0"
-id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
-  <param id="url">\${mirror:url}</param>
-  <group-catalogs/>
-</service>
-EOS
-;
 
     # we inserted/update this product already in this run
     # so let's skip it
@@ -573,25 +421,18 @@ EOS
         (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
         $statement = sprintf("UPDATE Products
-                                 SET PRODUCT = %s, VERSION = %s,
-                                     REL = %s, ARCH = %s,
-                                     PRODUCTLOWER = %s, VERSIONLOWER = %s,
-                                     RELLOWER = %s, ARCHLOWER = %s,
-                                     FRIENDLY = %s, PRODUCT_LIST = %s,
-                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
-                                     CPE = %s, DESCRIPTION = %s, EULA_URL = %s,
-                                     FORMER_IDENTIFIER = %s, PRODUCT_TYPE = %s
-                               WHERE ID = %s",
+                                 SET product = %s, version = %s,
+                                     rel = %s, arch = %s,
+                                     friendly = %s,
+                                     product_class = %s, productdataid = %s,
+                                     cpe = %s, description = %s, eula_url = %s,
+                                     former_identifier = %s, product_type = %s
+                               WHERE id = %s",
                              $self->{DBH}->quote($product->{identifier}),
                              $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{identifier})),
-                             $self->{DBH}->quote(($product->{version}?lc($product->{version}):undef)),
-                             $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
-                             $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($product->{friendly_name}),
-                             $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($product->{cpe}),
@@ -608,28 +449,20 @@ EOS
                                                                          $product->{arch},
                                                                          $self->{LOG}, $self->vblevel)))
     {
-        $self->_migrateMachineData($pid, $product->{id});
         $statement = sprintf("UPDATE Products
-                                 SET PRODUCT = %s, VERSION = %s,
-                                     REL = %s, ARCH = %s,
-                                     PRODUCTLOWER = %s, VERSIONLOWER = %s,
-                                     RELLOWER = %s, ARCHLOWER = %s,
-                                     FRIENDLY = %s, PRODUCT_LIST = %s,
-                                     PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
-                                     CPE = %s, DESCRIPTION = %s, EULA_URL = %s,
-                                     FORMER_IDENTIFIER = %s, PRODUCT_TYPE = %s,
-                                     SRC = 'S'
-                               WHERE ID = %s",
+                                 SET product = %s, version = %s,
+                                     rel = %s, arch = %s,
+                                     friendly = %s,
+                                     product_class = %s, productdataid = %s,
+                                     cpe = %s, description = %s, eula_url = %s,
+                                     former_identifier = %s, product_type = %s,
+                                     src = 'S'
+                               WHERE id = %s",
                              $self->{DBH}->quote($product->{identifier}),
                              $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{identifier})),
-                             $self->{DBH}->quote(($product->{version}?lc($product->{version}):undef)),
-                             $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
-                             $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
                              $self->{DBH}->quote($product->{friendly_name}),
-                             $self->{DBH}->quote('Y'), # SCC give all products back - all are listed.
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($product->{cpe}),
@@ -642,25 +475,16 @@ EOS
     }
     else
     {
-        $statement = sprintf("INSERT INTO Products (PRODUCT, VERSION, REL, ARCH,
-                              PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
-                              PARAMLIST, NEEDINFO, SERVICE, FRIENDLY, PRODUCT_LIST,
-                              PRODUCT_CLASS, CPE, DESCRIPTION, EULA_URL, PRODUCTDATAID,
-                              FORMER_IDENTIFIER, PRODUCT_TYPE, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+        $statement = sprintf("INSERT INTO Products (id, product, version, rel, arch, friendly,
+                              product_class, cpe, description, eula_url, productdataid,
+                              former_identifier, product_type, src)
+                              VALUES (nextval('products_id_seq'),
+                                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{identifier}),
                              $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
                              $self->{DBH}->quote($product->{arch}),
-                             $self->{DBH}->quote(lc($product->{identifier})),
-                             $self->{DBH}->quote(($product->{version}?lc($product->{version}):undef)),
-                             $self->{DBH}->quote(($product->{release_type}?lc($product->{release_type}):undef)),
-                             $self->{DBH}->quote(($product->{arch}?lc($product->{arch}):undef)),
-                             $self->{DBH}->quote($paramlist),
-                             $self->{DBH}->quote($needinfo),
-                             $self->{DBH}->quote($service),
                              $self->{DBH}->quote($product->{friendly_name}),
-                             $self->{DBH}->quote('Y'),
                              $self->{DBH}->quote($product->{product_class}),
                              $self->{DBH}->quote($product->{cpe}),
                              $self->{DBH}->quote($product->{description}),
@@ -715,8 +539,8 @@ sub _updateExtension
 
     my $sql = sprintf("
         INSERT INTO ProductExtensions VALUES (
-            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
-            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
+            (SELECT id from Products WHERE productdataid = %s AND src = 'S'),
+            (SELECT id from Products WHERE productdataid = %s AND src = 'S'),
             'S')",
             $self->{DBH}->quote($prdid),
             $self->{DBH}->quote($extid));
@@ -778,13 +602,13 @@ sub _updateRepositories
     if (! $self->migrate() &&
         (my $cid = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
-        $statement = sprintf("UPDATE Catalogs
-                                 SET NAME = %s, DESCRIPTION = %s,
-                                     TARGET = %s, LOCALPATH = %s,
-                                     EXTHOST = %s, EXTURL = %s,
-                                     CATALOGTYPE = %s, CATALOGID = %s,
-                                     AUTOREFRESH = %s
-                               WHERE ID = %s",
+        $statement = sprintf("UPDATE Repositories
+                                 SET name = %s, description = %s,
+                                     target = %s, localpath = %s,
+                                     exthost = %s, exturl = %s,
+                                     repotype = %s, repo_id = %s,
+                                     autorefresh = %s
+                               WHERE id = %s",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
                              $self->{DBH}->quote($repo->{distro_target}),
@@ -800,14 +624,14 @@ sub _updateRepositories
     elsif ($self->migrate() &&
            ($cid = SMT::Utils::lookupCatalogIdByName($self->{DBH}, $repo->{name}, $repo->{distro_target}, $self->{LOG}, $self->vblevel)))
     {
-        $statement = sprintf("UPDATE Catalogs
-                                 SET NAME = %s, DESCRIPTION = %s,
-                                     TARGET = %s, LOCALPATH = %s,
-                                     EXTHOST = %s, EXTURL = %s,
-                                     CATALOGTYPE = %s, CATALOGID = %s,
-                                     AUTOREFRESH = %s,
-                                     SRC = 'S'
-                               WHERE ID = %s",
+        $statement = sprintf("UPDATE Repositories
+                                 SET name = %s, description = %s,
+                                     target = %s, localpath = %s,
+                                     exthost = %s, exturl = %s,
+                                     repotype = %s, repo_id = %s,
+                                     autorefresh = %s,
+                                     src = 'S'
+                               WHERE id = %s",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
                              $self->{DBH}->quote($repo->{distro_target}),
@@ -822,9 +646,9 @@ sub _updateRepositories
     }
     else
     {
-        $statement = sprintf("INSERT INTO Catalogs (NAME, DESCRIPTION, TARGET, LOCALPATH,
-                              EXTHOST, EXTURL, CATALOGTYPE, CATALOGID, AUTOREFRESH, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+        $statement = sprintf("INSERT INTO Repositories (id, name, description, target, localpath,
+                              exthost, exturl, repotype, repo_id, autorefresh, src)
+                              VALUES (nextval('repos_id_seq'), %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
                              $self->{DBH}->quote($repo->{distro_target}),
@@ -880,7 +704,7 @@ sub _updateTargets
         return $ret;
     }
     my $rows = 0;
-    $statement = sprintf("UPDATE Targets SET TARGET = %s, SRC = 'S' WHERE OS = %s",
+    $statement = sprintf("UPDATE Targets SET target = %s, src = 'S' WHERE os = %s",
                          $self->{DBH}->quote($distro_target),
                          $self->{DBH}->quote($distro_description));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
@@ -896,7 +720,7 @@ sub _updateTargets
 
     if ($rows < 1)
     {
-        $statement = sprintf("INSERT INTO Targets (OS, TARGET, SRC) VALUES (%s, %s, 'S')",
+        $statement = sprintf("INSERT INTO Targets (os, target, src) VALUES (%s, %s, 'S')",
                              $self->{DBH}->quote($distro_description),
                              $self->{DBH}->quote($distro_target));
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
@@ -932,8 +756,9 @@ sub _updateProductCatalogs
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Repository ID: ".$repo->{id});
         return 1;
     }
-    my $statement = sprintf("DELETE FROM ProductCatalogs
-                              WHERE PRODUCTID = %s AND CATALOGID = %s",
+    my $statement = sprintf("DELETE FROM ProductRepositories
+                              WHERE product_id = %s
+                                AND repository_id = %s",
                             $self->{DBH}->quote($product_id),
                             $self->{DBH}->quote($repo_id)
     );
@@ -947,7 +772,7 @@ sub _updateProductCatalogs
         $ret += 1;
     }
 
-    $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
+    $statement = sprintf("INSERT INTO ProductRepositories (product_id, repository_id, optional, src)
                           VALUES (%s, %s, %s, 'S')",
                          $self->{DBH}->quote($product_id),
                          $self->{DBH}->quote($repo_id),
@@ -982,21 +807,24 @@ sub _addSubscription
         $server_class = SMT::Product::defaultServerClass($subscr->{product_classes}->[0]);
     }
     $server_class = 'ADDON' if(not $server_class);
-
-    my $statement = sprintf("INSERT INTO Subscriptions VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                         $self->{DBH}->quote($subscr->{id}),
-                         $self->{DBH}->quote($subscr->{regcode}),
-                         $self->{DBH}->quote($subscr->{name}),
-                         $self->{DBH}->quote($subscr->{type}),
-                         $self->{DBH}->quote($subscr->{status}),
-                         $self->{DBH}->quote(($startdate?SMT::Utils::getDBTimestamp($startdate):undef)),
-                         $self->{DBH}->quote(($enddate?SMT::Utils::getDBTimestamp($enddate):undef)),
-                         $self->{DBH}->quote($duration),
-                         $self->{DBH}->quote($server_class),
-                         $self->{DBH}->quote($product_classes),
-                         $self->{DBH}->quote($subscr->{system_limit}),
-                         $self->{DBH}->quote($subscr->{systems_count}),
-                         $self->{DBH}->quote($subscr->{virtual_count}));
+    my $subid = $self->{DBH}->sequence_nextval('subscriptions_id_seq');
+    my $statement = sprintf("INSERT INTO Subscriptions
+                                         (id, subid, regcode, subname, subtype, substatus,
+                                          substartdate, subenddate, product_class, nodecount,
+                                          constumed, consumedvirt)
+                                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                            $self->{DBH}->quote($subid),
+                            $self->{DBH}->quote($subscr->{id}),
+                            $self->{DBH}->quote($subscr->{regcode}),
+                            $self->{DBH}->quote($subscr->{name}),
+                            $self->{DBH}->quote($subscr->{type}),
+                            $self->{DBH}->quote($subscr->{status}),
+                            $self->{DBH}->quote(($startdate?SMT::Utils::getDBTimestamp($startdate):undef)),
+                            $self->{DBH}->quote(($enddate?SMT::Utils::getDBTimestamp($enddate):undef)),
+                            $self->{DBH}->quote($product_classes),
+                            $self->{DBH}->quote($subscr->{system_limit}),
+                            $self->{DBH}->quote($subscr->{systems_count}),
+                            $self->{DBH}->quote($subscr->{virtual_count}));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
@@ -1018,7 +846,12 @@ sub _addClientSubscription
     # skip it, if the client does not exist
     return 0 if(not SMT::Utils::lookupClientByGUID( $self->{DBH}, $guid, $self->{LOG}, $self->vblevel() ));
 
-    my $statement = sprintf("INSERT INTO ClientSubscriptions (SUBID, GUID) VALUES (%s,%s)",
+    my $statement = sprintf("INSERT INTO ClientSubscriptions
+                                         (subscription_id, client_id)
+                                  VALUES (
+                                          (SELECT id FROM Subscriptions WHERE subid = %s),
+                                          (SELECT id FROM Clients WHERE guid = %s),
+                                         )",
                             $self->{DBH}->quote($subscriptionId),
                             $self->{DBH}->quote($guid));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
@@ -1091,6 +924,7 @@ sub _updateSubscriptionData
 
     # cleanup Subscriptions and ClientSubscriptions table
     # we always do a delete all and a new full insert.
+    # FIXME: delete all is not an option anymore
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM Subscriptions");
     eval {
         $self->{DBH}->do("DELETE FROM Subscriptions");
@@ -1139,19 +973,19 @@ sub _finalizeMirrorableRepos
         return 1;
     }
 
-    my $sqlres = $self->{DBH}->selectall_hashref("select Name, Target, Mirrorable, ID, AUTHTOKEN
-                                                    from Catalogs
-                                                   where CATALOGTYPE = 'nu'",
-                                                 ['Name', 'Target']);
+    my $sqlres = $self->{DBH}->selectall_hashref("SELECT name, target, mirrorable, id, authtoken
+                                                    FROM Repositories
+                                                   WHERE repotype = 'nu'",
+                                                 ['name', 'target']);
     foreach my $repo (@{$json})
     {
         # zypp repos have no target
         next if (not $repo->{distro_target});
         my $updateNeeded = 0;
         my $authtoken = '';
-        if(exists $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable} )
+        if(exists $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{mirrorable} )
         {
-            if( uc($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{Mirrorable}) ne "Y")
+            if( uc($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{mirrorable}) ne "Y")
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
                          sprintf(__("* New mirrorable repository '%s %s' ."),
@@ -1159,7 +993,7 @@ sub _finalizeMirrorableRepos
                 $updateNeeded = 1;
             }
             $authtoken = URI->new($repo->{url})->query;
-            my $db_authtoken = $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{AUTHTOKEN};
+            my $db_authtoken = $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{authtoken};
             $db_authtoken = '' if(!$db_authtoken);
             if( $db_authtoken ne "$authtoken" )
             {
@@ -1172,9 +1006,9 @@ sub _finalizeMirrorableRepos
             }
             if($updateNeeded)
             {
-                my $statement = sprintf("UPDATE Catalogs SET Mirrorable='Y', AUTHTOKEN=%s  WHERE ID = %s",
+                my $statement = sprintf("UPDATE Repositories SET mirrorable='Y', authtoken=%s WHERE id = %s",
                                         $self->{DBH}->quote($authtoken),
-                                        $self->{DBH}->quote($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{ID}));
+                                        $self->{DBH}->quote($sqlres->{$repo->{name}}->{$repo->{distro_target}}->{id}));
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
                 $self->{DBH}->do( $statement );
             }
@@ -1187,59 +1021,23 @@ sub _finalizeMirrorableRepos
         foreach my $target ( keys %{$sqlres->{$cname}})
         {
             my $updateNeeded = 0;
-            if(uc($sqlres->{$cname}->{$target}->{Mirrorable}) eq "Y")
+            if(uc($sqlres->{$cname}->{$target}->{mirrorable}) eq "Y")
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
                          sprintf(__("* repository not longer mirrorable '%s %s' ."), $cname, $target ));
                 $updateNeeded = 1;
             }
-            $updateNeeded = 1 if ($sqlres->{$cname}->{$target}->{AUTHTOKEN});
+            $updateNeeded = 1 if ($sqlres->{$cname}->{$target}->{authtoken});
             if($updateNeeded)
             {
-                my $statement = sprintf("UPDATE Catalogs SET Mirrorable='N', AUTHTOKEN='' WHERE ID=%s",
-                                          $self->{DBH}->quote($sqlres->{$cname}->{$target}->{ID}) );
+                my $statement = sprintf("UPDATE Repositories SET mirrorable='N', authtoken='' WHERE id=%s",
+                                          $self->{DBH}->quote($sqlres->{$cname}->{$target}->{id}) );
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
                 $self->{DBH}->do( $statement );
             }
         }
     }
     return 0;
-}
-
-sub _migrateMachineData
-{
-    my $self = shift;
-    my $pid = shift;
-    my $new_productid = shift;
-    my $ret = 0;
-
-    my $query_productdataid = sprintf("SELECT PRODUCTDATAID FROM Products WHERE ID = %s AND SRC = 'N'",
-                                      $self->{DBH}->quote($pid));
-
-    my $ref = $self->{DBH}->selectrow_hashref($query_productdataid);
-    my $old_productdataid = $ref->{PRODUCTDATAID};
-
-    return $ret if ( not $old_productdataid);
-    eval {
-        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
-                                 $self->{DBH}->quote("product-name-$new_productid"),
-                                 $self->{DBH}->quote("product-name-$old_productdataid")));
-        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
-                                 $self->{DBH}->quote("product-version-$new_productid"),
-                                 $self->{DBH}->quote("product-version-$old_productdataid")));
-        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
-                                 $self->{DBH}->quote("product-arch-$new_productid"),
-                                 $self->{DBH}->quote("product-arch-$old_productdataid")));
-        $self->{DBH}->do(sprintf("UPDATE MachineData SET KEYNAME = %s WHERE KEYNAME = %s",
-                                 $self->{DBH}->quote("product-rel-$new_productid"),
-                                 $self->{DBH}->quote("product-rel-$old_productdataid")));
-    };
-    if($@)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        $ret += 1;
-    }
-    return $ret;
 }
 
 sub _staticTargets

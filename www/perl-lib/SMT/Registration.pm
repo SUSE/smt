@@ -17,10 +17,9 @@ use constant IOBUFSIZE => 8192;
 
 use SMT::Utils;
 use SMT::Client;
-use DBI qw(:sql_types);
+use SMT::DB;
 
 use Data::Dumper;
-use DBI;
 use XML::Writer;
 use XML::Parser;
 use Date::Parse;
@@ -93,24 +92,7 @@ sub register
     my $r          = shift;
     my $hargs      = shift;
 
-    my $namespace  = "";
-
     $r->log->info("register called");
-
-    # to be compatible with SMT10
-    if(exists $hargs->{testenv} && $hargs->{testenv})
-    {
-        $namespace = "testing";
-    }
-    if(exists $hargs->{namespace} && defined $hargs->{namespace} && $hargs->{namespace} ne "")
-    {
-        $namespace = $hargs->{namespace};
-        if ( $namespace !~ /^[a-zA-z0-9_-]+$/ )
-        {
-            $namespace  = "";
-            $r->log->warn("Invalid Namespace in registration request. Reset to empty");
-        }
-    }
 
     my $cfg = undef;
 
@@ -123,16 +105,6 @@ sub register
         $r->log_error("Cannot read the SMT configuration file: ".$@);
         return http_fail($r, 500,
            "SMT server is missconfigured. Please contact your administrator.");
-    }
-
-    if( $namespace ne "" )
-    {
-        my $LocalBasePath = $cfg->val('LOCAL', 'MirrorTo');
-        if(! -d  "$LocalBasePath/repo/$namespace" )
-        {
-            $r->log_error("Invalid namespace requested: $LocalBasePath/repo/$namespace/ does not exists.");
-            $namespace = "";
-        }
     }
 
     my $data = read_post($r);
@@ -159,8 +131,34 @@ sub register
         $r->log_error("SMT::Registration::register Invalid XML: $@");
     }
 
-
-    my $needinfo = SMT::Registration::parseFromProducts($r, $dbh, $regroot->{register}->{product}, "NEEDINFO");
+    # Legacy registration: return for all the same
+    my $needinfo =<<EON
+<?xml version="1.0" encoding="utf-8"?>
+<needinfo xmlns="http://www.novell.com/xml/center/regsvc-1_0"
+lang="" href="">
+  <guid description="" class="mandatory" />
+  <param id="secret" description="" command="zmd-secret"
+  class="mandatory" />
+  <host description="" />
+  <product description="" class="mandatory" />
+  <param id="ostarget" description="" command="zmd-ostarget"
+  class="mandatory" />
+  <param id="ostarget-bak" description="" command="lsb_release -sd"
+  class="mandatory" />
+  <param id="sysident" description="">
+    <param id="processor" description="" command="uname -p" />
+    <param id="platform" description="" command="uname -i" />
+    <param id="hostname" description="" command="uname -n" />
+  </param>
+  <param id="hw_inventory" description="">
+    <param id="cpu" description="" command="hwinfo --cpu" />
+    <param id="memory" description="" command="hwinfo --memory" />
+  </param>
+  <privacy url="http://www.novell.com/company/policies/privacy/textonly.html"
+  description="" class="informative" />
+</needinfo>
+EON
+;
 
     #$r->log_error("REGROOT:".Data::Dumper->Dump([$regroot]));
 
@@ -235,7 +233,7 @@ sub register
 
         # insert new registration data
 
-        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot, $namespace, $target);
+        my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot, $target);
 
         # get the catalogs
 
@@ -245,7 +243,7 @@ sub register
 
         # send new <zmdconfig>
 
-        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $status, $namespace);
+        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $status);
 
         if( ! defined $zmdconfig )
         {
@@ -279,7 +277,7 @@ sub listproducts
         return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
     }
 
-    my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
+    my $sth = $dbh->prepare("SELECT DISTINCT product FROM Products");
     $sth->execute();
 
     my $output = "";
@@ -318,26 +316,29 @@ sub listparams
 
     $r->log->info("listparams called");
 
-    my $lpreq = read_post($r);
     my $dbh = SMT::Utils::db_connect();
 
-    my $data  = {STATE => 0, PRODUCTS => []};
-    my $parser = XML::Parser->new( Handlers =>
-                                   { Start=> sub { prod_handle_start_tag($data, @_) },
-                                     Char => sub { prod_handle_char($data, @_) },
-                                     End=>   sub { prod_handle_end_tag($data, @_) }
-                                   });
-    eval {
-        $parser->parse( $lpreq );
-    };
-    if($@) {
-        # ignore the errors, but print them
-        chomp($@);
-        $r->log_error("SMT::Registration::parseFromProducts Invalid XML: $@");
-    }
-
-    my $xml = SMT::Registration::parseFromProducts($r, $dbh, $data->{PRODUCTS}, "PARAMLIST");
-
+    # Legacy registration: we return for all products the same.
+    my $xml =<<EOP
+<paramlist xmlns="http://www.novell.com/xml/center/regsvc-1_0"
+lang="">
+  <guid description="" class="mandatory" />
+  <param id="secret" description="" command="zmd-secret"
+  class="mandatory" />
+  <host description="" />
+  <product description="" class="mandatory" />
+  <param id="ostarget" description="" command="zmd-ostarget"
+  class="mandatory" />
+  <param id="ostarget-bak" description="" command="lsb_release -sd"
+  class="mandatory" />
+  <param id="processor" description="" command="uname -p" />
+  <param id="platform" description="" command="uname -i" />
+  <param id="hostname" description="" command="uname -n" />
+  <param id="cpu" description="" command="hwinfo --cpu" />
+  <param id="memory" description="" command="hwinfo --memory" />
+</paramlist>
+EOP
+;
     $r->log->info("Return PARAMLIST: $xml");
 
     print $xml;
@@ -349,170 +350,82 @@ sub listparams
 
 ###############################################################################
 
-sub parseFromProducts
-{
-    my $r      = shift;
-    my $dbh    = shift;
-    my $productarray = shift;
-    my $column = shift;
-
-    my @list = findColumnsForProducts($r, $dbh, $productarray, $column);
-
-    if(uc($column) eq "PARAMLIST" || uc($column) eq "NEEDINFO")
-    {
-        return SMT::Registration::mergeDocuments($r, \@list);
-    }
-
-    return "";
-}
-
-
-sub writeXML
-{
-    my $node = shift;
-    my $writer = shift;
-
-    my $element = ref($node);
-    return if($element !~ /^smt::/);
-
-    $element =~ s/^smt:://;
-
-    return if($element eq "Characters");
-
-    my %attr = %{$node};
-    delete $attr{Kids};
-
-    $writer->startTag($element, %attr);
-
-    foreach my $child (@{$node->{Kids}})
-    {
-        writeXML($child, $writer);
-    }
-
-    $writer->endTag($element);
-}
-
-
-sub mergeXML
-{
-    my $node1 = shift;
-    my $node2 = shift;
-
-    foreach my $child2 (@{$node2->{Kids}})
-    {
-        my $found = 0;
-
-        foreach my $child1 (@{$node1->{Kids}})
-        {
-
-            if(ref($child2) eq ref($child1))
-            {
-                if(ref($child2) eq "smt::param")
-                {
-                    # we have to match the id
-                    if($child2->{id} eq $child1->{id})
-                    {
-                        $found = 1;
-                        mergeXML($child1, $child2);
-                    }
-                }
-                else
-                {
-                    $found = 1;
-                    mergeXML($child1, $child2);
-                }
-            }
-        }
-        if(!$found)
-        {
-            # found something new in child2 - put it in child 1
-            push @{$node1->{Kids}}, $child2;
-        }
-    }
-}
-
-sub mergeDocuments
-{
-    my $r    = shift;
-    my $list = shift;
-
-    my $basedoc = "";
-
-    my $root1;
-    my $node1;
-
-
-    foreach my $other (@$list)
-    {
-        next if(!defined $other || $other eq "");
-        if($basedoc eq "")
-        {
-            $basedoc = $other;
-            my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
-            eval {
-                $root1 = $p1->parse( $basedoc );
-                $node1 = $root1->[0];
-            };
-            if($@) {
-                # ignore the errors, but print them
-                chomp($@);
-                $r->log_error("SMT::Registration::mergeDocuments Invalid XML: $@");
-            }
-
-            next;
-        }
-        next if($basedoc eq $other);
-
-        my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
-        eval {
-            my $root2 = $p2->parse( $other );
-            my $node2;
-
-            if(ref($root1->[0]) eq ref($root2->[0]))
-            {
-                $node1 = $root1->[0];
-                $node2 = $root2->[0];
-
-                mergeXML($node1, $node2);
-            }
-        };
-        if($@) {
-            # ignore the errors, but print them
-            chomp($@);
-            $r->log_error("SMT::Registration::register Invalid XML: $@");
-        }
-    }
-
-    my $output = "";
-    my $w = XML::Writer->new(NEWLINES => 0, OUTPUT => \$output);
-    $w->xmlDecl("UTF-8");
-
-    writeXML($node1, $w);
-
-    return $output;
-}
-
 
 sub insertRegistration
 {
     my $r         = shift;
     my $dbh       = shift;
     my $regdata   = shift;
-    my $namespace = shift || '';
     my $target    = shift || '';
 
     my $cnt     = 0;
     my $existingpids = {};
     my $regtimestring = "";
-    my $hostname = "";
+    my $hostname = $hostname = $regdata->{register}->{hostname};
+
+    #
+    # if we do not have the hostname, try to get the IP address
+    #
+    if($hostname eq "")
+    {
+        $hostname = $r->connection()->remote_host();
+        if(!$hostname)
+        {
+            $hostname = $r->connection()->remote_ip();
+        }
+    }
+
+    #
+    # update Clients table
+    #
+    my $client = SMT::Utils::lookupClientByGUID($dbh, $regdata->{register}->{guid}, $r);
+    my $clientid = 0;
+    if ($client)
+    {
+        $clientid = $client->{id};
+
+        eval
+        {
+            my $sth = $dbh->prepare("UPDATE Clients
+                                        SET hostname=:hst, target=:target,
+                                            lastcontact=CURRENT_TIMESTAMP, secret=:secret
+                                      WHERE id=:id");
+            $sth->execute_h(hst => $hostname, target => $target,
+                            secret => $regdata->{register}->{secret}, id => $clientid);
+        };
+        if ($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+            return [];
+        }
+    }
+    else
+    {
+        $clientid = $dbh->sequence_nextval('clients_id_seq');
+        # New registration; we need an insert
+        my $sth = $dbh->prepare("INSERT INTO Clients (id, guid, hostname, target, secret, regtype)
+                                   VALUES (:id, :guid, :hst, :target, :secret, 'SR')");
+        eval
+        {
+            $dbh->do_h(id => $clientid, guid => $regdata->{register}->{guid},
+                       hst => $hostname, target => $target,
+                       secret => $regdata->{register}->{secret});
+        };
+        if ($@)
+        {
+            $r->log_error("DBERROR: ".$dbh->errstr);
+            return [];
+        }
+    }
 
     my @list = findColumnsForProducts($r, $dbh, $regdata->{register}->{product}, "ID");
 
-    my $statement = sprintf("SELECT PRODUCTID from Registration where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
+    my $statement = sprintf("SELECT product_id from Registrations where client_id=%s",
+                            $dbh->quote($clientid));
     $r->log->info("STATEMENT: $statement");
     eval
     {
-        $existingpids = $dbh->selectall_hashref($statement, "PRODUCTID");
+        $existingpids = $dbh->selectall_hashref($statement, "product_id");
     };
     if($@)
     {
@@ -548,15 +461,9 @@ sub insertRegistration
 
     if(@delete > 0)
     {
-        $statement = sprintf("DELETE from Registration where GUID=%s AND PRODUCTID ", $dbh->quote($regdata->{register}->{guid}));
-        if(@delete > 1)
-        {
-            $statement .= "IN (".join(",", @delete).")";
-        }
-        else
-        {
-            $statement .= "= ".$delete[0];
-        }
+        $statement = sprintf("DELETE from Registrations where client_id=%s AND product_id ",
+                              $dbh->quote($clientid));
+        $statement .= "IN (".join(",", @delete).")";
 
         eval {
             $cnt = $dbh->do($statement);
@@ -568,11 +475,11 @@ sub insertRegistration
         }
     }
 
+    my $sth = $dbh->prepare("INSERT into Registrations (client_id, product_id, regdate) VALUES (?, ?, ?)");
     foreach my $id (@insert)
     {
         eval {
-            my $sth = $dbh->prepare("INSERT into Registration (GUID, PRODUCTID, REGDATE) VALUES (?, ?, ?)");
-            $sth->bind_param(1, $regdata->{register}->{guid});
+            $sth->bind_param(1, $clientid);
             $sth->bind_param(2, $id, SQL_INTEGER);
             $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
             $cnt = $sth->execute;
@@ -587,21 +494,13 @@ sub insertRegistration
 
     if(@update > 0)
     {
-        $statement = "UPDATE Registration SET REGDATE=? WHERE GUID=? AND PRODUCTID ";
-
-        if(@update > 1)
-        {
-            $statement .= "IN (".join(",", @update).")";
-        }
-        else
-        {
-            $statement .= "= ".$update[0];
-        }
+        $statement = "UPDATE Registrations SET regdate=? WHERE client_id=? AND product_id ";
+        $statement .= "IN (".join(",", @update).")";
 
         eval {
             my $sth = $dbh->prepare($statement);
             $sth->bind_param(1, $regtimestring, SQL_TIMESTAMP);
-            $sth->bind_param(2, $regdata->{register}->{guid});
+            $sth->bind_param(2, $clientid);
             $cnt = $sth->execute;
             $r->log->info("STATEMENT: ".$sth->{Statement}."  Affected rows: $cnt");
         };
@@ -611,12 +510,12 @@ sub insertRegistration
         }
     }
 
-
     #
     # clean old machinedata
     #
     $cnt = 0;
-    $statement = sprintf("DELETE from MachineData where GUID=%s", $dbh->quote($regdata->{register}->{guid}));
+    $statement = sprintf("DELETE from MachineData where client_id=%s",
+                         $dbh->quote($clientid));
     eval {
         $cnt = $dbh->do($statement);
         $r->log->info("STATEMENT: $statement  Affected rows: $cnt");
@@ -632,13 +531,9 @@ sub insertRegistration
     foreach my $key (keys %{$regdata->{register}})
     {
         next if($key eq "guid" || $key eq "product" || $key eq "mirrors");
-        if($key eq "hostname")
-        {
-            $hostname = $regdata->{register}->{$key};
-        }
 
-        my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                                $dbh->quote($regdata->{register}->{guid}),
+        my $statement = sprintf("INSERT into MachineData (client_id, md_key, md_value) VALUES (%s, %s, %s)",
+                                $dbh->quote($clientid),
                                 $dbh->quote($key),
                                 $dbh->quote($regdata->{register}->{$key}));
         $r->log->info("STATEMENT: $statement");
@@ -655,8 +550,8 @@ sub insertRegistration
     {
         my $ph = @{$regdata->{register}->{product}}[$i];
 
-        my $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                                $dbh->quote($regdata->{register}->{guid}),
+        my $statement = sprintf("INSERT into MachineData (client_id, md_key, md_value) VALUES (%s, %s, %s)",
+                                $dbh->quote($clientid),
                                 $dbh->quote("product-name-".$list[$i]),
                                 $dbh->quote($ph->{name}));
         $r->log->info("STATEMENT: $statement");
@@ -667,8 +562,8 @@ sub insertRegistration
         {
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
-        $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                             $dbh->quote($regdata->{register}->{guid}),
+        $statement = sprintf("INSERT into MachineData (client_id, md_key, md_value) VALUES (%s, %s, %s)",
+                             $dbh->quote($clientid),
                              $dbh->quote("product-version-".$list[$i]),
                              $dbh->quote($ph->{version}));
         $r->log->info("STATEMENT: $statement");
@@ -679,8 +574,8 @@ sub insertRegistration
         {
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
-        $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                             $dbh->quote($regdata->{register}->{guid}),
+        $statement = sprintf("INSERT into MachineData (client_id, md_key, md_value) VALUES (%s, %s, %s)",
+                             $dbh->quote($clientid),
                              $dbh->quote("product-arch-".$list[$i]),
                              $dbh->quote($ph->{arch}));
         $r->log->info("STATEMENT: $statement");
@@ -691,8 +586,8 @@ sub insertRegistration
         {
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
-        $statement = sprintf("INSERT into MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
-                             $dbh->quote($regdata->{register}->{guid}),
+        $statement = sprintf("INSERT into MachineData (client_id, md_key, md_value) VALUES (%s, %s, %s)",
+                             $dbh->quote($clientid),
                              $dbh->quote("product-rel-".$list[$i]),
                              $dbh->quote($ph->{release}));
         $r->log->info("STATEMENT: $statement");
@@ -704,69 +599,7 @@ sub insertRegistration
             $r->log_error("DBERROR: ".$dbh->errstr);
         }
     }
-
-    #
-    # if we do not have the hostname, try to get the IP address
-    #
-    if($hostname eq "")
-    {
-        $hostname = $r->connection()->remote_host();
-        if(! defined $hostname || $hostname eq "")
-        {
-            $hostname = $r->connection()->remote_ip();
-        }
-    }
-
-    #
-    # update Clients table
-    #
-    my $aff = 0;
-    eval
-    {
-        my $sth = $dbh->prepare("UPDATE Clients SET HOSTNAME=?, TARGET=?, LASTCONTACT=?, NAMESPACE=?, SECRET=? WHERE GUID=?");
-        $sth->bind_param(1, $hostname);
-        $sth->bind_param(2, $target);
-        $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
-        $sth->bind_param(4, $namespace );
-        $sth->bind_param(5, $regdata->{register}->{secret});
-        $sth->bind_param(6, $regdata->{register}->{guid});
-        $aff = $sth->execute;
-
-        $r->log->info("STATEMENT: ".$sth->{Statement});
-    };
-    if ($@)
-    {
-        $r->log_error("DBERROR: ".$dbh->errstr);
-        $aff = 0;
-    }
-    if ($aff == 0)
-    {
-        # New registration; we need an insert
-        $statement = sprintf("INSERT INTO Clients (GUID, HOSTNAME, TARGET, NAMESPACE, SECRET, REGTYPE) VALUES (%s, %s, %s, %s, %s, 'SR')",
-                             $dbh->quote($regdata->{register}->{guid}),
-                             $dbh->quote($hostname),
-                             $dbh->quote($target),
-                             $dbh->quote($namespace),
-                             $dbh->quote($regdata->{register}->{secret}));
-        $r->log->info("STATEMENT: $statement");
-        eval
-        {
-            $aff = $dbh->do($statement);
-        };
-        if ($@)
-        {
-            $r->log_error("DBERROR: ".$dbh->errstr);
-            $aff = 0;
-        }
-    }
-
-    my $client = SMT::Client->new({ 'dbh' => $dbh });
-
-    if ( !  $client->insertPatchstatusJob( $regdata->{register}->{guid} ) )
-    {
-        $r->log_error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
-                              $regdata->{register}->{guid} )  );
-    }
+    $dbh->commit();
 
     return \@list;
 }
@@ -782,7 +615,8 @@ sub findTarget
     if(exists $regroot->{register}->{ostarget} && defined $regroot->{register}->{ostarget} &&
        $regroot->{register}->{ostarget} ne "")
     {
-        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($regroot->{register}->{ostarget})) ;
+        my $statement = sprintf("SELECT target FROM Targets WHERE os=%s",
+                                $dbh->quote($regroot->{register}->{ostarget})) ;
         $r->log->info("STATEMENT: $statement");
 
         my $target = $dbh->selectcol_arrayref($statement);
@@ -799,7 +633,8 @@ sub findTarget
         $targetString =~ s/^\s*"//;
         $targetString =~ s/"\s*$//;
 
-        my $statement = sprintf("SELECT TARGET from Targets WHERE OS=%s", $dbh->quote($targetString)) ;
+        my $statement = sprintf("SELECT target FROM Targets WHERE os=%s",
+                                $dbh->quote($targetString)) ;
         $r->log->info("STATEMENT: $statement");
 
         my $target = $dbh->selectcol_arrayref($statement);
@@ -832,23 +667,14 @@ sub findCatalogs
 
     # get catalog values (only for the once we DOMIRROR)
 
-    $statement  = "SELECT c.ID, c.NAME, c.DESCRIPTION, c.TARGET, c.LOCALPATH, ";
-    $statement .= "c.CATALOGTYPE, c.STAGING, pc.OPTIONAL, c.AUTOREFRESH ";
-    $statement .= "from Catalogs c, ProductCatalogs pc WHERE ";
-    $statement .= "c.DOMIRROR='Y' AND c.ID=pc.CATALOGID ";
-    if($target)
-    {
-        $statement .= sprintf("AND (c.TARGET IS NULL OR c.TARGET=%s)", $dbh->quote($target));
-    } # if we do not have the target we use all catalogs assigned to a product
-    if(@{$productids} > 1)
-    {
-        $statement .= "AND pc.PRODUCTID IN (".join(",", @q_pids).") ";
-    }
-    elsif(@{$productids} == 1)
-    {
-        $statement .= "AND pc.PRODUCTID = ".$q_pids[0]." ";
-    }
-    else
+    $statement  = "SELECT r.id, r.name, r.description, r.target, r.localpath,
+                          r.repotype, pr.optional, r.autorefresh
+                     FROM Repositories r,
+                     JOIN ProductRepositories pr ON r.id = pr.repository_id
+                    WHERE r.domirror='Y' ";
+    $statement .= sprintf("AND (c.TARGET IS NULL OR c.TARGET=%s)", $dbh->quote($target)) if($target);
+    $statement .= "AND pc.PRODUCTID IN (".join(",", @q_pids).") " if(@{$productids} > 0);
+    if(@{$productids} == 0)
     {
         # This should not happen
         $r->log_error("No productids found");
@@ -870,21 +696,23 @@ sub getRegistrationStatus
     my $dbh  = shift;
     my $guid = shift;
 
-    my $statement = sprintf("SELECT r.GUID,
-                                    r.NCCREGERROR,
-                                    p.PRODUCT,
-                                    p.VERSION,
-                                    p.REL,
-                                    p.ARCH,
-                                    p.FRIENDLY,
-                                    s.SUBSTATUS STATUS,
-                                    s.SUBTYPE TYPE,
-                                    s.SUBENDDATE ENDDATE
-                               FROM Registration r
-                               JOIN Products p ON r.PRODUCTID = p.ID
-                          LEFT JOIN ClientSubscriptions cs ON cs.GUID = r.GUID
-                          LEFT JOIN Subscriptions s ON s.SUBID = cs.SUBID
-                              WHERE r.GUID = %s", $dbh->quote($guid));
+    my $statement = sprintf("SELECT c.id ID,
+                                    c.guid GUID,
+                                    r.sccregerror SCCREGERROR,
+                                    p.product PRODUCT,
+                                    p.version VERSION,
+                                    p.rel REL,
+                                    p.arch ARCH,
+                                    p.friendly FRIENDLY,
+                                    s.substatus STATUS,
+                                    s.subtype TYPE,
+                                    s.subenddate ENDDATE
+                               FROM Clients c
+                               JOIN Registrations r ON r.client_id = c.id
+                               JOIN Products p ON r.product_id = p.id
+                          LEFT JOIN ClientSubscriptions cs ON cs.client_id = c.id
+                          LEFT JOIN Subscriptions s ON s.id = cs.subscription_id
+                              WHERE c.guid = %s", $dbh->quote($guid));
     my $status = $dbh->selectall_arrayref( $statement, {Slice=>{}});
     foreach my $prodstatusentry (@{$status})
     {
@@ -892,7 +720,7 @@ sub getRegistrationStatus
         $prodstatusentry->{"RESULT"}    = "success";
         $prodstatusentry->{"ERRORCODE"} = "OK";
         $prodstatusentry->{"MESSAGE"}   = "Ok.";
-        if ($prodstatusentry->{"NCCREGERROR"})
+        if ($prodstatusentry->{"SCCREGERROR"})
         {
             $prodstatusentry->{"RESULT"}    = "error";
             $prodstatusentry->{"ERRORCODE"} = "ERR_LOCKED";
@@ -926,7 +754,6 @@ sub buildZmdConfig
     my $guid       = shift;
     my $catalogs   = shift;
     my $status     = shift;
-    my $namespace  = shift || '';
 
     my $cfg = undef;
 
@@ -969,7 +796,7 @@ sub buildZmdConfig
     my $nuCatCount = 0;
     foreach my $cat (keys %{$catalogs})
     {
-        $nuCatCount++ if(lc($catalogs->{$cat}->{CATALOGTYPE}) eq "nu");
+        $nuCatCount++ if(lc($catalogs->{$cat}->{repotype}) eq "nu");
     }
 
     my $output = "";
@@ -997,26 +824,17 @@ sub buildZmdConfig
 
         foreach my $cat (keys %{$catalogs})
         {
-            next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "y");
-            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu" || SMT::Utils::isRES($guid));
-            if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
-               $catalogs->{$cat}->{LOCALPATH} eq "")
+            next if(lc($catalogs->{$cat}->{optional}) eq "y");
+            next if(lc($catalogs->{$cat}->{repotype}) ne "nu" || SMT::Utils::isRES($guid));
+            if(! exists $catalogs->{$cat}->{localpath} || ! $catalogs->{$cat}->{localpath})
             {
                 $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
                 next;
             }
 
             my $catalogPath = "repo/";
-            my $catalogName = $catalogs->{$cat}->{NAME};
-            if($namespace ne "" && uc($catalogs->{$cat}->{STAGING}) eq "Y")
-            {
-                $catalogPath = SMT::Utils::cleanPath( $catalogPath, $namespace );
-                if($aliasChange)
-                {
-                    $catalogName .= ":$namespace";
-                }
-            }
-            $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{LOCALPATH} );
+            my $catalogName = $catalogs->{$cat}->{name};
+            $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{localpath} );
             if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $catalogPath ) )
             {
                 # we print only a warning in the log, but return this repos.
@@ -1040,23 +858,17 @@ sub buildZmdConfig
 
     foreach my $cat (keys %{$catalogs})
     {
-        next if (not ( lc($catalogs->{$cat}->{CATALOGTYPE}) eq "zypp" || SMT::Utils::isRES($guid)) );
+        next if (not ( lc($catalogs->{$cat}->{repotype}) eq "zypp" || SMT::Utils::isRES($guid)) );
 
-        if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
-           $catalogs->{$cat}->{LOCALPATH} eq "")
+        if(! exists $catalogs->{$cat}->{localpath} || !$catalogs->{$cat}->{localpath})
         {
             $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
             next;
         }
 
         my $catalogPath = SMT::Utils::cleanPath( "repo/" );
-        my $catalogName = $catalogs->{$cat}->{NAME};
-        if($namespace ne "" && uc($catalogs->{$cat}->{STAGING}) eq "Y")
-        {
-            $catalogPath = SMT::Utils::cleanPath( $catalogPath, $namespace );
-            $catalogName = $catalogs->{$cat}->{NAME}.":$namespace";
-        }
-        $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{LOCALPATH} );
+        my $catalogName = $catalogs->{$cat}->{name};
+        $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{localpath} );
         if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $catalogPath) )
         {
             # we print only a warning in the log, but return this repos.
@@ -1073,8 +885,8 @@ sub buildZmdConfig
 
         $writer->startTag("service",
                           "id"          => $catalogName,
-                          "description" => $catalogs->{$cat}->{DESCRIPTION},
-                          "type"        => $catalogs->{$cat}->{CATALOGTYPE});
+                          "description" => $catalogs->{$cat}->{description},
+                          "type"        => $catalogs->{$cat}->{repotype});
         $writer->startTag("param", "id" => "url");
         $writer->characters($catalogURL);
         $writer->endTag("param");
@@ -1129,24 +941,25 @@ sub findColumnsForProducts
 
     foreach my $phash (@{$parray})
     {
-        my $statement = sprintf("SELECT %s, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ", $dbh->quote_identifier($column));
+        my $statement = sprintf("SELECT %s, product, version, rel, arch FROM Products WHERE ",
+                                 $dbh->quote_identifier($column));
 
-        $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($phash->{name}));
-
-        $statement .= " AND (";
-        $statement .= "VERSIONLOWER=".$dbh->quote(lc($phash->{version}))." OR " if(defined $phash->{version} && $phash->{version} ne "");
-        $statement .= "VERSIONLOWER IS NULL)";
+        $statement .= "product = ".$dbh->quote($phash->{name});
 
         $statement .= " AND (";
-        $statement .= "RELLOWER=".$dbh->quote(lc($phash->{release}))." OR " if(defined $phash->{release} && $phash->{release} ne "");
-        $statement .= "RELLOWER IS NULL)";
+        $statement .= "version=".$dbh->quote($phash->{version})." OR " if(defined $phash->{version} && $phash->{version} ne "");
+        $statement .= "version = '')";
 
         $statement .= " AND (";
-        $statement .= "ARCHLOWER=".$dbh->quote(lc($phash->{arch}))." OR " if(defined $phash->{arch} && $phash->{arch} ne "");
-        $statement .= "ARCHLOWER IS NULL)";
+        $statement .= "rel=".$dbh->quote($phash->{release})." OR " if(defined $phash->{release} && $phash->{release} ne "");
+        $statement .= "rel = '')";
+
+        $statement .= " AND (";
+        $statement .= "arch=".$dbh->quote($phash->{arch})." OR " if($phash->{arch});
+        $statement .= "arch = '')";
 
         # order by name,version,release,arch with NULL values at the end (bnc#659912)
-        $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
+        $statement .= " ORDER BY product, version DESC, rel DESC, arch DESC";
 
         $r->log->info( "STATEMENT: $statement");
 
@@ -1167,9 +980,9 @@ sub findColumnsForProducts
             # Do we have an exact match?
             foreach my $prod (@$pl)
             {
-                if(lc($prod->{VERSIONLOWER}) eq lc($phash->{version}) &&
-                   lc($prod->{ARCHLOWER}) eq  lc($phash->{arch})&&
-                   lc($prod->{RELLOWER}) eq lc($phash->{release}))
+                if($prod->{version} eq $phash->{version} &&
+                   $prod->{arch} eq  $phash->{arch}&&
+                   $prod->{rel} eq $phash->{release})
                 {
                     # Exact match found.
                     push @list, $prod->{$column};
@@ -1248,52 +1061,6 @@ sub http_fail
 ###############################################################################
 
 
-sub prod_handle_start_tag
-{
-    my $data = shift;
-    my( $expat, $element, %attrs ) = @_;
-
-    if(lc($element) eq "product")
-    {
-        $data->{STATE} = 1;
-        foreach (keys %attrs)
-        {
-            $data->{CURRENT}->{lc($_)} = $attrs{$_};
-        }
-    }
-}
-
-sub prod_handle_char
-{
-    my $data = shift;
-    my( $expat, $string) = @_;
-
-    if($data->{STATE} == 1)
-    {
-        chomp($string);
-        if(!exists $data->{CURRENT}->{name} || !defined $data->{CURRENT}->{name})
-        {
-            $data->{CURRENT}->{name} = $string;
-        }
-        else
-        {
-            $data->{CURRENT}->{name} .= $string;
-        }
-    }
-}
-
-sub prod_handle_end_tag
-{
-    my $data = shift;
-    my( $expat, $element) = @_;
-
-    if($data->{STATE} == 1)
-    {
-        push @{$data->{PRODUCTS}}, $data->{CURRENT};
-        $data->{CURRENT} = undef;
-        $data->{STATE} = 0;
-    }
-}
 
 sub reg_handle_start_tag
 {

@@ -4,7 +4,7 @@ package SMT::Repositories;
 use strict;
 use warnings;
 use XML::Simple;
-use DBI qw(:sql_types);
+use SMT::DB;
 use Date::Parse;
 
 use SMT::Utils;
@@ -97,27 +97,22 @@ REPOSITORIES
 
 use constant {
     # Repository can be mirrored
-    MIRRORABLE		=> 'MIRRORABLE',
+    MIRRORABLE		=> 'mirrorable',
     MIRRORABLE_TRUE	=> 'Y',
     MIRRORABLE_FALSE	=> 'N',
 
     # Repository is being mirrored
-    MIRRORING		=> 'DOMIRROR',
+    MIRRORING		=> 'domirror',
     MIRRORING_TRUE	=> 'Y',
     MIRRORING_FALSE	=> 'N',
 
-    LAST_MIRROR         => 'LAST_MIRROR',
+    LAST_MIRROR         => 'last_mirror',
 
-    # Repository has Staging feature enabled
-    STAGING		=> 'STAGING',
-    STAGING_TRUE	=> 'Y',
-    STAGING_FALSE	=> 'N',
+    NAME                => 'name',
+    TARGET              => 'target',
 
-    NAME                => 'NAME',
-    TARGET              => 'TARGET',
-
-    REPOSITORYID	=> 'ID',
-    REPOSITORIES	=> 'Catalogs',
+    REPOSITORYID	=> 'id',
+    REPOSITORIES	=> 'Repositories',
 
     VBLEVEL		=> LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2,
 };
@@ -232,11 +227,11 @@ sub getAllRepositories ($$) {
 	    $filter_key.'='.$self->{'dbh'}->quote($filter->{$filter_key});
     }
 
-    my $sth = $self->{'dbh'}->prepare ('SELECT * FROM Catalogs'.
+    my $sth = $self->{'dbh'}->prepare ('SELECT * FROM Repositories'.
 	# Use the 'WHERE' part if defined
 	(length ($sql_filter) > 0 ? ' WHERE '.$sql_filter : '') .
         # always order by name and target
-	' ORDER BY NAME, TARGET'
+	' ORDER BY name, target'
     );
 
     $sth->execute();
@@ -247,10 +242,10 @@ sub getAllRepositories ($$) {
     my $rownr = 1;
     while ($row = $sth->fetchrow_hashref())
     {
-	$row->{'TARGET'} = '' if (not defined $row->{'TARGET'});
-	$row->{'LAST_MIRROR'} = '' if (not defined $row->{'LAST_MIRROR'});
+	$row->{'target'} = '' if (not defined $row->{'target'});
+	$row->{'last_mirror'} = '' if (not defined $row->{'last_mirror'});
 	$row->{rownr} = $rownr;
-	$ret->{$row->{'ID'}} = $row;
+	$ret->{$row->{'id'}} = $row;
 	$rownr++;
     }
 
@@ -313,8 +308,8 @@ sub getRepositoryPath ($$) {
     return undef if (not defined $repo);
 
     my $repo_local_path = '';
-    if (defined $repo->{'LOCALPATH'}) {
-	$repo_local_path = $repo->{'LOCALPATH'};
+    if (defined $repo->{'localpath'}) {
+	$repo_local_path = $repo->{'localpath'};
     } else {
 	$self->newErrorMessage ("Repository ".$repository." matches but no 'LOCALPATH' is defined");
 	return undef;
@@ -340,98 +335,14 @@ sub getRepositoryUrl ($$) {
     return undef if (not defined $repo);
 
     my $repo_url = '';
-    if (defined $repo->{'EXTURL'}) {
-        $repo_url = $repo->{'EXTURL'};
+    if (defined $repo->{'exturl'}) {
+        $repo_url = $repo->{'exturl'};
     } else {
         $self->newErrorMessage ("Repository ".$repository." matches but no 'EXTURL' is defined");
         return undef;
     }
 
     return $repo_url;
-}
-
-=item filteringAllowed($repositoryid, $basepath)
-
-Whether filtering can be done on given repository.
-
-TODO: move to SMT::Common::Repos
-
-=cut
-sub filteringAllowed($$$)
-{
-    my ($self, $repository, $basepath) = @_;
-
-    if (not
-        defined $repository && $repository && defined $basepath && $basepath)
-    {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-            "Repository ID or local base path parameter is not defined.", 0);
-        return undef;
-    }
-
-    my $repo = $self->getRepository($repository);
-    if (not defined $repo)
-    {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-            'Cannot get repository data for repository ' . $repository, 0);
-	return undef;
-    }
-
-    my $relrepopath = $repo->{'LOCALPATH'};
-    if (not defined $relrepopath && $relrepopath)
-    {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-            'LOCALPATH is not defined for repository '. $repo->{'NAME'} .
-            ' ID ' . $repository, 0);
-        return undef;
-    }
-
-    my $absrepopath = SMT::Utils::cleanPath($basepath, 'repo', $relrepopath);
-    my $p = SMT::Parser::RpmMdRepomd->new();
-    $p->resource($absrepopath);
-    my $repomd = $p->parse("repodata/repomd.xml");
-
-    return 1 if (
-        -d $absrepopath &&
-        $repomd &&
-        exists $repomd->{data}->{updateinfo}->{location}->{href} &&
-        $repomd->{data}->{updateinfo}->{location}->{href} &&
-        -e $absrepopath.'/'.$repomd->{data}->{updateinfo}->{location}->{href});
-
-    $absrepopath = SMT::Utils::cleanPath($basepath, 'repo/full', $relrepopath);
-    $p->resource($absrepopath);
-    $repomd = $p->parse("repodata/repomd.xml");
-
-    return 1 if (
-        -d $absrepopath &&
-        $repomd &&
-        exists $repomd->{data}->{updateinfo}->{location}->{href} &&
-        $repomd->{data}->{updateinfo}->{location}->{href} &&
-        -e $absrepopath.'/'.$repomd->{data}->{updateinfo}->{location}->{href});
-
-    printLog($self->{LOG}, VBLEVEL, LOG_DEBUG,
-        "filteringAllowed(): updateinfo.xml.gz not found in local" .
-        " repo copies, will check remote URI...", 0);
-
-    # if local repo dirs (production or full) do not exist or can't be
-    # determined, check the remote repo URL
-
-    my $url = $repo->{'EXTURL'};
-    if (defined $url && $url)
-    {
-        my $useragent = SMT::Utils::createUserAgent(
-                            log => $self->{LOG}, vblevel => VBLEVEL);
-        return (grep (($_ eq "updateinfo"), SMT::Utils::getFile($useragent, $url . '/repodata/repomd.xml'))?1:0);
-    }
-    else
-    {
-        printLog($self->{LOG}, VBLEVEL, LOG_ERROR,
-            'EXTURL is not defined for repository '. $repo->{'NAME'} .
-            ' ID ' . $repository, 0);
-        return undef;
-    }
-
-    return 0;
 }
 
 =item updateLastMirror($repoid)
@@ -455,108 +366,15 @@ sub updateLastMirror ($$)
 	return 0;
     };
 
-    $self->{'dbh'}->do('UPDATE Catalogs set LAST_MIRROR=now() where ID='.$self->{'dbh'}->quote($repositoryid));
-
+    $self->{'dbh'}->do('UPDATE Repositories set last_mirror=CURRENT_TIMESTAMP where id='.$self->{'dbh'}->quote($repositoryid));
+    $self->{'dbh'}->commit();
     return 1;
 }
 
-=item getStagingRepoPath($repoid, $basepath, $prefix)
-
-Returns absolute path to repository using specified $prefix.
-
-For internal use.
-
-TODO: move to SMT::Common::Repos
-
-=cut
-sub getStagingRepoPath($$$$)
-{
-    my ($self, $repoid, $basepath, $prefix) = @_;
-
-    $basepath = '' if (not defined $basepath);
-
-    my $repopath = $self->getRepositoryPath($repoid);
-    return '' if (! defined $repopath || $repopath eq '');
-
-    return SMT::Utils::cleanPath($basepath, 'repo', $prefix, $repopath);
-}
-
-=item getProductionRepoPath($repoid [, $basepath, $staginggroup])
-
-Returns path to production repository. This path is where
-the repository from which clients will get updates is meant to reside.
-
-If $basepath is specified, it is prependend to the resulting path, otherwise
-the portion of the path relative to a base path is returned. The returned path
-always starts with a slash.
-
- $repohandler = SMT::Repositories::new($dbh);
- $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
- $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
- $thepath = $repohandler->getProductionRepoPath($repoid, $basepath);
-
-TODO: move to SMT::Common::Repos
-
-=cut
-
-sub getProductionRepoPath($$$$)
-{
-    getStagingRepoPath(shift, shift, shift, _getGroupPath(shift, 'production'));
-}
-
-=item getFullRepoPath($repoid [, $basepath, $staginggroup])
-
-Returns path to full (unfiltered) repository. This is the path where
-the repository is mirrored, without any filtering. This repository must not be
-exported to the clients. Testing and production repositories are generated out
-of this repository.
-
-If $basepath is specified, it is prependend to the resulting path, otherwise
-the portion of the path relative to a base path is returned. The returned path
-always starts with a slash.
-
- $repohandler = SMT::Repositories::new($dbh);
- $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
- $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
- $thepath = getFullRepoPath($repoid, $basepath);
-
-TODO: move to SMT::Common::Repos
-
-=cut
-
-sub getFullRepoPath($$$$)
-{
-    getStagingRepoPath(shift, shift, shift, _getGroupPath(shift, 'full'));
-}
-
-=item getTestingRepoPath($repoid [, $basepath, $staginggroup])
-
-Returns path to testing repository. This is the path where
-the repository is mirrored, eventually with filters applied, for testing.
-This repository can be exported to clients only using a special registration
-option.
-
-If $basepath is specified, it is prependend to the resulting path, otherwise
-the portion of the path relative to a base path is returned. The returned path
-always starts with a slash.
-
- $repohandler = SMT::Repositories::new($dbh);
- $basepath = '/my/base/path' # or $cfg->val("LOCAL", "MirrorTo")
- $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
- $thepath = getTestingRepoPath($repoid, $basepath);
-
-TODO: move to SMT::Common::Repos
-
-=cut
-
-sub getTestingRepoPath($$$$)
-{
-    getStagingRepoPath(shift, shift, shift, _getGroupPath(shift, 'testing'));
-}
 
 =item changeRepoStatus ($arg)
 
-Adjusts repository status, such as 'mirroring' or 'staging'.
+Adjusts repository status, such as 'mirroring'.
 
  $repohandler = SMT::Repositories::new($dbh);
  $repoid = '86fed7f9cee6d69dddabd721436faa7c63b8b403';
@@ -574,9 +392,6 @@ repositoryid
 mirroring
  Defines whether a repository should be mirrored
 
-staging
- Defines whether a repository should support a staging feature
-
 =back
 
 =cut
@@ -593,10 +408,10 @@ sub changeRepoStatus ($$)
 	return 0;
     }
 
-    if (! defined $arg->{'mirroring'} && ! defined $arg->{'staging'})
+    if (! defined $arg->{'mirroring'})
     {
 	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_WARN,
-	    __("Neither 'mirroring' nor 'staging' parameter is defined"));
+	    __("'mirroring' parameter is not defined"));
 	return 1;
     }
 
@@ -611,12 +426,6 @@ sub changeRepoStatus ($$)
 	$where_plus .= ' AND '.MIRRORABLE.'='.$self->{'dbh'}->quote(MIRRORABLE_TRUE);
     }
 
-    # staging parameter
-    if (defined $arg->{'staging'}) {
-	$update_columns .= ' '.STAGING.'='.$self->{'dbh'}->quote($arg->{'staging'} ?
-	    STAGING_TRUE:STAGING_FALSE);
-    }
-
     my $cmd = 'UPDATE '.REPOSITORIES.' '.
 	'SET '.$update_columns.' '.
 	'WHERE '.REPOSITORYID.'='.$self->{'dbh'}->quote($arg->{'repositoryid'}).' '.
@@ -624,161 +433,10 @@ sub changeRepoStatus ($$)
 
     my $sth = $self->{'dbh'}->prepare($cmd);
     $sth->execute();
+    $self->{'dbh'}->commit();
 
     return ($sth->rows() > 0);
 }
-
-=item isSnapshotUpToDate($args)
-
-=over
-
-=item Required parameters:
-
-repositoryid
- Identifies a repository
-
-basepath
- Defines the the base SMT path
-
-type
- Defines a subrepository type ('testing' or 'production')
-
-=back
-
-=cut
-
-sub isSnapshotUpToDate ($)
-{
-    my $self = shift;
-    my $arg = shift || {};
-
-    # Checking all the parameters
-    if (! defined $arg->{'repositoryid'})
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"));
-	return undef;
-    }
-
-    if (! defined $arg->{'basepath'})
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'basepath' is required"));
-	return undef;
-    }
-
-    if (! defined $arg->{'type'})
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'type' is required"));
-	return undef;
-    }
-
-    # Define the paths to full and selected subrepositories
-    my $full_repopath = $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
-    my $subrepo_path = undef;
-
-    # Testing subrepository is always compared with the full (mirrored) repository
-    if ($arg->{'type'} eq 'testing')
-    {
-	$subrepo_path = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
-    }
-    # Production subrepository is compared either with the testing or the full repository
-    elsif ($arg->{'type'} eq 'production')
-    {
-	# Checking whether the testing repository exists
-	# See BNC #510314
-	my $fullrepo_tmp = $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
-	my $fullrepo_tmp_status = SMT::Mirror::Utils::getStatus($fullrepo_tmp);
-
-	# Will be compared with the testing repository
-	if (defined $fullrepo_tmp_status && $fullrepo_tmp_status > 0)
-	{
-	    $full_repopath = $fullrepo_tmp;
-	}
-
-	$subrepo_path = $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
-    }
-    else
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, sprintf (__("Unknown type %s"), $arg->{'type'}));
-	return undef;
-    }
-
-    my $timestamp_full = SMT::Mirror::Utils::getStatus($full_repopath);
-    my $timestamp_subrepo = SMT::Mirror::Utils::getStatus($subrepo_path);
-
-    if (! defined $timestamp_full || $timestamp_full eq '')
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_WARN, sprintf (__("Cannot get repository status %s"), $full_repopath));
-	return undef;
-    }
-
-    if (! defined $timestamp_subrepo || $timestamp_subrepo eq '')
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, sprintf (__("Cannot get repository status %s"), $subrepo_path));
-	return undef;
-    }
-
-    # $timestamp_full > $timestamp_subrepo -> full subrepo is newer
-    # $timestamp_full < $timestamp_subrepo -> full subrepo is older (nonsense)
-    # $timestamp_full = $timestamp_subrepo -> the same age
-    return ($timestamp_subrepo == $timestamp_full);
-}
-
-=item getRepositoryDetails($args)
-
-Returns hash of details about snapshots for a repository:
-
- 'full' - Timestamp of last mirroring
- 'testing' - Timestamp of last snapshot creation
- 'production' - Timestamp of last snapshot creation
-
-For each key an 'undef' is returned in case a particular snapshot
-does not exist.
-
-=over
-
-=item Required parameters:
-
-repositoryid
- Identifies a repository
-
-basepath
- Defines the the base SMT path
-
-=back
-
-=cut
-
-sub getRepositoryDetails ($)
-{
-    my $self = shift;
-    my $arg = shift || {};
-
-    # Checking all the parameters
-    if (! defined $arg->{'repositoryid'})
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'repositoryid' is required"));
-	return undef;
-    }
-
-    if (! defined $arg->{'basepath'})
-    {
-	SMT::Utils::printLog($self->{LOG}, VBLEVEL, LOG_ERROR, __("Parameter 'basepath' is required"));
-	return undef;
-    }
-
-    my $full_rp		= $self->getFullRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
-    my $testing_rp	= $self->getTestingRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
-    my $production_rp	= $self->getProductionRepoPath($arg->{'repositoryid'}, $arg->{'basepath'}, $arg->{'staginggroup'});
-
-    my $ret = {
-	'full'		=> SMT::Mirror::Utils::getStatus($full_rp),
-	'testing'	=> SMT::Mirror::Utils::getStatus($testing_rp),
-	'production'	=> SMT::Mirror::Utils::getStatus($production_rp),
-    };
-
-    return $ret;
-}
-
 
 =item getAllReposAsXML($dbh)
 Returns XML for /repos REST GET request.
@@ -788,7 +446,7 @@ sub getAllReposAsXML
 {
     my $dbh = shift;
 
-    my $sql = 'select * from Catalogs';
+    my $sql = 'select * from Repositories';
     my $sth = $dbh->prepare($sql);
     $sth->execute();
 
@@ -797,10 +455,10 @@ sub getAllReposAsXML
     {
         # <repo id="%s" name="%s" target"%s" mirrored="%s"/>
         push @{$data->{repo}}, {
-            id => $p->{ID},
-            name => $p->{NAME},
-            target => $p->{TARGET},
-            mirrored => str2time($p->{LAST_MIRROR})
+            id => $p->{id},
+            name => $p->{name},
+            target => $p->{target},
+            mirrored => str2time($p->{last_mirror})
             };
     }
     return XMLout($data,
@@ -817,23 +475,23 @@ sub getProductReposAsXML
 {
     my ($dbh, $productid) = @_;
 
-    my $sql = 'select c.*, pc.OPTIONAL from Catalogs as c, ProductCatalogs as pc'
-        . ' where c.id = pc.catalogid and pc.productid = ?;';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $productid, SQL_INTEGER);
-    $sth->execute();
+    my $sth = $dbh->prepare('SELECT r.*, pr.optional
+                               FROM Repositories r
+                               JOIN ProductRepositories pr ON r.id = pr.repository_id
+                              WHERE pr.product_id = :pid');
+    $sth->execute_h(pid => $productid);
 
     my $data = { repo => []};
     while (my $p = $sth->fetchrow_hashref())
     {
         # <repo id="%s" name="%s" target"%s" mirrored="%s" optional="%s"/>
         push @{$data->{repo}}, {
-            id => $p->{ID},
-            name => $p->{NAME},
-            target => $p->{TARGET},
-            mirrored => str2time($p->{LAST_MIRROR}),
-            optional => $p->{OPTIONAL}
-            };
+            id => $p->{id},
+            name => $p->{name},
+            target => $p->{target},
+            mirrored => str2time($p->{last_mirror}),
+            optional => $p->{optional}
+        };
     }
     return XMLout($data,
         rootname => 'repos',
@@ -849,16 +507,15 @@ sub getRepositoryAsXML
 {
     my ($dbh, $repoid) = @_;
 
-    my $sql = 'select * from Catalogs where id = ?;';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $repoid, SQL_INTEGER);
-    $sth->execute();
+    my $sql = ;
+    my $sth = $dbh->prepare('SELECT * FROM Repositories WHERE id = :rid;');
+    $sth->execute_h(rid => $repoid);
 
     my $r = $sth->fetchrow_hashref();
     return undef if (not $r);
 
     # read smt.conf to get info base MirrorTo path
-    my $localpath = '/srv/www/htdocs/repo/' . $r->{LOCALPATH};
+    my $localpath = SMT::Utils::cleanPath('/srv/www/htdocs/repo/', $r->{localpath});
     eval
     {
         my $cfg = SMT::Utils::getSMTConfig();
@@ -867,7 +524,7 @@ sub getRepositoryAsXML
         $localpath = SMT::Utils::cleanPath(
             $cfg->val('LOCAL', 'MirrorTo', '/srv/www/htdocs'),
             'repo',
-            $r->{LOCALPATH});
+            $r->{localpath});
     };
     # don't have access to logger here
     #log_error("Cannot read the SMT configuration file: ".$@)
@@ -881,38 +538,18 @@ sub getRepositoryAsXML
     #</repo>
 
     my $xdata = {
-        id => $r->{ID},
-        name => $r->{NAME},
-        target => $r->{TARGET},
-        type => $r->{CATALOGTYPE},
-        description => [$r->{DESCRIPTION}],
-        url => [$r->{EXTURL}],
-        mirrored => [{date => str2time($r->{LAST_MIRROR})}],
+        id => $r->{id},
+        name => $r->{name},
+        target => $r->{target},
+        type => $r->{repotype},
+        description => [$r->{description}],
+        url => [$r->{exturl}],
+        mirrored => [{date => str2time($r->{last_mirror})}],
         localpath => [ $localpath ]
     };
     return XMLout($xdata,
         rootname => 'repo',
         xmldecl => '<?xml version="1.0" encoding="UTF-8" ?>');
-}
-
-sub _getGroupPath($$)
-{
-    my $group = shift || "default";
-    my $type = shift;
-    my $dbh = SMT::Utils::db_connect();
-    my $testingdir = "testing";
-    my $productiondir = "";
-
-    ($testingdir, $productiondir) = SMT::Utils::getStagingGroupPaths($dbh, $group);
-    if(! $testingdir)
-    {
-        $testingdir = "testing";
-        $productiondir = "";
-    }
-
-    return $testingdir if($type eq "testing");
-    return $productiondir if($type eq "production");
-    return "full" if($type eq "full");
 }
 
 =back

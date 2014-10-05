@@ -2,7 +2,7 @@ package SMT::Patch;
 
 use strict;
 use warnings;
-use DBI qw(:sql_types);
+use SMT::DB;
 use Date::Parse;
 use XML::Simple;
 
@@ -296,10 +296,8 @@ sub findById
 {
     my ($dbh, $id) = @_;
 
-    my $sql = "select * from Patches where id = ?;";
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $id, SQL_INTEGER);
-    $sth->execute();
+    my $sth = $dbh->prepare("SELECT * FROM Patches WHERE id = :id");
+    $sth->execute_h(id => $id);
 
     my $pdata = $sth->fetchrow_hashref();
     return undef if (not $pdata);
@@ -325,10 +323,8 @@ sub findByRepoId
 {
     my ($dbh, $repoid) = @_;
 
-    my $sql = 'select * from Patches where catalogid = ?';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $repoid, SQL_INTEGER);
-    $sth->execute();
+    my $sth = $dbh->prepare('SELECT * FROM Patches WHERE repository_id = :id');
+    $sth->execute_h(id => repoid);
 
     my $patches = {};
 
@@ -361,34 +357,41 @@ sub save
 {
     my ($self, $dbh) = @_;
 
-    my $sql;
+    my $sth;
     if ($self->dbId())
     {
-        $sql = 'update Patches set name=?, version=?, category=?, summary=?,'
-            . ' description=?, reldate=?, catalogid=?'
-            . ' where id=?';
+        $sth = $dbh->prepare('UPDATE Patches
+                                 SET name=:name, version=:version, category=:cat,
+                                     summary=:sum, description=:desc, reldate=:rdate,
+                                     repository_id=:rid
+                               WHERE id=:ptid');
     }
     else
     {
-        $sql = 'insert into Patches'
-            . ' (name, version, category, summary, description, reldate, catalogid)'
-            . ' values (?,?,?,?,?,?,?)';
+        $self->dbId($dbh->sequence_nextval('patches_id_seq'));
+        $sth = $dbh->prepare('INSERT INTO Patches
+                                          (id, name, version, category, summary,
+                                           description, reldate, repository_id)
+                                   VALUES (:ptid, :name, :version, :cat, :sum,
+                                           :desc, :rdate, :rid)');
     }
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $self->name(), SQL_VARCHAR);
-    $sth->bind_param(2, $self->version(), SQL_VARCHAR);
-    $sth->bind_param(3, $self->categoryAsInt(), SQL_INTEGER);
-    $sth->bind_param(4, $self->summary(), SQL_VARCHAR);
+    $sth->execute_h(ptid => $self->dbId(), name => $self->name(), version => $self->version(),
+                    cat => $self->categoryAsInt(), sum => $self->summary(),
+                    desc => $self->description(),
+                    rdate => POSIX::strftime("%Y-%m-%d %H:%M", localtime($self->releaseDate())),
+                    rid => $self->repoId());
+    # FIXME: make a commit at a central place ?
+    $dbh->commit();
+    #$sth->bind_param(1, $self->name(), SQL_VARCHAR);
+    #$sth->bind_param(2, $self->version(), SQL_VARCHAR);
+    #$sth->bind_param(3, $self->categoryAsInt(), SQL_INTEGER);
+    #$sth->bind_param(4, $self->summary(), SQL_VARCHAR);
     # bnc#723571 - Description in the DB is only a varchar(1024)
     #              So it does not make sense to put more into it.
-    $sth->bind_param(5, substr($self->description(), 0, 1024), SQL_VARCHAR);
-    $sth->bind_param(6, POSIX::strftime("%Y-%m-%d %H:%M", localtime($self->releaseDate())), SQL_TIMESTAMP);
-    $sth->bind_param(7, $self->repoId(), SQL_INTEGER);
-    $sth->bind_param(8, $self->dbId(), SQL_INTEGER) if ($self->dbId());
-    $sth->execute(); # FIXME wrap in eval
-
-    $self->dbId($dbh->last_insert_id(undef, undef, undef, undef))
-        if ( not $self->dbId());
+    #$sth->bind_param(5, substr($self->description(), 0, 1024), SQL_VARCHAR);
+    #$sth->bind_param(6, POSIX::strftime("%Y-%m-%d %H:%M", localtime($self->releaseDate())), SQL_TIMESTAMP);
+    #$sth->bind_param(7, $self->repoId(), SQL_INTEGER);
+    #$sth->bind_param(8, $self->dbId(), SQL_INTEGER) if ($self->dbId());
 
     # load old packages
     my $oldpkgs = SMT::Package::findByPatchId($dbh, $self->dbId());
@@ -429,10 +432,10 @@ sub delete
     foreach my $ref (values %{$self->references()}) { $ref->delete($dbh); }
     foreach my $pkg (values %{$self->packages()}  ) { $pkg->delete($dbh); }
 
-    my $sql = 'delete from Patches where id=?';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $self->dbId(), SQL_INTEGER);
-    $sth->execute(); # FIXME wrap in eval
+    my $sth = $dbh->prepare('DELETE FROM Patches WHERE id=:id');
+    $sth->execute_h(id => $self->dbId());
+    # FIXME: make a commit at a central place ?
+    $dbh->commit();
 }
 
 

@@ -25,7 +25,7 @@ use SMT::Client;
 use SMT::Product;
 use SMT::Patch;
 use SMT::Repositories;
-use DBI qw(:sql_types);
+use SMT::DB;
 use Data::Dumper;
 
 #

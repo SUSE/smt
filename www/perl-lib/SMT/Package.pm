@@ -2,7 +2,7 @@ package SMT::Package;
 
 use strict;
 use warnings;
-use DBI qw(:sql_types);
+use SMT::DB;
 
 sub new
 {
@@ -136,6 +136,7 @@ sub NEVRA
 {
     my ($self, $separator) = @_;
 
+    # version or release can be "0"
     return undef if (not ($self->name() &&
                           defined $self->version() && $self->version() ne "" &&
                           defined $self->release() && $self->release() ne "" &&
@@ -173,10 +174,8 @@ sub findByPatchId
 {
     my ($dbh, $patchid) = @_;
 
-    my $sql = 'select * from Packages where patchid = ?';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $patchid, SQL_INTEGER);
-    $sth->execute();
+    my $sth = $dbh->prepare('select * from Packages where patchid = :patchid');
+    $sth->execute(patchid => $patchid);
 
     my $pkgs = {};
 
@@ -211,35 +210,30 @@ sub save
 {
     my ($self, $dbh) = @_;
 
-    my $sql;
+    my $sth;
     if ($self->dbId())
     {
-        $sql = 'update Packages set name=?, epoch=?, ver=?, rel=?,'
-            . ' arch=?, location=?, extlocation=?, catalogid=?, patchid=?'
-            . ' where id=?';
+        $sth = $dbh->prepare('UPDATE Packages
+                                 SET name=:name, epoch=:epoch, ver=:ver, rel=:rel,
+                                     arch=:arch, location=:location, extlocation=:extlocation,
+                                     repository_id=:rid, patch_id=:ptid
+                              WHERE id=:pkgid';
     }
     else
     {
-        $sql = 'insert into Packages'
-            . ' (name, epoch, ver, rel, arch, location, extlocation, catalogid, patchid)'
-            . ' values (?,?,?,?,?,?,?,?,?)';
+        $self->dbId($dbh->sequence_nextval('pkgs_id_seq'));
+        $sth = $dbh->prepare('INSERT INTO Packages
+                                          (id, name, epoch, ver, rel, arch,
+                                           location, extlocation, repository_id, patch_id)
+                                   VALUES (:pkgid, :name, :epoch, :ver, :rel, :arch,
+                                           :location, :extlocation, :rid, :ptid)';
     }
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $self->name(), SQL_VARCHAR);
-    $sth->bind_param(2, $self->epoch(), SQL_INTEGER);
-    $sth->bind_param(3, $self->version(), SQL_VARCHAR);
-    $sth->bind_param(4, $self->release(), SQL_VARCHAR);
-    $sth->bind_param(5, $self->arch(), SQL_VARCHAR);
-    $sth->bind_param(6, $self->smtLocation(), SQL_VARCHAR);
-    $sth->bind_param(7, $self->extLocation(), SQL_VARCHAR);
-    $sth->bind_param(8, $self->repoId(), SQL_INTEGER);
-    $sth->bind_param(9, $self->patchId(), SQL_INTEGER);
-    $sth->bind_param(10, $self->dbId(), SQL_INTEGER) if ($self->dbId());
-    $sth->execute();
-
-    $self->dbId($dbh->last_insert_id(undef, undef, undef, undef))
-        if ( not $self->dbId());
-
+    $sth->execute_h(pkgid => $self->dbId(), name => $self->name(), epoch => $self->epoch(),
+                    ver => $self->version(), rel => $self->release(), arch => $self->arch(),
+                    location => $self->smtLocation(), extlocation => $self->extLocation(),
+                    rid => $self->repoId(), ptid => $self->patchId());
+    # FIXME: make a commit at a central place ?
+    $dbh->commit();
     $self->{DIRTY} = 0;
 }
 
@@ -249,10 +243,10 @@ sub delete
     my ($self, $dbh) = @_;
     return if (not $self->dbId());
 
-    my $sql = 'delete from Packages where id=?';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $self->dbId(), SQL_INTEGER);
-    $sth->execute();
+    my $sth = $dbh->prepare('DELETE FROM Packages where id=:id');
+    $sth->execute_h(id => $self->dbId());
+    # FIXME: make a commit at a central place ?
+    $dbh->commit();
 }
 
 1;

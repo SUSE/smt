@@ -126,7 +126,7 @@ sub createSQLStatement($$)
     my $filter = shift || return undef;
     return undef unless isa($filter, 'HASH');
 
-    my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT NAMESPACE);
+    my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT);
     my @ALLPROPS = @PROPS;
     my $asXML = ( exists ${$filter}{'asXML'}  &&  defined ${$filter}{'asXML'} ) ? 1 : 0;
 
@@ -417,8 +417,9 @@ sub updateLastContact($)
     my $self = shift;
     my $guid = shift || return undef;
 
-    my $sql = sprintf( " UPDATE Clients SET LASTCONTACT = CURRENT_TIMESTAMP where GUID = %s ", $self->{'dbh'}->quote($guid) );
+    my $sql = sprintf( "UPDATE Clients SET lastcontact = CURRENT_TIMESTAMP WHERE guid = %s", $self->{'dbh'}->quote($guid) );
     my $res = $self->{'dbh'}->do($sql);
+    $self->{'dbh'}->commit();
 
     return 0 if ( defined $res  &&  $res =~ /^0E0$/ );
     return  $res ? 1:0;

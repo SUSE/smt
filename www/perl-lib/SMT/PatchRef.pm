@@ -2,7 +2,7 @@ package SMT::PatchRef;
 
 use strict;
 use warnings;
-use DBI qw(:sql_types);
+use SMT::DB;
 
 sub new
 {
@@ -99,10 +99,8 @@ sub findByPatchId
 {
     my ($dbh, $patchid) = @_;
 
-    my $sql = 'select * from PatchRefs where patchid = ?';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $patchid, SQL_INTEGER);
-    $sth->execute(); # FIXME wrap in eval
+    my $sth = $dbh->prepare('SELECT * FROM PatchRefs WHERE patch_id = :ptid');
+    $sth->execute(ptid => $patchid);
 
     my $prs = {};
 
@@ -128,30 +126,26 @@ sub save
 {
     my ($self, $dbh) = @_;
 
-    my $sql;
+    my $sth;
     if ($self->dbId())
     {
-        $sql = 'update PatchRefs set refid=?, reftype=?, url=?, title=?,'
-            . ' patchid=? where id=?';
+        $sth = $dbh->prepare('UPDATE PatchRefs
+                                 SET refid=:refid, reftype=:reftype, url=:url,
+                                     title=:title, patch_id=:ptid
+                               WHERE id=:prid');
     }
     else
     {
-        $sql = 'insert into PatchRefs'
-            . ' (refid, reftype, url, title, patchid)'
-            . ' values (?,?,?,?,?)';
+        $self->dbId($dbh->sequence_nextval('patchrefs_id_seq'));
+        $sth = $dbh->prepare('INSERT INTO PatchRefs
+                                          (id, refid, reftype, url, title, patch_id)
+                                   VALUES (:prid, :refid, :reftype, :url, :title, :ptid)');
     }
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $self->id(), SQL_VARCHAR);
-    $sth->bind_param(2, $self->type(), SQL_VARCHAR);
-    $sth->bind_param(3, $self->url(), SQL_VARCHAR);
-    $sth->bind_param(4, $self->title(), SQL_VARCHAR);
-    $sth->bind_param(5, $self->patchId(), SQL_INTEGER);
-    $sth->bind_param(6, $self->dbId(), SQL_INTEGER) if ($self->dbId());
-    $sth->execute(); # FIXME wrap in eval
+    $sth->execute_h(prid => $self->dbId(), refid => $self->id(), reftype => $self->type(),
+                    url => $self->url(), title => $self->title(), ptid => $self->patchId());
 
-    $self->dbId($dbh->last_insert_id(undef, undef, undef, undef))
-        if ( not $self->dbId());
-
+    # FIXME: make a commit at a central place ?
+    $dbh->commit();
     $self->{DIRTY} = 0;
 }
 
@@ -161,10 +155,11 @@ sub delete
     my ($self, $dbh) = @_;
     return if (not $self->dbId());
 
-    my $sql = 'delete from PatchRefs where id=?';
-    my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $self->dbId(), SQL_INTEGER);
-    $sth->execute(); # FIXME wrap in eval
+    my $sql = ;
+    my $sth = $dbh->prepare('DELETE FROM PatchRefs WHERE id=:prid');
+    $sth->execute_h(prid => $self->dbId());
+    # FIXME: make a commit at a central place ?
+    $dbh->commit();
 }
 
 1;
