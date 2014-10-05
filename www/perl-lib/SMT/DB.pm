@@ -10,6 +10,20 @@ my $dbh;
 package SMT::DB::db;
 our @ISA = qw/DBI::db/;
 
+sub sequence_nextval {
+  my $self = shift;
+  my $sequence = shift;
+
+  my $sth;
+  $sth = $self->prepare('select nextval(?)');
+  $sth->execute($sequence);
+
+  my ($ret) = $sth->fetchrow;
+  $sth->finish;
+
+  return $ret;
+}
+
 sub do_h {
   my $self = shift;
   my $query = shift;
