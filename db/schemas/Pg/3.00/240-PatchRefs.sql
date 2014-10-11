@@ -15,6 +15,8 @@ create table PatchRefs( id          NUMERIC NOT NULL
                         modified    TIMESTAMPTZ DEFAULT (current_timestamp) NOT NULL
                       );
 
+CREATE SEQUENCE patchrefs_id_seq;
+
 create or replace function pref_mod_trig_fun() returns trigger
 as
 $$
