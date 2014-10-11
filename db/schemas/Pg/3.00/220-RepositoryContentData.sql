@@ -1,5 +1,5 @@
 
-create table RepositoryContentData(localpath     VARCHAR(512)
+create table RepositoryContentData(localpath     VARCHAR(2048) NOT NULL
                                                  CONSTRAINT rcd_localpath_pk PRIMARY KEY,
                                    name          VARCHAR(300) NOT NULL,
                                    checksum      VARCHAR(255) NOT NULL,
