@@ -348,12 +348,14 @@ sub announce
         }
     }
 
-    my $statement = sprintf("INSERT INTO Clients (guid, hostname, target, secret, regtype)
-                             VALUES (%s, %s, %s, %s, 'SC')",
-                             $self->dbh()->quote($result->{login}),
-                             $self->dbh()->quote($hostname),
-                             $self->dbh()->quote($target),
-                             $self->dbh()->quote($result->{password}));
+    my $clientId = $self->dbh()->sequence_nextval('clients_id_seq');
+    my $statement = sprintf("INSERT INTO Clients (id, guid, hostname, target, secret, regtype)
+                             VALUES (%s, %s, %s, %s, %s, 'SC')",
+                            $self->dbh()->quote($clientId),
+                            $self->dbh()->quote($result->{login}),
+                            $self->dbh()->quote($hostname),
+                            $self->dbh()->quote($target),
+                            $self->dbh()->quote($result->{password}));
     $self->request()->log->info("STATEMENT: $statement");
     eval
     {
@@ -363,7 +365,6 @@ sub announce
     {
         return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
-    my $clientId = SMT::Utils::lookupClientIdByGUID($self->dbh(), $result->{login}, $self->request());
     $self->_storeMachineData($clientId, $c);
 
     return (Apache2::Const::OK, $result);
