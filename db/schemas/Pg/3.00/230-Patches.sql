@@ -17,7 +17,7 @@ create table Patches( id            NUMERIC NOT NULL
                       version       VARCHAR(32) NOT NULL,
                       category      NUMERIC NOT NULL DEFAULT 1,
                       summary       VARCHAR(512) NOT NULL,
-                      description   VARCHAR(1024) NOT NULL,
+                      description   TEXT NOT NULL,
                       reldate       TIMESTAMPTZ NOT NULL,
                       created       TIMESTAMPTZ DEFAULT (current_timestamp) NOT NULL,
                       modified      TIMESTAMPTZ DEFAULT (current_timestamp) NOT NULL
