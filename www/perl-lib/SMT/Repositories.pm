@@ -1,4 +1,4 @@
-# SMT::Repositories AKA SMT::Catalogs
+# SMT::Repositories
 package SMT::Repositories;
 
 use strict;
@@ -26,7 +26,7 @@ use Config::IniFiles;
 
 SMT::Repositories - reads SMT repositories and returns their states
 
-TODO: move to SMT::DB::Repos (Catalogs DB table accessor module), except the
+TODO: move to SMT::DB::Repos (Repositories DB table accessor module), except the
 functions where written otherwise.
 
 =head1 SYNOPSIS
@@ -258,7 +258,7 @@ sub getAllRepositories ($$) {
 =item getAllRepository
 
 Returns a hash of repository data for given repository ID. The hash keys
-correspond to Catalogs database table.
+correspond to Repositories database table.
 
 =cut
 sub getRepository($$)

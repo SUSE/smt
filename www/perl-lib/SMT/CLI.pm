@@ -503,9 +503,9 @@ sub getRepositories
 
         if ( exists $options{ used } && defined $options{used} )
         {
-          push( @VALUES, ("", $values->{EXTURL},      "", "") );
-          push( @VALUES, ("", $values->{LOCALPATH},   "", "") );
-          push( @VALUES, ("", $values->{CATALOGTYPE}, "", "") );
+          push( @VALUES, ("", $values->{exturl},      "", "") );
+          push( @VALUES, ("", $values->{localpath},   "", "") );
+          push( @VALUES, ("", $values->{repotype}, "", "") );
         }
     }
     $sth->finish();
@@ -562,19 +562,19 @@ sub getProducts
 
             if( @{$arr} == 0 )
             {
-                # no catalogs required for this product => all catalogs available
+                # no repositories required for this product => all repositories available
                 $cm = __("Yes");
             }
             elsif( @{$arr} == 1 )
             {
                 if( uc($arr->[0]->[0]) eq "Y")
                 {
-                    # all catalogs available
+                    # all repositories available
                     $cm = __("Yes");
                 }
                 # else default is NO
             }
-            # else some are available, some not => not all catalogs available
+            # else some are available, some not => not all repositories available
 
 
             push @VALUES, [ $value->{id},
@@ -815,7 +815,7 @@ sub setReposByProduct
         }
         else
         {
-            SMT::CLI::setCatalogDoMirror(enabled => $enable, name => $row->{name}, target => $row->{target});
+            SMT::CLI::setRepositoryDoMirror(enabled => $enable, name => $row->{name}, target => $row->{target});
             print sprintf(__("Repository [%s %s] %s.\n"),
                           $row->{name},
                           ($row->{target}) ? $row->{target} : "",
@@ -879,11 +879,11 @@ sub deleteRepositories
 }
 
 
-=item setRepoDoMirror
+=item setRepositoyDoMirror
 
-Set the catalog mirror flag to enabled or disabled.
+Set the repository mirror flag to enabled or disabled.
 
-Pass id => foo to select the catalog.
+Pass id => foo to select the repository.
 Pass enabled => 1 or enabled => 0;
 disabled => 1 or disabled => 0 are supported as well.
 
@@ -895,7 +895,7 @@ Returns the number of rows changed.
 
 =cut
 
-sub setRepoDoMirror
+sub setRepositoryDoMirror
 {
     my %opt = @_;
     my ($cfg, $dbh) = init();
@@ -984,7 +984,7 @@ sub setMirrorableRepos
             {
                 $ret = isZyppMirrorable( log        => $opt{log},
                                          vblevel    => $opt{vblevel},
-                                         catalogurl => $catUrl);
+                                         repourl    => $catUrl);
             }
             printLog($opt{log}, $opt{vblevel}, LOG_DEBUG, sprintf(__("* set [%s] as%s mirrorable."), $catName, ( ($ret == 1) ? '' : ' not' )));
             $sth_updrepos->execute_h(mirrorable => (($ret == 1)?"Y":"N"),
@@ -1010,7 +1010,7 @@ sub isZyppMirrorable
 
     my $useragent = SMT::Utils::createUserAgent(
                         log => $opt{log}, vblevel => $opt{vblevel});
-    my $remote = SMT::Utils::appendPathToURI($url, "repodata/repomd.xml");
+    my $remote = SMT::Utils::appendPathToURI($opt{repourl}, "repodata/repomd.xml");
 
     return SMT::Utils::doesFileExist($useragent, $remote);
 }
@@ -1020,7 +1020,7 @@ sub removeCustomRepo
     my %options = @_;
     my ($cfg, $dbh) = init();
 
-    # delete existing catalogs with this id
+    # delete existing repository with this id
 
     my $affected1 = $dbh->do(sprintf("DELETE from Repositories where id = %s", $dbh->quote($options{repository_id})));
 
@@ -1043,7 +1043,7 @@ sub setupCustomRepo
     my %options = @_;
     my ($cfg, $dbh) = init();
 
-    # delete existing catalogs with this id
+    # delete existing repository with this id
 
     removeCustomRepo(%options);
 

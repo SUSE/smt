@@ -545,7 +545,9 @@ sub updateDB
     {
         if( $self->checksum() && $self->checksum_type() )
         {
-            my $statement = sprintf("SELECT checksum, checksum_type from RepositoryContentData where localpath = %s",
+            my $statement = sprintf("SELECT checksum, checksum_type
+                                       FROM RepositoryContentData
+                                      WHERE localpath = %s",
                                     $self->{DBH}->quote( $self->fullLocalPath() ));
             my $existChecksum = $self->{DBH}->selectall_arrayref($statement, {Slice=>{}});
 
@@ -566,7 +568,9 @@ sub updateDB
                  )
             {
                 #update
-                $self->{DBH}->do(sprintf("UPDATE RepositoryContentData set name=%s, checksum=%s, checksum_type=%s where localpath=%s",
+                $self->{DBH}->do(sprintf("UPDATE RepositoryContentData
+                                             SET name=%s, checksum=%s, checksum_type=%s
+                                           WHERE localpath=%s",
                                          $self->{DBH}->quote( basename( $self->fullLocalPath() ) ),
                                          $self->{DBH}->quote( $self->checksum() ),
                                          $self->{DBH}->quote( $self->checksum_type() ),
@@ -838,8 +842,12 @@ sub copyFromLocalIfAvailable
 
     if (defined $self->{DBH})
     {
-        my $statement = sprintf("SELECT localpath from RepositoryContentData where name = %s and checksum = %s and
-                                 checksum_type = %s and localpath not like %s",
+        my $statement = sprintf("SELECT localpath
+                                   FROM RepositoryContentData
+                                  WHERE name = %s
+                                    AND checksum = %s
+                                    AND checksum_type = %s
+                                    AND localpath NOT LIKE %s",
                                 $self->{DBH}->quote($name),
                                 $self->{DBH}->quote($checksum),
                                 $self->{DBH}->quote($checksum_type),

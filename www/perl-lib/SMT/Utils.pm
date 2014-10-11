@@ -1256,9 +1256,9 @@ sub lookupProductIdByDataId
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_product = sprintf("SELECT ID FROM Products WHERE PRODUCTDATAID = %s",
+    my $query_product = sprintf("SELECT id FROM Products WHERE productdataid = %s",
                                 $dbh->quote($id));
-    $query_product .= sprintf(" AND SRC = %s", $dbh->quote($src)) if $src;
+    $query_product .= sprintf(" AND src = %s", $dbh->quote($src)) if $src;
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product");
     my $ref = $dbh->selectrow_hashref($query_product);
@@ -1282,24 +1282,24 @@ sub lookupProductIdByName
     my $log = shift;
     my $vblevel = shift;
 
-    my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
+    my $statement = "SELECT id, product, version, rel, arch FROM Products WHERE ";
 
-    $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($name));
-
-    $statement .= " AND (";
-    $statement .= "VERSIONLOWER=".$dbh->quote(lc($version))." OR " if(defined $version);
-    $statement .= "VERSIONLOWER IS NULL)";
+    $statement .= "product = ".$dbh->quote($name);
 
     $statement .= " AND (";
-    $statement .= "RELLOWER=".$dbh->quote(lc($release))." OR " if(defined $release);
-    $statement .= "RELLOWER IS NULL)";
+    $statement .= "version=".$dbh->quote($version)." OR " if(defined $version);
+    $statement .= "version = '')";
 
     $statement .= " AND (";
-    $statement .= "ARCHLOWER=".$dbh->quote(lc($arch))." OR " if(defined $arch);
-    $statement .= "ARCHLOWER IS NULL)";
+    $statement .= "rel=".$dbh->quote($release)." OR " if(defined $release);
+    $statement .= "rel = '')";
+
+    $statement .= " AND (";
+    $statement .= "arch=".$dbh->quote(lc($arch))." OR " if(defined $arch);
+    $statement .= "arch = '')";
 
     # order by name,version,release,arch with NULL values at the end (bnc#659912)
-    $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
+    $statement .= " ORDER BY product, version DESC, rel DESC, arch DESC";
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
     my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
@@ -1315,18 +1315,18 @@ sub lookupProductIdByName
         # Do we have an exact match?
         foreach my $prod (@$pl)
         {
-            if(lc($prod->{VERSIONLOWER}) eq lc($version) &&
-               lc($prod->{ARCHLOWER}) eq  lc($arch)&&
-               lc($prod->{RELLOWER}) eq lc($release))
+            if($prod->{version} eq $version &&
+               $prod->{arch} eq  $arch &&
+               $prod->{rel} eq $release)
             {
                 # Exact match found.
-                return $prod->{ID};
+                return $prod->{id};
             }
         }
         $release = "" if(not defined $release);
         $arch = "" if(not defined $arch);
         printLog($log, $vblevel, LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
-        return $pl->[0]->{ID};
+        return $pl->[0]->{id};
     }
     $release = "" if(not defined $release);
     $arch = "" if(not defined $arch);
@@ -1335,16 +1335,16 @@ sub lookupProductIdByName
     return undef;
 }
 
-=item lookupCatalogIdByDataId($dbh, $id[, $src])
+=item lookupRepositoryIdByDataId($dbh, $id[, $src])
 
-Lookup the catalog ID using the external catalog ID. Providing the
+Lookup the repository ID using the external repository ID. Providing the
 Source is optional.
 
 It returns the first ID found or undef.
 
 =cut
 
-sub lookupCatalogIdByDataId
+sub lookupRepositoryIdByDataId
 {
     my $dbh = shift || return undef;
     my $id = shift || return undef;
@@ -1352,23 +1352,23 @@ sub lookupCatalogIdByDataId
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_product = sprintf("SELECT ID FROM Catalogs WHERE CATALOGID = %s",
+    my $query_product = sprintf("SELECT id FROM Repositories WHERE repository_id = %s",
                                 $dbh->quote($id));
-    $query_product .= sprintf(" AND SRC = %s", $dbh->quote($src)) if $src;
+    $query_product .= sprintf(" AND src = %s", $dbh->quote($src)) if $src;
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product");
     my $ref = $dbh->selectrow_hashref($query_product);
     return $ref->{ID};
 }
 
-=item lookupCatalogIdByName($dbh, $name[, $target])
+=item lookupRepositoryIdByName($dbh, $name[, $target])
 
-Lookup the catalog ID using name and target.
+Lookup the repository ID using name and target.
 This function return the ID or undef.
 
 =cut
 
-sub lookupCatalogIdByName
+sub lookupRepositoryIdByName
 {
     my $dbh = shift || return undef;
     my $name = shift || return undef;
@@ -1376,17 +1376,17 @@ sub lookupCatalogIdByName
     my $log = shift;
     my $vblevel = shift;
 
-    my $statement = "SELECT ID FROM Catalogs where ";
+    my $statement = "SELECT id FROM Repositories WHERE ";
 
-    $statement .= "NAME = ".$dbh->quote($name);
+    $statement .= "name = ".$dbh->quote($name);
 
     if($target)
     {
-        $statement .= " AND TARGET=".$dbh->quote($target);
+        $statement .= " AND target=".$dbh->quote($target);
     }
     else
     {
-        $statement .= " AND (TARGET IS NULL or TARGET = '')";
+        $statement .= " AND target = ''";
     }
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
@@ -1398,7 +1398,7 @@ sub lookupCatalogIdByName
         return $pl->[0]->{ID};
     }
     $target = "" if(not defined $target);
-    # Do not find a catalog is not an error. It is a valid result of a lookup function
+    # Do not find a repository is not an error. It is a valid result of a lookup function
     printLog($log, $vblevel, LOG_INFO2, "No match found for: $name $target");
     return undef;
 }
@@ -1418,7 +1418,7 @@ sub lookupSubscriptionByRegcode
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_subsc = sprintf("SELECT * FROM Subscriptions WHERE REGCODE = %s",
+    my $query_subsc = sprintf("SELECT * FROM Subscriptions WHERE regcode = %s",
                                 $dbh->quote($regcode));
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_subsc");
@@ -1430,7 +1430,7 @@ sub lookupSubscriptionByRegcode
 
 Lookup the Product Registrations for a system specified by GUID.
 
-It returns a hash reference with the ProductID as key and a hash
+It returns a hash reference with the product_id as key and a hash
 contains all values for the Registration.
 It returns undef if nothing was not found.
 
@@ -1443,11 +1443,14 @@ sub lookupRegistrationByGUID
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_reg = sprintf("SELECT * FROM Registration WHERE GUID = %s",
+    my $query_reg = sprintf("SELECT r.*, c.guid
+                               FROM Registrations r
+                               JOIN Clients c ON r.client_id = c.id
+                              WHERE GUID = %s",
                                 $dbh->quote($guid));
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_reg");
-    my $ref = $dbh->selectall_hashref($query_reg, 'PRODUCTID');
+    my $ref = $dbh->selectall_hashref($query_reg, 'product_id');
     return $ref;
 }
 
@@ -1467,12 +1470,32 @@ sub lookupClientByGUID
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_reg = sprintf("SELECT * FROM Clients WHERE GUID = %s",
+    my $query_reg = sprintf("SELECT * FROM Clients WHERE guid = %s",
                                 $dbh->quote($guid));
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_reg");
     my $ref = $dbh->selectrow_hashref($query_reg);
     return $ref;
+}
+
+=item lookupClientIdByGUID($dbh, $guid)
+
+Lookup Client ID specified by GUID.
+
+It returns the id or undef
+
+=cut
+
+sub lookupClientIdByGUID
+{
+    my $dbh = shift || return undef;
+    my $guid = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $client = lookupClientByGUID($dbh, $guid, $log, $vblevel);
+
+    return ($client?$client->{id}:undef);
 }
 
 
@@ -1491,7 +1514,7 @@ sub lookupTargetForClient
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_target = sprintf("SELECT TARGET FROM Clients WHERE GUID = %s",
+    my $query_target = sprintf("SELECT target FROM Clients WHERE guid = %s",
                                $dbh->quote($guid));
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_target");
@@ -1515,7 +1538,7 @@ sub lookupTargetByOS
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_target = sprintf("SELECT TARGET FROM Clients WHERE OS = %s",
+    my $query_target = sprintf("SELECT target FROM Clients WHERE os = %s",
                                $dbh->quote($os));
     if($src)
     {
@@ -1541,16 +1564,17 @@ sub isRES
     my $vblevel = shift;
 
     my $sql = sprintf("
-        select r.GUID
-          from Registration r
-          join Products p on r.PRODUCTID = p.PRODUCTDATAID
-         where r.GUID = %s
-           AND p.PRODUCT = 'RES'",
+        SELECT 1
+          FROM Clients c
+          JOIN Registration r ON c.id = r.client_id
+          JOIN Products p on r.product_id = p.id
+         where c.guid = %s
+           AND p.product = 'RES'",
            $dbh->quote($guid));
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $sql");
     my $ref = $dbh->selectrow_hashref($sql);
-    return ($ref->{GUID}?1:0);
+    return ($ref?1:0);
 }
 
 =item requestedAPIVersion($r)
@@ -1565,11 +1589,7 @@ sub requestedAPIVersion
     my $r = shift;
     my $latestVersion = 4;
     my $versionHeader = "application/vnd.scc.suse.com";
-    my %supportedVersions = ( "application/vnd.scc.suse.com.v1+json" => 1,
-                              "application/vnd.scc.suse.com.v2+json" => 2,
-                              "application/vnd.scc.suse.com.v3+json" => 3,
-                              "application/vnd.scc.suse.com.v4+json" => 4
-    );
+    my %supportedVersions = ("application/vnd.scc.suse.com.v4+json" => 4);
 
     my $accepts = $r->headers_in->{Accept} || '';
 

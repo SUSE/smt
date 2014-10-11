@@ -698,7 +698,9 @@ sub mirror()
     # create a hash with filename => checksum
     if ( defined $self->{DBH} )
     {
-        my $statement = sprintf("SELECT localpath, checksum, checksum_type from RepositoryContentData where localpath like %s",
+        my $statement = sprintf("SELECT localpath, checksum, checksum_type
+                                   FROM RepositoryContentData
+                                  WHERE localpath LIKE %s",
                                 $self->{DBH}->quote($self->fullLocalRepoPath()."%"));
         $self->{EXISTS} = $self->{DBH}->selectall_hashref($statement, 'localpath');
         #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
@@ -1071,7 +1073,9 @@ sub clean()
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Delete: $file");
         $cnt += unlink $file;
 
-        $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($file) ) );
+        $self->{DBH}->do(sprintf("DELETE FROM RepositoryContentData
+                                   WHERE localpath = %s",
+                                 $self->{DBH}->quote($file) ) );
     }
 
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Finished cleaning: '%s'"), $self->fullLocalRepoPath() )) if(!$isYum);
@@ -1164,7 +1168,9 @@ sub verify()
 
             if (defined $self->{DBH})
             {
-                $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($job->fullLocalPath() ) ) );
+                $self->{DBH}->do(sprintf("DELETE FROM RepositoryContentData
+                                           WHERE localpath = %s",
+                                         $self->{DBH}->quote($job->fullLocalPath() ) ) );
             }
 
             $self->{STATISTIC}->{ERROR} += 1;
@@ -1382,6 +1388,7 @@ repomd.xml.key).
 The function works on the repodata located at $repodatadir.
 
 =cut
+# FIXME: needed?
 sub signrepo
 {
     my ($self, $repodatadir, $keyid, $passphrase) = @_;
@@ -1501,6 +1508,7 @@ Example of input data:
     };
 
 =cut
+# FIXME: needed?
 
 sub removePackages($$$)
 {
@@ -1625,7 +1633,8 @@ sub removePackages($$$)
             }
             else
             {
-                $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s",
+                $self->{DBH}->do(sprintf("DELETE FROM RepositoryContentData
+                                           WHERE localpath = %s",
                                           $self->{DBH}->quote($tgtrepopath.$pkg->{loc}) ) );
                 printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
                     "Deleted $tgtrepopath$pkg->{loc}");
@@ -1655,6 +1664,7 @@ changend.
 
 See updateRepomd() for details on the $mdfiles structure.
 =cut
+# FIXME: needed?
 
 sub metadataChanged()
 {
@@ -1711,6 +1721,7 @@ from the files by ourselves seems to be better approach.
 # write output to tmpdir, then copy to .repodata
 # createrepo --update <repobase> --outputdir $tmpdir $self->fullLocalRepoPath()
 =cut
+# FIXME: needed?
 
 sub updateRepomd($$$)
 {
@@ -1773,6 +1784,8 @@ sub updateRepomd($$$)
 Parse and save Patch Data
 
 =cut
+
+# FIXME: needed?
 
 sub parsePatchData
 {

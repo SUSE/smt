@@ -510,10 +510,10 @@ sub _updateProducts
         my $retcat = $self->_updateRepositories($repo);
         $ret += $retcat;
 
-        # if either product or catalogs could not be added,
+        # if either product or repository could not be added,
         # we will fail to add the relation.
         next if ( $retprd || $retcat);
-        $ret += $self->_updateProductCatalogs($product, $repo);
+        $ret += $self->_updateProductRepositories($product, $repo);
     }
     $ret += $retprd;
 
@@ -563,7 +563,7 @@ sub _updateRepositories
     my $repo = shift;
     my $statement = "";
     my $localpath = "";
-    my $catalogtype = "";
+    my $repotype = "";
     # we inserted/update this repo already in this run
     # so let's skip it
     return 0 if(exists $self->{REPO_DONE}->{$repo->{id}});
@@ -581,7 +581,7 @@ sub _updateRepositories
         {
             $localpath =~ s/^repo\///;
         }
-        $catalogtype = 'nu';
+        $repotype = 'nu';
     }
     else
     {
@@ -596,11 +596,11 @@ sub _updateRepositories
             $repo->{name} = $repo->{name}."-SP1";
         }
         $localpath = "RPMMD/".$repo->{name};
-        $catalogtype = 'zypp';
+        $repotype = 'zypp';
     }
 
     if (! $self->migrate() &&
-        (my $cid = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel)))
+        (my $cid = SMT::Utils::lookupRepositoryIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
         $statement = sprintf("UPDATE Repositories
                                  SET name = %s, description = %s,
@@ -615,14 +615,14 @@ sub _updateRepositories
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
-                             $self->{DBH}->quote($catalogtype),
+                             $self->{DBH}->quote($repotype),
                              $self->{DBH}->quote($repo->{id}),
                              $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N')),
                              $self->{DBH}->quote($cid)
         );
     }
     elsif ($self->migrate() &&
-           ($cid = SMT::Utils::lookupCatalogIdByName($self->{DBH}, $repo->{name}, $repo->{distro_target}, $self->{LOG}, $self->vblevel)))
+           ($cid = SMT::Utils::lookupRepositoryIdByName($self->{DBH}, $repo->{name}, $repo->{distro_target}, $self->{LOG}, $self->vblevel)))
     {
         $statement = sprintf("UPDATE Repositories
                                  SET name = %s, description = %s,
@@ -638,7 +638,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
-                             $self->{DBH}->quote($catalogtype),
+                             $self->{DBH}->quote($repotype),
                              $self->{DBH}->quote($repo->{id}),
                              $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N')),
                              $self->{DBH}->quote($cid)
@@ -655,7 +655,7 @@ sub _updateRepositories
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
-                             $self->{DBH}->quote($catalogtype),
+                             $self->{DBH}->quote($repotype),
                              $self->{DBH}->quote($repo->{id}),
                              $self->{DBH}->quote(($repo->{autorefresh}?'Y':'N'))
         );
@@ -737,14 +737,14 @@ sub _updateTargets
     return $ret;
 }
 
-sub _updateProductCatalogs
+sub _updateProductRepositories
 {
     my $self = shift;
     my $product = shift;
     my $repo = shift;
     my $ret = 0;
     my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel);
-    my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel);
+    my $repo_id = SMT::Utils::lookupRepositoryIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel);
     if (! $product_id)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$product->{id});

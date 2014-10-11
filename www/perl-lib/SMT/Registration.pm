@@ -235,15 +235,15 @@ EON
 
         my $pidarr = SMT::Registration::insertRegistration($r, $dbh, $regroot, $target);
 
-        # get the catalogs
+        # get the Repository
 
-        my $catalogs = SMT::Registration::findCatalogs($r, $dbh, $target, $pidarr);
+        my $repositories = SMT::Registration::findRepositories($r, $dbh, $target, $pidarr);
 
         my $status = SMT::Registration::getRegistrationStatus($r, $dbh, $regroot->{register}->{guid});
 
         # send new <zmdconfig>
 
-        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $status);
+        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $repositories, $status);
 
         if( ! defined $zmdconfig )
         {
@@ -647,7 +647,7 @@ sub findTarget
     return $result;
 }
 
-sub findCatalogs
+sub findRepositories
 {
     my $r      = shift;
     my $dbh    = shift;
@@ -665,7 +665,7 @@ sub findCatalogs
     }
 
 
-    # get catalog values (only for the once we DOMIRROR)
+    # get repository values (only for the once we DOMIRROR)
 
     $statement  = "SELECT r.id, r.name, r.description, r.target, r.localpath,
                           r.repotype, pr.optional, r.autorefresh
@@ -752,7 +752,7 @@ sub buildZmdConfig
 {
     my $r          = shift;
     my $guid       = shift;
-    my $catalogs   = shift;
+    my $repositories   = shift;
     my $status     = shift;
 
     my $cfg = undef;
@@ -794,9 +794,9 @@ sub buildZmdConfig
     $localID =~ s/_$//;
 
     my $nuCatCount = 0;
-    foreach my $cat (keys %{$catalogs})
+    foreach my $cat (keys %{$repositories})
     {
-        $nuCatCount++ if(lc($catalogs->{$cat}->{repotype}) eq "nu");
+        $nuCatCount++ if(lc($repositories->{$cat}->{repotype}) eq "nu");
     }
 
     my $output = "";
@@ -811,7 +811,7 @@ sub buildZmdConfig
     $writer->characters($guid);
     $writer->endTag("guid");
 
-    # first write all catalogs of type NU
+    # first write all repositories of type NU
     if($nuCatCount > 0)
     {
         $writer->startTag("service",
@@ -822,33 +822,33 @@ sub buildZmdConfig
         $writer->characters($LocalNUUrl."/");
         $writer->endTag("param");
 
-        foreach my $cat (keys %{$catalogs})
+        foreach my $cat (keys %{$repositories})
         {
-            next if(lc($catalogs->{$cat}->{optional}) eq "y");
-            next if(lc($catalogs->{$cat}->{repotype}) ne "nu" || SMT::Utils::isRES($guid));
-            if(! exists $catalogs->{$cat}->{localpath} || ! $catalogs->{$cat}->{localpath})
+            next if(lc($repositories->{$cat}->{optional}) eq "y");
+            next if(lc($repositories->{$cat}->{repotype}) ne "nu" || SMT::Utils::isRES($guid));
+            if(! exists $repositories->{$cat}->{localpath} || ! $repositories->{$cat}->{localpath})
             {
                 $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
                 next;
             }
 
-            my $catalogPath = "repo/";
-            my $catalogName = $catalogs->{$cat}->{name};
-            $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{localpath} );
-            if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $catalogPath ) )
+            my $repositoryPath = "repo/";
+            my $repositoryName = $repositories->{$cat}->{name};
+            $repositoryPath = SMT::Utils::cleanPath( $repositoryPath, $repositories->{$cat}->{localpath} );
+            if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $repositoryPath ) )
             {
                 # we print only a warning in the log, but return this repos.
                 # the user on the client should see immediately that he requested
                 # a repo which does not exist.
-                $r->log->warn("Returning not existing repositoriy: ".SMT::Utils::cleanPath( $LocalBasePath, $catalogPath ));
+                $r->log->warn("Returning not existing repository: ".SMT::Utils::cleanPath( $LocalBasePath, $repositoryPath ));
             }
-            my $catalogURL = $LocalNUUrl."/".$catalogPath;
+            my $repositoryURL = $LocalNUUrl."/".$repositoryPath;
 
             $writer->startTag("param",
                               "name" => "catalog",
-                              "url"  => $catalogURL
+                              "url"  => $repositoryURL
                              );
-            $writer->characters($catalogName);
+            $writer->characters($repositoryName);
             $writer->endTag("param");
         }
         $writer->endTag("service");
@@ -856,44 +856,44 @@ sub buildZmdConfig
 
     # and now the zypp and yum Repositories
 
-    foreach my $cat (keys %{$catalogs})
+    foreach my $cat (keys %{$repositories})
     {
-        next if (not ( lc($catalogs->{$cat}->{repotype}) eq "zypp" || SMT::Utils::isRES($guid)) );
+        next if (not ( lc($repositories->{$cat}->{repotype}) eq "zypp" || SMT::Utils::isRES($guid)) );
 
-        if(! exists $catalogs->{$cat}->{localpath} || !$catalogs->{$cat}->{localpath})
+        if(! exists $repositories->{$cat}->{localpath} || !$repositories->{$cat}->{localpath})
         {
             $r->log_error("Path for repository '$cat' does not exists. Skipping the repository.");
             next;
         }
 
-        my $catalogPath = SMT::Utils::cleanPath( "repo/" );
-        my $catalogName = $catalogs->{$cat}->{name};
-        $catalogPath = SMT::Utils::cleanPath( $catalogPath, $catalogs->{$cat}->{localpath} );
-        if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $catalogPath) )
+        my $repositoryPath = SMT::Utils::cleanPath( "repo/" );
+        my $repositoryName = $repositories->{$cat}->{name};
+        $repositoryPath = SMT::Utils::cleanPath( $repositoryPath, $repositories->{$cat}->{localpath} );
+        if(! -d  SMT::Utils::cleanPath( $LocalBasePath, $repositoryPath) )
         {
             # we print only a warning in the log, but return this repos.
             # the user on the client should see immediately that he requested
             # a repo which does not exist.
-            $r->log->warn("Returning not existing repositoriy: ". SMT::Utils::cleanPath( $LocalBasePath, $catalogPath) );
+            $r->log->warn("Returning not existing repository: ". SMT::Utils::cleanPath( $LocalBasePath, $repositoryPath) );
         }
-        my $catalogURL = $LocalNUUrl."/".$catalogPath;
+        my $repositoryURL = $LocalNUUrl."/".$repositoryPath;
         #
         # this does not work
         # NCCcredentials are not known in SLE10 and not in RES
         #
-        #$catalogURL .= "?credentials=NCCcredentials";
+        #$repositoryURL .= "?credentials=NCCcredentials";
 
         $writer->startTag("service",
-                          "id"          => $catalogName,
-                          "description" => $catalogs->{$cat}->{description},
-                          "type"        => $catalogs->{$cat}->{repotype});
+                          "id"          => $repositoryName,
+                          "description" => $repositories->{$cat}->{description},
+                          "type"        => $repositories->{$cat}->{repotype});
         $writer->startTag("param", "id" => "url");
-        $writer->characters($catalogURL);
+        $writer->characters($repositoryURL);
         $writer->endTag("param");
 
 
         $writer->startTag("param", "name" => "catalog");
-        $writer->characters($catalogName);
+        $writer->characters($repositoryName);
         $writer->endTag("param");
 
         $writer->endTag("service");

@@ -303,14 +303,14 @@ sub findById
     return undef if (not $pdata);
 
     my $p = new;
-    $p->dbId($pdata->{ID});
-    $p->repoId($pdata->{CATALOGID});
-    $p->name($pdata->{NAME});
-    $p->version($pdata->{VERSION});
-    $p->categoryAsInt($pdata->{CATEGORY});
-    $p->summary($pdata->{SUMMARY});
-    $p->description($pdata->{DESCRIPTION});
-    $p->releaseDate(str2time($pdata->{RELDATE}));
+    $p->dbId($pdata->{id});
+    $p->repoId($pdata->{repository_id});
+    $p->name($pdata->{name});
+    $p->version($pdata->{version});
+    $p->categoryAsInt($pdata->{category});
+    $p->summary($pdata->{summary});
+    $p->description($pdata->{description});
+    $p->releaseDate(str2time($pdata->{reldate}));
     $p->setPackages(SMT::Package::findByPatchId($dbh, $p->dbId()));
     $p->setReferences(SMT::PatchRef::findByPatchId($dbh, $p->dbId()));
     $p->{DIRTY} = 0;
@@ -330,18 +330,18 @@ sub findByRepoId
 
     while (my $pdata = $sth->fetchrow_hashref())
     {
-      my $name = $pdata->{NAME};
-      my $version = $pdata->{VERSION};
+      my $name = $pdata->{name};
+      my $version = $pdata->{version};
 
       my $p = new;
-      $p->dbId($pdata->{ID});
-      $p->repoId($pdata->{CATALOGID});
+      $p->dbId($pdata->{id});
+      $p->repoId($pdata->{repository_id});
       $p->name($name);
       $p->version($version);
-      $p->categoryAsInt($pdata->{CATEGORY});
-      $p->summary($pdata->{SUMMARY});
-      $p->description($pdata->{DESCRIPTION});
-      $p->releaseDate(str2time($pdata->{RELDATE}));
+      $p->categoryAsInt($pdata->{category});
+      $p->summary($pdata->{summary});
+      $p->description($pdata->{description});
+      $p->releaseDate(str2time($pdata->{reldate}));
       $p->setPackages(SMT::Package::findByPatchId($dbh, $p->dbId()));
       $p->setReferences(SMT::PatchRef::findByPatchId($dbh, $p->dbId()));
       $p->{DIRTY} = 0;

@@ -181,23 +181,23 @@ sub findByPatchId
 
     while (my $pdata = $sth->fetchrow_hashref())
     {
-        my $name = $pdata->{NAME};
-        my $epo = $pdata->{EPOCH};
-        my $ver = $pdata->{VER};
-        my $rel = $pdata->{REL};
-        my $arch = $pdata->{ARCH};
+        my $name = $pdata->{name};
+        my $epo = $pdata->{epoch};
+        my $ver = $pdata->{ver};
+        my $rel = $pdata->{rel};
+        my $arch = $pdata->{arch};
 
         my $p = new;
-        $p->dbId($pdata->{ID});
-        $p->repoId($pdata->{CATALOGID});
-        $p->patchId($pdata->{PATCHID});
+        $p->dbId($pdata->{id});
+        $p->repoId($pdata->{repository_id});
+        $p->patchId($pdata->{patch_id});
         $p->name($name);
         $p->epoch($epo);
         $p->version($ver);
         $p->release($rel);
         $p->arch($arch);
-        $p->smtLocation($pdata->{LOCATION});
-        $p->extLocation($pdata->{EXTLOCATION});
+        $p->smtLocation($pdata->{location});
+        $p->extLocation($pdata->{extlocation});
         $p->{DIRTY} = 0;
 
         $pkgs->{$p->NEVRA(':')} = $p;
