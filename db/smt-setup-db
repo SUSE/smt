@@ -208,6 +208,7 @@ EOF
 
     export PGPASSWORD=$PGPASSWORD
     for s in /usr/share/schemas/smt/Pg/3.00/*; do
+        echo `basename $s`
         cat $s | psql -U $PGUSER -d $PGNAME
     done
 }
