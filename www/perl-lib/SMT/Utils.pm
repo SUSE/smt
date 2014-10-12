@@ -389,9 +389,7 @@ sub getSMTGuid
     my $guid   = "";
     my $secret = "";
     my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
-    my $CREDENTIAL_FILE = "NCCcredentials";
-    my $GUID_FILE = "/etc/zmd/deviceid";
-    my $SECRET_FILE = "/etc/zmd/secret";
+    my $CREDENTIAL_FILE = "SCCcredentials";
     my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
     if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
@@ -400,7 +398,7 @@ sub getSMTGuid
     }
 
     #
-    # read credentials from NCCcredentials file
+    # read credentials from SCCcredentials file
     #
     open(CRED, "< $fullpath") or do {
         die("Cannot open file $fullpath for read: $!\n");
