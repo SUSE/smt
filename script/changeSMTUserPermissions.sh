@@ -9,7 +9,7 @@ CAT=/bin/cat
 
 SMT_DIRS=("/var/log/smt" "/var/run/smt")
 SMT_ROOT_FILES=()
-NCC_CREDENTIAL="/etc/zypp/credentials.d/NCCcredentials"
+NCC_CREDENTIAL="/etc/zypp/credentials.d/SCCcredentials"
 
 SMTCONF="/etc/smt.conf"
 
