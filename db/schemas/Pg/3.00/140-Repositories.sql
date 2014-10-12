@@ -30,7 +30,7 @@ create table Repositories(id          NUMERIC
 CREATE SEQUENCE repos_id_seq;
 
 CREATE UNIQUE INDEX repos_cid_src_uq
-  ON Repositories (catalog_id, src);
+  ON Repositories (repo_id, src);
 
 CREATE UNIQUE INDEX repos_name_target_uq
   ON Repositories (name, target);
