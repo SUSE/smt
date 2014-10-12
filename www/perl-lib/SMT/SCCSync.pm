@@ -417,6 +417,10 @@ sub _updateProducts
         $product->{eula_url} = $eulaUrl->as_string();
     }
 
+    foreach my $k (keys %{$product})
+    {
+        $product->{$k} = '' if(!defined $product->{$k});
+    }
     if (! $self->migrate() &&
         (my $pid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel)))
     {
@@ -479,7 +483,7 @@ sub _updateProducts
                               product_class, cpe, description, eula_url, productdataid,
                               former_identifier, product_type, src)
                               VALUES (nextval('products_id_seq'),
-                                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{identifier}),
                              $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
@@ -611,7 +615,7 @@ sub _updateRepositories
                                WHERE id = %s",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
-                             $self->{DBH}->quote($repo->{distro_target}),
+                             $self->{DBH}->quote($repo->{distro_target}?$repo->{distro_target}:''),
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
@@ -634,7 +638,7 @@ sub _updateRepositories
                                WHERE id = %s",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
-                             $self->{DBH}->quote($repo->{distro_target}),
+                             $self->{DBH}->quote($repo->{distro_target}?$repo->{distro_target}:''),
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
@@ -651,7 +655,7 @@ sub _updateRepositories
                               VALUES (nextval('repos_id_seq'), %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($repo->{name}),
                              $self->{DBH}->quote($repo->{description}),
-                             $self->{DBH}->quote($repo->{distro_target}),
+                             $self->{DBH}->quote($repo->{distro_target}?$repo->{distro_target}:''),
                              $self->{DBH}->quote($localpath),
                              $self->{DBH}->quote($exthost),
                              $self->{DBH}->quote($repo->{url}),
@@ -749,6 +753,7 @@ sub _updateProductRepositories
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$product->{id});
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Unable to find Product ID for: ".Data::Dumper->Dump([$product]));
+        exit 1;
         return 1;
     }
     if (! $repo_id)
@@ -801,17 +806,12 @@ sub _addSubscription
     my $duration = 0;
     $duration =  (($startdate - $enddate) / 60*60*24) if($startdate && $enddate);
     my $product_classes = join(',', @{$subscr->{product_classes}});
-    my $server_class = '';
-    if (exists $subscr->{product_classes}->[0])
-    {
-        $server_class = SMT::Product::defaultServerClass($subscr->{product_classes}->[0]);
-    }
-    $server_class = 'ADDON' if(not $server_class);
     my $subid = $self->{DBH}->sequence_nextval('subscriptions_id_seq');
+
     my $statement = sprintf("INSERT INTO Subscriptions
                                          (id, subid, regcode, subname, subtype, substatus,
                                           substartdate, subenddate, product_class, nodecount,
-                                          constumed, consumedvirt)
+                                          consumed, consumedvirt)
                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                             $self->{DBH}->quote($subid),
                             $self->{DBH}->quote($subscr->{id}),

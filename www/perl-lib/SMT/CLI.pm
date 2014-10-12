@@ -658,10 +658,10 @@ sub getRegistrations
         $lastguid = $clnt->{guid};
         $lasthostname = $clnt->{hostname};
         $lastcontact = $clnt->{lastcontact};
-        $prdstr .=     $product->{product} if($product->{product});
-        $prdstr .= " ".$product->{version} if($product->{version});
-        $prdstr .= " ".$product->{rel}     if($product->{rel});
-        $prdstr .= " ".$product->{arch}    if($product->{arch});
+        $prdstr .=     $clnt->{product} if($clnt->{product});
+        $prdstr .= " ".$clnt->{version} if($clnt->{version});
+        $prdstr .= " ".$clnt->{rel}     if($clnt->{rel});
+        $prdstr .= " ".$clnt->{arch}    if($clnt->{arch});
         $prdstr .= "\n";
     }
     push @VALUES, [ $lastguid, $lasthostname, $lastcontact, $prdstr ];
@@ -716,6 +716,7 @@ sub listRegistrations
             print __('Last Contact')." : $clnt->{lastcontact}\n";
             $sth_products->execute_h(cid => $clnt->{id});
             my $products = $sth_products->fecthall_arrayref({Slice => {}});
+            my $prdstr = "";
             foreach my $product (@{$products})
             {
                 $prdstr  =     $product->{product} if($product->{product});
@@ -841,7 +842,7 @@ sub deleteRepositories
 
     my $sql =     "SELECT id, name, target, domirror, localpath
                      FROM Repositories
-                    WHERE 1 ";
+                    WHERE 1=1 ";
     $sql .= sprintf(" AND name = %s ", $dbh->quote($opt{name})) if($opt{name});
     $sql .= sprintf(" AND target = %s ", $dbh->quote($opt{target})) if($opt{target});
     $sql .= sprintf(" AND id = %s ", $dbh->quote($opt{id})) if($opt{id});
@@ -904,7 +905,7 @@ sub setRepositoryDoMirror
     {
         my $sql .= sprintf("UPDATE Repositories
                                SET domirror = %s
-                             WHERE 1",
+                             WHERE 1=1",
                             $dbh->quote(  $opt{enabled} ? "Y" : "N" ) );
 
         # allow enable mirroring only if the repository is mirrorable
@@ -916,7 +917,7 @@ sub setRepositoryDoMirror
         $sql .= sprintf(" and id = %s", $dbh->quote($opt{id})) if($opt{id});
 
         my $rows = $dbh->do($sql);
-        $rows = 0 if(!$rows || $rows = "0E0");
+        $rows = 0 if(!$rows || $rows eq "0E0");
         $dbh->commit();
         return $rows;
     }
@@ -955,7 +956,7 @@ sub setMirrorableRepos
     my $useragent = SMT::Utils::createUserAgent(log => $opt{log}, vblevel => $opt{vblevel});
     my $sth = $dbh->prepare("SELECT id, name, localpath, exturl, target
                                FROM Repositories
-                              WHERE repotype = 'zypp'";
+                              WHERE repotype = 'zypp'");
     $sth->execute();
     my $values = $dbh->fetchall_arrayref({Slice => {}});
 
@@ -1177,7 +1178,7 @@ sub deleteRegistrations
                              WHERE guid = :guid");
     foreach my $guid (@{$guids})
     {
-        $sth->do_h(guid=>$guid):
+        $sth->do_h(guid=>$guid);
     }
 }
 

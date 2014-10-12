@@ -106,7 +106,7 @@ my ($cfg, $dbh, $nuri) = SMT::CLI::init();
 
 my $count = 0;
 my @catalogs;
-my $sql = "SELECT * FROM Repositories WHERE 1";
+my $sql = "SELECT * FROM Repositories WHERE 1=1";
 
 if ( defined($mirrorable) )
 {
@@ -133,11 +133,11 @@ my $output = "";
 my $t = new Text::ASCIITable;
 $t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"));
 
-my $sth = $dbh->prepare("SELECT p.id, p.product, p.version, p.arch, p.rel, pr.optional
-                           FROM Products p
-                           JOIN ProductRepositories pr ON p.id = pr.product_id
-                          WHERE pr.repository_id = :rid
-                       ORDER BY p.product, p.version, p.arch, p.rel");
+my $sthp = $dbh->prepare("SELECT p.id, p.product, p.version, p.arch, p.rel, pr.optional
+                            FROM Products p
+                            JOIN ProductRepositories pr ON p.id = pr.product_id
+                           WHERE pr.repository_id = :rid
+                        ORDER BY p.product, p.version, p.arch, p.rel");
 while ( my $v = $sth->fetchrow_hashref() ) {
     $count++;
     my $catId = $v->{id};
@@ -149,8 +149,8 @@ while ( my $v = $sth->fetchrow_hashref() ) {
     my $catMA   = $v->{mirrorable};
 
     if (defined($verbose)) {
-        $sth->execute_h(rid => $catId);
-        my $products = $dbh->fetchall_arrayref({Slice=>{}});
+        $sthp->execute_h(rid => $catId);
+        my $products = $sthp->fetchall_arrayref({Slice=>{}});
 
         $output .= "[" . (( $v->{domirror} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
         $output .= "          (" . $v->{description} .")\n";
@@ -227,7 +227,7 @@ elsif ( $count == 1 )
     }
     elsif( $delete )
     {
-        my $ret = SMT::CLI::deleteRepositories(id => $idnumbers[0], namespace => $namespace);
+        my $ret = SMT::CLI::deleteRepositories(id => $idnumbers[0]);
         exit $ret;
     }
 }
@@ -250,7 +250,7 @@ else
         }
         elsif( $delete )
         {
-            my $ret = SMT::CLI::deleteRepositories(name => $name, target => $target, namespace => $namespace);
+            my $ret = SMT::CLI::deleteRepositories(name => $name, target => $target);
             exit $ret;
         }
     }
@@ -267,7 +267,7 @@ else
         }
         elsif( $delete )
         {
-            my $ret = SMT::CLI::deleteRepositories(id => $idnumbers[$number-1], namespace => $namespace);
+            my $ret = SMT::CLI::deleteRepositories(id => $idnumbers[$number-1]);
             exit $ret;
         }
     }

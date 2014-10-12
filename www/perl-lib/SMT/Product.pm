@@ -96,10 +96,9 @@ sub findById
                       p.friendly,
                       p.product_class
                  FROM Products p
-                WHERE p.id = ?;";
+                WHERE p.id = :pid;";
     my $sth = $dbh->prepare($sql);
-    $sth->bind_param(1, $id, SQL_INTEGER);
-    $sth->execute();
+    $sth->execute_h(pid => $id);
 
     my $pdata = $sth->fetchrow_hashref();
     return undef if (not $pdata);

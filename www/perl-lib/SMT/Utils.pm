@@ -1260,9 +1260,9 @@ sub lookupProductIdByDataId
                                 $dbh->quote($id));
     $query_product .= sprintf(" AND src = %s", $dbh->quote($src)) if $src;
 
-    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product");
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product;");
     my $ref = $dbh->selectrow_hashref($query_product);
-    return $ref->{ID};
+    return $ref->{id};
 }
 
 =item lookupProductIdByName($dbh, $name[, $version][, $release][, $arch])
@@ -1352,13 +1352,13 @@ sub lookupRepositoryIdByDataId
     my $log = shift;
     my $vblevel = shift;
 
-    my $query_product = sprintf("SELECT id FROM Repositories WHERE repository_id = %s",
+    my $query_product = sprintf("SELECT id FROM Repositories WHERE repo_id = %s",
                                 $dbh->quote($id));
     $query_product .= sprintf(" AND src = %s", $dbh->quote($src)) if $src;
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product");
     my $ref = $dbh->selectrow_hashref($query_product);
-    return $ref->{ID};
+    return $ref->{id};
 }
 
 =item lookupRepositoryIdByName($dbh, $name[, $target])
@@ -1395,7 +1395,7 @@ sub lookupRepositoryIdByName
     if(@$pl == 1)
     {
         # Only one match found.
-        return $pl->[0]->{ID};
+        return $pl->[0]->{id};
     }
     $target = "" if(not defined $target);
     # Do not find a repository is not an error. It is a valid result of a lookup function
@@ -1519,7 +1519,7 @@ sub lookupTargetForClient
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_target");
     my $ref = $dbh->selectrow_hashref($query_target);
-    return ($ref->{TARGET}?$ref->{TARGET}:"");
+    return ($ref->{target}?$ref->{target}:"");
 }
 
 =item lookupTargetByOS($dbh, $os[, $src])
@@ -1547,7 +1547,7 @@ sub lookupTargetByOS
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_target");
     my $ref = $dbh->selectrow_hashref($query_target);
-    return $ref->{TARGET};
+    return $ref->{target};
 }
 
 =item isRES($dbh, $guid[, $log, vblevel])

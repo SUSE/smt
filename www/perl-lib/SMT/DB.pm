@@ -46,10 +46,10 @@ sub execute_h {
 
     # this allows for inout binds; for instance, DELETE and INSERT with RETURNING clauses
     if (ref $v eq 'SCALAR') {
-      $self->bind_param_inout(":$k" => $v, 4096, $attr);
+      $self->bind_param_inout(":$k" => $v, 4096);
     }
     else {
-      $self->bind_param(":$k" => $v, $attr);
+      $self->bind_param(":$k" => $v);
     }
   }
 
