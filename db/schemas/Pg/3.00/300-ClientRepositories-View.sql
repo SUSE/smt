@@ -1,13 +1,13 @@
 
 create or replace view ClientRepositories
 as
-SELECT c.id AS client_id
+SELECT c.id AS client_id,
        c.guid,
        c.secret,
        c.target AS client_target,
        c.hostname,
        c.regtype,
-       c.lastcontact
+       c.lastcontact,
        p.product,
        p.version,
        p.rel,
@@ -23,7 +23,7 @@ SELECT c.id AS client_id
        rp.domirror,
        rp.mirrorable
   FROM Clients c
-  JOIN Registration r ON r.client_id = c.id
+  JOIN Registrations r ON r.client_id = c.id
   JOIN Products p ON p.id = r.product_id
   JOIN ProductRepositories pr ON pr.product_id = p.id
   JOIN Repositories rp ON rp.id = pr.repository_id
