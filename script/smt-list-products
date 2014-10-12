@@ -33,7 +33,8 @@ use Getopt::Long;
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = Getopt::Long::GetOptions(
                                       'used|u' => \$used,
-                                      'catstat|c' => \$catstat,
+                                      'catstat|c' => \$catstat, # keep this for compatibility
+                                      'repostat|r' => \$catstat,
                                       'verbose|v' => \$verbose,
                                       'help|h' => \$help,
                                       'format|f=s' => \$format,
@@ -43,14 +44,16 @@ if ( (defined $help && $help == 1 ) || !$optres )
 {
   print basename($0) . " : " . __("list known products\n");
   print "   --used       (-u) : " . __("show only used products\n");
-  print "   --catstat    (-c) : " . __("show repository (catalog) status: Are all repositories localy mirrored, which are required for this product?\n");
+  print "   --repostat    (-r) : " . __("show repository status: Are all repositories localy mirrored, which are required for this product?\n");
 #  print "    -verbose    (-v) : " . __("show detailed product information\n");
   print "   --help       (-h) : " . __("show this help\n");
   print "   --format     (-f) : " . __("format the output ('asciitable', 'csv')\n");
   exit 0;
 }
 
-my %params = (verbose => $verbose, used => $used, catstat => $catstat);
+$repostat = 1 if($catstat);
+
+my %params = (verbose => $verbose, used => $used, repostat => $catstat);
 
 $params{format} = (defined $format ? lc($format):'asciitable');
 
@@ -84,9 +87,9 @@ C<smt list-products> shows information about known products allowing filtering b
 
 Shows only used products.
 
-=item --catstat -c
+=item --repostat -r
 
-Shows repository (catalog) status. Are all repositories localy mirrored,
+Shows repository status. Are all repositories localy mirrored,
 which are required for this product?.
 
 =head1 AUTHORS and CONTRIBUTORS

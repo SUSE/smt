@@ -7,7 +7,7 @@
 use strict;
 use warnings;
 use SMT::Utils;
-use SMT::NCCRegTools;
+use SMT::CLI;
 use Getopt::Long;
 use File::Basename;
 use Data::Dumper;
@@ -67,31 +67,9 @@ if(!SMT::Utils::openLock("smt-delete-registration"))
 
 my $LOG = SMT::Utils::openLog($logfile);
 
-my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel);
-$useragent->protocols_allowed( [ 'https' ] );
-
-
-my $dbh = undef;
-
-$dbh = SMT::Utils::db_connect();
-
-if(!$dbh)
-{
-    if(!SMT::Utils::unLock("smt-delete-registration"))
-    {
-        print STDERR __("Cannot remove lockfile.\n");
-    }
-    die __("Cannot connect to database");
-}
-
 eval
 {
-    my $nccreg = SMT::NCCRegTools->new(log => $LOG, vblevel => $vblevel, useragent => $useragent, dbh => $dbh);
-    my $err = $nccreg->NCCDeleteRegistration(@guids);
-    if($err != 0)
-    {
-        SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
-    }
+    SMT::CLI::deleteRegistration(\@guids);
 };
 if($@)
 {

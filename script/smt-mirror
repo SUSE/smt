@@ -54,7 +54,6 @@ my $debug    = 0;
 my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 
 my $clean    = 0;
-my $hardlink = undef;
 my $deepverify = 0;
 my $dryrun     = 0;
 
@@ -88,7 +87,6 @@ Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = GetOptions ("debug|d"      => \$debug,
                          "verboselevel|v=i" => \$vblevel,
                          "clean|c"      => \$clean,
-                         "hardlink=i"   => \$hardlink,
                          "directory=s"  => \$LocalBasePath,
                          "fromdir=s"    => \$FromLocalBasePath,
                          "fromlocalsmt" => \$fromlocalsmt,
@@ -108,7 +106,6 @@ if($help || !$optres)
 {
     print basename($0) . " [--directory path] [--deepverify] [--testrun] [--dbreplfile file] [-L file] [--debug] [--verboselevel level] [--nohardlink] [--mail] [--repository repositoryid]\n";
     print basename($0) . " --clean [--directory path] [--dbreplfile file] [-L file] [--debug]\n";
-    print basename($0) . " --hardlink size [--directory path] [-L file] [--debug]\n";
     print "\n";
     print __("Options:\n");
     print "--debug -d              " . __("enable debug mode\n");
@@ -116,8 +113,6 @@ if($help || !$optres)
     print "--clean -c              " . __("cleanup all mirrored repositories.\n");
     print "                        " . __("Remove all files no longer mentioned in the metadata.\n");
     print "                        " . __("It does not mirror new files.\n");
-    print "--hardlink size         " . __("Search for duplicate files with size > 'size' (in Kilobytes) and create hardlinks\n");
-    print "                        " . __("for them\n");
     print "--directory arg         " . __("The directory to work on. Using this option ignores the configured\n");
     print "                        " . __("default value in smt.conf\n");
     print "--fromdir arg           " . __("Mirror from the directory give here, instead of mirroring from the remote sources.\n");
@@ -240,13 +235,6 @@ if ( $fromlocalsmt )
     }
 }
 
-if(defined $hardlink)
-{
-    SMT::CLI::hardlink(log => $LOG, size => $hardlink, vblevel => $vblevel, basepath => $LocalBasePath);
-    SMT::Utils::unLockAndExit( "smt-mirror", 0, $LOG, $vblevel );
-}
-
-
 my $dbh = undef;
 
 if(!defined $dbreplfile)
@@ -271,7 +259,7 @@ else
     $dbreplacement = [];
 
     my $parser = SMT::Parser::RegData->new();
-    $parser->parse( $dbreplfile, sub { catalog_handler($dbreplacement, @_); });
+    $parser->parse( $dbreplfile, sub { repo_handler($dbreplacement, @_); });
 }
 
 my $useragent = SMT::Utils::createUserAgent(log => $LOG, vblevel => $vblevel);
@@ -314,10 +302,14 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING, AUTHTOKEN ".
-                                       "from Catalogs ".
-                                       "where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
-                                       "order by CATALOGTYPE, NAME",
+    $array = $dbh->selectall_arrayref( "SELECT id, repo_id, localpath,
+                                               exturl, exthost, repotype,
+                                               authtoken
+                                          FROM Repositories
+                                         WHERE mirrorable='Y'
+                                           AND domirror='Y'
+                                               $additional_filters
+                                      ORDER BY repotype, name",
                                        { Slice => {} } );
 }
 else
@@ -327,68 +319,55 @@ else
 
 foreach my $entry (@{$array})
 {
-    next if(!exists $entry->{CATALOGTYPE} || ! defined $entry->{CATALOGTYPE});
+    next if($entry->{repotype});
 
-    if( $entry->{EXTURL} ne "" && $entry->{LOCALPATH} ne "" )
+    if( $entry->{exturl} && $entry->{localpath})
     {
         my $zuri;
-        if ( defined $FromLocalBasePath && $FromLocalBasePath ne "" )
+        if ($FromLocalBasePath)
         {
-            $zuri = URI::file->new($FromLocalBasePath.$entry->{LOCALPATH});
+            $zuri = URI::file->new($FromLocalBasePath.$entry->{localpath});
         }
         elsif ( $fromlocalsmt )
         {
-            $zuri = URI::file->new($cfg->val("LOCAL", "MirrorTo")."/repo/".$entry->{LOCALPATH});
+            $zuri = URI::file->new($cfg->val("LOCAL", "MirrorTo")."/repo/".$entry->{localpath});
         }
         else
         {
             # in case of SCC with updates.suse.com we use tokenauth
             # no user/password needed
-            $zuri = URI->new($entry->{EXTURL});
+            $zuri = URI->new($entry->{exturl});
             if($zuri->host eq "nu.novell.com")
             {
                 $zuri->userinfo("$nuUser:$nuPass");
             }
-            if ($entry->{AUTHTOKEN})
+            if ($entry->{authtoken})
             {
                 # if we have an authtoken, we overwrite everything.
                 # a repo URL should not have extra query params
-                $zuri->query($entry->{AUTHTOKEN});
+                $zuri->query($entry->{authtoken});
             }
         }
 
-        # if STAGING is Y, put full/ infront of LOCALPATH
-        if( exists $entry->{STAGING} && defined $entry->{STAGING} && uc($entry->{STAGING}) eq "Y")
-        {
-            if ( $fromlocalsmt )
-            {
-                $zuri->path($cfg->val("LOCAL", "MirrorTo")."/repo/$stagingDir/".$entry->{LOCALPATH});
-            }
-            else
-            {
-                $entry->{LOCALPATH} = "$stagingDir/".$entry->{LOCALPATH};
-            }
-        }
-
-        &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $entry->{LOCALPATH} ) );
+        &File::Path::mkpath( SMT::Utils::cleanPath( $LocalBasePath, "repo", $entry->{localpath} ) );
 
         my $zyppMirror = undef;
         if( SMT::Utils::doesFileExist($useragent, SMT::Utils::appendPathToURI($zuri, "headers/header.info")))
         {
             $zyppMirror = SMT::Mirror::Yum->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                 mirrorsrc => $mirrorsrc, nohardlink => $nohardlink,
-                                                cfg => $cfg, repoid => $entry->{ID},
+                                                cfg => $cfg, repoid => $entry->{id},
                                                 useragent => $useragent);
         }
         else
         {
             $zyppMirror = SMT::Mirror::RpmMd->new(vblevel => $vblevel, log => $LOG, dbh => $dbh,
                                                   mirrorsrc => $mirrorsrc, nohardlink => $nohardlink,
-                                                  cfg => $cfg, repoid => $entry->{ID},
+                                                  cfg => $cfg, repoid => $entry->{id},
                                                   useragent => $useragent);
         }
         $zyppMirror->localBasePath( SMT::Utils::cleanPath( $LocalBasePath, "repo" ) );
-        $zyppMirror->localRepoPath( $entry->{LOCALPATH} );
+        $zyppMirror->localRepoPath( $entry->{localpath} );
 
         if($clean)
         {
@@ -440,7 +419,7 @@ foreach my $entry (@{$array})
                 {
                     # This date reflects the last successfull sync.
                     # Updated even if nothing changed.
-                    $rh->updateLastMirror ($entry->{ID});
+                    $rh->updateLastMirror ($entry->{id});
                     # Something new has been downloaded, update the mirroring timestamp
                     # BNC #510320: Downloaded per repository, not a total download size
                     if ($s->{DOWNLOAD})
@@ -458,19 +437,19 @@ foreach my $entry (@{$array})
                 # s/he wants (maybe this should be configurable)
                 # Only add new filter for a new patch, if the current one does
                 # not match it, to avoid filling the DB unnecesarily.
-                if ($rh->filteringAllowed($entry->{ID}, $cfg->val("LOCAL", "MirrorTo")))
+                if ($rh->filteringAllowed($entry->{id}, $cfg->val("LOCAL", "MirrorTo")))
                 {
                     my $newpatches = $zyppMirror->newpatches();
-                    foreach my $group (@{SMT::Utils::getStagingGroupsForCatalogID($dbh, $entry->{ID})})
+                    foreach my $group (@{SMT::Utils::getStagingGroupsForCatalogID($dbh, $entry->{id})})
                     {
                         my $filter = SMT::Filter->new();
-                        $filter->load($dbh, $entry->{ID}, $group);
+                        $filter->load($dbh, $entry->{id}, $group);
                         for (keys %$newpatches)
                         {
                             $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
                                 if (!$filter->matches($newpatches->{$_}));
                         }
-                        $filter->save($dbh, $entry->{ID}, $group);
+                        $filter->save($dbh, $entry->{id}, $group);
                     }
                 }
             }
@@ -481,21 +460,22 @@ foreach my $entry (@{$array})
 # search for Catalogs which has the DOMIRROR flag equals Y but the MIRRORABLE flag to N
 if(!defined $dbreplfile)
 {
-    my $hash = $dbh->selectall_hashref( "select ID, NAME, TARGET, CATALOGTYPE ".
-                                        "from Catalogs ".
-                                        "where MIRRORABLE='N' and DOMIRROR='Y'".$additional_filters,
-                                        "ID" );
+    my $hash = $dbh->selectall_hashref("SELECT id, name, target, repotype
+                                          FROM Repositories
+                                         WHERE mirrorable='N'
+                                           AND domirror='Y'
+                                               $additional_filters",
+                                       "id" );
 
     if(keys %{$hash} > 0)
     {
-
         my $warning = __("WARNING: The following repositories cannot be mirrored.\n");
         $warning   .= __("         Maybe you have not enough permissions to download these repositories?\n\n");
 
         foreach my $id (keys %{$hash})
         {
-            $hash->{$id}->{TARGET} = '' if not $hash->{$id}->{TARGET};
-            $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
+            $hash->{$id}->{target} = '' if not $hash->{$id}->{target};
+            $warning .= "* ".$hash->{$id}->{name}." ".$hash->{$id}->{target}."\n";
         }
 
         SMT::Utils::printLog($LOG, $vblevel, LOG_WARN, $warning);
@@ -512,7 +492,7 @@ if(!SMT::Utils::unLock("smt-mirror"))
 
 SMT::Utils::runHook("mirror_postunlock_hook");
 
-if(!$clean && !$hardlink)
+if(!$clean)
 {
     # print summary only when mirroring
     my @summary = ();
@@ -579,7 +559,7 @@ if(!$clean && !$hardlink)
 
 exit 0;
 
-sub catalog_handler
+sub repo_handler
 {
     my $data = shift;
     my $node = shift;

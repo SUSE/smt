@@ -540,7 +540,7 @@ sub getProducts
     my @HEAD = ( __('ID'), __('Name'), __('Version'), __('Architecture'), __('Release'), __('Usage') );
     my @VALUES = ();
 
-    if($options{catstat})
+    if($options{repostat})
     {
         push @HEAD,  __('Repos mirrored?');
     }
@@ -554,7 +554,7 @@ sub getProducts
     {
         next if ($options{used} && int($value->{registered_machines}) < 1);
 
-        if($options{catstat})
+        if($options{repostat})
         {
             $ststat->execute_h(pdid => $value->{ID});
             my $arr = $dbh->fetchall_arrayref();
@@ -1068,7 +1068,7 @@ sub setupCustomRepo
                              VALUES(:id, :repoid, :name, :desc, :target,
                                     :localpath, :exthost, :exturl, :repotype, :domirror,
                                     :mirrorable, :autorefresh, 'C')");
-    my $affected = $sth->execute_h(id => $id, repoid => $options{repository_id}, name => $options{name},
+    my $affected = $sth->execute_h(id => $id, repoid => $id, name => $options{name},
                                    desc => $options{description},
                                    target => $options{target}?$options{target}:'',
                                    localpath => "/RPMMD/".$options{name},
@@ -1168,6 +1168,18 @@ sub certificateExpireCheck
     return $days;
 }
 
+sub deleteRegistrations
+{
+    my $guids = shift || return;
+    my ($cfg, $dbh) = init();
+
+    my $sth = $dbh->prepare("DELETE FROM Clients
+                             WHERE guid = :guid");
+    foreach my $guid (@{$guids})
+    {
+        $sth->do_h(guid=>$guid):
+    }
+}
 
 sub _sha1sum
 {

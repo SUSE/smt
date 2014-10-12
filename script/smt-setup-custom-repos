@@ -25,7 +25,7 @@ if(!SMT::Utils::dropPrivileges())
 my $help = 0;
 
 my @productids = ();
-my $catalogid = "";
+my $repoid = "";
 my $name = "";
 my $description = "";
 my $exturl = "";
@@ -61,7 +61,7 @@ if ( $help || !$optres )
     print "\n\n";
     print __("Examples:\n\n");
     print "  smt-setup-custom-repos --productid 434 --name 'My_Repository' --exturl 'http://my.domain.top/My_Repository'\n";
-    print "  smt-setup-custom-repos --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc\n";
+    print "  smt-setup-custom-repos --delete 42\n";
 
     exit 0;
 }
@@ -74,7 +74,9 @@ if(!$dbh)
 
 if(@delete > 0)
 {
-    my $statement = sprintf("SELECT ID, NAME, TARGET from Catalogs where ID IN ('%s')", join("','", @delete));
+    my $statement = sprintf("SELECT id, name, target
+                               FROM Repositories
+                              WHERE id IN ('%s')", join("','", @delete));
     my $arr = $dbh->selectall_arrayref($statement, {Slice=>{}});
 
     if(@{$arr} == 0)
@@ -86,10 +88,10 @@ if(@delete > 0)
     print __("Really delete the following repositories:\n");
     foreach my $entry (@$arr)
     {
-        print " ".$entry->{ID}.":".$entry->{NAME};
-        if(defined $entry->{TARGET})
+        print " ".$entry->{id}.":".$entry->{name};
+        if(defined $entry->{target})
         {
-            print " ".$entry->{TARGET};
+            print " ".$entry->{target};
         }
         print "\n";
     }
@@ -106,7 +108,7 @@ if(@delete > 0)
         my $removed = 0;
         foreach my $del (@delete)
         {
-            $removed += SMT::CLI::removeCustomCatalog(catalogid => $del);
+            $removed += SMT::CLI::removeCustomRepo(repository_id => $del);
         }
         if(!$removed)
         {
@@ -127,7 +129,9 @@ if(@delete > 0)
 
 if($target ne "")
 {
-       my $targets_avail = $dbh->selectcol_arrayref("select distinct TARGET from Targets order by TARGET asc");
+       my $targets_avail = $dbh->selectcol_arrayref("SELECT DISTINCT target
+                                                       FROM Targets
+                                                   ORDER BY target ASC");
        my $found = 0;
        my $alltargets = "";
        foreach my $arch (@{$targets_avail})
@@ -173,13 +177,15 @@ chomp($exturl);
 
 if($description eq "")
 {
-    print __("Catalog description:");
+    print __("Repository description:");
 
     $description = <STDIN>;
 }
 chomp($description);
 
-my $array = $dbh->selectall_arrayref("SELECT PRODUCTDATAID, PRODUCT, VERSION, REL, ARCH from Products where PRODUCT_LIST='Y' group by PRODUCT, VERSION, REL, ARCH",
+my $array = $dbh->selectall_arrayref("SELECT id, product, version, rel, arch
+                                        FROM Products
+                                    GROUP BY product, version, rel, arch",
                                      {Slice => {}});
 my @validProductIds = ();
 my $anotherone = 0;
@@ -190,14 +196,14 @@ if(@productids == 0 )
 
     foreach my $item (@{$array})
     {
-        print $item->{PRODUCTDATAID}."\t";
-        print $item->{PRODUCT}." ";
-        print $item->{VERSION}." " if(defined $item->{VERSION});
-        print $item->{REL}." " if(defined $item->{REL});
-        print $item->{ARCH}." " if(defined $item->{ARCH});
+        print $item->{id}."\t";
+        print $item->{product}." ";
+        print $item->{version}." ";
+        print $item->{rel}." ";
+        print $item->{arch}." ";
         print "\n";
 
-        push @validProductIds, $item->{PRODUCTDATAID};
+        push @validProductIds, $item->{id};
     }
     print "\n";
 }
@@ -229,18 +235,16 @@ while(@productids == 0 || $anotherone)
         $anotherone = 0;
     }
 }
-$catalogid = sha1_hex($name);
 
 my %options = (
                productids  => \@productids,
-               catalogid   => $catalogid,
                name        => $name,
                description => $description,
                exturl      => $exturl,
                target      => $target
               );
 
-my $success = SMT::CLI::setupCustomCatalogs( %options );
+my $success = SMT::CLI::setupCustomRepo( %options );
 if($success)
 {
     print __("Repository successfully added.\n");

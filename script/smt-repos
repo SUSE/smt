@@ -27,9 +27,6 @@ my $disable;
 my $delete;
 my $enableByProduct = "";
 my $disableByProduct = "";
-my $namespace="";
-my $enableStaging = 0;
-my $disableStaging = 0;
 my $mirrorable;
 my $domirror;
 my $verbose;
@@ -43,14 +40,11 @@ my $optres = &Getopt::Long::GetOptions(
                                        'disable-mirror|d'     => \$disable,
                                        'enable-by-prod|p=s'   => \$enableByProduct,
                                        'disable-by-prod|P=s'  => \$disableByProduct,
-                                       'enable-staging|s'     => \$enableStaging,
-                                       'disable-staging|S'    => \$disableStaging,
                                        'only-mirrorable|m'    => \$mirrorable,
                                        'only-enabled|o'       => \$domirror,
                                        'verbose|v'            => \$verbose,
                                        'batch-mode|b'         => \$batchMode,
                                        'delete'               => \$delete,
-                                       'namespace=s'          => \$namespace,
                                        'help|h'               => \$help
                                       );
 
@@ -69,12 +63,9 @@ if ( (defined $help && $help == 1 ) || (defined $optres && $optres == 0) )
     print "   --disable-by-prod (-P) arg : " . __("disable repository mirroring by giving product data\n");
     print "                                Product[,Version[,Architecture[,Release]]]\n";
     print "                                (call smt list-products to get a list of known products)\n";
-    print "   --enable-staging  (-s)     : " . __("Enable staging for a repository\n");
-    print "   --disable-staging (-S)     : " . __("Disable staging for a repository\n");
     print "   --only-mirrorable (-m)     : " . __("only show mirrorable repositories\n");
     print "   --only-enabled    (-o)     : " . __("only show repositories set to be mirrored\n");
     print "   --delete                   : " . __("delete the repository from disk\n");
-    print "   --namespace            arg : " . __("specify the namespace of the repository which should be deleted\n");
     print "   --verbose         (-v)     : " . __("show detailed repository information\n");
     print "   --help            (-h)     : " . __("show this help\n");
     exit 0;
@@ -82,23 +73,18 @@ if ( (defined $help && $help == 1 ) || (defined $optres && $optres == 0) )
 
 if ( $enableByProduct ne "" )
 {
-    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $enableByProduct, enable => 1);
+    my $ret = SMT::CLI::setReposByProduct( verbose => $verbose, prodStr => $enableByProduct, enable => 1);
     exit $ret;
 }
 elsif ( $disableByProduct ne "" )
 {
-    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $disableByProduct, enable => 0);
+    my $ret = SMT::CLI::setReposByProduct( verbose => $verbose, prodStr => $disableByProduct, enable => 0);
     exit $ret;
 }
 
 my $name = shift(@ARGV);
 
 if ( defined $disable && defined $enable )
-{
-    die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
-}
-
-if ( $disableStaging && $enableStaging )
 {
     die __("Neurosis is the inability to tolerate ambiguity. Sigmund Freud.\n");
 }
@@ -114,62 +100,28 @@ if ( defined $enable )
     $bool = ( $enable == 1 ? 1 : 0 );
 }
 
-my $boolStaging;
-if ( defined $disableStaging )
-{
-    $boolStaging = ( $disableStaging == 1 ? 0 : 1 );
-}
-
-if ( defined $enableStaging )
-{
-    $boolStaging = ( $enableStaging == 1 ? 1 : 0 );
-}
-
 my $target = shift(@ARGV);
 
 my ($cfg, $dbh, $nuri) = SMT::CLI::init();
 
 my $count = 0;
 my @catalogs;
-my $sql = "select * from Catalogs";
-
-$sql = $sql . " where 1";
+my $sql = "SELECT * FROM Repositories WHERE 1";
 
 if ( defined($mirrorable) )
 {
-    if (  $mirrorable == 1 )
-    {
-        $sql = $sql . " and MIRRORABLE='Y'";
-    }
-    else
-    {
-        $sql = $sql . " and MIRRORABLE='N'";
-    }
+    $sql .= " AND mirrorable='Y'" if($mirrorable);
+    $sql .= " AND mirrorable='N'" if(!$mirrorable);
 }
 
 if ( defined($domirror) )
 {
-    if (  $domirror == 1 )
-    {
-        $sql = $sql . " and DOMIRROR='Y'";
-    }
-    else
-    {
-        $sql = $sql . " and DOMIRROR='N'";
-    }
+    $sql .= " AND domirror='Y'" if($domirror);
+    $sql .= " AND domirror='N'" if(!$domirror);
 }
-
-if (defined $name && $name ne "")
-{
-    $sql = $sql . sprintf(" and NAME=%s", $dbh->quote($name) );
-}
-# if target was given, limit the search even more
-if (defined $target && $target ne "")
-{
-    $sql = $sql . sprintf(" and TARGET=%s", $dbh->quote($target) );
-}
-
-$sql = $sql . " order by NAME, TARGET";
+$sql .= sprintf(" AND name=%s", $dbh->quote($name)) if ($name);
+$sql .= sprintf(" AND target=%s", $dbh->quote($target)) if ($target);
+$sql .= " ORDER BY name, target";
 
 # hash to associate order with id.
 my @idnumbers;
@@ -179,41 +131,43 @@ $sth->execute();
 my $output = "";
 
 my $t = new Text::ASCIITable;
-$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"), __("Staging"));
+$t->setCols(__("Mirror?"), __("ID"), __("Type"), __("Name"), __("Target"), __("Description"), __("Can be Mirrored"));
 
+my $sth = $dbh->prepare("SELECT p.id, p.product, p.version, p.arch, p.rel, pr.optional
+                           FROM Products p
+                           JOIN ProductRepositories pr ON p.id = pr.product_id
+                          WHERE pr.repository_id = :rid
+                       ORDER BY p.product, p.version, p.arch, p.rel");
 while ( my $v = $sth->fetchrow_hashref() ) {
     $count++;
-    my $catId = $v->{ID};
+    my $catId = $v->{id};
     push(@idnumbers, $catId);
-    my $catName = $v->{NAME};
-    my $catTarget = $v->{TARGET};
-    my $catType = $v->{CATALOGTYPE};
-    my $catDesc = $v->{DESCRIPTION};
-    my $catMA   = $v->{MIRRORABLE};
-    my $catStaging = $v->{STAGING};
+    my $catName = $v->{name};
+    my $catTarget = $v->{target};
+    my $catType = $v->{repotype};
+    my $catDesc = $v->{description};
+    my $catMA   = $v->{mirrorable};
 
     if (defined($verbose)) {
-        my $st = sprintf("select p.ID, p.PRODUCT, p.VERSION, p.ARCH, p.REL, pc.OPTIONAL from Products p, ProductCatalogs pc where pc.CATALOGID=%s and p.ID = pc.PRODUCTID order by p.PRODUCT, p.VERSION, p.ARCH, p.REL",
-                         $dbh->quote($catId));
-        my $products = $dbh->selectall_arrayref($st,{Slice=>{}} );
+        $sth->execute_h(rid => $catId);
+        my $products = $dbh->fetchall_arrayref({Slice=>{}});
 
-        $output .= "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
-        $output .= "          (" . $v->{DESCRIPTION} .")\n";
-        $output .= "          " . $v->{EXTURL} ."\n";
-        $output .= "          " . $v->{LOCALPATH} ."\n";
-        $output .= "          Repository ID: " . $v->{ID} ."\n";
-        $output .= "          Staging  : " . $catStaging ."\n";
+        $output .= "[" . (( $v->{domirror} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
+        $output .= "          (" . $v->{description} .")\n";
+        $output .= "          " . $v->{exturl} ."\n";
+        $output .= "          " . $v->{localpath} ."\n";
+        $output .= "          Repository ID: " . $v->{id} ."\n";
         foreach my $h (@{$products}) {
-            my $product = (defined $h->{PRODUCT}?$h->{PRODUCT}:"");
-            my $version = (defined $h->{VERSION}?$h->{VERSION}:"");
-            my $arch    = (defined $h->{ARCH}?$h->{ARCH}:"");
-            my $rel     = (defined $h->{REL}?$h->{REL}:"");
+            my $product = $h->{product};
+            my $version = $h->{version};
+            my $arch    = $h->{ARCH};
+            my $rel     = $h->{REL};
 
             $output .= "          Assigned to product: $product $version $arch $rel\n";
         }
     } else {
         $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"),
-                    $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")), (( $catStaging eq "Y" ) ? __("Yes") : __("No")));
+                    $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")) );
     }
 }
 
@@ -236,8 +190,7 @@ if (not defined $verbose) {
     }
 }
 
-if ( ! defined $disable && ! defined $enable &&
-     ! $disableStaging && ! $enableStaging && ! $delete )
+if ( ! defined $disable && ! defined $enable && ! $delete )
 {
     print $output;
     # not do any action, display was enough
@@ -253,7 +206,7 @@ elsif ( $count == 1 )
     # we are lucky, only one
     if ( $disable || $enable )
     {
-        my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[0]);
+        my $rows = SMT::CLI::setRepositoryDoMirror(enabled => $bool, id => $idnumbers[0]);
         if ($bool)
         {
             print sprintf(__N(
@@ -272,30 +225,9 @@ elsif ( $count == 1 )
         }
         exit 0;
     }
-    elsif( $disableStaging || $enableStaging)
-    {
-        my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[0]);
-        if ($boolStaging)
-        {
-            print sprintf(__N(
-                    'Staging enabled for %d repository.',
-                    'Staging enabled for %d repositories.',
-                    $rows),
-                $rows) . "\n";
-        }
-        else
-        {
-            print sprintf(__N(
-                    'Staging disabled for %d repository.',
-                    'Staging disabled for %d repositories.',
-                    $rows),
-                $rows) . "\n";
-        }
-        exit 0;
-    }
     elsif( $delete )
     {
-        my $ret = SMT::CLI::deleteCatalogs(id => $idnumbers[0], namespace => $namespace);
+        my $ret = SMT::CLI::deleteRepositories(id => $idnumbers[0], namespace => $namespace);
         exit $ret;
     }
 }
@@ -311,21 +243,14 @@ else
     {
         if ( $disable || $enable )
         {
-            my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, name => $name, target => $target);
+            my $rows = SMT::CLI::setRepositoryDoMirror(enabled => $bool, name => $name, target => $target);
             # FIXME this should use gettext for variable mutliplicity
             print sprintf(__("%d Repo(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
             exit 0;
         }
-        elsif( $disableStaging || $enableStaging)
-        {
-            my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, name => $name, target => $target);
-            # FIXME this should use gettext for variable mutliplicity
-            print sprintf(__("%d Repo(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
-            exit 0;
-        }
         elsif( $delete )
         {
-            my $ret = SMT::CLI::deleteCatalogs(name => $name, target => $target, namespace => $namespace);
+            my $ret = SMT::CLI::deleteRepositories(name => $name, target => $target, namespace => $namespace);
             exit $ret;
         }
     }
@@ -335,21 +260,14 @@ else
 
         if ( $disable || $enable )
         {
-            my $rows = SMT::CLI::setCatalogDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
+            my $rows = SMT::CLI::setRepositoryDoMirror(enabled => $bool, id => $idnumbers[$number-1]);
             # FIXME this should use gettext for variable mutliplicity
             print sprintf(__("%d Repo(s) %s.\n"), $rows, ($bool?__("enabled"):__("disabled")) );
             exit 0;
         }
-        elsif( $disableStaging || $enableStaging)
-        {
-            my $rows = SMT::CLI::setCatalogStaging(enabled => $boolStaging, id => $idnumbers[$number-1]);
-            # FIXME this should use gettext for variable mutliplicity
-            print sprintf(__("%d Repo(s) %s.\n"), $rows, ($boolStaging?__("staging enabled"):__("staging disabled")) );
-            exit 0;
-        }
         elsif( $delete )
         {
-            my $ret = SMT::CLI::deleteCatalogs(id => $idnumbers[$number-1], namespace => $namespace);
+            my $ret = SMT::CLI::deleteRepositories(id => $idnumbers[$number-1], namespace => $namespace);
             exit $ret;
         }
     }
@@ -414,14 +332,6 @@ Disables repository mirroring by giving product data.
 Product[,Version[,Architecture[,Release]]]
 (call smt list-products to get a list of known products)
 
-=item --enable-staging -s
-
-Enable staging for a repository.
-
-=item --disable-staging -S
-
-Disable staging for a repository.
-
 =item --only-mirrorable -m
 
 Shows mirrorable repositories only.
@@ -437,10 +347,6 @@ Shows detailed repository information.
 =item --delete
 
 Delete the repository from disk.
-
-=item --namespace arg
-
-Specify the namespace of the repository which should be deleted.
 
 =back
 

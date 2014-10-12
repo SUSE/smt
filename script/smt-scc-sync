@@ -190,10 +190,10 @@ eval
     }
 
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
-    SMT::CLI::setMirrorableCatalogs(log     => $LOG,
-                                    vblevel => $vblevel,
-                                    fromdir => (($fromdir ne "")?$fromdir:undef),
-                                    todir   => (($todir ne "")?$todir:undef));
+    SMT::CLI::setMirrorableRepos(log     => $LOG,
+                                 vblevel => $vblevel,
+                                 fromdir => (($fromdir ne "")?$fromdir:undef),
+                                 todir   => (($todir ne "")?$todir:undef));
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) during sync."), $res));
@@ -205,8 +205,9 @@ eval
         my $mirrorinfofile = $fromdir."/mirrorinfo.xml";
         if ( -f $mirrorinfofile && (stat($fromdir."/catalogs.xml"))[9] <= (stat($mirrorinfofile))[9] )
         {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Updating mirror flags from $mirrorinfofile."));
-            SMT::CLI::setDoMirrorFromXml( xml => $mirrorinfofile );
+	    #SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Updating mirror flags from $mirrorinfofile."));
+	    # FIXME: no xml anymore
+	    #SMT::CLI::setDoMirrorFromXml( xml => $mirrorinfofile );
         }
     }
 
