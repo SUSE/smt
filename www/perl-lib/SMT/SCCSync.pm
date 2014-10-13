@@ -335,44 +335,6 @@ sub products
     }
 }
 
-=item services
-
-NOT YET IMPLEMENTED
-
-Update distro_targets.
-Return number of errors.
-
-=cut
-
-sub services
-{
-    my $self = shift;
-    my $name = "services";
-    my $input = $self->_getInput($name);
-
-    if (! $input)
-    {
-        return 1;
-    }
-    if(defined $self->{TODIR})
-    {
-        open( FH, '>', $self->{TODIR}."/$name.json") or do
-        {
-            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
-            return 1;
-        };
-        my $json_text = JSON::encode_json($input);
-        print FH "$json_text";
-        close FH;
-        return 0;
-    }
-    else
-    {
-        my $ret = undef;
-        return $ret;
-    }
-}
-
 =item subscriptions
 
 Update subscriptions and connect them to the registered clients.
@@ -484,10 +446,6 @@ sub _getInput
     if($what eq "organization_products_unscoped")
     {
         $func = sub{$self->{API}->org_products()};
-    }
-    elsif($what eq "services")
-    {
-        $func = sub{$self->{API}->services()};
     }
     elsif($what eq "organization_subscriptions")
     {
