@@ -205,7 +205,7 @@ Return:
 sub canMigrate
 {
     my $self = shift;
-    my $input = $self->_getInput("organization_products_unscoped");
+    my $input = $self->_getInput("organizations_products_unscoped");
     my $errors = 0;
 
     if (! $input)
@@ -250,7 +250,7 @@ sub canMigrate
         return 3;
     }
 
-    $input = $self->_getInput("organization_repositories");
+    $input = $self->_getInput("organizations_repositories");
 
     if (! $input)
     {
@@ -309,7 +309,7 @@ Return number of errors.
 sub products
 {
     my $self = shift;
-    my $name = "organization_products_unscoped";
+    my $name = "organizations_products_unscoped";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -345,7 +345,7 @@ Return number of errors.
 sub subscriptions
 {
     my $self = shift;
-    my $name = "organization_subscriptions";
+    my $name = "organizations_subscriptions";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -374,7 +374,7 @@ sub subscriptions
 sub finalize_mirrorable_repos
 {
     my $self = shift;
-    my $name = "organization_repositories";
+    my $name = "organizations_repositories";
     my $input = $self->_getInput($name);
 
     if (! $input)
@@ -443,15 +443,15 @@ sub _getInput
         return $self->{CACHE}->{$what};
     }
 
-    if($what eq "organization_products_unscoped")
+    if($what eq "organizations_products_unscoped")
     {
         $func = sub{$self->{API}->org_products()};
     }
-    elsif($what eq "organization_subscriptions")
+    elsif($what eq "organizations_subscriptions")
     {
         $func = sub{$self->{API}->org_subscriptions()};
     }
-    elsif($what eq "organization_repositories")
+    elsif($what eq "organizations_repositories")
     {
         $func = sub{$self->{API}->org_repos()};
     }
