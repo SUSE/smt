@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Oct 13 14:21:40 CEST 2014 - mc@suse.de
+
+- version 2.0.7
+- rename local json file created or read with --todir or --fromdir
+  for organization/products/unscoped (bnc#900895)
+
+-------------------------------------------------------------------
 Thu Oct  2 12:44:33 UTC 2014 - jsrain@suse.cz
 
 - version 2.0.6
