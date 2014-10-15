@@ -1151,12 +1151,14 @@ sub _finalizeMirrorableRepos
                 $updateNeeded = 1;
             }
             $authtoken = URI->new($repo->{url})->query;
-            if( $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{AUTHTOKEN} ne "$authtoken")
+            my $db_authtoken = $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{AUTHTOKEN};
+            $db_authtoken = '' if(!$db_authtoken);
+            if( $db_authtoken ne "$authtoken" )
             {
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG3,
                          sprintf("Token differ for %s %s\n%s vs\n%s\n",
                                  $repo->{name}, $repo->{distro_target},
-                                 $sqlres->{$repo->{name}}->{$repo->{distro_target}}->{AUTHTOKEN},
+                                 $db_authtoken,
                                  $authtoken));
                 $updateNeeded = 1;
             }
