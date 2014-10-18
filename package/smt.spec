@@ -210,9 +210,9 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 %config /etc/apache2/vhosts.d/*.conf
 %config /etc/smt.d/*.conf
 %config /etc/slp.reg.d/smt.reg
-%exclude /etc/apache2/conf.d/smt_support.conf
 %config /etc/cron.d/novell.com-smt
 %config /etc/logrotate.d/smt
+%config /etc/tmpfiles.d/smt.conf
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Mirror/*.pm
@@ -223,9 +223,7 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/SMT/*.pm
 /srv/www/perl-lib/SMT/Client/*.pm
-%exclude /srv/www/perl-lib/SMT/Support.pm
 /usr/sbin/smt-*
-%exclude /usr/sbin/smt-support
 /usr/sbin/smt
 /usr/lib/SMT/bin/*
 /usr/bin/smt*
@@ -236,6 +234,9 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
 %doc %{_docdir}/smt/*
+%exclude /etc/apache2/conf.d/smt_support.conf
+%exclude /srv/www/perl-lib/SMT/Support.pm
+%exclude /usr/sbin/smt-support
 
 %files -n res-signingkeys
 %defattr(-,root,root)

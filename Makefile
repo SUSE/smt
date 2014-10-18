@@ -25,6 +25,7 @@ install:
 	mkdir -p $(DESTDIR)/etc/smt.d/
 	mkdir -p $(DESTDIR)/etc/logrotate.d/
 	mkdir -p $(DESTDIR)/etc/slp.reg.d/
+	mkdir -p $(DESTDIR)/etc/tmpfiles.d/
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/tools
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/keys
 	mkdir -p $(DESTDIR)/srv/www/htdocs/repo/testing
@@ -74,6 +75,7 @@ install:
                   \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \)
 	install -m 755 config/smt.target $(DESTDIR)/usr/lib/systemd/system/
 	install -m 755 config/smt.reg $(DESTDIR)/etc/slp.reg.d/
+	install -m 755 config/smt-tmpfiles.conf $(DESTDIR)/etc/tmpfiles.d/smt.conf
 	install -m 755 db/smt-setup-db $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 db/smt-sql $(DESTDIR)/usr/bin/
 	install -m 755 db/smt-schema-upgrade $(DESTDIR)/usr/bin/
@@ -147,6 +149,7 @@ dist: clean
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
 	@cp config/smt.target $(NAME)-$(VERSION)/config/
 	@cp config/smt.reg $(NAME)-$(VERSION)/config/
+	@cp config/smt-tmpfiles.conf $(NAME)-$(VERSION)/config/
 	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
 	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
 	find db -name ".svn" -prune -o \
