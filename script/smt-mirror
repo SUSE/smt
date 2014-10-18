@@ -9,13 +9,9 @@ use warnings;
 use SMT::Mirror::RpmMd;
 use SMT::Mirror::Yum;
 use SMT::Mirror::Utils;
-use SMT::Parser::RpmMdPatches;
-use SMT::Patch;
 use SMT::Utils;
-use SMT::CLI;
 use SMT::Parser::RegData;
 use SMT::Repositories;
-use SMT::Filter;
 use Config::IniFiles;
 use File::Path;
 use URI;
@@ -433,25 +429,6 @@ foreach my $entry (@{$array})
                         }
                     }
                 }
-                # filter new patches -> admin needs to manually allow which patches
-                # s/he wants (maybe this should be configurable)
-                # Only add new filter for a new patch, if the current one does
-                # not match it, to avoid filling the DB unnecesarily.
-                if ($rh->filteringAllowed($entry->{id}, $cfg->val("LOCAL", "MirrorTo")))
-                {
-                    my $newpatches = $zyppMirror->newpatches();
-                    foreach my $group (@{SMT::Utils::getStagingGroupsForCatalogID($dbh, $entry->{id})})
-                    {
-                        my $filter = SMT::Filter->new();
-                        $filter->load($dbh, $entry->{id}, $group);
-                        for (keys %$newpatches)
-                        {
-                            $filter->add(SMT::Filter->TYPE_NAME_VERSION, $_)
-                                if (!$filter->matches($newpatches->{$_}));
-                        }
-                        $filter->save($dbh, $entry->{id}, $group);
-                    }
-                }
             }
         }
     }
@@ -556,7 +533,7 @@ if(!$clean)
 
 }
 
-
+$dbh->disconnect();
 exit 0;
 
 sub repo_handler

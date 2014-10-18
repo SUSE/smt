@@ -14,8 +14,6 @@ use Digest::SHA1  qw(sha1 sha1_hex);
 use SMT::Mirror::Job;
 use SMT::Parser::RpmMdLocation;
 use SMT::Parser::RpmMdPatches;
-use SMT::Parser::RpmMdPrimaryFilter; # for removing of filtered packages from MD
-use SMT::Parser::RpmMdOtherFilter;   # for removing of filtered packages from MD
 use SMT::Utils;
 
 =head1 NAME
@@ -116,8 +114,6 @@ sub new
     $self->{REPODATAJOBS} = {};
     $self->{VERIFYJOBS}   = {};
     $self->{CLEANLIST}    = {};
-
-    $self->{FILTER} = undef;
 
     $self->{VBLEVEL} = 0;
     $self->{LOG}   = undef;
@@ -526,12 +522,6 @@ sub mirror()
     # hash to hold patches added since last mirroring
     $self->{NEWPATCHES} = {};
 
-    # repository's metadata files info
-    # gets initialized in download_handler form repomd.xml <data> data.
-    #
-    # see description in removePackages() for details of it's contents
-    $self->{MDFILES} = {};
-
     my $dest = $self->fullLocalRepoPath();
 
     if ( ! -d $dest )
@@ -721,13 +711,13 @@ sub mirror()
 
     $self->{EXISTS} = undef;
 
+
     #
     # parse old and new patch metadata
     #
 
     my $newpatches;
     my $oldpatches;
-    my $pkgstoremove;
 
     # to store the new (filtered) repodata
     $self->{TMPDIR} = my $tmpdir = tempdir(CLEANUP => 1);
@@ -735,104 +725,18 @@ sub mirror()
     # updateinfo.xml.gz file path
     my $olduifname = $self->fullLocalRepoPath().'/.'.$repomd->{data}->{updateinfo}->{location}->{href};
 
-    # with filtering (will generate new metadata later)
-    if (defined $self->{FILTER} && !$self->{FILTER}->empty() && -e $olduifname)
-    {
-        # new updateinfo.xml file path
-        my $uifname = "$tmpdir/updateinfo.xml";
+    my $parsenew = SMT::Parser::RpmMdPatches->new(
+        log => $self->{LOG}, vblevel => $self->vblevel());
+    $parsenew->resource($self->fullLocalRepoPath());
+    $parsenew->specialmdlocation(1);
+    $newpatches = $parsenew->parse(
+        ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
 
-        # open file to write the new updateinfo.xml
-        my $out = new IO::File();
-        $out->open("> $uifname") or do {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                "Cannot open $uifname for reading.");
-            return $self->{STATISTIC}->{ERROR}++;
-        };
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-            "Going to look for and parse new patch metadata.");
-
-        # parse with filter and writer
-        my $parsenew = SMT::Parser::RpmMdPatches->new(
-            log => $self->{LOG}, vblevel => $self->vblevel(),
-            filter => $self->{FILTER},
-            savefiltered => 1,
-            savepackages => 1,
-            out => $out);
-        $parsenew->resource($self->fullLocalRepoPath());
-        $parsenew->specialmdlocation(1);
-        $newpatches = $parsenew->parse(
-            ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
-        $pkgstoremove = $parsenew->filteredpkgs();
-
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-            "Going to look for and parse old patch metadata.");
-
-        # parse the original metadata with the filter
-        my $parseorig = SMT::Parser::RpmMdPatches->new(
-            log => $self->{LOG}, vblevel => $self->vblevel(),
-            filter => $self->{FILTER});
-        $parseorig->resource($self->fullLocalRepoPath());
-        $oldpatches = $parseorig->parse(
-            "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
-
-        $out->flush();
-
-        # compare checksums of old updateinfo & tmpfile
-
-        # new checksum
-        open(FILE, "< $uifname");
-        my $sha1 = Digest::SHA1->new;
-        $sha1->addfile(*FILE);
-        my $digest = $sha1->hexdigest();
-        close FILE;
-
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("new checksum %s", $digest ), 1);
-
-        # unzip the old file
-        my $olddigest = 0;
-        if (defined open(FILE, "> $uifname.old"))
-        {
-            my $fh = IO::Zlib->new($olduifname, "rb");
-            print FILE while <$fh>;
-            $fh->close;
-            close FILE;
-
-            # old checksum
-            if (defined open(FILE, "< $uifname.old"))
-            {
-                $sha1 = Digest::SHA1->new;
-                $sha1->addfile(*FILE);
-                $olddigest = $sha1->hexdigest();
-                close FILE;
-            }
-        }
-
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG2,  sprintf("old checksum %s", $olddigest ), 1);
-
-        # if checksums differ, overwrite the old updateinfo & update repomd later
-        if (not $digest eq $olddigest)
-        {
-            #for (keys %{$self->{MDFILES}}) { if ($_ =~ /updateinfo.*xml/) { $mdkey = $_; last }}
-            $self->{MDFILES}->{'repodata/updateinfo.xml.gz'}->{changednew} = $uifname;
-            $self->{MDFILES}->{'repodata/updateinfo.xml.gz'}->{changedorig} = $olduifname;
-        }
-    }
-    # without filtering (metadata stay untouched)
-    else
-    {
-        my $parsenew = SMT::Parser::RpmMdPatches->new(
-            log => $self->{LOG}, vblevel => $self->vblevel());
-        $parsenew->resource($self->fullLocalRepoPath());
-        $parsenew->specialmdlocation(1);
-        $newpatches = $parsenew->parse(
-            ".repodata/updateinfo.xml.gz", ".repodata/patches.xml" );
-
-        my $parseorig = SMT::Parser::RpmMdPatches->new(
-            log => $self->{LOG}, vblevel => $self->vblevel());
-        $parseorig->resource($self->fullLocalRepoPath());
-        $oldpatches = $parseorig->parse(
-            "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
-    }
+    my $parseorig = SMT::Parser::RpmMdPatches->new(
+        log => $self->{LOG}, vblevel => $self->vblevel());
+    $parseorig->resource($self->fullLocalRepoPath());
+    $oldpatches = $parseorig->parse(
+        "repodata/updateinfo.xml.gz", "repodata/patches.xml" );
 
     #
     # create a list of new patches (the diff of before and after mirroring)
@@ -865,50 +769,8 @@ sub mirror()
     $self->{NEWPATCHES} = $newpatches;
 
     #
-    # remove unwanted packages from metadata and the download queue
-    # ($self->{JOBS})
-    #
-
-    if (defined $pkgstoremove && @$pkgstoremove)
-    {
-        if (!$self->removePackages($pkgstoremove, $self->{MDFILES}))
-        {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                'Failed to remove filtered packages from the repository.');
-            $self->{STATISTIC}->{ERROR}++;
-        }
-    }
-
-    #
-    # update repomd.xml with changed metadata files
-    #
-
-    my $repodatadir = $self->fullLocalRepoPath() . '/.repodata';
-    if ($self->metadataChanged($self->{MDFILES}) &&
-        $self->updateRepomd($self->{MDFILES}, $repodatadir))
-    {
-        # re-sign the repo
-        $self->signrepo(
-            $self->fullLocalRepoPath()."/.repodata/", $keyid, $keypass);
-
-        # remove the signature and key file (we've got our own)
-        # from download queue to avoid overwriting (bnc #560823)
-        my @toremove = ('.repodata/repomd.xml.asc', '.repodata/repomd.xml.key');
-        foreach my $file (@toremove)
-        {
-            next if (not exists $self->{JOBS}->{$file});
-            delete $self->{JOBS}->{$file};
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-                "Removing download job $file");
-        }
-    }
-
-    #
     # execute enqueued jobs (download the files)
     #
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
-        'Finished downloading and parsing the metadata, going to download the rest of the files...');
     foreach my $r ( sort keys %{$self->{JOBS}})
     {
         if( $dryrun )
@@ -1231,7 +1093,6 @@ sub download_handler
         {
             my $locationKey = $data->{LOCATION};
             $locationKey =~ s/^(repodata\/)[0-9a-f]*-(.+)$/$1$2/;
-            $self->{MDFILES}->{$locationKey} = undef;
         }
 
         # get the repository index
@@ -1376,407 +1237,6 @@ sub verify_handler
             }
         }
     }
-}
-
-=item signrepo($repodatadir, [$keyid, $passphrase])
-
-Signs the repository index file, repomd.xml using the key specified by $keyid
-argument and specified $passphrase. If $keyid is not specified, the function
-removes any previous signature and public key (repomd.xml.asc and
-repomd.xml.key).
-
-The function works on the repodata located at $repodatadir.
-
-=cut
-# FIXME: needed?
-sub signrepo
-{
-    my ($self, $repodatadir, $keyid, $passphrase) = @_;
-
-    if (not defined $repodatadir || not -d $repodatadir)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Invalid repodata directory specified: $repodatadir.");
-        $self->{STATISTIC}->{ERROR}++;
-        return 0;
-    }
-
-    $repodatadir .= '/' if (not $repodatadir =~ /\/$/);
-    my $repomdfile = $repodatadir."repomd.xml";
-
-    if (-e "$repomdfile.asc")
-    {
-        unlink "$repomdfile.asc";
-    }
-    if (-e "$repomdfile.key")
-    {
-        unlink "$repomdfile.key";
-    }
-
-    if (not defined $keyid)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
-            "No key ID given, the repository will not be signed.");
-        return 1;
-    }
-
-    # sign the repomd.xml
-
-    system('gpg', '-sab', '--batch',
-        '-u', $keyid, '--passphrase', $passphrase,
-        '-o', "$repomdfile.asc", $repomdfile);
-    if ($? == -1)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Failed to sign the repository: $!.");
-        $self->{STATISTIC}->{ERROR}++;
-        return 0;
-    }
-    elsif ($? >> 8 != 0 || not -e "$repomdfile.asc")
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Failed to sign the repository, gpg returned ".($? >> 8).".");
-        $self->{STATISTIC}->{ERROR}++;
-        return 0;
-    }
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
-        "$repomdfile has been signed.");
-
-    # export the public signing key
-
-    system('gpg', '--batch', '--export', '-a', '-o', "$repomdfile.key", $keyid);
-    if ($? == -1 || ($? >> 8) != 0 || not -e "$repomdfile.key")
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Failed to export the repo signing key.");
-        $self->{STATISTIC}->{ERROR}++;
-        return 0;
-    }
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO1,
-        "$repomdfile.key successfully generated.");
-
-    return 1;
-}
-
-
-=item removePackages($pkgstoremove, $mdfiles)
-
-Removes packages given in $pkgstoremove from primary.xml and several other
-metadata files which contain additional package information like other.xml.gz,
-filelists.xml.gz, and susedata.xml.gz, and from the filesystem.
-
-Packages are not removed from the filesystem until successfully removed from
-the metadata.
-
-$pkgstoremove is a list of hashes with package data as returned
-by SMT::Parser::RpmMdPatches::filteredpkgs()
-
-$mdfiles is a hash with information about metadata files found in repository's
-repomd.xml file, their changed status, etc. This method uses this info to
-check whether the repository contains the metadata it is interested in and
-to add information about any changed metadata files to it.
-
-Example of input data:
-
- $pkgstoremove = {
-     {name => 'logwatch', epo => undef, ver => '7.3.6', rel => '60.6.1', arch => 'noarch'},
-    {name => 'audacity', epo => 0, ver => '1.3.5', rel => '49.12.1', arch => 'i586'}
- };
-
- # repository metadata info
- #
- # exists $mdfiles->{'repodata/susedata.xml.gz'} means the repository contains
- # susedata.xml.gz file
- #
- # exists $mdfiles->{'repodata/susedata.xml.gz'}->{changedorig} means
- # the susedata file has been changed, and the value is the location
- # of the original file. $mdfiles->{'repodata/susedata.xml.gz'}->{changednew}
- # then contains the path to new metadata file, non-gzipped.
- #
- $mdfiles = {
-    'repodata/primary.xml.gz' => undef,
-    'repodata/other.xml.gz' => undef,
-    'repodata/filelists.xml.gz' => undef,
-    'repodata/updateinfo.xml.gz' => {
-                  'changedorig' => '/path/to/repo/.repodata/updateinfo.xml.gz',
-                  'changednew' => '/tmp/yakHpx8kvP/updateinfo.xml'
-                  },
-    'repodata/susedata.xml.gz' => undef,
-    'repodata/deltainfo.xml.gz' => undef
-    };
-
-=cut
-# FIXME: needed?
-
-sub removePackages($$$)
-{
-    my ($self, $pkgstoremove, $mdfiles) = @_;
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-        'Going to remove ' . (scalar @$pkgstoremove) . ' filtered packages.');
-
-    return 1 if (!@$pkgstoremove);
-
-    my $errc = 0;
-    my $tgtrepopath = $self->fullLocalRepoPath();
-
-    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
-                                          vblevel => $self->vblevel());
-    $p->resource($tgtrepopath);
-    my $repomd = $p->parse(".repodata/repomd.xml");
-
-    # first, remove the unwanted packages from primary.xml.gz
-
-    # file to write the new primary.xml
-    my $primarynew = SMT::Utils::cleanPath($self->{TMPDIR}, '/primary.xml');
-    my $primaryfh = new IO::File();
-    $primaryfh->open('>' . $primarynew);
-
-    # update primary
-    my $parser = SMT::Parser::RpmMdPrimaryFilter->new(log => $self->{LOG},
-                                                      vblevel => $self->vblevel(),
-                                                      out => $primaryfh);
-    $parser->resource($tgtrepopath);
-    $parser->specialmdlocation(1);
-    $errc = $parser->parse($pkgstoremove);
-    $primaryfh->close;
-
-    if ($errc)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            'Failed to remove unwanted packages from primary.xml.gz.');
-        $self->{ERRORS}++;
-        return 0;
-    }
-    else
-    {
-        $mdfiles->{'repodata/primary.xml.gz'}->{changednew} = "$primarynew";
-        $mdfiles->{'repodata/primary.xml.gz'}->{changedorig} = $tgtrepopath."/.".$repomd->{data}->{primary}->{location}->{href};
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-            'Packages successfully removed from primary.xml.gz.');
-    }
-
-    # these are packages that were actually found in primary.xml
-    my $pkgsfound = $parser->found();
-
-
-    # now remove corresponding package data from the following metadata files
-
-    my %mdtoupdate = (
-        'repodata/other.xml.gz' => {
-            'new' => 'other.xml',
-            'orig' => (exists $repomd->{data}->{other}->{location}->{href}?".".$repomd->{data}->{other}->{location}->{href}:'.repodata/other.xml.gz') },
-        # this takes too long and is not used in SUSE tools (bnc #510300),
-        # so we'll ignore it. Should we need it in the future, we'll need to
-        # optimize.
-        #
-        #'repodata/filelists.xml.gz' => {
-        #   'new' => 'filelists.xml',
-        #   'orig' => (exists $repomd->{data}->{filelists}->{location}->{href}?".".$repomd->{data}->{filelists}->{location}->{href}:'.repodata/filelists.xml.gz') },
-        'repodata/susedata.xml.gz' => {
-            'new' => 'susedata.xml',
-            'orig' => (exists $repomd->{data}->{susedata}->{location}->{href}?".".$repomd->{data}->{susedata}->{location}->{href}: '.repodata/susedata.xml.gz')}
-        );
-
-    foreach my $mdfile (keys %mdtoupdate)
-    {
-        # skip the ones which do not exist in the repo
-        next if not exists $mdfiles->{$mdfile};
-
-        # file to write the new *.xml files
-        my $mdnew = SMT::Utils::cleanPath(
-            $self->{TMPDIR}, $mdtoupdate{$mdfile}->{'new'});
-        my $mdfh = new IO::File();
-        $mdfh->open('>' . $mdnew);
-
-        # update the *.xml
-        my $parser = SMT::Parser::RpmMdOtherFilter->new(log => $self->{LOG},
-                                                        vblevel => $self->{VBLEVEL});
-        $parser->resource($tgtrepopath);
-        $errc = $parser->parse($mdtoupdate{$mdfile}->{'orig'}, $pkgsfound, out => $mdfh);
-        $mdfh->close;
-
-        if ($errc)
-        {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                sprintf (__('Failed to remove unwanted packages from \'%s\'.'), $mdfile));
-            $self->{ERRORS}++;
-            return 0;
-        }
-        else
-        {
-            $mdfiles->{$mdfile}->{changednew} = "$mdnew";
-            $mdfiles->{$mdfile}->{changedorig} =
-                SMT::Utils::cleanPath($tgtrepopath, $mdtoupdate{$mdfile}->{'orig'});
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-                'Packages successfully removed from ' . $mdfile);
-        }
-    }
-
-    # metadata are updated, now remove the packages from the download queue
-    # and filesystem
-
-    $tgtrepopath = $tgtrepopath . '/' if ($tgtrepopath !~ /\/$/);
-    foreach my $pkg (values %$pkgsfound)
-    {
-        # remove from filesystem
-        if (-e $tgtrepopath . $pkg->{loc})
-        {
-            if (not unlink $tgtrepopath . $pkg->{loc})
-            {
-                # No need to fail because of this; the important thing is the
-                # packages were removed from the metadata. Just warn here.
-                printLog($self->{LOG}, $self->vblevel(), LOG_WARN,
-                    "unlink($tgtrepopath$pkg->{loc}) failed: $!");
-            }
-            else
-            {
-                $self->{DBH}->do(sprintf("DELETE FROM RepositoryContentData
-                                           WHERE localpath = %s",
-                                          $self->{DBH}->quote($tgtrepopath.$pkg->{loc}) ) );
-                printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
-                    "Deleted $tgtrepopath$pkg->{loc}");
-            }
-        }
-
-        #remove from download queue
-        if (defined $self->{JOBS}->{$pkg->{loc}})
-        {
-            delete $self->{JOBS}->{$pkg->{loc}};
-            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
-                "Removing download job $pkg->{loc}");
-        }
-    }
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2,
-        "All filtered packages successfully removed.");
-
-    return 1;
-}
-
-
-=item metadataChanged($mdfiles)
-
-Whether the $mdfiles hash indicates that some of the metadata files have been
-changend.
-
-See updateRepomd() for details on the $mdfiles structure.
-=cut
-# FIXME: needed?
-
-sub metadataChanged()
-{
-    my ($self, $mdfiles) = @_;
-    for (values %$mdfiles)
-    {
-        return 1 if (defined $_->{changednew});
-    }
-    return 0;
-}
-
-
-=item updateRepomd($mdfiles, $repodatadir)
-
-Updates repository with changed metadata files described in $mdfiles.
-The method uses modifyrepo utility to update repomd.xml and put gzipped metadata
-files into the repository's metadata directory pointed to by $repodatadir.
-
-Example of input data:
-
- # repository metadata info
- #
- # exists $mdfiles->{'repodata/susedata.xml.gz'} means the repository contains
- # susedata.xml.gz file
- #
- # exists $mdfiles->{'repodata/susedata.xml.gz'}->{changedorig} means
- # the susedata file has been changed, and the value is the location
- # of the original file. $mdfiles->{'repodata/susedata.xml.gz'}->{changednew}
- # then contains the path to new metadata file, non-gzipped.
- #
- $mdfiles = {
-    'repodata/primary.xml.gz' => {
-                  'changedorig' => '/path/to/repo/.repodata/primary.xml.gz',
-                  'changednew'  => '/tmp/yakHpx8kvP/primary.xml'
-                  },
-    'repodata/other.xml.gz' => undef,
-    'repodata/filelists.xml.gz' => undef,
-    'repodata/updateinfo.xml.gz' => {
-                  'changedorig' => '/path/to/repo/.repodata/updateinfo.xml.gz',
-                  'changednew' => '/tmp/yakHpx8kvP/updateinfo.xml'
-                  },
-    'repodata/susedata.xml.gz' => undef,
-    'repodata/deltainfo.xml.gz' => undef
-    };
-
- $repodatadir = '/path/to/repo/.repodata/';
-
-
-NOTE: Another alternative would be to use createrepo (see below) to update
-primary/other/filelists, but that would be slow, and we'd still need to
-parse primary.xml and deal with susedata.xml. So removing the package data
-from the files by ourselves seems to be better approach.
-
-# write output to tmpdir, then copy to .repodata
-# createrepo --update <repobase> --outputdir $tmpdir $self->fullLocalRepoPath()
-=cut
-# FIXME: needed?
-
-sub updateRepomd($$$)
-{
-    my ($self, $mdfiles, $repodatadir) = @_;
-
-    my $modifyrepopath = '/usr/bin/modifyrepo';
-    # my $createrepopath = '/usr/bin/createrepo';
-
-    # unlink the original repomd.xml first to avoid modifying the original
-    # repomd.xml on the source URI if hardlinked from elsewhere
-    my $repomdpath = SMT::Utils::cleanPath($repodatadir, 'repomd.xml');
-    copy($repomdpath, "$repomdpath.tmp");
-    unlink ($repomdpath);
-    rename("$repomdpath.tmp", $repomdpath);
-
-    my $errc = 0;
-
-    # update changed metadata files in repomd.xml
-    foreach my $key (keys %$mdfiles)
-    {
-	my $mdfile = $mdfiles->{$key};
-        # skip unchanged files
-        next if not exists $mdfile->{changednew};
-
-        # unlink the original file first - we do not want to modify all the
-        # aliases with modifyrepo
-        unlink ($mdfile->{changedorig});
-        unlink (SMT::Utils::cleanPath($repodatadir, basename($key)));
-
-        # note: modifyrepo needs unzipped unpdateinfo.xml
-        my @args = ($mdfile->{changednew}, $repodatadir);
-        my ($exitcode, $out, $err) =
-            SMT::Utils::executeCommand(
-                {log => $self->{LOG}, vblevel => $self->vblevel()},
-                $modifyrepopath, @args);
-
-        $errc++ if ($exitcode || $exitcode == -1);
-
-        if( ! exists $self->{REPODATAJOBS}->{$key} )
-        {
-            # create a repodata job to update the checksum in DB
-            my $job = SMT::Mirror::Job->new(vblevel => $self->vblevel(), useragent => $self->{USERAGENT}, log => $self->{LOG},
-                                            dbh => $self->{DBH}, nohardlink => $self->{NOHARDLINK} );
-            $job->uri( $self->{URI} );
-            $job->localBasePath( $self->localBasePath() );
-            $job->localRepoPath( $self->localRepoPath() );
-            $job->localFileLocation( $key );
-            $job->checksum_type( 'sha1' );
-            $job->checksum( $job->realchecksum() );
-            $self->{REPODATAJOBS}->{$key} = $job;
-        }
-    }
-
-    return 0 if ($errc);
-    return 1;
 }
 
 =item parsePatchData()
