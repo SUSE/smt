@@ -562,6 +562,7 @@ sub updateDB
                                          $self->{DBH}->quote( $self->checksum_type() ),
                                          $self->{DBH}->quote( $self->fullLocalPath() )
                                         ));
+                $self->{DBH}->commit();
             }
             elsif( $existChecksum->[0]->{checksum} ne $self->checksum() ||
                    $existChecksum->[0]->{checksum_type} ne $self->checksum_type()
@@ -576,6 +577,7 @@ sub updateDB
                                          $self->{DBH}->quote( $self->checksum_type() ),
                                          $self->{DBH}->quote( $self->fullLocalPath() )
                                         ));
+                $self->{DBH}->commit();
             }
         }
     };
