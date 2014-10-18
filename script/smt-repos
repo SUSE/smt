@@ -160,13 +160,13 @@ while ( my $v = $sth->fetchrow_hashref() ) {
         foreach my $h (@{$products}) {
             my $product = $h->{product};
             my $version = $h->{version};
-            my $arch    = $h->{ARCH};
-            my $rel     = $h->{REL};
+            my $arch    = $h->{arch};
+            my $rel     = $h->{rel};
 
             $output .= "          Assigned to product: $product $version $arch $rel\n";
         }
     } else {
-        $t->addRow( (( $v->{DOMIRROR} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"),
+        $t->addRow( (( $v->{domirror} eq "Y" ) ? __("Yes") :  __("No")), $count, $catType, $catName, ( defined($catTarget) ? $catTarget : "--"),
                     $catDesc,  (( $catMA eq "Y" ) ? __("Yes") : __("No")) );
     }
 }
