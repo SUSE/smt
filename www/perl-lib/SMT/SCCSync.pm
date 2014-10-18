@@ -222,6 +222,14 @@ sub products
     else
     {
         my $ret = $self->_updateProductData($input);
+        if($ret > 0)
+        {
+            $self->{DBH}->rollback();
+        }
+        else
+        {
+            $self->{DBH}->commit();
+        }
         return $ret;
     }
 }
@@ -296,6 +304,14 @@ sub subscriptions
     else
     {
         my $ret = $self->_updateSubscriptionData($input);
+        if($ret > 0)
+        {
+            $self->{DBH}->rollback();
+        }
+        else
+        {
+            $self->{DBH}->commit();
+        }
         return $ret;
     }
 }
@@ -326,6 +342,14 @@ sub finalize_mirrorable_repos
     else
     {
         my $ret = $self->_finalizeMirrorableRepos($input);
+        if($ret > 0)
+        {
+            $self->{DBH}->rollback();
+        }
+        else
+        {
+            $self->{DBH}->commit();
+        }
         return $ret;
     }
 }
@@ -901,7 +925,7 @@ sub _updateProductData
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
         $ret += $self->_updateProducts($product);
     }
-    $self->_staticTargets();
+    $ret += $self->_staticTargets();
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "\n", 1, 0);
     return $ret;
 }
