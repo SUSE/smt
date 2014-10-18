@@ -720,6 +720,7 @@ sub mirror
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg, 1, 0);
         $self->{DOWNLOAD_TYPE} = 1;
+        unlink $self->fullLocalPath() if(-e $self->fullLocalPath());
         return $errorcode;
     }
 
