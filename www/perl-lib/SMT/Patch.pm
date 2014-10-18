@@ -324,7 +324,7 @@ sub findByRepoId
     my ($dbh, $repoid) = @_;
 
     my $sth = $dbh->prepare('SELECT * FROM Patches WHERE repository_id = :id');
-    $sth->execute_h(id => repoid);
+    $sth->execute_h(id => $repoid);
 
     my $patches = {};
 

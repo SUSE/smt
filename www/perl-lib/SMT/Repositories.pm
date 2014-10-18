@@ -507,7 +507,6 @@ sub getRepositoryAsXML
 {
     my ($dbh, $repoid) = @_;
 
-    my $sql = ;
     my $sth = $dbh->prepare('SELECT * FROM Repositories WHERE id = :rid;');
     $sth->execute_h(rid => $repoid);
 

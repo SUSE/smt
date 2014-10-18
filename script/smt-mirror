@@ -319,7 +319,7 @@ else
 
 foreach my $entry (@{$array})
 {
-    next if($entry->{repotype});
+    next if(!$entry->{repotype});
 
     if( $entry->{exturl} && $entry->{localpath})
     {

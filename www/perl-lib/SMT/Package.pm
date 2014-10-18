@@ -217,7 +217,7 @@ sub save
                                  SET name=:name, epoch=:epoch, ver=:ver, rel=:rel,
                                      arch=:arch, location=:location, extlocation=:extlocation,
                                      repository_id=:rid, patch_id=:ptid
-                              WHERE id=:pkgid';
+                              WHERE id=:pkgid');
     }
     else
     {
@@ -226,7 +226,7 @@ sub save
                                           (id, name, epoch, ver, rel, arch,
                                            location, extlocation, repository_id, patch_id)
                                    VALUES (:pkgid, :name, :epoch, :ver, :rel, :arch,
-                                           :location, :extlocation, :rid, :ptid)';
+                                           :location, :extlocation, :rid, :ptid)');
     }
     $sth->execute_h(pkgid => $self->dbId(), name => $self->name(), epoch => $self->epoch(),
                     ver => $self->version(), rel => $self->release(), arch => $self->arch(),

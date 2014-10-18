@@ -155,7 +155,6 @@ sub delete
     my ($self, $dbh) = @_;
     return if (not $self->dbId());
 
-    my $sql = ;
     my $sth = $dbh->prepare('DELETE FROM PatchRefs WHERE id=:prid');
     $sth->execute_h(prid => $self->dbId());
     # FIXME: make a commit at a central place ?
