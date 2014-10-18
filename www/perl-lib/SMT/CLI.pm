@@ -638,7 +638,7 @@ sub getRegistrations
                                JOIN Products p ON r.product_id = p.id
                            ORDER BY guid, lastcontact, product, version, rel, arch");
     $sth->execute();
-    my $clients = $dbh->fetchall_arrayref({Slice => {}});
+    my $clients = $dbh->fetchall_arrayref({});
 
     my @HEAD = ( __('Unique ID'), __('Hostname'), __('Last Contact'), __('Product') );
     my @VALUES = ();
@@ -707,7 +707,7 @@ sub listRegistrations
                                    FROM Clients c
                                ORDER BY lastcontact");
         $sth->execute();
-        my $clients = $dbh->fetchall_arrayref({Slice => {}});
+        my $clients = $dbh->fetchall_arrayref({});
 
         foreach my $clnt (@{$clients})
         {
@@ -733,7 +733,7 @@ sub listRegistrations
                 }
             }
             $sth_sub->execute_h(cid => $clnt->{id});
-            my $subscr = $sth_sub->fetchall_arrayref({Slice => {}});
+            my $subscr = $sth_sub->fetchall_arrayref({});
 
             foreach my $sub (@{$subscr})
             {
@@ -945,7 +945,7 @@ sub _getSCCRepoList
 sub setMirrorableRepos
 {
     my %opt = @_;
-    my ($cfg, $dbh) = ();
+    my ($cfg, $dbh) = init();
 
     _getSCCRepoList(%opt, dbh => $dbh, cfg => $cfg);
 
@@ -958,7 +958,7 @@ sub setMirrorableRepos
                                FROM Repositories
                               WHERE repotype = 'zypp'");
     $sth->execute();
-    my $values = $dbh->fetchall_arrayref({Slice => {}});
+    my $values = $sth->fetchall_arrayref({});
 
     my $sth_updrepos = $dbh->prepare("UPDATE Repositories
                                          SET mirrorable = :mirrorable

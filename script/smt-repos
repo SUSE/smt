@@ -150,7 +150,7 @@ while ( my $v = $sth->fetchrow_hashref() ) {
 
     if (defined($verbose)) {
         $sthp->execute_h(rid => $catId);
-        my $products = $sthp->fetchall_arrayref({Slice=>{}});
+        my $products = $sthp->fetchall_arrayref({});
 
         $output .= "[" . (( $v->{domirror} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
         $output .= "          (" . $v->{description} .")\n";
