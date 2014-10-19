@@ -45,8 +45,7 @@ sub handler {
                             $dbh->quote($r->user()), $dbh->quote($password));
     my $existsecret = $dbh->selectcol_arrayref($statement);
 
-
-    if( !exists $existuser->[0] || !defined $existuser->[0] || $existuser->[0] ne $r->user() )
+    if( !exists $existsecret->[0] || !$existsecret->[0])
     {
         # connect/system requires a system authentication
         # generic REST authentication is not allowed here

@@ -1,8 +1,6 @@
 package SMT::ConnectAPI;
 
-use SMT::Rest::SCCAPIv1;
-use SMT::Rest::SCCAPIv2;
-use SMT::Rest::SCCAPIv3;
+use SMT::Rest::SCCAPIv4;
 use SMT::Utils;
 use Apache2::Const -compile => qw(HTTP_NOT_ACCEPTABLE :log);
 use JSON;
@@ -28,26 +26,10 @@ sub handler {
     }
     $r->err_headers_out->add('scc-api-version' => "v$apiVersion");
 
-    if ( $apiVersion == 1 )
+    # API v1 - v3 deprecated and not supported anymore
+    if ( $apiVersion == 4 )
     {
-        $api = SMT::Rest::SCCAPIv1->new($r);
-        return $api->handler();
-    }
-    elsif ( $apiVersion == 2 )
-    {
-        $api = SMT::Rest::SCCAPIv2->new($r);
-        return $api->handler();
-    }
-    elsif ( $apiVersion == 3 )
-    {
-        $api = SMT::Rest::SCCAPIv3->new($r);
-        return $api->handler();
-    }
-    elsif ( $apiVersion == 4 )
-    {
-        # there is currently no difference between v3 and v4
-        # in the parts we provide. So also use v3 here.
-        $api = SMT::Rest::SCCAPIv3->new($r);
+        $api = SMT::Rest::SCCAPIv4->new($r);
         return $api->handler();
     }
     else

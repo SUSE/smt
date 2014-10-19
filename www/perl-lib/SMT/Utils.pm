@@ -1307,7 +1307,7 @@ sub lookupProductIdByName
     if(@$pl == 1)
     {
         # Only one match found.
-        return $pl->[0]->{ID};
+        return $pl->[0]->{id};
     }
     elsif(@$pl > 1)
     {
@@ -1566,7 +1566,7 @@ sub isRES
     my $sql = sprintf("
         SELECT 1
           FROM Clients c
-          JOIN Registration r ON c.id = r.client_id
+          JOIN Registrations r ON c.id = r.client_id
           JOIN Products p on r.product_id = p.id
          where c.guid = %s
            AND p.product = 'RES'",

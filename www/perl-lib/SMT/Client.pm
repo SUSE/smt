@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use XML::Simple;
-use UNIVERSAL 'isa';
 use SMT::Utils;
 
 use Locale::gettext();
@@ -124,9 +123,9 @@ sub createSQLStatement($$)
     my $self = shift;
 
     my $filter = shift || return undef;
-    return undef unless isa($filter, 'HASH');
+    return undef unless (ref($filter) eq 'HASH');
 
-    my @PROPS = qw(ID GUID HOSTNAME TARGET DESCRIPTION LASTCONTACT);
+    my @PROPS = qw(id guid hostname target description lastcontact);
     my @ALLPROPS = @PROPS;
     my $asXML = ( exists ${$filter}{'asXML'}  &&  defined ${$filter}{'asXML'} ) ? 1 : 0;
 
@@ -161,13 +160,13 @@ sub createSQLStatement($$)
     }
 
     # special handling for the SECRET - only add to where filter, but not to select
-    if ( exists ${$filter}{'SECRET'}  &&  defined ${$filter}{'SECRET'} )
+    if ( exists ${$filter}{'secret'}  &&  defined ${$filter}{'secret'} )
     {
-        push( @where, ' cl.SECRET = '. $self->{'dbh'}->quote(${$filter}{SECRET}) .' ' );
+        push( @where, ' cl.secret = '. $self->{'dbh'}->quote(${$filter}{secret}) .' ' );
     }
 
     # make sure the ID is in the select statement in any case
-    push( @select, "ID" ) unless ( in_Array("ID", \@select) );
+    push( @select, "id" ) unless ( in_Array("id", \@select) );
     # if XML gets exported then switch to lower case attributes
     my @selectExpand = ();
     foreach my $sel (@select)
@@ -196,7 +195,7 @@ sub getClientsInfo_internal($)
     my $self = shift;
 
     my $filter = shift || {};
-    return undef unless ( isa($filter, 'HASH') );
+    return undef unless ( ref($filter) eq 'HASH');
 
     # let create the SQL statement
     my $sql = $self->createSQLStatement($filter);
@@ -209,7 +208,7 @@ sub getClientsInfo_internal($)
     #return $sql;
 
     my $refKey = $asXML ? 'id':'ID';
-    my $result = $self->{'dbh'}->selectall_hashref($sql, $refKey);
+    my $result = $self->{'dbh'}->selectall_hashref($sql, 'id');
 
     if ( $asXML )
     {
@@ -252,9 +251,9 @@ sub authenticateByGUIDAndSecret($$$)
    my $guid = shift || return undef;
    my $secret = shift || '';
 
-   return $self->getClientsInfo_internal({ 'ID'     => '',
-                                           'GUID'   => $guid,
-                                           'SECRET' => $secret });
+   return $self->getClientsInfo_internal({ 'id'     => '',
+                                           'guid'   => $guid,
+                                           'secret' => $secret });
 }
 
 
@@ -269,9 +268,9 @@ sub authenticateByIDAndSecret($$$)
    my $id = shift || return undef;
    my $secret = shift || '';
 
-   return $self->getClientsInfo_internal({ 'ID'     => $id,
-                                           'GUID'   => '',
-                                           'SECRET' => $secret });
+   return $self->getClientsInfo_internal({ 'id'     => $id,
+                                           'guid'   => '',
+                                           'secret' => $secret });
 }
 
 
@@ -288,7 +287,7 @@ sub getClientsInfo($$)
     my $self = shift;
     my $filter = shift || {};
 
-    return undef unless ( isa($filter, 'HASH') );
+    return undef unless ( ref($filter) eq 'HASH');
     return $self->getClientsInfo_internal($filter);
 }
 
@@ -308,8 +307,8 @@ sub getClientInfoByGUID($$)
     my $guid = shift || "";
 
     return undef unless (defined $guid && $guid !~ /^$/);
-    return $self->getClientsInfo_internal({'GUID' => $guid,
-                                    'selectAll' => ''});
+    return $self->getClientsInfo_internal({'guid' => $guid,
+                                           'selectAll' => ''});
 }
 
 
@@ -328,8 +327,8 @@ sub getClientInfoByID($$)
     my $id = shift || '';
 
     return undef unless (defined $id && $id !~ /^$/);
-    return $self->getClientsInfo_internal({'ID' => $id,
-                                    'selectAll' => ''});
+    return $self->getClientsInfo_internal({'id' => $id,
+                                           'selectAll' => ''});
 }
 
 
@@ -373,13 +372,13 @@ sub getClientGUIDByID($$)
     my $guid = undef;
 
     return undef unless (defined $id && $id !~ /^$/);
-    my $res = $self->getClientsInfo_internal({ 'ID' => $id,
-                                               'GUID' => ''  });
+    my $res = $self->getClientsInfo_internal({ 'id' => $id,
+                                               'guid' => ''  });
     if ( keys %{$res} == 1 )
     {
         foreach my $key (keys %{$res})
         {
-            return ${$res}{$key}{'GUID'} if ( ${$res}{$key}{'ID'} eq $id )
+            return ${$res}{$key}{'guid'} if ( ${$res}{$key}{'id'} eq $id )
         }
     }
     return undef;
@@ -396,13 +395,13 @@ sub getClientIDByGUID($$)
     my $guid = shift || "";
 
     return undef unless (defined $guid && $guid !~ /^$/);
-    my $res = $self->getClientsInfo_internal({ 'GUID' => $guid,
-                                               'ID' => ''  });
+    my $res = $self->getClientsInfo_internal({ 'guid' => $guid,
+                                               'id' => ''  });
     if ( keys %{$res} == 1 )
     {
         foreach my $key (keys %{$res})
         {
-            return ${$res}{$key}{'ID'} if ( ${$res}{$key}{'GUID'} eq $guid )
+            return ${$res}{$key}{'id'} if ( ${$res}{$key}{'guid'} eq $guid )
         }
     }
     return undef;

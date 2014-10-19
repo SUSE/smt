@@ -66,16 +66,21 @@ sub handler
 
     if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
+        $self->dbh()->rollback();
         return $self->respond_with_error($code, $data);
     }
     elsif ($code != Apache2::Const::HTTP_NO_CONTENT)
     {
+        $self->dbh()->commit();
         $self->request()->content_type('application/json');
         $self->request()->err_headers_out->add('Cache-Control' => "no-cache, public, must-revalidate");
         $self->request()->err_headers_out->add('Pragma' => "no-cache");
         print encode_json($data);
     }
-
+    else
+    {
+        $self->dbh()->commit();
+    }
     # return a 200 response
     return $code;
 }
@@ -241,8 +246,8 @@ sub delete_system
     my $guid = $self->user();
 
     # ON DELETE CASCADE take care of all the other tables
-    $sql = sprintf("DELETE FROM Clients WHERE guid=%s",
-                   $self->dbh()->quote($guid));
+    my $sql = sprintf("DELETE FROM Clients WHERE guid=%s",
+                      $self->dbh()->quote($guid));
     $self->request()->log->info("STATEMENT: $sql");
     eval {
         $self->dbh()->do($sql);
@@ -438,7 +443,7 @@ sub products
     }
 
     my $productId = SMT::Utils::lookupProductIdByName($self->dbh(), $c->{identifier}, $c->{version},
-                                                      $c->{release_type}, $c->{arch});
+                                                      $c->{release_type}, $c->{arch}, $self->request());
     if(not $productId)
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
@@ -455,7 +460,7 @@ sub products
     my $existingregs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
     if(exists $existingregs->{$productId} && $existingregs->{$productId})
     {
-        $statement = sprintf("UPDATE Registration SET regdate=%s
+        $statement = sprintf("UPDATE Registrations SET regdate=%s
                                WHERE client_id=%s AND product_id=%s",
                              $self->dbh()->quote( SMT::Utils::getDBTimestamp()),
                              $self->dbh()->quote($clientId),
@@ -463,7 +468,7 @@ sub products
     }
     else
     {
-        $statement = sprintf("INSERT INTO Registration (client_id, product_id, regdate)
+        $statement = sprintf("INSERT INTO Registrations (client_id, product_id, regdate)
                               VALUES (%s, %s, %s)",
                              $self->dbh()->quote($clientId),
                              $self->dbh()->quote($productId),
@@ -553,7 +558,7 @@ sub update_product
     my $reg_products = [];
     my $sql = sprintf("SELECT p.id
                          FROM Products p
-                         JOIN Registration r ON r.product_id = p.id
+                         JOIN Registrations r ON r.product_id = p.id
                         WHERE r.client_id = %s
                           AND (p.product = %s OR p.product = %s)
                       ",
@@ -579,7 +584,7 @@ sub update_product
 #
 #     my $sql = sprintf("SELECT p.id, p.PRODUCT_CLASS
 #                          FROM Products p
-#                          JOIN Registration r ON r.PRODUCTID = p.ID
+#                          JOIN Registrations r ON r.PRODUCTID = p.ID
 #                         WHERE r.GUID = %s
 #                           AND p.PRODUCT_CLASS is not NULL
 #                       ", $self->dbh()->quote($guid));
@@ -627,7 +632,7 @@ sub update_product
         {
             return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
         }
-        $self->_storeProductData($clientId, $productId, $args, $old_pdid);
+        $self->_storeProductData($clientId, $req_pdid, $args, $old_pdid);
     }
     else
     {
@@ -651,14 +656,14 @@ sub get_activations
     # We are sure, that user is a system GUID
     my $guid = $self->user();
 
-    my $sql = "SELECT c.id system_id,
-                      s.regcode regcode,
-                      s.subtype type,
-                      s.substatus status,
-                      DATE_FORMAT(s.substartdate, '%Y-%m-%dT%TZ') starts_at,
-                      DATE_FORMAT(s.subenddate, '%Y-%m-%dT%TZ') expires_at,
+    my $sql = "SELECT c.id AS system_id,
+                      s.regcode AS regcode,
+                      s.subtype AS type,
+                      s.substatus AS status,
+                      TO_CHAR(s.substartdate, 'YYYY-MM-DDTHH24-MI-SSZ') starts_at,
+                      TO_CHAR(s.subenddate, 'YYYY-MM-DDTHH24-MI-SSZ') expires_at,
                       r.product_id
-                 FROM Registration r
+                 FROM Registrations r
                  JOIN Clients c ON r.client_id = c.id
             LEFT JOIN ClientSubscriptions cs ON c.id = cs.client_id
             LEFT JOIN Subscriptions s ON cs.subscription_id = s.id
@@ -728,13 +733,13 @@ sub get_extensions
 
     $sql = sprintf(
         "SELECT p.id id,
-                p.friendly friendly_name,
-                p.friendly name,
-                p.product identifier,
+                p.friendly AS friendly_name,
+                p.friendly AS name,
+                p.product AS identifier,
                 p.former_identifier,
                 p.description,
                 p.version,
-                p.rel release_type,
+                p.rel AS release_type,
                 p.arch,
                 p.product_class,
                 p.cpe,
@@ -749,9 +754,9 @@ sub get_extensions
                                AND pr.optional = 'N'
                           GROUP BY rp.domirror) = 'N'
                  THEN 0 ELSE 1 END ) available
-           FROM Registration r
+           FROM Registrations r
            JOIN Products p ON r.product_id = p.id
-           JOIN Client c ON r.client_id = c.id
+           JOIN Clients c ON r.client_id = c.id
           WHERE c.guid = %s
             AND r.product_id = %s
         ", $self->dbh()->quote($guid), $self->dbh()->quote($req_pdid));
@@ -806,9 +811,9 @@ sub _storeProductData
     #
     # insert product info into MachineData
     #
-    $sth = $self->dbh()->prepare("DELETE FROM MachineData
-                                   WHERE client_id=:cid
-                                     AND md_key LIKE :key");
+    my $sth = $self->dbh()->prepare("DELETE FROM MachineData
+                                      WHERE client_id=:cid
+                                        AND md_key LIKE :key");
     eval {
         $sth->do_h(cid=>$clientId, key=>"product-%-$productId");
         if($old_pdid)
@@ -824,21 +829,21 @@ sub _storeProductData
                                          (client_id, md_key, md_value)
                                   VALUES (:cid, :key, :val)");
     eval {
-        $cnt = $self->dbh()->do_h(cid=>$clientId,
-                                  key=>"product-name-$productId",
-                                  val=>$c->{identifier});
-        $cnt = $self->dbh()->do_h(cid=>$clientId,
-                                  key=>"product-version-$productId",
-                                  val=>$c->{version});
-        $cnt = $self->dbh()->do_h(cid=>$clientId,
-                                  key=>"product-arch-$productId",
-                                  val=>$c->{arch});
-        $cnt = $self->dbh()->do_h(cid=>$clientId,
-                                  key=>"product-rel-$productId",
-                                  val=>$c->{release_type});
-        $cnt = $self->dbh()->do_h(cid=>$clientId,
-                                  key=>"product-token-$productId",
-                                  val=>((exists $c->{token} && $c->{token})?$c->{token}:''));
+        $self->dbh()->do_h(cid=>$clientId,
+                           key=>"product-name-$productId",
+                           val=>$c->{identifier});
+        $self->dbh()->do_h(cid=>$clientId,
+                           key=>"product-version-$productId",
+                           val=>$c->{version});
+        $self->dbh()->do_h(cid=>$clientId,
+                           key=>"product-arch-$productId",
+                           val=>$c->{arch});
+        $self->dbh()->do_h(cid=>$clientId,
+                           key=>"product-rel-$productId",
+                           val=>$c->{release_type});
+        $self->dbh()->do_h(cid=>$clientId,
+                           key=>"product-token-$productId",
+                           val=>((exists $c->{token} && $c->{token})?$c->{token}:''));
     };
     if($@)
     {
@@ -857,7 +862,7 @@ sub _storeMachineData
                                        WHERE client_id = :cid");
     $stht->execute_h(cid=>$clientId);
     my $sth;
-    if( $stht->fetchrow_arry() )
+    if( $stht->fetchrow_array() )
     {
         $sth = $self->dbh()->prepare("UPDATE SystemData SET
                                              data = :json
@@ -934,13 +939,13 @@ sub _extensions_for_products
     }
     my $sql = sprintf("
         SELECT e.id id,
-               e.friendly friendly_name,
-               e.friendly name,
-               e.product identifier,
+               e.friendly AS friendly_name,
+               e.friendly AS name,
+               e.product AS identifier,
                e.former_identifier,
                e.description,
                e.version,
-               e.rel release_type,
+               e.rel AS release_type,
                e.arch,
                e.product_class,
                e.cpe,
@@ -995,13 +1000,13 @@ sub _getProduct
 
     my $sql = sprintf("
         SELECT p.id id,
-               p.friendly friendly_name,
-               p.friendly name,
-               p.product identifier,
+               p.friendly AS friendly_name,
+               p.friendly AS name,
+               p.product AS identifier,
                p.former_identifier,
                p.description,
                p.version,
-               p.rel release_type,
+               p.rel AS release_type,
                p.arch,
                p.product_class,
                p.cpe,

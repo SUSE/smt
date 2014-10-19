@@ -58,6 +58,11 @@ sub new
     return $self;
 }
 
+sub DESTROY {
+    my $self = shift;
+    $self->dbh()->disconnect();
+}
+
 sub request
 {
     my $self = shift;

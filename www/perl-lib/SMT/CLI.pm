@@ -689,7 +689,7 @@ sub listRegistrations
         my ($cfg, $dbh) = init();
         my $sth_products = $dbh->prepare("SELECT p.product, p.version, p.rel, p.arch,
                                                  r.regdate, r.sccregdate, r.sccregerror
-                                            FROM Registration r
+                                            FROM Registrations r
                                             JOIN Products p ON r.product_id = p.id
                                            WHERE r.id = :cid");
 

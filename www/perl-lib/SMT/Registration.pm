@@ -18,6 +18,7 @@ use constant IOBUFSIZE => 8192;
 use SMT::Utils;
 use SMT::Client;
 use SMT::DB;
+use DBI qw(:sql_types);
 
 use Data::Dumper;
 use XML::Writer;
@@ -361,7 +362,7 @@ sub insertRegistration
     my $cnt     = 0;
     my $existingpids = {};
     my $regtimestring = "";
-    my $hostname = $hostname = $regdata->{register}->{hostname};
+    my $hostname = $regdata->{register}->{hostname};
 
     #
     # if we do not have the hostname, try to get the IP address
@@ -475,14 +476,15 @@ sub insertRegistration
         }
     }
 
-    my $sth = $dbh->prepare("INSERT into Registrations (client_id, product_id, regdate) VALUES (?, ?, ?)");
+    my $sth = $dbh->prepare("INSERT into Registrations (client_id, product_id, regdate)
+                             VALUES (:cid, :pid, :regdate)");
     foreach my $id (@insert)
     {
         eval {
-            $sth->bind_param(1, $clientid);
-            $sth->bind_param(2, $id, SQL_INTEGER);
-            $sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
-            $cnt = $sth->execute;
+            #$sth->bind_param(1, $clientid);
+            #$sth->bind_param(2, $id, SQL_INTEGER);
+            #$sth->bind_param(3, $regtimestring, SQL_TIMESTAMP);
+            $cnt = $sth->execute_h(cid => $clientid, pid => $id, regdate => $regtimestring);
 
             $r->log->info("STATEMENT: ".$sth->{Statement}." Affected rows: $cnt");
         };
@@ -669,11 +671,11 @@ sub findRepositories
 
     $statement  = "SELECT r.id, r.name, r.description, r.target, r.localpath,
                           r.repotype, pr.optional, r.autorefresh
-                     FROM Repositories r,
+                     FROM Repositories r
                      JOIN ProductRepositories pr ON r.id = pr.repository_id
                     WHERE r.domirror='Y' ";
-    $statement .= sprintf("AND (c.TARGET IS NULL OR c.TARGET=%s)", $dbh->quote($target)) if($target);
-    $statement .= "AND pc.PRODUCTID IN (".join(",", @q_pids).") " if(@{$productids} > 0);
+    $statement .= sprintf("AND (r.target = '' OR r.target=%s)", $dbh->quote($target)) if($target);
+    $statement .= "AND pr.product_id IN (".join(",", @q_pids).") " if(@{$productids} > 0);
     if(@{$productids} == 0)
     {
         # This should not happen
@@ -683,7 +685,7 @@ sub findRepositories
 
     $r->log->info("STATEMENT: $statement");
 
-    $result = $dbh->selectall_hashref($statement, "ID");
+    $result = $dbh->selectall_hashref($statement, "id");
 
     $r->log->info("RESULT: ".Data::Dumper->Dump([$result]));
 
