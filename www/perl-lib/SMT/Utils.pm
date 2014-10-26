@@ -1000,13 +1000,13 @@ sub doesFileExist
             $tries++;
         }
 
-        if ( $response->is_redirect )
+        if ( $response && $response->is_redirect )
         {
             $redirects++;
             $tries = 4 if ($redirects > 15);
             $srcUrl = $response->header("location");
         }
-        elsif ( $response->is_success )
+        elsif ( $response && $response->is_success )
         {
             $ret = 1;
             $tries = 4;
