@@ -12,7 +12,7 @@ use XML::Writer;
 
 use SMT::Utils;
 use SMT::Repositories;
-use SMT::DB qw(:sql_types);
+use SMT::DB;
 
 
 sub getReposByGUID($$$)
@@ -57,7 +57,7 @@ sub getReposByGUID($$$)
         else
         {
             if ($ref->{$id}->{target} ne $ref->{$id}->{client_target} ||
-                $ref->{$id}>{repotype} ne 'nu')
+                $ref->{$id}->{repotype} ne 'nu')
             {
                 # skip
                 delete $ref->{$id};
@@ -141,7 +141,7 @@ sub handler {
 
         eval
         {
-            my $sth = $dbh->prepare("UPDATE Clients SET lastcontact = CURRECT_TIMESTAMP WHERE guid = :guid");
+            my $sth = $dbh->prepare("UPDATE Clients SET lastcontact = CURRENT_TIMESTAMP WHERE guid = :guid");
             $sth->execute_h(guid => $username);
         };
         if($@)
@@ -209,7 +209,8 @@ sub handler {
     }
 
     $writer->endTag("repoindex");
-
+    $dbh->commit();
+    $dbh->disconnect();
     return Apache2::Const::OK;
 }
 1;
