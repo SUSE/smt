@@ -94,6 +94,7 @@ sub handler {
     # try to connect to the database - else report server error
     if ( ! ($dbh=SMT::Utils::db_connect()) )
     {
+        $r->log->error("Cannot connect to database");
         return Apache2::Const::SERVER_ERROR;
     }
 
