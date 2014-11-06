@@ -246,7 +246,8 @@ sub canMigrate
     if ($errors)
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
-                 __("Products found which are not supported by SCC. Migration is not possible."));
+                 __("Products found which are not supported by SCC. Migration is not possible.")."\n".
+                 __("Please check the logfile for more information."));
         return 3;
     }
 
@@ -292,7 +293,8 @@ sub canMigrate
     if ($errors)
     {
         printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR,
-                 __("Used repositories found which are not supported by SCC. Migration is not possible."));
+                 __("Used repositories found which are not supported by SCC. Migration is not possible.")."\n".
+                 __("Please check the logfile for more information."));
         return 4;
     }
 
