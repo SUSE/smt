@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Nov  6 11:35:26 CET 2014 - mc@suse.de
+
+- fix duplicate detection (bsc#903677)
+- If migration is not possible, write a message to look into
+  the logfile for more info (bsc#903787)
+- ix setup-custom-repos accessing wrong column in DB (bsc#903847)
+
+-------------------------------------------------------------------
 Wed Oct 15 15:02:20 CEST 2014 - mc@suse.de
 
 - reduce warnings during scc migration (bnc#901281)
