@@ -49,6 +49,7 @@ sub new
     $self->{TODIR}   = undef;
 
     $self->{ERRORS} = 0;
+    $self->{DUPLICATE_CACHE} = {};
 
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
@@ -676,7 +677,6 @@ sub _listreg_handler
     my $data     = shift;
 
     my $statement = "";
-    my $duplicate = {};
 
     if(!exists $data->{GUID} || !defined $data->{GUID})
     {
@@ -693,15 +693,16 @@ sub _listreg_handler
 
             foreach my $subid (@{$data->{SUBREF}})
             {
+                my $ident = $data->{GUID}."-".$subid;
                 # we already have this combination. Prevent Duplicate Entry error in DB
-                next if(exists $duplicate->{$data->{GUID}."-".$subid});
+                next if(exists $self->{DUPLICATE_CACHE}->{$ident});
                 $statement = sprintf("INSERT INTO ClientSubscriptions (GUID, SUBID) VALUES(%s, %s)",
                                      $self->{DBH}->quote($data->{GUID}),
                                      $self->{DBH}->quote($subid));
 
                 $self->{DBH}->do($statement);
                 printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "$statement") ;
-                $duplicate->{$data->{GUID}."-".$subid} = 1;
+                $self->{DUPLICATE_CACHE}->{$ident} = 1;
             }
         }
     };
