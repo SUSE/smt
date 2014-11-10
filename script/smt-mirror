@@ -494,6 +494,7 @@ if(!defined $dbreplfile)
 
         foreach my $id (keys %{$hash})
         {
+            $hash->{$id}->{TARGET} = '' if not $hash->{$id}->{TARGET};
             $warning .= "* ".$hash->{$id}->{NAME}." ".$hash->{$id}->{TARGET}."\n";
         }
 
