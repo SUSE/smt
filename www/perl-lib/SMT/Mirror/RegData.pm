@@ -377,6 +377,10 @@ sub canMigrate
             printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
                      sprintf("'%s' not found in registration server. Migration not possible.",
                              $c->{PRODUCT_CLASS}), 0, 1);
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
+                     sprintf("'%s' not found in registration server. Migration not possible.",
+                             $c->{PRODUCT_CLASS}), 1, 0);
+
             $errors++;
         }
     }
@@ -448,6 +452,12 @@ sub canMigrate
                              $catalogs->{$needed_cid}->{NAME},
                              $catalogs->{$needed_cid}->{TARGET}
                      ), 0, 1);
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
+                     sprintf("Repository '%s-%s' not found in registration server. Migration not possible.",
+                             $catalogs->{$needed_cid}->{NAME},
+                             $catalogs->{$needed_cid}->{TARGET}
+                     ), 1, 0);
+
             $errors++;
         }
     }
