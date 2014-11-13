@@ -955,14 +955,19 @@ Would you like to continue nevertheless?")))
 	else if (is_scc && ! was_scc)
 	{
 	    Popup::ShowFeedback("", "Checking if migration to SCC is possible...");
-	    integer test_ret = (integer)SCR::Execute (.target.bash, "/usr/sbin/smt-ncc-scc-migration --check-only");
+	    map<string,any> test_ret = (map<string,any>)SCR::Execute (.target.bash_output, "/usr/sbin/smt-ncc-scc-migration --check-only -v 15");
 	    Popup::ClearFeedback();
-	    if (test_ret != 0)
+	    if (test_ret["exit"]:-1 != 0)
 	    {
+		string log = test_ret["stdout"]:"";
+		list<string> lines = splitstring(log, "\n");
+		lines[0] = nil;
+		lines = filter (string l, lines, { return l != nil && substring (l, 0, 8) != "Download"; });
+		log = mergestring(lines, "\n");
 		// report message
-		Report::Message(_("Cannot migrate SMT to SCC because not all products,
+		Popup::MessageDetails(_("Cannot migrate SMT to SCC because not all products,
 which are registered against this instance of SMT,
-are available also via SCC."));
+are available also via SCC."), log);
 		return false;
 	    }
 	    // continue / cancel pop-up
@@ -979,14 +984,19 @@ Migrate SMT from NCC to SCC now?")))
 	else if (was_scc && ! is_scc)
 	{
 	    Popup::ShowFeedback("", "Checking if migration to NCC is possible...");
-	    integer test_ret = (integer)SCR::Execute (.target.bash, "smt-scc-ncc-migration --check-only");
+	    map<string,any> test_ret = (map<string,any>)SCR::Execute (.target.bash_output, "smt-scc-ncc-migration --check-only -v 15");
 	    Popup::ClearFeedback();
-	    if (test_ret != 0)
+	    if (test_ret["exit"]:-1 != 0)
 	    {
+		string log = test_ret["stdout"]:"";
+		list<string> lines = splitstring(log, "\n");
+		lines[0] = nil;
+		lines = filter (string l, lines, { return l != nil; });
+		log = mergestring(lines, "\n");
 		// report message
-		Report::Message(_("Cannot migrate SMT to NCC because not all products,
+		Popup::MessageDetails(_("Cannot migrate SMT to NCC because not all products,
 which are registered against this instance of SMT,
-are available also via NCC."));
+are available also via NCC."), log);
 		return false;
 	    }
 	    // continue / cancel pop-up
