@@ -1,32 +1,32 @@
 Migration between SCC and NCC
 =============================
 
-SMT can talk to only one registration service (SCC, NCC, alternatively also SLMS). The switch between the registration servers can be done either via YaST module or via command-line tools.
+SMT can talk to one registration service only (SCC, NCC, or alternatively also SLMS). Migrating between the registration servers can be done either via the YaST smt-server module or via command-line tools.
 
-Before performing the switch between customer cetners, make sure that the target customer cetner serves all products that are registered against SMT. Both YaST the command-line tools perform check to find out whether all products can be served with the new registration server. It it is not possible, the only option is to install parallel SMT and to synchronize products from both SCC and NCC.
+Before migrating between customer centers, make sure that the target customer center can serve all products that are registered against SMT. Both YaST as well as the command-line scripts perform a check to find out whether all products can be served with the new registration server. If this is not possible the only option is to install an additional (parallel) SMT instance. One instance to synchronize the SCC products and the other one to synchronize the NCC products.
 
-To perform the migration to SCC via command-line, run:
+To perform the migration to SCC via the command-line tool, run:
 
   smt ncc-scc-migration
 
-tool. To get its parameter, use the --help option. If you need to revert back from SCC to NCC, use
+To get its parameters, see the --help output. If you need to revert back from SCC to NCC, run:
 
   smt scc-ncc-migration
 
-The migration itself is time-sonsuming and during the migration process the SMT server may not be able to serve clients, which are already registered.
+The migration itself is time-consuming and during the migration process the SMT server may not be able to serve clients, which are already registered.
 
-The migration process itself changes the registration server and the proper type of API in the configuraiton files. There is no other task needed from user to perform the switch.
+The migration process itself changes the registration server and the proper type of API in the configuraiton files. Users do not have to perform any other task to achieve the switch.
 
-To migrate between NCC and SCC via YaST, use the YaST smt-server module
+To migrate between NCC and SCC via YaST, use the YaST smt-server module.
 
-After migration, it is needed to re-synchronize the repositories.
+After the migration is done, it is needed to re-synchronize the repositories.
 
 
 
-Repository structure
+Repository Structure
 ====================
 
-The repository structure in the /srv/www/htdocs directory matches the structure as it comes from SCC. This directory structure differs from the structure coming from NCC. There are following directories in the structure (selected examples, similar for other products and architectures):
+The repository structure in the /srv/www/htdocs directory matches the structure as it comes from SCC. This directory structure differs from the structure coming from NCC. The following directories are available (selected examples, similar for other products and architectures):
 
 repo/SUSE/Products/SLE-SDK/12/x86_64/product/
 
@@ -45,16 +45,15 @@ repo/SUSE/Updates/SLE-SERVER/12/x86_64/update/
 repo/full/SUSE/Updates/SLE-SERVER/12/x86_64/update/
 repo/testing/SUSE/Updates/SLE-SERVER/12/x86_64/update/
 
-- Repositories optionally created for staging of respecive repositories. The semantics is the same as with repositories from NCC
+- Custom created repositories as well as repositories in the staging environment follow the same semantics as repositories coming from NCC.
 
 
-Enabling SLP announcements
+Enabling SLP Announcements
 ==========================
 
-SMT already includes the SLP service description file (/etc/slp.reg.d/smt.reg). In order to enable SLP announcements of the SMT service, open respective ports in firewall and enable the SLP service.
+SMT already includes the SLP service description file (/etc/slp.reg.d/smt.reg). In order to enable SLP announcements of the SMT service, open respective ports in the firewall and enable the SLP service:
 
   sysconf_addword /etc/sysconfig/SuSEfirewall2 FW_SERVICES_EXT_TCP "427"
   sysconf_addword /etc/sysconfig/SuSEfirewall2 FW_SERVICES_EXT_UDP "427"
   insserv slpd
   rcslpd start
-
