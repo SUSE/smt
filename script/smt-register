@@ -9,7 +9,6 @@ use warnings;
 use SMT::Utils;
 use SMT::NCCRegTools;
 use Getopt::Long;
-use LWP::UserAgent;
 use Crypt::SSLeay;
 use File::Basename;
 use File::Temp;
