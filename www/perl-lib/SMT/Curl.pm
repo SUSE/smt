@@ -9,6 +9,8 @@ use HTTP::Response;
 use HTTP::Request;
 use English;
 
+# only needed to handle local files
+use LWP::UserAgent;
 
 use Data::Dumper;
 
@@ -53,6 +55,7 @@ sub new
     }
     $self->setopt(CURLOPT_SSL_VERIFYHOST, 2 );
     $self->setopt(CURLOPT_SSL_VERIFYPEER, 1 );
+    $self->setopt(CURLOPT_SSLVERSION, 1 ); # 1 should be CURL_SSLVERSION_TLSv1
 
     if(exists $opt{useragent})
     {
