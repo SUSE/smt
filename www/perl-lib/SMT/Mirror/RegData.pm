@@ -1,7 +1,6 @@
 package SMT::Mirror::RegData;
 use strict;
 
-use LWP::UserAgent;
 use URI;
 use SMT::Parser::RegData;
 use XML::Writer;

@@ -1,7 +1,6 @@
 package SMT::NCCRegTools;
 use strict;
 
-use LWP::UserAgent;
 use URI;
 use SMT::Parser::ListReg;
 use SMT::Parser::ListSubscriptions;

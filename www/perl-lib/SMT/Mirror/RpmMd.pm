@@ -1,7 +1,6 @@
 package SMT::Mirror::RpmMd;
 use strict;
 
-use LWP::UserAgent;
 use URI;
 use File::Path;
 use File::Find;
