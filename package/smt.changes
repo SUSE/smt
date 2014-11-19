@@ -1,6 +1,7 @@
 -------------------------------------------------------------------
 Tue Nov 18 10:41:56 CET 2014 - mc@suse.de
 
+- version 2.0.8
 - prevent POODLE: SMT should only talk TLS (bsc#903684)
   CVE-2014-3566
 
