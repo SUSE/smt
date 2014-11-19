@@ -1,3 +1,3 @@
 #!/bin/sh
-cat smt.spec | grep "^Requires" | awk '{print $2 }' | xargs
+cat package/smt.spec | grep "^Requires" | awk '{print $2 }' | xargs
 
