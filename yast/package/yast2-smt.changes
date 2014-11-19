@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Thu Nov 13 12:30:50 UTC 2014 - jsrain@suse.cz
+
+- when migration not possible, show the reason (bnc#903787)
+- 2.17.31
+
+-------------------------------------------------------------------
+Wed Oct  8 10:41:01 UTC 2014 - jsrain@suse.cz
+
+- corrected the license of the package
+
+-------------------------------------------------------------------
 Wed Oct  1 06:53:15 UTC 2014 - jsrain@suse.cz
 
 - 2.17.30

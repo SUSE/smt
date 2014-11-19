@@ -5,6 +5,11 @@ Tue Nov 18 10:41:56 CET 2014 - mc@suse.de
   CVE-2014-3566
 
 -------------------------------------------------------------------
+Thu Nov 13 07:58:54 UTC 2014 - jsrain@suse.cz
+
+- proofreaded README-SCC file (bnc#902903)
+
+-------------------------------------------------------------------
 Thu Nov  6 11:35:26 CET 2014 - mc@suse.de
 
 - fix duplicate detection (bsc#903677)
