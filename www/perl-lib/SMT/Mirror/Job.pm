@@ -1,7 +1,6 @@
 package SMT::Mirror::Job;
 use strict;
 
-use LWP::UserAgent;
 use File::Path;
 use File::Basename;
 use Date::Parse;
