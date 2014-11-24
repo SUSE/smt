@@ -189,11 +189,11 @@ eval
         $exitcode = 1;
     }
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
-    SMT::CLI::setMirrorableRepos(log     => $LOG,
-                                 vblevel => $vblevel,
-                                 fromdir => (($fromdir ne "")?$fromdir:undef),
-                                 todir   => (($todir ne "")?$todir:undef));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Flagging repositories which can be mirrored"));
+    SMT::CLI::setMirrorableCatalogs(log     => $LOG,
+                                    vblevel => $vblevel,
+                                    fromdir => (($fromdir ne "")?$fromdir:undef),
+                                    todir   => (($todir ne "")?$todir:undef));
     if ($res)
     {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("%d Error(s) during sync."), $res));
