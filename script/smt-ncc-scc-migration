@@ -161,7 +161,7 @@ eval
         SMT::Utils::unLockAndExit( "smt-ncc-scc-migration", 1, $LOG, $vblevel);
     }
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Flagging repositories which can be mirrored"));
     $res = $sccsync->finalize_mirrorable_repos();
     if ($res)
     {

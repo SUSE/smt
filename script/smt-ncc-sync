@@ -343,7 +343,7 @@ eval
         SMT::Utils::unLockAndExit("smt-sync", 0, $LOG, $vblevel);
     }
 
-    printLog($LOG, $vblevel, LOG_INFO1, __("Flagged repositories which can be mirrored"));
+    printLog($LOG, $vblevel, LOG_INFO1, __("Flagging repositories which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(fromdir => ($fromdir ne "")?$fromdir:undef,
                                     todir   => ($todir ne "")?$todir:undef,
                                     log     => $LOG,
