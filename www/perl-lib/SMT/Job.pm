@@ -1,5 +1,6 @@
 package SMT::Job;
 
+use SMT::Client;
 use SMT::Utils;
 use SMT::Job::Constants;
 use strict;
@@ -570,8 +571,11 @@ sub getNextAvailableJobID()
   my $self = shift;
 
   my $cookie = SMT::Utils::getDBTimestamp()." - ".rand(1024);
+  my $guidid = $self->guid_id() || return (undef, $cookie);
 
-  my $sql1 = 'insert into JobQueue ( DESCRIPTION ) values ("'.$cookie.'")' ;
+  my $sql1 = sprintf("insert into JobQueue ( GUID_ID, DESCRIPTION ) values (%s, %s)",
+                     $self->{dbh}->quote($guidid),
+                     $self->{dbh}->quote($cookie));
   $self->{dbh}->do($sql1) || return ( undef, $cookie);
 
   my $sql2 = 'select ID from JobQueue ';
