@@ -617,6 +617,13 @@ sub announce
 
     $self->_storeMachineData($result->{login}, $c);
 
+    my $client = SMT::Client->new({ 'dbh' => $self->dbh() });
+    if ( !  $client->insertPatchstatusJob( $result->{login} ) )
+    {
+        $self->request()->log_error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
+                                            $result->{login} )  );
+    }
+
     return (Apache2::Const::OK, $result);
 }
 
