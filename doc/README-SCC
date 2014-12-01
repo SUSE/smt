@@ -19,7 +19,7 @@ The migration process itself changes the registration server and the proper type
 
 To migrate between NCC and SCC via YaST, use the YaST smt-server module.
 
-After the migration is done, it is needed to re-synchronize the repositories.
+After the migration is done, it is needed to synchronize SMT with the new registration server via 'smt-sync'.
 
 
 
