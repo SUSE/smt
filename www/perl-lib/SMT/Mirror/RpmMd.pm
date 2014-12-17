@@ -628,6 +628,7 @@ sub mirror()
         foreach my $entry (readdir(DIR))
         {
             next if ($entry =~ /^\./);
+            next if( $entry =~ /^[\da-fA-F]+-.+$/);
 
             my $fullpath = $job->fullLocalRepoPath()."/repodata/$entry";
             if( -f $fullpath )
@@ -705,10 +706,6 @@ sub mirror()
         #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement \n DUMP: ".Data::Dumper->Dump([$self->{EXISTS}]));
     }
 
-    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
-                                          vblevel => $self->vblevel());
-    $p->resource($self->fullLocalRepoPath());
-    my $repomd = $p->parse(".repodata/repomd.xml");
 
     # parse it and find more resources
     # download metadata right away and enqueue the rest of the files for later download
@@ -719,6 +716,11 @@ sub mirror()
     $self->{STATISTIC}->{ERROR} += $err;
 
     $self->{EXISTS} = undef;
+
+    my $p = SMT::Parser::RpmMdRepomd->new(log => $self->{LOG},
+                                          vblevel => $self->vblevel());
+    $p->resource($self->fullLocalRepoPath());
+    my $repomd = $p->parse(".repodata/repomd.xml");
 
     #
     # parse old and new patch metadata
@@ -1235,7 +1237,18 @@ sub download_handler
         $job->uri( $self->{URI} );
         $job->localBasePath( $self->localBasePath() );
         $job->localRepoPath( $self->localRepoPath() );
-        $job->localFileLocation( $data->{LOCATION} );
+        if ($data->{LOCATION} =~ /^\/?repodata\// )
+        {
+            # metadata! change the download area
+            my $localres = $data->{LOCATION};
+            $localres =~ s/repodata/.repodata/;
+            $job->localFileLocation( $localres );
+            $job->remoteFileLocation( $data->{LOCATION} );
+        }
+        else
+        {
+            $job->localFileLocation( $data->{LOCATION} );
+        }
         $job->checksum( $data->{CHECKSUM} );
         $job->checksum_type( $data->{CHECKSUM_TYPE} );
 
@@ -1281,23 +1294,13 @@ sub download_handler
             $invalidFile = 1 if( !$dryrun );
         }
 
-        # if it is an xml file we have to download it now and
-        # process it
-        # any fine in repodata needs to be donloaded here
-        if (  $job->localFileLocation() =~ /(.+)\.xml(.*)/ || $data->{LOCATION} =~ /^\/?repodata\// )
+        # any file in repodata needs to be donloaded here
+        if ( $data->{LOCATION} =~ /^\/?repodata\// )
         {
-            # metadata! change the download area
-
-            my $localres = $data->{LOCATION};
-
-            $localres =~ s/repodata/.repodata/;
-            $job->remoteFileLocation( $data->{LOCATION} );
-            $job->localFileLocation( $localres );
-
-	    if( $invalidFile )
-	    {
+            if( $invalidFile )
+            {
                 unlink ( $job->fullLocalPath() );
-	    }
+            }
 
             # mirror it first, so we can parse it
             my $mres = $job->mirror();
