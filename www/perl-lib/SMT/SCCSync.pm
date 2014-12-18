@@ -1017,6 +1017,10 @@ sub _addClientSubscription
 
     # skip it, if the client does not exist
     return 0 if(not SMT::Utils::lookupClientByGUID( $self->{DBH}, $guid, $self->{LOG}, $self->vblevel() ));
+    my $ident = $guid."-".$subscriptionId;
+
+    # skip duplicate entries bsc#905076
+    next if (exists $self->{CACHE}->{'DB_ClientSubscriptions'}->{$ident});
 
     my $statement = sprintf("INSERT INTO ClientSubscriptions (SUBID, GUID) VALUES (%s,%s)",
                             $self->{DBH}->quote($subscriptionId),
@@ -1024,6 +1028,7 @@ sub _addClientSubscription
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
+        $self->{CACHE}->{'DB_ClientSubscriptions'}->{$ident} = 1;
     };
     if($@)
     {
@@ -1109,6 +1114,7 @@ sub _updateSubscriptionData
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
         $ret += 1;
     }
+    $self->{CACHE}->{'DB_ClientSubscriptions'} = {};
 
     foreach my $subscr (@$json)
     {
