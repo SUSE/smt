@@ -1,0 +1,186 @@
+SMT Overview
+============
+
+SMT has four main areas:
+
+* commandline tools for managing
+* yast modules for managing and setup
+* web services for registration
+* job execution (commandline and web service)
+
+Commandline tools for managing
+------------------------------
+
+These scripts starts with "smt-" and exists in git in the scripts/
+directory.
+
+smt: wrapper to call the other scripts as sub commands
+smt-client: show info about a client (job execution)
+smt-delete-registration: delete a registration locally and from NCC
+smt-job: manage jobs
+smt-list-products: list product
+smt-list-registrations: list available registrations
+smt-mirror: mirror the repos from NCC/SCC
+smt-mirror-sle9: special mirror tools for SLES9 repos. (using wget --mirror)
+smt-ncc-scc-migration: migrate from NCC to SCC
+smt-ncc-sync: daily sync tool NCC
+smt-register: register the clients at NCC
+smt-report: generate reports about products, cients and registrations
+smt-repos: manage repositories
+smt-scc-ncc-migration: migrate back from SCC to NCC (don't ask:-)
+smt-scc-sync: daily sync tool SCC
+smt-setup-custom-repos: add custom repos
+smt-staging: manage staging (full/testing/production)
+smt-support: something for uploading support configs (not written by me)
+smt-sync: generic wrapper for daily sync (calls the right smt-ncc-sync or smt-scc-sync)
+
+The most important once are the smt-mirror, smt-repos and smt-[ncc|scc]-sync.
+With smt-repos you can enable/diable repositories for mirroring
+or staging. You can see, which repos you can manage and which not.
+
+smt-mirror than does the mirroring. It is called via a cron job,
+but also used manually.
+
+smt-sync/smt-ncc-sync/smt-scc-sync download the required data from NCC or SCC
+and push them into the database. These are infomations about:
+* product
+* repositories
+* relations between products and repositories
+* subscriptions
+* registrations
+This tool runs also via cron to keep the data up-to-date.
+
+Yast modules for managing and setup
+-----------------------------------
+
+We have two yast modules:
+yast2 smt-server: setup SMT
+yast2 smt: a UI for smt-repos, smt-staging and smt-mirror
+
+
+Web services for registration
+-----------------------------
+
+The current SMT implements two registration protocols:
+
+* NCC protocol
+* SCC protocol
+
+The NCC protocol is an XML based, self invented protocol.
+(https://wiki.innerweb.novell.com/index.php/Registration)
+
+The code in git exists here: www/perl-lib/SMT/Registration.pm
+In the installed system it is here: /srv/www/perl-lib/SMT/Registration.pm
+
+The SCC protocol is a REST protocol.
+( https://github.com/SUSE/connect/wiki/SCC-API-(Implemented) )
+
+The code has multiple files:
+git:
+www/perl-lib/SMT/ConnectAPI.pm
+www/perl-lib/SMT/Rest/SCCAPIv1.pm
+www/perl-lib/SMT/Rest/SCCAPIv2.pm
+www/perl-lib/SMT/Rest/SCCAPIv3.pm
+www/perl-lib/SMT/Rest/Base.pm
+
+In the system it is here:
+/srv/www/perl-lib/SMT/ConnectAPI.pm
+/usr/lib/perl5/vendor_perl/5.10.0/SMT/Rest/Base.pm
+/usr/lib/perl5/vendor_perl/5.10.0/SMT/Rest/SCCAPIv1.pm
+/usr/lib/perl5/vendor_perl/5.10.0/SMT/Rest/SCCAPIv2.pm
+/usr/lib/perl5/vendor_perl/5.10.0/SMT/Rest/SCCAPIv3.pm
+
+Additionally SMT provides a "(NU)-service" which is a XML file
+which list available repositories for specific client.
+This is also implemented as a web service. It is used for
+both NCC as well as NCC.
+
+The code in git is here:
+www/perl-lib/NU/SMTAuth.pm
+www/perl-lib/NU/RepoIndex.pm
+
+In the installed system it is here:
+/srv/www/perl-lib/NU/RepoIndex.pm
+/srv/www/perl-lib/NU/SMTAuth.pm
+
+The apache config files in git are here:
+apache2/
+apache2/vhosts.d
+apache2/vhosts.d/vhost-ssl.conf
+apache2/conf.d
+apache2/conf.d/smt_support.conf
+apache2/conf.d/nu_server.conf
+apache2/conf.d/smt_mod_perl.conf
+apache2/smt-mod_perl-startup.pl
+
+nu_server.conf: configures access to the repositories for downloading
+                packages.
+
+smt_mod_perl.conf: configure the mod_perl parts.
+                   The registration services:
+                   * /center/regsvc  => NCC
+                   * /connect/subscriptions
+                     /connect/systems      => SCC
+                   and the repoindex:
+                   * /repo/repoindex.xml
+
+There is another REST interface. /=, /=/1/ .
+This provide info about products, packages and patches.
+It was introduced for a partner to prevent them to parse our web pages
+to get infos about patches.
+
+This REST interface is disabled by default and not a core part of SMT.
+
+
+Job execution
+-------------
+
+You can specify jobs for clients on the SMT server. The Client
+can fetch these jobs, execute them and return the result.
+Jobs are:
+* patchstatus
+* softwarepush
+* update
+* execute
+* reboot
+* wait
+* eject
+* createjob
+* report
+* inventory
+
+This component has a client and a server part.
+
+The client part (smt-agent) is in the git in the client/ subdir.
+The server part is here:
+* www/perl-lib/SMT/Client.pm
+* www/perl-lib/SMT/Client/Auth.pm
+* www/perl-lib/SMT/RESTService.pm
+
+
+About the Database
+==================
+
+We use a mysql Database. The schema is very simple.
+
+The tool to do schema upgrades could be improved.
+The schema can be found in git:db/schemas/mysql/
+
+You have directories with a single version and directories
+with <version1>-<version2> .
+The single version contains one script which hold the schema
+in this version. This is used for a new setup in this version.
+
+The directories with two versions are for upgrading from
+version1 to version2.
+
+The migration is executed vi the tool git:db/smt-db in the smt
+init script (git:config/rc.smt)
+
+The version is defined in git:www/perl-lib/SMT.pm or
+/usr/lib/perl5/vendor_perl/5.10.0/SMT.pm in the system.
+
+In the database there is a table about the version and a
+history.
+
+
