@@ -3,6 +3,16 @@ package SMT::Utils;
 use strict;
 use warnings;
 
+use APR::Brigade ();
+use APR::Bucket ();
+use Apache2::Filter ();
+
+use Apache2::RequestRec ();
+use Apache2::RequestIO ();
+
+use Apache2::Const -compile => qw(OK SERVER_ERROR :log MODE_READBYTES);
+use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
+
 use Config::IniFiles;
 use DBI qw(:sql_types);
 use Fcntl qw(:DEFAULT);
@@ -27,6 +37,7 @@ use English;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(__ __N printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2 LOG_DEBUG3);
 
+use constant IOBUFSIZE => 8192;
 use constant LOG_ERROR  => 0x0001;
 use constant LOG_WARN   => 0x0002;
 use constant LOG_INFO1  => 0x0004;
@@ -143,6 +154,23 @@ sub __N
     return Locale::gettext::dngettext ($domain, $msgid, $msgidpl, $n);
 }
 
+=item http_fail($r)
+
+The request failed properly set the satus and message
+
+=cut
+sub http_fail
+{
+    my $r   = shift;
+    my $status = shift || 400;
+    my $message = shift || "Bad Request";
+
+    $r->status(int($status));
+    $r->content_type('text/plain');
+    $r->print($message);
+    return Apache2::Const::OK; # don't laugh.
+}
+
 #
 # lock file support
 #
@@ -208,6 +236,46 @@ sub openLock
     close LOCK;
 
     return 1;
+}
+
+=item read_post($r)
+
+Read the POST request and return the provided data
+
+=cut
+
+sub read_post {
+    my $r = shift;
+
+    my $bb = APR::Brigade->new($r->pool,
+                               $r->connection->bucket_alloc);
+
+    my $data = '';
+    my $seen_eos = 0;
+    do {
+        $r->input_filters->get_brigade($bb, Apache2::Const::MODE_READBYTES,
+                                       APR::Const::BLOCK_READ, IOBUFSIZE);
+
+        for (my $b = $bb->first; $b; $b = $bb->next($b)) {
+            if ($b->is_eos) {
+                $seen_eos++;
+                last;
+            }
+
+            if ($b->read(my $buf)) {
+                $data .= $buf;
+            }
+
+            $b->remove; # optimization to reuse memory
+        }
+
+    } while (!$seen_eos);
+
+    $bb->destroy;
+
+    $r->log->info("Got content: $data");
+
+    return $data;
 }
 
 =item unLock($progname)

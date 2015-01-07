@@ -13,8 +13,6 @@ use Apache2::RequestIO ();
 use Apache2::Const -compile => qw(OK SERVER_ERROR :log MODE_READBYTES);
 use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
 
-use constant IOBUFSIZE => 8192;
-
 use SMT::Utils;
 use SMT::Client;
 use DBI qw(:sql_types);
@@ -36,7 +34,7 @@ sub handler {
     if(! defined $args)
     {
         $r->log_error("Registration called without args.");
-        return http_fail($r, 400, "Bad Request");
+        return SMT::Utils::http_fail($r, 400, "Bad Request");
     }
 
     foreach my $a (split(/\&/, $args))
@@ -51,7 +49,7 @@ sub handler {
         $hargs->{'version'} ne "1.0")
     {
         $r->log_error("protocol version '".$hargs->{'version'}."' not implemented");
-        return http_fail($r, 400, "Invalid protocol version.");
+        return SMT::Utils::http_fail($r, 400, "Invalid protocol version.");
     }
     $r->log->info("Registration called with command: ".$hargs->{command});
 
@@ -72,13 +70,13 @@ sub handler {
         else
         {
             $r->log_error("Unknown command: ".$hargs->{command});
-            return http_fail($r, 400, "Bad Request");
+            return SMT::Utils::http_fail($r, 400, "Bad Request");
         }
     }
     else
     {
         $r->log_error("Missing command");
-        return http_fail($r, 400, "Bad Request");
+        return SMT::Utils::http_fail($r, 400, "Bad Request");
     }
 
     return Apache2::Const::OK;
@@ -121,7 +119,7 @@ sub register
     if($@ || !defined $cfg)
     {
         $r->log_error("Cannot read the SMT configuration file: ".$@);
-        return http_fail($r, 500,
+        return SMT::Utils::http_fail($r, 500,
            "SMT server is missconfigured. Please contact your administrator.");
     }
 
@@ -135,12 +133,12 @@ sub register
         }
     }
 
-    my $data = read_post($r);
+    my $data = SMT::Utils::read_post($r);
     my $dbh = SMT::Utils::db_connect();
     if(!$dbh)
     {
         $r->log_error("Cannot open Database");
-        return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
+        return SMT::Utils::http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
     }
 
     my $regroot = { ACCEPTOPT => 1, CURRENTELEMENT => "", PRODUCTATTR => {}, register => {}};
@@ -217,14 +215,14 @@ sub register
             {
                 $r->log_error(
                  "Failed to load guest verification module '$modFile.pm'\n$@");
-                return http_fail($r, 500,
+                return SMT::Utils::http_fail($r, 500,
                   "Internal Server Error. Please contact your administrator.");
             }
             my $result = $module->verifyGuest($r, $regroot);
             if (! $result)
             {
                 $r->log_error("Guest verification failed\n");
-                return http_fail($r, 403,
+                return SMT::Utils::http_fail($r, 403,
                      "Guest verification failed repository access denied");
             }
         }
@@ -276,7 +274,7 @@ sub listproducts
     if(!$dbh)
     {
         $r->log_error("Cannot connect to database");
-        return http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
+        return SMT::Utils::http_fail($r, 500, "Internal Server Error. Please contact your administrator.");
     }
 
     my $sth = $dbh->prepare("SELECT DISTINCT PRODUCT FROM Products where product_list = 'Y'");
@@ -318,7 +316,7 @@ sub listparams
 
     $r->log->info("listparams called");
 
-    my $lpreq = read_post($r);
+    my $lpreq = SMT::Utils::read_post($r);
     my $dbh = SMT::Utils::db_connect();
 
     my $data  = {STATE => 0, PRODUCTS => []};
@@ -937,7 +935,7 @@ sub buildZmdConfig
     if($@ || !defined $cfg)
     {
         $r->log_error("Cannot read the SMT configuration file: ".$@);
-        http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
+        SMT::Utils::http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
         return undef;
     }
 
@@ -958,7 +956,7 @@ sub buildZmdConfig
     if(!defined $LocalNUUrl || $LocalNUUrl !~ /^http/)
     {
         $r->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
-        http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
+        SMT::Utils::http_fail($r, 500, "SMT server is missconfigured. Please contact your administrator.");
         return undef;
     }
     my $localID = "SMT-".$LocalNUUrl;
@@ -1186,61 +1184,11 @@ sub findColumnsForProducts
         else
         {
             $r->log_error("No Product match found: ".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch});
-            http_fail($r, 400, "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found on Server.");
+            SMT::Utils::http_fail($r, 400, "Product (".$phash->{name}." ".$phash->{version}." ".$phash->{release}." ".$phash->{arch}.") not found on Server.");
             exit 0;
         }
     }
     return @list;
-}
-
-
-#
-# read the content of a POST and return the data
-#
-sub read_post {
-    my $r = shift;
-
-    my $bb = APR::Brigade->new($r->pool,
-                               $r->connection->bucket_alloc);
-
-    my $data = '';
-    my $seen_eos = 0;
-    do {
-        $r->input_filters->get_brigade($bb, Apache2::Const::MODE_READBYTES,
-                                       APR::Const::BLOCK_READ, IOBUFSIZE);
-
-        for (my $b = $bb->first; $b; $b = $bb->next($b)) {
-            if ($b->is_eos) {
-                $seen_eos++;
-                last;
-            }
-
-            if ($b->read(my $buf)) {
-                $data .= $buf;
-            }
-
-            $b->remove; # optimization to reuse memory
-        }
-
-    } while (!$seen_eos);
-
-    $bb->destroy;
-
-    $r->log->info("Got content: $data");
-
-    return $data;
-}
-
-sub http_fail
-{
-    my $r   = shift;
-    my $status = shift || 400;
-    my $message = shift || "Bad Request";
-
-    $r->status(int($status));
-    $r->content_type('text/plain');
-    $r->print($message);
-    return Apache2::Const::OK; # don't laugh.
 }
 
 ###############################################################################

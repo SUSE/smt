@@ -6,7 +6,6 @@ use warnings;
 use APR::Brigade ();
 use APR::Bucket ();
 use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
-use constant IOBUFSIZE => 8192;
 use Apache2::Filter ();
 
 use APR::Brigade;
@@ -120,30 +119,8 @@ sub parse_args($)
 sub read_post
 {
     my $self = shift;
-
-    my $bb = APR::Brigade->new($self->request()->pool, $self->request()->connection->bucket_alloc);
-
-    my $data = '';
-    my $seen_eos = 0;
-    do {
-        $self->request()->input_filters->get_brigade($bb, Apache2::Const::MODE_READBYTES,
-                                                     APR::Const::BLOCK_READ, IOBUFSIZE);
-
-        for (my $b = $bb->first; $b; $b = $bb->next($b)) {
-            if ($b->is_eos) {
-                $seen_eos++;
-                last;
-            }
-
-            if ($b->read(my $buf)) { $data .= $buf; }
-            $b->remove; # optimization to reuse memory
-        }
-    } while (!$seen_eos);
-
-    $bb->destroy;
-    # Fake an empty hash in case we get no data
+    my $data = SMT::Utils::read_post($self->request());
     $data = '{}' if ! $data;
-    $self->request()->log->info("Got content: $data");
     return $data;
 }
 
