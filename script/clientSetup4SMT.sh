@@ -244,6 +244,8 @@ if [ -d $ZMDSSLDIR ]; then
     fi
 fi
 
+rm -f $TEMPFILE
+
 if [ -x "$SUSEREGISTER" ]; then
     SRCTMP=`mktemp /tmp/suseRegister.conf.XXXXXX`
 
