@@ -6,7 +6,6 @@ use warnings;
 use APR::Brigade ();
 use APR::Bucket ();
 use APR::Const     -compile => qw(:error SUCCESS BLOCK_READ);
-use constant IOBUFSIZE => 8192;
 use Apache2::Filter ();
 
 use APR::Brigade;
@@ -66,7 +65,7 @@ sub jobs_handler($$)
     {
         if ( $path =~ $reJobsId )
         {
-            my $c = read_post($r);
+            my $c = SMT::Utils::read_post($r);
             return $jobq->finishJob({ GUID => $username, xmldata => $c });
         }
         else { return undef; }
@@ -477,38 +476,6 @@ sub sub_path($)
 
     return $path;
 }
-
-
-#
-# read the content of a POST and return the data
-#
-sub read_post {
-    my $r = shift;
-
-    my $bb = APR::Brigade->new($r->pool, $r->connection->bucket_alloc);
-
-    my $data = '';
-    my $seen_eos = 0;
-    do {
-        $r->input_filters->get_brigade($bb, Apache2::Const::MODE_READBYTES,
-                                       APR::Const::BLOCK_READ, IOBUFSIZE);
-
-        for (my $b = $bb->first; $b; $b = $bb->next($b)) {
-            if ($b->is_eos) {
-                $seen_eos++;
-                last;
-            }
-
-            if ($b->read(my $buf)) { $data .= $buf; }
-            $b->remove; # optimization to reuse memory
-        }
-    } while (!$seen_eos);
-
-    $bb->destroy;
-    $r->log->info("Got content: $data");
-    return $data;
-}
-
 
 #
 # update_last_contact
