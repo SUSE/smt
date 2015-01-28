@@ -9,7 +9,6 @@ use warnings;
 use SMT::CLI;
 use SMT::Utils;
 use File::Basename;
-use File::Find;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
@@ -25,14 +24,17 @@ if(!SMT::Utils::dropPrivileges())
 sub help
 {
     print __("show help\n");
-    my @files;
-    find( {wanted => sub { push(@files, $1) if $_ =~ /smt\-(.+)/; }, no_chdir => 1}, "/usr/sbin");
+    opendir(DIR, "/usr/sbin") || die "can't opendir '/usr/sbin': $!";
+    my @files = grep { /^smt-/ && -f "/usr/sbin/$_" } readdir(DIR);
+    closedir DIR;
 
     print __("Subscription Management Tool (SMT). (c)2007-2012 SUSE LINUX Products GmbH, Nuernberg, Germany.\n\n");
 
     foreach my $cmd (@files)
     {
-      print basename($0) . " $cmd\n";
+        $cmd =~ s/smt\-(.+)/$1/;
+
+        print basename($0) . " $cmd\n";
     }
 
     print __("\nUse smt help <command> for more help\n");
