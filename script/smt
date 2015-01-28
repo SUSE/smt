@@ -25,10 +25,10 @@ sub help
 {
     print __("show help\n");
     opendir(DIR, "/usr/sbin") || die "can't opendir '/usr/sbin': $!";
-    my @files = grep { /^smt-/ && -f "/usr/sbin/$_" } readdir(DIR);
+    my @files = grep { /^smt-.+/ && -x "/usr/sbin/$_" } readdir(DIR);
     closedir DIR;
 
-    print __("Subscription Management Tool (SMT). (c)2007-2012 SUSE LINUX Products GmbH, Nuernberg, Germany.\n\n");
+    print __("Subscription Management Tool (SMT). (c)2007-2015 SUSE LINUX Products GmbH, Nuernberg, Germany.\n\n");
 
     foreach my $cmd (@files)
     {
