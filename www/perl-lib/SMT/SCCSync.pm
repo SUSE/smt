@@ -1005,26 +1005,12 @@ sub _updateProductCatalogs
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Repository ID: ".$repo->{id});
         return 1;
     }
-    my $statement = sprintf("DELETE FROM ProductCatalogs
-                              WHERE PRODUCTID = %s AND CATALOGID = %s",
-                            $self->{DBH}->quote($product_id),
-                            $self->{DBH}->quote($repo_id)
-    );
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
-    eval {
-        $self->{DBH}->do($statement);
-    };
-    if($@)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        $ret += 1;
-    }
 
-    $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
-                          VALUES (%s, %s, %s, 'S')",
-                         $self->{DBH}->quote($product_id),
-                         $self->{DBH}->quote($repo_id),
-                         $self->{DBH}->quote(($repo->{enabled}?'N':'Y')));
+    my $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
+                             VALUES (%s, %s, %s, 'S')",
+                            $self->{DBH}->quote($product_id),
+                            $self->{DBH}->quote($repo_id),
+                            $self->{DBH}->quote(($repo->{enabled}?'N':'Y')));
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
@@ -1131,8 +1117,10 @@ sub _updateProductData
     $self->{LOCALSCHEME} = $localhost->scheme;
 
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductCatalogs  WHERE SRC='S'");
     eval {
         $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
+        $self->{DBH}->do("DELETE FROM ProductCatalogs  WHERE SRC='S'");
     };
     if($@)
     {
@@ -1146,6 +1134,22 @@ sub _updateProductData
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
         $ret += $self->_updateProducts($product);
     }
+
+    my $st1 = sprintf("Delete from Products where SRC='S' and PRODUCTDATAID not in (%s)",
+                      "'".join("','", keys %{$self->{PROD_DONE}})."'");
+    #my $st2 = sprintf("Delete from Catalogs where SRC='S' and CATALOGID not in (%s)",
+    #                  "'".join("','", keys %{$self->{REPO_DONE}})."'");
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st1");
+    #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st2");
+    eval {
+        $self->{DBH}->do($st1);
+        #$self->{DBH}->do($st2);
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+    }
+
     $self->_staticTargets();
     printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "\n", 1, 0);
     return $ret;
