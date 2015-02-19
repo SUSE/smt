@@ -1485,6 +1485,77 @@ sub lookupProductIdByName
     return undef;
 }
 
+=item lookupProductDataIdByName($dbh, $name[, $version][, $release][, $arch])
+
+Lookup the productdata ID (NCC/SCC internal id) using name, version arch and release.
+This function return the best match or undef if nothing could be found.
+
+=cut
+
+sub lookupProductDataIdByName
+{
+    my $dbh = shift || return undef;
+    my $name = shift || return undef;
+    my $version = shift;
+    my $release = shift;
+    my $arch = shift;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $statement = "SELECT PRODUCTDATAID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
+
+    $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($name));
+
+    $statement .= " AND (";
+    $statement .= "VERSIONLOWER=".$dbh->quote(lc($version))." OR " if(defined $version);
+    $statement .= "VERSIONLOWER IS NULL)";
+
+    $statement .= " AND (";
+    $statement .= "RELLOWER=".$dbh->quote(lc($release))." OR " if(defined $release);
+    $statement .= "RELLOWER IS NULL)";
+
+    $statement .= " AND (";
+    $statement .= "ARCHLOWER=".$dbh->quote(lc($arch))." OR " if(defined $arch);
+    $statement .= "ARCHLOWER IS NULL)";
+
+    # order by name,version,release,arch with NULL values at the end (bnc#659912)
+    $statement .= " ORDER BY PRODUCTLOWER, VERSIONLOWER DESC, RELLOWER DESC, ARCHLOWER DESC";
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $statement");
+    my $pl = $dbh->selectall_arrayref($statement, {Slice => {}});
+
+    if(@$pl == 1)
+    {
+        # Only one match found.
+        return $pl->[0]->{PRODUCTDATAID};
+    }
+    elsif(@$pl > 1)
+    {
+        my $found = 0;
+        # Do we have an exact match?
+        foreach my $prod (@$pl)
+        {
+            if(lc($prod->{VERSIONLOWER}) eq lc($version) &&
+               lc($prod->{ARCHLOWER}) eq  lc($arch)&&
+               lc($prod->{RELLOWER}) eq lc($release))
+            {
+                # Exact match found.
+                return $prod->{PRODUCTDATAID};
+            }
+        }
+        $release = "" if(not defined $release);
+        $arch = "" if(not defined $arch);
+        printLog($log, $vblevel, LOG_DEBUG, "No exact match found for: $name $version $release $arch. Choose the first one.");
+        return $pl->[0]->{PRODUCTDATAID};
+    }
+    $release = "" if(not defined $release);
+    $arch = "" if(not defined $arch);
+    # Do not find a product is not an error. It is a valid result of a lookup function
+    printLog($log, $vblevel, LOG_INFO2, "No Product match found for: $name $version $release $arch");
+    return undef;
+}
+
+
 =item lookupCatalogIdByDataId($dbh, $id[, $src])
 
 Lookup the catalog ID using the external catalog ID. Providing the

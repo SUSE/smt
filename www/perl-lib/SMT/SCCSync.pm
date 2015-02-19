@@ -677,8 +677,23 @@ EOS
     };
     if($@)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        $retprd = 1;
+        if( $@ =~ /Duplicate entry/i )
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found, executing auto migration.", 0, 1);
+            if ($self->_mergeProducts($product) == 0)
+            {
+                $retprd = $self->_updateProducts($product);
+            }
+            else
+            {
+                $retprd = 1;
+            }
+        }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $retprd = 1;
+        }
     }
 
     foreach my $repo (@{$product->{repositories}})
@@ -700,6 +715,64 @@ EOS
     }
 
     return $ret;
+}
+
+sub _mergeProducts
+{
+    my $self = shift;
+    my $product = shift || return 1;
+
+    my $otherdataid = SMT::Utils::lookupProductDataIdByName($self->{DBH}, $product->{identifier},
+                                                            $product->{version},
+                                                            $product->{release_type},
+                                                            $product->{arch},
+                                                            $self->{LOG}, $self->vblevel);
+    if ($otherdataid eq $product->{id})
+    {
+        # if this happens we should not have a problem.
+        # So why get we here ?
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                 sprintf("Cannot merge: %s -> %s: %s %s %s %s", $otherdataid,
+                         $product->{id}, $product->{identifier},
+                         $product->{version}, $product->{release_type},
+                         $product->{arch}));
+        return 1;
+    }
+    my $correctpdid = SMT::Utils::lookupProductIdByDataId($self->{DBH},
+                                                          $product->{id}, 'S',
+                                                          $self->{LOG}, $self->vblevel);
+    my $otherpdid = SMT::Utils::lookupProductIdByDataId($self->{DBH},
+                                                      $otherdataid, 'S',
+                                                      $self->{LOG}, $self->vblevel);
+    my $statement = sprintf("update Registration
+                                set PRODUCTID = %s
+                              where PRODUCTID = %s",
+                            $self->{DBH}->quote($correctpdid),
+                            $self->{DBH}->quote($otherpdid));
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    eval {
+        $self->{DBH}->do($statement);
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        return 1;
+    }
+
+    $statement = sprintf("delete from Products
+                           where ID = %s
+                             and SRC = 'S'",
+                         $self->{DBH}->quote($otherpdid));
+    eval {
+        $self->{DBH}->do($statement);
+    };
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        return 1;
+    }
+    return 0;
 }
 
 sub _updateExtension
