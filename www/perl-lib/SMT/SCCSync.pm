@@ -679,7 +679,7 @@ EOS
     {
         if( $@ =~ /Duplicate entry/i )
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found, executing auto migration.", 0, 1);
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found, executing auto migration.");
             if ($self->_mergeProducts($product) == 0)
             {
                 $retprd = $self->_updateProducts($product);
@@ -687,6 +687,7 @@ EOS
             else
             {
                 $retprd = 1;
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Product merge failed.");
             }
         }
         else
@@ -742,8 +743,10 @@ sub _mergeProducts
                                                           $product->{id}, 'S',
                                                           $self->{LOG}, $self->vblevel);
     my $otherpdid = SMT::Utils::lookupProductIdByDataId($self->{DBH},
-                                                      $otherdataid, 'S',
+                                                      $otherdataid, undef,
                                                       $self->{LOG}, $self->vblevel);
+    return 1 if ! $otherpdid;
+
     my $statement = sprintf("update Registration
                                 set PRODUCTID = %s
                               where PRODUCTID = %s",
@@ -760,8 +763,7 @@ sub _mergeProducts
     }
 
     $statement = sprintf("delete from Products
-                           where ID = %s
-                             and SRC = 'S'",
+                           where ID = %s",
                          $self->{DBH}->quote($otherpdid));
     eval {
         $self->{DBH}->do($statement);
@@ -918,7 +920,7 @@ sub _updateRepositories
     {
         if( $@ =~ /Duplicate entry/i )
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found, executing auto migration.", 0, 1);
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found, executing auto migration.");
             $self->migrate(1);
             my $ret = $self->_updateRepositories($repo);
             $self->migrate(0);
@@ -1140,9 +1142,11 @@ sub _updateProductData
     #my $st2 = sprintf("Delete from Catalogs where SRC='S' and CATALOGID not in (%s)",
     #                  "'".join("','", keys %{$self->{REPO_DONE}})."'");
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st1");
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: Delete from Products where SRC='N'");
     #printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $st2");
     eval {
         $self->{DBH}->do($st1);
+        $self->{DBH}->do("Delete from Products where SRC='N'");
         #$self->{DBH}->do($st2);
     };
     if($@)
