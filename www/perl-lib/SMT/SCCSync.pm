@@ -79,6 +79,7 @@ sub new
     # temporarily used variables
     $self->{REPO_DONE} = {};
     $self->{PROD_DONE} = {};
+    $self->{PRODREPO_DONE} = {};
     $self->{EXT_DONE} = {};
     $self->{TARGET_DONE} = {};
     $self->{NUHOSTS} = ['nu.novell.com', 'updates.suse.com'];
@@ -994,6 +995,7 @@ sub _updateProductCatalogs
     my $product = shift;
     my $repo = shift;
     my $ret = 0;
+    return $ret if (exists $self->{PRODREPO_DONE}->{$product->{id}."-".$repo->{id}});
     my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel);
     my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel);
     if (! $product_id)
@@ -1016,6 +1018,7 @@ sub _updateProductCatalogs
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
     eval {
         $self->{DBH}->do($statement);
+        $self->{PRODREPO_DONE}->{$product->{id}."-".$repo->{id}} = 1;
     };
     if($@)
     {
