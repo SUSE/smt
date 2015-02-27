@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Fri Feb 27 14:48:38 CET 2015 - mc@suse.de
+
+- version 2.0.10
+- fix increasing files if metadata have checksums in there filenames
+- Skip duplicate subscription-system combinations (bsc#905076)
+- Add alias to display /SUSE on the same level as /repo (bsc#911546)
+- fix error in smt help if a directory is not readable by the smt user
+  (bsc#915001)
+- merge products with different IDs (bsc#918568)
+
+-------------------------------------------------------------------
 Thu Nov 27 13:46:49 CET 2014 - mc@suse.de
 
 - version 2.0.9
