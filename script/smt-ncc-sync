@@ -15,6 +15,7 @@ use File::Temp;
 use Config::IniFiles;
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
+use Parse::Date;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -413,7 +414,12 @@ sub subscriptions_handler
     foreach my $col (keys %{$row})
     {
         $writer->startTag($col2tag{$col});
-        $writer->characters( $row->{$col} ?  $row->{$col} : "0");
+        my $val = $row->{$col};
+        if ($val && ($col eq "SUBSTARTDATE" || $col eq "SUBENDDATE"))
+        {
+            $val = str2time($val, "GMT");
+        }
+        $writer->characters( $val ?  $val : "0");
         $writer->endTag($col2tag{$col});
     }
     $writer->endTag("subscription");
