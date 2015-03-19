@@ -15,7 +15,7 @@ use File::Temp;
 use Config::IniFiles;
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
-use Parse::Date;
+use Date::Parse;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
