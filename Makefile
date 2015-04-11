@@ -134,6 +134,8 @@ install:
 	if [ -e $(DESTDIR)/usr/sbin/rcsmt ]; then rm -f $(DESTDIR)/usr/sbin/rcsmt; fi
 	ln -s /etc/init.d/smt $(DESTDIR)/usr/sbin/rcsmt
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 db/smt-sql $(DESTDIR)/usr/bin/
+	install -m 755 db/smt-schema-upgrade $(DESTDIR)/usr/bin/
 	install -m 755 script/changeSMTUserPermissions.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/reschedule-sync.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/srv/www/htdocs/repo/tools/

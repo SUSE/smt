@@ -261,6 +261,7 @@ fi
 /usr/lib/SMT/bin/*
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
+/usr/bin/smt-*
 %doc %attr(644, root, root) %{_mandir}/man3/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
