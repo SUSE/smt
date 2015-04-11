@@ -1,7 +1,7 @@
 [Unit]
 Description=SMT
 Requires=cron.service
-Requires=postgresql.service
+Requires=mysql.service
 Requires=apache2.service
 
 [Install]
