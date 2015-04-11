@@ -33,8 +33,6 @@ Requires:       perl = %{perl_version}
 Requires:       perl-Config-IniFiles
 Requires:       perl-Crypt-SSLeay
 Requires:       perl-DBI
-Requires:       perl-DBIx-Migration-Directories
-Requires:       perl-DBIx-Transaction
 Requires:       perl-Digest-SHA1
 Requires:       perl-JSON
 Requires:       perl-MIME-Lite

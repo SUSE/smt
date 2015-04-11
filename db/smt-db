@@ -21,43 +21,14 @@ use strict;
 use warnings;
 use lib ("/srv/www/perl-lib/");
 
+use SMT;
 use SMT::Utils;
-use DBIx::Migration::Directories;
-use DBIx::Transaction;
 use Config::IniFiles;
 
 use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
-sub db_connect
-{
-    my $cfg = undef;
-
-    eval
-    {
-        $cfg = SMT::Utils::getSMTConfig();
-    };
-    if($@ || !defined $cfg)
-    {
-        print STDERR sprintf(__("Cannot read the SMT configuration file: %s\n"), $@);
-        exit 2;
-    }
-
-    my $config = $cfg->val('DB', 'config');
-    my $user   = $cfg->val('DB', 'user');
-    my $pass   = $cfg->val('DB', 'pass');
-    if(!defined $config || $config eq "")
-    {
-        # FIXME: is die correct here?
-        print STDERR __("Invalid Database configuration. Missing value for DB/config.\n");
-	exit 3;
-    }
-
-    my $dbh    = DBIx::Transaction->connect($config, $user, $pass, {RaiseError => 1, AutoCommit => 1});
-
-    return $dbh;
-}
 
 sub help
 {
@@ -73,7 +44,7 @@ sub help
 sub optimize
 {
   my $dbh;
-  if ( not $dbh=db_connect() )
+  if ( not $dbh=SMT::Utils::db_connect() )
   {
     print STDERR __("ERROR: Could not connect to the database.\n");
     return 20;
@@ -111,60 +82,7 @@ sub optimize
 
 sub migrate
 {
-    my $dbh;
-    if ( not $dbh=db_connect() )
-    {
-        print STDERR __("ERROR: Could not connect to the database.\n");
-	return 20;
-    }
-
-
-    my $m = DBIx::Migration::Directories->new(
-        base                    => '/usr/share/schemas',
-        schema                  => 'smt',
-        desired_version_from    => 'SMT',
-        dbh                     => $dbh
-        );
-
-    eval
-    {
-        $m->full_migrate;
-    };
-    if($@)
-    {
-	print STDERR "Installing database failed! $@\n";
-	return 21;
-    }
-    return 0;
-}
-
-sub migrate_to
-{
-    my $version = shift;
-    my $dbh;
-    if ( not $dbh=db_connect() )
-    {
-        print STDERR __("ERROR: Could not connect to the database.\n");
-        return 20;
-    }
-
-
-    my $m = DBIx::Migration::Directories->new(
-        base                    => '/usr/share/schemas',
-        schema                  => 'smt',
-        desired_version_from    => 'SMT',
-        dbh                     => $dbh
-        );
-
-    eval
-    {
-        $m->migrate_to($version);
-    };
-    if($@)
-    {
-        print STDERR "Migration to version $version failed! $@\n";
-        return 21;
-    }
+    `smt-schema-migration`;
     return 0;
 }
 
@@ -383,6 +301,8 @@ sub setup
     my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
     chown 0, $gid, "/etc/smt.conf";
 
+    my $smtversion = sprintf("%.02f", $SMT::SCHEMA_VERSION);
+    `smt-sql --select-mode-direct /usr/share/schemas/smt/mysql/$smtversion/100-smt-tables.sql > /var/log/smt/smt-db-setup.log`;
     return 0;
 }
 
@@ -415,11 +335,6 @@ if (defined $ARGV[0] )
     {
       exit $ret;
     }
-    $ret = migrate();
-    if($ret != 0)
-    {
-      exit $ret;
-    }
   }
   elsif ( $cmd eq "cpw" )
   {
@@ -434,22 +349,6 @@ if (defined $ARGV[0] )
       exit $ret;
     }
   }
-  elsif ( $cmd eq "migrate_to" )
-  {
-    if (defined $ARGV[0] )
-    {
-      my $ret = migrate_to($ARGV[0]);
-      if($ret != 0)
-      {
-        exit $ret;
-      }
-    }
-    else
-    {
-      print STDERR "Missing version.\n";
-      exit 21;
-    }
-  }
 }
 else
 {
@@ -457,8 +356,4 @@ else
 }
 
 exit 0;
-
-
-
-
 
