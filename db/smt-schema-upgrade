@@ -31,7 +31,7 @@ if (not defined $schema_version) {
       order by name DESC;
 EOF
     if (! defined $migrationdir or ! -d "$SCHEMA_UPGRADE_LOGDIR/$migrationdir") {
-        die "No existing schema version info found in rhnVersionInfo.\n";
+        die "No existing schema version info found in migration_schema_version\n";
     }
     my @logfiles = sort {$b cmp $a} map { glob } "/var/log/smt/schema-upgrade/$migrationdir-*.log";
     my $logname = ((scalar(@logfiles) >= 1)?basename($logfiles[0]):"$migrationdir.log");
@@ -241,10 +241,10 @@ sub run_schema_upgrade
     print "\n";
 
     my $new_schema_version = run_query(<<EOF);
-    select version from SchemaVersion where name = 'smt';
+    select version from migration_schema_version where name = 'smt';
 EOF
     if (not defined $new_schema_version) {
-        die "Upgrade seems to have run OK yet new schema version is not in rhnVersionInfo.\n";
+        die "Upgrade seems to have run OK yet new schema version is not in migration_schema_version.\n";
     }
     $new_schema_version = sprintf("%.02f", $new_schema_version);
     if ($new_schema_version ne $target_schema) {
