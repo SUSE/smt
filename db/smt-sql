@@ -123,7 +123,7 @@ while (<$rfh>) {
 	if ($select_direct) {
 		print;
 	} else {
-		push @out, $_;
+		push @out, substr($_, 1, length($_)-3)."\n";;
 	}
 }
 close $rfh;
