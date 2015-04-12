@@ -21,6 +21,7 @@ CREATE TABLE migration_schema_version (
           version double NOT NULL,
           CONSTRAINT migration_schema_version_name_pk PRIMARY KEY (name)
 ) ENGINE=InnoDB;
+insert into migration_schema_version ('smt', 2.03);
 
 CREATE TABLE migration_schema_log (
   schema_name varchar(128) NOT NULL,
@@ -113,7 +114,7 @@ create table StagingGroups(ID            INT NOT NULL AUTO_INCREMENT,
                            CONSTRAINT StagingGroups_id_pk PRIMARY KEY(ID),
                            UNIQUE INDEX StagingGroups_name_uq (NAME),
                            UNIQUE INDEX StagingGroups_testingdir_uq (TESTINGDIR),
-                           UNIQUE INDEX StagingGroups_productiondir_uq (PRODUCTIONDIR),
+                           UNIQUE INDEX StagingGroups_productiondir_uq (PRODUCTIONDIR)
                           ) ENGINE=InnoDB;
 
 insert into StagingGroups(ID, NAME, TESTINGDIR, PRODUCTIONDIR)
