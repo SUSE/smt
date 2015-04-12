@@ -301,8 +301,7 @@ sub setup
     my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
     chown 0, $gid, "/etc/smt.conf";
 
-    my $smtversion = sprintf("%.02f", $SMT::SCHEMA_VERSION);
-    `smt-sql --select-mode-direct /usr/share/schemas/smt/mysql/$smtversion/100-smt-tables.sql > /var/log/smt/smt-db-setup.log`;
+    `smt-sql --select-mode-direct /usr/share/schemas/smt/mysql/2.03/100-smt-tables.sql > /var/log/smt/smt-db-setup.log`;
     return 0;
 }
 
