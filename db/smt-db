@@ -35,7 +35,7 @@ sub help
     print __("\nSMT database maintenance tool\n");
     print __("Available commands:");
     print "  help :    ".__("show help\n");
-    print "  init :    ".__("initialize or upgrade database\n");
+    print "  migrate : ".__("initialize or upgrade database\n");
     print "  setup:    ".__("setup the database\n");
     print "  optimize: ".__("optimize the database\n");
     exit 0;
@@ -315,7 +315,7 @@ if (defined $ARGV[0] )
   {
     help();
   }
-  elsif ( $cmd eq "init" )
+  elsif ( $cmd eq "init" || $cmd eq "migrate" )
   {
     migrate();
   }
