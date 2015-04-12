@@ -190,6 +190,9 @@ sub setup
     my $smtpass  = "";
     my $host     = "localhost";
 
+    system("systemctl enable smt.target");
+    system("systemctl start mysql.service");
+
     print "mysql password for user $username: ";
     if($opt ne "--yast")
     {
