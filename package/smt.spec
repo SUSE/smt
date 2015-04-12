@@ -158,7 +158,7 @@ for manp in *.3pm; do
     install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man3/$manp
 done
 mkdir -p $RPM_BUILD_ROOT/var/run/smt
-mkdir -p $RPM_BUILD_ROOT/var/log/smt
+mkdir -p $RPM_BUILD_ROOT/var/log/smt/schema-upgrade
 mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt/
 mkdir -p $RPM_BUILD_ROOT/var/lib/smt
 
@@ -207,6 +207,7 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 %dir %{_docdir}/smt/
 %dir %attr(755, smt, www)/var/run/smt
 %dir %attr(755, smt, www)/var/log/smt
+%dir %attr(755, smt, www)/var/log/smt/schema-upgrade
 %dir %attr(755, smt, www)/var/lib/smt
 %config(noreplace) %attr(640, root, www)/etc/smt.conf
 %config /etc/apache2/*.pl

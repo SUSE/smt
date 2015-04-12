@@ -10,7 +10,7 @@ use File::Basename;
 my $SCHEMA_UPGRADE_DIR = '/usr/share/schemas/smt/mysql/';
 my $SCHEMA_UPGRADE_LOGDIR = '/var/log/smt/schema-upgrade';
 
-my $test = run_query("select '1' || '2' || '3' as testing;");
+my $test = run_query("select CONCAT('1', '2', '3') as testing;");
 if (not defined $test) {
     die "Connect to database was not successful.\n";
 }
@@ -21,12 +21,12 @@ if ($test ne '123') {
 my $target_schema = sprintf("%.02f", $SMT::SCHEMA_VERSION);
 
 my $schema_version = run_query(<<EOF);
-    select version from SchemaVersion where name = 'smt';
+    select version from migration_schema_version where name = 'smt';
 EOF
 if (not defined $schema_version) {
     my $migrationdir = run_query(<<EOF);
         select name
-          from SchemaVersion
+          from migration_schema_version
          where name like 'smt-schema-from-%'
       order by name DESC;
 EOF
@@ -108,7 +108,7 @@ my $start = $start_schema;
 my $migrationdir = "smt-schema-from-$stamp";
 
 my $in = <<EOF;
-update SchemaVersion
+update migration_schema_version
   set name = '$migrationdir'
 where name = 'smt';
 commit;
@@ -167,7 +167,7 @@ if (-e "$endfile")
 }
 
 $in .= <<EOF;
-update SchemaVersion
+update migration_schema_version
   set name = 'smt',
       version = $target_schema
 where name like 'smt-schema-from-%';
