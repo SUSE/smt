@@ -1,0 +1,4 @@
+Dump old SMT database. Data only:
+
+$> mysqldump -u <user> -p --no-create-info smt > smt-dump.sql
+
