@@ -1122,10 +1122,10 @@ sub _updateProductData
     $self->{LOCALSCHEME} = $localhost->scheme;
 
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductCatalogs  WHERE SRC='S'");
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductCatalogs  WHERE SRC='S' OR SRC='N'");
     eval {
         $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
-        $self->{DBH}->do("DELETE FROM ProductCatalogs  WHERE SRC='S'");
+        $self->{DBH}->do("DELETE FROM ProductCatalogs  WHERE SRC='S' OR SRC='N'");
     };
     if($@)
     {
