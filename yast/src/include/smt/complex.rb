@@ -7,8 +7,8 @@
 #
 # $Id: complex.ycp 27914 2006-02-13 14:32:08Z locilka $
 module Yast
-  class ComplexClient < Client
-    def main
+  module SmtComplexInclude
+    def initialize_smt_complex(include_target)
       Yast.import "UI"
       textdomain "smt"
 
@@ -18,8 +18,6 @@ module Yast
       Yast.import "Report"
 
       @log_view_ID = nil
-
-      nil
     end
 
     # Function for logging in the LogView widget.
@@ -126,5 +124,3 @@ module Yast
     end
   end
 end
-
-Yast::ComplexClient.new.main

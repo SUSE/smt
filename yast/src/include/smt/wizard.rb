@@ -9,8 +9,8 @@
 #
 # Main file for smt configuration. Uses all other files.
 module Yast
-  class WizardClient < Client
-    def main
+  module SmtWizardInclude
+    def initialize_smt_wizard(include_target)
       Yast.import "UI"
       textdomain "smt"
 
@@ -20,8 +20,8 @@ module Yast
       Yast.import "Mode"
       Yast.import "CWMFirewallInterfaces"
 
-      Yast.include self, "smt/helps.rb"
-      Yast.include self, "smt/dialogs.rb"
+      Yast.include include_target, "smt/helps.rb"
+      Yast.include include_target, "smt/dialogs.rb"
 
       @widgets = {
         "cr"           => {
@@ -200,8 +200,6 @@ module Yast
           "contents"     => ScheduledDownloadsDialogContent()
         }
       }
-
-      nil
     end
 
     def InstallCredentialsDialog
@@ -424,5 +422,3 @@ module Yast
     end
   end
 end
-
-Yast::WizardClient.new.main

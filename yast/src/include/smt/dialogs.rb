@@ -7,13 +7,13 @@
 #
 # $Id: dialogs.ycp 27914 2006-02-13 14:32:08Z locilka $
 module Yast
-  class DialogsClient < Client
-    def main
+  module SmtDialogsInclude
+    def initialize_smt_dialogs(include_target)
       Yast.import "UI"
       textdomain "smt"
 
-      Yast.include self, "smt/helps.rb"
-      Yast.include self, "smt/complex.rb"
+      Yast.include include_target, "smt/helps.rb"
+      Yast.include include_target, "smt/complex.rb"
 
       Yast.import "Wizard"
       Yast.import "Popup"
@@ -172,8 +172,6 @@ module Yast
 
       @cron_rpms_checked = false
       @cron_rpms_installed = nil
-
-      nil
     end
 
     def CredentialsDialogContent
@@ -3633,5 +3631,3 @@ module Yast
     end
   end
 end
-
-Yast::DialogsClient.new.main

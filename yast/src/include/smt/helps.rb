@@ -7,8 +7,8 @@
 #
 # $Id: helps.ycp 27914 2006-02-13 14:32:08Z locilka $
 module Yast
-  class HelpsClient < Client
-    def main
+  module SmtHelpsInclude
+    def initialize_smt_helps(include_target)
       textdomain "smt"
 
       @HELPS = {
@@ -112,10 +112,6 @@ module Yast
               "<p><b>Testing</b> snapshot is always created from the mirrored repository,\n<b>production</b> is always created as a copy of the <b>testing</b> one.</p>"
             )
       }
-
-      nil
     end
   end
 end
-
-Yast::HelpsClient.new.main

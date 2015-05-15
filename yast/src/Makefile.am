@@ -3,16 +3,16 @@
 yncludedir = @yncludedir@/smt
 
 client_DATA = \
-	clients/smt.ycp \
-	clients/smt-server.ycp \
-	clients/inst_smt.ycp \
-	clients/smt_generate_new_credentials.ycp
+	clients/smt.rb \
+	clients/smt-server.rb \
+	clients/inst_smt.rb \
+	clients/smt_generate_new_credentials.rb
 
 ynclude_DATA = \
-	include/smt/dialogs.ycp \
-	include/smt/helps.ycp \
-	include/smt/complex.ycp \
-	include/smt/wizard.ycp
+	include/smt/dialogs.rb \
+	include/smt/helps.rb \
+	include/smt/complex.rb \
+	include/smt/wizard.rb
 
 control_DATA = \
 	control/smt_control.xml
@@ -21,7 +21,7 @@ ybin_SCRIPTS = scripts/regsrv-check-creds
 
 desktop_DATA = $(wildcard desktop/*.desktop)
 
-module_DATA = $(wildcard modules/SMT*.ycp)
+module_DATA = $(wildcard modules/SMT*.rb)
 
 # create a symlink for local build, #145327
 #smt:
