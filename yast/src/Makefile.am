@@ -3,30 +3,30 @@
 yncludedir = @yncludedir@/smt
 
 client_DATA = \
-	smt.ycp \
-	smt-server.ycp \
-	inst_smt.ycp \
-	smt_generate_new_credentials.ycp
+	clients/smt.ycp \
+	clients/smt-server.ycp \
+	clients/inst_smt.ycp \
+	clients/smt_generate_new_credentials.ycp
 
 ynclude_DATA = \
-	dialogs.ycp \
-	helps.ycp \
-	complex.ycp \
-	wizard.ycp
+	include/smt/dialogs.ycp \
+	include/smt/helps.ycp \
+	include/smt/complex.ycp \
+	include/smt/wizard.ycp
 
 control_DATA = \
-	smt_control.xml
+	control/smt_control.xml
 
-ybin_SCRIPTS = regsrv-check-creds
+ybin_SCRIPTS = scripts/regsrv-check-creds
 
-desktop_DATA = $(wildcard *.desktop)
+desktop_DATA = $(wildcard desktop/*.desktop)
 
-module_DATA = $(wildcard SMT*.ycp)
+module_DATA = $(wildcard modules/SMT*.ycp)
 
 # create a symlink for local build, #145327
-smt:
-	ln -sf . $@
-ycpchook = smt
+#smt:
+#	ln -sf . $@
+#ycpchook = smt
 
 controldir = $(yast2dir)/control
 
