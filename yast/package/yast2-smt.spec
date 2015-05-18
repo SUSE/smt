@@ -84,8 +84,10 @@ Provides the YaST module for SMT configuration.
 %install
 %yast_install
 
-%suse_update_desktop_file yast2-smt
-%suse_update_desktop_file yast2-smt-server
+for f in `find $RPM_BUILD_ROOT/%{prefix}/share/applications/YaST2/ -name "*.desktop"` ; do
+    d=${f##*/}
+    %suse_update_desktop_file -d ycc_${d%.desktop} ${d%.desktop}
+done
 
 %post
 %desktop_database_post
