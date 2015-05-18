@@ -30,7 +30,6 @@ Source0:        yast2-smt-%{version}.tar.bz2
 Prefix:         /usr
 
 Requires:	yast2
-Requires:	yast2-runlevel
 # FATE 305541: Creating NCCcredentials file using yast2-registration
 Requires:	yast2-registration
 Requires:	/usr/bin/curl
@@ -62,7 +61,7 @@ Recommends:	apache2
 # If CA is missing, SMT offers to create one
 Recommends:	yast2-ca-management
 
-BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite yast2-runlevel
+BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite
 BuildRequires:	hicolor-icon-theme
 # any YaST theme
 BuildRequires:	yast2_theme
@@ -80,35 +79,40 @@ Provides the YaST module for SMT configuration.
 %setup -n yast2-smt-%{version}
 
 %build
-%{prefix}/bin/y2tool y2autoconf
-%{prefix}/bin/y2tool y2automake
-autoreconf --force --install
-
-export CFLAGS="$RPM_OPT_FLAGS -DNDEBUG"
-export CXXFLAGS="$RPM_OPT_FLAGS -DNDEBUG"
-
-%{?suse_update_config:%{suse_update_config -f}}
-./configure --libdir=%{_libdir} --prefix=%{prefix} --mandir=%{_mandir}
-make %{?jobs:-j%jobs}
+%yast_build
 
 %install
-make install DESTDIR="$RPM_BUILD_ROOT"
-[ -e "%{prefix}/share/YaST2/data/devtools/NO_MAKE_CHECK" ] || Y2DIR="$RPM_BUILD_ROOT/usr/share/YaST2" make check DESTDIR="$RPM_BUILD_ROOT"
-for f in `find $RPM_BUILD_ROOT/%{prefix}/share/applications/YaST2/ -name "*.desktop"` ; do
-    d=${f##*/}
-    %suse_update_desktop_file -d ycc_${d%.desktop} ${d%.desktop}
-done
+%yast_install
 
-mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/16x16/apps
-mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/22x22/apps
-mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/32x32/apps
-mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/48x48/apps
-cd $RPM_BUILD_ROOT//usr/share/YaST2/theme/current/icons
-for dir in 16x16 22x22 32x32 48x48; do
-    cd $RPM_BUILD_ROOT/usr/share/icons/hicolor/$dir/apps
-    rm -rf yast-smt.png
-    ln -s /usr/share/YaST2/theme/current/icons/$dir/apps/yast-smt.png .
-done
+%suse_update_desktop_file yast2-smt
+%suse_update_desktop_file yast2-smt-server
+
+%post
+%desktop_database_post
+
+%postun
+%desktop_database_postun
+
+
+
+#%install
+#make install DESTDIR="$RPM_BUILD_ROOT"
+#[ -e "%{prefix}/share/YaST2/data/devtools/NO_MAKE_CHECK" ] || Y2DIR="$RPM_BUILD_ROOT/usr/share/YaST2" make check DESTDIR="$RPM_BUILD_ROOT"
+#for f in `find $RPM_BUILD_ROOT/%{prefix}/share/applications/YaST2/ -name "*.desktop"` ; do
+#    d=${f##*/}
+#    %suse_update_desktop_file -d ycc_${d%.desktop} ${d%.desktop}
+#done
+
+#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/16x16/apps
+#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/22x22/apps
+#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/32x32/apps
+#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/48x48/apps
+#cd $RPM_BUILD_ROOT//usr/share/YaST2/theme/current/icons
+#for dir in 16x16 22x22 32x32 48x48; do
+#    cd $RPM_BUILD_ROOT/usr/share/icons/hicolor/$dir/apps
+#    rm -rf yast-smt.png
+#    ln -s /usr/share/YaST2/theme/current/icons/$dir/apps/yast-smt.png .
+#done
 
 %clean
 rm -rf "$RPM_BUILD_ROOT"
@@ -117,7 +121,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %defattr(-,root,root)
 %dir /usr/share/YaST2/include/smt
 /usr/share/YaST2/include/smt/*
-/usr/share/YaST2/clients/*.ycp
+/usr/share/YaST2/clients/*.rb
 /usr/share/YaST2/modules/SMT*.*
 %{prefix}/share/applications/YaST2/smt*.desktop
 /usr/share/YaST2/scrconf/smt*.scr
