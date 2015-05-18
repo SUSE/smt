@@ -89,32 +89,23 @@ for f in `find $RPM_BUILD_ROOT/%{prefix}/share/applications/YaST2/ -name "*.desk
     %suse_update_desktop_file -d ycc_${d%.desktop} ${d%.desktop}
 done
 
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/16x16/apps
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/22x22/apps
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/32x32/apps
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/48x48/apps
+
+cd $RPM_BUILD_ROOT//usr/share/YaST2/theme/current/icons
+for dir in 16x16 22x22 32x32 48x48; do
+    cd $RPM_BUILD_ROOT/usr/share/icons/hicolor/$dir/apps
+    rm -rf yast-smt.png
+    ln -s /usr/share/YaST2/theme/current/icons/$dir/apps/yast-smt.png .
+done
+
 %post
 %desktop_database_post
 
 %postun
 %desktop_database_postun
-
-
-
-#%install
-#make install DESTDIR="$RPM_BUILD_ROOT"
-#[ -e "%{prefix}/share/YaST2/data/devtools/NO_MAKE_CHECK" ] || Y2DIR="$RPM_BUILD_ROOT/usr/share/YaST2" make check DESTDIR="$RPM_BUILD_ROOT"
-#for f in `find $RPM_BUILD_ROOT/%{prefix}/share/applications/YaST2/ -name "*.desktop"` ; do
-#    d=${f##*/}
-#    %suse_update_desktop_file -d ycc_${d%.desktop} ${d%.desktop}
-#done
-
-#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/16x16/apps
-#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/22x22/apps
-#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/32x32/apps
-#mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/48x48/apps
-#cd $RPM_BUILD_ROOT//usr/share/YaST2/theme/current/icons
-#for dir in 16x16 22x22 32x32 48x48; do
-#    cd $RPM_BUILD_ROOT/usr/share/icons/hicolor/$dir/apps
-#    rm -rf yast-smt.png
-#    ln -s /usr/share/YaST2/theme/current/icons/$dir/apps/yast-smt.png .
-#done
 
 %clean
 rm -rf "$RPM_BUILD_ROOT"
