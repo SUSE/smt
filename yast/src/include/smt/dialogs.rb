@@ -703,8 +703,8 @@ module Yast
               next
             end
           elsif decision == "registration"
-            wfmret = WFM.CallFunction("inst_suse_register")
-            Builtins.y2milestone("inst_suse_register returned: %1", wfmret)
+            wfmret = WFM.CallFunction("inst_scc")
+            Builtins.y2milestone("inst_scc returned: %1", wfmret)
             ret = :again
           elsif decision == "generate"
             # Busy message
