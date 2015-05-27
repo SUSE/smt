@@ -61,6 +61,7 @@ module Yast
 
       @smt_database = "mysql"
 
+      @SCCcredentials_file = "/etc/zypp/credentials.d/SCCcredentials"
       @NCCcredentials_file = "/etc/zypp/credentials.d/NCCcredentials"
 
       @read_api_type = "NCC"
@@ -82,12 +83,12 @@ module Yast
       @initial_password = nil
     end
 
-    def GetNCCcredentialsFile
-      @NCCcredentials_file
+    def GetSCCcredentialsFile
+      @SCCcredentials_file
     end
 
     def SystemIsRegistered
-      FileUtils.Exists(@NCCcredentials_file) == true
+      FileUtils.Exists(@SCCcredentials_file) || FileUtils.Exist(@NCCCredentials_file)
     end
 
     def InitialConfig
@@ -142,7 +143,7 @@ module Yast
       @_smt_user
     end
 
-    # Returns whether a NCCcredentials file is accessible by SMT user
+    # Returns whether a SCCcredentials file is accessible by SMT user
     # defined in LOCAL->smtUser. Returns nil if the file does not exist.
     #
     # @return [Boolean] whether accessible
@@ -156,17 +157,17 @@ module Yast
           Builtins.sformat(
             "echo '' | /usr/bin/sudo -S -u '%1' /bin/cat '%2'",
             String.Quote(smt_user),
-            String.Quote(@NCCcredentials_file)
+            String.Quote(@SCCcredentials_file)
           )
         )
       ) == 0
     end
 
-    # Adjusts NCCcredentials file permissions to be accessible
+    # Adjusts SCCcredentials file permissions to be accessible
     # by SMT user defined in LOCAL->smtUser.
     # By default it adjusts file ACL to "read", or it changes the
     # file owner and permissions to smt:root.
-    def AdjustNCCCredentialsFileAccess
+    def AdjustSCCCredentialsFileAccess
       smt_user = GetSMTUser()
 
       if smt_user == nil || smt_user == ""
@@ -177,7 +178,7 @@ module Yast
       cmd = Builtins.sformat(
         "/usr/bin/setfacl -m u:%1:r '%2'",
         smt_user,
-        String.Quote(@NCCcredentials_file)
+        String.Quote(@SCCcredentials_file)
       )
       setfacl = Convert.to_integer(SCR.Execute(path(".target.bash"), cmd)) == 0
       Builtins.y2milestone("Adjusting file ACL (%1) returned %2", cmd, setfacl)
@@ -191,7 +192,7 @@ module Yast
               path(".target.bash_output"),
               Builtins.sformat(
                 "/usr/bin/getfacl --access '%1' 2>/dev/null",
-                String.Quote(@NCCcredentials_file)
+                String.Quote(@SCCcredentials_file)
               )
             )
           )
@@ -204,7 +205,7 @@ module Yast
       cmd = Builtins.sformat(
         "/bin/chown %1:root '%2'; /bin/chmod ug+r '%2'",
         smt_user,
-        String.Quote(@NCCcredentials_file)
+        String.Quote(@SCCcredentials_file)
       )
       chownchmod = Convert.to_integer(SCR.Execute(path(".target.bash"), cmd)) == 0
       Builtins.y2milestone(
@@ -265,7 +266,7 @@ module Yast
       nil
     end
 
-    # Checks (and adjusts) the NCCcredentials file permissions the be readable
+    # Checks (and adjusts) the SCCcredentials file permissions the be readable
     # by SMT user defined in LOCAL->smtUser. Returns if accessible and/or permissions
     # successfuly set. If the file does not exist, nil is returned.
     #
@@ -278,7 +279,7 @@ module Yast
 
       state = CredentialsFileAccessible()
       Builtins.y2milestone(
-        "Initial state: NCCcredentials are readable by SMT user: %1",
+        "Initial state: SCCcredentials are readable by SMT user: %1",
         state
       )
 
@@ -288,11 +289,11 @@ module Yast
         return false
       end
 
-      AdjustNCCCredentialsFileAccess()
+      AdjustSCCCredentialsFileAccess()
 
       state = CredentialsFileAccessible()
       Builtins.y2milestone(
-        "Final state: NCCcredentials are readable by SMT user: %1",
+        "Final state: SCCcredentials are readable by SMT user: %1",
         state
       )
 
@@ -1438,7 +1439,7 @@ module Yast
       SCR.Execute(path(".target.remove"), smt_command_file)
     end
 
-    publish :function => :GetNCCcredentialsFile, :type => "string ()"
+    publish :function => :GetSCCcredentialsFile, :type => "string ()"
     publish :function => :SystemIsRegistered, :type => "boolean ()"
     publish :function => :InitialConfig, :type => "boolean ()"
     publish :function => :ApiTypeChanged, :type => "boolean ()"

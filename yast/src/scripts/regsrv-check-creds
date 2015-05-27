@@ -39,7 +39,7 @@ if(!$smtguid)
     $smtguid = "1234567890";
 }
 
-$apitype = 'NCC' if(!$apitype);
+$apitype = 'SCC' if(!$apitype);
 
 my $ua = SMT::Utils::createUserAgent();
 $ua->protocols_allowed( [ 'https'] );

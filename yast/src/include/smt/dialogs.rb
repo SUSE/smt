@@ -33,7 +33,7 @@ module Yast
       @text_mode = UI.TextMode
 
       @smt_cron_scripts = {
-        "/usr/lib/SMT/bin/smt-repeated-register"    => _("NCC Registration"),
+        "/usr/lib/SMT/bin/smt-repeated-register"    => _("SCC Registration"),
         "/usr/lib/SMT/bin/smt-daily"                => _(
           "Synchronization of Updates"
         ),
@@ -273,7 +273,7 @@ module Yast
                   # TRANSLATORS: text entry (e-mail)
                   InputField(
                     Id("nccEmail"),
-                    _("&NCC E-mail Used for Registration")
+                    _("&SCC E-mail Used for Registration")
                   )
                 )
               )
@@ -600,13 +600,13 @@ module Yast
     def RegisterOrFillUpCredentials
       Wizard.SetContents(
         # Dialog caption
-        _("NCC Credentials"),
+        _("SCC Credentials"),
         HSquash(
           VBox(
             # Informative text
             Label(
               _(
-                "System does not appear to be registered in NCC.\nChoose one of the options below."
+                "System does not appear to be registered in SCC.\nChoose one of the options below."
               )
             ),
             VSpacing(1),
@@ -630,7 +630,7 @@ module Yast
                     RadioButton(
                       Id("registration"),
                       Opt(:notify),
-                      _("Register in &Novell Customer Center")
+                      _("Register in &SUSE Customer Center")
                     )
                   ),
                   VSpacing(1),
@@ -639,7 +639,7 @@ module Yast
                     RadioButton(
                       Id("generate"),
                       Opt(:notify),
-                      _("&Generate New NCC Credentials")
+                      _("&Generate New SCC Credentials")
                     )
                   ),
                   VSpacing(1)
@@ -648,18 +648,18 @@ module Yast
             )
           )
         ),
-        # Help "NCC Credentials", #1
+        # Help "SCC Credentials", #1
         _(
-          "<p><b><big>NCC Credentials</big></b><br>\n" +
-            "You need to register your SMT in Novell Customer Center to get it working\n" +
+          "<p><b><big>SCC Credentials</big></b><br>\n" +
+            "You need to register your SMT in SUSE Customer Center to get it working\n" +
             "properly. Choose one of the listed options.</p>"
         ) +
-          # Help "NCC Credentials", #2
+          # Help "SCC Credentials", #2
           _(
-            "<p>Choosing <b>Register in Novell Customer Center</b> would\n" +
-              "call regular Novell Customer Center Configuration module,\n" +
-              "<b>Generate New NCC Credentials</b> just creates new NCC Credentials\n" +
-              "file without calling Novell Customer Center Configuration module.</p>"
+            "<p>Choosing <b>Register in SUSE Customer Center</b> would\n" +
+              "call regular SUSE Customer Center Configuration module,\n" +
+              "<b>Generate New SCC Credentials</b> just creates new SCC Credentials\n" +
+              "file without calling SUSE Customer Center Configuration module.</p>"
           ),
         true,
         true
@@ -687,7 +687,7 @@ module Yast
                 _("Warning"),
                 # Pop-up question
                 _(
-                  "Leaving the NCC credentials empty might cause SMT not to work properly.\nAre you sure you want to really skip it?"
+                  "Leaving the SCC credentials empty might cause SMT not to work properly.\nAre you sure you want to really skip it?"
                 ),
                 # Button label
                 _("&Yes, Skip It"),
@@ -696,7 +696,7 @@ module Yast
                 :focus_no
               )
               Builtins.y2warning(
-                "User decided to skip registration or entering NCC credentials"
+                "User decided to skip registration or entering SCC credentials"
               )
               ret = :next
             else
@@ -708,7 +708,7 @@ module Yast
             ret = :again
           elsif decision == "generate"
             # Busy message
-            dopen = UI.OpenDialog(Label(_("Generating NCCcredentials...")))
+            dopen = UI.OpenDialog(Label(_("Generating SCCcredentials...")))
             check_ret = WFM.CallFunction("smt_generate_new_credentials")
             UI.CloseDialog if dopen == true
             if check_ret == nil
@@ -716,7 +716,7 @@ module Yast
               Report.Error(
                 Builtins.sformat(
                   _(
-                    "Unable to generate new NCCcredentials,\nAn error occurred while calling %1"
+                    "Unable to generate new SCCcredentials,\nAn error occurred while calling %1"
                   ),
                   "smt_generate_new_credentials"
                 )
@@ -746,7 +746,7 @@ module Yast
       ret
     end
 
-    # FATE #305541, Check if NCCcredentials file exists and offer registration
+    # FATE #305541, Check if SCCcredentials file exists and offer registration
     # or creating the file if it doesn't
     def CheckConfigDialog
       # defualt dialog return
@@ -761,7 +761,7 @@ module Yast
 
       while SMTData.SystemIsRegistered != true
         Builtins.y2warning(
-          "No NCCcredentials present, offering registration, etc."
+          "No SCCcredentials present, offering registration, etc."
         )
         dialog_ret = RegisterOrFillUpCredentials()
         Builtins.y2milestone("Dialog ret: %1", dialog_ret)
@@ -786,7 +786,7 @@ module Yast
             _(
               "SMT is unable to set %1 file permissions\nto be readable by %2 user."
             ),
-            SMTData.GetNCCcredentialsFile,
+            SMTData.GetSCCcredentialsFile,
             SMTData.GetCredentials("DB", "user")
           )
         )

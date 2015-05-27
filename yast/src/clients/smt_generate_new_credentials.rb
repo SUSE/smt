@@ -2,7 +2,7 @@
 
 # File:	include/smt_generate_new_credentials.ycp
 # Package:	Configuration of smt
-# Summary:	Creates new NCCcredentials file
+# Summary:	Creates new SCCcredentials file
 # See:		FATE #305541
 # Authors:	Lukas Ocilka <locilka@suse.cz>
 #
@@ -14,7 +14,7 @@ module Yast
       Yast.import "SMTData"
 
       if SMTData.SystemIsRegistered
-        Builtins.y2warning("NCCcredentials file exists, not creating a new one")
+        Builtins.y2warning("SCCcredentials file exists, not creating a new one")
         return :next
       end
 
@@ -26,9 +26,16 @@ module Yast
         "restoreRepos" => 0
       }
 
-      Builtins.y2milestone("Creating new NCCcredentials...")
+      Builtins.y2milestone("Creating new SCCcredentials...")
+      
+
       # FATE #305541
-      Builtins.y2milestone("Returned: %1", YSR.init_ctx(@initial_data))
+# FIXME this does not work :-(
+#          login, password = announce_system(nil, @config.instance_data_file)
+#          Credentials.new(login, password, Credentials.system_credentials_file).write
+
+
+#      Builtins.y2milestone("Returned: %1", YSR.init_ctx(@initial_data))
 
       :next
     end
