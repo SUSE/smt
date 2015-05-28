@@ -633,15 +633,6 @@ module Yast
                       _("Register in &SUSE Customer Center")
                     )
                   ),
-                  VSpacing(1),
-                  # Radio button
-                  Left(
-                    RadioButton(
-                      Id("generate"),
-                      Opt(:notify),
-                      _("&Generate New SCC Credentials")
-                    )
-                  ),
                   VSpacing(1)
                 )
               )
@@ -706,30 +697,12 @@ module Yast
             wfmret = WFM.CallFunction("inst_scc")
             Builtins.y2milestone("inst_scc returned: %1", wfmret)
             ret = :again
-          elsif decision == "generate"
-            # Busy message
-            dopen = UI.OpenDialog(Label(_("Generating SCCcredentials...")))
-            check_ret = WFM.CallFunction("smt_generate_new_credentials")
-            UI.CloseDialog if dopen == true
-            if check_ret == nil
-              # Error pop-up, %1 is replaced with a script name
-              Report.Error(
-                Builtins.sformat(
-                  _(
-                    "Unable to generate new SCCcredentials,\nAn error occurred while calling %1"
-                  ),
-                  "smt_generate_new_credentials"
-                )
-              )
-              next
-            end
           end
           break
         elsif dialog_ret == :back
           ret = :back
           break
-        elsif dialog_ret == "skip" || dialog_ret == "registration" ||
-            dialog_ret == "generate"
+        elsif dialog_ret == "skip" || dialog_ret == "registration"
           decision = Convert.to_string(
             UI.QueryWidget(Id("NCCCredentialsRBB"), :CurrentButton)
           )
