@@ -1059,6 +1059,7 @@ sub doesFileExist
     my $tries = 0;
     my $ret = 0;
     my $response;
+    $userAgent->connecttimeout(1);
 
     do
     {
