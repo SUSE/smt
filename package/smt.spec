@@ -1,7 +1,7 @@
 #
 # spec file for package smt
 #
-# Copyright (c) 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2015 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -16,11 +16,12 @@
 #
 
 
+
 Name:           smt
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
-Version:        2.0.11
+Version:        2.0.12
 Release:        0
 Requires:       createrepo
 Requires:       gpg2
@@ -81,6 +82,7 @@ Authors:
         locilka@suse.cz
 
 %package -n res-signingkeys
+
 Summary:        Signing Key for RES
 Group:          Productivity/Security
 PreReq:         smt = %version
@@ -100,6 +102,7 @@ Authors:
         locilka@suse.cz
 
 %package support
+
 Summary:        SMT support proxy
 Group:          Productivity/Networking/Web/Proxy
 PreReq:         smt = %version
