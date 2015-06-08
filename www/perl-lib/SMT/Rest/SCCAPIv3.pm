@@ -77,6 +77,8 @@ sub get_extensions
         ", $self->dbh()->quote($guid), $self->dbh()->quote($req_pdid));
 
     $self->request()->log->info("STATEMENT: $sql");
+    my $code = Apache2::Const::OK;
+    my $errmsg = "";
     eval
     {
         my $baseURL = $self->cfg()->val('LOCAL', 'url');
@@ -84,9 +86,12 @@ sub get_extensions
 
         my $new_ids = [];
         $result = $self->dbh()->selectall_hashref($sql, 'id');
+
         if (scalar(keys %{$result}) == 0)
         {
-            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "The requested product is not activated on this system.");
+            $code = Apache2::Const::HTTP_UNPROCESSABLE_ENTITY;
+            $errmsg = "The requested product is not activated on this system.";
+            return; # goes out of the eval
         }
 
         foreach my $pdid (keys %{$result})
@@ -106,6 +111,7 @@ sub get_extensions
     {
         return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
+    return ($code, $errmsg) if($code != Apache2::Const::OK);
 
     # log->info is limited in strlen. If you want to see all, you need to print to STDERR
     #print STDERR "PRODUCTS: ".Data::Dumper->Dump([$result->{$req_pdid}])."\n";
