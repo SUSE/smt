@@ -71,10 +71,9 @@ sub get_extensions
                          GROUP BY c.DOMIRROR) = 'N'
                 THEN 0 ELSE 1 END ) available
            FROM Registration r
-           JOIN Products p1 ON r.PRODUCTID = p1.ID
-           JOIN Products p ON p1.PRODUCT_CLASS = p.PRODUCT_CLASS
+           JOIN Products p ON r.PRODUCTID = p.ID
           WHERE r.GUID = %s
-            AND p.ID = %s
+            AND r.PRODUCTID = %s
         ", $self->dbh()->quote($guid), $self->dbh()->quote($req_pdid));
 
     $self->request()->log->info("STATEMENT: $sql");
