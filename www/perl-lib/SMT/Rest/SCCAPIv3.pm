@@ -4,7 +4,7 @@ require SMT::Rest::SCCAPIv2;
 @ISA = qw(SMT::Rest::SCCAPIv2);
 
 use strict;
-use Apache2::Const -compile => qw(:log OK SERVER_ERROR HTTP_NO_CONTENT AUTH_REQUIRED FORBIDDEN HTTP_UNPROCESSABLE_ENTITY);
+use Apache2::Const -compile => qw(:log OK SERVER_ERROR HTTP_NO_CONTENT AUTH_REQUIRED FORBIDDEN HTTP_UNPROCESSABLE_ENTITY HTTP_UNAUTHORIZED);
 
 use JSON;
 
@@ -117,6 +117,124 @@ sub get_extensions
     #print STDERR "PRODUCTS: ".Data::Dumper->Dump([$result->{$req_pdid}])."\n";
 
     return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), $result->{$req_pdid});
+}
+
+sub get_subscriptions_products
+{
+    my $self = shift || return (undef, undef);
+    my $result = {};
+    my $sql = "";
+    my $productids = [];
+    # We are sure, that user is a system GUID
+    my $guid = $self->user();
+    my $product_class = undef;
+    my $token = $self->get_header("Authorization");
+    if($token)
+    {
+        my ($key, $value) = split(/=/, $token, 2);
+        if ($key = "Token token")
+        {
+            my $sub = SMT::Utils::lookupSubscriptionByRegcode($self->dbh(), $value, $self->request());
+            $product_class = $sub->{'PRODUCT_CLASS'};
+        }
+        if(!$product_class)
+        {
+            # we got a token but it seems to be invalid
+            return (Apache2::Const::HTTP_UNAUTHORIZED, "Invalid registration code");
+        }
+    }
+    my $args = $self->parse_args();
+
+    if(!$args || scalar(keys %{$args}) == 0)
+    {
+        # try to read from body
+        $args = JSON::decode_json($self->read_post());
+    }
+    $self->request()->log->info(Data::Dumper->Dump([$args]));
+    my $req_pdid = undef;
+    if (exists $args->{identifier} && exists $args->{version} && exists $args->{arch})
+    {
+        my $release = ((exists $args->{release_type})?$args->{release_type}:"");
+        $req_pdid = SMT::Utils::lookupProductIdByName($self->dbh(), $args->{identifier},
+                                                      $args->{version}, $release,
+                                                      $args->{arch}, $self->request());
+    }
+    elsif (!$token)
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Either token or product required");
+    }
+
+    $sql ="SELECT p.id id,
+               p.FRIENDLY friendly_name,
+               p.FRIENDLY name,
+               p.PRODUCT identifier,
+               p.FORMER_IDENTIFIER former_identifier,
+               p.DESCRIPTION description,
+               p.VERSION version,
+               p.REL release_type,
+               p.ARCH arch,
+               p.PRODUCT_CLASS product_class,
+               p.CPE cpe,
+               p.EULA_URL eula_url,
+               1 free,
+               p.PRODUCT_TYPE product_type,
+               (CASE WHEN (SELECT c.DOMIRROR
+                             FROM ProductCatalogs pc
+                             JOIN Catalogs c ON pc.CATALOGID = c.ID
+                            WHERE pc.PRODUCTID = p.ID
+                              AND c.DOMIRROR = 'N'
+                              AND pc.OPTIONAL = 'N'
+                         GROUP BY c.DOMIRROR) = 'N'
+                THEN 0 ELSE 1 END ) available
+           FROM Products p
+          WHERE 1 = 1 ";
+    if($req_pdid) {
+        $sql .= sprintf(" AND p.ID = %s", $self->dbh()->quote($req_pdid));
+    }
+    if($product_class) {
+        $sql .= sprintf(" AND p.product_class = %s", $self->dbh()->quote($product_class));
+    }
+    $self->request()->log->info("STATEMENT: $sql");
+    my $code = Apache2::Const::OK;
+    my $errmsg = "";
+    eval
+    {
+        my $baseURL = $self->cfg()->val('LOCAL', 'url');
+        $baseURL =~ s/\/*$//;
+
+        my $new_ids = [];
+        $result = $self->dbh()->selectall_hashref($sql, 'id');
+
+        if (scalar(keys %{$result}) == 0)
+        {
+            $code = Apache2::Const::HTTP_UNPROCESSABLE_ENTITY;
+            $errmsg = "Unable to find the requested product.";
+            return; # goes out of the eval
+        }
+
+        foreach my $pdid (keys %{$result})
+        {
+            $result->{$pdid}->{extensions} = [];
+            $result->{$pdid}->{id} = int($result->{$pdid}->{id});
+            $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id});
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}])})
+            {
+                push @{$result->{$pdid}->{extensions}}, $ext;
+            }
+        }
+    };
+    if ($@)
+    {
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+    }
+    return ($code, $errmsg) if($code != Apache2::Const::OK);
+
+    # log->info is limited in strlen. If you want to see all, you need to print to STDERR
+    #print STDERR "PRODUCTS: ".Data::Dumper->Dump([values %{$result}])."\n";
+
+    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), [values %{$result}]);
 }
 
 ################ PRIVATE ####################

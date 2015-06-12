@@ -124,6 +124,7 @@ sub subscriptions_handler($$$$)
     $self->request()->log->info($self->request()->method() ." connect/$path");
     if    ( $self->request()->method() =~ /^GET$/i )
     {
+        if ( $path =~ /^subscriptions\/products\/?$/ ) { return $self->get_subscriptions_products(); }
     }
     elsif ( $self->request()->method() =~ /^POST$/i )
     {
