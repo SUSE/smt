@@ -153,6 +153,14 @@ sub update_last_contact($$)
     return $client->updateLastContact($self->request()->user);
 }
 
+sub get_header
+{
+    my $self    = shift;
+    my $key     = shift;
+    my $default = shift || undef;
+
+    return $self->request()->headers_in->{$key} || $default;
+}
 
 1;
 
