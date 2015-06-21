@@ -134,6 +134,7 @@ sub announce
     return $self->_request($uri, "post", $headers, $body);
 }
 
+
 =item products
 
 List all products.
@@ -280,6 +281,17 @@ sub org_systems_show
              "show system with id: $id", 0);
 
     return $self->_request($uri->as_string(), "get", {}, {});
+}
+
+sub org_systems_set
+{
+    my $self = shift;
+    my %opts = @_;
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/systems");
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "Announce data: ".Data::Dumper->Dump([$opts{body}]), 0);
+
+    return $self->_request($uri, "post", {}, $opts{body});
 }
 
 sub org_systems_delete
