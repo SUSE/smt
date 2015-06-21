@@ -410,6 +410,67 @@ sub finalize_mirrorable_repos
     }
 }
 
+sub register_systems
+{
+    my $self = shift;
+    my $sleeptime = shift || 1;
+    my $allguids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE (REGDATE > NCCREGDATE || NCCREGDATE IS NULL) && NCCREGERROR=0");
+
+    if(@{$allguids} > 0)
+    {
+        # we have something to register, check for random sleep value
+        sleep(int($sleeptime));
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Register %d new clients.", ($#{$allguids}+1) ) );
+    }
+    else
+    {
+        # nothing to register -- success
+        return 0;
+    }
+
+    my $exitcode = 0;
+    foreach my $guid (@$allguids)
+    {
+        my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.ID, p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH
+                                                                   from Products p, Registration r
+                                                                  where r.GUID=%s
+                                                                    and r.PRODUCTID=p.ID", $self->{DBH}->quote($guid)),
+                                                        {Slice => {}});
+
+        my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s",
+                                                                $self->{DBH}->quote($guid)), {Slice => {}});
+        my $data = $self->{DBH}->selectrow_hashref(sprintf("SELECT GUID as login, SECRET as password, HOSTNAME as hostname
+                                                            FROM Clients WHERE GUID=%s", $self->{DBH}->quote($guid)));
+        ($data->{products}, $data->{regcodes}) = $self->_products_from_db($products, $regdata);
+        my $machinedata = $self->_machinedata_from_db($regdata);
+        if(exists $machinedata->{hwinfo} && $machinedata->{hwinfo})
+        {
+            $data->{hwinfo} = $machinedata->{hwinfo};
+        }
+        my $system = $self->{API}->org_systems_set(body => $data);
+        if($system)
+        {
+            my $sth = $self->{DBH}->prepare(sprintf("UPDATE Registration SET NCCREGDATE=?, NCCREGERROR=0 WHERE GUID=%s",
+                                                    $self->{DBH}->quote($guid)));
+            $sth->bind_param(1, SMT::Utils::getDBTimestamp(), SQL_TIMESTAMP);
+            $sth->execute;
+            my $statement = sprintf("UPDATE Clients SET systemid=%s WHERE GUID=%s",
+                                    $self->{DBH}->quote($result->{id}),
+                                    $self->{DBH}->quote($guid));
+            $self->{DBH}->do($statement);
+        }
+        else
+        {
+            $self->{DBH}->do(sprintf("UPDATE Registration SET NCCREGERROR=1 WHERE GUID=%s",
+                                     $self->{DBH}->quote($guid)));
+            $exitcode = 1;
+        }
+    }
+    return $exitcode;
+}
+
+
 sub cleanup_db
 {
     my $self = shift;
@@ -1393,6 +1454,92 @@ sub _staticTargets
     {
         $self->_updateTargets($distro_description, $staticTargets{$distro_description});
     }
+}
+
+sub _machinedata_from_db
+{
+    my $self = shift;
+    my $regdata = shift;
+    my $out = {};
+
+    foreach my $pair (@{$regdata})
+    {
+        if($pair->{KEYNAME} eq "machinedata" && $pair->{VALUE})
+        {
+            $out = JSON::decode_json($pair->{VALUE});
+            last;
+        }
+    }
+    return $out;
+}
+
+sub _products_from_db
+{
+    my $self = shift;
+    my $products = shift;
+    my $regdata = shift;
+    my $prdout = [];
+    my $r = {};
+
+    foreach my $PHash (@{$products})
+    {
+        if(!exists $PHash->{ID} || ! $PHash->{ID} ||
+           !exists $PHash->{PRODUCTDATAID} || ! $PHash->{PRODUCTDATAID})
+        {
+            next;
+        }
+        my $p = {};
+
+        foreach my $pair (@{$regdata})
+        {
+            if($pair->{KEYNAME} eq "product-name-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{identifier} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{version} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{arch} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{release_type} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-token-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $r->{$pair->{VALUE}} = 1;
+            }
+            # testing PRODUCTDATAID for compatibility reason
+            # ID > 10000 - NCC productdataid starts with 1
+            elsif($pair->{KEYNAME} eq "product-name-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{identifier} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{version} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{arch} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{release_type} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-token-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $r->{$pair->{VALUE}} = 1;
+            }
+        }
+        $p->{id} = $PHash->{PRODUCTDATAID};
+        push @{$prdout}, $p;
+    }
+    my @regout = keys %$r;
+    return ($prdout, \@regout);
 }
 
 1;

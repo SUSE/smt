@@ -136,17 +136,24 @@ eval
         SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Reset NCC Registration Errors. Result: $res");
     }
     my $api = $cfg->val("NU", "ApiType", "NCC");
-    if( $api eq "SCC")
+    if( $api eq "NCC")
     {
         # TODO
-        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Forward registration to SCC not yet implemented"));
-        $exitcode = 1;
-    }
-    elsif ($api eq 'NCC')
-    {
         SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("NCC is not supported by this version of SMT"));
         $exitcode = 1;
     }
+    elsif ($api eq 'SCC')
+    {
+        my $sccreg = SMT::SCCSync->new(vblevel   => $vblevel,
+                                       useragent => $useragent,
+                                       log       => $LOG,
+                                       dbh       => $dbh,
+                                       nccemail  => $nccEmail);
+        my $err = $sccreg->register_systems($sleeptime);
+        if($err != 0)
+        {
+            $exitcode = 1;
+        }
     else {
         MT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Unknown API $api"));
         $exitcode = 1;
