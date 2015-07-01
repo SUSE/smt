@@ -6,6 +6,9 @@
 
 use strict;
 use warnings;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
+
 use SMT::Mirror::RpmMd;
 use SMT::Mirror::Yum;
 use SMT::Mirror::Utils;

@@ -6,6 +6,9 @@
 
 use strict;
 use warnings;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
+
 use SMT::Utils;
 
 use Locale::gettext ();
