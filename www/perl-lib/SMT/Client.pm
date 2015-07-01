@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use XML::Simple;
-use UNIVERSAL 'isa';
 use SMT::Utils;
 
 use Locale::gettext();
@@ -237,7 +236,7 @@ sub createSQLStatement($$)
     my $self = shift;
 
     my $filter = shift || return undef;
-    return undef unless isa($filter, 'HASH');
+    return undef unless UNIVERSAL::isa($filter, 'HASH');
 
     my %PSmap = ( 'PKGMGR' => 'PATCHSTATUS_P',
                   'SECURITY' => 'PATCHSTATUS_S',
@@ -332,7 +331,7 @@ sub getClientsInfo_internal($)
     my $self = shift;
 
     my $filter = shift || {};
-    return undef unless ( isa($filter, 'HASH') );
+    return undef unless ( UNIVERSAL::isa($filter, 'HASH') );
 
     # let create the SQL statement
     my $sql = $self->createSQLStatement($filter);
@@ -424,7 +423,7 @@ sub getClientsInfo($$)
     my $self = shift;
     my $filter = shift || {};
 
-    return undef unless ( isa($filter, 'HASH') );
+    return undef unless ( UNIVERSAL::isa($filter, 'HASH') );
     return $self->getClientsInfo_internal($filter);
 }
 

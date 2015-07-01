@@ -12,8 +12,6 @@ use File::Basename;
 use File::Temp;
 use SMT::JobQueue;
 use SMT::Job::Constants;
-use UNIVERSAL 'isa';
-
 
 if( ! SMT::Utils::dropPrivileges() )
 {
