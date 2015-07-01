@@ -8,7 +8,6 @@ use warnings;
 use XML::Writer;
 use XML::Parser;
 use XML::XPath;
-use UNIVERSAL 'isa';
 
 use constant VBLEVEL => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 

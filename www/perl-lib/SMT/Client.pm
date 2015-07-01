@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use XML::Simple;
-use UNIVERSAL 'isa';
 use SMT::Utils;
 
 use Locale::gettext();

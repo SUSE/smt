@@ -3,7 +3,6 @@ package SMT::JobQueue;
 use strict;
 use warnings;
 use XML::Writer;
-use UNIVERSAL 'isa';
 use SMT::Job;
 use SMT::Job::Result;
 use SMT::Client;

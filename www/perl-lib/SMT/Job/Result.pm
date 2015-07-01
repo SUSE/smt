@@ -2,7 +2,6 @@ package SMT::Job::Result;
 
 use strict;
 use warnings;
-use UNIVERSAL 'isa';
 
 use SMT::Utils;
 
