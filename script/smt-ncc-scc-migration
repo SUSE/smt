@@ -2,6 +2,9 @@
 
 use strict;
 use English;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
+
 use SMT::Utils;
 use SMT::SCCSync;
 use File::Basename;
