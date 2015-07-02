@@ -62,7 +62,7 @@ sub executeCommand
   #print "execute '$cmd'\n";
   if ( -e $exec )
   {
-      system($cmd);
+      exec($cmd);
   }
   else
   {
