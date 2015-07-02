@@ -45,6 +45,7 @@ Requires:       perl-XML-Writer
 Requires:       perl-XML-XPath
 Requires:       perl-gettext
 Requires:       perl-libwww-perl
+Requires:       perl-solv
 Recommends:     mariadb
 Recommends:     perl-DBD-mysql
 Recommends:     yast2-smt
