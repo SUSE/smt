@@ -26,28 +26,28 @@ Release:        0
 Requires(pre):  apache2 apache2-mod_perl pwdutils
 Requires:       createrepo
 Requires:       gpg2
-Requires:       perl-camgm
 Requires:       logrotate
 Requires:       ca-certificates
 Requires:       perl = %{perl_version}
-Requires:       perl-Config-IniFiles
-Requires:       perl-DBI
-Requires:       perl-Digest-SHA1
-Requires:       perl-JSON
-Requires:       perl-MIME-Lite
-Requires:       perl-Text-ASCIITable
-Requires:       perl-TimeDate
-Requires:       perl-URI
-Requires:       perl-WWW-Curl
-Requires:       perl-XML-Parser
-Requires:       perl-XML-Simple
-Requires:       perl-XML-Writer
-Requires:       perl-XML-XPath
-Requires:       perl-gettext
-Requires:       perl-libwww-perl
-Requires:       perl-solv
+Requires:       perl(CaMgm)
+Requires:       perl(Config::IniFiles)
+Requires:       perl(DBI)
+Requires:       perl(Digest::SHA1)
+Requires:       perl(JSON)
+Requires:       perl(MIME::Lite)
+Requires:       perl(Text::ASCIITable)
+Requires:       perl(Date::Parse)
+Requires:       perl(URI)
+Requires:       perl(WWW::Curl)
+Requires:       perl(XML::Parser)
+Requires:       perl(XML::Simple)
+Requires:       perl(XML::Writer)
+Requires:       perl(XML::XPath)
+Requires:       perl(Locale::gettext)
+Requires:       perl(LWP)
+Requires:       perl(solv)
 Recommends:     mariadb
-Recommends:     perl-DBD-mysql
+Recommends:     perl(DBD::mysql)
 Recommends:     yast2-smt
 Conflicts:      slms-registration
 Conflicts:      smt-client <= 0.0.14
