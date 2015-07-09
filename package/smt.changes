@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jul  9 13:25:27 UTC 2015 - oholecek@suse.com
+
+- delete testdata after build so clamav is happy
+- run through spec-cleaner 
+
+-------------------------------------------------------------------
 Wed Jul  8 15:52:07 UTC 2015 - oholecek@suse.com
 
 - use perl provides instead of perl package names
