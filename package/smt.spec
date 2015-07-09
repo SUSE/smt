@@ -139,7 +139,10 @@ if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" www/p
     perl -p -e 's/.if n .na/.\\\".if n .na/;' www/perl-lib/SMT/RESTService.pm.$$$$ > man/$progfile.3pm;
 fi
 rm -f www/perl-lib/SMT/RESTService.pm.$$$$
+
 #make test
+# delete test rpms, they are interfering with clamav
+rm -rf tests/testdata
 # ---------------------------------------------------------------------------
 
 %install
