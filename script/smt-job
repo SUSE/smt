@@ -6,6 +6,8 @@
 
 use strict;
 use warnings;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
 
 use SMT::CLI;
 use SMT::Utils;
@@ -13,13 +15,12 @@ use SMT::Client;
 use SMT::JobQueue;
 use SMT::Job;
 use SMT::Job::Constants;
-
 use XML::Writer;
 use XML::Parser;
 use Text::ASCIITable;
 use File::Basename;
 use Locale::gettext ();
-use UNIVERSAL 'isa';
+
 use POSIX ();     # Needed for setlocale()
 use Data::Dumper; # DEBUG
 

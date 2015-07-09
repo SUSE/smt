@@ -1,6 +1,6 @@
 package SMT::Parser::FilteredRepoChecker;
 
-use satsolver;
+use solv;
 use File::Temp qw/ tempdir /;
 
 use SMT::Filter;
@@ -128,7 +128,7 @@ sub check()
     }
 
     # load the solv file
-    my $pool = new satsolver::Pool;
+    my $pool = new solv::Pool;
     # $pool->set_arch('x86_64'); # is this needed if we only want to search the pool?
     my $repo = $pool->create_repo('checked-repo');
     $repo->add_solv($self->{SOLV});
