@@ -88,7 +88,7 @@ module Yast
     end
 
     def SystemIsRegistered
-      FileUtils.Exists(@SCCcredentials_file) || FileUtils.Exist(@NCCCredentials_file)
+      FileUtils.Exists(@SCCcredentials_file) || FileUtils.Exists(@NCCCredentials_file)
     end
 
     def InitialConfig
