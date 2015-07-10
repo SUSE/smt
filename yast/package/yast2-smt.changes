@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed May 27 13:09:34 UTC 2015 - jsrain@suse.cz
+
+- updated to SLE12
+- 3.0.0
+
+-------------------------------------------------------------------
 Thu Nov 13 12:30:50 UTC 2014 - jsrain@suse.cz
 
 - when migration not possible, show the reason (bnc#903787)
