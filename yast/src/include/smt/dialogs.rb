@@ -1259,52 +1259,8 @@ module Yast
           return false
         end
       elsif was_scc && !is_scc
-        Popup.ShowFeedback("", "Checking if migration to NCC is possible...")
-        test_ret = Convert.convert(
-          SCR.Execute(
-            path(".target.bash_output"),
-            "smt-scc-ncc-migration --check-only -v 15"
-          ),
-          :from => "any",
-          :to   => "map <string, any>"
-        )
-        Popup.ClearFeedback
-        if Ops.get_integer(test_ret, "exit", -1) != 0
-          log = Ops.get_string(test_ret, "stdout", "")
-          lines = Builtins.splitstring(log, "\n")
-          Ops.set(lines, 0, nil)
-          lines = Builtins.filter(lines) { |l| l != nil }
-          log = Builtins.mergestring(lines, "\n")
-          # report message
-          Popup.MessageDetails(
-            _(
-              "Cannot migrate SMT to NCC because not all products,\n" +
-                "which are registered against this instance of SMT,\n" +
-                "are available also via NCC."
-            ),
-            log
-          )
-          return false
-        end
-        # continue / cancel pop-up
-        if !Popup.ContinueCancel(
-            _(
-              "You are about to switch this instance of SMT from SCC\n" +
-                "back to NCC. SCC is the default registration server\n" +
-                "for SUSE products. Using SCC is recommended.\n" +
-                "\n" +
-                "The migration to NCC will take some time, during which\n" +
-                "SMT will not be able to serve its clients. After\n" +
-                "the migration is finished, you will be able to serve\n" +
-                "SUSE products released before September 2014.\n" +
-                "SUSE products released after September 2014 will not\n" +
-                "be available.\n" +
-                "\n" +
-                "Migrate SMT from SCC to NCC now?"
-            )
-          )
-          return false
-        end
+        Report.Error(_("Migration to NCC is not possible."))
+        return false
       end
 
       url = Convert.to_string(UI.QueryWidget(Id("url"), :Value))

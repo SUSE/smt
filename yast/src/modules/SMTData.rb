@@ -954,24 +954,17 @@ module Yast
     def MigrateCustomerCenter
       ret = {}
       if Ops.get(@all_credentials, ["NU", "ApiType"], "NCC") == "NCC"
-        ret = Convert.convert(
-          SCR.Execute(
-            path(".target.bash_output"),
-            "/usr/sbin/smt-scc-ncc-migration"
-          ),
-          :from => "any",
-          :to   => "map <string, any>"
-        )
-      else
-        ret = Convert.convert(
-          SCR.Execute(
-            path(".target.bash_output"),
-            "/usr/sbin/smt-ncc-scc-migration"
-          ),
-          :from => "any",
-          :to   => "map <string, any>"
-        )
+        Report.Error(_("Switch to NCC is not supported."))
+        return false
       end
+      ret = Convert.convert(
+        SCR.Execute(
+          path(".target.bash_output"),
+          "/usr/sbin/smt-ncc-scc-migration"
+        ),
+        :from => "any",
+        :to   => "map <string, any>"
+      )
       if Ops.get_integer(ret, "exit", -1) != 0
         Report.Error(_("Changing the customer center back-end failed"))
         Builtins.y2error("Customer center back-end migration output: %1", ret)
