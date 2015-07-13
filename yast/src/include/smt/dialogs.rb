@@ -1051,7 +1051,7 @@ module Yast
         UI.ChangeWidget(Id("NURegURL"), :Value, regurl)
         UI.ChangeWidget(Id("NUURL"), :Value, "https://updates.suse.com/")
       end
-      if regurl == "https://scc.suse.com/connect")
+      if regurl == "https://scc.suse.com/connect"
         UI.ChangeWidget(Id("custom"), :Value, false)
         UI.ChangeWidget(Id("NURegUrl"), :Enabled, false)
         UI.ChangeWidget(Id("NUUrl"), :Enabled, false)
@@ -1337,7 +1337,7 @@ module Yast
           UI.ChangeWidget(
             Id("NURegUrl"),
             :Value,
-            "https://scc.suse.com/connect" :
+            "https://scc.suse.com/connect"
           )
           UI.ChangeWidget(
             Id("NUUrl"),
