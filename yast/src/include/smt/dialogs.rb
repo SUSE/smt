@@ -196,29 +196,6 @@ module Yast
                   HSquash(
                     MinWidth(
                       40,
-                      RadioButtonGroup(
-                        Id(:protocol),
-                        HBox(
-                          HSpacing(0.2),
-                          RadioButton(
-                            Id("scc"),
-                            Opt(:notify),
-                            # radio button label
-                            _("SCC")
-                          ),
-                          RadioButton(
-                            Id("ncc"),
-                            Opt(:notify),
-                            # radio button label
-                            _("NCC")
-                          )
-                        )
-                      )
-                    )
-                  ),
-                  HSquash(
-                    MinWidth(
-                      40,
                       # TRANSLATORS: check box
                       CheckBox(
                         Id("custom"),
@@ -1068,11 +1045,13 @@ module Yast
 
       regurl = SMTData.GetCredentials("NU", "NURegUrl")
       api_type = SMTData.GetCredentials("NU", "ApiType")
-      if regurl == "https://scc.suse.com/connect" ||
-          String.StartsWith(
-            regurl,
-            "https://secure-www.novell.com/center/regsvc"
-          )
+      if api_type != "SCC"
+        api_type = "SCC"
+        regurl = "https://scc.suse.com/connect"
+        UI.ChangeWidget(Id("NURegURL"), :Value, regurl)
+        UI.ChangeWidget(Id("NUURL"), :Value, "https://updates.suse.com/")
+      end
+      if regurl == "https://scc.suse.com/connect")
         UI.ChangeWidget(Id("custom"), :Value, false)
         UI.ChangeWidget(Id("NURegUrl"), :Enabled, false)
         UI.ChangeWidget(Id("NUUrl"), :Enabled, false)
@@ -1082,11 +1061,6 @@ module Yast
         UI.ChangeWidget(Id("NUUrl"), :Enabled, true)
       end
 
-      if api_type == "SCC"
-        UI.ChangeWidget(Id(:protocol), :CurrentButton, "scc")
-      else
-        UI.ChangeWidget(Id(:protocol), :CurrentButton, "ncc")
-      end
       UI.ChangeWidget(
         Id("enable_smt_service"),
         :Value,
@@ -1114,12 +1088,7 @@ module Yast
         )
       end
 
-      if UI.QueryWidget(Id(:protocol), :CurrentButton) == "scc"
-        SMTData.SetCredentials("NU", "ApiType", "SCC")
-      else
-        # SLMS "speak" NCC protocol
-        SMTData.SetCredentials("NU", "ApiType", "NCC")
-      end
+      SMTData.SetCredentials("NU", "ApiType", "SCC")
       new_service_status = Convert.to_boolean(
         UI.QueryWidget(Id("enable_smt_service"), :Value)
       )
@@ -1206,7 +1175,7 @@ module Yast
       event = deep_copy(event)
       orig_url = SMTData.GetCredentials("NU", "NURegUrl")
       was_scc = orig_url == "https://scc.suse.com/connect"
-      is_scc = UI.QueryWidget(Id(:protocol), :CurrentButton) == "scc"
+      is_scc = true
       Builtins.y2milestone(
         "Previous CC: %1, new CC: %2, initial config: %3",
         was_scc,
@@ -1352,29 +1321,10 @@ module Yast
       event = deep_copy(event)
       action = Ops.get(event, "ID")
       custom = Convert.to_boolean(UI.QueryWidget(Id("custom"), :Value))
-      cc = Convert.to_string(UI.QueryWidget(Id(:protocol), :CurrentButton))
 
       if action == "test_NU_credentials"
         StoreCredentialsDialog(id, event)
         TestCredentials()
-      elsif action == "scc"
-        if !custom
-          UI.ChangeWidget(
-            Id("NURegUrl"),
-            :Value,
-            "https://scc.suse.com/connect"
-          )
-          UI.ChangeWidget(Id("NUUrl"), :Value, "https://updates.suse.com/")
-        end
-      elsif action == "ncc"
-        if !custom
-          UI.ChangeWidget(
-            Id("NURegUrl"),
-            :Value,
-            "https://secure-www.novell.com/center/regsvc/"
-          )
-          UI.ChangeWidget(Id("NUUrl"), :Value, "https://nu.novell.com/")
-        end
       elsif action == "custom"
         if Convert.to_boolean(UI.QueryWidget(Id("custom"), :Value))
           UI.ChangeWidget(Id("NURegUrl"), :Enabled, true)
@@ -1387,14 +1337,12 @@ module Yast
           UI.ChangeWidget(
             Id("NURegUrl"),
             :Value,
-            cc == "scc" ?
-              "https://scc.suse.com/connect" :
-              "https://secure-www.novell.com/center/regsvc/"
+            "https://scc.suse.com/connect" :
           )
           UI.ChangeWidget(
             Id("NUUrl"),
             :Value,
-            cc == "scc" ? "https://updates.suse.com/" : "https://nu.novell.com/"
+            "https://updates.suse.com/"
           )
         end
       end
