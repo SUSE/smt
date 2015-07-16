@@ -3018,7 +3018,7 @@ sub certificateExpireCheck
 
     return undef if(! defined $certfile);
 
-    my $certData = CaMgm::LocalManagement::getCertificate($certfile, $LIMAL::CaMgm::E_PEM);
+    my $certData = CaMgm::LocalManagement::getCertificate($certfile, $CaMgm::E_PEM);
 
     my $endtime = $certData->getEndDate();
     my $currentTime = time();
