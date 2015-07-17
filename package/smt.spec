@@ -32,10 +32,10 @@ Requires:       createrepo
 Requires:       gpg2
 Requires:       logrotate
 Requires:       perl = %{perl_version}
-Requires:       perl(CaMgm)
 Requires:       perl(Config::IniFiles)
 Requires:       perl(DBI)
 Requires:       perl(Date::Parse)
+Requires:       perl(DateTime)
 Requires:       perl(Digest::SHA1)
 Requires:       perl(JSON)
 Requires:       perl(LWP)
