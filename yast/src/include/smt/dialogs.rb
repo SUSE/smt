@@ -824,8 +824,6 @@ module Yast
         # TRANSLATORS: Progress stage
         _("Adjust database configuration"),
         # TRANSLATORS: Progress stage
-        _("Migrate the customer center"),
-        # TRANSLATORS: Progress stage
         _("Check and install server certificate"),
         # TRANSLATORS: Progress stage
         _("Adjust Web-server configuration"),
@@ -846,8 +844,6 @@ module Yast
         # TRANSLATORS: Bussy message /progress/
         _("Adjusting database configuration..."),
         # TRANSLATORS: Bussy message /progress/
-        _("Migrating the customer center..."),
-        # TRANSLATORS: Bussy message /progress/
         _("Checking and installing server certificate..."),
         # TRANSLATORS: Bussy message /progress/
         _("Adjusting Web server configuration..."),
@@ -863,13 +859,6 @@ module Yast
         _("Running synchronization check..."),
         Message.Finished
       ]
-
-      if !SMTData.ApiTypeChanged
-        Ops.set(stages, 2, nil)
-        Ops.set(steps, 2, nil)
-        stages = Builtins.filter(stages) { |s| s != nil }
-        steps = Builtins.filter(steps) { |s| s != nil }
-      end
 
       Progress.New(
         # TRANSLATORS: Dialog caption
@@ -896,12 +885,6 @@ module Yast
       SMTData.StartDatabaseIfNeeded
       SMTData.WriteDatabaseSettings
       SMTData.ChangePasswordIfDifferent
-
-      if SMTData.ApiTypeChanged
-        Progress.NextStage
-        Builtins.sleep(@sl)
-        SMTData.MigrateCustomerCenter
-      end
 
       Progress.NextStage
       Builtins.sleep(@sl)
@@ -1174,64 +1157,6 @@ module Yast
     def ValidateCredentialsDialog(id, event)
       event = deep_copy(event)
       orig_url = SMTData.GetCredentials("NU", "NURegUrl")
-      was_scc = orig_url == "https://scc.suse.com/connect"
-      is_scc = true
-      Builtins.y2milestone(
-        "Previous CC: %1, new CC: %2, initial config: %3",
-        was_scc,
-        is_scc,
-        SMTData.InitialConfig
-      )
-      if SMTData.InitialConfig
-        Builtins.y2milestone("Initial configuration, skipping migration checks")
-      elsif is_scc && !was_scc
-        Popup.ShowFeedback("", "Checking if migration to SCC is possible...")
-        test_ret = Convert.convert(
-          SCR.Execute(
-            path(".target.bash_output"),
-            "/usr/sbin/smt-ncc-scc-migration --check-only -v 15"
-          ),
-          :from => "any",
-          :to   => "map <string, any>"
-        )
-        Popup.ClearFeedback
-        if Ops.get_integer(test_ret, "exit", -1) != 0
-          log = Ops.get_string(test_ret, "stdout", "")
-          lines = Builtins.splitstring(log, "\n")
-          Ops.set(lines, 0, nil)
-          lines = Builtins.filter(lines) do |l|
-            l != nil && Builtins.substring(l, 0, 8) != "Download"
-          end
-          log = Builtins.mergestring(lines, "\n")
-          # report message
-          Popup.MessageDetails(
-            _(
-              "Cannot migrate SMT to SCC because not all products,\n" +
-                "which are registered against this instance of SMT,\n" +
-                "are available also via SCC."
-            ),
-            log
-          )
-          return false
-        end
-        # continue / cancel pop-up
-        if !Popup.ContinueCancel(
-            _(
-              "The migration to SCC will take some time, during which\n" +
-                "SMT will not be able to serve its clients. After\n" +
-                "the migration is finished, you will be able to serve\n" +
-                "only products available in SCC.\n" +
-                "\n" +
-                "Migrate SMT from NCC to SCC now?"
-            )
-          )
-          return false
-        end
-      elsif was_scc && !is_scc
-        Report.Error(_("Migration to NCC is not possible."))
-        return false
-      end
-
       url = Convert.to_string(UI.QueryWidget(Id("url"), :Value))
 
       if url == nil || url == ""

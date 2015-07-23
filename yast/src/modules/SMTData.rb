@@ -36,7 +36,6 @@ module Yast
       # cron
       @path_to_cron = "/etc/smt.d/novell.com-smt"
 
-      @path_to_ncc_sync_script = "/usr/sbin/smt-ncc-sync"
       @path_to_scc_sync_script = "/usr/sbin/smt-scc-sync"
       @user_for_sync_script = "root"
 
@@ -63,8 +62,6 @@ module Yast
 
       @SCCcredentials_file = "/etc/zypp/credentials.d/SCCcredentials"
       @NCCcredentials_file = "/etc/zypp/credentials.d/NCCcredentials"
-
-      @read_api_type = "NCC"
 
       @initial_config = false
 
@@ -93,11 +90,6 @@ module Yast
 
     def InitialConfig
       @initial_config
-    end
-
-    def ApiTypeChanged
-      return false if InitialConfig()
-      @read_api_type != Ops.get(@all_credentials, ["NU", "ApiType"], "NCC")
     end
 
     # Returns SMT user (LOCAL->smtUser) or nil if not set or erroneous
@@ -539,7 +531,6 @@ module Yast
         end
       end
 
-      @read_api_type = Ops.get(@all_credentials, ["NU", "ApiType"], "NCC")
       if Ops.get(@all_credentials, ["NU", "NUUser"], "MIRRORUSER") == ""
         @initial_config = true
       end
@@ -556,13 +547,7 @@ module Yast
 
       Builtins.foreach(@all_credentials) do |base_key, current_credentials|
         Builtins.foreach(current_credentials) do |key, value|
-          if ApiTypeChanged() &&
-              Builtins.contains(["NUUrl", "NURegUrl", "ApiType"], key)
-            # avoid writing these options, they get written by the migratino script
-            Builtins.y2debug(
-              "Not changing API information before customer center switch"
-            )
-          elsif !SCR.Write(
+          if !SCR.Write(
               Builtins.add(Builtins.add(path(".smt_conf.value"), base_key), key),
               value
             )
@@ -670,9 +655,9 @@ module Yast
     end
 
     def RunSmallSync
-      path_to_sync_script = @path_to_ncc_sync_script
-      if GetCredentials("NU", "ApiType") == "SCC"
-        path_to_sync_script = @path_to_scc_sync_script
+      path_to_sync_script = @path_to_scc_sync_script
+      if not GetCredentials("NU", "ApiType") == "SCC"
+        Builtins.y2error("Synchronization from SCC not possible")
       end
       if !FileUtils.Exists(path_to_sync_script)
         Builtins.y2error("Sync script doesn't exist")
@@ -947,32 +932,6 @@ module Yast
       end
     end
 
-
-    # Function migrates SMT between NCC and SCC
-    #
-    # @return [Boolean] if successful
-    def MigrateCustomerCenter
-      ret = {}
-      if Ops.get(@all_credentials, ["NU", "ApiType"], "NCC") == "NCC"
-        Report.Error(_("Switch to NCC is not supported."))
-        return false
-      end
-      ret = Convert.convert(
-        SCR.Execute(
-          path(".target.bash_output"),
-          "/usr/sbin/smt-ncc-scc-migration"
-        ),
-        :from => "any",
-        :to   => "map <string, any>"
-      )
-      if Ops.get_integer(ret, "exit", -1) != 0
-        Report.Error(_("Changing the customer center back-end failed"))
-        Builtins.y2error("Customer center back-end migration output: %1", ret)
-        return false
-      end
-      Builtins.y2debug("Customer center back-end migration output: %1", ret)
-      true
-    end
 
     # Function checks whether a server certificate exists and copies it
     # to the apache directory. If a server certificate doesn't exist,
@@ -1435,7 +1394,6 @@ module Yast
     publish :function => :GetSCCcredentialsFile, :type => "string ()"
     publish :function => :SystemIsRegistered, :type => "boolean ()"
     publish :function => :InitialConfig, :type => "boolean ()"
-    publish :function => :ApiTypeChanged, :type => "boolean ()"
     publish :function => :GetCredentials, :type => "string (string, string)"
     publish :function => :GetMirroredReposDirectory, :type => "string ()"
     publish :function => :CheckAndAdjustMirroredReposAccess, :type => "boolean ()"
@@ -1460,7 +1418,6 @@ module Yast
     publish :function => :ReadCronSettings, :type => "void ()"
     publish :function => :CronRandomize, :type => "void ()"
     publish :function => :WriteCronSettings, :type => "boolean ()"
-    publish :function => :MigrateCustomerCenter, :type => "boolean ()"
     publish :function => :WriteCASettings, :type => "boolean ()"
     publish :function => :StartDatabaseIfNeeded, :type => "boolean ()"
     publish :function => :WriteDatabaseSettings, :type => "boolean ()"
