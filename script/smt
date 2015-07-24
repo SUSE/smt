@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ###############################################################################
-## Copyright (c) 2007-2012 SUSE LINUX Products GmbH, Nuernberg, Germany.
+## Copyright (c) 2007-2015 SUSE LINUX GmbH, Nuernberg, Germany.
 ###############################################################################
 
 use strict;
@@ -31,7 +31,7 @@ sub help
     my @files = grep { /^smt-.+/ && -x "$FindBin::Bin/$_" } readdir(DIR);
     closedir DIR;
 
-    print __("Subscription Management Tool (SMT). (c)2007-2015 SUSE LINUX Products GmbH, Nuernberg, Germany.\n\n");
+    print __("Subscription Management Tool (SMT). (c)2007-2015 SUSE LINUX GmbH, Nuernberg, Germany.\n\n");
 
     foreach my $cmd (@files)
     {
@@ -85,14 +85,6 @@ if (defined $ARGV[0] )
         {
             help();
         }
-    }
-    elsif($cmd eq "ncc-scc-migration")
-    {
-        die "smt ncc-scc-migration requires root privilege. Please execute it directly at /usr/sbin/smt-ncc-scc-migration.\n";
-    }
-    elsif($cmd eq "scc-ncc-migration")
-    {
-        die "smt scc-ncc-migration requires root privilege. Please execute it directly at /usr/sbin/smt-scc-ncc-migration.\n";
     }
     else
     {

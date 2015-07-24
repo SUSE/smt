@@ -135,7 +135,7 @@ if($help || !$optres)
     print "--nohardlink            " . __("If a file already exists on the local harddisk do not link it into the\n");
     print "                        " . __("mirrored repository, but copy it.\n");
     print "--dbreplfile arg        " . __("Path to XML file to use as database replacement. Such a file can\n");
-    print "                        " . __("be created with the sync-ncc command. This option is only\n");
+    print "                        " . __("be created with the sync-scc command. This option is only\n");
     print "                        " . __("useful if the smt database does not exist on the host from\n");
     print "                        " . __("which the smt-mirror script is being executed.\n");
     print "--mail -m               " . __("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
@@ -674,7 +674,7 @@ It shows only the names which would be downloaded.
 =item --dbreplfile <file>
 
 Path to XML file to use as database replacement. Such a file can
-be created with the sync-ncc command. This option is only
+be created with the sync-scc command. This option is only
 useful if the smt database does not exist on the host from
 which the smt-mirror script is being executed.
 
@@ -774,7 +774,7 @@ default value in smt.conf
 =item --dbreplfile <file>
 
 Path to XML file to use as database replacement. Such a file can be created with
-the sync-ncc command. This option is only usefull if the smt database is not on the
+the sync-scc command. This option is only usefull if the smt database is not on the
 same host as this script should run.
 
 =item --logfile -L <file>

@@ -30,7 +30,8 @@ if($@ || !defined $cfg)
 
 if ( $cfg->val('NU', 'ApiType', 'NCC') eq 'NCC')
 {
-    $exec = "/usr/sbin/smt-ncc-sync";
+    print __("NCC is not supported in this version of SMT");
+    exit 1;
 }
 
 sub executeCommand
