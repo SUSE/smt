@@ -307,10 +307,10 @@ sub createUserAgent
     # reset to default redirect limit of 7
     $ua->max_redirect(7);
 
-    # allow redirecting of PUT and POST requests, as NCC relies on this functionality when binding an SMT server (acting as SMT client) to NCC
+    # allow redirecting of PUT and POST requests, as SCC relies on this functionality when binding an SMT server (acting as SMT client) to SCC
     $ua->requests_redirectable( ['GET', 'HEAD', 'PUT', 'POST'] );
 
-    # adapt to new iChain timeout (as changed in SMT server lately), note: smt-client will talk to NCC as well, so the timeout needs to raise as well
+    # adapt to new iChain timeout (as changed in SMT server lately), note: smt-client will talk to SCC as well, so the timeout needs to raise as well
     $ua->timeout(300);
 
     return $ua;

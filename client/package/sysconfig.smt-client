@@ -5,7 +5,7 @@
 ## Default: "softwarepush patchstatus update inventory createjob report"
 #
 # List of allowed agents that can be called via SMT job queue
-# The jobs createjob and report will only run on an SMT server that acts as smt-client relative to NCC.
+# The jobs createjob and report will only run on an SMT server that acts as smt-client relative to SCC.
 #
 ALLOWED_AGENTS="softwarepush patchstatus update inventory createjob report"
 
