@@ -19,18 +19,12 @@ module Yast
           ) +
             # TRANSLATORS: help a2
             _(
-              "<p>It is important to select properly the protocol to communicate with the Customer Center,\n" +
-                "since the SUSE Customer Center uses different communication protocol than the\n" +
-                "SUSE Customer Center. We recommend to use SUSE Customer Center where possible.</p>\n"
-            ) +
-            # TRANSLATORS: help a3
-            _(
               "<p><b>User</b> and <b>Password</b> are needed for Customer Center authentication.\n" +
                 "To test the credentials you entered, click <b>Test</b>.\n" +
                 "SMT then connects to the Customer Center server for authentication and download of\n" +
                 "test data.</p>\n"
             ) +
-            # TRANSLATORS: help a4
+            # TRANSLATORS: help a3
             _(
               "<p>E-mail should be the one you used to register to the customer center.</p>"
             ),
