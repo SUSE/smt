@@ -29,6 +29,9 @@ sub new
 {
     my($class, $r) = @_;
 
+    # Set PATH to work in taint mode (bsc#939076)
+    $ENV{PATH} = '/sbin:/usr/sbin:/bin:/usr/bin';
+
     # try to connect to the database - else report server error
     my $dbh = undef;
     my $cfg = undef;
