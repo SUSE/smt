@@ -497,13 +497,16 @@ my $cfg = SMT::Utils::getSMTConfig();
 
 if ( $cfg->val('NU', 'ApiType', 'NCC') eq 'NCC')
 {
-    printLog($LOG, $vblevel, LOG_WARN, __("NCC is not supported in this version of SMT"));
+    printLog($LOG, $vblevel, LOG_ERROR, __("NCC is not supported in this version of SMT"));
     exit 1;
 }
 
 # sync current data from SCC
 if(!$nosccsync)
 {
+    printLog($LOG, $vblevel, LOG_ERROR, __("SCC reporting it not yet implemented"));
+    exit 1;
+
     my $maxwait = 0;
     while(!SMT::Utils::openLock("smt-sync") && $maxwait <= 60 )
     {
@@ -520,6 +523,7 @@ if(!$nosccsync)
     {
         my $scc = SMT::SCCSync->new(vblevel => $vblevel, log => $LOG);
 
+        # TODO
         printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
         my $res = $scc->subscriptions;
         if ($res)

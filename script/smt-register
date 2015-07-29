@@ -138,39 +138,17 @@ eval
     my $api = $cfg->val("NU", "ApiType", "NCC");
     if( $api eq "SCC")
     {
-        my $err;
-        my $guid = SMT::Utils::getSMTGuid;
-        my $sccreg = SMT::SCCAPI->new(vblevel => $vblevel, useragent => $useragent, log => $LOG);
-
-        my $products = $dbh->selectall_arrayref(sprintf("select p.ID, p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH from Products p, Registration r where r.GUID=%s and r.PRODUCTID=p.ID", $dbh->quote($guid)), {Slice => {}});
-        my $regdata =  $dbh->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s", $dbh->quote($guid)), {Slice => {}});
-
-        if(defined $regdata && ref($regdata) eq "ARRAY")
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Register '$guid'") ;
-
-            $err = $sccreg->announce() // 1;
-            
-        }
-        else
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Incomplete registration found. GUID:%s"), $guid));
-            $err++;
-            next;
-        }
-        if($err != 0)
-        {
-            $exitcode = 1;
-        }
+        # TODO
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Forward registration to SCC not yet implemented"));
+        $exitcode = 1;
     }
     elsif ($api eq 'NCC')
     {
-        # SCC registration not yet implemented
-        SMT::Utils::printLog($LOG, $vblevel, LOG_WARN, "NCC is not supported by this version of SMT");
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("NCC is not supported by this version of SMT"));
         $exitcode = 1;
     }
     else {
-        MT::Utils::printLog($LOG, $vblevel, LOG_ERROR, "Unknown API $api");
+        MT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Unknown API $api"));
         $exitcode = 1;
     }
 };
