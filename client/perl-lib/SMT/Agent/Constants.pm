@@ -41,8 +41,12 @@ use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smt-client';
 #  in that case fallback to SLE11 file only if SLE11 file is present:
 sub CREDENTIALS_FILE() {
   my $cred_path = '/etc/zypp/credentials.d';
+  my $cred_file_sle11 = 'NCCcredentials';
   my $cred_file_sle12 = 'SCCcredentials';
   my $cred_file = $cred_file_sle12;
+  if ( ! -e "$cred_path/$cred_file_sle12"  && -e "$cred_path/$cred_file_sle11"  ) {
+    $cred_file = $cred_file_sle11;
+  }
   return "$cred_path/$cred_file";
 }
 
