@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jul 31 07:15:37 UTC 2015 - oholecek@suse.com
+
+- version 3.0.1
+- SLE-12 support
+
+-------------------------------------------------------------------
 Thu Jul  9 13:25:27 UTC 2015 - oholecek@suse.com
 
 - delete testdata after build so clamav is happy
