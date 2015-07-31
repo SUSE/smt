@@ -1,7 +1,7 @@
 #
 # spec file for package smt
 #
-# Copyright (c) 2015 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -16,108 +16,77 @@
 #
 
 
-
 Name:           smt
-BuildRequires:  apache2
-BuildRequires:  apache2-mod_perl
-BuildRequires:  swig
-Version:        3.0.0
+Version:        3.0.1
 Release:        0
-Requires(pre):  apache2 apache2-mod_perl pwdutils
-Requires:       createrepo
-Requires:       gpg2
-Requires:       perl-camgm
-Requires:       logrotate
-Requires:       ca-certificates
-Requires:       perl = %{perl_version}
-Requires:       perl-Config-IniFiles
-Requires:       perl-DBI
-Requires:       perl-Digest-SHA1
-Requires:       perl-JSON
-Requires:       perl-MIME-Lite
-Requires:       perl-Text-ASCIITable
-Requires:       perl-TimeDate
-Requires:       perl-URI
-Requires:       perl-WWW-Curl
-Requires:       perl-XML-Parser
-Requires:       perl-XML-Simple
-Requires:       perl-XML-Writer
-Requires:       perl-XML-XPath
-Requires:       perl-gettext
-Requires:       perl-libwww-perl
-Recommends:     mariadb
-Recommends:     perl-DBD-mysql
-Recommends:     yast2-smt
-Conflicts:      slms-registration
-Conflicts:      smt-client <= 0.0.14
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
 Group:          Productivity/Networking/Web/Proxy
-Source0:         %{name}-%{version}.tar.bz2
+Source0:        %{name}-%{version}.tar.bz2
 Source1:        smt-rpmlintrc
+BuildRequires:  apache2
+BuildRequires:  apache2-mod_perl
+BuildRequires:  swig
+Requires:       ca-certificates
+Requires:       createrepo
+Requires:       gpg2
+Requires:       logrotate
+Requires:       perl = %{perl_version}
+Requires:       perl(Config::IniFiles)
+Requires:       perl(DBI)
+Requires:       perl(Date::Parse)
+Requires:       perl(DateTime)
+Requires:       perl(Digest::SHA1)
+Requires:       perl(JSON)
+Requires:       perl(LWP)
+Requires:       perl(Locale::gettext)
+Requires:       perl(MIME::Lite)
+Requires:       perl(Text::ASCIITable)
+Requires:       perl(URI)
+Requires:       perl(WWW::Curl)
+Requires:       perl(XML::Parser)
+Requires:       perl(XML::Simple)
+Requires:       perl(XML::Writer)
+Requires:       perl(XML::XPath)
+Requires:       perl(solv)
+Requires(pre):  apache2
+Requires(pre):  apache2-mod_perl
+Requires(pre):  pwdutils
+Recommends:     mariadb
+Recommends:     perl(DBD::mysql)
+Recommends:     yast2-smt
+Conflicts:      slms-registration
+Conflicts:      smt-client <= 0.0.14
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
 This package provide everything you need to get a local NU and
 registration proxy.
 
-
-
-Authors:
---------
-    Authors:
-    --------
-        dmacvicar@suse.de
-        mc@suse.de
-        jdsn@suse.de
-        locilka@suse.cz
-
 %package -n res-signingkeys
-
 Summary:        Signing Key for RES
 Group:          Productivity/Security
-PreReq:         smt = %version
+# FIXME: use proper Requires(pre/post/preun/...)
+PreReq:         smt = %{version}
 
 %description -n res-signingkeys
 This package contain the signing key for RES.
 
-
-
-Authors:
---------
-    Authors:
-    --------
-        dmacvicar@suse.de
-        mc@suse.de
-        jdsn@suse.de
-        locilka@suse.cz
-
 %package support
-
 Summary:        SMT support proxy
 Group:          Productivity/Networking/Web/Proxy
-PreReq:         smt = %version
+# FIXME: use proper Requires(pre/post/preun/...)
+PreReq:         smt = %{version}
 
 %description support
 This package contains proxy for Novell Support Link
 
-
-
-Authors:
---------
-    Authors:
-    --------
-        dmacvicar@suse.de
-        mc@suse.de
-        jdsn@suse.de
-        locilka@suse.cz
-
 %prep
-%setup -n %{name}-%{version}
+%setup -q
 # ---------------------------------------------------------------------------
 
 %build
-make
+make %{?_smp_mflags}
 mkdir man
 cd script
 
@@ -138,45 +107,45 @@ if pod2man --center=" " --release="%{version}-%{release}" --date="$(date)" www/p
     perl -p -e 's/.if n .na/.\\\".if n .na/;' www/perl-lib/SMT/RESTService.pm.$$$$ > man/$progfile.3pm;
 fi
 rm -f www/perl-lib/SMT/RESTService.pm.$$$$
+
 #make test
+# delete test rpms, they are interfering with clamav
+rm -rf tests/testdata
 # ---------------------------------------------------------------------------
 
 %install
 
-/usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d /var/lib/empty smt 2> /dev/null || :
+%{_sbindir}/useradd -r -g www -s /bin/false -c "User for SMT" -d %{_localstatedir}/lib/empty smt 2> /dev/null || :
 
-make DESTDIR=$RPM_BUILD_ROOT DOCDIR=%{_docdir} install
-make DESTDIR=$RPM_BUILD_ROOT install_conf
+make DESTDIR=%{buildroot} DOCDIR=%{_docdir} install
+make DESTDIR=%{buildroot} install_conf
 
-mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
-mkdir -p $RPM_BUILD_ROOT%{_mandir}/man3
+mkdir -p %{buildroot}%{_mandir}/man1
+mkdir -p %{buildroot}%{_mandir}/man3
 cd man
 for manp in smt*.1; do
-    install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man1/$manp
+    install -m 644 $manp    %{buildroot}%{_mandir}/man1/$manp
 done
 for manp in *.3pm; do
-    install -m 644 $manp    $RPM_BUILD_ROOT%{_mandir}/man3/$manp
+    install -m 644 $manp    %{buildroot}%{_mandir}/man3/$manp
 done
-mkdir -p $RPM_BUILD_ROOT/var/run/smt
-mkdir -p $RPM_BUILD_ROOT/var/log/smt/schema-upgrade
-mkdir -p $RPM_BUILD_ROOT%{_docdir}/smt/
-mkdir -p $RPM_BUILD_ROOT/var/lib/smt
+mkdir -p %{buildroot}%{_localstatedir}/run/smt
+mkdir -p %{buildroot}%{_localstatedir}/log/smt/schema-upgrade
+mkdir -p %{buildroot}%{_docdir}/smt/
+mkdir -p %{buildroot}%{_localstatedir}/lib/smt
 
-ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh $RPM_BUILD_ROOT%{_docdir}/smt/clientSetup4SMT.sh
+ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh %{buildroot}%{_docdir}/smt/clientSetup4SMT.sh
 
 # ---------------------------------------------------------------------------
 
-%clean
-[ "$RPM_BUILD_ROOT" != "/" ] && [ -d $RPM_BUILD_ROOT ] && rm -rf $RPM_BUILD_ROOT
-
 %pre
 if ! usr/bin/getent passwd smt >/dev/null; then
-  usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d /var/lib/smt smt 2> /dev/null || :
+  usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt 2> /dev/null || :
 fi
 
 %post
-sysconf_addword /etc/sysconfig/apache2 APACHE_MODULES perl
-sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
+sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
+sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 
 
 %files
@@ -190,8 +159,8 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 %dir %{perl_vendorarch}/Sys
 %dir %{perl_vendorarch}/auto/Sys/
 %dir %{perl_vendorarch}/auto/Sys/GRP
-%dir /etc/smt.d
-%dir /etc/slp.reg.d
+%dir %{_sysconfdir}/smt.d
+%dir %{_sysconfdir}/slp.reg.d
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/tools
 %dir %attr(755, smt, www)/srv/www/htdocs/repo/keys
@@ -200,24 +169,24 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 %dir /srv/www/perl-lib/NU/
 %dir /srv/www/perl-lib/SMT/
 %dir /srv/www/perl-lib/SMT/Client
-%dir /usr/lib/SMT/
-%dir /usr/lib/SMT/bin/
+%dir %{_libexecdir}/SMT/
+%dir %{_libexecdir}/SMT/bin/
 %dir %{_datadir}/schemas/
 %dir %{_datadir}/schemas/smt
 %dir %{_docdir}/smt/
-%dir %attr(755, smt, www)/var/run/smt
-%dir %attr(755, smt, www)/var/log/smt
-%dir %attr(755, smt, www)/var/log/smt/schema-upgrade
-%dir %attr(755, smt, www)/var/lib/smt
-%config(noreplace) %attr(640, root, www)/etc/smt.conf
-%config /etc/apache2/*.pl
-%config /etc/apache2/conf.d/*.conf
-%config /etc/apache2/vhosts.d/*.conf
-%config /etc/smt.d/*.conf
-%config /etc/slp.reg.d/smt.reg
-%exclude /etc/apache2/conf.d/smt_support.conf
-%config /etc/cron.d/novell.com-smt
-%config /etc/logrotate.d/smt
+%dir %attr(755, smt, www)%{_localstatedir}/run/smt
+%dir %attr(755, smt, www)%{_localstatedir}/log/smt
+%dir %attr(755, smt, www)%{_localstatedir}/log/smt/schema-upgrade
+%dir %attr(755, smt, www)%{_localstatedir}/lib/smt
+%config(noreplace) %attr(640, root, www)%{_sysconfdir}/smt.conf
+%config %{_sysconfdir}/apache2/*.pl
+%config %{_sysconfdir}/apache2/conf.d/*.conf
+%config %{_sysconfdir}/apache2/vhosts.d/*.conf
+%config %{_sysconfdir}/smt.d/*.conf
+%config %{_sysconfdir}/slp.reg.d/smt.reg
+%exclude %{_sysconfdir}/apache2/conf.d/smt_support.conf
+%config %{_sysconfdir}/cron.d/novell.com-smt
+%config %{_sysconfdir}/logrotate.d/smt
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Job/*.pm
@@ -231,15 +200,15 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 /srv/www/perl-lib/SMT/*.pm
 /srv/www/perl-lib/SMT/Client/*.pm
 %exclude /srv/www/perl-lib/SMT/Support.pm
-/usr/sbin/smt-*
-%exclude /usr/sbin/smt-support
-/usr/sbin/smt
-/usr/lib/SMT/bin/*
-/usr/bin/smt*
-/usr/lib/systemd/system/smt.target
+%{_sbindir}/smt-*
+%exclude %{_sbindir}/smt-support
+%{_sbindir}/smt
+%{_libexecdir}/SMT/bin/*
+%{_bindir}/smt*
+%{_libexecdir}/systemd/system/smt.target
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
-/usr/bin/smt-*
+%{_bindir}/smt-*
 %doc %attr(644, root, root) %{_mandir}/man3/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
@@ -252,10 +221,10 @@ sysconf_addword /etc/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 
 %files support
 %defattr(-,root,root)
-/usr/sbin/smt-support
+%{_sbindir}/smt-support
 /srv/www/perl-lib/SMT/Support.pm
-%config /etc/apache2/conf.d/smt_support.conf
-%dir %attr(775, smt, www)/var/spool/smt-support
+%config %{_sysconfdir}/apache2/conf.d/smt_support.conf
+%dir %attr(775, smt, www)%{_localstatedir}/spool/smt-support
 %doc %attr(644, root, root) %{_mandir}/man1/smt-support.1.gz
 
 %changelog

@@ -101,7 +101,7 @@ sub readCredentials
   my $guid   = "";
   my $secret = "";
 
-  # read credentials from NCCcredentials file on SLE11 clients
+  # read credentials from SCCcredentials file on SLE11 clients
   if ( open(CRED, "< ".SMT::Agent::Constants::CREDENTIALS_FILE) )
   {
     while(<CRED>)

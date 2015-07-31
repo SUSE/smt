@@ -6,8 +6,10 @@
 
 use strict;
 use warnings;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
+
 use SMT::Utils;
-use SMT::NCCRegTools;
 use Getopt::Long;
 use File::Basename;
 use Data::Dumper;
@@ -39,7 +41,7 @@ my $optres = GetOptions ("guid|g=s"    => \@guids,
 if($help || !$optres)
 {
     print basename($0) . __(" [OPTIONS]\n");
-    print __("Delete one or more registration from NCC and SMT\n");
+    print __("Delete one or more registration from SCC and SMT\n");
     print "\n";
     print __("Options:\n");
     print "  --guid (-g)            : " . __("Unique ID of the client which should be deleted.\n");
@@ -86,15 +88,17 @@ if(!$dbh)
 
 eval
 {
-    my $nccreg = SMT::NCCRegTools->new(log => $LOG, vblevel => $vblevel, useragent => $useragent, dbh => $dbh);
-    my $err = $nccreg->NCCDeleteRegistration(@guids);
-    if($err != 0)
-    {
-        SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
+    my $sccreg = SMT::SCCApi->new(log => $LOG, vblevel => $vblevel, useragent => $useragent);
+    for my $id (@guids) {
+        # remove registration on scc side
+        $sccreg->org_systems_delete($id) || die $id;
+        # remove registration in DB
     }
+    SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
 };
 if($@)
 {
+    print STDERR __("Failed to delete registration for id $@\n");
     SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
 }
 
@@ -119,7 +123,7 @@ smt delete-registration --debug --guid id1
 
 =head1 DESCRIPTION
 
-I<smt delete-registration> deletes one or more registrations from SMT and NCC. It will deregister machines from the system.
+I<smt delete-registration> deletes one or more registrations from SMT and SCC. It will deregister machines from the system.
 
 =head1 OPTIONS
 

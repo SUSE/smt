@@ -8,7 +8,6 @@ use warnings;
 use XML::Writer;
 use XML::Parser;
 use XML::XPath;
-use UNIVERSAL 'isa';
 
 use constant VBLEVEL => LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 
@@ -88,7 +87,7 @@ sub readJobFromHash($$)
 {
   my $self = shift || return undef;
   my $attribs = shift || return undef;
-  return undef unless isa($attribs, 'HASH');
+  return undef unless UNIVERSAL::isa($attribs, 'HASH');
 
   foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
   {

@@ -6,8 +6,10 @@
 
 use strict;
 use warnings;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
+
 use SMT::Utils;
-use SMT::NCCRegTools;
 use Getopt::Long;
 use File::Basename;
 use File::Temp;
@@ -49,11 +51,11 @@ my $optres = GetOptions ("debug|d"     => \$debug,
 if($help || !$optres)
 {
     print basename($0) . " [--reseterror] [--debug] [--logfile file] [--mail]\n\n";
-    print __("Register all clients at NCC which are currently not registered\n");
+    print __("Register all clients at SCC which are currently not registered\n");
     print __("or which data changed since the last registration.\n");
     print "\n";
     print __("Options:\n");
-    print "--reseterror            ".__("reset the NCC registration error flag and try to submit failed registrations again.\n");
+    print "--reseterror            ".__("reset the SCC registration error flag and try to submit failed registrations again.\n");
     print "--mail -m               ".__("Send output as e-mail to the administrators defined in reportEmail in smt.conf.\n");
     print "                        ".__("The output on stdout and stderr will be suppressed.\n");
     print "--debug -d              ".__("enable debug mode\n");
@@ -90,7 +92,7 @@ my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel
 $useragent->protocols_allowed( [ 'https' ] );
 
 
-# check if we are allowed to register clients at NCC
+# check if we are allowed to register clients at SCC
 
 my $cfg = undef;
 
@@ -133,21 +135,21 @@ eval
         my $res = $dbh->do("Update Registration SET NCCREGERROR=0");
         SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Reset NCC Registration Errors. Result: $res");
     }
-    if($cfg->val("NU", "ApiType", "NCC") eq "NCC")
+    my $api = $cfg->val("NU", "ApiType", "NCC");
+    if( $api eq "SCC")
     {
-        my $nccreg = SMT::NCCRegTools->new(vblevel => $vblevel, useragent => $useragent, dbh => $dbh,
-                                           log => $LOG, nccemail => $nccEmail);
-        my $err = $nccreg->NCCRegister($sleeptime);
-        if($err != 0)
-        {
-            $exitcode = 1;
-        }
+        # TODO
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Forward registration to SCC not yet implemented"));
+        $exitcode = 1;
     }
-    else
+    elsif ($api eq 'NCC')
     {
-        # SCC registration not yet implemented
-        SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Forward registration to SCC not yet implemented");
-        $exitcode = 0;
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("NCC is not supported by this version of SMT"));
+        $exitcode = 1;
+    }
+    else {
+        MT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Unknown API $api"));
+        $exitcode = 1;
     }
 };
 
@@ -201,7 +203,7 @@ smt register [--reseterror] [--debug] [--logfile file] [--mail]
 
 =head1 DESCRIPTION
 
-smt register registers all clients at NCC which are currently not registered
+smt register registers all clients at SCC which are currently not registered
 or which data changed since the last registration. It skips all clients which
 registration failed the last time unless the B<--reseterror> parameter is used.
 

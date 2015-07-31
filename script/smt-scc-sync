@@ -6,6 +6,9 @@
 
 use strict;
 use warnings;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
+
 use SMT::CLI;
 use SMT::Utils;
 use SMT::SCCAPI;
@@ -267,11 +270,11 @@ C<smt scc-sync> gets data from SUSE Customer Center and updates the local databa
 
 =item --fromdir directory
 
-Reads NCC information from directory instead of downloading it from NCC and update the database.
+Reads SCC information from directory instead of downloading it from SCC and update the database.
 
 =item --todir directory
 
-Write NCC informations to directory without updating the database.
+Write SCC informations to directory without updating the database.
 
 =item --createdbreplacementfile
 

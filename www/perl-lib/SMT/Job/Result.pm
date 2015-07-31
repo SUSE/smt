@@ -2,7 +2,6 @@ package SMT::Job::Result;
 
 use strict;
 use warnings;
-use UNIVERSAL 'isa';
 
 use SMT::Utils;
 
@@ -99,15 +98,15 @@ sub getResults($\@;\@\%)
   my @params = ();
 
   my $sql = 'select r.* from JobResults r inner join JobQueue j on (r.CLIENT_ID = j.GUID_ID and r.JOB_ID = j.ID) where ';
-  $sql .= ' j.UPSTREAM = 1 and ' if ( isa($config, 'HASH') && (exists $config->{checkupstream}) && ($config->{checkupstream} == 1) );
+  $sql .= ' j.UPSTREAM = 1 and ' if ( UNIVERSAL::isa($config, 'HASH') && (exists $config->{checkupstream}) && ($config->{checkupstream} == 1) );
 
-  return undef unless ( isa($job_ids, 'ARRAY') && scalar @$job_ids );
+  return undef unless ( UNIVERSAL::isa($job_ids, 'ARRAY') && scalar @$job_ids );
   my $jq = ' ?,' x scalar @$job_ids;
   $jq =~ s/,$//;
   $sql .= ' r.JOB_ID in ('.$jq.') ';
   push @params, @$job_ids;
 
-  if ( isa($client_ids, 'ARRAY') && scalar @$client_ids )
+  if ( UNIVERSAL::isa($client_ids, 'ARRAY') && scalar @$client_ids )
   {
       my $cq = ' ?,' x scalar @$client_ids;
       $cq =~ s/,$//;
@@ -135,15 +134,15 @@ sub asResultsXML($$)
   my $res  = shift || return undef;
 
   my $xml = "<results>\n";
-  if ( isa($res, 'HASH') )
+  if ( UNIVERSAL::isa($res, 'HASH') )
   {
       $xml .= ($res->{RESULT}."\n") if defined $res->{RESULT};
   }
-  elsif ( isa($res, 'ARRAY') )
+  elsif ( UNIVERSAL::isa($res, 'ARRAY') )
   {
       foreach my $href (@$res)
       {
-          $xml .= ($href->{RESULT}."\n") if ( isa($href, 'HASH') || defined $href->{RESULT} );
+          $xml .= ($href->{RESULT}."\n") if ( UNIVERSAL::isa($href, 'HASH') || defined $href->{RESULT} );
       }
   }
 

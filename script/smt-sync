@@ -6,6 +6,9 @@
 
 use strict;
 use warnings;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
+
 use SMT::Utils;
 
 use Locale::gettext ();
@@ -27,7 +30,8 @@ if($@ || !defined $cfg)
 
 if ( $cfg->val('NU', 'ApiType', 'NCC') eq 'NCC')
 {
-    $exec = "/usr/sbin/smt-ncc-sync";
+    print __("NCC is not supported in this version of SMT");
+    exit 1;
 }
 
 sub executeCommand

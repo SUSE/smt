@@ -35,7 +35,7 @@ use constant LOG_FILE		=> '/var/log/smtclient.log';
 use constant CLIENT_CONFIG_FILE	=> '/etc/sysconfig/smt-client';
 
 # smt client credenitials file containing guid
-#  SLE11 => /etc/zypp/credentials.d/NCCcredentials
+#  SLE11 => /etc/zypp/credentials.d/SCCcredentials
 #  SLE12 => /etc/zypp/credentials.d/SCCcredentials
 # SLE12 file may be missing due to update or missing SUSEConnect package
 #  in that case fallback to SLE11 file only if SLE11 file is present:
