@@ -24,6 +24,7 @@ License:        GPL-2.0+
 Group:          Productivity/Networking/Web/Proxy
 Source0:        %{name}-%{version}.tar.bz2
 Source1:        smt-rpmlintrc
+Source2:        tmpfile-smt.conf
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
@@ -129,7 +130,10 @@ done
 for manp in *.3pm; do
     install -m 644 $manp    %{buildroot}%{_mandir}/man3/$manp
 done
-mkdir -p %{buildroot}%{_localstatedir}/run/smt
+# /var/run/smt
+install -d -m 0755 %{buildroot}/%{_tmpfilesdir}
+install -m 0644 %{SOURCE2} %{buildroot}/%{_tmpfilesdir}/%{name}.conf
+
 mkdir -p %{buildroot}%{_localstatedir}/log/smt/schema-upgrade
 mkdir -p %{buildroot}%{_docdir}/smt/
 mkdir -p %{buildroot}%{_localstatedir}/lib/smt
@@ -146,7 +150,7 @@ fi
 %post
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
-
+usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf
 
 %files
 %defattr(-,root,root)
@@ -174,7 +178,6 @@ sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 %dir %{_datadir}/schemas/
 %dir %{_datadir}/schemas/smt
 %dir %{_docdir}/smt/
-%dir %attr(755, smt, www)%{_localstatedir}/run/smt
 %dir %attr(755, smt, www)%{_localstatedir}/log/smt
 %dir %attr(755, smt, www)%{_localstatedir}/log/smt/schema-upgrade
 %dir %attr(755, smt, www)%{_localstatedir}/lib/smt
@@ -184,6 +187,7 @@ sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 %config %{_sysconfdir}/apache2/vhosts.d/*.conf
 %config %{_sysconfdir}/smt.d/*.conf
 %config %{_sysconfdir}/slp.reg.d/smt.reg
+%config %{_tmpfilesdir}/smt.conf
 %exclude %{_sysconfdir}/apache2/conf.d/smt_support.conf
 %config %{_sysconfdir}/cron.d/novell.com-smt
 %config %{_sysconfdir}/logrotate.d/smt

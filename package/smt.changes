@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Aug  3 12:17:15 UTC 2015 - oholecek@suse.com
+
+- fix /var/run/smt packaging (bsc#940343)
+  add tmpfile-smt.conf as source2
+
+-------------------------------------------------------------------
 Fri Jul 31 07:15:37 UTC 2015 - oholecek@suse.com
 
 - version 3.0.1
