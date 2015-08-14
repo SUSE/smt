@@ -150,7 +150,33 @@ fi
 %post
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
-usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf
+usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf || :
+
+if [ "$1" = "2" ]; then
+    rm -f %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release}
+    # check if there are MyISAM tables, if yes add note about migrating them to InnoDB
+    if ! %{_bindir}/smt-schema-upgrade --check-engine; then
+        echo > %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
+SMT database must be migrated to InnoDB engine.
+
+Migration will happen automatically smt-schema-upgrade service. If you are not using systemd's smt.target, please
+call /usr/bin/smt-schema-upgrade manually.
+
+Please review your database settings to reflect this change.
+(see https://mariadb.com/kb/en/mariadb/converting-tables-from-myisam-to-innodb/#non-index-issues)
+
+EOT
+    fi
+    # check if there is need to schema migration
+    if ! %{_bindir}/smt-schema-upgrade --check-schema; then
+        echo >> %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
+SMT database schema must be migrated to new schema version.
+
+Migration will happen automatically smt-schema-upgrade service. If you are not using systemd's smt.target, please
+call /usr/bin/smt-schema-upgrade manually.
+EOT
+    fi
+fi
 
 %files
 %defattr(-,root,root)
