@@ -7,184 +7,267 @@ use SMT;
 use IPC::Open3 ();
 use File::Basename;
 
+use Getopt::Long;
+
+sub help {
+    print <<EOH;
+Usage: $0 [OPTIONS]
+
+Options:
+    -h|--help       Display this help and exit
+    --check-engine  Check if engine migration is required end exit (indicated by exit code)
+    --check-schema  Check if schema migration is required end exit (indicated by exit code)
+    -y|--yes        Auto agree with all
+EOH
+    exit;
+}
+
 my $SCHEMA_UPGRADE_DIR = '/usr/share/schemas/smt/mysql/';
 my $SCHEMA_UPGRADE_LOGDIR = '/var/log/smt/schema-upgrade';
 
-my $test = run_query("select CONCAT('1', '2', '3') as testing;");
-if (not defined $test) {
+my ($check_engine, $check_schema, $autoyes);
+my $optres = GetOptions('help|h' => \&help, 'check-engine' => \$check_engine, 'check-schema' => \$check_schema, 'yes|y' => \$autoyes);
+help unless ($optres);
+
+my @test = run_query("select CONCAT('1', '2', '3') as testing;");
+if (not @test) {
     die "Connect to database was not successful.\n";
 }
-if ($test ne '123') {
+if ($test[0][0] ne '123') {
     die "Test select from database did not give expected results.\n";
+}
+
+# test db engine
+# if MyISAM, convert to InnoDB, if else left it be
+my @table_engines = run_query(<<EOF);
+    select table_name, engine from information_schema.tables where table_schema = 'smt' and engine != 'InnoDB';
+EOF
+
+my $engine_migration_needed = scalar @table_engines;
+if ($check_engine) {
+    if ($engine_migration_needed) {
+        exit 1;
+    }
+    exit 0;
 }
 
 my $target_schema = sprintf("%.02f", $SMT::SCHEMA_VERSION);
 
-my $schema_version = run_query(<<EOF);
+my $schema_version;
+my @query = run_query(<<EOF);
     select version from migration_schema_version where name = 'smt';
 EOF
-if (not defined $schema_version) {
-    my $migrationdir = run_query(<<EOF);
-        select name
-          from migration_schema_version
-         where name like 'smt-schema-from-%'
-      order by name DESC;
-EOF
-    if (! defined $migrationdir or ! -d "$SCHEMA_UPGRADE_LOGDIR/$migrationdir") {
-        die "No existing schema version info found in migration_schema_version\n";
+if (@query) {
+    $schema_version = sprintf('%.02f', $query[0][0]);
+}
+
+my $schema_migration_needed = not(defined $schema_version && $schema_version eq $target_schema);
+if ($check_schema) {
+    if ($schema_migration_needed) {
+        exit 1;
     }
-    my @logfiles = sort {$b cmp $a} map { glob } "/var/log/smt/schema-upgrade/$migrationdir-*.log";
-    my $logname = ((scalar(@logfiles) >= 1)?basename($logfiles[0]):"$migrationdir.log");
-    print "Found unfinished schema migration\n";
-    print "Try to continue schema migration\n";
-    run_schema_upgrade("$SCHEMA_UPGRADE_LOGDIR/$migrationdir", $logname, $target_schema);
-
-    exit;
-}
-$schema_version = sprintf("%.02f", $schema_version);
-
-my $start_schema = $schema_version;
-
-print "Schema upgrade: [$start_schema] -> [$target_schema]\n";
-
-my $foundtarget = 0;
-my $retried = 0;
-
-if (!$foundtarget) {
-    print "Searching for upgrade path to: [$target_schema]\n";
+    exit 0;
 }
 
-my %upgrade_path;
-my @queue = ( $target_schema );
-while (@queue) {
-    my $t = shift @queue;
-    print "search in $SCHEMA_UPGRADE_DIR/*-$t\n";
-    my @lookup = glob "$SCHEMA_UPGRADE_DIR/*-$t";
-    for (@lookup) {
-        $foundtarget = 1;
-        s!^\Q$SCHEMA_UPGRADE_DIR/\E!!;
-        s!-\Q$t\E$!!;
-        print "  [$_] -> [$t]\n";
-        if ($_ eq $start_schema) {
-            print "    -> start found.\n";
-        }
-        $upgrade_path{$_}{$t} = $upgrade_path{$t};
-        push @queue, $_;
+# first do schema upgrade
+if ($schema_migration_needed) {
+    eval {prepare_schema_upgrade($schema_version, $target_schema);};
+    if ($@) {
+        print STDERR "DB schema upgrade failed: $@\n";
+        exit 1;
     }
 }
-
-if (!$foundtarget) {
-    die "Was not able to find upgrade path in directory [$SCHEMA_UPGRADE_DIR].\n";
-}
-
-$retried = 0;
-RETRYSOURCE:
-
-if ($start_schema eq $target_schema) {
-    warn "Your database schema already matches the schema package version [$target_schema].\n";
-    exit;
-}
-
-print "Searching for start path:  [$start_schema]\n";
-
-if (not exists $upgrade_path{$start_schema}) {
-    die "Was not able to find upgrade path in directory [$SCHEMA_UPGRADE_DIR].\n";
-}
-
-
-my @path = get_shortest_path($upgrade_path{$start_schema}, $target_schema);
-print "The path: ", (join " -> ", map "[$_]", $start_schema, @path), "\n";
-
-mkdir $SCHEMA_UPGRADE_LOGDIR, 0755;
-if (not -e $SCHEMA_UPGRADE_LOGDIR) {
-    die "Failed to create log directory [$SCHEMA_UPGRADE_LOGDIR]: $!\n";
-}
-
-my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
-my $stamp = sprintf "%04d%02d%02d-%02d%02d%02d", $year + 1900, $mon + 1, $mday,
-$hour, $min, $sec;
-
-my $start = $start_schema;
-my $migrationdir = "smt-schema-from-$stamp";
-
-my $in = <<EOF;
-update migration_schema_version
-  set name = '$migrationdir'
-where name = 'smt';
-commit;
-EOF
-
-mkdir "$SCHEMA_UPGRADE_LOGDIR/$migrationdir", 0755;
-if (not -e "$SCHEMA_UPGRADE_LOGDIR/$migrationdir") {
-    die "Failed to create log directory [$SCHEMA_UPGRADE_LOGDIR/$migrationdir]: $!\n";
-}
-
-open(INIT, "> $SCHEMA_UPGRADE_LOGDIR/$migrationdir/00_0000-upgrade-start.sql") or
-     rmdir_and_die("Cannot create upgrade-start file: $!", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
-print INIT $in."\n";
-close INIT;
-
-my $prenum = 0;
-while (@path) {
-    my $t = shift @path;
-    my $dir = "$start-$t";
-    if (not -e "$SCHEMA_UPGRADE_DIR/$dir") {
-        rmdir_and_die("Directory [$SCHEMA_UPGRADE_DIR/$dir] was seen but is lost now.\n",
-                      "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
-    }
-    if( $prenum > 98 )
-    {
-        # prevent overrun
-        rmdir_and_die("Overrun: too many migrations", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
-    }
-
-    my @files = sort map { glob } "$SCHEMA_UPGRADE_DIR/$dir/*";
-
-    for my $fullname (@files) {
-        (my $name = $fullname) =~ s!^.*/!!;
-        my $linkname = sprintf("%02d_%s", $prenum, $name);
-        if( ! symlink("$fullname", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir/$linkname") )
-        {
-            rmdir_and_die("Cannot create symlink: $!", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
+# then convert db engine
+if ($engine_migration_needed) {
+    print "Planning to run database engine migration to InnoDB\n";
+    if (not $autoyes) {
+        local $| = 1;
+        READ_ENTER:
+        print "Hit Enter to continue or Ctrl+C to interrupt: ";
+        my $in = <STDIN>;
+        chomp $in;
+        if ($in ne '') {
+            goto READ_ENTER;
         }
     }
-    # print $in;
-    $start = $t;
-    $prenum++;
-}
-
-$in = "";
-my $endfile = "$SCHEMA_UPGRADE_DIR/upgrade-end.sql";
-if (-e "$endfile")
-{
-    local * END;
-    open END, '<', $endfile or rmdir_and_die("Error reading [$endfile]: $!\n", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
-    {
-        local $/ = undef;
-        $in .= join '', <END>;
-    }
-    close END;
-}
-
-$in .= <<EOF;
-update migration_schema_version
-  set name = 'smt',
-      version = $target_schema
-where name like 'smt-schema-from-%';
-commit;
+    for my $row (@table_engines) {
+        my ($table, $engine) = @$row;
+        if ($engine =~ /MyISAM/i) {
+            print "Converting table $table to InnoDB engine\n";
+            run_query(<<EOF);
+            alter table smt.$table engine InnoDB;
 EOF
-
-local *SQL;
-open SQL, "> $SCHEMA_UPGRADE_LOGDIR/$migrationdir/99_9999-upgrade-end.sql" or rmdir_and_die(
-          "Error writing [$SCHEMA_UPGRADE_LOGDIR/$migrationdir/99_9999-upgrade-end.sql]: $!.\n",
-          "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
-print SQL $in;
-close SQL;
-
-my $logname = "$migrationdir-$start.log";
-run_schema_upgrade("$SCHEMA_UPGRADE_LOGDIR/$migrationdir", $logname, $target_schema);
+        }
+    }
+}
 
 exit;
+
+sub prepare_schema_upgrade
+{
+    my ($schema_version, $target_version) = @_;
+    # first handle interrupted schema upgrade
+    if (not defined $schema_version) {
+        my $migrationdir;
+        my @query = run_query(<<EOF);
+            select name
+            from migration_schema_version
+            where name like 'smt-schema-from-%'
+        order by name DESC;
+EOF
+        if (@query) {
+            $migrationdir = $query[0][0];
+        }
+        if (! defined $migrationdir or ! -d "$SCHEMA_UPGRADE_LOGDIR/$migrationdir") {
+            die "No existing schema version info found in migration_schema_version\n";
+        }
+        my @logfiles = sort {$b cmp $a} map { glob } "/var/log/smt/schema-upgrade/$migrationdir-*.log";
+        my $logname = ((scalar(@logfiles) >= 1)?basename($logfiles[0]):"$migrationdir.log");
+        print "Found unfinished schema migration\n";
+        print "Try to continue schema migration\n";
+        run_schema_upgrade("$SCHEMA_UPGRADE_LOGDIR/$migrationdir", $logname, $target_schema);
+        return;
+    }
+
+    # then usual schema upgrade
+    $schema_version = sprintf("%.02f", $schema_version);
+
+    my $start_schema = $schema_version;
+
+    print "Schema upgrade: [$start_schema] -> [$target_schema]\n";
+
+    my $foundtarget = 0;
+    if (!$foundtarget) {
+        print "Searching for upgrade path to: [$target_schema]\n";
+    }
+
+    my %upgrade_path;
+    my @queue = ( $target_schema );
+    while (@queue) {
+        my $t = shift @queue;
+        print "search in $SCHEMA_UPGRADE_DIR/*-$t\n";
+        my @lookup = glob "$SCHEMA_UPGRADE_DIR/*-$t";
+        for (@lookup) {
+            $foundtarget = 1;
+            s!^\Q$SCHEMA_UPGRADE_DIR/\E!!;
+            s!-\Q$t\E$!!;
+            print "  [$_] -> [$t]\n";
+            if ($_ eq $start_schema) {
+                print "    -> start found.\n";
+            }
+            $upgrade_path{$_}{$t} = $upgrade_path{$t};
+            push @queue, $_;
+        }
+    }
+
+    if (!$foundtarget) {
+        die "Was not able to find upgrade path in directory [$SCHEMA_UPGRADE_DIR].\n";
+    }
+
+    if ($start_schema eq $target_schema) {
+        warn "Your database schema already matches the schema package version [$target_schema].\n";
+        return;
+    }
+
+    print "Searching for start path:  [$start_schema]\n";
+
+    if (not exists $upgrade_path{$start_schema}) {
+        die "Was not able to find upgrade path in directory [$SCHEMA_UPGRADE_DIR].\n";
+    }
+
+
+    my @path = get_shortest_path($upgrade_path{$start_schema}, $target_schema);
+    print "The path: ", (join " -> ", map "[$_]", $start_schema, @path), "\n";
+
+    mkdir $SCHEMA_UPGRADE_LOGDIR, 0755;
+    if (not -e $SCHEMA_UPGRADE_LOGDIR) {
+        die "Failed to create log directory [$SCHEMA_UPGRADE_LOGDIR]: $!\n";
+    }
+
+    my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
+    my $stamp = sprintf "%04d%02d%02d-%02d%02d%02d", $year + 1900, $mon + 1, $mday,
+    $hour, $min, $sec;
+
+    my $start = $start_schema;
+    my $migrationdir = "smt-schema-from-$stamp";
+
+    my $in = <<EOF;
+    update migration_schema_version
+    set name = '$migrationdir'
+    where name = 'smt';
+    commit;
+EOF
+
+    mkdir "$SCHEMA_UPGRADE_LOGDIR/$migrationdir", 0755;
+    if (not -e "$SCHEMA_UPGRADE_LOGDIR/$migrationdir") {
+        die "Failed to create log directory [$SCHEMA_UPGRADE_LOGDIR/$migrationdir]: $!\n";
+    }
+
+    open(INIT, "> $SCHEMA_UPGRADE_LOGDIR/$migrationdir/00_0000-upgrade-start.sql") or
+        rmdir_and_die("Cannot create upgrade-start file: $!", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
+    print INIT $in."\n";
+    close INIT;
+
+    my $prenum = 0;
+    while (@path) {
+        my $t = shift @path;
+        my $dir = "$start-$t";
+        if (not -e "$SCHEMA_UPGRADE_DIR/$dir") {
+            rmdir_and_die("Directory [$SCHEMA_UPGRADE_DIR/$dir] was seen but is lost now.\n",
+                        "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
+        }
+        if( $prenum > 98 )
+        {
+            # prevent overrun
+            rmdir_and_die("Overrun: too many migrations", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
+        }
+
+        my @files = sort map { glob } "$SCHEMA_UPGRADE_DIR/$dir/*";
+
+        for my $fullname (@files) {
+            (my $name = $fullname) =~ s!^.*/!!;
+            my $linkname = sprintf("%02d_%s", $prenum, $name);
+            if( ! symlink("$fullname", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir/$linkname") )
+            {
+                rmdir_and_die("Cannot create symlink: $!", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
+            }
+        }
+        # print $in;
+        $start = $t;
+        $prenum++;
+    }
+
+    $in = "";
+    my $endfile = "$SCHEMA_UPGRADE_DIR/upgrade-end.sql";
+    if (-e "$endfile")
+    {
+        local * END;
+        open END, '<', $endfile or rmdir_and_die("Error reading [$endfile]: $!\n", "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
+        {
+            local $/ = undef;
+            $in .= join '', <END>;
+        }
+        close END;
+    }
+
+    $in .= <<EOF;
+    update migration_schema_version
+    set name = 'smt',
+        version = $target_schema
+    where name like 'smt-schema-from-%';
+    commit;
+EOF
+
+    local *SQL;
+    open SQL, '>', "$SCHEMA_UPGRADE_LOGDIR/$migrationdir/99_9999-upgrade-end.sql" or rmdir_and_die(
+            "Error writing [$SCHEMA_UPGRADE_LOGDIR/$migrationdir/99_9999-upgrade-end.sql]: $!.\n",
+            "$SCHEMA_UPGRADE_LOGDIR/$migrationdir");
+    print SQL $in;
+    close SQL;
+
+    my $logname = "$migrationdir-$start.log";
+    run_schema_upgrade("$SCHEMA_UPGRADE_LOGDIR/$migrationdir", $logname, $target_schema);
+}
 
 sub run_schema_upgrade
 {
@@ -195,7 +278,7 @@ sub run_schema_upgrade
     die "Migration directory [$dir] does not exist." if(! -d "$dir");
 
     print "Planning to run schema upgrade with dir '$dir'\n";
-    if (not @ARGV or $ARGV[0] ne '-y') {
+    if (not $autoyes) {
         local $| = 1;
         READ_ENTER:
         print "Hit Enter to continue or Ctrl+C to interrupt: ";
@@ -240,9 +323,13 @@ sub run_schema_upgrade
     }
     print "\n";
 
-    my $new_schema_version = run_query(<<EOF);
+    my $new_schema_version;
+    my @query = run_query(<<EOF);
     select version from migration_schema_version where name = 'smt';
 EOF
+    if (@query) {
+        $new_schema_version = $query[0][0];
+    }
     if (not defined $new_schema_version) {
         die "Upgrade seems to have run OK yet new schema version is not in migration_schema_version.\n";
     }
@@ -267,16 +354,18 @@ sub run_query {
     print $wfh "\n";
     close $wfh;
 
-    my $out;
-    my $seen_dashes = 0;
+    my @out;
     while (<$rfh>) {
-        if (not defined $out and $seen_dashes) {
-            $out = $_;
+        chomp;
+        if (/----/) {
+            next;
+        }
+        elsif (/^\(0 rows\)/) {
+            @out = undef;
             last;
         }
-        if (/---/) {
-            $seen_dashes = 1;
-        }
+        my (@data) = $_ =~ /([^\t]+)\t*/g;
+        push @out, \@data;
     }
     close $rfh;
     waitpid $pid, 0;
@@ -284,10 +373,7 @@ sub run_query {
         return;
     }
 
-    $out =~ s/^\s+|\s+$//g if defined $out;
-    # psql print '----' even if no rows were selected
-    $out = undef if defined $out && $out =~ /^\(0 rows\)$/;
-    return $out;
+    return @out;
 }
 
 sub run_query_direkt {
@@ -377,6 +463,14 @@ B<smt-schema-upgrade>
 =item B<-y>
 
 Proceed without asking for confirmation.
+
+=item B<--check-schema>
+
+Checks if schema upgrade is required. Returns 1 if so.
+
+=item B<--check-engine>
+
+Checks if engine migration is required. Returns 1 if so.
 
 =back
 
