@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use SMT::Utils;
 use SMT::NCCRegTools;
+use SMT::SCCSync;
 use Getopt::Long;
 use Crypt::SSLeay;
 use File::Basename;
