@@ -371,10 +371,12 @@ sub _request
     }
     elsif ($method eq "post")
     {
+        $headers->{'Content-Type'} = 'application/json' if (! exists $headers->{'Content-Type'});
         $response = $self->{USERAGENT}->post($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     elsif ($method eq "put")
     {
+        $headers->{'Content-Type'} = 'application/json' if (! exists $headers->{'Content-Type'});
         $response = $self->{USERAGENT}->put($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     elsif ($method eq "delete")
