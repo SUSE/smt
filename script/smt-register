@@ -10,6 +10,7 @@ use FindBin;
 BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
 
 use SMT::Utils;
+use SMT::SCCSync;
 use Getopt::Long;
 use File::Basename;
 use File::Temp;
