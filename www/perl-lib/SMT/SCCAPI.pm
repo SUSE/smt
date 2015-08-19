@@ -288,6 +288,10 @@ sub org_systems_set
     my $self = shift;
     my %opts = @_;
     my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/systems");
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
              "Announce data: ".Data::Dumper->Dump([$opts{body}]), 0);
 
