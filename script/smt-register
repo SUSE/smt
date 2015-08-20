@@ -155,6 +155,7 @@ eval
         {
             $exitcode = 1;
         }
+    }
     else {
         MT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Unknown API $api"));
         $exitcode = 1;
