@@ -3,7 +3,7 @@ Description=SMT
 Requires=cron.service
 Requires=mysql.service
 Requires=apache2.service
-Requires=smt-schema-migration.service
+Requires=smt-schema-upgrade.service
 
 [Install]
 WantedBy=multi-user.target

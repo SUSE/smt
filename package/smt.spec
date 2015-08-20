@@ -146,11 +146,14 @@ ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh %{buildroot}%{_docdir}/smt/c
 if ! usr/bin/getent passwd smt >/dev/null; then
   usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt 2> /dev/null || :
 fi
+%service_add_pre smt-schema-upgrade.service
+
 
 %post
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf || :
+%service_add_post smt-schema-upgrade.service
 
 if [ "$1" = "2" ]; then
     rm -f %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release}
@@ -159,8 +162,9 @@ if [ "$1" = "2" ]; then
         echo > %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
 SMT database must be migrated to InnoDB engine.
 
-Migration will happen automatically smt-schema-upgrade service. If you are not using systemd's smt.target, please
-call /usr/bin/smt-schema-upgrade manually.
+Call /usr/bin/smt-schema-upgrade to upgrade DB.
+Migration will also start automatically by smt-schema-upgrade service when smt.target is started.
+If you are not using systemd's smt.target, please call /usr/bin/smt-schema-upgrade manually.
 
 Please review your database settings to reflect this change.
 (see https://mariadb.com/kb/en/mariadb/converting-tables-from-myisam-to-innodb/#non-index-issues)
@@ -172,11 +176,19 @@ EOT
         echo >> %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
 SMT database schema must be migrated to new schema version.
 
-Migration will happen automatically smt-schema-upgrade service. If you are not using systemd's smt.target, please
-call /usr/bin/smt-schema-upgrade manually.
+Call /usr/bin/smt-schema-upgrade to upgrade DB.
+Migration will also start automatically by smt-schema-upgrade service when smt.target is started.
+If you are not using systemd's smt.target, please call /usr/bin/smt-schema-upgrade manually.
+
 EOT
     fi
 fi
+
+%preun
+%service_del_preun smt-schema-upgrade.service
+
+%postun
+%service_del_postun smt-schema-upgrade.service
 
 %files
 %defattr(-,root,root)
@@ -236,6 +248,7 @@ fi
 %{_libexecdir}/SMT/bin/*
 %{_bindir}/smt*
 %{_libexecdir}/systemd/system/smt.target
+%{_libexecdir}/systemd/system/smt-schema-upgrade.service
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
 %{_bindir}/smt-*
