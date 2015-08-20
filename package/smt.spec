@@ -151,7 +151,7 @@ if [ "$1" = "2" ]; then
     rm -f %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release}
     # check if there are MyISAM tables, if yes add note about migrating them to InnoDB
     if ! %{_bindir}/smt-schema-upgrade --check-engine; then
-        echo > %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
+        cat > %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
 SMT database must be migrated to InnoDB engine.
 
 Call /usr/bin/smt-schema-upgrade to upgrade DB.
@@ -165,7 +165,7 @@ EOT
     fi
     # check if there is need to schema migration
     if ! %{_bindir}/smt-schema-upgrade --check-schema; then
-        echo >> %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
+        cat >> %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
 SMT database schema must be migrated to new schema version.
 
 Call /usr/bin/smt-schema-upgrade to upgrade DB.
