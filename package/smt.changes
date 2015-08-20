@@ -13,6 +13,13 @@ Fri Aug 21 10:35:47 CEST 2015 - mc@suse.de
 - Make Rest interface work if PerlTaintChecks are on (bsc#939076)
 
 -------------------------------------------------------------------
+Thu Aug 20 13:25:37 UTC 2015 - oholecek@suse.com
+
+- add support for migrating DB engine to InnoDB 
+- move tmpfile configuration to git
+  remove tmpfile-smt.conf (source2)
+
+-------------------------------------------------------------------
 Mon Aug  3 12:17:15 UTC 2015 - oholecek@suse.com
 
 - fix /var/run/smt packaging (bsc#940343)
