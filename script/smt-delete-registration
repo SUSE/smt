@@ -36,6 +36,7 @@ my @guids = ();
 my $optres = GetOptions ("guid|g=s"    => \@guids,
                          "logfile|L=s" => \$logfile,
                          "debug|d"     => \$debug,
+                         "verboselevel|v=i" => \$vblevel,
                          "help|h"      => \$help
                         );
 
