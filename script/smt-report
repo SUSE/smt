@@ -492,10 +492,15 @@ $LOG = SMT::Utils::openLog($logfile);
 # calculate best report
 my $cfg = SMT::Utils::getSMTConfig();
 
-if ( $cfg->val('NU', 'ApiType', 'NCC') eq 'SCC')
+my $api = $cfg->val('NU', 'ApiType', 'NCC');
+if ( $api eq 'SCC' && $nccreport)
 {
-    printLog($LOG, $vblevel, LOG_INFO1, __("Reports are currently not supported while connected to SCC."));
-    exit 0;
+    printLog($LOG, $vblevel, LOG_ERROR, __("Only local reports are available for SCC connected SMT servers"));
+    exit 1;
+}
+if ( $api eq 'SCC')
+{
+    $nonccsync = 1;
 }
 
 # sync current data from NCC
@@ -543,13 +548,13 @@ if(!$nonccsync)
 if(!($localreport || $nccreport))
 {
     my $fwdr = $cfg->val("LOCAL", "forwardRegistration");
-    if(lc($fwdr) eq "true")
+    if($api eq 'SCC' || lc($fwdr) ne "true")
     {
-        $nccreport = 1;
+        $localreport = 1;
     }
     else
     {
-        $localreport = 1;
+        $nccreport = 1;
     }
 }
 
