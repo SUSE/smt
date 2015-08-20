@@ -459,6 +459,7 @@ sub register_systems
                                     $self->{DBH}->quote($result->{id}),
                                     $self->{DBH}->quote($guid));
             $self->{DBH}->do($statement);
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Registration success: '%s'."), $guid));
         }
         else
         {
