@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Aug 19 11:45:57 CEST 2015 - mc@suse.de
+
+- version 2.0.13
+- implement forwarding registrations to SCC (bsc#942300, bsc#907791)
+- implement delete systems requests to SCC
+- enable reports based on local data for SCC connected SMT server
+
+-------------------------------------------------------------------
 Wed May 20 10:07:12 CEST 2015 - mc@suse.de
 
 - version 2.0.12

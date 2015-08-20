@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use SMT::Utils;
 use SMT::NCCRegTools;
+use SMT::SCCSync;
 use Getopt::Long;
 use Crypt::SSLeay;
 use File::Basename;
@@ -146,12 +147,18 @@ eval
     }
     else
     {
-        # SCC registration not yet implemented
-        SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Forward registration to SCC not yet implemented");
-        $exitcode = 0;
+        my $sccreg = SMT::SCCSync->new(vblevel   => $vblevel,
+                                       useragent => $useragent,
+                                       log       => $LOG,
+                                       dbh       => $dbh,
+                                       nccemail  => $nccEmail);
+        my $err = $sccreg->register_systems($sleeptime);
+        if($err != 0)
+        {
+            $exitcode = 1;
+        }
     }
 };
-
 if($@)
 {
     $exitcode = 1;

@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use SMT::Utils;
 use SMT::NCCRegTools;
+use SMT::SCCSync;
 use Getopt::Long;
 use Crypt::SSLeay;
 use File::Basename;
@@ -34,6 +35,7 @@ my @guids = ();
 my $optres = GetOptions ("guid|g=s"    => \@guids,
                          "logfile|L=s" => \$logfile,
                          "debug|d"     => \$debug,
+                         "verboselevel|v=i" => \$vblevel,
                          "help|h"      => \$help
                         );
 
@@ -71,6 +73,17 @@ my $LOG = SMT::Utils::openLog($logfile);
 my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel);
 $useragent->protocols_allowed( [ 'https' ] );
 
+my $cfg = undef;
+
+eval
+{
+    $cfg = SMT::Utils::getSMTConfig();
+};
+if($@ || !defined $cfg)
+{
+    SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, sprintf(__("Cannot read the SMT configuration file: %s"), $@));
+    SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
+}
 
 my $dbh = undef;
 
@@ -87,8 +100,20 @@ if(!$dbh)
 
 eval
 {
-    my $nccreg = SMT::NCCRegTools->new(log => $LOG, vblevel => $vblevel, useragent => $useragent, dbh => $dbh);
-    my $err = $nccreg->NCCDeleteRegistration(@guids);
+    my $err = 1;
+    if($cfg->val("NU", "ApiType", "NCC") eq "NCC")
+    {
+        my $nccreg = SMT::NCCRegTools->new(log => $LOG, vblevel => $vblevel, useragent => $useragent, dbh => $dbh);
+        $err = $nccreg->NCCDeleteRegistration(@guids);
+    }
+    else
+    {
+        my $sccreg = SMT::SCCSync->new(vblevel   => $vblevel,
+                                       useragent => $useragent,
+                                       log       => $LOG,
+                                       dbh       => $dbh);
+        $err = $sccreg->delete_systems(@guids);
+    }
     if($err != 0)
     {
         SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
