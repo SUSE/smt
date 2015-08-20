@@ -302,7 +302,7 @@ sub org_systems_delete
 {
     my $self = shift;
     my $id = shift || return undef;
-    my $uri = SMT::Utils::appendPathToURI($self->{URL}."/organizations/systems/$id");
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "/organizations/systems/$id");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
