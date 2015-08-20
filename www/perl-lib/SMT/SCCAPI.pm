@@ -314,6 +314,14 @@ sub org_systems_delete
 }
 
 
+sub is_error
+{
+    my $self = shift;
+    my $data = shift;
+    return (!defined $data ||
+             ref($data) eq "HASH" && exists $data->{type} && $data->{type} eq "error");
+}
+
 ##########################################################################
 ### private methods
 ##########################################################################
@@ -331,6 +339,7 @@ sub org_systems_delete
 # The body will be JSON encoded before it is send. The body is
 # only added if the method is post or put.
 #
+# The body could be an error.
 sub _request
 {
     my $self = shift;
@@ -431,7 +440,17 @@ sub _request
     }
     else
     {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Connection to registration server failed with: ".$response->status_line);
+        if ($response->content_type() eq "application/json")
+        {
+            $result = $self->_getDataFromResponse($response, $dataTempFile);
+            $result->{type} = "error" if(! exists $result->{type} || $result->{type} ne "error");
+        }
+        else
+        {
+            $result = {'type' => 'error', 'error' => $response->status_line,
+                       'localized_error' => $response->status_line};
+        }
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Connection to registration server failed with: ".$response->status_line, 0);
     }
     return $result;
 }
