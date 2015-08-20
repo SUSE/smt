@@ -485,6 +485,10 @@ sub delete_systems
         my $data = $self->{DBH}->selectrow_arrayref(
             sprintf("SELECT GUID from Registration where NCCREGDATE IS NOT NULL and GUID=%s",
                     $self->{DBH}->quote($guid)));
+        my $id = $self->{DBH}->selectrow_arrayref(
+            sprintf("SELECT systemid from Clients where GUID=%s",
+                    $self->{DBH}->quote($guid)));
+
         $self->_deleteRegistrationLocal($guid);
         if(!($data->[0] && $data->[0] eq $guid))
         {
@@ -497,9 +501,6 @@ sub delete_systems
             printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "Forward registration is disabled. '$guid' deleted only locally.");
             next;
         }
-        my $id = $self->{DBH}->selectrow_arrayref(
-            sprintf("SELECT systemid from Clients where GUID=%s",
-                    $self->{DBH}->quote($guid)));
         if(!$id->[0]) {
             printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "Systemid for '$guid' not available. Client deleted only locally.");
             $exitcode = 1;
