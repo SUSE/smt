@@ -512,6 +512,10 @@ sub delete_systems
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Failed to delete '$guid' from SCC: ". $result->{error});
             $exitcode = 1;
         }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Successfully delete registration from SCC: %s", $guid));
+        }
     }
     return $exitcode;
 }
