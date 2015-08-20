@@ -24,7 +24,6 @@ License:        GPL-2.0+
 Group:          Productivity/Networking/Web/Proxy
 Source0:        %{name}-%{version}.tar.bz2
 Source1:        smt-rpmlintrc
-Source2:        tmpfile-smt.conf
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
@@ -115,9 +114,6 @@ rm -rf tests/testdata
 # ---------------------------------------------------------------------------
 
 %install
-
-%{_sbindir}/useradd -r -g www -s /bin/false -c "User for SMT" -d %{_localstatedir}/lib/empty smt 2> /dev/null || :
-
 make DESTDIR=%{buildroot} DOCDIR=%{_docdir} install
 make DESTDIR=%{buildroot} install_conf
 
@@ -132,7 +128,6 @@ for manp in *.3pm; do
 done
 # /var/run/smt
 install -d -m 0755 %{buildroot}/%{_tmpfilesdir}
-install -m 0644 %{SOURCE2} %{buildroot}/%{_tmpfilesdir}/%{name}.conf
 
 mkdir -p %{buildroot}%{_localstatedir}/log/smt/schema-upgrade
 mkdir -p %{buildroot}%{_docdir}/smt/
@@ -143,11 +138,8 @@ ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh %{buildroot}%{_docdir}/smt/c
 # ---------------------------------------------------------------------------
 
 %pre
-if ! usr/bin/getent passwd smt >/dev/null; then
-  usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt 2> /dev/null || :
-fi
+%{_bindir}/getent passwd smt >/dev/null || %{_sbindir}/useradd -r -g www -s %{_bindir}/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt
 %service_add_pre smt-schema-upgrade.service
-
 
 %post
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
