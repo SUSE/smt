@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Aug 24 12:33:53 CEST 2015 - mc@suse.de
+
+- implement forwarding registrations to SCC (bsc#942300, bsc#907791)
+- implement delete systems requests to SCC
+
+-------------------------------------------------------------------
 Fri Aug 21 10:35:47 CEST 2015 - mc@suse.de
 
 - Use a connect timeout when checking if a file exists (bsc#932736)
