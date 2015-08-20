@@ -448,8 +448,8 @@ sub register_systems
         {
             $data->{hwinfo} = $machinedata->{hwinfo};
         }
-        my $system = $self->{API}->org_systems_set(body => $data);
-        if(! $self->{API}->is_error($system))
+        my $result = $self->{API}->org_systems_set(body => $data);
+        if(! $self->{API}->is_error($result))
         {
             my $sth = $self->{DBH}->prepare(sprintf("UPDATE Registration SET NCCREGDATE=?, NCCREGERROR=0 WHERE GUID=%s",
                                                     $self->{DBH}->quote($guid)));
@@ -463,7 +463,7 @@ sub register_systems
         else
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                     sprintf("Registration of %s failed: %s", $guid, $system->{error}));
+                     sprintf("Registration of %s failed: %s", $guid, $result->{error}));
             $self->{DBH}->do(sprintf("UPDATE Registration SET NCCREGERROR=1 WHERE GUID=%s",
                                      $self->{DBH}->quote($guid)));
             $exitcode = 1;
