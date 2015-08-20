@@ -472,6 +472,47 @@ sub register_systems
     return $exitcode;
 }
 
+sub delete_systems
+{
+    my $self = shift;
+    my @guids = @_;
+    my $exitcode = 0;
+
+    my $allowRegister = $self->{CFG}->val("LOCAL", "forwardRegistration", 'true');
+    foreach my $guid (@guids)
+    {
+        my $data = $self->{DBH}->selectrow_arrayref(
+            sprintf("SELECT GUID from Registration where NCCREGDATE IS NOT NULL and GUID=%s",
+                    $self->{DBH}->quote($guid)));
+        $self->_deleteRegistrationLocal($guid);
+        if(!($data->[0] && $data->[0] eq $guid))
+        {
+            # this GUID was never registered at NCC
+            # no need to delete it there
+            next;
+        }
+        if($allowRegister ne "true")
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "Forward registration is disabled. '$guid' deleted only locally.");
+            next;
+        }
+        my $id = $self->{DBH}->selectrow_arrayref(
+            sprintf("SELECT systemid from Clients where GUID=%s",
+                    $self->{DBH}->quote($guid)));
+        if(!$id->[0]) {
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "Systemid for '$guid' not available. Client deleted only locally.");
+            $exitcode = 1;
+            next;
+        }
+        my $result = $self->{API}->org_systems_delete($id->[0]);
+        if($self->{API}->is_error($result))
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Failed to delete '$guid' from SCC: ". $result->{error});
+            $exitcode = 1;
+        }
+    }
+    return $exitcode;
+}
 
 sub cleanup_db
 {
@@ -1543,6 +1584,62 @@ sub _products_from_db
     my @regout = keys %$r;
     return ($prdout, \@regout);
 }
+
+#
+# copy from NCCRegTools
+#
+sub _deleteRegistrationLocal
+{
+    my $self = shift;
+    my @guids = @_;
+
+    my $where = "";
+    if(@guids == 0)
+    {
+        return 1;
+    }
+
+    foreach my $guid (@guids)
+    {
+        my $found = 0;
+
+        $where = sprintf("GUID = %s", $self->{DBH}->quote( $guid ) );
+
+        my $statement = "DELETE FROM Registration where ".$where;
+
+        my $res = $self->{DBH}->do($statement);
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+
+        $found = 1 if( $res > 0 );
+
+        $statement = "DELETE FROM Clients where ".$where;
+
+        $res = $self->{DBH}->do($statement);
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+
+        $statement = "DELETE FROM MachineData where ".$where;
+
+        $res = $self->{DBH}->do($statement);
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+
+        #FIXME: does it make sense to remove this GUID from ClientSubscriptions ?
+
+        if($found)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Successfully delete registration locally : %s", $guid));
+        }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf("Delete registration locally failed: %s", $guid));
+        }
+    }
+
+    return 1;
+}
+
 
 1;
 
