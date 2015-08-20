@@ -262,7 +262,7 @@ sub org_systems_list
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
              "list organization systems", 0);
 
     return $self->_request($uri->as_string(), "get", {}, {});
@@ -277,7 +277,7 @@ sub org_systems_show
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
              "show system with id: $id", 0);
 
     return $self->_request($uri->as_string(), "get", {}, {});
@@ -292,8 +292,8 @@ sub org_systems_set
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
-             "Announce data: ".Data::Dumper->Dump([$opts{body}]), 0);
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
+             "forward system with data: ".Data::Dumper->Dump([$opts{body}]), 0);
 
     return $self->_request($uri, "post", {}, $opts{body});
 }
@@ -307,7 +307,7 @@ sub org_systems_delete
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
              "delete syste with id: $id", 0);
 
     return $self->_request($uri->as_string(), "delete", {}, {});
