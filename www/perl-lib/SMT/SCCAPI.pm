@@ -404,6 +404,11 @@ sub _request
         {
             $result = $self->_getDataFromResponse($response, $dataTempFile);
         }
+        elsif ($response->code() == 204)
+        {
+            # Return with No Content
+            return {};
+        }
         else
         {
             printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Unexpected Content Type");
