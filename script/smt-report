@@ -36,7 +36,6 @@ my $pdf;     # export data as pdf
 my $xml;     # export data as xml
 my $file;    # write output to file
 my $logfile;
-my $nosccsync = 0;
 
 # which reports
 my $localreport = 0;
@@ -466,7 +465,6 @@ Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = Getopt::Long::GetOptions(
                                       'local'      => \$localreport,
                                       'scc'        => \$sccreport,
-                                      'nosccsync|nosync'  => \$nosccsync,
                                       'debug|d'    => \$debug,
                                       "verboselevel|v=i" => \$vblevel,
                                       'help|h'     => \$help,
@@ -501,54 +499,6 @@ if ( $api eq 'SCC' && $nccreport)
     printLog($LOG, $vblevel, LOG_ERROR, __("Only local reports are available for SCC connected SMT servers"));
     exit 1;
 }
-if ( $api eq 'SCC')
-{
-    $nosccsync = 1;
-}
-
-# sync current data from SCC
-if(!$nosccsync)
-{
-    printLog($LOG, $vblevel, LOG_ERROR, __("SCC reporting it not yet implemented"));
-    exit 1;
-
-    my $maxwait = 0;
-    while(!SMT::Utils::openLock("smt-sync") && $maxwait <= 60 )
-    {
-        # wait for the lock
-        $maxwait++;
-        sleep 5;
-    }
-
-    if($maxwait > 60)
-    {
-        printLog($LOG, $vblevel, LOG_ERROR, __("Cannot create lockfile. Skip syncing current data from SCC"));
-    }
-    elsif($maxwait == 0)
-    {
-        my $scc = SMT::SCCSync->new(vblevel => $vblevel, log => $LOG);
-
-        # TODO
-        printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Subscription information"));
-        my $res = $scc->subscriptions;
-        if ($res)
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Subscription data."));
-        }
-
-        printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Registration information"));
-        $res = $scc->products;
-        if ($res)
-        {
-            SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Registration data."));
-        }
-
-    }
-    # else $maxwait > 0 and <=60 means scc-sync was running. we do not need to sync again.
-
-    SMT::Utils::unLock("smt-sync");
-}
-
 
 if(!($localreport || $sccreport))
 {
