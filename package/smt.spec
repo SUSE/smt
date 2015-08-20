@@ -126,8 +126,6 @@ done
 for manp in *.3pm; do
     install -m 644 $manp    %{buildroot}%{_mandir}/man3/$manp
 done
-# /var/run/smt
-install -d -m 0755 %{buildroot}/%{_tmpfilesdir}
 
 mkdir -p %{buildroot}%{_localstatedir}/log/smt/schema-upgrade
 mkdir -p %{buildroot}%{_docdir}/smt/
@@ -140,12 +138,14 @@ ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh %{buildroot}%{_docdir}/smt/c
 %pre
 %{_bindir}/getent passwd smt >/dev/null || %{_sbindir}/useradd -r -g www -s %{_bindir}/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt
 %service_add_pre smt-schema-upgrade.service
+%service_add_pre smt.target
 
 %post
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf || :
 %service_add_post smt-schema-upgrade.service
+%service_add_post smt.target
 
 if [ "$1" = "2" ]; then
     rm -f %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release}
@@ -178,9 +178,11 @@ fi
 
 %preun
 %service_del_preun smt-schema-upgrade.service
+%service_del_preun smt.target
 
 %postun
 %service_del_postun smt-schema-upgrade.service
+%service_del_postun smt.target
 
 %files
 %defattr(-,root,root)
@@ -217,7 +219,7 @@ fi
 %config %{_sysconfdir}/apache2/vhosts.d/*.conf
 %config %{_sysconfdir}/smt.d/*.conf
 %config %{_sysconfdir}/slp.reg.d/smt.reg
-%config %{_tmpfilesdir}/smt.conf
+%{_tmpfilesdir}/smt.conf
 %exclude %{_sysconfdir}/apache2/conf.d/smt_support.conf
 %config %{_sysconfdir}/cron.d/novell.com-smt
 %config %{_sysconfdir}/logrotate.d/smt
