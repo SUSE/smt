@@ -110,6 +110,68 @@ sub product_migration_targets
     return $self->_calcMigrationTargets($installedProducts);
 }
 
+sub update_product
+{
+    my $self = shift || return (undef, undef);
+    my $args = JSON::decode_json($self->read_post());
+    my $product_classes = {};
+    my $old_pdid = undef;
+
+    if (!exists $args->{identifier} || !exists $args->{version} || !exists $args->{arch})
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No product specified");
+    }
+    my $former_identifier = $args->{identifier};
+
+    # We are sure, that user is a system GUID
+    my $guid = $self->user();
+
+    # sometimes people provide edition instead of version, so let's stip the release
+    my ($v, $r) = split(/-/, $args->{version}, 2);
+    $args->{version} = $v;
+
+    my $release = ((exists $args->{release_type})?$args->{release_type}:"");
+    my $req_pdid = SMT::Utils::lookupProductIdByName($self->dbh(), $args->{identifier},
+                                                     $args->{version}, $release,
+                                                     $args->{arch}, $self->request());
+    my $regs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
+
+    foreach my $cur_pid (keys %$regs)
+    {
+        if (SMT::Utils::isMigrationTargetOf($self->dbh(), $cur_pid, $req_pdid))
+        {
+            $old_pdid = $cur_pid;
+            last ;
+        }
+    }
+
+    if($old_pdid && $req_pdid)
+    {
+        $sql = sprintf("UPDATE Registration
+                           SET PRODUCTID = %s
+                         WHERE GUID = %s
+                           AND PRODUCTID = %s",
+                       $self->dbh()->quote($req_pdid),
+                       $self->dbh()->quote($guid),
+                       $self->dbh()->quote($old_pdid));
+        $self->request()->log->info("STATEMENT: $sql");
+        eval {
+            $self->dbh()->do($sql);
+        };
+        if($@)
+        {
+            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+        }
+    }
+    else
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+                "No installed product with requested migration target product found");
+    }
+    return $self->_registrationResult($req_pdid);
+}
+
+
 #################################################################################
 
 sub _calcMigrationTargets
