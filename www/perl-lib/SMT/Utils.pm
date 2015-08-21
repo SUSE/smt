@@ -1858,7 +1858,7 @@ sub isExtensionOf
 {
     my $dbh = shift || return 0;
     my $baseid = shift || return 0;
-    my $extid = shift || 0;
+    my $extid = shift || return 0;
     my $log = shift;
     my $vblevel = shift;
 
@@ -1875,6 +1875,34 @@ sub isExtensionOf
     return (@$ref == 1);
 }
 
+=item isMigrationTargetOf($dbh, $srcid, $tgtid)
+
+returns true if tgtid is a valid migration target of srcid, otherwise false
+
+=cut
+
+sub isMigrationTargetOf
+{
+    my $dbh = shift || return 0;
+    my $srcid = shift || return 0;
+    my $tgtid = shift || return 0;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $sql = sprintf("
+        SELECT 1
+          FROM Products src
+          JOIN ProductMigrations pm on src.productdataid = pm.srcpdid
+          JOIN Products tgt on pm.tgtpdid = tgt.productdataid
+         WHERE src.id = %s
+           AND tgt.id = %s",
+           $dbh->quote($srcid),
+           $dbh->quote($tgtid));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $sql");
+    my $ref = $dbh->selectcol_arrayref($sql) || [];
+    return (@$ref == 1);
+}
 
 =item hasClientProductRegistered($dbh, $guid, $pdid[, $log, vblevel])
 
