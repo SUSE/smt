@@ -1413,6 +1413,53 @@ sub lookupProductIdByDataId
     return $ref->{ID};
 }
 
+=item lookupProductById($dbh, $id)
+
+Lookup the product using the internal product ID.
+
+It returns a hash reference with product info
+
+=cut
+
+sub lookupProductById
+{
+    my $dbh = shift || return undef;
+    my $id = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $query_product = sprintf("
+        SELECT p.id,
+               p.productdataid,
+               p.PRODUCTLOWER identifier,
+               p.versionlower version,
+               p.rellower release_type,
+               p.archlower arch,
+               p.friendly friendly_name,
+               p.product_type,
+               p.product_class,
+               p.cpe,
+               p.description,
+               1 free,
+               (CASE WHEN (SELECT c.DOMIRROR
+                             FROM ProductCatalogs pc
+                             JOIN Catalogs c ON pc.CATALOGID = c.ID
+                            WHERE pc.PRODUCTID = p.ID
+                              AND c.DOMIRROR = 'N'
+                              AND pc.OPTIONAL = 'N'
+                         GROUP BY c.DOMIRROR) = 'N'
+                THEN 0 ELSE 1 END ) available
+        FROM Products p WHERE id = %s",
+        $dbh->quote($id));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_product");
+    my $ref = $dbh->selectrow_hashref($query_product) || {};
+    $ref->{free} = (exists $ref->{free}?1:0);
+    $ref->{available} = ((exists $ref->{available} && $ref->{available} eq "1")?1:0);
+    return $ref;
+
+}
+
 =item lookupProductIdByName($dbh, $name[, $version][, $release][, $arch])
 
 Lookup the product ID using name, version arch and release.
@@ -1746,6 +1793,32 @@ sub lookupTargetByOS
     return $ref->{TARGET};
 }
 
+=item lookupMigrationTargetsById($dbh, $pdid[, $log, $vblevel])
+
+return an array reference with all product ids which are
+possible migration targets of the given product id
+
+=cut
+
+sub lookupMigrationTargetsById
+{
+    my $dbh = shift || return undef;
+    my $pdid = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $query = sprintf("SELECT tgt.id
+                           FROM Products src
+                           JOIN ProductMigrations pm on src.productdataid = pm.srcpdid
+                           JOIN Products tgt on pm.tgtpdid = tgt.productdataid
+                          WHERE src.id = %s",
+                        $dbh->quote($pdid));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query");
+    my $ref = $dbh->selectcol_arrayref($query) || [];
+    return $ref;
+}
+
 =item isRES($dbh, $guid[, $log, vblevel])
 
 Return true if the client has RES installed, otherwise false
@@ -1771,6 +1844,62 @@ sub isRES
     my $ref = $dbh->selectrow_hashref($sql);
     return ($ref->{GUID}?1:0);
 }
+
+=item isExtensionOf($dbh, $baseid, $extensionid)
+
+returns true if extensionid is an extension of baseid, otherwise false
+
+=cut
+
+sub isExtensionOf
+{
+    my $dbh = shift || return 0;
+    my $baseid = shift || return 0;
+    my $extid = shift || 0;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $sql = sprintf("
+        select 1
+          from ProductExtensions
+         where PRODUCTID = %s
+           and EXTENSIONID = %s",
+           $dbh->quote($baseid),
+           $dbh->quote($extid));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $sql");
+    my $ref = $dbh->selectcol_arrayref($sql) || [];
+    return (@$ref == 1);
+}
+
+
+=item hasClientProductRegistered($dbh, $guid, $pdid[, $log, vblevel])
+
+Return true if the client has the product registered, otherwise false
+
+=cut
+
+sub hasClientProductRegistered
+{
+    my $dbh = shift || return 0;
+    my $guid = shift || return 0;
+    my $pdid = shift || return 0;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $sql = sprintf("
+        select r.GUID
+          from Registration r
+         where r.GUID = %s
+           AND r.PRODUCTID = %s",
+           $dbh->quote($guid),
+           $dbh->quote($pdid));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $sql");
+    my $ref = $dbh->selectrow_hashref($sql);
+    return ($ref->{GUID}?1:0);
+}
+
 
 =item requestedAPIVersion($r)
 
@@ -1808,6 +1937,20 @@ sub requestedAPIVersion
         }
     }
     return $latestVersion;
+}
+
+sub array_compare
+{
+    my $array1 = shift || return 0;
+    my $array2 = shift || return 0;
+
+    # check the length of the arrays
+    return 0 if (@{$array1} != @{$array2});
+
+    my $str1 = join(',', sort(@$array1));
+    my $str2 = join(',', sort(@$array2));
+
+    return ($str1 eq $str2);
 }
 
 =back
