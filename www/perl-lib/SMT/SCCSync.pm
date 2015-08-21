@@ -828,9 +828,9 @@ EOS
     }
     if (exists $product->{predecessor_ids})
     {
-        # we use productdataid, because we cannot be sure that the predecessor product
-        # is already added.
-        $ret += $self->_updateMigrations($product->{productdataid}, $product->{predecessor_ids});
+        # we use id (sccid == productdataid), because we cannot be sure
+        # that the predecessor product is already added.
+        $ret += $self->_updateMigrations($product->{id}, $product->{predecessor_ids});
     }
 
     return $ret;
@@ -940,8 +940,8 @@ sub _updateMigrations
         next if(exists $self->{MIG_DONE}->{"$prdid-$predecessor"});
 
         my $sql = sprintf("INSERT INTO ProductMigrations VALUES (%s, %s, 'S')",
-                          $self->{DBH}->quote($prdid),
-                          $self->{DBH}->quote($predecessor));
+                          $self->{DBH}->quote($predecessor),
+                          $self->{DBH}->quote($prdid));
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
         eval {
             $self->{DBH}->do($sql);

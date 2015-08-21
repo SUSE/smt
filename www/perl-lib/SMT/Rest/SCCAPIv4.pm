@@ -103,7 +103,6 @@ sub product_migration_targets
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
             sprintf("The requested products '%s' are not activated on the system.", join(', ', @not_registered_products)));
-        )
     }
 
     # now we can start to calculate the migration targets
@@ -149,10 +148,10 @@ sub update_product
 
     if($old_pdid && $req_pdid)
     {
-        $sql = sprintf("UPDATE Registration
-                           SET PRODUCTID = %s
-                         WHERE GUID = %s
-                           AND PRODUCTID = %s",
+        my $sql = sprintf("UPDATE Registration
+                              SET PRODUCTID = %s
+                            WHERE GUID = %s
+                              AND PRODUCTID = %s",
                        $self->dbh()->quote($req_pdid),
                        $self->dbh()->quote($guid),
                        $self->dbh()->quote($old_pdid));
@@ -184,11 +183,11 @@ sub _calcMigrationTargets
     my $expanded;
     my @result = ();
     printLog($self->request(), undef, LOG_DEBUG,
-             "Search migration targets for: ".join(', ', @installedProducts));
+             "Search migration targets for: ".join(', ', @$installedProducts));
 
     foreach my $pdid (@$installedProducts)
     {
-        my $targets = SMT::Utils::lookupMigrationTargetsById($pdid);
+        my $targets = SMT::Utils::lookupMigrationTargetsById($self->dbh(), $pdid, $self->request());
         push @$targets, $pdid;
         $expanded = $self->_expandToPossibleTargets($targets, $expanded);
     }
