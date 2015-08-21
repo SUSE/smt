@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Aug 21 10:35:47 CEST 2015 - mc@suse.de
+
+- Use a connect timeout when checking if a file exists (bsc#932736)
+- implement /subscriptions/products for docker integration
+- Make Rest interface work if PerlTaintChecks are on (bsc#939076)
+
+-------------------------------------------------------------------
 Mon Aug  3 12:17:15 UTC 2015 - oholecek@suse.com
 
 - fix /var/run/smt packaging (bsc#940343)
