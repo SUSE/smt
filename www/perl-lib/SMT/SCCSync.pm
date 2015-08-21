@@ -81,6 +81,7 @@ sub new
     $self->{PROD_DONE} = {};
     $self->{PRODREPO_DONE} = {};
     $self->{EXT_DONE} = {};
+    $self->{MIG_DONE} = {};
     $self->{TARGET_DONE} = {};
     $self->{NUHOSTS} = ['nu.novell.com', 'updates.suse.com'];
     $self->{LOCALHOST} = "";
@@ -825,6 +826,12 @@ EOS
         $ret += $self->_updateProducts($ext);
         $ret += $self->_updateExtension($product->{id}, $ext->{id});
     }
+    if (exists $product->{predecessor_ids})
+    {
+        # we use productdataid, because we cannot be sure that the predecessor product
+        # is already added.
+        $ret += $self->_updateMigrations($product->{productdataid}, $product->{predecessor_ids});
+    }
 
     return $ret;
 }
@@ -917,6 +924,36 @@ sub _updateExtension
         return 1;
     }
     return 0;
+}
+
+sub _updateMigrations
+{
+    my $self    = shift || return 1;
+    my $prdid   = shift || return 1;
+    my $predIds = shift || return 1;
+    my $err = 0;
+
+    foreach my $predecessor (@$predIds)
+    {
+        # we inserted/update this product already in this run
+        # so let's skip it
+        next if(exists $self->{MIG_DONE}->{"$prdid-$predecessor"});
+
+        my $sql = sprintf("INSERT INTO ProductMigrations VALUES (%s, %s, 'S')",
+                          $self->{DBH}->quote($prdid),
+                          $self->{DBH}->quote($predecessor));
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+        eval {
+            $self->{DBH}->do($sql);
+            $self->{MIG_DONE}->{"$prdid-$predecessor"} = 1;
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $err += 1;
+        }
+    }
+    return $err;
 }
 
 sub _updateRepositories
@@ -1232,10 +1269,12 @@ sub _updateProductData
     $self->{LOCALSCHEME} = $localhost->scheme;
 
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductCatalogs  WHERE SRC='S' OR SRC='N'");
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductMigrations WHERE SRC='S'");
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductCatalogs   WHERE SRC='S' OR SRC='N'");
     eval {
         $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
-        $self->{DBH}->do("DELETE FROM ProductCatalogs  WHERE SRC='S' OR SRC='N'");
+        $self->{DBH}->do("DELETE FROM ProductMigrations WHERE SRC='S'");
+        $self->{DBH}->do("DELETE FROM ProductCatalogs   WHERE SRC='S' OR SRC='N'");
     };
     if($@)
     {
