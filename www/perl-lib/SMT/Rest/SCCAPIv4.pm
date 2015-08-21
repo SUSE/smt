@@ -138,7 +138,9 @@ sub update_product
 
     foreach my $cur_pid (keys %$regs)
     {
-        if (SMT::Utils::isMigrationTargetOf($self->dbh(), $cur_pid, $req_pdid))
+        if (SMT::Utils::isMigrationTargetOf($self->dbh(), $cur_pid, $req_pdid)    # upgrade
+            || SMT::Utils::isMigrationTargetOf($self->dbh(), $req_pdid, $cur_pid) # Rollback
+        )
         {
             $old_pdid = $cur_pid;
             last ;
