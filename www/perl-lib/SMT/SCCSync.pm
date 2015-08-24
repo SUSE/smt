@@ -81,7 +81,7 @@ sub new
     $self->{PROD_DONE} = {};
     $self->{PRODREPO_DONE} = {};
     $self->{EXT_DONE} = {};
-    $self->{MIG_DONE} = {};
+    $self->{MIGS} = {};
     $self->{TARGET_DONE} = {};
     $self->{NUHOSTS} = ['nu.novell.com', 'updates.suse.com'];
     $self->{LOCALHOST} = "";
@@ -830,7 +830,7 @@ EOS
     {
         # we use id (sccid == productdataid), because we cannot be sure
         # that the predecessor product is already added.
-        $ret += $self->_updateMigrations($product->{id}, $product->{predecessor_ids});
+        $ret += $self->_collectMigrations($product->{id}, $product->{predecessor_ids});
     }
 
     return $ret;
@@ -926,7 +926,7 @@ sub _updateExtension
     return 0;
 }
 
-sub _updateMigrations
+sub _collectMigrations
 {
     my $self    = shift || return 1;
     my $prdid   = shift || return 1;
@@ -935,17 +935,69 @@ sub _updateMigrations
 
     foreach my $predecessor (@$predIds)
     {
-        # we inserted/update this product already in this run
-        # so let's skip it
-        next if(exists $self->{MIG_DONE}->{"$prdid-$predecessor"});
+        $self->{MIGS}->{"$prdid-$predecessor"} = {pdid => $prdid, predecessorid => $predecessor};
+    }
+}
 
-        my $sql = sprintf("INSERT INTO ProductMigrations VALUES (%s, %s, 'S')",
-                          $self->{DBH}->quote($predecessor),
-                          $self->{DBH}->quote($prdid));
+sub _updateMigrations
+{
+    my $self    = shift || return 1;
+    my $err = 0;
+    my $href = {};
+
+    my $sql = "select SRCPDID, TGTPDID from ProductMigrations";
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+    eval {
+        my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
+
+        foreach my $v (@{$ref})
+        {
+            $href->{$v->{TGTPDID}."-".$v->{SRCPDID}} = $v;
+        }
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $err += 1;
+    }
+
+    foreach my $key (keys %{$self->{MIGS}})
+    {
+        my $prdid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{MIGS}->{$key}->{pdid}, 'S',
+                                                        $self->{LOG}, $self->vblevel());
+        my $predecessor = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{MIGS}->{$key}->{predecessorid}, 'S',
+                                                              $self->{LOG}, $self->vblevel());
+
+        if (exists $href->{$prdid."-".$predecessor})
+        {
+            delete $href->{$prdid."-".$predecessor};
+            next;
+        }
+        else
+        {
+            $sql = sprintf("INSERT INTO ProductMigrations VALUES (%s, %s, 'S')",
+                           $self->{DBH}->quote($predecessor),
+                           $self->{DBH}->quote($prdid));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+            eval {
+                $self->{DBH}->do($sql);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                $err += 1;
+            }
+        }
+    }
+    # remove obsolete entries
+    foreach my $key (keys %{$href})
+    {
+        $sql = sprintf("DELETE FROM ProductMigrations WHERE TGTPDID = %s AND SRCPDID = %s",
+                       $self->{DBH}->quote($href->{$key}->{TGTPDID}),
+                       $self->{DBH}->quote($href->{$key}->{SRCPDID}));
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
         eval {
             $self->{DBH}->do($sql);
-            $self->{MIG_DONE}->{"$prdid-$predecessor"} = 1;
         };
         if($@)
         {
@@ -1269,11 +1321,9 @@ sub _updateProductData
     $self->{LOCALSCHEME} = $localhost->scheme;
 
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductMigrations WHERE SRC='S'");
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductCatalogs   WHERE SRC='S' OR SRC='N'");
     eval {
         $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
-        $self->{DBH}->do("DELETE FROM ProductMigrations WHERE SRC='S'");
         $self->{DBH}->do("DELETE FROM ProductCatalogs   WHERE SRC='S' OR SRC='N'");
     };
     if($@)
@@ -1288,6 +1338,7 @@ sub _updateProductData
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
         $ret += $self->_updateProducts($product);
     }
+    $ret += $self->_updateMigrations();
 
     my $st1 = sprintf("Delete from Products where SRC='S' and PRODUCTDATAID not in (%s)",
                       "'".join("','", keys %{$self->{PROD_DONE}})."'");
