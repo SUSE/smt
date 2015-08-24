@@ -1,108 +1,23 @@
-TODO (SMT11):
+TODO :
+
+Possible code improvements
 =============================
 
-- use new installation.xml and test it according to bnc #377154
+- overwrite DBI module to log statements and results at a common place
 
-- STAGING:
-  If staging is enabled for a catalogs, find out all products for which this 
-  catalog is used. Find all catalogs for these products and create symlinks 
-  in full/ and testing/ for all catalogs where staging is not enabled.
-  This is required to successfully register clients against the testing 
-  or full namespace if only one of X catalogs are enabled for staging.
+- new DBI module could provide named queries
+  (See SMT12 branch DB.pm module)
 
-  If staging is enabled for an already existing (mirrored) catalog, 
-  hardlink or copy the current content to full and testing.
+- SCC API version 1 and 2 was only used during Beta of SLES12.
+  These files could be merged with version 3 to cleanup the code.
 
+- try to improve progress status reporting on the commandline
 
-- enhance setup-custom-catalogs to allow configuration of repositories
-  of type NU .
-
-- fix smt-db: add "cpw" to help() and check chown of smt.conf (may make trouble with
-              smt user). 
- 
-
-Nice-To-Have but not so important
-=================================
-
-- flagCatalogs should show new and removed mirrorable catatalogs.
-
-- verify checksum of /repodata/repomd.xml
-
-- Do we need to provide a keyring and accept new keys? 
-  Talk to security-team about this.
-
-  Talked to security-team: This is nice to have but no requirement
-  because the client are checking the repomd too.
-
-- provide --config <configfile> options for the smt commands to
-  use a different configfile then /etc/smt.conf 
-
-
+- For new REST interface, provide common functions to create objects
+  for products, repos, etc.
 
 DONE:
 =====
-
-- configure the smt user via smt.conf?
-  With the possibility to disable user switching?
-
-- regserver URL in smt.conf? 
-  If not available , fallback to suseRegister.conf?
-
-- In the parser we print errors if we found invalid XML syntax but ignore them. 
-  We should return errors and count them in SLE11.
-
-- better mirror report. Shorter with more informations. 
-
-- move the re-try on error loops into Job::mirror() function. Then we have the
-  code one time and not X times in the code.
-
-- idea to speed-up mirroring by integrating the hardlink feature.
-  * create a table in DB with key = <rpm-name>-<checksum> and path
-    column
-  * during mirror, when fetching a new rpm, first look into DB if we
-    have it already. If yes, create a hardlink (or copy) instead of
-    downloading it from the network.
-    If we do not have it yet, download it and create a database entry
-
-- idea to speep-up mirroring by "diffing" repodata/
-  * parse repodata/ and .repodata/ and find out which files are changed or 
-    new. After having this list, download only these files.
-    [implemented in a different way]
-
-- Add Yum.pm, which mirror the headers/ dir and then call RpmMd.pm
-  This is more straight forward then doing everything in RpmMd.pm 
-
-- yast2-smt: Checking if /etc/zypp/credentials.d/NCCcredentials file
-             exists. If it doesn't user is offered to run registration,
-             create the file off-line (using registration API) or
-             skip it (FATE #305540).
-
-- yast2-smt: Checking the permissions of /etc/zypp/credentials.d/NCCcredentials
-             the user defined in LOCAL->smtUser needs read access to this file.
-             At first trying to use ACL, then chown + chmod if it fails
-             (FATE #305540).
-
-- yast2-smt: New "Plugged world" icon (FATE #306264).
-
-- yast2-smt: Added UI interface to handle catalogs states (mirroring, staging)
-             (FATE #304491).
-
-- yast2-smt: Added UI to handle patches 'testing/ignored' states
-
-- yast2-smt: Added SCR agent to handle staging
-
-- New SMT::Support Perl module to handle uploading the supportconfig
-  profiles for NTS.
-
-- Created new Repositories.pm Perl module (AKA Catalogs) in smt package
-
-- yast2-smt: Using Repositories.pm from SCR agent
-
-- Extended smt-mirror script to select just one --repository to mirror.
-  Needed for YaST. Currently working with unique repository ID.
-
-- Extended smt-mirror script to update the LAST_MIRROR entry in Catalogs
-  table (when a repository was mirrored last time).
 
 Rejected:
 =========
