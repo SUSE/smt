@@ -139,6 +139,7 @@ sub update_product
     {
         if (SMT::Utils::isMigrationTargetOf($self->dbh(), $cur_pid, $req_pdid)    # upgrade
             || SMT::Utils::isMigrationTargetOf($self->dbh(), $req_pdid, $cur_pid) # Rollback
+            || "$req_pdid" eq "$cur_pid" # same ; not an upgrade
         )
         {
             $old_pdid = $cur_pid;
@@ -148,20 +149,23 @@ sub update_product
 
     if($old_pdid && $req_pdid)
     {
-        my $sql = sprintf("UPDATE Registration
-                              SET PRODUCTID = %s
-                            WHERE GUID = %s
-                              AND PRODUCTID = %s",
-                       $self->dbh()->quote($req_pdid),
-                       $self->dbh()->quote($guid),
-                       $self->dbh()->quote($old_pdid));
-        $self->request()->log->info("STATEMENT: $sql");
-        eval {
-            $self->dbh()->do($sql);
-        };
-        if($@)
+        if("$req_pdid" ne "$old_pdid")
         {
-            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+            my $sql = sprintf("UPDATE Registration
+                                  SET PRODUCTID = %s
+                                WHERE GUID = %s
+                                  AND PRODUCTID = %s",
+                              $self->dbh()->quote($req_pdid),
+                              $self->dbh()->quote($guid),
+                              $self->dbh()->quote($old_pdid));
+            $self->request()->log->info("STATEMENT: $sql");
+            eval {
+                $self->dbh()->do($sql);
+            };
+            if($@)
+            {
+                return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+            }
         }
     }
     else
