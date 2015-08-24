@@ -1810,11 +1810,7 @@ sub lookupMigrationTargetsById
     my $log = shift;
     my $vblevel = shift;
 
-    my $query = sprintf("SELECT tgt.id
-                           FROM Products src
-                           JOIN ProductMigrations pm on src.productdataid = pm.srcpdid
-                           JOIN Products tgt on pm.tgtpdid = tgt.productdataid
-                          WHERE src.id = %s",
+    my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s",
                         $dbh->quote($pdid));
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query");
@@ -1891,11 +1887,9 @@ sub isMigrationTargetOf
 
     my $sql = sprintf("
         SELECT 1
-          FROM Products src
-          JOIN ProductMigrations pm on src.productdataid = pm.srcpdid
-          JOIN Products tgt on pm.tgtpdid = tgt.productdataid
-         WHERE src.id = %s
-           AND tgt.id = %s",
+         FROM ProductMigrations
+         WHERE srcpdid = %s
+           AND tgtpdid = %s",
            $dbh->quote($srcid),
            $dbh->quote($tgtid));
 
