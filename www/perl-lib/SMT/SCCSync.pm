@@ -1418,6 +1418,8 @@ sub _updateProductData
     my $count = 0;
     my $sum = @$json;
 
+    $sum += (@$json/10)*2+(@$json/100)*5;
+
     if(!defined $self->{DBH})
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
@@ -1436,7 +1438,14 @@ sub _updateProductData
         $ret += $self->_updateProducts($product);
     }
     $ret += $self->_updateProductCatalogs();
+    $count += (@$json/10);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
+    $ret += $self->_updateExtensions();
+    $count += (@$json/10);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
     $ret += $self->_updateMigrations();
+    $count = $sum;
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
 
     my $st1 = sprintf("Delete from Products where SRC='S' and PRODUCTDATAID not in (%s)",
                       "'".join("','", keys %{$self->{PROD_DONE}})."'");
