@@ -817,7 +817,7 @@ EOS
         # if either product or catalogs could not be added,
         # we will fail to add the relation.
         next if ( $retprd || $retcat);
-        $ret += $self->_collectProductCatalogs($product, $repo);
+        $self->_collectProductCatalogs($product, $repo);
     }
     $ret += $retprd;
 
@@ -828,9 +828,7 @@ EOS
     }
     if (exists $product->{predecessor_ids})
     {
-        # we use id (sccid == productdataid), because we cannot be sure
-        # that the predecessor product is already added.
-        $ret += $self->_collectMigrations($product->{id}, $product->{predecessor_ids});
+        $self->_collectMigrations($product->{id}, $product->{predecessor_ids});
     }
 
     return $ret;
@@ -931,7 +929,6 @@ sub _collectMigrations
     my $self    = shift || return 1;
     my $prdid   = shift || return 1;
     my $predIds = shift || return 1;
-    my $err = 0;
 
     foreach my $predecessor (@$predIds)
     {
@@ -1193,7 +1190,6 @@ sub _collectProductCatalogs
     my $self = shift;
     my $product = shift;
     my $repo = shift;
-    my $ret = 0;
     $self->{PRODREPO}->{$product->{id}."-".$repo->{id}} = {
         'productdataid' => $product->{id},
         'catalogid' => $repo->{id},
