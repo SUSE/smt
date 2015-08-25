@@ -11,7 +11,6 @@ BEGIN { unshift @INC, "$FindBin::Bin/../www/perl-lib" }
 
 use SMT::CLI;
 use SMT::Utils;
-use SMT::SCCAPI;
 use SMT::SCCSync;
 use File::Basename;
 use File::Temp;

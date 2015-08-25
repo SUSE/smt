@@ -134,6 +134,7 @@ sub announce
     return $self->_request($uri, "post", $headers, $body);
 }
 
+
 =item products
 
 List all products.
@@ -261,7 +262,7 @@ sub org_systems_list
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
              "list organization systems", 0);
 
     return $self->_request($uri->as_string(), "get", {}, {});
@@ -276,27 +277,50 @@ sub org_systems_show
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
              "show system with id: $id", 0);
 
     return $self->_request($uri->as_string(), "get", {}, {});
+}
+
+sub org_systems_set
+{
+    my $self = shift;
+    my %opts = @_;
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/systems");
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
+             "forward system with data: ".Data::Dumper->Dump([$opts{body}]), 0);
+
+    return $self->_request($uri, "post", {}, $opts{body});
 }
 
 sub org_systems_delete
 {
     my $self = shift;
     my $id = shift || return undef;
-    my $uri = SMT::Utils::appendPathToURI($self->{URL}."/organizations/systems/$id");
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "/organizations/systems/$id");
     if($self->{AUTHUSER} && $self->{AUTHPASS})
     {
         $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
     }
-    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO2,
              "delete syste with id: $id", 0);
 
     return $self->_request($uri->as_string(), "delete", {}, {});
 }
 
+
+sub is_error
+{
+    my $self = shift;
+    my $data = shift;
+    return (!defined $data ||
+             ref($data) eq "HASH" && exists $data->{type} && $data->{type} eq "error");
+}
 
 ##########################################################################
 ### private methods
@@ -315,6 +339,7 @@ sub org_systems_delete
 # The body will be JSON encoded before it is send. The body is
 # only added if the method is post or put.
 #
+# The body could be an error.
 sub _request
 {
     my $self = shift;
@@ -355,10 +380,12 @@ sub _request
     }
     elsif ($method eq "post")
     {
+        $headers->{'Content-Type'} = 'application/json' if (! exists $headers->{'Content-Type'});
         $response = $self->{USERAGENT}->post($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     elsif ($method eq "put")
     {
+        $headers->{'Content-Type'} = 'application/json' if (! exists $headers->{'Content-Type'});
         $response = $self->{USERAGENT}->put($url, %{$headers}, 'content' => JSON::encode_json($body));
     }
     elsif ($method eq "delete")
@@ -376,6 +403,11 @@ sub _request
         if ($response->content_type() eq "application/json")
         {
             $result = $self->_getDataFromResponse($response, $dataTempFile);
+        }
+        elsif ($response->code() == 204)
+        {
+            # Return with No Content
+            return {};
         }
         else
         {
@@ -413,7 +445,17 @@ sub _request
     }
     else
     {
-        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Connection to registration server failed with: ".$response->status_line);
+        if ($response->content_type() eq "application/json")
+        {
+            $result = $self->_getDataFromResponse($response, $dataTempFile);
+            $result->{type} = "error" if(! exists $result->{type} || $result->{type} ne "error");
+        }
+        else
+        {
+            $result = {'type' => 'error', 'error' => $response->status_line,
+                       'localized_error' => $response->status_line};
+        }
+        printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Connection to registration server failed with: ".$response->status_line, 0);
     }
     return $result;
 }

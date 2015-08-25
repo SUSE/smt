@@ -410,6 +410,116 @@ sub finalize_mirrorable_repos
     }
 }
 
+sub register_systems
+{
+    my $self = shift;
+    my $sleeptime = shift || 1;
+    my $allguids = $self->{DBH}->selectcol_arrayref("SELECT DISTINCT GUID from Registration WHERE (REGDATE > NCCREGDATE || NCCREGDATE IS NULL) && NCCREGERROR=0");
+
+    if(@{$allguids} > 0)
+    {
+        # we have something to register, check for random sleep value
+        sleep(int($sleeptime));
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Register %d new clients.", ($#{$allguids}+1) ) );
+    }
+    else
+    {
+        # nothing to register -- success
+        return 0;
+    }
+
+    my $exitcode = 0;
+    foreach my $guid (@$allguids)
+    {
+        my $products = $self->{DBH}->selectall_arrayref(sprintf("select p.ID, p.PRODUCTDATAID, p.PRODUCT, p.VERSION, p.REL, p.ARCH
+                                                                   from Products p, Registration r
+                                                                  where r.GUID=%s
+                                                                    and r.PRODUCTID=p.ID", $self->{DBH}->quote($guid)),
+                                                        {Slice => {}});
+
+        my $regdata =  $self->{DBH}->selectall_arrayref(sprintf("select KEYNAME, VALUE from MachineData where GUID=%s",
+                                                                $self->{DBH}->quote($guid)), {Slice => {}});
+        my $data = $self->{DBH}->selectrow_hashref(sprintf("SELECT GUID as login, SECRET as password, HOSTNAME as hostname
+                                                            FROM Clients WHERE GUID=%s", $self->{DBH}->quote($guid)));
+        ($data->{products}, $data->{regcodes}) = $self->_products_from_db($products, $regdata);
+        my $machinedata = $self->_machinedata_from_db($regdata);
+        if(exists $machinedata->{hwinfo} && $machinedata->{hwinfo})
+        {
+            $data->{hwinfo} = $machinedata->{hwinfo};
+        }
+        my $result = $self->{API}->org_systems_set(body => $data);
+        if(! $self->{API}->is_error($result))
+        {
+            my $sth = $self->{DBH}->prepare(sprintf("UPDATE Registration SET NCCREGDATE=?, NCCREGERROR=0 WHERE GUID=%s",
+                                                    $self->{DBH}->quote($guid)));
+            $sth->bind_param(1, SMT::Utils::getDBTimestamp(), SQL_TIMESTAMP);
+            $sth->execute;
+            my $statement = sprintf("UPDATE Clients SET systemid=%s WHERE GUID=%s",
+                                    $self->{DBH}->quote($result->{id}),
+                                    $self->{DBH}->quote($guid));
+            $self->{DBH}->do($statement);
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf(__("Registration success: '%s'."), $guid));
+        }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                     sprintf("Registration of %s failed: %s", $guid, $result->{error}));
+            $self->{DBH}->do(sprintf("UPDATE Registration SET NCCREGERROR=1 WHERE GUID=%s",
+                                     $self->{DBH}->quote($guid)));
+            $exitcode = 1;
+        }
+    }
+    return $exitcode;
+}
+
+sub delete_systems
+{
+    my $self = shift;
+    my @guids = @_;
+    my $exitcode = 0;
+
+    my $allowRegister = $self->{CFG}->val("LOCAL", "forwardRegistration", 'true');
+    foreach my $guid (@guids)
+    {
+        my $data = $self->{DBH}->selectrow_arrayref(
+            sprintf("SELECT GUID from Registration where NCCREGDATE IS NOT NULL and GUID=%s",
+                    $self->{DBH}->quote($guid)));
+        my $id = $self->{DBH}->selectrow_arrayref(
+            sprintf("SELECT systemid from Clients where GUID=%s",
+                    $self->{DBH}->quote($guid)));
+
+        $self->_deleteRegistrationLocal($guid);
+        if(!($data->[0] && $data->[0] eq $guid))
+        {
+            # this GUID was never registered at NCC
+            # no need to delete it there
+            next;
+        }
+        if($allowRegister ne "true")
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "Forward registration is disabled. '$guid' deleted only locally.");
+            next;
+        }
+        if(!$id->[0]) {
+            printLog($self->{LOG}, $self->vblevel(), LOG_WARN, "Systemid for '$guid' not available. Client deleted only locally.");
+            $exitcode = 1;
+            next;
+        }
+        my $result = $self->{API}->org_systems_delete($id->[0]);
+        if($self->{API}->is_error($result))
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Failed to delete '$guid' from SCC: ". $result->{error});
+            $exitcode = 1;
+        }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Successfully delete registration from SCC: %s", $guid));
+        }
+    }
+    return $exitcode;
+}
+
 sub cleanup_db
 {
     my $self = shift;
@@ -482,7 +592,7 @@ sub _getInput
     {
         $input = &$func();
     }
-    if (! $input)
+    if ($self->{API}->is_error($input))
     {
         return undef;
     }
@@ -1394,6 +1504,148 @@ sub _staticTargets
         $self->_updateTargets($distro_description, $staticTargets{$distro_description});
     }
 }
+
+sub _machinedata_from_db
+{
+    my $self = shift;
+    my $regdata = shift;
+    my $out = {};
+
+    foreach my $pair (@{$regdata})
+    {
+        if($pair->{KEYNAME} eq "machinedata" && $pair->{VALUE})
+        {
+            $out = JSON::decode_json($pair->{VALUE});
+            last;
+        }
+    }
+    return $out;
+}
+
+sub _products_from_db
+{
+    my $self = shift;
+    my $products = shift;
+    my $regdata = shift;
+    my $prdout = [];
+    my $r = {};
+
+    foreach my $PHash (@{$products})
+    {
+        if(!exists $PHash->{ID} || ! $PHash->{ID} ||
+           !exists $PHash->{PRODUCTDATAID} || ! $PHash->{PRODUCTDATAID})
+        {
+            next;
+        }
+        my $p = {};
+
+        foreach my $pair (@{$regdata})
+        {
+            if($pair->{KEYNAME} eq "product-name-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{identifier} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{version} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{arch} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $p->{release_type} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-token-".$PHash->{ID} && $pair->{VALUE})
+            {
+                $r->{$pair->{VALUE}} = 1;
+            }
+            # testing PRODUCTDATAID for compatibility reason
+            # ID > 10000 - NCC productdataid starts with 1
+            elsif($pair->{KEYNAME} eq "product-name-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{identifier} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-version-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{version} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-arch-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{arch} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-rel-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $p->{release_type} = $pair->{VALUE};
+            }
+            elsif($pair->{KEYNAME} eq "product-token-".$PHash->{PRODUCTDATAID} && $pair->{VALUE})
+            {
+                $r->{$pair->{VALUE}} = 1;
+            }
+        }
+        $p->{id} = $PHash->{PRODUCTDATAID};
+        push @{$prdout}, $p;
+    }
+    my @regout = keys %$r;
+    return ($prdout, \@regout);
+}
+
+#
+# copy from NCCRegTools
+#
+sub _deleteRegistrationLocal
+{
+    my $self = shift;
+    my @guids = @_;
+
+    my $where = "";
+    if(@guids == 0)
+    {
+        return 1;
+    }
+
+    foreach my $guid (@guids)
+    {
+        my $found = 0;
+
+        $where = sprintf("GUID = %s", $self->{DBH}->quote( $guid ) );
+
+        my $statement = "DELETE FROM Registration where ".$where;
+
+        my $res = $self->{DBH}->do($statement);
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+
+        $found = 1 if( $res > 0 );
+
+        $statement = "DELETE FROM Clients where ".$where;
+
+        $res = $self->{DBH}->do($statement);
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+
+        $statement = "DELETE FROM MachineData where ".$where;
+
+        $res = $self->{DBH}->do($statement);
+
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Statement: $statement Result: $res") ;
+
+        #FIXME: does it make sense to remove this GUID from ClientSubscriptions ?
+
+        if($found)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, sprintf("Successfully delete registration locally : %s", $guid));
+        }
+        else
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf("Delete registration locally failed: %s", $guid));
+        }
+    }
+
+    return 1;
+}
+
 
 1;
 
