@@ -80,7 +80,7 @@ sub new
     $self->{REPO_DONE} = {};
     $self->{PROD_DONE} = {};
     $self->{PRODREPO} = {};
-    $self->{EXT_DONE} = {};
+    $self->{EXTS} = {};
     $self->{MIGS} = {};
     $self->{TARGET_DONE} = {};
     $self->{NUHOSTS} = ['nu.novell.com', 'updates.suse.com'];
@@ -824,7 +824,7 @@ EOS
     foreach my $ext (@{$product->{extensions}})
     {
         $ret += $self->_updateProducts($ext);
-        $ret += $self->_updateExtension($product->{id}, $ext->{id});
+        $self->_collectExtensions($product->{id}, $ext->{id});
     }
     if (exists $product->{predecessor_ids})
     {
@@ -893,33 +893,92 @@ sub _mergeProducts
     return 0;
 }
 
-sub _updateExtension
+sub _collectExtensions
+{
+    my $self  = shift || return;
+    my $prdid = shift || return;
+    my $extid = shift || return;
+
+    $self->{EXTS}->{"$prdid-$extid"} = {productid => $prdid, extensionid => $extid};
+}
+
+sub _updateExtensions
 {
     my $self  = shift || return 1;
-    my $prdid = shift || return 1;
-    my $extid = shift || return 1;
+    my $err = 0;
+    my $href = {};
 
-    # we inserted/update this product already in this run
-    # so let's skip it
-    return 0 if(exists $self->{EXT_DONE}->{"$prdid-$extid"});
-
-
-    my $sql = sprintf("
-        INSERT INTO ProductExtensions VALUES (
-            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
-            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
-            'S')",
-            $self->{DBH}->quote($prdid),
-            $self->{DBH}->quote($extid));
+    my $sql = "select PRODUCTID, EXTENSIONID from ProductExtensions";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
-        $self->{DBH}->do($sql);
-        $self->{EXT_DONE}->{"$prdid-$extid"} = 1;
+        my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
+
+        foreach my $v (@{$ref})
+        {
+            $href->{$v->{PRODUCTID}."-".$v->{EXTENSIONID}} = $v;
+        }
     };
     if($@)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        return 1;
+        $err += 1;
+    }
+
+    foreach my $key (keys %{$self->{EXTS}})
+    {
+        my $prdid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{EXTS}->{$key}->{productid}, 'S',
+                                                        $self->{LOG}, $self->vblevel());
+        my $extid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{EXTS}->{$key}->{extensionid}, 'S',
+                                                              $self->{LOG}, $self->vblevel());
+
+        if (exists $href->{$prdid."-".$extid})
+        {
+            delete $href->{$prdid."-".$extid};
+            next;
+        }
+        else
+        {
+            if(!$prdid)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Productid not found for: ".$self->{EXTS}->{$key}->{productid});
+                $err += 1;
+                next;
+            }
+            if(!$extid)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Extensionid not found for: ".$self->{EXTS}->{$key}->{extensionid});
+                $err += 1;
+                next;
+            }
+            my $sql = sprintf("INSERT INTO ProductExtensions VALUES ( %s, %s, 'S')",
+                              $self->{DBH}->quote($prdid),
+                              $self->{DBH}->quote($extid));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+            eval {
+                $self->{DBH}->do($sql);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                return 1;
+            }
+        }
+    }
+    # remove obsolete entries
+    foreach my $key (keys %{$href})
+    {
+        $sql = sprintf("DELETE FROM ProductExtensions WHERE PRODUCTID = %s AND EXTENSIONID = %s",
+                       $self->{DBH}->quote($href->{$key}->{PRODUCTID}),
+                       $self->{DBH}->quote($href->{$key}->{EXTENSIONID}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+        eval {
+            $self->{DBH}->do($sql);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $err += 1;
+        }
     }
     return 0;
 }
@@ -1369,16 +1428,6 @@ sub _updateProductData
     my $localhost = URI->new($self->{CFG}->val("LOCAL", "url"));
     $self->{LOCALHOST} = $localhost->host;
     $self->{LOCALSCHEME} = $localhost->scheme;
-
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
-    eval {
-        $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
-    };
-    if($@)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        $ret += 1;
-    }
 
     foreach my $product (@$json)
     {
