@@ -908,7 +908,7 @@ sub _updateExtensions
     my $err = 0;
     my $href = {};
 
-    my $sql = "select PRODUCTID, EXTENSIONID from ProductExtensions";
+    my $sql = "select PRODUCTID, EXTENSIONID from ProductExtensions where SRC = 'S'";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
         my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
@@ -1001,7 +1001,7 @@ sub _updateMigrations
     my $err = 0;
     my $href = {};
 
-    my $sql = "select SRCPDID, TGTPDID from ProductMigrations";
+    my $sql = "select SRCPDID, TGTPDID from ProductMigrations where SRC = 'S'";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
         my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
