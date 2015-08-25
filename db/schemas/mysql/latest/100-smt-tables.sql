@@ -21,7 +21,7 @@ CREATE TABLE migration_schema_version (
           version double NOT NULL,
           CONSTRAINT migration_schema_version_name_pk PRIMARY KEY (name)
 ) ENGINE=InnoDB;
-insert into migration_schema_version ('smt', 3.00);
+insert into migration_schema_version values ('smt', 3.01);
 
 -- integer id for "Clients" for faster joins compared to GUID with CHAR(50)
 --    GUID remains primary key until all code that deals with GUIDs gets adapted
