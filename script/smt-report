@@ -432,7 +432,7 @@ $LOG = SMT::Utils::openLog($logfile);
 # calculate best report
 my $cfg = SMT::Utils::getSMTConfig();
 
-my $api = $cfg->val('NU', 'ApiType', 'SCC');
+my $api = $cfg->val('NU', 'ApiType', 'NCC');
 if ( $api eq 'NCC')
 {
     printLog($LOG, $vblevel, LOG_ERROR, __("NCC is not supported by this version of SMT"));
