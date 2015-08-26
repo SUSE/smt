@@ -160,7 +160,8 @@ create table ProductExtensions (
     PRODUCTID   integer NOT NULL,
     EXTENSIONID integer NOT NULL,
     SRC         CHAR(1) DEFAULT 'S',
-    UNIQUE pdid_extid_unq (PRODUCTID, EXTENSIONID)
+    UNIQUE pdid_extid_unq (PRODUCTID, EXTENSIONID),
+    INDEX ProductExtensions_pdid_extid_src_idx (PRODUCTID, EXTENSIONID, SRC)
 );
 
 create table ProductMigrations (
