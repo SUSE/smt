@@ -173,14 +173,16 @@ create table ProductExtensions (
     PRODUCTID   integer NOT NULL,
     EXTENSIONID integer NOT NULL,
     SRC         CHAR(1) DEFAULT 'S',
-    UNIQUE INDEX ProductExtensions_pdid_extid_uq (PRODUCTID, EXTENSIONID)
+    UNIQUE INDEX ProductExtensions_pdid_extid_uq (PRODUCTID, EXTENSIONID),
+    INDEX ProductExtensions_pdid_extid_src_idx (PRODUCTID, EXTENSIONID, SRC)
 ) ENGINE=InnoDB;
 
 create table ProductMigrations (
     SRCPDID   integer NOT NULL,
     TGTPDID   integer NOT NULL,
     SRC       CHAR(1) DEFAULT 'S',
-    UNIQUE INDEX ProductMigrations_srcpdid_tgtpdid_uq (SRCPDID, TGTPDID)
+    UNIQUE INDEX ProductMigrations_srcpdid_tgtpdid_uq (SRCPDID, TGTPDID),
+    INDEX ProductMigrations_srcpdid_tgtpdid_src_idx (SRCPDID, TGTPDID, SRC)
 ) ENGINE=InnoDB;
 
 create table ProductCatalogs(PRODUCTID   integer NOT NULL,

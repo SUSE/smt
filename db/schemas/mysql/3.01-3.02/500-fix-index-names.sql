@@ -43,3 +43,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS ProductMigrations_srcpdid_tgtpdid_uq ON Produc
 call smt.drop_index_if_exists('RepositoryContentData', 'idx_repo_cont_data_name_checksum');
 CREATE INDEX IF NOT EXISTS RepositoryContentData_name_cksum_cktype_idx ON RepositoryContentData (name, checksum, checksum_type);
 
+CREATE INDEX IF NOT EXISTS ProductExtensions_pdid_extid_src_idx ON ProductExtensions (PRODUCTID, EXTENSIONID, SRC);
