@@ -4,6 +4,8 @@ drop table if exists Filters;
 drop table if exists JobQueue;
 drop table if exists Products;
 drop table if exists ProductCatalogs;
+drop table if exists ProductExtensions;
+drop table if exists ProductMigrations;
 drop table if exists Registration;
 drop table if exists MachineData;
 drop table if exists Targets;
@@ -170,6 +172,13 @@ create table ProductExtensions (
     EXTENSIONID integer NOT NULL,
     SRC         CHAR(1) DEFAULT 'S',
     UNIQUE INDEX ProductExtensions_pdid_extid_uq (PRODUCTID, EXTENSIONID)
+) ENGINE=InnoDB;
+
+create table ProductMigrations (
+    SRCPDID   integer NOT NULL,
+    TGTPDID   integer NOT NULL,
+    SRC       CHAR(1) DEFAULT 'S',
+    UNIQUE INDEX ProductExtensions_pdid_migid_unq (SRCPDID, TGTPDID)
 ) ENGINE=InnoDB;
 
 create table ProductCatalogs(PRODUCTID   integer NOT NULL,
