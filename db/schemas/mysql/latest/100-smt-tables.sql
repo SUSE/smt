@@ -16,12 +16,12 @@ drop table if exists RepositoryContentData;
 
 drop table if exists StagingGroups;
 
+-- schema version is inserted by smt-db script according to $SMT::SCHEMA_VERSION
 CREATE TABLE migration_schema_version (
           name varchar(128) NOT NULL,
           version double NOT NULL,
           CONSTRAINT migration_schema_version_name_pk PRIMARY KEY (name)
 ) ENGINE=InnoDB;
-insert into migration_schema_version values ('smt', 3.01);
 
 -- integer id for "Clients" for faster joins compared to GUID with CHAR(50)
 --    GUID remains primary key until all code that deals with GUIDs gets adapted
