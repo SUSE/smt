@@ -24,7 +24,6 @@ License:        GPL-2.0+
 Group:          Productivity/Networking/Web/Proxy
 Source0:        %{name}-%{version}.tar.bz2
 Source1:        smt-rpmlintrc
-Source2:        tmpfile-smt.conf
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
@@ -115,9 +114,6 @@ rm -rf tests/testdata
 # ---------------------------------------------------------------------------
 
 %install
-
-%{_sbindir}/useradd -r -g www -s /bin/false -c "User for SMT" -d %{_localstatedir}/lib/empty smt 2> /dev/null || :
-
 make DESTDIR=%{buildroot} DOCDIR=%{_docdir} install
 make DESTDIR=%{buildroot} install_conf
 
@@ -130,9 +126,6 @@ done
 for manp in *.3pm; do
     install -m 644 $manp    %{buildroot}%{_mandir}/man3/$manp
 done
-# /var/run/smt
-install -d -m 0755 %{buildroot}/%{_tmpfilesdir}
-install -m 0644 %{SOURCE2} %{buildroot}/%{_tmpfilesdir}/%{name}.conf
 
 mkdir -p %{buildroot}%{_localstatedir}/log/smt/schema-upgrade
 mkdir -p %{buildroot}%{_docdir}/smt/
@@ -143,14 +136,51 @@ ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh %{buildroot}%{_docdir}/smt/c
 # ---------------------------------------------------------------------------
 
 %pre
-if ! usr/bin/getent passwd smt >/dev/null; then
-  usr/sbin/useradd -r -g www -s /bin/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt 2> /dev/null || :
-fi
+%{_bindir}/getent passwd smt >/dev/null || %{_sbindir}/useradd -r -g www -s %{_bindir}/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt
+%service_add_pre smt-schema-upgrade.service
+%service_add_pre smt.target
 
 %post
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
-usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf
+usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf || :
+%service_add_post smt-schema-upgrade.service
+%service_add_post smt.target
+
+if [ "$1" = "2" ]; then
+    rm -f %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release}
+    # check if there are MyISAM tables, if yes add note about migrating them to InnoDB
+    if ! %{_bindir}/smt-schema-upgrade --check-engine; then
+        cat > %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
+SMT database must be migrated to InnoDB engine.
+
+Call /usr/bin/smt-schema-upgrade to upgrade DB.
+Migration will also start automatically by smt-schema-upgrade service when smt.target is started.
+If you are not using systemd's smt.target, please call /usr/bin/smt-schema-upgrade manually.
+
+Please review your database settings to reflect this change.
+(see https://mariadb.com/kb/en/mariadb/converting-tables-from-myisam-to-innodb/#non-index-issues)
+
+EOT
+    fi
+    # check if there is need to schema migration
+    if ! %{_bindir}/smt-schema-upgrade --check-schema; then
+        cat >> %{_localstatedir}/adm/update-messages/%{name}-%{version}-%{release} <<EOT
+SMT database schema must be migrated to new schema version.
+
+Call /usr/bin/smt-schema-upgrade to upgrade DB.
+Migration will also start automatically by smt-schema-upgrade service when smt.target is started.
+If you are not using systemd's smt.target, please call /usr/bin/smt-schema-upgrade manually.
+
+EOT
+    fi
+fi
+
+%preun
+%service_del_preun smt-schema-upgrade.service
+%service_del_preun smt.target
+
+# no postun service handling, we don't want them to be restarted on upgrade
 
 %files
 %defattr(-,root,root)
@@ -187,7 +217,7 @@ usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf
 %config %{_sysconfdir}/apache2/vhosts.d/*.conf
 %config %{_sysconfdir}/smt.d/*.conf
 %config %{_sysconfdir}/slp.reg.d/smt.reg
-%config %{_tmpfilesdir}/smt.conf
+%{_tmpfilesdir}/smt.conf
 %exclude %{_sysconfdir}/apache2/conf.d/smt_support.conf
 %config %{_sysconfdir}/cron.d/novell.com-smt
 %config %{_sysconfdir}/logrotate.d/smt
@@ -210,6 +240,7 @@ usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf
 %{_libexecdir}/SMT/bin/*
 %{_bindir}/smt*
 %{_libexecdir}/systemd/system/smt.target
+%{_libexecdir}/systemd/system/smt-schema-upgrade.service
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
 %{_bindir}/smt-*

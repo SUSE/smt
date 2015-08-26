@@ -1,0 +1,12 @@
+[Unit]
+Description=SMT database and schema upgrade service
+Requires=mysql.service
+After=mysql.service
+Before=apache2.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/smt-schema-upgrade --yes
+
+[Install]
+WantedBy=smt.target

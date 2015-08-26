@@ -83,8 +83,10 @@ install:
                   -type d -exec install -m755 -d $(DESTDIR)/usr/share/schemas/smt/\{\} \; \
                   -o \
                   \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \)
-	install -m 755 config/smt.target $(DESTDIR)/usr/lib/systemd/system/
-	install -m 755 config/smt.reg $(DESTDIR)/etc/slp.reg.d/
+	install -m 444 config/smt.target $(DESTDIR)/usr/lib/systemd/system/
+	install -m 444 config/smt-schema-upgrade.service $(DESTDIR)/usr/lib/systemd/system/
+	install -D -m 644 config/tmpfile-smt.conf $(DESTDIR)/usr/lib/tmpfiles.d/smt.conf
+	install -m 655 config/smt.reg $(DESTDIR)/etc/slp.reg.d/
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 db/smt-sql $(DESTDIR)/usr/bin/
 	install -m 755 db/smt-schema-upgrade $(DESTDIR)/usr/bin/

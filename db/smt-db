@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 ###########################################################################
+## Copyright (c) 2015 SUSE LLC
 ## Copyright (c) 2007 Novell Inc.
 ###########################################################################
 
@@ -82,7 +83,7 @@ sub optimize
 
 sub migrate
 {
-    `smt-schema-migration`;
+    `smt-schema-upgrade --yes`;
     return 0;
 }
 
@@ -191,6 +192,7 @@ sub setup
     my $host     = "localhost";
 
     system("systemctl enable smt.target");
+    system("systemctl enable smt-schema-upgrade.service");
     system("systemctl start mysql.service");
 
     print "mysql password for user $username: ";
@@ -222,7 +224,7 @@ sub setup
     if(!defined $config || $config eq "")
     {
         print STDERR __("Invalid Database configuration. Missing value for DB/config.\n");
-	return 3;
+        return 3;
     }
     $config =~ s/database=smt/database=/;
     if($config =~ /host=([^;]+)/)
@@ -297,6 +299,7 @@ sub setup
     }
 
     $r = $dbh->do("grant all on smt.* to '$smtuser'\@$host identified by '$smtpass'");
+    $dbh->disconnect;
 
     $cfg->setval('DB', 'user', $smtuser);
     $cfg->setval('DB', 'pass', $smtpass);
@@ -304,7 +307,16 @@ sub setup
     my ($login,$pass,$uid,$gid) = getpwnam("wwwrun");
     chown 0, $gid, "/etc/smt.conf";
 
-    `smt-sql --select-mode-direct /usr/share/schemas/smt/mysql/2.03/100-smt-tables.sql > /var/log/smt/smt-db-setup.log`;
+    `smt-sql --select-mode-direct /usr/share/schemas/smt/mysql/latest/100-smt-tables.sql > /var/log/smt/smt-db-setup.log`;
+    # reconnect to smt database
+    $dbh = SMT::Utils::db_connect();
+    unless ($dbh)
+    {
+        print STDERR "Cannot connect to database: $@\n";
+        return 4;
+    }
+    $dbh->do("insert into migration_schema_version values ('smt', $SMT::SCHEMA_VERSION);");
+    $dbh->disconnect;
     return 0;
 }
 

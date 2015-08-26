@@ -318,11 +318,18 @@ function check_copy_cert {
 
 function test_ncccred_permissions {
     ncccred_file="/etc/zypp/credentials.d/NCCcredentials"
-    if [ -e $ncccred_file ]; then
-        su -s /bin/bash -c "if [ ! -r $ncccred_file ]; then
-                                echo \"${warn}Unable to read $ncccred_file: Permission denied.${norm}\";
+    scccred_file="/etc/zypp/credentials.d/SCCcredentials"
+    cred_file=""
+    if [ -e $scccred_file ]; then
+        cred_file=$scccred_file
+    elif [ -e $ncccred_file]; then
+        cred_file=$ncccred_file
+    fi
+    if [ -n $cred_file ]; then
+        su -s /bin/bash -c "if [ ! -r $cred_file ]; then
+                                echo \"${warn}Unable to read $cred_file: Permission denied.${norm}\";
                                 echo \"You need to grant read access for the user 'smt'\";
-                                echo \"Example: /usr/bin/setfacl -m u:smt:r $ncccred_file\";
+                                echo \"Example: /usr/bin/setfacl -m u:smt:r $cred_file\";
                                 exit 1;
                             fi" - smt
         if [ "$?" != "0" ]; then

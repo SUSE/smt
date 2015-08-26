@@ -16,20 +16,11 @@ drop table if exists RepositoryContentData;
 
 drop table if exists StagingGroups;
 
+-- schema version is inserted by smt-db script according to $SMT::SCHEMA_VERSION
 CREATE TABLE migration_schema_version (
           name varchar(128) NOT NULL,
           version double NOT NULL,
           CONSTRAINT migration_schema_version_name_pk PRIMARY KEY (name)
-) ENGINE=InnoDB;
-insert into migration_schema_version ('smt', 2.03);
-
-CREATE TABLE migration_schema_log (
-  schema_name varchar(128) NOT NULL,
-  event_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  old_version double NOT NULL DEFAULT '0',
-  new_version double NOT NULL,
-  KEY schema_name (schema_name),
-  CONSTRAINT migration_schema_log_ibfk_1 FOREIGN KEY (schema_name) REFERENCES migration_schema_version (name) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- integer id for "Clients" for faster joins compared to GUID with CHAR(50)
@@ -37,6 +28,7 @@ CREATE TABLE migration_schema_log (
 --    all new tables refering to a Client should use Clients.ID from now on
 create table Clients(ID          INT UNSIGNED AUTO_INCREMENT,
                      GUID        CHAR(50),
+                     SYSTEMID    INT UNSIGNED,
                      HOSTNAME    VARCHAR(100) DEFAULT '',
                      TARGET      VARCHAR(100),
                      DESCRIPTION VARCHAR(500) DEFAULT '',
@@ -45,7 +37,8 @@ create table Clients(ID          INT UNSIGNED AUTO_INCREMENT,
                      SECRET      CHAR(50) NOT NULL DEFAULT '',
                      REGTYPE     CHAR(10) NOT NULL DEFAULT 'SR', -- SR = SuseRegister, SC = SUSEConnect
                      CONSTRAINT Clients_guid_pk PRIMARY KEY (GUID),
-                     UNIQUE INDEX Clients_id_uq (ID)
+                     UNIQUE INDEX Clients_id_uq (ID),
+                     INDEX idx_clnt_sysid (SYSTEMID)
                     ) ENGINE=InnoDB;
 
 
@@ -277,7 +270,7 @@ create table Patches( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                       VERSION     VARCHAR(32) NOT NULL,
                       CATEGORY    INTEGER UNSIGNED NOT NULL DEFAULT 1,
                       SUMMARY     VARCHAR(512) NOT NULL,
-                      DESCRIPTION VARCHAR(1024) NOT NULL,
+                      DESCRIPTION TEXT NOT NULL,
                       RELDATE     TIMESTAMP NOT NULL,
                       CONSTRAINT Patches_id_pk PRIMARY KEY (ID)
                     ) ENGINE=InnoDB;
