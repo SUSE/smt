@@ -1,9 +1,8 @@
 package SMT::Rest::SCCAPIv1;
 
-require SMT::Rest::Base;
-@ISA = qw(SMT::Rest::Base);
-
 use strict;
+use parent qw/SMT::Rest::Base/;
+
 use Apache2::Const -compile => qw(:log OK SERVER_ERROR HTTP_NO_CONTENT AUTH_REQUIRED FORBIDDEN HTTP_UNPROCESSABLE_ENTITY);
 
 use JSON;
