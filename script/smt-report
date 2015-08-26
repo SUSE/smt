@@ -165,8 +165,6 @@ sub printUsage
 {
     print basename($0) . " : " . __("generate a report")."\n";
     print "  --local        : " . __("force to create a report based on a local calculation")."\n";
-    print "  --scc          : " . __("force to create a report based on SCC data")."\n";
-    print "  --nosync       : " . __("do not sync subscription information from the registration server before creating the report")."\n";
     print "  --mail    (-m) : " . __("enable mailing of report")."\n";
     print "  --attach  (-a) : " . __("attach CSV report files to mail (only together with --mail)")."\n";
     print "  --quiet   (-q) : " . __("suppress output")."\n";
@@ -436,11 +434,6 @@ my $api = $cfg->val('NU', 'ApiType', 'NCC');
 if ( $api eq 'NCC')
 {
     printLog($LOG, $vblevel, LOG_ERROR, __("NCC is not supported by this version of SMT"));
-    exit 1;
-}
-if ( $api eq 'SCC' && $nccreport)
-{
-    printLog($LOG, $vblevel, LOG_ERROR, __("Only local reports are available for SCC connected SMT servers"));
     exit 1;
 }
 
