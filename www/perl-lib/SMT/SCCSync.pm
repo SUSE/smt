@@ -79,8 +79,9 @@ sub new
     # temporarily used variables
     $self->{REPO_DONE} = {};
     $self->{PROD_DONE} = {};
-    $self->{PRODREPO_DONE} = {};
-    $self->{EXT_DONE} = {};
+    $self->{PRODREPO} = {};
+    $self->{EXTS} = {};
+    $self->{MIGS} = {};
     $self->{TARGET_DONE} = {};
     $self->{NUHOSTS} = ['nu.novell.com', 'updates.suse.com'];
     $self->{LOCALHOST} = "";
@@ -816,14 +817,18 @@ EOS
         # if either product or catalogs could not be added,
         # we will fail to add the relation.
         next if ( $retprd || $retcat);
-        $ret += $self->_updateProductCatalogs($product, $repo);
+        $self->_collectProductCatalogs($product, $repo);
     }
     $ret += $retprd;
 
     foreach my $ext (@{$product->{extensions}})
     {
         $ret += $self->_updateProducts($ext);
-        $ret += $self->_updateExtension($product->{id}, $ext->{id});
+        $self->_collectExtensions($product->{id}, $ext->{id});
+    }
+    if (exists $product->{predecessor_ids})
+    {
+        $self->_collectMigrations($product->{id}, $product->{predecessor_ids});
     }
 
     return $ret;
@@ -888,35 +893,175 @@ sub _mergeProducts
     return 0;
 }
 
-sub _updateExtension
+sub _collectExtensions
+{
+    my $self  = shift || return;
+    my $prdid = shift || return;
+    my $extid = shift || return;
+
+    $self->{EXTS}->{"$prdid-$extid"} = {productid => $prdid, extensionid => $extid};
+}
+
+sub _updateExtensions
 {
     my $self  = shift || return 1;
-    my $prdid = shift || return 1;
-    my $extid = shift || return 1;
+    my $err = 0;
+    my $href = {};
 
-    # we inserted/update this product already in this run
-    # so let's skip it
-    return 0 if(exists $self->{EXT_DONE}->{"$prdid-$extid"});
-
-
-    my $sql = sprintf("
-        INSERT INTO ProductExtensions VALUES (
-            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
-            (SELECT id from Products WHERE PRODUCTDATAID = %s AND SRC = 'S'),
-            'S')",
-            $self->{DBH}->quote($prdid),
-            $self->{DBH}->quote($extid));
+    my $sql = "select PRODUCTID, EXTENSIONID from ProductExtensions where SRC = 'S'";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
-        $self->{DBH}->do($sql);
-        $self->{EXT_DONE}->{"$prdid-$extid"} = 1;
+        my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
+
+        foreach my $v (@{$ref})
+        {
+            $href->{$v->{PRODUCTID}."-".$v->{EXTENSIONID}} = $v;
+        }
     };
     if($@)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        return 1;
+        $err += 1;
+    }
+
+    foreach my $key (keys %{$self->{EXTS}})
+    {
+        my $prdid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{EXTS}->{$key}->{productid}, 'S',
+                                                        $self->{LOG}, $self->vblevel());
+        my $extid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{EXTS}->{$key}->{extensionid}, 'S',
+                                                              $self->{LOG}, $self->vblevel());
+
+        if (exists $href->{$prdid."-".$extid})
+        {
+            delete $href->{$prdid."-".$extid};
+            next;
+        }
+        else
+        {
+            if(!$prdid)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Productid not found for: ".$self->{EXTS}->{$key}->{productid});
+                $err += 1;
+                next;
+            }
+            if(!$extid)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Extensionid not found for: ".$self->{EXTS}->{$key}->{extensionid});
+                $err += 1;
+                next;
+            }
+            my $sql = sprintf("INSERT INTO ProductExtensions VALUES ( %s, %s, 'S')",
+                              $self->{DBH}->quote($prdid),
+                              $self->{DBH}->quote($extid));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+            eval {
+                $self->{DBH}->do($sql);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                return 1;
+            }
+        }
+    }
+    # remove obsolete entries
+    foreach my $key (keys %{$href})
+    {
+        $sql = sprintf("DELETE FROM ProductExtensions WHERE PRODUCTID = %s AND EXTENSIONID = %s",
+                       $self->{DBH}->quote($href->{$key}->{PRODUCTID}),
+                       $self->{DBH}->quote($href->{$key}->{EXTENSIONID}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+        eval {
+            $self->{DBH}->do($sql);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $err += 1;
+        }
     }
     return 0;
+}
+
+sub _collectMigrations
+{
+    my $self    = shift || return 1;
+    my $prdid   = shift || return 1;
+    my $predIds = shift || return 1;
+
+    foreach my $predecessor (@$predIds)
+    {
+        $self->{MIGS}->{"$prdid-$predecessor"} = {pdid => $prdid, predecessorid => $predecessor};
+    }
+}
+
+sub _updateMigrations
+{
+    my $self    = shift || return 1;
+    my $err = 0;
+    my $href = {};
+
+    my $sql = "select SRCPDID, TGTPDID from ProductMigrations where SRC = 'S'";
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+    eval {
+        my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
+
+        foreach my $v (@{$ref})
+        {
+            $href->{$v->{TGTPDID}."-".$v->{SRCPDID}} = $v;
+        }
+    };
+    if($@)
+    {
+        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+        $err += 1;
+    }
+
+    foreach my $key (keys %{$self->{MIGS}})
+    {
+        my $prdid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{MIGS}->{$key}->{pdid}, 'S',
+                                                        $self->{LOG}, $self->vblevel());
+        my $predecessor = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{MIGS}->{$key}->{predecessorid}, 'S',
+                                                              $self->{LOG}, $self->vblevel());
+
+        if (exists $href->{$prdid."-".$predecessor})
+        {
+            delete $href->{$prdid."-".$predecessor};
+            next;
+        }
+        else
+        {
+            $sql = sprintf("INSERT INTO ProductMigrations VALUES (%s, %s, 'S')",
+                           $self->{DBH}->quote($predecessor),
+                           $self->{DBH}->quote($prdid));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+            eval {
+                $self->{DBH}->do($sql);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                $err += 1;
+            }
+        }
+    }
+    # remove obsolete entries
+    foreach my $key (keys %{$href})
+    {
+        $sql = sprintf("DELETE FROM ProductMigrations WHERE TGTPDID = %s AND SRCPDID = %s",
+                       $self->{DBH}->quote($href->{$key}->{TGTPDID}),
+                       $self->{DBH}->quote($href->{$key}->{SRCPDID}));
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+        eval {
+            $self->{DBH}->do($sql);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $err += 1;
+        }
+    }
+    return $err;
 }
 
 sub _updateRepositories
@@ -1099,43 +1244,96 @@ sub _updateTargets
     return $ret;
 }
 
-sub _updateProductCatalogs
+sub _collectProductCatalogs
 {
     my $self = shift;
     my $product = shift;
     my $repo = shift;
-    my $ret = 0;
-    return $ret if (exists $self->{PRODREPO_DONE}->{$product->{id}."-".$repo->{id}});
-    my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $product->{id}, 'S', $self->{LOG}, $self->vblevel);
-    my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $repo->{id}, 'S', $self->{LOG}, $self->vblevel);
-    if (! $product_id)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$product->{id});
-        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "Unable to find Product ID for: ".Data::Dumper->Dump([$product]));
-        return 1;
-    }
-    if (! $repo_id)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Repository ID: ".$repo->{id});
-        return 1;
-    }
+    $self->{PRODREPO}->{$product->{id}."-".$repo->{id}} = {
+        'productdataid' => $product->{id},
+        'catalogid' => $repo->{id},
+        'optional' => ($repo->{enabled}?'N':'Y')};
+}
 
-    my $statement = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
-                             VALUES (%s, %s, %s, 'S')",
-                            $self->{DBH}->quote($product_id),
-                            $self->{DBH}->quote($repo_id),
-                            $self->{DBH}->quote(($repo->{enabled}?'N':'Y')));
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
+sub _updateProductCatalogs
+{
+    my $self = shift;
+    my $err = 0;
+    my $href = {};
+
+    my $sql = "select productid, catalogid, optional from ProductCatalogs WHERE SRC = 'S'";
+    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
-        $self->{DBH}->do($statement);
-        $self->{PRODREPO_DONE}->{$product->{id}."-".$repo->{id}} = 1;
+        my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
+
+        foreach my $v (@{$ref})
+        {
+            $href->{$v->{productid}."-".$v->{catalogid}} = $v;
+        }
     };
     if($@)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        $ret += 1;
+        $err += 1;
     }
-    return $ret;
+
+    foreach my $key (keys %{$self->{PRODREPO}})
+    {
+        my $product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{PRODREPO}->{$key}->{productdataid},
+                                                             'S', $self->{LOG}, $self->vblevel);
+        my $repo_id = SMT::Utils::lookupCatalogIdByDataId($self->{DBH}, $self->{PRODREPO}->{$key}->{catalogid},
+                                                          'S', $self->{LOG}, $self->vblevel);
+        if (! $product_id)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Product ID for: ".$self->{PRODREPO}->{$key}->{productdataid});
+            $err += 1;
+        }
+        if (! $repo_id)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Repository ID: ".$self->{PRODREPO}->{$key}->{catalogid});
+            $err += 1;
+        }
+        if (!exists $href->{$product_id."-".$repo_id})
+        {
+            $sql = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
+                            VALUES (%s, %s, %s, 'S')",
+                           $self->{DBH}->quote($product_id),
+                           $self->{DBH}->quote($repo_id),
+                           $self->{DBH}->quote($self->{PRODREPO}->{$key}->{optional}));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+            eval {
+                $self->{DBH}->do($sql);
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                $err += 1;
+            }
+        }
+        elsif($href->{$product_id."-".$repo_id}->{optional} eq $self->{PRODREPO}->{$key}->{optional})
+        {
+            delete $href->{$key};
+        }
+        else
+        {
+            $sql = sprintf("UPDATE ProductCatalogs SET OPTIONAL = %s
+                            WHERE PRODUCTID = %s AND CATALOGID = %s",
+                           $self->{DBH}->quote($self->{PRODREPO}->{$key}->{optional}),
+                           $self->{DBH}->quote($product_id),
+                           $self->{DBH}->quote($repo_id));
+            printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+            eval {
+                $self->{DBH}->do($sql);
+                delete $href->{$key};
+            };
+            if($@)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+                $err += 1;
+            }
+        }
+    }
+    return $err;
 }
 
 sub _addSubscription
@@ -1220,6 +1418,8 @@ sub _updateProductData
     my $count = 0;
     my $sum = @$json;
 
+    $sum += (@$json/10)*2+(@$json/100)*5;
+
     if(!defined $self->{DBH})
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
@@ -1231,24 +1431,21 @@ sub _updateProductData
     $self->{LOCALHOST} = $localhost->host;
     $self->{LOCALSCHEME} = $localhost->scheme;
 
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductExtensions WHERE SRC='S'");
-    printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: DELETE FROM ProductCatalogs  WHERE SRC='S' OR SRC='N'");
-    eval {
-        $self->{DBH}->do("DELETE FROM ProductExtensions WHERE SRC='S'");
-        $self->{DBH}->do("DELETE FROM ProductCatalogs  WHERE SRC='S' OR SRC='N'");
-    };
-    if($@)
-    {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
-        $ret += 1;
-    }
-
     foreach my $product (@$json)
     {
         $count++;
         printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
         $ret += $self->_updateProducts($product);
     }
+    $ret += $self->_updateProductCatalogs();
+    $count += (@$json/10);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
+    $ret += $self->_updateExtensions();
+    $count += (@$json/10);
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
+    $ret += $self->_updateMigrations();
+    $count = $sum;
+    printLog($self->{LOG}, $self->vblevel(), LOG_INFO2, "Update DB (".int(($count/$sum*100))."%)\r", 1, 0);
 
     my $st1 = sprintf("Delete from Products where SRC='S' and PRODUCTDATAID not in (%s)",
                       "'".join("','", keys %{$self->{PROD_DONE}})."'");
