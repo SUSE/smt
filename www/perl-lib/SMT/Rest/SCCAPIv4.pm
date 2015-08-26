@@ -300,3 +300,5 @@ sub _iterate
     return (\@notfound, $compat);
 }
 
+1;
+
