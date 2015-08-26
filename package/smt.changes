@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Aug 26 11:56:10 CEST 2015 - mc@suse.de
+
+- implement ServicePack migration API (FATE#319133, FATE#319134)
+
+-------------------------------------------------------------------
 Thu Aug 24 12:33:53 CEST 2015 - mc@suse.de
 
 - implement forwarding registrations to SCC (bsc#942300, bsc#907791)
