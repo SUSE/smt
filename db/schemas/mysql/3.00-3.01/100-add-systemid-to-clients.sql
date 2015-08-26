@@ -1,4 +1,4 @@
 ALTER TABLE Clients ADD COLUMN SYSTEMID INT UNSIGNED ;
 
-ALTER TABLE Clients ADD INDEX idx_clnt_sysid (SYSTEMID);
+ALTER TABLE Clients ADD INDEX Clients_systemid_idx (SYSTEMID);
 

@@ -42,7 +42,7 @@ create table Clients(ID          INT UNSIGNED AUTO_INCREMENT,
                      REGTYPE     CHAR(10) NOT NULL DEFAULT 'SR', -- SR = SuseRegister, SC = SUSEConnect
                      CONSTRAINT Clients_guid_pk PRIMARY KEY (GUID),
                      UNIQUE INDEX Clients_id_uq (ID),
-                     INDEX idx_clnt_sysid (SYSTEMID)
+                     INDEX Clients_systemid_idx (SYSTEMID)
                     ) ENGINE=InnoDB;
 
 
@@ -180,7 +180,7 @@ create table ProductMigrations (
     SRCPDID   integer NOT NULL,
     TGTPDID   integer NOT NULL,
     SRC       CHAR(1) DEFAULT 'S',
-    UNIQUE INDEX ProductExtensions_pdid_migid_unq (SRCPDID, TGTPDID)
+    UNIQUE INDEX ProductMigrations_srcpdid_tgtpdid_uq (SRCPDID, TGTPDID)
 ) ENGINE=InnoDB;
 
 create table ProductCatalogs(PRODUCTID   integer NOT NULL,
