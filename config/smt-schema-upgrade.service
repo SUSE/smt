@@ -1,6 +1,6 @@
 [Unit]
 Description=SMT database and schema upgrade service
-Require=mysql.service
+Requires=mysql.service
 After=mysql.service
 Before=apache2.service
 
