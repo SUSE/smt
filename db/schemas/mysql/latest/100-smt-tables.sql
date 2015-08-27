@@ -18,6 +18,8 @@ drop table if exists RepositoryContentData;
 
 drop table if exists StagingGroups;
 
+DROP PROCEDURE IF EXISTS smt.drop_index_if_exists;
+
 -- schema version is inserted by smt-db script according to $SMT::SCHEMA_VERSION
 CREATE TABLE migration_schema_version (
           name varchar(128) NOT NULL,
@@ -40,7 +42,7 @@ create table Clients(ID          INT UNSIGNED AUTO_INCREMENT,
                      REGTYPE     CHAR(10) NOT NULL DEFAULT 'SR', -- SR = SuseRegister, SC = SUSEConnect
                      CONSTRAINT Clients_guid_pk PRIMARY KEY (GUID),
                      UNIQUE INDEX Clients_id_uq (ID),
-                     INDEX idx_clnt_sysid (SYSTEMID)
+                     INDEX Clients_systemid_idx (SYSTEMID)
                     ) ENGINE=InnoDB;
 
 
@@ -171,14 +173,16 @@ create table ProductExtensions (
     PRODUCTID   integer NOT NULL,
     EXTENSIONID integer NOT NULL,
     SRC         CHAR(1) DEFAULT 'S',
-    UNIQUE INDEX ProductExtensions_pdid_extid_uq (PRODUCTID, EXTENSIONID)
+    UNIQUE INDEX ProductExtensions_pdid_extid_uq (PRODUCTID, EXTENSIONID),
+    INDEX ProductExtensions_pdid_extid_src_idx (PRODUCTID, EXTENSIONID, SRC)
 ) ENGINE=InnoDB;
 
 create table ProductMigrations (
     SRCPDID   integer NOT NULL,
     TGTPDID   integer NOT NULL,
     SRC       CHAR(1) DEFAULT 'S',
-    UNIQUE INDEX ProductExtensions_pdid_migid_unq (SRCPDID, TGTPDID)
+    UNIQUE INDEX ProductMigrations_srcpdid_tgtpdid_uq (SRCPDID, TGTPDID),
+    INDEX ProductMigrations_srcpdid_tgtpdid_src_idx (SRCPDID, TGTPDID, SRC)
 ) ENGINE=InnoDB;
 
 create table ProductCatalogs(PRODUCTID   integer NOT NULL,
@@ -313,4 +317,23 @@ create table Packages ( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         EXTLOCATION VARCHAR(255) NOT NULL,
                         CONSTRAINT Packages_id_pk PRIMARY KEY (ID)
                       ) ENGINE=InnoDB;
+
+DELIMITER //
+
+CREATE PROCEDURE smt.drop_index_if_exists(in theTable varchar(128), in theIndexName varchar(128) )
+BEGIN
+ IF((SELECT COUNT(*) AS index_exists
+       FROM information_schema.statistics
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND table_name = theTable
+        AND index_name = theIndexName) > 0) THEN
+   SET @s = CONCAT('DROP INDEX ' , theIndexName , ' ON ' , theTable);
+   PREPARE stmt FROM @s;
+   EXECUTE stmt;
+ END IF;
+END;
+
+//
+
+DELIMITER ;
 
