@@ -1,5 +1,7 @@
+ALTER TABLE Clients change ID ID int(10) unsigned NOT NULL;
 call smt.drop_index_if_exists('Clients', 'ID');
 CREATE UNIQUE INDEX IF NOT EXISTS Clients_id_uq ON Clients (ID);
+ALTER TABLE Clients change ID ID int(10) unsigned NOT NULL AUTO_INCREMENT;
 
 call smt.drop_index_if_exists('Clients', 'idx_clnt_sysid');
 CREATE INDEX IF NOT EXISTS Clients_systemid_idx ON Clients (SYSTEMID);
@@ -44,4 +46,3 @@ call smt.drop_index_if_exists('RepositoryContentData', 'idx_repo_cont_data_name_
 CREATE INDEX IF NOT EXISTS RepositoryContentData_name_cksum_cktype_idx ON RepositoryContentData (name, checksum, checksum_type);
 
 CREATE INDEX IF NOT EXISTS ProductExtensions_pdid_extid_src_idx ON ProductExtensions (PRODUCTID, EXTENSIONID, SRC);
-

@@ -1,5 +1,7 @@
+ALTER TABLE Clients change ID ID int(10) unsigned NOT NULL;
 call smt.drop_index_if_exists('Clients', 'ID');
 CREATE UNIQUE INDEX IF NOT EXISTS Clients_id_uq ON Clients (ID);
+ALTER TABLE Clients change ID ID int(10) unsigned NOT NULL AUTO_INCREMENT;
 
 call smt.drop_index_if_exists('Clients', 'idx_clnt_sysid');
 CREATE INDEX IF NOT EXISTS Clients_systemid_idx ON Clients (SYSTEMID);
