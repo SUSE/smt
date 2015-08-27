@@ -318,6 +318,8 @@ create table Packages ( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         CONSTRAINT Packages_id_pk PRIMARY KEY (ID)
                       ) ENGINE=InnoDB;
 
+DELIMITER //
+
 CREATE PROCEDURE smt.drop_index_if_exists(in theTable varchar(128), in theIndexName varchar(128) )
 BEGIN
  IF((SELECT COUNT(*) AS index_exists
@@ -330,4 +332,8 @@ BEGIN
    EXECUTE stmt;
  END IF;
 END;
+
+//
+
+DELIMITER ;
 

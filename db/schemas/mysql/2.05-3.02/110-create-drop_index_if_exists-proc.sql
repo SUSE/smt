@@ -1,5 +1,7 @@
 DROP PROCEDURE IF EXISTS smt.drop_index_if_exists;
 
+DELIMITER //
+
 CREATE PROCEDURE smt.drop_index_if_exists(in theTable varchar(128), in theIndexName varchar(128) )
 BEGIN
  IF((SELECT COUNT(*) AS index_exists
@@ -12,4 +14,8 @@ BEGIN
    EXECUTE stmt;
  END IF;
 END;
+
+//
+
+DELIMITER ;
 
