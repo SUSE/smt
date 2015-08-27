@@ -1,5 +1,5 @@
 NAME          = smt
-VERSION       = 3.0.1
+VERSION       = 3.0.2
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -162,6 +162,8 @@ dist: clean
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
 	@cp config/smt.target $(NAME)-$(VERSION)/config/
+	@cp config/smt-schema-upgrade.service $(NAME)-$(VERSION)/config/
+	@cp config/tmpfile-smt.conf $(NAME)-$(VERSION)/config/
 	@cp config/smt.reg $(NAME)-$(VERSION)/config/
 	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
 	@cp cron/novell.com-smt $(NAME)-$(VERSION)/cron/
