@@ -714,14 +714,6 @@ Using the parameter B<--local> will force a report based on local data whereas B
 
 Enforces the creation of a report based on local data.
 
-=item --scc
-
-Enforces the creation of a report based on SCC data.
-
-=item --nosync
-
-Prevents the report module from syncing subscription information from the registration server before creating the report. This can be used in combination with B<--local> or B<--scc>.
-
 =back
 
 =head2 OUTPUT FORMAT and TARGET
