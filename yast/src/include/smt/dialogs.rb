@@ -8,6 +8,9 @@
 # $Id: dialogs.ycp 27914 2006-02-13 14:32:08Z locilka $
 module Yast
   module SmtDialogsInclude
+
+    REQUIRED_PACKAGES = [ "smt" ]
+
     def initialize_smt_dialogs(include_target)
       Yast.import "UI"
       textdomain "smt"
@@ -27,6 +30,7 @@ module Yast
       Yast.import "FileUtils"
       Yast.import "GPG"
       Yast.import "Hostname"
+      Yast.import "Package"
 
       @sl = 100
 
@@ -544,6 +548,8 @@ module Yast
       Progress.NextStage
       Builtins.sleep(@sl)
 
+      Package.InstallAll(REQUIRED_PACKAGES) or return :abort
+
       SMTData.ReadCredentials
       SMTData.ReadFirstRun
       SMTData.StorePasswordTMP
@@ -958,6 +964,8 @@ module Yast
       Wizard.RestoreHelp(Ops.get(@HELPS, "read", ""))
 
       Progress.NextStage
+
+      Package.InstallAll(REQUIRED_PACKAGES) or return :abort
 
       SMTData.ReadCredentials
 
