@@ -5,7 +5,7 @@ yncludedir = @yncludedir@/smt
 client_DATA = \
 	clients/smt.rb \
 	clients/smt-server.rb \
-	clients/inst_smt.rb
+	clients/smt-wizard.rb
 
 ynclude_DATA = \
 	include/smt/dialogs.rb \
