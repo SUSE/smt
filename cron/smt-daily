@@ -56,7 +56,7 @@ fi
 
 if [ -x ${SMTCMD}-report ]
 then
-    ${SMTCMD}-report --nosccsync --dailycheck ${REPORT_PARAMS}
+    ${SMTCMD}-report --local --dailycheck ${REPORT_PARAMS}
 else
     echo "WARNING: Could not find the SMT binary ${SMTCMD}-report"
     echo "         Please make sure SMT is properly installed."

@@ -693,7 +693,7 @@ smt [help|--help|-h] report
 
 smt report [--mail|-m] [--attach|-a] [--quiet|-q] [--csv|-c] [--file|-F [file]] [--logfile|-L file] [--debug|-d]
 
-smt report [--local] [--scc] [--nosync]
+smt report [--local]
 
 =head1 DESCRIPTION
 
@@ -701,7 +701,6 @@ I<smt report> creates reports on SMT and SCC data. Reports of the kinds local re
 The reports can be printed to STDOUT, exported to one or multiple files as well as mailed to the administrator(s).
 
 The kind of the report is computed automatically based on your SMT setup but can as well be defined by parameters.
-Using the parameter B<--local> will force a report based on local data whereas B<--scc> will force a report based on SCC data. These parameters can be used in combination and do not exclude each other.
 
 
 =head1 OPTIONS
@@ -947,7 +946,7 @@ Write log messages to B<file>.
 
 Print all reports to STDOUT
 
- smt report --local --scc
+ smt report --local
 
 Only mail the default report to the administrator(s) and suppress console output
 
@@ -955,11 +954,11 @@ Only mail the default report to the administrator(s) and suppress console output
 
 Export all reports as separate files in B<csv> format to B<./reports/>
 
- smt report --local --scc --file ./reports/ --csv
+ smt report --local --file ./reports/ --csv
 
 Mail all reports including csv attachments to the administrators and suppress console output (convenient for a cron job)
 
- smt report --local --scc --mail --attach --quiet
+ smt report --local --mail --attach --quiet
 
 Start the report procedure with logging
 
