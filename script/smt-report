@@ -37,9 +37,6 @@ my $xml;     # export data as xml
 my $file;    # write output to file
 my $logfile;
 
-# which reports
-my $localreport = 0;
-
 my $currenttime = time();
 my $dailycheck = 0;
 my $haveAlerts = 0;
@@ -164,7 +161,6 @@ my %DATA = ();
 sub printUsage
 {
     print basename($0) . " : " . __("generate a report")."\n";
-    print "  --local        : " . __("force to create a report based on a local calculation")."\n";
     print "  --mail    (-m) : " . __("enable mailing of report")."\n";
     print "  --attach  (-a) : " . __("attach CSV report files to mail (only together with --mail)")."\n";
     print "  --quiet   (-q) : " . __("suppress output")."\n";
@@ -300,54 +296,51 @@ sub getMergedReport($)
     my $txt = '';
     my $date = SMT::Utils::getDBTimestamp();
 
-    if($localreport)
+    if($renderMode eq 'html')
     {
-        if($renderMode eq 'html')
-        {
-            $res .= "<h1>".$headings{'localreport'}."</h1>";
-        }
-        elsif($renderMode eq 'docbook')
-        {
-            $res .= "<title>".$headings{'localreport'}."</title>";
-        }
-        elsif($renderMode eq 'xml')
-        {
-            $res .= '<report title="'.$headings{'localreport'}.'" id="localreport" date="'.$date.'">';
-        }
-        else
-        {
-            $res .= $headings{'localreport'}."\n";
-            $res .= sprintf '=' x length($headings{'localreport'})."\n\n";
-        }
+        $res .= "<h1>".$headings{'localreport'}."</h1>";
+    }
+    elsif($renderMode eq 'docbook')
+    {
+        $res .= "<title>".$headings{'localreport'}."</title>";
+    }
+    elsif($renderMode eq 'xml')
+    {
+        $res .= '<report title="'.$headings{'localreport'}.'" id="localreport" date="'.$date.'">';
+    }
+    else
+    {
+        $res .= $headings{'localreport'}."\n";
+        $res .= sprintf '=' x length($headings{'localreport'})."\n\n";
+    }
 
-        $res .= getReportRenderedAs($renderMode, 'localreport', 'alerts')."\n";
-        $res .= getReportRenderedAs($renderMode, 'localreport', 'summary')."\n";
-        $res .= getReportRenderedAs($renderMode, 'localreport', 'active')."\n";
-        $res .= getReportRenderedAs($renderMode, 'localreport', 'soon')."\n";
-        $res .= getReportRenderedAs($renderMode, 'localreport', 'expired')."\n";
-        $res .= getReportRenderedAs($renderMode, 'localreport', 'wosub')."\n";
-        $res .= "\n\n";
+    $res .= getReportRenderedAs($renderMode, 'localreport', 'alerts')."\n";
+    $res .= getReportRenderedAs($renderMode, 'localreport', 'summary')."\n";
+    $res .= getReportRenderedAs($renderMode, 'localreport', 'active')."\n";
+    $res .= getReportRenderedAs($renderMode, 'localreport', 'soon')."\n";
+    $res .= getReportRenderedAs($renderMode, 'localreport', 'expired')."\n";
+    $res .= getReportRenderedAs($renderMode, 'localreport', 'wosub')."\n";
+    $res .= "\n\n";
 
-        if($renderMode eq 'html')
-        {
-            $res .= "<pre>\n";
-            $res .= $legendLocal."\n\n";
-        }
-        elsif($renderMode eq 'xml')
-        {
-            #$res .= "<screen>\n";
-        }
-        elsif($renderMode eq 'docbook')
-        {
-            $res .= "<section><title>Footer</title>";
-            $res .= "<screen>";
-            $res .= $legendLocal."\n\n";
-            #$res .= "</para></section>";
-        }
-        else
-        {
-            $res .= $legendLocal."\n\n";
-        }
+    if($renderMode eq 'html')
+    {
+        $res .= "<pre>\n";
+        $res .= $legendLocal."\n\n";
+    }
+    elsif($renderMode eq 'xml')
+    {
+        #$res .= "<screen>\n";
+    }
+    elsif($renderMode eq 'docbook')
+    {
+        $res .= "<section><title>Footer</title>";
+        $res .= "<screen>";
+        $res .= $legendLocal."\n\n";
+        #$res .= "</para></section>";
+    }
+    else
+    {
+        $res .= $legendLocal."\n\n";
     }
 
     if($renderMode eq 'html')
@@ -382,15 +375,12 @@ sub getSeparateReports($)
     my %res = ();
     if (! defined $renderMode) { return %res; }
 
-    if($localreport)
-    {
-        $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'localreport', 'active');
-        $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'localreport', 'soon');
-        $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'localreport', 'expired');
-        $res{'product_subscription_wosub'}      = getReportRenderedAs($renderMode, 'localreport', 'wosub');
-        $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'localreport', 'summary');
-        $res{'product_subscription_alerts'}     = getReportRenderedAs($renderMode, 'localreport', 'alerts');
-    }
+    $res{'product_subscription_active'}     = getReportRenderedAs($renderMode, 'localreport', 'active');
+    $res{'product_subscription_expiresoon'} = getReportRenderedAs($renderMode, 'localreport', 'soon');
+    $res{'product_subscription_expired'}    = getReportRenderedAs($renderMode, 'localreport', 'expired');
+    $res{'product_subscription_wosub'}      = getReportRenderedAs($renderMode, 'localreport', 'wosub');
+    $res{'product_subscription_summary'}    = getReportRenderedAs($renderMode, 'localreport', 'summary');
+    $res{'product_subscription_alerts'}     = getReportRenderedAs($renderMode, 'localreport', 'alerts');
 
     return %res;
 }
@@ -401,7 +391,6 @@ sub getSeparateReports($)
 
 Getopt::Long::Configure( 'no_auto_abbrev');
 my $optres = Getopt::Long::GetOptions(
-                                      'local'      => \$localreport,
                                       'debug|d'    => \$debug,
                                       "verboselevel|v=i" => \$vblevel,
                                       'help|h'     => \$help,
@@ -437,15 +426,6 @@ if ( $api eq 'NCC')
     exit 1;
 }
 
-if(!$localreport)
-{
-    my $fwdr = $cfg->val("LOCAL", "forwardRegistration");
-    if(lc($fwdr) ne "true")
-    {
-        $localreport = 1;
-    }
-}
-
 {
     my $hostname = SMT::Utils::getFQDN();
     my ($uri, $NUUser, $NUPass) = SMT::Utils::getLocalRegInfos();
@@ -459,13 +439,10 @@ SMT ID:       $smtguid
 }
 
 
-if($localreport)
+$DATA {'localreport'} = SMT::CLI::productSubscriptionReport(log => $LOG, vblevel => $vblevel);
+if( $DATA{'localreport'}{'alerts'} ne "" )
 {
-    $DATA {'localreport'} = SMT::CLI::productSubscriptionReport(log => $LOG, vblevel => $vblevel);
-    if( $DATA{'localreport'}{'alerts'} ne "" )
-    {
-        $haveAlerts = 1;
-    }
+    $haveAlerts = 1;
 }
 
 if( defined $mail && $mail && $dailycheck )
@@ -693,7 +670,7 @@ smt [help|--help|-h] report
 
 smt report [--mail|-m] [--attach|-a] [--quiet|-q] [--csv|-c] [--file|-F [file]] [--logfile|-L file] [--debug|-d]
 
-smt report [--local] [--scc] [--nosync]
+smt report
 
 =head1 DESCRIPTION
 
@@ -701,20 +678,9 @@ I<smt report> creates reports on SMT and SCC data. Reports of the kinds local re
 The reports can be printed to STDOUT, exported to one or multiple files as well as mailed to the administrator(s).
 
 The kind of the report is computed automatically based on your SMT setup but can as well be defined by parameters.
-Using the parameter B<--local> will force a report based on local data whereas B<--scc> will force a report based on SCC data. These parameters can be used in combination and do not exclude each other.
 
 
 =head1 OPTIONS
-
-=head2 REPORT TYPES
-
-=over
-
-=item --local
-
-Enforces the creation of a report based on local data.
-
-=back
 
 =head2 OUTPUT FORMAT and TARGET
 
@@ -826,11 +792,11 @@ Number of registered virtual systems.  (Only in sccreport)
 
 =item B<localregsystems>
 
-Number of registered systems at this SMT server.  (Only in localreport)
+Number of registered systems at this SMT server.
 
 =item B<localregsystemsvirt>
 
-Number of registered virtual systems at this SMT server.  (Only in localreport)
+Number of registered virtual systems at this SMT server.
 
 =item B<active>
 
@@ -947,7 +913,7 @@ Write log messages to B<file>.
 
 Print all reports to STDOUT
 
- smt report --local --scc
+ smt report
 
 Only mail the default report to the administrator(s) and suppress console output
 
@@ -955,11 +921,11 @@ Only mail the default report to the administrator(s) and suppress console output
 
 Export all reports as separate files in B<csv> format to B<./reports/>
 
- smt report --local --scc --file ./reports/ --csv
+ smt report --file ./reports/ --csv
 
 Mail all reports including csv attachments to the administrators and suppress console output (convenient for a cron job)
 
- smt report --local --scc --mail --attach --quiet
+ smt report --mail --attach --quiet
 
 Start the report procedure with logging
 
