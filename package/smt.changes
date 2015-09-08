@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Sep  8 09:06:11 UTC 2015 - oholecek@suse.com
+
+- smt-daily: don't use removed nosccsync option (bsc#944693)
+- version 3.0.3
+
+-------------------------------------------------------------------
 Thu Aug 27 12:15:19 UTC 2015 - oholecek@suse.com
 
 - version 3.0.2
