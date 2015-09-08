@@ -18,15 +18,11 @@ module Yast
 
       Yast.include self, "smt/wizard.rb"
 
-      # Registering new agents installed during the current
-      # y2base run, bnc #384994
-      if Mode.installation
-        Builtins.y2milestone("Registering new SCR Agents")
-        SCR.RegisterNewAgents
-      end
-
+      Wizard.CreateDialog()
 
       SMTInstallSequence()
+
+      UI.CloseDialog()
     end
   end
 end

@@ -20,7 +20,7 @@
 
 
 Name:           yast2-smt
-Version:        3.0.1
+Version:        3.0.2
 Release:        0
 License:        GPL-2.0
 Group:          System/YaST
@@ -44,8 +44,8 @@ Requires:	/usr/bin/getent
 Requires:       sudo
 # Modified smt-catalogs (added --batch-mode)
 # SMT::Client::getPatchStatusLabel returning two values
-# require smt version having SMT::Curl
-Requires:	smt >= 1.1.23
+# don't require SMT (instead ask to install it), but prevent older versions
+Conflicts:	smt < 3.0.2
 # Icons
 Requires:	hicolor-icon-theme
 # any YaST theme

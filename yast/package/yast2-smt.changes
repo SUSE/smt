@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Sep  4 10:57:39 UTC 2015 - jsrain@suse.cz
+
+- do not require smt, install it on demand instead (bsc#944479)
+- re-add initial configuration wizard (bsc#944491)
+- fixed the systemd target to enable/check (bsc#944499)
+- 3.0.2
+
+-------------------------------------------------------------------
 Fri Jul 24 11:30:54 UTC 2015 - jsrain@suse.cz
 
 - clean-up NCC support
