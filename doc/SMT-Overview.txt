@@ -21,13 +21,9 @@ smt-job: manage jobs
 smt-list-products: list product
 smt-list-registrations: list available registrations
 smt-mirror: mirror the repos from NCC/SCC
-smt-mirror-sle9: special mirror tools for SLES9 repos. (using wget --mirror)
-smt-ncc-scc-migration: migrate from NCC to SCC
-smt-ncc-sync: daily sync tool NCC
 smt-register: register the clients at NCC
 smt-report: generate reports about products, cients and registrations
 smt-repos: manage repositories
-smt-scc-ncc-migration: migrate back from SCC to NCC (don't ask:-)
 smt-scc-sync: daily sync tool SCC
 smt-setup-custom-repos: add custom repos
 smt-staging: manage staging (full/testing/production)
