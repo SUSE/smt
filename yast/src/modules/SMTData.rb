@@ -39,7 +39,7 @@ module Yast
       @path_to_scc_sync_script = "/usr/sbin/smt-scc-sync"
       @user_for_sync_script = "root"
 
-      @server_cert = "/etc/ssl/certs/YaST-CA.pem"
+      @server_cert = "/etc/pki/trust/anchors/YaST-CA.pem"
       @apache_cert = "/srv/www/htdocs/smt.crt"
 
       # own control file
