@@ -183,7 +183,9 @@ fi
 %service_del_preun smt.service
 %service_del_preun smt.target
 
-# no postun service handling, we don't want them to be restarted on upgrade
+# no postun service handling for target or schema-upgrade, we don't want them to be restarted on upgrade
+%postun
+%service_del_postun smt.service
 
 %files
 %defattr(-,root,root)
