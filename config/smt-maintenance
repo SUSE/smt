@@ -1,0 +1,92 @@
+#!/bin/sh
+#
+# Copyright (c) 2008-2015 SUSE LLC
+#
+# Authors:	Lukas Ocilka <locilka@suse.cz>
+#               Michael Calmer <mc@suse.com>
+#
+##############################################
+
+apache_vhosts="vhost-ssl.conf"
+smt_apache_vhostdir="/etc/apache2/vhosts.d/"
+exit_code=0
+
+function test_cred_permissions {
+    cred_file="/etc/zypp/credentials.d/SCCcredentials"
+    if [ -n $cred_file ]; then
+        su -s /bin/bash -c "if [ ! -r $cred_file ]; then
+                                logger \"Unable to read $cred_file: Permission denied.\";
+                                logger \"You need to grant read access for the user 'smt'\";
+                                logger \"Example: /usr/bin/setfacl -m u:smt:r $cred_file\";
+                                exit 1;
+                            fi" - smt
+        if [ "$?" != "0" ]; then
+            return 1
+        fi
+    fi
+    return 0
+}
+
+function check_copy_cert {
+    ok="false"
+    calink=""
+    for filename in ${apache_vhosts}; do
+
+        if [ -e ${smt_apache_vhostdir}${filename} ]; then
+
+            servercert=`grep -P "^\sSSLCertificateFile" ${smt_apache_vhostdir}${filename} | sed 's/^[[:space:]]*SSLCertificateFile[[:space:]]*//'`
+            calink="${servercert}"
+            issuerhash=""
+            subjecthash=""
+
+            if [ -e ${servercert} ]; then
+
+                issuerhash=`openssl x509 -issuer_hash -noout -in ${servercert}`
+                subjecthash=`openssl x509 -subject_hash -noout -in ${servercert}`
+
+                while [ ${issuerhash} != ${subjecthash} ]; do
+                    suffix=0
+                    calink="/etc/ssl/certs/${issuerhash}.${suffix}"
+                    while [ ! -e "${calink}" ]; do
+                        ((suffix++))
+                        calink="/etc/ssl/certs/${issuerhash}.${suffix}"
+                        if [ ${suffix} -gt 100 ]; then
+                            logger "ERROR: Setting smt certificate failed"
+                            return 1
+                        fi
+                    done
+
+                    issuerhash=`openssl x509 -issuer_hash -noout -in ${calink}`
+                    subjecthash=`openssl x509 -subject_hash -noout -in ${calink}`
+
+                done
+
+                if cmp /srv/www/htdocs/smt.crt ${calink} > /dev/null 2>&1 ; then
+                        ok="true"
+                elif [ -e ${calink} ]; then
+                    logger "Copy SMT certificate"
+                    ok="true"
+                    cp ${calink} /srv/www/htdocs/smt.crt
+                fi
+            fi
+        fi
+    done
+    if [ ${ok} != "true" ]; then
+        logger "ERROR: Setting smt certificate failed"
+        return 1
+    fi
+    logger "The SMT certificate is ok"
+    return 0
+}
+
+if ! test_cred_permissions; then
+    exit_code=1
+fi
+
+if ! check_copy_cert; then
+    exit_code=1
+fi
+
+# Inform the caller not only verbosely and set an exit status.
+exit ${exit_code}
+
