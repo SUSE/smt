@@ -2,6 +2,7 @@
 Description=SMT
 Requires=cron.service
 Requires=mysql.service
+Requires=smt.service
 Requires=apache2.service
 Requires=smt-schema-upgrade.service
 

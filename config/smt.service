@@ -1,0 +1,12 @@
+[Unit]
+Description=SMT Maintenance tasks
+Requires=mysql.service
+After=mysql.service
+Before=apache2.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/SMT/bin/smt-maintenance
+
+[Install]
+WantedBy=smt.target

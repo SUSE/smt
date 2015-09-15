@@ -138,6 +138,7 @@ ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh %{buildroot}%{_docdir}/smt/c
 %pre
 %{_bindir}/getent passwd smt >/dev/null || %{_sbindir}/useradd -r -g www -s %{_bindir}/false -c "User for SMT" -d %{_localstatedir}/lib/smt smt
 %service_add_pre smt-schema-upgrade.service
+%service_add_pre smt.service
 %service_add_pre smt.target
 
 %post
@@ -145,6 +146,7 @@ sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf || :
 %service_add_post smt-schema-upgrade.service
+%service_add_post smt.service
 %service_add_post smt.target
 
 if [ "$1" = "2" ]; then
@@ -178,9 +180,12 @@ fi
 
 %preun
 %service_del_preun smt-schema-upgrade.service
+%service_del_preun smt.service
 %service_del_preun smt.target
 
-# no postun service handling, we don't want them to be restarted on upgrade
+# no postun service handling for target or schema-upgrade, we don't want them to be restarted on upgrade
+%postun
+%service_del_postun smt.service
 
 %files
 %defattr(-,root,root)
@@ -240,6 +245,7 @@ fi
 %{_libexecdir}/SMT/bin/*
 %{_bindir}/smt*
 %{_libexecdir}/systemd/system/smt.target
+%{_libexecdir}/systemd/system/smt.service
 %{_libexecdir}/systemd/system/smt-schema-upgrade.service
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*

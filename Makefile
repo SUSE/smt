@@ -84,7 +84,9 @@ install:
                   -o \
                   \( -type f -exec install -m644 \{\} $(DESTDIR)/usr/share/schemas/smt/\{\} \; \)
 	install -m 444 config/smt.target $(DESTDIR)/usr/lib/systemd/system/
+	install -m 444 config/smt.service $(DESTDIR)/usr/lib/systemd/system/
 	install -m 444 config/smt-schema-upgrade.service $(DESTDIR)/usr/lib/systemd/system/
+	install -m 755 config/smt-maintenance $(DESTDIR)/usr/lib/SMT/bin/
 	install -D -m 644 config/tmpfile-smt.conf $(DESTDIR)/usr/lib/tmpfiles.d/smt.conf
 	install -m 655 config/smt.reg $(DESTDIR)/etc/slp.reg.d/
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
@@ -162,7 +164,9 @@ dist: clean
 	@cp apache2/vhosts.d/*.conf $(NAME)-$(VERSION)/apache2/vhosts.d/
 	@cp config/smt.conf.production $(NAME)-$(VERSION)/config/smt.conf
 	@cp config/smt.target $(NAME)-$(VERSION)/config/
+	@cp config/smt.service $(NAME)-$(VERSION)/config/
 	@cp config/smt-schema-upgrade.service $(NAME)-$(VERSION)/config/
+	@cp config/smt-maintenance $(NAME)-$(VERSION)/config/
 	@cp config/tmpfile-smt.conf $(NAME)-$(VERSION)/config/
 	@cp config/smt.reg $(NAME)-$(VERSION)/config/
 	@cp cron/smt-* $(NAME)-$(VERSION)/cron/
