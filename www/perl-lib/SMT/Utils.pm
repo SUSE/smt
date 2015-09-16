@@ -430,6 +430,11 @@ sub getDBTimestamp
 {
     my $time = shift || time;
 
+    # max time representable by 32bit mysql TIMESTAMP type
+    # once fate#319450 is done this check should be removed
+    if ($time > 2147483647) {
+	$time = 2147483647;
+    }
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($time);
     $year += 1900;
     $mon +=1;
