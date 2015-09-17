@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Sep 17 11:41:56 UTC 2015 - oholecek@suse.com
+
+- add smt.service for extra maintenance tasks (bsc#945081)
+- remove smt-mirror-sle9 (fate#319415)
+- limit timestamp to 32bit value (bnc#945382)
+- version 3.0.4 
+
+-------------------------------------------------------------------
 Tue Sep  8 09:06:11 UTC 2015 - oholecek@suse.com
 
 - smt-daily: don't use removed nosccsync option (bsc#944693)
