@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Sep 25 13:17:23 CEST 2015 - mc@suse.de
+
+- implement rollback for ServicePack migration feature
+  (FATE#319133, FATE#319134)
+
+-------------------------------------------------------------------
 Thu Sep 17 11:41:56 UTC 2015 - oholecek@suse.com
 
 - add smt.service for extra maintenance tasks (bsc#945081)
