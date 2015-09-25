@@ -37,6 +37,7 @@ sub systems_handler()
         elsif ( $self->request()->method() =~ /^POST$/i )
         {
             if     ( $path =~ /^systems\/products\/migrations\/?$/ ) { return $self->product_migration_targets(); }
+            elsif  ( $path =~ /^systems\/products\/synchronize\/?$/ ) { return $self->product_synchronize(); }
         }
         elsif ( $self->request()->method() =~ /^PUT$/i || $self->request()->method() =~ /^PATCH$/i)
         {
@@ -46,6 +47,82 @@ sub systems_handler()
         }
      }
      return ($code, $data);
+}
+
+sub product_synchronize
+{
+    my $self = shift || return (undef, undef);
+    my $c    = JSON::decode_json($self->read_post());
+    my $guid = $self->user();
+    my $installedProducts = [];
+    my $result = [];
+
+    foreach my $installedProduct (@{$c->{products}})
+    {
+        if ( ! (exists $installedProduct->{identifier} && $installedProduct->{identifier}))
+        {
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: identifier");
+        }
+        if ( ! (exists $installedProduct->{version} && $installedProduct->{version}))
+        {
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: version");
+        }
+        else
+        {
+            # sometimes people provide edition instead of version, so let's stip the release
+            my ($v, $r) = split(/-/, $installedProduct->{version}, 2);
+            $installedProduct->{version} = $v;
+        }
+        if ( ! (exists $installedProduct->{arch} && $installedProduct->{arch}))
+        {
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: arch");
+        }
+        if ( ! (exists $installedProduct->{release_type}))
+        {
+            $installedProduct->{release_type} = undef;
+        }
+        push @{$installedProducts}, $installedProduct;
+    }
+    my $statement = sprintf("SELECT p.id id,
+                                    p.PRODUCT identifier,
+                                    p.VERSION version,
+                                    p.REL release_type,
+                                    p.ARCH arch,
+                                    p.FRIENDLY friendly_name
+                               FROM Products p
+                               JOIN Registration r ON r.PRODUCTID = p.ID
+                              WHERE r.GUID=%s",
+                            $self->dbh()->quote($guid));
+    my $registeredProducts = $self->dbh()->selectall_arrayref($statement, {Slice => {}});
+    foreach my $regProd (@{$registeredProducts})
+    {
+        my $found = 0;
+        foreach my $instProd (@{$installedProducts})
+        {
+            if( $regProd->{'identifier'} eq $instProd->{'identifier'} &&
+                $regProd->{'version'} eq $instProd->{'version'} &&
+                $regProd->{'arch'} eq $instProd->{'arch'})
+            {
+                # extra check for REL
+                if( ! $regProd->{'release_type'} ||
+                    $regProd->{'release_type'} eq $instProd->{'release_type'})
+                {
+                    $found = 1;
+                    last;
+                }
+            }
+        }
+        if( ! $found )
+        {
+            $self->_deregister_product($guid, $regProd);
+            $self->request()->log->warn(sprintf("Product '%s' de-activated", $regProd->{friendly_name}));
+        }
+        else
+        {
+             push @{$result}, $self->_getProduct($regProd->{id});
+        }
+    }
+    return (Apache2::Const::OK, $result);
 }
 
 sub product_migration_targets
@@ -300,5 +377,47 @@ sub _iterate
     return (\@notfound, $compat);
 }
 
+sub _deregister_product
+{
+    my $self = shift    || return 0;
+    my $guid = shift    || return 0;
+    my $regProd = shift || return 0;
+
+    my $productId = SMT::Utils::lookupProductIdByName($self->dbh(),
+                                                      $regProd->{'identifier'},
+                                                      $regProd->{'version'},
+                                                      $regProd->{'release_type'},
+                                                      $regProd->{'arch'});
+
+    my $statement = sprintf("DELETE FROM Registration WHERE GUID = %s AND PRODUCTID = %s",
+                            $self->dbh()->quote($guid),
+                            $self->dbh()->quote($productId));
+    $self->request()->log->info("STATEMENT: $statement");
+    eval
+    {
+        $self->dbh()->do($statement);
+    };
+    if ($@)
+    {
+        $self->request()->log->error("DBERROR: ".$self->dbh()->errstr);
+        return 0;
+    }
+    #
+    # delete product info into MachineData
+    #
+    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME LIKE %s",
+                         $self->dbh()->quote($guid),
+                         $self->dbh()->quote("product-%-$productId"));
+    $self->request()->log->info("STATEMENT: $statement");
+    eval {
+        $self->dbh()->do($statement);
+    };
+    if($@)
+    {
+        $self->request()->log->error("DBERROR: ".$self->dbh()->errstr);
+        return 0;
+    }
+    return 1;
+}
 1;
 
