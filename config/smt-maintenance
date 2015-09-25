@@ -16,7 +16,10 @@ function test_cred_permissions {
     if [ -n $cred_file ]; then
         if ! su -s /bin/bash -c "/usr/bin/test -r $cred_file" -l smt; then
             logger 'Updating SCCcredentials permissions to allow smt read access'
-            /usr/bin/setfacl -m u:smt:r $cred_file
+            if ! /usr/bin/setfacl -m u:smt:r $cred_file 2>/dev/null; then
+                logger "ERROR: Cannot update ACL. Make sure 'smt' user has read access to ${cred_file}."
+                return 1
+            fi
         fi
     fi
     return 0
