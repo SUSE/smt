@@ -260,7 +260,7 @@ module Yast
 
       if sequence_type == "config"
         # TRANSLATORS: dialog caption
-        caption = _("NU Configuration")
+        caption = _("Update Server Configuration")
         wd = {
           "tab" => CWMTab.CreateWidget(
             {

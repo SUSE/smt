@@ -870,7 +870,7 @@ module Yast
               "Server certificate %1 does not exist.\n" +
                 "Would you like to run CA management to create one?\n" +
                 "\n" +
-                "The server certificate is vitally important for the NU server to support SSL.\n"
+                "The server certificate is vitally important for the update server to support SSL.\n"
             ),
             @server_cert
           ),
@@ -972,7 +972,7 @@ module Yast
               message != "" && message != nil ?
                 VBox(Label(message), VSpacing(1)) :
                 Empty(),
-              Password(Id(:root_password), _("Enter the MySQL root &Password"))
+              Password(Id(:root_password), _("Enter the MariaDB root &Password"))
             ),
             HSpacing(2)
           ),
@@ -1077,13 +1077,13 @@ module Yast
             VBox(
               Label(
                 _(
-                  "The current MySQL root password is empty.\n" +
+                  "The current MariaDB root password is empty.\n" +
                     "\n" +
                     "                                          For security reasons, please, set a new one."
                 )
               ),
               VSpacing(1),
-              Password(Id(:new_root_password_1), _("New MySQL root &Password")),
+              Password(Id(:new_root_password_1), _("New MariaDB root &Password")),
               Password(Id(:new_root_password_2), _("New Password &Again"))
             ),
             HSpacing(2)
@@ -1179,7 +1179,7 @@ module Yast
       cmd = Convert.to_map(SCR.Execute(path(".target.bash_output"), cmd_cmd))
       if Ops.get_integer(cmd, "exit", -1) != 0
         Builtins.y2error("Cannot set new root password: %1", cmd)
-        Report.Error(_("Setting up new MySQL root password failed."))
+        Report.Error(_("Setting up new MariaDB root password failed."))
         return false
       end
 
