@@ -1196,7 +1196,7 @@ module Yast
       if nuuser == nil || nuuser == ""
         UI.SetFocus(Id("NUUser"))
         # Pop-up error message
-        Report.Error(_("Updatge server user must not be empty."))
+        Report.Error(_("Update server user must not be empty."))
         return false
       end
 
