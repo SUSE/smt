@@ -630,6 +630,7 @@ sub _registrationResult
         'id' => 1,
         'name' =>  $localID,
         'url'  =>  "$LocalNUUrl?credentials=$localID",
+        'obsoleted_service_name' => '',
         'product' => $p
     };
     return (Apache2::Const::OK, $response);
