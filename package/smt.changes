@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Oct  5 08:50:26 CEST 2015 - mc@suse.de
+
+- Set obsoleted_service_name to same service name (bsc#948551)
+
+-------------------------------------------------------------------
 Fri Sep 25 13:17:23 CEST 2015 - mc@suse.de
 
 - implement rollback for ServicePack migration feature
