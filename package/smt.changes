@@ -2,6 +2,7 @@
 Mon Oct  5 08:50:26 CEST 2015 - mc@suse.de
 
 - Set obsoleted_service_name to same service name (bsc#948551)
+- fix the location of the SSL CA Truststore in clientSetup4SMT.sh
 
 -------------------------------------------------------------------
 Fri Sep 25 13:17:23 CEST 2015 - mc@suse.de
