@@ -20,8 +20,8 @@ SED=/usr/bin/sed
 CA_TRUSTSTORE="/etc/ssl/certs/"
 CA_GEN_TRUSTSTORE_CMD="/usr/bin/c_rehash"
 
-if [ -d "/usr/share/pki/trust/anchors/" ] && [ -x "/usr/sbin/update-ca-certificates" ]; then
-    CA_TRUSTSTORE="/usr/share/pki/trust/anchors/"
+if [ -d "/etc/pki/trust/anchors/" ] && [ -x "/usr/sbin/update-ca-certificates" ]; then
+    CA_TRUSTSTORE="/etc/pki/trust/anchors/"
     CA_GEN_TRUSTSTORE_CMD="/usr/sbin/update-ca-certificates"
 elif [ -d $CA_TRUSTSTORE ] && [ -x $CA_GEN_TRUSTSTORE_CMD ]; then
     CA_GEN_TRUSTSTORE_CMD="$CA_GEN_TRUSTSTORE_CMD $CA_TRUSTSTORE"
