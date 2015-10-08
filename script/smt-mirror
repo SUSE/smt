@@ -504,7 +504,7 @@ if(!defined $dbreplfile)
 
 # bsc#949361
 if( $LocalBasePath && ! -d SMT::Utils::cleanPath($LocalBasePath, "SUSE") &&
-    SMT::Utils::cleanPath($LocalBasePath, "repo", "SUSE"))
+    -d SMT::Utils::cleanPath($LocalBasePath, "repo", "SUSE"))
 {
     symlink("repo/SUSE", SMT::Utils::cleanPath($LocalBasePath, "SUSE"));
 }
