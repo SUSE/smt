@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Oct 12 09:49:55 UTC 2015 - oholecek@suse.com
+
+- version 3.0.6
+
+-------------------------------------------------------------------
 Thu Oct  8 08:48:24 CEST 2015 - mc@suse.com
 
 - create a symlink to repo/SUSE when exporting to directory
