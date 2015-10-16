@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Oct 16 12:10:25 UTC 2015 - jsrain@suse.cz
+
+- store created server certificate when it is created while saving
+  SMT server settings (bsc#950692)
+- 3.0.5
+
+-------------------------------------------------------------------
 Fri Sep 25 09:39:45 UTC 2015 - jsrain@suse.cz
 
 - adjusted several texts (bsc#947276)

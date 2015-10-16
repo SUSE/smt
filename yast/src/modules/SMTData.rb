@@ -912,6 +912,10 @@ module Yast
           ProductControl.Init
 
           Builtins.y2milestone("Service proposal returned: %1", ret)
+          if ret == :next
+            ret = WFM.call("ca_mgm_proposal", ["Write"])
+            Builtins.y2milestone("Storing CA management settings returned: %1", ret)
+          end
           Progress.set(progress_orig)
           Wizard.CloseDialog
 
