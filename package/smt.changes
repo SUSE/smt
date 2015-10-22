@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Oct 22 11:54:42 UTC 2015 - oholecek@suse.com
+
+- version 3.0.7
+
+-------------------------------------------------------------------
 Thu Oct 22 09:22:49 CEST 2015 - mc@suse.de
 
 - set a global connect timeout to a value which work also for sloweri
