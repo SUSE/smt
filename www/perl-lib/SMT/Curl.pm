@@ -44,14 +44,24 @@ sub new
 
     $self->setopt(CURLOPT_HEADER, 0);
     $self->setopt(CURLOPT_NOPROGRESS,1);
-    $self->setopt(CURLOPT_CONNECTTIMEOUT, $opt{connecttimeout} ) if(exists $opt{connecttimeout});
+
+    if(exists $opt{connecttimeout})
+    {
+        $self->connecttimeout($opt{connecttimeout});
+    }
+    else
+    {
+        # See bsc#950924 and bsc#932736
+        $self->connecttimeout(5);
+    }
+
     if(exists $opt{capath})
     {
         $self->setopt(CURLOPT_CAPATH, $opt{capath} );
     }
     else
     {
-        $self->setopt(CURLOPT_CAPATH, '/etc/ssl/certs' );
+        $self->setopt(CURLOPT_CAPATH, '/etc/ssl/certs/' );
     }
     $self->setopt(CURLOPT_SSL_VERIFYHOST, 2 );
     $self->setopt(CURLOPT_SSL_VERIFYPEER, 1 );
@@ -63,7 +73,6 @@ sub new
     }
     # setting some defaults
     $self->max_redirect(5);
-    $self->connecttimeout(300);
 
     if($self->{VBLEVEL} & LOG_DEBUG3)
     {
