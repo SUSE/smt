@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Oct 22 09:19:28 CEST 2015 - mc@suse.de
+
+- version 2.0.15
+- set a global connect timeout to a value which work also for slower
+  network connections (bsc#950924, bsc#932736)
+
+-------------------------------------------------------------------
 Thu Oct  8 08:46:11 CEST 2015 - mc@suse.com
 
 - version 2.0.14
