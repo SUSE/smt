@@ -172,7 +172,14 @@ sub product_migration_targets
         }
         else
         {
-            push @$installedProducts, $productId;
+            if (SMT::Utils::isBaseProduct($self->dbh(), $productId))
+            {
+                unshift @$installedProducts, $productId;
+            }
+            else
+            {
+                push @$installedProducts, $productId;
+            }
         }
     }
     if (@not_registered_products > 0)
