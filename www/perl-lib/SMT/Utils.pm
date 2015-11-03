@@ -1875,6 +1875,31 @@ sub isExtensionOf
     return (@$ref == 1);
 }
 
+=item isBaseProduct($dbh, $productid)
+
+returns true if productid is the base, otherwise false
+
+=cut
+
+sub isBaseProduct
+{
+    my $dbh = shift || return 0;
+    my $productid = shift || return 0;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $sql = sprintf("
+        select 1
+          from ProductExtensions
+         where EXTENSIONID = %s",
+           $dbh->quote($productid));
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $sql");
+    my $ref = $dbh->selectcol_arrayref($sql) || [];
+    return (@$ref == 0);
+}
+
+
 =item isMigrationTargetOf($dbh, $srcid, $tgtid)
 
 returns true if tgtid is a valid migration target of srcid, otherwise false
