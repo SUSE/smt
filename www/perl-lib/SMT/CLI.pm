@@ -721,10 +721,10 @@ sub listRegistrations
 
 
                 print "        ".__('Local Registration Date')." : $product->{REGDATE}\n";
-                print "        ".__('NCC Registration Date')." : ".((defined $product->{NCCREGDATE})?$product->{NCCREGDATE}:"")."\n";
+                print "        ".__('SCC Registration Date')." : ".((defined $product->{NCCREGDATE})?$product->{NCCREGDATE}:"")."\n";
                 if (defined $product->{NCCREGERROR} && $product->{NCCREGERROR})
                 {
-                    print "        ".__('NCC Registration Errors')." : YES\n";
+                    print "        ".__('SCC Registration Errors')." : YES\n";
                 }
             }
 
@@ -2361,7 +2361,7 @@ sub productSubscriptionReport
     my $count = $dbh->selectcol_arrayref($statement);
     if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
     {
-        $alerts .= sprintf(__("NCC registration failed for %d Machines. \n"), $count->[0]);
+        $alerts .= sprintf(__("SCC registration failed for %d Machines. \n"), $count->[0]);
     }
 
     $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => \@SUMVALUES, 'opts' => \%SUMOPTIONS };
@@ -2867,12 +2867,12 @@ sub subscriptionReport
                      id    => "expiresoon"
                     },
                     {
-                     name  => __("Total Systems\nRegistered with NCC"),
+                     name  => __("Total Systems\nRegistered with SCC"),
                      align => "auto",
                      id    => "regsystems"
                     },
                     {
-                     name  => __("Total Virtual Systems\nRegistered with NCC"),
+                     name  => __("Total Virtual Systems\nRegistered with SCC"),
                      align => "auto",
                      id    => "regsystemsvirt"
                     },
@@ -2974,7 +2974,7 @@ sub subscriptionReport
     my $count = $dbh->selectcol_arrayref($statement);
     if(exists $count->[0] && defined $count->[0] && $count->[0] > 0)
     {
-        $alerts .= sprintf(__("NCC registration failed for %d Machines. \n"), $count->[0]);
+        $alerts .= sprintf(__("SCC registration failed for %d Machines. \n"), $count->[0]);
     }
 
     $report{'summary'} = {'cols' => \@SUMHEAD, 'vals' => [sort {$a->[0] cmp $b->[0]} @SUMVALUES], 'opts' => \%SUMOPTIONS };
