@@ -677,6 +677,7 @@ module Yast
               next
             end
           elsif decision == "registration"
+            PackageSystem.EnsureTargetInit
             wfmret = WFM.CallFunction("inst_scc")
             Builtins.y2milestone("inst_scc returned: %1", wfmret)
             ret = :again
