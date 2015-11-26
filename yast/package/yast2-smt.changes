@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Nov 23 13:05:51 UTC 2015 - jsrain@suse.cz
+
+- fixed detection whether system is registered when configuring
+  SMT (bsc#956249)
+- 3.0.6
+
+-------------------------------------------------------------------
 Fri Oct 16 12:10:25 UTC 2015 - jsrain@suse.cz
 
 - store created server certificate when it is created while saving
