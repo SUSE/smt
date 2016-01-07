@@ -188,6 +188,14 @@ eval
         $exitcode = 1;
     }
 
+    printLog($LOG, $vblevel, LOG_INFO1, __("Downloading Order information"));
+    $res = $sccsync->orders();
+    if ($res)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_ERROR, __("Error while fetching Order data."));
+        $exitcode = 1;
+    }
+
     printLog($LOG, $vblevel, LOG_INFO1, __("Flagging repositories which can be mirrored"));
     SMT::CLI::setMirrorableCatalogs(log     => $LOG,
                                     vblevel => $vblevel,

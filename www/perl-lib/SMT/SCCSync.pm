@@ -381,6 +381,42 @@ sub subscriptions
     }
 }
 
+=item orders
+
+Write orders if option TODIR is given.
+Return number of errors.
+
+=cut
+
+sub orders
+{
+    my $self = shift;
+    my $name = "organizations_orders";
+
+    if(defined $self->{TODIR})
+    {
+        my $input = $self->_getInput($name);
+        if (! $input)
+        {
+            return 1;
+        }
+        open( FH, '>', $self->{TODIR}."/$name.json") or do
+        {
+            printLog($self->{LOG}, $self->{VBLEVEL}, LOG_ERROR, "Cannot open file: $!");
+            return 1;
+        };
+        my $json_text = JSON::encode_json($input);
+        print FH "$json_text";
+        close FH;
+        return 0;
+    }
+    else
+    {
+	printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1, "Downloading Orders skipped");
+        return 0;
+    }
+}
+
 sub finalize_mirrorable_repos
 {
     my $self = shift;
@@ -570,6 +606,10 @@ sub _getInput
     elsif($what eq "organizations_subscriptions")
     {
         $func = sub{$self->{API}->org_subscriptions()};
+    }
+    elsif($what eq "organizations_orders")
+    {
+        $func = sub{$self->{API}->org_orders()};
     }
     elsif($what eq "organizations_repositories")
     {
