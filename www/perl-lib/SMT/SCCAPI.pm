@@ -18,7 +18,7 @@ use SMT::Utils;
 use JSON;
 use URI;
 use Data::Dumper;
-use File::Temp qw/ :mktemp  /;
+use File::Temp qw/ tempfile  /;
 
 =item constructor
 
@@ -376,7 +376,7 @@ sub _request
     my $method = shift;
     my $headers = shift;
     my $body = shift;
-    my $dataTempFile = SMT::Utils::cleanPath("/var/tmp/", mktemp( "smtXXXXXXXX" ));
+    my ($fh, $dataTempFile) = tempfile( "smtXXXXXXXX", DIR => "/var/tmp/", UNLINK => 1);
 
     if ($url !~ /^http/)
     {
