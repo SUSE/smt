@@ -130,26 +130,25 @@ sub check()
     # load the solv file
     my $pool = new solv::Pool;
     # $pool->set_arch('x86_64'); # is this needed if we only want to search the pool?
-    my $repo = $pool->create_repo('checked-repo');
+    my $repo = $pool->add_repo('checked-repo');
     $repo->add_solv($self->{SOLV});
 
     printLog($self->{LOG}, $self->{VBLEVEL}, LOG_DEBUG,
-        'FilteredRepoChecker: repo loaded. Pool size: ' . $pool->size() .
-        ', count: ' . $pool->count(), 0);
+        'FilteredRepoChecker: repo loaded. size: ' . $repo->{nsolvables}, 0);
 
     # get the patches
     my $allowed = {};
     my $forbiden = {};
     my $allowedpkgs = {};
     my $forbidenpkgs = {};
-    foreach my $solvable ($pool->solvables())
+    foreach my $solvable (@{$pool->solvables_iter()})
     {
-        next if($solvable->name() !~ /^patch\:(.*)$/);
+        next if($solvable->{name} !~ /^patch\:(.*)$/);
 
         my $patch = {
             name => $1,
-            version => $solvable->evr(),
-            type => $solvable->attr_values('solvable:patchcategory')
+            version => $solvable->{evr},
+            type => $solvable->lookup_str($solv::SOLVABLE_PATCHCATEGORY),
             #title =>       # not used in match() so far
             #description => # not used in match() so far
         };
@@ -159,20 +158,20 @@ sub check()
         {
             $forbiden->{$patchid} = $patch;
 
-            for (my $i = 0; $i < $solvable->conflicts()->size(); $i++)
+            for my $rel ($solvable->lookup_deparray($solv::SOLVABLE_CONFLICTS))
             {
-                my $rel = $solvable->conflicts()->get($i);
-                $forbidenpkgs->{$rel->name() . '-' . $rel->evr()} = $patchid;
+                die("bad patch dep: ".$rel->str()) unless $rel->str() =~ /^(\S+) < (\S+)$/s;
+                $forbidenpkgs->{"$1-$2"} = $patchid;
             }
         }
         else
         {
             $allowed->{$patchid} = $patch;
 
-            for (my $i = 0; $i < $solvable->conflicts()->size(); $i++)
+            for my $rel ($solvable->lookup_deparray($solv::SOLVABLE_CONFLICTS))
             {
-                my $rel = $solvable->conflicts()->get($i);
-                $allowedpkgs->{$rel->name() . '-' . $rel->evr()} = $patchid;
+                die("bad patch dep: ".$rel->str()) unless $rel->str() =~ /^(\S+) < (\S+)$/s;
+                $allowedpkgs->{"$1-$2"} = $patchid;
             }
         }
     }
