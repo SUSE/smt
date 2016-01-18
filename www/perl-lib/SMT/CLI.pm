@@ -1569,7 +1569,18 @@ sub db2Xml
         die "No filename given.";
     }
     my $columstr = join ( ', ', @{$opts{columns}} );
-    my $dbout = $dbh->selectall_arrayref("SELECT $columstr from ".$opts{table} , { Slice => {} });
+    my $statement = "SELECT $columstr from ".$opts{table};
+    if($opts{table} eq "ProductCatalogs")
+    {
+        # ProductCatalogs has internal IDs, but we need the external
+        $statement = "SELECT p.PRODUCTDATAID as PRODUCTID,
+                             c.CATALOGID as CATALOGID,
+                             pc.OPTIONAL
+                        FROM ProductCatalogs pc
+                        JOIN Products p ON pc.PRODUCTID = p.ID
+                        JOIN Catalogs c ON pc.CATALOGID = c.ID";
+    }
+    my $dbout = $dbh->selectall_arrayref($statement , { Slice => {} });
 
     my $output = new IO::File("> ".$opts{outfile});
     if(!defined $output)
