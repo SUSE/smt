@@ -11,6 +11,7 @@ use JSON;
 use SMT::Utils;
 use SMT::Client;
 use SMT::Registration;
+use SMT::SCCSync;
 
 
 sub new
@@ -260,6 +261,23 @@ sub update_product
     return $self->_registrationResult($req_pdid);
 }
 
+sub delete_system
+{
+    my $self = shift || return (undef, undef);
+
+    # We are sure, that user is a system GUID
+    my @guids = ();
+    push @guids, $self->user();
+
+    my $sccreg = SMT::SCCSync->new(log       => $self->request(),
+                                   dbh       => $self->dbh());
+    my $err = $sccreg->delete_systems(@guids);
+    if($err)
+    {
+        return (Apache2::Const::SERVER_ERROR, "Error while deleting the system ");
+    }
+    return (Apache2::Const::OK, {});
+}
 
 #################################################################################
 
