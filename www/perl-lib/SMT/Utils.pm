@@ -37,6 +37,8 @@ use English;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(__ __N printLog LOG_ERROR LOG_WARN LOG_INFO1 LOG_INFO2 LOG_DEBUG LOG_DEBUG2 LOG_DEBUG3);
 
+my $REGSHARING = undef;
+
 use constant IOBUFSIZE => 8192;
 use constant LOG_ERROR  => 0x0001;
 use constant LOG_WARN   => 0x0002;
@@ -126,6 +128,46 @@ sub db_connect
 
     return $dbh;
 }
+
+=item hasRegSharing()
+
+Check whether registration sharing is enabled or not.
+
+=cut
+
+sub hasRegSharing
+{
+    my $r = shift;
+
+    if (! defined $REGSHARING) {
+        $REGSHARING = 0;
+        my $cfg;
+        eval
+        {
+            $cfg = SMT::Utils::getSMTConfig();
+        };
+        if($@ || !defined $cfg)
+        {
+            if (! $r)
+            {
+                return -1;
+            }
+            $r->log_error("Cannot read the SMT configuration file: ".$@);
+            my $msg = 'SMT server is missconfigured. Please contact your '
+                . 'administrator.';
+            return http_fail($r, 500, $msg);
+        }
+        my $allowedSenders = $cfg->val('LOCAL', 'acceptRegistrationSharing');
+        my $shareRegDataTargets = $cfg->val('LOCAL', 'shareRegistrations');
+
+        if ($allowedSenders && $shareRegDataTargets) {
+            $REGSHARING = 1;
+        }
+    }
+
+    return $REGSHARING;
+}
+
 
 =item __()
 

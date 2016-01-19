@@ -91,7 +91,6 @@ PreReq:         smt = %version
 This package contain the signing key for RES.
 
 
-
 Authors:
 --------
     Authors:
@@ -121,6 +120,42 @@ Authors:
         jdsn@suse.de
         locilka@suse.cz
 
+%package ha
+Summary:     SMT HA setup
+Group:       Productivity/Networking/Web/Proxy
+PreReq:      smt = %version
+Requires:    perl-File-Touch
+Requires:    perl-File-Slurp
+Requires:    perl-XML-LibXML
+
+%description ha
+This package extends the basic SMT functionality with registration sharing
+capabilities. This allows 2 or more SMT servers running at the same time to
+share the registrations they receive. The following smt.conf options are
+used.
+
+#
+# This string is used to verify that any sender trying to share a
+# registration is allowed to do so. Provide a comma separated list of
+# names or IP addresses.
+acceptRegistrationSharing=
+#
+# This string is used to set the host names and or IP addresses of sibling
+# SMT servers to which the registration data should be sent. For multiple
+# siblings provide a comma separated list.
+shareRegistrations=
+#
+# This string provides information for SSL verification of teh siblings.
+# Certificates for the siblings should reside in the given directory.
+# If not defined siblings are assumed to have the same CA as this server
+siblingCertDir=
+
+Authors:
+--------
+    rjschwei@suse.com
+
+
+ 
 %prep
 %setup -n %{name}-%{version}
 cp -p %{S:1} .
@@ -241,6 +276,7 @@ fi
 %config /etc/logrotate.d/smt
 /etc/init.d/smt
 /usr/sbin/rcsmt
+%exclude %{perl_vendorlib}/SMT/RegistrationSharing.pm
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Job/*.pm
@@ -256,9 +292,11 @@ fi
 %exclude /srv/www/perl-lib/SMT/Support.pm
 /usr/sbin/smt-*
 %exclude /usr/sbin/smt-support
+%exclude /usr/sbin/smt-sibling-sync
 /usr/sbin/smt
 /var/adm/fillup-templates/sysconfig.apache2-smt
 /usr/lib/SMT/bin/*
+%exclude /usr/lib/SMT/bin/shareRegistration.pl
 /srv/www/htdocs/repo/tools/*
 %{_datadir}/schemas/smt/*
 %doc %attr(644, root, root) %{_mandir}/man3/*
@@ -278,5 +316,11 @@ fi
 %config /etc/smt.d/smt_support.conf
 %dir %attr(775, smt, www)/var/spool/smt-support
 %doc %attr(644, root, root) %{_mandir}/man1/smt-support.1.gz
+
+%files ha
+%defattr(-,root,root)
+/usr/lib/SMT/bin/shareRegistration.pl
+%{perl_vendorlib}/SMT/RegistrationSharing.pm
+%{_sbindir}/smt-sibling-sync
 
 %changelog
