@@ -1,5 +1,5 @@
 -------------------------------------------------------------------
-Wed Mar  9 11:21:07 EST 2016 - rjschwei@suse.com
+Fri Apr 15 11:49:34 EDT 2016 - rjschwei@suse.com
 
 - SMT HA functionality for Cloud setup
   + Enable registration sharing between SMT servers that are configured
