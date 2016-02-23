@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Tue Feb 23 17:43:24 CET 2016 - mc@suse.de
+
+- version 2.0.17
+- Fix smt-ncc-sync --export after changed usage of the ID columns
+  (bsc#960627)
+- fix tempfile handling
+- Implement forwarding a delete system request to SCC (bsc#961135)
+- download orders if --todir is given needed for SUSE Manager
+
+-------------------------------------------------------------------
 Tue Nov  3 11:22:18 CET 2015 - mc@suse.de
 
 - version 2.0.16
