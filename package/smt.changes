@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Tue Feb 23 17:57:12 CET 2016 - mc@suse.de
+
+- version 3.0.9
+- fix tempfile handling
+- Implement forwarding a delete system request to SCC (bsc#961135)
+- adapt code to new libsolv wrapper
+- download orders if --todir is given needed for SUSE Manager
+- Adjusted user-visible strings for the move from NCC to SCC
+
+-------------------------------------------------------------------
 Wed Nov  4 09:31:22 CET 2015 - mc@suse.de
 
 - version 3.0.8
