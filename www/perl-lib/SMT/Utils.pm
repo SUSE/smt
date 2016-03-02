@@ -1838,7 +1838,7 @@ sub isRES
     my $sql = sprintf("
         select r.GUID
           from Registration r
-          join Products p on r.PRODUCTID = p.PRODUCTDATAID
+          join Products p on r.PRODUCTID = p.ID
          where r.GUID = %s
            AND p.PRODUCT = 'RES'",
            $dbh->quote($guid));
