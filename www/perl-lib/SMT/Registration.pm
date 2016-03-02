@@ -243,7 +243,7 @@ sub register
 
         # send new <zmdconfig>
 
-        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $regroot->{register}->{guid}, $catalogs, $status, $namespace);
+        my $zmdconfig = SMT::Registration::buildZmdConfig($r, $dbh, $regroot->{register}->{guid}, $catalogs, $status, $namespace);
 
         if( ! defined $zmdconfig )
         {
@@ -921,6 +921,7 @@ sub getRegistrationStatus
 sub buildZmdConfig
 {
     my $r          = shift;
+    my $dbh        = shift;
     my $guid       = shift;
     my $catalogs   = shift;
     my $status     = shift;
@@ -983,7 +984,7 @@ sub buildZmdConfig
     $writer->endTag("guid");
 
     # first write all catalogs of type NU
-    if($nuCatCount > 0)
+    if($nuCatCount > 0 && !SMT::Utils::isRES($dbh, $guid))
     {
         $writer->startTag("service",
                           "id"          => "$localID",
@@ -996,7 +997,7 @@ sub buildZmdConfig
         foreach my $cat (keys %{$catalogs})
         {
             next if(lc($catalogs->{$cat}->{OPTIONAL}) eq "y");
-            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu" || SMT::Utils::isRES($guid));
+            next if(lc($catalogs->{$cat}->{CATALOGTYPE}) ne "nu");
             if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
                $catalogs->{$cat}->{LOCALPATH} eq "")
             {
@@ -1038,8 +1039,7 @@ sub buildZmdConfig
 
     foreach my $cat (keys %{$catalogs})
     {
-        next if (not ( lc($catalogs->{$cat}->{CATALOGTYPE}) eq "zypp" || SMT::Utils::isRES($guid)) );
-
+        next if (not ( lc($catalogs->{$cat}->{CATALOGTYPE}) eq "zypp" || SMT::Utils::isRES($dbh, $guid)) );
         if(! exists $catalogs->{$cat}->{LOCALPATH} || ! defined $catalogs->{$cat}->{LOCALPATH} ||
            $catalogs->{$cat}->{LOCALPATH} eq "")
         {
