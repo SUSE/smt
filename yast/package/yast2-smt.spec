@@ -20,7 +20,7 @@
 
 
 Name:           yast2-smt
-Version:        3.0.6
+Version:        3.0.7
 Release:        0
 License:        GPL-2.0
 Group:          System/YaST
