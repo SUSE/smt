@@ -17,7 +17,7 @@
 
 
 Name:           smt
-Version:        3.0.9
+Version:        3.0.10
 Release:        0
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
@@ -143,7 +143,6 @@ ln -s /srv/www/htdocs/repo/tools/clientSetup4SMT.sh %{buildroot}%{_docdir}/smt/c
 
 %post
 sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_MODULES perl
-sysconf_addword %{_sysconfdir}/sysconfig/apache2 APACHE_SERVER_FLAGS SSL
 usr/bin/systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf || :
 %service_add_post smt-schema-upgrade.service
 %service_add_post smt.service
