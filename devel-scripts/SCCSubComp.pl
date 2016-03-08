@@ -13,7 +13,7 @@ use SMT::SCCAPI;
 
 my $self = {
   'AUTHUSER' => $ARGV[0] || 'UC7',
-  'AUTHPASS' => $ARGV[1] || 'a48210ea39',
+  'AUTHPASS' => $ARGV[1] || '',
   'SMTGUID'  => '5100dfd0f6bf4fc9a672bb670ef07dd3',
   'SUBSCRIPTIONS' => {},
   'NCCPRDID2NAME' => {},
