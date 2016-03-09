@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Mar  9 07:38:45 UTC 2016 - jsrain@localhost
+
+- version 3.0.11
+- fixed patch to file storing cron jobs in reschedule-sync.sh
+  (bsc#966898)
+
+-------------------------------------------------------------------
 Mon Mar  7 07:03:10 UTC 2016 - jsrain@localhost
 
 - version 3.0.10
