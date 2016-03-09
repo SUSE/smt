@@ -34,7 +34,7 @@ module Yast
       # script entered into a crontab
       @cron_mirror_script = "/usr/bin/smt-mirror.pl"
       # cron
-      @path_to_cron = "/etc/smt.d/novell.com-smt"
+      @path_to_cron = "/etc/cron.d/novell.com-smt"
 
       @path_to_scc_sync_script = "/usr/sbin/smt-scc-sync"
       @user_for_sync_script = "root"

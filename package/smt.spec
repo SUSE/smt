@@ -17,7 +17,7 @@
 
 
 Name:           smt
-Version:        3.0.10
+Version:        3.0.11
 Release:        0
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
