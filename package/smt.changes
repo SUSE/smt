@@ -11,6 +11,7 @@ Mon Mar  7 07:03:10 UTC 2016 - jsrain@localhost
 - version 3.0.10
 - do not enable SSL for Apache on installation of the smt package
   (bsc#956632)
+- fix RES registration (bsc#968124)
 
 -------------------------------------------------------------------
 Tue Feb 23 17:57:12 CET 2016 - mc@suse.de
