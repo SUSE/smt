@@ -176,8 +176,6 @@ module Yast
 
       @cron_rpms_checked = false
       @cron_rpms_installed = nil
-
-      @widget_filter_changed = false
     end
 
     def CredentialsDialogContent
@@ -2736,21 +2734,6 @@ module Yast
         UI.QueryWidget(Id(:catalogs_table), :CurrentItem)
       )
 
-      if event_id == :repos_filter
-        @widget_filter_changed = true
-        return nil
-      elsif event["EventType"] == "TimeoutEvent"
-        if @widget_filter_changed
-          event_id = :repos_filter
-          @widget_filter_changed = false
-        else
-          @widget_filter_changed = false
-          return nil
-        end
-      else
-        @widget_filter_changed = false
-      end
-
       if event_id == :toggle_mirroring
         ToggleRepository(current_id, "mirroring")
       elsif event_id == :toggle_staging
@@ -2766,8 +2749,7 @@ module Yast
         else
           AdjustRepositoriesButtons()
         end
-      elsif event_id == :filter || event_id == :repos_filter
-        @widget_filter_changed = false
+      elsif event_id == :filter || (event_id == :repos_filter && event["EventReason"] == "Activated")
         filter = UI.QueryWidget(Id(:repos_filter), :Value)
         @filters = filter.empty? ? [] : [filter]
         RedrawCatalogsTable(@filters)

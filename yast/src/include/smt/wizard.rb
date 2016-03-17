@@ -292,13 +292,8 @@ module Yast
         Builtins.y2error("Unknown sequence_type: %1", sequence_type)
       end
 
-      wd["timeout"] = {
-        "ui_timeout"    => 2000,
-        "widget"     => :empty
-      }
-
-      contents = VBox("tab", "timeout")
-      w = CWM.CreateWidgets(["tab", "timeout"], wd)
+      contents = VBox("tab")
+      w = CWM.CreateWidgets(["tab"], wd)
       contents = CWM.PrepareDialog(contents, w)
 
       Wizard.SetContentsButtons(
