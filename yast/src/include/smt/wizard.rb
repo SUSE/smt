@@ -293,7 +293,15 @@ module Yast
       end
 
       contents = VBox("tab")
-      w = CWM.CreateWidgets(["tab"], wd)
+
+      w = CWM.CreateWidgets(
+        ["tab"],
+        Convert.convert(
+          wd,
+          :from => "map <string, any>",
+          :to   => "map <string, map <string, any>>"
+        )
+      )
       contents = CWM.PrepareDialog(contents, w)
 
       Wizard.SetContentsButtons(
