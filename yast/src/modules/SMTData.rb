@@ -34,7 +34,7 @@ module Yast
       # script entered into a crontab
       @cron_mirror_script = "/usr/bin/smt-mirror.pl"
       # cron
-      @path_to_cron = "/etc/smt.d/novell.com-smt"
+      @path_to_cron = "/etc/cron.d/novell.com-smt"
 
       @path_to_scc_sync_script = "/usr/sbin/smt-scc-sync"
       @user_for_sync_script = "root"
@@ -611,28 +611,31 @@ module Yast
       end
 
       # SSL in /etc/sysconfig/apache2:APACHE_SERVER_FLAGS
-      ap_serflag = Convert.to_string(
-        SCR.Read(path(".http_server_conf.APACHE_SERVER_FLAGS"))
-      )
-      ap_serflag_old = ap_serflag
-
-      ap_serflag_l = Builtins.splitstring(ap_serflag, " \t")
-      ap_serflag_l = Builtins.filter(ap_serflag_l) do |one_ap_serflag|
-        one_ap_serflag != nil && one_ap_serflag != ""
-      end
-      ap_serflag_l = Builtins.toset(
-        Convert.convert(
-          Builtins.union(ap_serflag_l, ["SSL"]),
-          :from => "list",
-          :to   => "list <string>"
+      if FileUtils.Exists(@server_cert)
+        ap_serflag = Convert.to_string(
+          SCR.Read(path(".http_server_conf.APACHE_SERVER_FLAGS"))
         )
-      )
-      ap_serflag = Builtins.mergestring(ap_serflag_l, " ")
+        ap_serflag_old = ap_serflag
 
-      if ap_serflag != ap_serflag_old
-        Builtins.y2milestone("Writing APACHE_SERVER_FLAGS")
-        SCR.Write(path(".http_server_conf.APACHE_SERVER_FLAGS"), ap_serflag)
-        apache_conf_changed = true
+        ap_serflag_l = Builtins.splitstring(ap_serflag, " \t")
+        ap_serflag_l = Builtins.filter(ap_serflag_l) do |one_ap_serflag|
+          one_ap_serflag != nil && one_ap_serflag != ""
+        end
+
+        ap_serflag_l = Builtins.toset(
+          Convert.convert(
+            Builtins.union(ap_serflag_l, ["SSL"]),
+            :from => "list",
+            :to   => "list <string>"
+          )
+        )
+        ap_serflag = Builtins.mergestring(ap_serflag_l, " ")
+
+        if ap_serflag != ap_serflag_old
+          Builtins.y2milestone("Writing APACHE_SERVER_FLAGS")
+          SCR.Write(path(".http_server_conf.APACHE_SERVER_FLAGS"), ap_serflag)
+          apache_conf_changed = true
+        end
       end
 
       # Something has been changed

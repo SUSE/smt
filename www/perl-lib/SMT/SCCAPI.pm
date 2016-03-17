@@ -18,7 +18,7 @@ use SMT::Utils;
 use JSON;
 use URI;
 use Data::Dumper;
-use File::Temp qw/ :mktemp  /;
+use File::Temp qw/ tempfile  /;
 
 =item constructor
 
@@ -227,6 +227,35 @@ sub org_subscriptions
     return $self->_request($uri->as_string(), "get", {}, {});
 }
 
+=item org_orders
+
+List orders of an organization.
+
+Returns json structure containing orders of an organization with its
+order_items pointig to subscriptions.
+In case of an error it returns "undef".
+
+Example:
+
+
+
+=cut
+
+sub org_orders
+{
+    my $self = shift;
+    my $uri = SMT::Utils::appendPathToURI($self->{URL}, "organizations/orders");
+    if($self->{AUTHUSER} && $self->{AUTHPASS})
+    {
+        $uri->userinfo($self->{AUTHUSER}.":".$self->{AUTHPASS});
+    }
+    printLog($self->{LOG}, $self->{VBLEVEL}, LOG_INFO1,
+             "list organization orders", 0);
+
+    return $self->_request($uri->as_string(), "get", {}, {});
+}
+
+
 =item org_repos
 
 List repositories accessible by an organization.
@@ -347,7 +376,7 @@ sub _request
     my $method = shift;
     my $headers = shift;
     my $body = shift;
-    my $dataTempFile = SMT::Utils::cleanPath("/var/tmp/", mktemp( "smtXXXXXXXX" ));
+    my ($fh, $dataTempFile) = tempfile( "smtXXXXXXXX", DIR => "/var/tmp/", UNLINK => 1);
 
     if ($url !~ /^http/)
     {

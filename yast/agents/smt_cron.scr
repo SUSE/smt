@@ -2,7 +2,7 @@
  * File:
  *   smt_cron.scr
  * Summary:
- *   SCR Agent for reading/writing /etc/smt.d/novell.com-smt
+ *   SCR Agent for reading/writing /etc/cron.d/novell.com-smt
  *   using the any-agent
  * Access:
  *   read/write
@@ -11,14 +11,14 @@
  *
  * $Id:$
  *
- * Read/Sets the values defined in /etc/smt.d/novell.com-smt
- * linked from /etc/cron.d/novell.com-smt
+ * Read/Sets the values defined in /etc/cron.d/novell.com-smt
+ * original file /etc/smt.d/novell.com-smt is not used any more
  */
 .smt_cron
 
 `ag_anyagent (
     `Description (
-	(`File ("/etc/smt.d/novell.com-smt")),	// read this file`
+	(`File ("/etc/cron.d/novell.com-smt")),	// read this file`
 	"#\n",					// comments
 	false,					// read/write
 	(`List (

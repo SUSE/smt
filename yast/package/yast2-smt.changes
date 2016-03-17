@@ -1,4 +1,17 @@
 -------------------------------------------------------------------
+Wed Mar  9 07:37:43 UTC 2016 - jsrain@localhost
+
+- adjust correct file when defining scheduled jobs (bsc#966898)
+- 3.0.8
+
+-------------------------------------------------------------------
+Fri Mar  4 12:35:17 UTC 2016 - jsrain@localhost
+
+- only set Apache server flag SSL when there is a certificate
+  (bsc#956632)
+- 3.0.7
+
+-------------------------------------------------------------------
 Mon Nov 23 13:05:51 UTC 2015 - jsrain@suse.cz
 
 - fixed detection whether system is registered when configuring

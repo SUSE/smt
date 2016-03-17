@@ -5,7 +5,7 @@
 
 JOBNAME="smt-daily"
 REPORT="smt-gen-report"
-CRONPATH="/etc/smt.d/novell.com-smt"
+CRONPATH="/etc/cron.d/novell.com-smt"
 
 if [ ! -r "$CRONPATH" ]; then
     exit 1
