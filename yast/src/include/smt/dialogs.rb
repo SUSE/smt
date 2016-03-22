@@ -472,7 +472,14 @@ module Yast
 
     def CatalogsTableContent
       VBox(
-        Left(ReplacePoint(Id(:catalogs_filter), Empty())),
+        HBox(
+          Left(TextEntry(Id(:repos_filter), Opt(:notify), _("Repository Filter"), "")),
+          VBox(
+            VSpacing(1),
+            PushButton(Id(:filter), _("Filter"))
+          ),
+          HStretch()
+        ),
         Table(
           Id(:catalogs_table),
           Opt(:hstretch, :vstretch, :notify, :immediate),
@@ -1375,19 +1382,8 @@ module Yast
       )
 
       catalog_filter = nil
-      if Ops.greater_than(Builtins.size(catalogs_filters), 0) &&
-          Ops.get(
-            catalogs_filters,
-            Ops.subtract(Builtins.size(catalogs_filters), 1),
-            ""
-          ) == ""
-        catalogs_filters = Builtins.remove(
-          catalogs_filters,
-          Ops.subtract(Builtins.size(catalogs_filters), 1)
-        )
-      end
-      if Ops.greater_than(Builtins.size(catalogs_filters), 0)
-        catalog_filter = Builtins.mergestring(catalogs_filters, "-")
+      if ! catalogs_filters.empty?
+        catalog_filter = catalogs_filters[0]
       end
 
       @catalogs_info = {}
@@ -1412,18 +1408,11 @@ module Yast
 
       # Constructing the Filter UI
       # $[0:["openSUSE", "SLE", ...], 1:["11.1", "SDK", ...], ...]
-      filter_items = {}
-      max_filter_item = -1
       current_item_present = false
 
       items = Builtins.maplist(catalogs_states) do |catalogid, one_catalog|
         if catalog_filter != nil
-          if Builtins.regexpmatch(
-              Ops.get_string(one_catalog, "NAME", ""),
-              Ops.add(Ops.add("^", catalog_filter), "-")
-            )
-            Builtins.y2debug("match")
-          elsif Ops.get_string(one_catalog, "NAME", "") == catalog_filter
+          if one_catalog["NAME"].downcase.include? catalog_filter.downcase
             Builtins.y2debug("match")
           else
             next nil
@@ -1432,28 +1421,6 @@ module Yast
         mirroring = Ops.get_string(one_catalog, "DOMIRROR", "") == "Y"
         staging = Ops.get_string(one_catalog, "STAGING", "") == "Y"
         splititem_nr = -1
-        # "SLE10-SDK-Updates" -> ["SLE10", "SDK", "Updates"]
-        Builtins.foreach(
-          Builtins.splitstring(Ops.get_string(one_catalog, "NAME", ""), "-")
-        ) do |one_item|
-          splititem_nr = Ops.add(splititem_nr, 1)
-          if !Builtins.haskey(filter_items, splititem_nr)
-            Ops.set(filter_items, splititem_nr, [])
-          end
-          if !Builtins.contains(
-              Ops.get(filter_items, splititem_nr, []),
-              one_item
-            )
-            Ops.set(
-              filter_items,
-              splititem_nr,
-              Builtins.add(Ops.get(filter_items, splititem_nr, []), one_item)
-            )
-          end
-        end
-        if Ops.greater_than(splititem_nr, max_filter_item)
-          max_filter_item = splititem_nr
-        end
         # used later in Handle* function
         Ops.set(
           @catalogs_info,
@@ -1493,58 +1460,9 @@ module Yast
         Ops.less_than(Ops.get_string(a, 1, ""), Ops.get_string(b, 1, ""))
       end
 
-      current_item_nr = -1
-      filter_UI_items = HBox()
-      more_items_lasttime = false
-
-      while Ops.less_or_equal(current_item_nr, max_filter_item)
-        current_item_nr = Ops.add(current_item_nr, 1)
-        nrofitems = Builtins.size(Ops.get(filter_items, current_item_nr, []))
-        fitems = Builtins.maplist(Ops.get(filter_items, current_item_nr, [])) do |one_fitem|
-          Item(Id(one_fitem), one_fitem, nrofitems == 1)
-        end
-
-        fitems = Builtins.sort(fitems) do |a, b|
-          Ops.less_than(Ops.get_string(a, 1, ""), Ops.get_string(b, 1, ""))
-        end
-
-        # internal error
-        break if Ops.less_than(Builtins.size(fitems), 1)
-
-        # Add another filter level UI
-        filter_UI_items = Builtins.add(
-          filter_UI_items,
-          ComboBox(
-            Id(Builtins.sformat("catalogs_filter_%1", current_item_nr)),
-            Opt(:notify),
-            # Part of a complex catalogs filter, ComboBox label
-            # %1 is replaced with a filter level number (1 ... n)
-            Builtins.sformat(_("Filter &%1"), Ops.add(current_item_nr, 1)),
-            Builtins.prepend(
-              fitems,
-              # Part of a complex catalogs filter, Item: (List) All (Catalogs)
-              Item(Id(""), _("All"))
-            )
-          )
-        )
-
-        # More items to choose from, finish
-        break if Ops.greater_than(Builtins.size(fitems), 1)
-      end
-
       items = [] if items == nil
 
       UI.CloseDialog if uio == true
-
-      if filter_UI_items == nil || Builtins.size(filter_UI_items) == 0
-        UI.ReplaceWidget(
-          Id(:catalogs_filter),
-          ComboBox(Id(:empty_filter), _("F&ilter"), [])
-        )
-        UI.ChangeWidget(Id(:empty_filter), :Enabled, false)
-      else
-        UI.ReplaceWidget(Id(:catalogs_filter), filter_UI_items)
-      end
 
       UI.ChangeWidget(Id(:catalogs_table), :Items, items)
       if current_item_present && current_item != nil
@@ -2831,43 +2749,14 @@ module Yast
         else
           AdjustRepositoriesButtons()
         end
-      elsif Ops.is_string?(event_id) &&
-          Builtins.regexpmatch(Builtins.tostring(event_id), "^catalogs_filter_")
-        filter_id = Builtins.tointeger(
-          Builtins.regexpsub(
-            Builtins.tostring(event_id),
-            "^catalogs_filter_(.*)",
-            "\\1"
-          )
-        )
-
-        if filter_id == nil
-          Builtins.y2error("Unable to get filter ID from %1", filter_id)
-          return nil
-        end
-
-        @filters = []
-        current_fid = -1
-        filter_item = nil
-
-        while Ops.less_than(current_fid, filter_id)
-          current_fid = Ops.add(current_fid, 1)
-          filter_item = Convert.to_string(
-            UI.QueryWidget(
-              Id(Builtins.sformat("catalogs_filter_%1", current_fid)),
-              :Value
-            )
-          )
-          break if filter_item == nil
-          @filters = Builtins.add(@filters, filter_item)
-        end
-
-        @filters = [] if @filters == nil
+      elsif event_id == :filter || (event_id == :repos_filter && event["EventReason"] == "Activated")
+        filter = UI.QueryWidget(Id(:repos_filter), :Value)
+        @filters = filter.empty? ? [] : [filter]
         RedrawCatalogsTable(@filters)
       end
 
       # Catalog have been toggled, re-focus the table again
-      UI.SetFocus(Id(:catalogs_table))
+      UI.SetFocus(Id(:catalogs_table)) unless event_id == :repos_filter
       nil
     end
 

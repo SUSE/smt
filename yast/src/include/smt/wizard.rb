@@ -293,6 +293,7 @@ module Yast
       end
 
       contents = VBox("tab")
+
       w = CWM.CreateWidgets(
         ["tab"],
         Convert.convert(

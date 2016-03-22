@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Mar 17 09:26:50 UTC 2016 - jsrain@localhost
+
+- use TextEntry-based filter for repos (fate#319777)
+- 3.0.9
+
+-------------------------------------------------------------------
 Wed Mar  9 07:37:43 UTC 2016 - jsrain@localhost
 
 - adjust correct file when defining scheduled jobs (bsc#966898)
