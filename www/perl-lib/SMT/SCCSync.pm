@@ -1301,6 +1301,11 @@ sub _updateProductCatalogs
     my $err = 0;
     my $href = {};
 
+    if ($self->migrate())
+    {
+        $self->{DBH}->do("DELETE FROM ProductCatalogs WHERE SRC='N'");
+    }
+
     my $sql = "select productid, catalogid, optional from ProductCatalogs WHERE SRC = 'S'";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
