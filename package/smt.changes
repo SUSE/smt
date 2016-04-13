@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Apr 13 13:25:09 CEST 2016 - mc@suse.de
+
+- Fix duplicate ProductCatalogs entries (bsc#973801)
+- add shortname to returned product (bsc#949480)
+
+-------------------------------------------------------------------
 Wed Mar  9 07:38:45 UTC 2016 - jsrain@localhost
 
 - version 3.0.11
