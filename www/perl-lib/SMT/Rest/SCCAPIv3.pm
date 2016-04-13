@@ -59,6 +59,7 @@ sub get_extensions
                p.PRODUCT_CLASS product_class,
                p.CPE cpe,
                p.EULA_URL eula_url,
+               p.SHORTNAME shortname,
                1 free,
                p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
@@ -175,6 +176,7 @@ sub get_subscriptions_products
                p.PRODUCT_CLASS product_class,
                p.CPE cpe,
                p.EULA_URL eula_url,
+               p.SHORTNAME shortname,
                1 free,
                p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
@@ -266,6 +268,7 @@ sub _extensions_for_products
                e.PRODUCT_CLASS product_class,
                e.CPE cpe,
                e.EULA_URL eula_url,
+               e.SHORTNAME shortname,
                1 free,
                e.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
@@ -328,6 +331,7 @@ sub _getProduct
                p.PRODUCT_CLASS product_class,
                p.CPE cpe,
                p.EULA_URL eula_url,
+               p.SHORTNAME shortname,
                1 free,
                p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR

@@ -1444,6 +1444,7 @@ sub lookupProductById
                p.product_class,
                p.cpe,
                p.description,
+               p.shortname,
                1 free,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
