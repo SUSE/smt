@@ -8,6 +8,7 @@ Wed Apr 13 12:29:16 CEST 2016 - mc@suse.de
   suggest to de-register (bsc#962982)
 - store host and virttype attribute separate to identify virtual
   machines correctly (bsc#974649)
+- prevent listing products as one without subscriptions (bsc#965590)
 
 -------------------------------------------------------------------
 Wed Mar  9 14:32:03 CET 2016 - mc@suse.de
