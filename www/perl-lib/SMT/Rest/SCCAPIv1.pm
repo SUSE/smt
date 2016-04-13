@@ -432,28 +432,7 @@ sub update_system
     #
     # insert product info into MachineData
     #
-    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME = 'machinedata'",
-                        $self->dbh()->quote($guid));
-    $self->request()->log->info("STATEMENT: $statement");
-    eval {
-        $self->dbh()->do($statement);
-    };
-    if($@)
-    {
-        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
-    }
-    $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, 'machinedata', %s)",
-                        $self->dbh()->quote($guid),
-                        $self->dbh()->quote(encode_json($c)));
-    $self->request()->log->info("STATEMENT: $statement");
-    eval {
-        $self->dbh()->do($statement);
-    };
-    if($@)
-    {
-        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
-    }
-    return (Apache2::Const::OK, {});
+    return $self->_storeMachineData($guid, $c);
 }
 
 sub delete_system
@@ -813,7 +792,7 @@ sub _storeMachineData
     my $c    = shift || return;
 
     #
-    # insert product info into MachineData
+    # delete outdated data
     #
     my $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME = %s",
                            $self->dbh()->quote($guid),
@@ -825,7 +804,36 @@ sub _storeMachineData
     if($@)
     {
         $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
+    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME = %s",
+                           $self->dbh()->quote($guid),
+                           $self->dbh()->quote("host"));
+    $self->request()->log->info("STATEMENT: $statement");
+    eval {
+        $self->dbh()->do($statement);
+    };
+    if($@)
+    {
+        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+    }
+    $statement = sprintf("DELETE from MachineData where GUID=%s AND KEYNAME = %s",
+                           $self->dbh()->quote($guid),
+                           $self->dbh()->quote("virttype"));
+    $self->request()->log->info("STATEMENT: $statement");
+    eval {
+        $self->dbh()->do($statement);
+    };
+    if($@)
+    {
+        $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+    }
+
+    #
+    # insert new data
+    #
     $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
                         $self->dbh()->quote($guid),
                         $self->dbh()->quote("machinedata"),
@@ -837,7 +845,38 @@ sub _storeMachineData
     if($@)
     {
         $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
     }
+    if($c->{'hwinfo'}->{'hypervisor'})
+    {
+        $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                            $self->dbh()->quote($guid),
+                            $self->dbh()->quote("host"),
+                            $self->dbh()->quote('Y'));
+        $self->request()->log->info("STATEMENT: $statement");
+        eval {
+            $self->dbh()->do($statement);
+        };
+        if($@)
+        {
+            $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+        }
+        $statement = sprintf("INSERT INTO MachineData (GUID, KEYNAME, VALUE) VALUES (%s, %s, %s)",
+                            $self->dbh()->quote($guid),
+                            $self->dbh()->quote("virttype"),
+                            $self->dbh()->quote($c->{'hwinfo'}->{'hypervisor'}));
+        $self->request()->log->info("STATEMENT: $statement");
+        eval {
+            $self->dbh()->do($statement);
+        };
+        if($@)
+        {
+            $self->request()->log_error("DBERROR: ".$self->dbh()->errstr);
+            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+        }
+    }
+    return (Apache2::Const::OK, {});
 }
 
 1;
