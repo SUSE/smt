@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Apr 13 12:29:16 CEST 2016 - mc@suse.de
+
+- Fix duplicate ProductCatalogs entries while NCC to SCC migration
+  (bsc#973801)
+- add shortname to returned product (bsc#949480)
+
+-------------------------------------------------------------------
 Wed Mar  9 14:32:03 CET 2016 - mc@suse.de
 
 - version 2.0.18
