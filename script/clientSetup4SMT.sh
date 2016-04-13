@@ -181,6 +181,12 @@ if [ ! -x $SUSEREGISTER ] && [ ! -x $SUSECONNECT ]; then
     exit 1
 fi
 
+if [ -x "$SUSECONNECT" ] && [ -e /etc/zypp/credentials.d/SCCcredentials ]; then
+    echo "The system is already register. Please de-register first calling:"
+    echo "$> SUSEConnect --de-register"
+    exit 1
+fi
+
 if [ ! -x $GPG ]; then
     echo "gpg command not found. Abort."
     exit 1
