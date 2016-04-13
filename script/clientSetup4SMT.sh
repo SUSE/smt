@@ -182,8 +182,9 @@ if [ ! -x $SUSEREGISTER ] && [ ! -x $SUSECONNECT ]; then
 fi
 
 if [ -x "$SUSECONNECT" ] && [ -e /etc/zypp/credentials.d/SCCcredentials ]; then
-    echo "The system is already register. Please de-register first calling:"
+    echo "The system is already register. Please de-register first by calling:"
     echo "$> SUSEConnect --de-register"
+    echo "$> SUSEConnect --cleanup"
     exit 1
 fi
 
