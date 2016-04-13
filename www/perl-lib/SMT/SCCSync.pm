@@ -1338,7 +1338,8 @@ sub _updateProductCatalogs
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Unable to find Repository ID: ".$self->{PRODREPO}->{$key}->{catalogid});
             $err += 1;
         }
-        if (!exists $href->{$product_id."-".$repo_id})
+        my $pr_key = $product_id."-".$repo_id;
+        if (!exists $href->{$pr_key})
         {
             $sql = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
                             VALUES (%s, %s, %s, 'S')",
@@ -1355,9 +1356,9 @@ sub _updateProductCatalogs
                 $err += 1;
             }
         }
-        elsif($href->{$product_id."-".$repo_id}->{optional} eq $self->{PRODREPO}->{$key}->{optional})
+        elsif($href->{$pr_key}->{optional} eq $self->{PRODREPO}->{$key}->{optional})
         {
-            delete $href->{$key};
+            delete $href->{$pr_key};
         }
         else
         {
@@ -1369,7 +1370,7 @@ sub _updateProductCatalogs
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
             eval {
                 $self->{DBH}->do($sql);
-                delete $href->{$key};
+                delete $href->{$pr_key};
             };
             if($@)
             {
@@ -1378,6 +1379,7 @@ sub _updateProductCatalogs
             }
         }
     }
+    # TODO: remove product <=> catalogs definitions which are not any longer present
     return $err;
 }
 
