@@ -161,6 +161,7 @@ create table Products (
                 PRODUCT_CLASS   CHAR(50),
                 PRODUCT_TYPE    VARCHAR(100) NOT NULL DEFAULT '',
                 FORMER_IDENTIFIER VARCHAR(500) NOT NULL DEFAULT '',
+                SHORTNAME       VARCHAR(255) NOT NULL DEFAULT '',
                 SRC         CHAR(1) DEFAULT 'N',    -- N NCC   C Custom
                 CONSTRAINT Products_id_pk PRIMARY KEY (ID),
                 UNIQUE INDEX Products_pdl_verl_rell_archl_uq (PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER),
