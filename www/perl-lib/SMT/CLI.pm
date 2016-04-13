@@ -1984,6 +1984,11 @@ sub productSubscriptionReport
 
         foreach my $pc (@prodclasses)
         {
+            if(!$subnamesByProductClass->{$pc})
+            {
+                # bsc#965590 - prevent listing products as one without subscriptions
+                $subnamesByProductClass->{$pc} = $pc;
+            }
             if(exists $calchash->{$pc} && $calchash->{$pc}->{MACHINES_LEFT} > 0 &&
                ( $subhash->{$subprodclass}->{ASSIGNEDMACHINES} < ($subhash->{$subprodclass}->{NODECOUNT_ACTIVE} + $subhash->{$subprodclass}->{NODECOUNT_EXPSOON}) ||
                  $subhash->{$subprodclass}->{UNLIMITED_ACTIVE} || $subhash->{$subprodclass}->{UNLIMITED_EXPSOON} )
@@ -2435,6 +2440,20 @@ sub subscriptionReport
         else
         {
             $subnamesByProductClass->{$product_class} = "$subname";
+        }
+
+        if($product_class =~ /,/)
+        {
+            my @prodclasses = split(/,/, $product_class);
+
+            foreach my $pc (@prodclasses)
+            {
+                if(!$subnamesByProductClass->{$pc})
+                {
+                    # bsc#965590 - prevent listing products as one without subscriptions
+                    $subnamesByProductClass->{$pc} = $subnamesByProductClass->{$product_class};
+                }
+            }
         }
     }
 
