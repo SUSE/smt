@@ -23,7 +23,7 @@ use XML::Writer;
 use XML::Parser;
 use Date::Parse;
 
-my $REGSHARING;
+my $REGSHARING = undef;
 
 sub handler {
     my $r = shift;
@@ -54,24 +54,26 @@ sub handler {
         return SMT::Utils::http_fail($r, 400, "Invalid protocol version.");
     }
 
-    # check if registration sharing is enabled and load module if it is
-    if (SMT::Utils::hasRegSharing($r) && ! $REGSHARING) {
-        eval
-        {
-            require 'SMT/RegistrationSharing.pm';
-        };
-        if ($@)
-        {
-            my $msg = 'Failed to load registration sharing module '
-              . '"SMT/RegistrationSharing.pm"'
-              . "\n$@";
-            $r->log_error($msg);
-            $msg = 'Internal Server Error. Please contact your '
-              . 'administrator.';
-            return SMT::Utils::http_fail($r, 500, $msg);
+    if (! defined $REGSHARING) {
+        $REGSHARING = 0;
+        if (SMT::Utils::hasRegSharing($r)) {
+            eval
+            {
+                require 'SMT/RegistrationSharing.pm';
+            };
+            if ($@)
+            {
+                my $msg = 'Failed to load registration sharing module '
+                . '"SMT/RegistrationSharing.pm"'
+                . "\n$@";
+                $r->log_error($msg);
+                $msg = 'Internal Server Error. Please contact your '
+                . 'administrator.';
+                return SMT::Utils::http_fail($r, 500, $msg);
+            }
+            # Plugin successfully loaded
+            $REGSHARING = 1;
         }
-        # Plugin successfully loaded
-        $REGSHARING = 1;
     }
 
     $r->log->info("Registration called with command: ".$hargs->{command});

@@ -150,7 +150,7 @@ sub hasRegSharing
         {
             if (! $r)
             {
-                return -1;
+                return;
             }
             $r->log_error("Cannot read the SMT configuration file: ".$@);
             my $msg = 'SMT server is missconfigured. Please contact your '
