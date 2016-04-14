@@ -162,7 +162,7 @@ sub new
                                    );
 
     my $regsharing = SMT::Utils::hasRegSharing();
-    if ($regsharing == -1) {
+    if (! defined $regsharing) {
         my $msg = 'Could not read SMT configuration file';
         printLog($self->{LOG}, $self->vblevel(), LOG_WARN, __($msg));
         $regsharing = 0;

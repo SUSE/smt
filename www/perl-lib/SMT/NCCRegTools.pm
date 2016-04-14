@@ -105,12 +105,12 @@ sub new
     $self->{AUTHPASS} = $pass;
 
     my $regsharing = SMT::Utils::hasRegSharing();
-    if (! $regsharing) {
+    if (! defined $regsharing) {
         my $msg = 'Could not read SMT configuration file';
         printLog($self->{LOG}, $self->vblevel(), LOG_WARN, __($msg));
-        $regsharing = 'false';
+        $regsharing = 0;
     }
-    elsif ($regsharing eq 'true') {
+    elsif ($regsharing == 1) {
         eval
         {
             require 'SMT/RegistrationSharing.pm';
@@ -121,7 +121,7 @@ sub new
               . '"SMT/RegistrationSharing.pm"'
               . "\n$@";
             printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __($msg));
-            $regsharing = 'false';
+            $regsharing = 0;
         }
     }
     $self->{REGSHARING} = $regsharing;
@@ -547,7 +547,7 @@ sub NCCDeleteRegistration
         }
 
         $self->_deleteRegistrationLocal($guid);
-        if ($self->{REGSHARING} eq 'true')
+        if ($self->{REGSHARING})
         {
             SMT::RegistrationSharing::deleteSiblingRegistration(
                                                         $guid,
