@@ -10,7 +10,8 @@ use JSON;
 
 use SMT::Utils;
 use SMT::Client;
-use SMT;
+use SMT::Registration;
+
 
 sub new
 {
