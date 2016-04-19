@@ -88,7 +88,7 @@ sub readJobFromHash($$)
 {
   my $self = shift || return undef;
   my $attribs = shift || return undef;
-  return undef unless isa($attribs, 'HASH');
+  return undef unless UNIVERSAL::isa($attribs, 'HASH');
 
   foreach my $att ( SMT::Job::Constants::JOB_DATA_BASIC, SMT::Job::Constants::JOB_DATA_ATTRIBUTES, SMT::Job::Constants::JOB_DATA_ELEMENTS )
   {
