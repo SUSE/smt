@@ -148,14 +148,14 @@ sub hasRegSharing
         };
         if($@ || !defined $cfg)
         {
-            if (! $r)
+            if ($r)
             {
-                return;
+                $r->log_error("Cannot read the SMT configuration file: ".$@);
+                my $msg = 'SMT server is missconfigured. Please contact your '
+                  . 'administrator.';
+                http_fail($r, 500, $msg);
             }
-            $r->log_error("Cannot read the SMT configuration file: ".$@);
-            my $msg = 'SMT server is missconfigured. Please contact your '
-                . 'administrator.';
-            return http_fail($r, 500, $msg);
+            return;
         }
         my $allowedSenders = $cfg->val('LOCAL', 'acceptRegistrationSharing');
         my $shareRegDataTargets = $cfg->val('LOCAL', 'shareRegistrations');
