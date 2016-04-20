@@ -99,6 +99,7 @@ install:
 	ln -s smt-setup-custom-repos $(DESTDIR)/usr/sbin/smt-setup-custom-catalogs
 	install -m 644 www/perl-lib/NU/*.pm $(DESTDIR)/srv/www/perl-lib/NU/
 	install -m 644 www/perl-lib/SMT/Registration.pm $(DESTDIR)/srv/www/perl-lib/SMT/
+	install -m 644 www/perl-lib/SMT/RegistrationSharing.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/Support.pm $(DESTDIR)/srv/www/perl-lib/SMT/
 	install -m 644 www/perl-lib/SMT/Utils.pm $(DESTDIR)$(PERLMODDIR)/SMT/
 	install -m 644 www/perl-lib/SMT/NCCRegTools.pm $(DESTDIR)$(PERLMODDIR)/SMT/
@@ -136,6 +137,7 @@ install:
 	install -m 755 db/smt-db $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/changeSMTUserPermissions.sh $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/reschedule-sync.sh $(DESTDIR)/usr/lib/SMT/bin/
+	install -m 755 tests/SMT/shareRegistration.pl $(DESTDIR)/usr/lib/SMT/bin/
 	install -m 755 script/clientSetup4SMT.sh $(DESTDIR)/srv/www/htdocs/repo/tools/
 	install -m 644 www/repo/res-signingkeys.key $(DESTDIR)/srv/www/htdocs/repo/keys/
 	install -m 644 cron/novell.com-smt $(DESTDIR)/etc/smt.d/
@@ -225,6 +227,7 @@ dist: clean
 	@cp doc/README-SCC $(NAME)-$(VERSION)/doc/
 
 	@cp tests/*.pl $(NAME)-$(VERSION)/tests/
+	@cp tests/SMT/shareRegistration.pl $(NAME)-$(VERSION)/tests/SMT
 	@cp tests/SMT/Mirror/*.pl $(NAME)-$(VERSION)/tests/SMT/Mirror/
 	@cp -r tests/testdata/regdatatest/* $(NAME)-$(VERSION)/tests/testdata/regdatatest/
 	@cp script/* $(NAME)-$(VERSION)/script/

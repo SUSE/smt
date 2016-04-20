@@ -103,8 +103,30 @@ sub new
     $self->{URI}      = $ruri;
     $self->{AUTHUSER} = $user;
     $self->{AUTHPASS} = $pass;
-    bless($self);
 
+    my $regsharing = SMT::Utils::hasRegSharing();
+    if (! defined $regsharing) {
+        my $msg = 'Could not read SMT configuration file';
+        printLog($self->{LOG}, $self->vblevel(), LOG_WARN, __($msg));
+        $regsharing = 0;
+    }
+    elsif ($regsharing == 1) {
+        eval
+        {
+            require 'SMT/RegistrationSharing.pm';
+        };
+        if ($@)
+        {
+            my $msg = 'Failed to load registration sharing module '
+              . '"SMT/RegistrationSharing.pm"'
+              . "\n$@";
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __($msg));
+            $regsharing = 0;
+        }
+    }
+    $self->{REGSHARING} = $regsharing;
+
+    bless($self);
     return $self;
 }
 
@@ -525,6 +547,13 @@ sub NCCDeleteRegistration
         }
 
         $self->_deleteRegistrationLocal($guid);
+        if ($self->{REGSHARING})
+        {
+            SMT::RegistrationSharing::deleteSiblingRegistration(
+                                                        $guid,
+                                                        $self->{LOG}
+            );
+        }
 
         if(!(exists $result->[0] && defined $result->[0] && $result->[0] eq $guid))
         {

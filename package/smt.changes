@@ -1,4 +1,26 @@
 -------------------------------------------------------------------
+Fri Apr 15 11:49:34 EDT 2016 - rjschwei@suse.com
+
+- SMT HA functionality for Cloud setup
+  + Enable registration sharing between SMT servers that are configured
+    as sibling servers
+  + New configuration options
+    ~ cloudGuestVerify - enables a verification plugin to check if access
+                         should be granted
+    ~ acceptRegistrationSharing - set IP or DNS name indicating from
+                                  which server sharing requests should be
+                                  accepted
+    ~ shareRegistrations - set IP or DNS name indicating the servers that
+                           should receive shared registration requests
+    ~ siblingCertDir - location where the sibling certs may be stored
+  + Example implementation of verification code
+  + Support deletion of registrations on the sibling server(s) in
+    smt-delete-registration
+  + HA functionality is encapsulated in -ha sub-package
+  + Implement plugin mechanism to allow cloud specific functionality
+    to be maintained separately
+
+-------------------------------------------------------------------
 Wed Apr 13 12:29:16 CEST 2016 - mc@suse.de
 
 - Fix duplicate ProductCatalogs entries while NCC to SCC migration
