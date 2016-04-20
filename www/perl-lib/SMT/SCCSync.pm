@@ -752,7 +752,7 @@ EOS
                              $self->{DBH}->quote($product->{eula_url}),
                              $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($product->{product_type}),
-                             $self->{DBH}->quote($product->{shortname}),
+                             $self->{DBH}->quote((! defined $product->{shortname})?'':$product->{shortname}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -791,7 +791,7 @@ EOS
                              $self->{DBH}->quote($product->{eula_url}),
                              $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($product->{product_type}),
-                             $self->{DBH}->quote($product->{shortname}),
+                             $self->{DBH}->quote((! defined $product->{shortname})?'':$product->{shortname}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -823,7 +823,7 @@ EOS
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($product->{product_type}),
-                             $self->{DBH}->quote($product->{shortname})
+                             $self->{DBH}->quote((! defined $product->{shortname})?'':$product->{shortname})
         );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
