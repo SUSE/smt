@@ -1573,7 +1573,7 @@ sub db2Xml
     if($opts{table} eq "ProductCatalogs")
     {
         # ProductCatalogs has internal IDs, but we need the external
-        $statement = "SELECT p.PRODUCTDATAID as PRODUCTID,
+        $statement = "SELECT p.PRODUCTDATAID as PRODUCTDATAID,
                              c.CATALOGID as CATALOGID,
                              pc.OPTIONAL
                         FROM ProductCatalogs pc
