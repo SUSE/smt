@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Apr 20 12:07:09 CEST 2016 - mc@suse.de
+
+- fix smt-jobqueue-cleanup returning Undefined subroutine isa
+  (bsc#974584)
+
+-------------------------------------------------------------------
 Wed Apr 13 13:25:09 CEST 2016 - mc@suse.de
 
 - Fix duplicate ProductCatalogs entries (bsc#973801)
