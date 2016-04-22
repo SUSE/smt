@@ -354,7 +354,6 @@ sub products
         }
     }
 
-
     #
     # lookup the Clients target
     #
@@ -601,6 +600,13 @@ sub announce
     {
         $self->request()->log_error(sprintf("SMT Registration error: Could not create initial patchstatus reporting job for client with guid: %s  ",
                                             $result->{login} )  );
+    }
+
+    #
+    # share the registration
+    #
+    if ($self->{regsharing}) {
+        SMT::RegistrationSharing::shareRegistration($result->{login});
     }
 
     return (Apache2::Const::OK, $result);

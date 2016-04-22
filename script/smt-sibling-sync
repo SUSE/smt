@@ -1,0 +1,91 @@
+#!/usr/bin/perl
+
+###############################################################################
+## Copyright (c) 2016 SUSE LLC
+###############################################################################
+
+use strict;
+use warnings;
+use Getopt::Long;
+use SMT::Utils;
+use SMT::RegistrationSharing;
+
+if(!SMT::Utils::dropPrivileges())
+{
+    print STDERR __("Unable to drop privileges. Abort!\n");
+    exit 1;
+}
+
+my $help  = 0;
+my $logfile = "/dev/null";
+
+my $optres = GetOptions ("logfile|L=s" => \$logfile,
+                         "help|h"      => \$help
+                        );
+
+if($help) {
+    print basename($0) . __(" [OPTIONS]\n");
+    print __("Sync this SMT server with its configured siblings\n");
+    print "\n";
+    print __("Options:\n");
+    print "  --logfile (-L) <file>  : " . __("Path to logfile")."\n";
+    exit 0;
+}
+
+my $log = SMT::Utils::openLog($logfile);
+
+my $dbh = SMT::Utils::db_connect();
+my $statement = 'SELECT GUID from Registration';
+my $guids = $dbh->selectcol_arrayref($statement);
+
+if (! $guids) {
+    print "This server has no registrations, nothing to do\n";
+    exit 0;
+}
+
+for my $guid (@{$guids}) {
+    SMT::RegistrationSharing::shareRegistration($guid, $log);
+}
+
+#
+# Manpage
+#
+
+=head1 NAME
+
+smt-sibling-sync
+
+=head1 SYNOPSIS
+
+smt-sibling-sync
+
+=head1 DESCRIPTION
+
+I<smt-sibling-sync> syncs all registered clients with the configured sibling SMT server(s). The sibling SMT server(s) are configured with the shareRegistrations configuration option.
+
+=head1 OPTIONS
+
+None
+
+=head1 AUTHORS and CONTRIBUTORS
+
+Robert Schweikert
+
+=head1 LICENSE
+
+Copyright (c) 2016 SUSE LLC
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 675 Mass
+Ave, Cambridge, MA 02139, USA.
+
+=cut

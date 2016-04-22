@@ -6,7 +6,7 @@ use warnings;
 use APR::Brigade ();
 use APR::Bucket ();
 use Apache2::Filter ();
-
+use Apache2::Log;
 use Apache2::RequestRec ();
 use Apache2::RequestIO ();
 
@@ -22,6 +22,8 @@ use DBI;
 use XML::Writer;
 use XML::Parser;
 use Date::Parse;
+
+my $REGSHARING = undef;
 
 sub handler {
     my $r = shift;
@@ -51,6 +53,29 @@ sub handler {
         $r->log_error("protocol version '".$hargs->{'version'}."' not implemented");
         return SMT::Utils::http_fail($r, 400, "Invalid protocol version.");
     }
+
+    if (! defined $REGSHARING) {
+        $REGSHARING = 0;
+        if (SMT::Utils::hasRegSharing($r)) {
+            eval
+            {
+                require 'SMT/RegistrationSharing.pm';
+            };
+            if ($@)
+            {
+                my $msg = 'Failed to load registration sharing module '
+                . '"SMT/RegistrationSharing.pm"'
+                . "\n$@";
+                $r->log_error($msg);
+                $msg = 'Internal Server Error. Please contact your '
+                . 'administrator.';
+                return SMT::Utils::http_fail($r, 500, $msg);
+            }
+            # Plugin successfully loaded
+            $REGSHARING = 1;
+        }
+    }
+
     $r->log->info("Registration called with command: ".$hargs->{command});
 
     if(exists $hargs->{command} && defined $hargs->{command})
@@ -66,6 +91,28 @@ sub handler {
         elsif($hargs->{command} eq "listparams")
         {
             SMT::Registration::listparams($r, $hargs);
+        }
+        elsif($hargs->{command} eq "shareregistration")
+        {
+            if (! $REGSHARING) {
+                my $msg = "Registration sharing is not configured\n";
+                $r->log_error($msg);
+                $msg = 'Internal Server Error. Please contact your '
+                    . 'administrator.';
+                return http_fail($r, 500, $msg);
+            }
+            SMT::RegistrationSharing::addSharedRegistration($r, $hargs);
+        }
+        elsif($hargs->{command} eq "deltesharedregistration")
+        {
+            if (! $REGSHARING) {
+                my $msg = "Registration sharing is not configured\n";
+                $r->log_error($msg);
+                $msg = 'Internal Server Error. Please contact your '
+                    . 'administrator.';
+                return http_fail($r, 500, $msg);
+            }
+            SMT::RegistrationSharing::deleteSharedRegistration($r, $hargs);
         }
         else
         {
@@ -256,6 +303,12 @@ sub register
     }
     $dbh->disconnect();
 
+    if ($REGSHARING) {
+        # share the registration
+        SMT::RegistrationSharing::shareRegistration(
+                                               $regroot->{register}->{guid});
+    }
+
     return;
 }
 
@@ -344,6 +397,7 @@ sub listparams
 
     return;
 }
+
 
 ###############################################################################
 
@@ -1194,8 +1248,6 @@ sub findColumnsForProducts
 ###############################################################################
 ### XML::Parser Handler
 ###############################################################################
-
-
 sub prod_handle_start_tag
 {
     my $data = shift;

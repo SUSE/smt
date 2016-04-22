@@ -56,6 +56,24 @@ sub new
                 '_cfg' => $cfg,
                 '_usr' => $r->user
     };
+
+    if (SMT::Utils::hasRegSharing($r) && ! $self->{regsharing} ) {
+        eval
+        {
+            require 'SMT/RegistrationSharing.pm';
+            #require SMT::RegistrationSharing;
+        };
+        if ($@)
+        {
+            my $msg = 'Failed to load registration sharing module '
+                . '"SMT/RegistrationSharing.pm"'
+                . "\n$@";
+            $r->log_error($msg);
+        }
+        # Plugin successfully loaded
+        $self->{regsharing} = 1;
+    }
+
     bless $self, $class;
     return $self;
 }
