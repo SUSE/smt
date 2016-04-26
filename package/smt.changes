@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Apr 26 16:27:45 CEST 2016 - mc@suse.de
+
+- Convert Patches table to UTF8 (bsc#977002)
+
+-------------------------------------------------------------------
 Wed Apr 20 12:07:09 CEST 2016 - mc@suse.de
 
 - fix smt-jobqueue-cleanup returning Undefined subroutine isa
