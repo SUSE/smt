@@ -291,6 +291,10 @@ sub setup
 	return 6;
     }
 
+    # we use latin1, because with UTF8 we could not create indexes like we
+    # want. The limitation of 767 bytes is too small to create an index
+    # over the products table for name, version, release and architecture
+    # if with UTF8 every character is counted as 3 bytes.
     $r = $dbh->do("create database if not exists smt character set = 'latin1'");
     if($r != 1)
     {
