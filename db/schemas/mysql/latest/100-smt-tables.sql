@@ -287,7 +287,7 @@ create table Patches( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                       DESCRIPTION TEXT NOT NULL,
                       RELDATE     TIMESTAMP NOT NULL,
                       CONSTRAINT Patches_id_pk PRIMARY KEY (ID)
-                    ) ENGINE=InnoDB;
+                    ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- PatchRefs
 --
