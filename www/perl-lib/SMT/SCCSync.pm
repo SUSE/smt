@@ -160,6 +160,28 @@ sub new
                                     authpass => $self->{AUTHPASS},
                                     ident => $self->{SMTGUID}
                                    );
+
+    my $regsharing = SMT::Utils::hasRegSharing();
+    if (! defined $regsharing) {
+        my $msg = 'Could not read SMT configuration file';
+        printLog($self->{LOG}, $self->vblevel(), LOG_WARN, __($msg));
+        $regsharing = 0;
+    }
+    if ($regsharing && ! $self->{REGSHARING}) {
+        eval
+        {
+            require 'SMT/RegistrationSharing.pm';
+            $self->{REGSHARING} = 1;
+        };
+        if ($@)
+        {
+            my $msg = 'Failed to load registration sharing module '
+              . '"SMT/RegistrationSharing.pm"'
+              . "\n$@";
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, __($msg));
+        }
+    }
+
     bless($self);
 
     return $self;
@@ -527,6 +549,13 @@ sub delete_systems
                     $self->{DBH}->quote($guid)));
 
         $self->_deleteRegistrationLocal($guid);
+        if ($self->{REGSHARING})
+        {
+            SMT::RegistrationSharing::deleteSiblingRegistration(
+                                                        $guid,
+                                                        $self->{LOG}
+            );
+        }
         if(!($data->[0] && $data->[0] eq $guid))
         {
             # this GUID was never registered at NCC

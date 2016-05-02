@@ -63,6 +63,36 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 This package provide everything you need to get a local NU and
 registration proxy.
 
+%package ha
+Summary:     SMT HA setup
+Group:       Productivity/Networking/Web/Proxy
+PreReq:      smt = %version
+Requires:    perl-File-Touch
+Requires:    perl-File-Slurp
+Requires:    perl-XML-LibXML
+
+%description ha
+This package extends the basic SMT functionality with registration sharing
+capabilities. This allows 2 or more SMT servers running at the same time to
+share the registrations they receive. The following smt.conf options are
+used.
+
+#
+# This string is used to verify that any sender trying to share a
+# registration is allowed to do so. Provide a comma separated list of
+# names or IP addresses.
+acceptRegistrationSharing=
+#
+# This string is used to set the host names and or IP addresses of sibling
+# SMT servers to which the registration data should be sent. For multiple
+# siblings provide a comma separated list.
+shareRegistrations=
+#
+# This string provides information for SSL verification of teh siblings.
+# Certificates for the siblings should reside in the given directory.
+# If not defined siblings are assumed to have the same CA as this server
+siblingCertDir=
+
 %package -n res-signingkeys
 Summary:        Signing Key for RES
 Group:          Productivity/Security
@@ -225,6 +255,7 @@ fi
 %exclude %{_sysconfdir}/apache2/conf.d/smt_support.conf
 %config %{_sysconfdir}/cron.d/novell.com-smt
 %config %{_sysconfdir}/logrotate.d/smt
+%exclude %{perl_vendorlib}/SMT/RegistrationSharing.pm
 %{perl_vendorlib}/SMT.pm
 %{perl_vendorlib}/SMT/*.pm
 %{perl_vendorlib}/SMT/Job/*.pm
@@ -236,12 +267,15 @@ fi
 %{perl_vendorarch}/auto/Sys/GRP/*.so
 /srv/www/perl-lib/NU/*.pm
 /srv/www/perl-lib/SMT/*.pm
+%exclude /srv/www/perl-lib/SMT/Client/exampleVerify.pm
 /srv/www/perl-lib/SMT/Client/*.pm
 %exclude /srv/www/perl-lib/SMT/Support.pm
 %{_sbindir}/smt-*
 %exclude %{_sbindir}/smt-support
+%exclude /usr/sbin/smt-sibling-sync
 %{_sbindir}/smt
 %{_libexecdir}/SMT/bin/*
+%exclude %{_libexecdir}/SMT/bin/shareRegistration.pl
 %{_bindir}/smt*
 %{_libexecdir}/systemd/system/smt.target
 %{_libexecdir}/systemd/system/smt.service
@@ -253,6 +287,13 @@ fi
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
 %doc %{_docdir}/smt/*
+
+%files ha
+%defattr(-,root,root)
+/srv/www/perl-lib/SMT/Client/exampleVerify.pm
+/usr/lib/SMT/bin/shareRegistration.pl
+%{perl_vendorlib}/SMT/RegistrationSharing.pm
+%{_sbindir}/smt-sibling-sync
 
 %files -n res-signingkeys
 %defattr(-,root,root)
