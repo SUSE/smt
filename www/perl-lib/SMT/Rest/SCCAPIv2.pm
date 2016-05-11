@@ -600,16 +600,6 @@ sub _registrationResult
     my $product_id  = shift || undef;
 
     my $LocalNUUrl = $self->cfg()->val('LOCAL', 'url');
-    my $LocalBasePath = $self->cfg()->val('LOCAL', 'MirrorTo');
-    my $aliasChange = $self->cfg()->val('NU', 'changeAlias');
-    if(defined $aliasChange && $aliasChange eq "true")
-    {
-        $aliasChange = 1;
-    }
-    else
-    {
-        $aliasChange = 0;
-    }
 
     $LocalNUUrl =~ s/\s*$//;
     $LocalNUUrl =~ s/\/*$//;
@@ -618,10 +608,7 @@ sub _registrationResult
         $self->request()->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
         return (Apache2::Const::SERVER_ERROR, "SMT server is missconfigured. Please contact your administrator.");
     }
-    my $localID = "SMT-".$LocalNUUrl;
-    $localID =~ s/:*\/+/_/g;
-    $localID =~ s/\./_/g;
-    $localID =~ s/_$//;
+    my $localID = $self->get_local_id();
 
     my $p = $self->_getProduct($product_id);
 
