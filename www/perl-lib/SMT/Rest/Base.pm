@@ -183,5 +183,25 @@ sub get_header
     return $self->request()->headers_in->{$key} || $default;
 }
 
+sub get_local_id
+{
+    my $self = shift;
+
+    my $LocalNUUrl = $self->cfg()->val('LOCAL', 'url');
+    $LocalNUUrl =~ s/\s*$//;
+    $LocalNUUrl =~ s/\/*$//;
+    if(! $LocalNUUrl || $LocalNUUrl !~ /^http/)
+    {
+        $self->request()->log_error("Invalid url parameter in smt.conf. Please fix the url parameter in the [LOCAL] section.");
+        return undef;
+    }
+    my $localID = "SMT-".$LocalNUUrl;
+    $localID =~ s/:*\/+/_/g;
+    $localID =~ s/\./_/g;
+    $localID =~ s/_$//;
+
+    return $localID;
+}
+
 1;
 
