@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue May 17 16:37:07 CEST 2016 - mc@suse.de
+
+- fix product id key name in export file (bsc#975838)
+- add credentials info to subscriptions/products API endpoint
+  to support auth for docker container (bsc#979459)
+
+-------------------------------------------------------------------
 Fri Apr 15 11:49:34 EDT 2016 - rjschwei@suse.com
 
 - SMT HA functionality for Cloud setup
