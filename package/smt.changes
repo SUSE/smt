@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue May 17 16:32:24 CEST 2016 - mc@suse.de
+
+- add credentials info to subscriptions/products API endpoint
+  to support auth for docker container (bsc#979459)
+
+-------------------------------------------------------------------
 Sat Apr 30 08:05:19 EDT 2016 - rjschwei@suse.com
 
 - SMT HA functionality for Cloud setup
