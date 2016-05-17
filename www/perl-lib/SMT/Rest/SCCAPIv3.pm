@@ -219,8 +219,8 @@ sub get_subscriptions_products
             $result->{$pdid}->{id} = int($result->{$pdid}->{id});
             $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
-            $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id});
-            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}])})
+            $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id}, 1);
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}], 1)})
             {
                 push @{$result->{$pdid}->{extensions}}, $ext;
             }
@@ -244,6 +244,7 @@ sub _extensions_for_products
 {
     my $self       = shift || return {};
     my $productids = shift || return {};
+    my $includeRepoAuth = shift || 0;
     my $result = {};
 
     if (scalar(@{$productids}) == 0)
@@ -299,8 +300,8 @@ sub _extensions_for_products
             $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{id} = int($result->{$pdid}->{id});
-            $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id});
-            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}])})
+            $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id}, $includeRepoAuth);
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}], $includeRepoAuth)})
             {
                 push @{$result->{$pdid}->{extensions}}, $ext;
             }
@@ -378,21 +379,31 @@ sub _repositories_for_product
     my $self      = shift || return ([], []);
     my $baseURL   = shift || return ([], []);
     my $productid = shift || return ([], []);
+    my $includeRepoAuth = shift || 0;
     my $enabled_repositories = [];
     my $repositories = [];
-
+    my $credStr = "";
+    if ($includeRepoAuth)
+    {
+        my $localId = $self->get_local_id();
+        if($localId)
+        {
+            $credStr = "?credentials=$localId";
+        }
+    }
     my $sql = sprintf("
         select c.id,
                c.name,
                c.target distro_target,
                c.description,
-               CONCAT(%s, '/repo/', c.localpath) url,
+               CONCAT(%s, '/repo/', c.localpath, %s) url,
                c.autorefresh,
                pc.OPTIONAL
           from ProductCatalogs pc
           join Catalogs c ON pc.catalogid = c.id
          where pc.productid = %s",
          $self->dbh()->quote($baseURL),
+         $self->dbh()->quote($credStr),
          $self->dbh()->quote($productid));
     $self->request()->log->info("STATEMENT: $sql");
     eval
