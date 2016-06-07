@@ -1,6 +1,7 @@
 -------------------------------------------------------------------
 Tue May 17 16:32:24 CEST 2016 - mc@suse.de
 
+- version 3.0.12
 - add credentials info to subscriptions/products API endpoint
   to support auth for docker container (bsc#979459)
 
