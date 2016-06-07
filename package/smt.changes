@@ -1,6 +1,7 @@
 -------------------------------------------------------------------
 Tue May 17 16:37:07 CEST 2016 - mc@suse.de
 
+- version 2.0.19
 - fix product id key name in export file (bsc#975838)
 - add credentials info to subscriptions/products API endpoint
   to support auth for docker container (bsc#979459)
