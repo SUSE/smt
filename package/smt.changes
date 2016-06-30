@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jun  8 09:37:14 EDT 2016 - rjschwei@suse.com
+
+- version 3.0.13
+- fix package dependency, require perl-DBD-mysql (bsc#983755)
+
+-------------------------------------------------------------------
 Tue May 17 16:32:24 CEST 2016 - mc@suse.de
 
 - version 3.0.12

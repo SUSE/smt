@@ -17,7 +17,7 @@
 
 
 Name:           smt
-Version:        3.0.12
+Version:        3.0.13
 Release:        0
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
@@ -33,6 +33,7 @@ Requires:       gpg2
 Requires:       logrotate
 Requires:       perl = %{perl_version}
 Requires:       perl(Config::IniFiles)
+Requires:       perl(DBD::mysql)
 Requires:       perl(DBI)
 Requires:       perl(Date::Parse)
 Requires:       perl(DateTime)
@@ -53,7 +54,6 @@ Requires(pre):  apache2
 Requires(pre):  apache2-mod_perl
 Requires(pre):  pwdutils
 Recommends:     mariadb
-Recommends:     perl(DBD::mysql)
 Recommends:     yast2-smt
 Conflicts:      slms-registration
 Conflicts:      smt-client <= 0.0.14
