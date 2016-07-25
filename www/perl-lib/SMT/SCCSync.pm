@@ -1860,6 +1860,10 @@ sub _products_from_db
             {
                 $r->{$pair->{VALUE}} = 1;
             }
+            elsif($pair->{KEYNAME} =~ "^regcode-" && $pair->{VALUE})
+            {
+                $r->{$pair->{VALUE}} = 1;
+            }
         }
         $p->{id} = $PHash->{PRODUCTDATAID};
         push @{$prdout}, $p;
