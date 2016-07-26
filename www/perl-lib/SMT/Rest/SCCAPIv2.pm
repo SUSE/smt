@@ -505,7 +505,8 @@ sub get_activations
 
         foreach my $activation (values %{$res})
         {
-            my($dummy, $service) = $self->_registrationResult($activation->{product_id});
+            my($code, $service) = $self->_registrationResult($activation->{product_id});
+            next if ($code != Apache2::Const::OK);
             delete $activation->{product_id};
             $activation->{service} = $service;
             push @{$activations}, $activation;
@@ -526,7 +527,7 @@ sub get_activations
 sub _extensions_for_products
 {
     my $self       = shift || return {};
-    my $productids = shift || return {};
+    my $productids = shift || return [];
     my $result = {};
 
     if (scalar(@{$productids}) == 0)
@@ -612,7 +613,11 @@ sub _registrationResult
     my $localID = $self->get_local_id();
 
     my $p = $self->_getProduct($product_id);
-
+    if ( scalar(keys %{$p}) == 0)
+    {
+        $self->request()->log_error("Incomplete Registration found. Unable to find the product");
+        return (Apache2::Const::SERVER_ERROR, "Incomplete Registration found. Unable to find the product");
+    }
     my $response = {
         'id' => 1,
         'name' =>  $localID,
