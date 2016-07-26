@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Jul 26 18:05:28 CEST 2016 - mc@suse.de
+
+- version 3.0.14
+- order by target product id downwards (bsc#986018)
+- add a generic error handler to return json format (bsc#943355)
+- do not return incomplete activations (bsc#985396)
+
+-------------------------------------------------------------------
 Tue Jul 26 13:21:31 CEST 2016 - mc@suse.de
 
 - version 3.0.13
