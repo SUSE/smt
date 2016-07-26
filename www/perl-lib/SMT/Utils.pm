@@ -1490,6 +1490,7 @@ sub lookupProductById
                p.cpe,
                p.description,
                p.shortname,
+               p.release_stage,
                1 free,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc

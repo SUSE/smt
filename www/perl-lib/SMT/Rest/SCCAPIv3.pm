@@ -61,6 +61,7 @@ sub get_extensions
                p.CPE cpe,
                p.EULA_URL eula_url,
                p.SHORTNAME shortname,
+               p.RELEASE_STAGE release_stage,
                1 free,
                p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
@@ -178,6 +179,7 @@ sub get_subscriptions_products
                p.CPE cpe,
                p.EULA_URL eula_url,
                p.SHORTNAME shortname,
+               p.RELEASE_STAGE release_stage,
                1 free,
                p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
@@ -271,6 +273,7 @@ sub _extensions_for_products
                e.CPE cpe,
                e.EULA_URL eula_url,
                e.SHORTNAME shortname,
+               e.RELEASE_STAGE release_stage,
                1 free,
                e.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR
@@ -334,6 +337,7 @@ sub _getProduct
                p.CPE cpe,
                p.EULA_URL eula_url,
                p.SHORTNAME shortname,
+               p.RELEASE_STAGE release_stage,
                1 free,
                p.PRODUCT_TYPE product_type,
                (CASE WHEN (SELECT c.DOMIRROR

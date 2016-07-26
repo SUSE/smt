@@ -150,6 +150,7 @@ create table Products (
                 PRODUCT_TYPE    VARCHAR(100) NOT NULL DEFAULT '',
                 FORMER_IDENTIFIER VARCHAR(500) NOT NULL DEFAULT '',
                 SHORTNAME       VARCHAR(255) NOT NULL DEFAULT '',
+                RELEASE_STAGE   VARCHAR(255) NOT NULL DEFAULT '',
                 SRC         CHAR(1) DEFAULT 'N',    -- N NCC   C Custom
                 UNIQUE(PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER),
                 UNIQUE(PRODUCTDATAID, SRC),

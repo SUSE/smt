@@ -762,7 +762,7 @@ EOS
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
                                      CPE = %s, DESCRIPTION = %s, EULA_URL = %s,
                                      FORMER_IDENTIFIER = %s, PRODUCT_TYPE = %s,
-                                     SHORTNAME = %s
+                                     SHORTNAME = %s, RELEASE_STAGE = %s
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{identifier}),
                              $self->{DBH}->quote($product->{version}),
@@ -782,6 +782,7 @@ EOS
                              $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($product->{product_type}),
                              $self->{DBH}->quote((! defined $product->{shortname})?'':$product->{shortname}),
+                             $self->{DBH}->quote((! $product->{release_stage})?'':$product->{release_stage}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -801,7 +802,7 @@ EOS
                                      PRODUCT_CLASS = %s, PRODUCTDATAID = %s,
                                      CPE = %s, DESCRIPTION = %s, EULA_URL = %s,
                                      FORMER_IDENTIFIER = %s, PRODUCT_TYPE = %s,
-                                     SHORTNAME = %s, SRC = 'S'
+                                     SHORTNAME = %s, RELEASE_STAGE = %s, SRC = 'S'
                                WHERE ID = %s",
                              $self->{DBH}->quote($product->{identifier}),
                              $self->{DBH}->quote($product->{version}),
@@ -821,6 +822,7 @@ EOS
                              $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($product->{product_type}),
                              $self->{DBH}->quote((! defined $product->{shortname})?'':$product->{shortname}),
+                             $self->{DBH}->quote((! $product->{release_stage})?'':$product->{release_stage}),
                              $self->{DBH}->quote($pid)
         );
     }
@@ -830,8 +832,8 @@ EOS
                               PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER,
                               PARAMLIST, NEEDINFO, SERVICE, FRIENDLY, PRODUCT_LIST,
                               PRODUCT_CLASS, CPE, DESCRIPTION, EULA_URL, PRODUCTDATAID,
-                              FORMER_IDENTIFIER, PRODUCT_TYPE, SHORTNAME, SRC)
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
+                              FORMER_IDENTIFIER, PRODUCT_TYPE, SHORTNAME, RELEASE_STAGE, SRC)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'S')",
                              $self->{DBH}->quote($product->{identifier}),
                              $self->{DBH}->quote($product->{version}),
                              $self->{DBH}->quote($product->{release_type}),
@@ -852,7 +854,8 @@ EOS
                              $self->{DBH}->quote($product->{id}),
                              $self->{DBH}->quote($product->{former_identifier}),
                              $self->{DBH}->quote($product->{product_type}),
-                             $self->{DBH}->quote((! defined $product->{shortname})?'':$product->{shortname})
+                             $self->{DBH}->quote((! defined $product->{shortname})?'':$product->{shortname}),
+                             $self->{DBH}->quote((! $product->{release_stage})?'':$product->{release_stage})
         );
     }
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $statement");
