@@ -1855,7 +1855,8 @@ sub lookupMigrationTargetsById
     my $log = shift;
     my $vblevel = shift;
 
-    my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s",
+    my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s
+                         ORDER BY tgtpdid DESC",
                         $dbh->quote($pdid));
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query");
