@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Jul 26 13:22:42 CEST 2016 - mc@suse.de
+
+- version 2.0.20
+- handle release stage of products (FATE#319909)
+- implement installer update repos (FATE#319716)
+- add regcodes for SLE10/SLE11 products to forwarding call (bsc#990105)
+
+-------------------------------------------------------------------
 Tue May 17 16:37:07 CEST 2016 - mc@suse.de
 
 - version 2.0.19
