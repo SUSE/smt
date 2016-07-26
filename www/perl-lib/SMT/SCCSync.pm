@@ -1325,7 +1325,8 @@ sub _collectProductCatalogs
     $self->{PRODREPO}->{$product->{id}."-".$repo->{id}} = {
         'productdataid' => $product->{id},
         'catalogid' => $repo->{id},
-        'optional' => ($repo->{enabled}?'N':'Y')};
+        'optional' => ($repo->{enabled}?'N':'Y'),
+        'installer_updates' => ($repo->{installer_updates}?'Y':'N')};
 }
 
 sub _updateProductCatalogs
@@ -1339,7 +1340,7 @@ sub _updateProductCatalogs
         $self->{DBH}->do("DELETE FROM ProductCatalogs WHERE SRC='N'");
     }
 
-    my $sql = "select productid, catalogid, optional from ProductCatalogs WHERE SRC = 'S'";
+    my $sql = "select productid, catalogid, optional, installer_updates from ProductCatalogs WHERE SRC = 'S'";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
         my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
@@ -1374,11 +1375,13 @@ sub _updateProductCatalogs
         my $pr_key = $product_id."-".$repo_id;
         if (!exists $href->{$pr_key})
         {
-            $sql = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
-                            VALUES (%s, %s, %s, 'S')",
+            $sql = sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, INSTALLER_UPDATES, SRC)
+                            VALUES (%s, %s, %s, %s, 'S')",
                            $self->{DBH}->quote($product_id),
                            $self->{DBH}->quote($repo_id),
-                           $self->{DBH}->quote($self->{PRODREPO}->{$key}->{optional}));
+                           $self->{DBH}->quote($self->{PRODREPO}->{$key}->{optional}),
+                           $self->{DBH}->quote($self->{PRODREPO}->{$key}->{installer_updates})
+                       );
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
             eval {
                 $self->{DBH}->do($sql);
@@ -1389,15 +1392,17 @@ sub _updateProductCatalogs
                 $err += 1;
             }
         }
-        elsif($href->{$pr_key}->{optional} eq $self->{PRODREPO}->{$key}->{optional})
+        elsif($href->{$pr_key}->{optional} eq $self->{PRODREPO}->{$key}->{optional} &&
+              $href->{$pr_key}->{installer_updates} eq $self->{PRODREPO}->{$key}->{installer_updates})
         {
             delete $href->{$pr_key};
         }
         else
         {
-            $sql = sprintf("UPDATE ProductCatalogs SET OPTIONAL = %s
+            $sql = sprintf("UPDATE ProductCatalogs SET OPTIONAL = %s, INSTALLER_UPDATES = %s
                             WHERE PRODUCTID = %s AND CATALOGID = %s",
                            $self->{DBH}->quote($self->{PRODREPO}->{$key}->{optional}),
+                           $self->{DBH}->quote($self->{PRODREPO}->{$key}->{installer_updates}),
                            $self->{DBH}->quote($product_id),
                            $self->{DBH}->quote($repo_id));
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
