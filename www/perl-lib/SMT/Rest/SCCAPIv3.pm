@@ -380,6 +380,7 @@ sub _repositories_for_product
     my $baseURL   = shift || return ([], []);
     my $productid = shift || return ([], []);
     my $includeRepoAuth = shift || 0;
+    my $installerUpdatesOnly = shift || 0;
     my $enabled_repositories = [];
     my $repositories = [];
     my $credStr = "";
@@ -398,13 +399,19 @@ sub _repositories_for_product
                c.description,
                CONCAT(%s, '/repo/', c.localpath, %s) url,
                c.autorefresh,
-               pc.OPTIONAL
+               pc.OPTIONAL,
+               pc.installer_updates
           from ProductCatalogs pc
           join Catalogs c ON pc.catalogid = c.id
-         where pc.productid = %s",
+         where pc.productid = %s
+         ",
          $self->dbh()->quote($baseURL),
          $self->dbh()->quote($credStr),
          $self->dbh()->quote($productid));
+    if($installerUpdatesOnly)
+    {
+        $sql .= " and pc.installer_updates = 'Y'";
+    }
     $self->request()->log->info("STATEMENT: $sql");
     eval
     {
@@ -412,6 +419,7 @@ sub _repositories_for_product
         {
             $repo->{autorefresh} = (($repo->{autorefresh} eq 'Y')?JSON::true:JSON::false);
             $repo->{enabled} = (($repo->{OPTIONAL} eq 'N')?JSON::true:JSON::false);
+            $repo->{installer_updates} = (($repo->{installer_updates} eq 'Y')?JSON::true:JSON::false);
             delete $repo->{OPTIONAL};
             push @{$repositories}, $repo;
         }

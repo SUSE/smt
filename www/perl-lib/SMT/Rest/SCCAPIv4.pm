@@ -49,6 +49,67 @@ sub systems_handler()
      return ($code, $data);
 }
 
+sub repositories_handler()
+{
+    my $self = shift;
+    my ($code, $data) = (undef, undef);
+
+    my $path = $self->sub_path();
+    $self->request()->log->info($self->request()->method() ." connect/$path");
+    if     ( $self->request()->method() =~ /^GET$/i )
+    {
+        if     ( $path =~ /^repositories\/installer\/?$/ ) { return $self->repository_installer(); }
+    }
+    elsif ( $self->request()->method() =~ /^POST$/i )
+    {
+    }
+    elsif ( $self->request()->method() =~ /^PUT$/i || $self->request()->method() =~ /^PATCH$/i)
+    {
+    }
+    elsif ( $self->request()->method() =~ /^DELETE$/i )
+    {
+    }
+    return ($code, $data);
+
+}
+
+sub repository_installer
+{
+    my $self = shift || return (undef, undef);
+    my $args = $self->parse_args();
+    if(!$args || scalar(keys %{$args}) == 0)
+    {
+        # try to read from body
+        $args = JSON::decode_json($self->read_post());
+    }
+    $self->request()->log->info(Data::Dumper->Dump([$args]));
+    if (!exists $args->{identifier} || !exists $args->{version} || !exists $args->{arch})
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No product specified");
+    }
+
+    my $release = ((exists $args->{release_type})?$args->{release_type}:"");
+    my $pdid = SMT::Utils::lookupProductIdByName($self->dbh(), $args->{identifier},
+                                                 $args->{version}, $release,
+                                                 $args->{arch}, $self->request());
+    my $code = Apache2::Const::OK;
+    my $errmsg = "";
+    my $result = undef;
+    eval
+    {
+        my $baseURL = $self->cfg()->val('LOCAL', 'url');
+        $baseURL =~ s/\/*$//;
+        $result = $self->_repositories_for_product($baseURL, $pdid, 0, 1);
+    };
+    if ($@)
+    {
+        return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+    }
+    return ($code, $errmsg) if($code != Apache2::Const::OK);
+    return (($result?Apache2::Const::OK:Apache2::Const::HTTP_UNPROCESSABLE_ENTITY), $result);
+}
+
+
 sub product_synchronize
 {
     my $self = shift || return (undef, undef);

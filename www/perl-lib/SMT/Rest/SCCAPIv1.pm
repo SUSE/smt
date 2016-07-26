@@ -39,6 +39,11 @@ sub handler
         $self->request()->log->info("call systems handler");
         ($code, $data) = $self->systems_handler();
     }
+    elsif  ( $path =~ qr{^repositories?})
+    {
+        $self->request()->log->info("call repositories handler");
+        ($code, $data) = $self->repositories_handler();
+    }
 
     if (! defined $code || !($code == Apache2::Const::OK || $code == Apache2::Const::HTTP_NO_CONTENT))
     {
@@ -137,6 +142,15 @@ sub subscriptions_handler($$$$)
     }
 
     return (undef, undef);
+}
+
+# dummy - this handler was introduced in v4.
+sub repositories_handler()
+{
+    my $self = shift;
+    my ($code, $data) = (undef, undef);
+
+    return ($code, $data);
 }
 
 sub get_extensions
