@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jul 28 06:14:46 UTC 2016 - jsrain@suse.cz
+
+- version 3.0.15
+- made dependency on perl-DBD-mysql hard (bsc#983755)
+- fixed typo in clientSetup4SMT.sh (bsc#989748)
+
+-------------------------------------------------------------------
 Tue Jul 26 18:05:28 CEST 2016 - mc@suse.de
 
 - version 3.0.14
