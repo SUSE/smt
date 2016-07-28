@@ -21,7 +21,7 @@ Name:           smt
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
-Version:        2.0.20
+Version:        2.0.21
 Release:        0
 Requires:       createrepo
 Requires:       gpg2
@@ -53,7 +53,7 @@ Requires:       satsolver-tools
 Requires:       suseRegister
 Requires(pre):  bc
 Recommends:     mysql
-Recommends:     perl-DBD-mysql
+Requires:       perl-DBD-mysql
 Recommends:     yast2-smt
 Conflicts:      slms-registration
 Conflicts:      smt-client <= 0.0.14
