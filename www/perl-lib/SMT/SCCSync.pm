@@ -1165,6 +1165,14 @@ sub _updateRepositories
             $localpath =~ s/^repo\///;
         }
         $catalogtype = 'nu';
+        if (!$repo->{distro_target})
+        {
+            # catalogs of type 'nu' must have a target.
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
+                sprintf("ERROR: NU repository '%s' without distro_target reported by SUSE Customer Center. Skipping",
+                        $repo->{name}));
+            return 1;
+        }
     }
     else
     {
