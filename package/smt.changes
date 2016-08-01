@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug  1 12:06:42 CEST 2016 - mc@suse.de
+
+- version 3.0.16
+- increase column size for NAME, VER and REL in Packages table
+  (bsc#991439)
+
+-------------------------------------------------------------------
 Thu Jul 28 06:14:46 UTC 2016 - jsrain@suse.cz
 
 - version 3.0.15
