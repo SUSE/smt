@@ -215,6 +215,12 @@ sub products
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
     }
 
+    my $product = SMT::Utils::lookupProductById($self->dbh(), $productId, $self->request());
+    if (!$product->{available})
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Product not (fully) mirrored on this server");
+    }
+
     #
     # insert registration
     #
