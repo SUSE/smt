@@ -1440,7 +1440,22 @@ sub _updateProductCatalogs
             }
         }
     }
-    # TODO: remove product <=> catalogs definitions which are not any longer present
+    foreach my $value (values %{$href})
+    {
+        $sql = sprintf("DELETE FROM ProductCatalogs
+                         WHERE PRODUCTID = %s AND CATALOGID = %s
+                           AND SRC = 'S'",
+                           $value->{productid}, $value->{catalogid});
+        printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
+        eval {
+            $self->{DBH}->do($sql);
+        };
+        if($@)
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
+            $err += 1;
+        }
+    }
     return $err;
 }
 
