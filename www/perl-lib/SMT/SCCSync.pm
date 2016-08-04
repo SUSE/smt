@@ -1258,13 +1258,25 @@ sub _updateRepositories
     };
     if($@)
     {
-        if( $@ =~ /Duplicate entry/i )
+        if(!$self->migrate() && $@ =~ /Duplicate entry/i )
         {
             printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found, executing auto migration.");
             $self->migrate(1);
             my $ret = $self->_updateRepositories($repo);
             $self->migrate(0);
             return $ret;
+        }
+        elsif($@ =~ /Duplicate entry/i )
+        {
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Duplicate entry found. Need to cleanup Repository entries.");
+            printLog($self->{LOG}, $self->vblevel(), LOG_INFO1, "Please run 'smt sync' again.");
+            $statement = sprintf("DELETE FROM Catalogs
+                                   WHERE NAME = %s
+                                     AND (TARGET = %s OR TARGET IS NULL)",
+                                 $self->{DBH}->quote($repo->{name}),
+                                 $self->{DBH}->quote($repo->{distro_target}));
+            $self->{DBH}->do($statement);
+            return 1;
         }
         else
         {
