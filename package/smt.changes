@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Thu Aug  4 09:26:08 CEST 2016 - mc@suse.de
+
+- version 3.0.17
+- Cleanup outdated product to repository references
+- Prevent endless loop and cleanup repository entries if migration
+  failed (bsc#990861)
+- report error if a not available product should be
+  registered (bsc#991453)
+
+-------------------------------------------------------------------
 Mon Aug  1 12:06:42 CEST 2016 - mc@suse.de
 
 - version 3.0.16
