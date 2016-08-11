@@ -1996,6 +1996,56 @@ sub hasClientProductRegistered
     return ($ref->{GUID}?1:0);
 }
 
+=item sortProductsByExtensions($dbh, $input, $sorted)
+
+Sort product ids by "extensions of".
+
+Return array reference of products could not added to sorted
+because a base product is not part of the list.
+
+=cut
+
+sub sortProductsByExtensions
+{
+    my $dbh = shift || return [];
+    my $input = shift || return [];
+    my $sorted = shift || return [];
+    my $log = shift;
+    my $vblevel = shift;
+    my $notFound = [];
+
+    printLog($log, $vblevel, LOG_DEBUG, ">>>SORTING: ".join(', ', @$input));
+    foreach my $pdid (@$input)
+    {
+        if (@$sorted == 0)
+        {
+            push @$sorted, $pdid;
+            next;
+        }
+        my $found = 0;
+        foreach my $spdid (@$sorted)
+        {
+            if (isExtensionOf($dbh, $spdid, $pdid, $log, $vblevel))
+            {
+                push @$sorted, $pdid;
+                $found = 1;
+                next;
+            }
+        }
+        if (! $found)
+        {
+            push @$notFound, $pdid;
+        }
+    }
+    printLog($log, $vblevel, LOG_DEBUG, ">>> notFound: ".join(', ', @$notFound));
+    printLog($log, $vblevel, LOG_DEBUG, ">>> size notFound ".@$notFound." size input: ".@$input);
+    if (@$notFound > 0 && @$notFound < @$input)
+    {
+        return sortProductsByExtensions($dbh, $notFound, $sorted, $log, $vblevel);
+    }
+    return $notFound;
+}
+
 
 =item requestedAPIVersion($r)
 
