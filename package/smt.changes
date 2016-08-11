@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Aug 11 12:42:19 CEST 2016 - mc@suse.de
+
+- version 3.0.18
+- Make the curl connect timeout configurable (bsc#992764)
+- Find migration targets independent of the order of products
+  reported to the API (bsc#986220)
+
+-------------------------------------------------------------------
 Thu Aug  4 09:26:08 CEST 2016 - mc@suse.de
 
 - version 3.0.17
