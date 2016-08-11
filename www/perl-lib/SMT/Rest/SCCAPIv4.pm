@@ -251,8 +251,17 @@ sub product_migration_targets
             sprintf("The requested products '%s' are not activated on the system.", join(', ', @not_registered_products)));
     }
 
+    my $sorted = [];
+    my $notFound = SMT::Utils::sortProductsByExtensions($self->dbh(), $installedProducts, $sorted, $self->request());
+    printLog($self->request(), undef, LOG_DEBUG, "SORTED: ".join(', ', @$sorted));
+
+    if (@$notFound > 0)
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+            sprintf("Invalid combination of products registered. Unable to find base product for id(s) '%s'.", join(', ', @$notFound)));
+    }
     # now we can start to calculate the migration targets
-    return $self->_calcMigrationTargets($installedProducts);
+    return $self->_calcMigrationTargets($sorted);
 }
 
 sub update_product
