@@ -1014,11 +1014,16 @@ sub createUserAgent
 {
     my %opts = @_;
 
+    my $cfg = getSMTConfig;
+    if (! exists $opts{connecttimeout})
+    {
+        $opts{connecttimeout} = int($cfg->val('LOCAL', 'ConnectTimeout', 5));
+    }
+
     require SMT::Curl;
 
     my $ua = SMT::Curl->new(%opts);
 
-    my $cfg = getSMTConfig;
     my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', WWW::Curl::Easy->version());
     $ua->agent($userAgentString) if( $userAgentString ne "");
 
