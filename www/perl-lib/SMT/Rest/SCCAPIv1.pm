@@ -412,7 +412,7 @@ sub update_system
     }
     if (! $hostname)
     {
-        $hostname = $self->request()->connection()->remote_ip();
+        $hostname = $self->request()->connection()->client_ip();
     }
 
     if ( exists $c->{distro_target} && $c->{distro_target})
@@ -528,7 +528,7 @@ sub announce
     }
     if (! $hostname)
     {
-        $hostname = $self->request()->connection()->remote_ip();
+        $hostname = $self->request()->connection()->client_ip();
     }
 
     if ( exists $c->{distro_target} && $c->{distro_target})
