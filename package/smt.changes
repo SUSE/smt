@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Aug 26 12:46:39 CEST 2016 - mc@suse.de
+
+- remote_ip was renamed to client_ip for apache 2.4 (bsc#992246)
+
+-------------------------------------------------------------------
 Thu Aug 11 12:42:19 CEST 2016 - mc@suse.de
 
 - version 3.0.18
@@ -10,7 +15,7 @@ Thu Aug 11 12:42:19 CEST 2016 - mc@suse.de
 Thu Aug  4 09:26:08 CEST 2016 - mc@suse.de
 
 - version 3.0.17
-- Cleanup outdated product to repository references
+- Cleanup outdated product to repository references (bsc#987559)
 - Prevent endless loop and cleanup repository entries if migration
   failed (bsc#990861)
 - report error if a not available product should be
