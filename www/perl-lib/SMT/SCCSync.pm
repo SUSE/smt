@@ -742,7 +742,23 @@ EOS
     if ($product->{eula_url})
     {
         my $eulaUrl = URI->new($product->{eula_url});
-        $eulaUrl->path(SMT::Utils::cleanPath("repo", $eulaUrl->path()));
+        if( grep {$_ eq $eulaUrl->host} @{$self->{NUHOSTS}} )
+        {
+            $eulaUrl->path(SMT::Utils::cleanPath("repo", $eulaUrl->path()));
+        }
+        else
+        {
+            foreach my $r (@{$product->{repositories}})
+            {
+                my $u = $r->{url};
+                $u =~ s/\/*$//;
+                if($eulaUrl =~ /$u/)
+                {
+                    $eulaUrl->path(SMT::Utils::cleanPath("repo", "RPMMD", $r->{name}.".license"));
+                    last;
+                }
+            }
+        }
         $eulaUrl->fragment(undef);
         $eulaUrl->query(undef);
         $eulaUrl->host($self->{LOCALHOST});
