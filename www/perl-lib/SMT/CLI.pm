@@ -1444,8 +1444,10 @@ sub removeCustomCatalog
 
     # delete existing catalogs with this id
 
-    my $affected1 = $dbh->do(sprintf("DELETE from Catalogs where ID=%s", $dbh->quote($options{catalogid})));
-    my $affected2 = $dbh->do(sprintf("DELETE from ProductCatalogs where CATALOGID=%s", $dbh->quote($options{catalogid})));
+    my $affected2 = $dbh->do(sprintf("DELETE from ProductCatalogs where CATALOGID IN (
+                                          select id from Catalogs where CATALOGID = %s and CATALOGTYPE = 'zypp'
+                                      ) AND SRC = 'C'", $dbh->quote($options{catalogid})));
+    my $affected1 = $dbh->do(sprintf("DELETE from Catalogs where CATALOGID=%s AND SRC = 'C'", $dbh->quote($options{catalogid})));
 
     $affected1=0 if($affected1 != 1);
 
