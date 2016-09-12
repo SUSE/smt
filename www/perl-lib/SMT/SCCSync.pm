@@ -1829,17 +1829,45 @@ sub _machinedata_from_db
 {
     my $self = shift;
     my $regdata = shift;
-    my $out = {};
+    my $translation = {};
 
     foreach my $pair (@{$regdata})
     {
         if($pair->{KEYNAME} eq "machinedata" && $pair->{VALUE})
         {
-            $out = JSON::decode_json($pair->{VALUE});
-            last;
+            # machinedata comes direct from SUSEConnect and we use it 1:1
+            return JSON::decode_json($pair->{VALUE});
+        }
+        # else we translate suse_register reported hardware data to SCC/SUSEConnect format
+        elsif($pair->{KEYNAME} eq "host" && $pair->{VALUE} && ! exists $translation->{hwinfo}->{hypervisor})
+        {
+            $translation->{hwinfo}->{hypervisor} = "suseRegister.conf";
+        }
+        elsif($pair->{KEYNAME} eq "virttype" && $pair->{VALUE})
+        {
+            $translation->{hwinfo}->{hypervisor} = $pair->{VALUE};
+        }
+        elsif($pair->{KEYNAME} eq "hostname" && $pair->{VALUE})
+        {
+            $translation->{hwinfo}->{hostname} = $pair->{VALUE};
+        }
+        elsif($pair->{KEYNAME} eq "platform" && $pair->{VALUE})
+        {
+            $translation->{hwinfo}->{arch} = $pair->{VALUE};
+        }
+        elsif($pair->{KEYNAME} eq "cpu-count" && $pair->{VALUE})
+        {
+            if($pair->{VALUE} =~ /CPUSockets\s*:\s*(\d+)/)
+            {
+                $translation->{hwinfo}->{sockets} = $1;
+            }
+            if($pair->{VALUE} =~ /CPUCores\s*:\s*(\d+)/)
+            {
+                $translation->{hwinfo}->{cpus} = $1;
+            }
         }
     }
-    return $out;
+    return $translation;
 }
 
 sub _products_from_db
