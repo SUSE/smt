@@ -10,7 +10,7 @@ Thu Aug 11 12:39:48 CEST 2016 - mc@suse.de
 Thu Aug  4 09:10:11 CEST 2016 - mc@suse.de
 
 - version 2.0.23
-- Cleanup outdated product to repository references
+- Cleanup outdated product to repository references (bsc#987559)
 - Prevent endless loop and cleanup repository entries if migration
   failed (bsc#990861)
 - report error if a not available product should be
