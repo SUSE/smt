@@ -74,7 +74,7 @@ if(!$dbh)
 
 if(@delete > 0)
 {
-    my $statement = sprintf("SELECT ID, NAME, TARGET from Catalogs where ID IN ('%s')", join("','", @delete));
+    my $statement = sprintf("SELECT CATALOGID, NAME, TARGET from Catalogs where CATALOGID IN ('%s')", join("','", @delete));
     my $arr = $dbh->selectall_arrayref($statement, {Slice=>{}});
 
     if(@{$arr} == 0)
@@ -86,7 +86,7 @@ if(@delete > 0)
     print __("Really delete the following repositories:\n");
     foreach my $entry (@$arr)
     {
-        print " ".$entry->{ID}.":".$entry->{NAME};
+        print " ".$entry->{CATALOGID}.":".$entry->{NAME};
         if(defined $entry->{TARGET})
         {
             print " ".$entry->{TARGET};
