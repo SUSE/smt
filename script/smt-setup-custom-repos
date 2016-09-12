@@ -179,10 +179,23 @@ if($description eq "")
 }
 chomp($description);
 
-my $array = $dbh->selectall_arrayref("SELECT PRODUCTDATAID, PRODUCT, VERSION, REL, ARCH from Products where PRODUCT_LIST='Y' group by PRODUCT, VERSION, REL, ARCH",
+my $array = $dbh->selectall_arrayref("SELECT ID, PRODUCT, VERSION, REL, ARCH from Products where PRODUCT_LIST='Y' group by PRODUCT, VERSION, REL, ARCH",
                                      {Slice => {}});
 my @validProductIds = ();
 my $anotherone = 0;
+foreach my $item (@{$array})
+{
+    push @validProductIds, $item->{ID};
+}
+
+foreach my $pdid (@productids)
+{
+    if( !grep( ($_ eq $pdid), @validProductIds) )
+    {
+        print __("Invalid Product Number ($pdid).\n");
+        exit 1;
+    }
+}
 
 if(@productids == 0 )
 {
@@ -190,14 +203,12 @@ if(@productids == 0 )
 
     foreach my $item (@{$array})
     {
-        print $item->{PRODUCTDATAID}."\t";
+        print $item->{ID}."\t";
         print $item->{PRODUCT}." ";
         print $item->{VERSION}." " if(defined $item->{VERSION});
         print $item->{REL}." " if(defined $item->{REL});
         print $item->{ARCH}." " if(defined $item->{ARCH});
         print "\n";
-
-        push @validProductIds, $item->{PRODUCTDATAID};
     }
     print "\n";
 }
