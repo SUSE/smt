@@ -41,6 +41,7 @@ my $optres = Getopt::Long::GetOptions(
                                       'exturl=s'      => \$exturl,
                                       'target=s'      => \$target,
                                       'delete=s'      => \@delete,
+                                      'addproductsto=s' => \$catalogid,
                                       'help|h'        => \$help
                                      );
 
@@ -58,10 +59,12 @@ if ( $help || !$optres )
     print "    --delete arg        " . __("Remove custom repository with the given ID. You can use this option multiple times.\n");
     print "                        " . __("Call 'smt repos --verbose' to find out the Repository ID\n");
     print "                        " . __("of the repository you want to delete.\n");
+    print "    --addproductsto arg " . __("Add new products to existing repository defined by 'arg'\n");
     print "\n\n";
     print __("Examples:\n\n");
     print "  smt-setup-custom-repos --productid 434 --name 'My_Repository' --exturl 'http://my.domain.top/My_Repository'\n";
     print "  smt-setup-custom-repos --delete 1cf336d819e8e5904f4d4b05ee081971a0cc8afc\n";
+    print "  smt-setup-custom-repos --addproductsto 1cf336d819e8e5904f4d4b05ee081971a0cc8afc --productid 101010 --productid 101012\n";
 
     exit 0;
 }
@@ -125,6 +128,44 @@ if(@delete > 0)
     exit 0;
 }
 
+my $array = $dbh->selectall_arrayref("SELECT ID, PRODUCT, VERSION, REL, ARCH from Products where PRODUCT_LIST='Y' group by PRODUCT, VERSION, REL, ARCH",
+                                     {Slice => {}});
+my @validProductIds = ();
+foreach my $item (@{$array})
+{
+    push @validProductIds, $item->{ID};
+}
+
+foreach my $pdid (@productids)
+{
+    if( !grep( ($_ eq $pdid), @validProductIds) )
+    {
+        print __("Invalid Product Number ($pdid).\n");
+        exit 1;
+    }
+}
+
+if($catalogid ne "")
+{
+    my %options = (
+               productids  => \@productids,
+               catalogid   => $catalogid,
+               addproducts => 1
+              );
+
+    my $success = SMT::CLI::setupCustomCatalogs( %options );
+    if($success)
+    {
+        print __("Products successfully added.\n");
+        exit 0;
+    }
+    else
+    {
+        print __("Adding products failed.\n");
+        exit 1;
+    }
+}
+
 if($target ne "")
 {
        my $targets_avail = $dbh->selectcol_arrayref("select distinct TARGET from Targets order by TARGET asc");
@@ -179,24 +220,8 @@ if($description eq "")
 }
 chomp($description);
 
-my $array = $dbh->selectall_arrayref("SELECT ID, PRODUCT, VERSION, REL, ARCH from Products where PRODUCT_LIST='Y' group by PRODUCT, VERSION, REL, ARCH",
-                                     {Slice => {}});
-my @validProductIds = ();
+
 my $anotherone = 0;
-foreach my $item (@{$array})
-{
-    push @validProductIds, $item->{ID};
-}
-
-foreach my $pdid (@productids)
-{
-    if( !grep( ($_ eq $pdid), @validProductIds) )
-    {
-        print __("Invalid Product Number ($pdid).\n");
-        exit 1;
-    }
-}
-
 if(@productids == 0 )
 {
     print __("Select product where this repository belongs to.\n\n");

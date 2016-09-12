@@ -1467,27 +1467,29 @@ sub setupCustomCatalogs
 {
     my %options = @_;
     my ($cfg, $dbh) = init();
+    my $affected = 0;
 
-    # delete existing catalogs with this id
-
-    removeCustomCatalog(%options);
-
-    # now insert it again.
-    my $exthost = $options{exturl};
-    if($exthost =~ /^(https?:\/\/[^\/]+\/)/)
+    if(! $options{addproducts})
     {
-        $exthost = $1;
-    }
-    elsif($exthost =~ /^(ftp:\/\/[^\/]+\/)/)
-    {
-      $exthost = $1;
-    }
-    elsif($exthost =~ /^file:/)
-    {
-        $exthost = "file://localhost";
-    }
+        # delete existing catalogs with this id
+        removeCustomCatalog(%options);
 
-    my $affected = $dbh->do(sprintf("INSERT INTO Catalogs (CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR,MIRRORABLE,SRC ) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'C')",
+        # now insert it again.
+        my $exthost = $options{exturl};
+        if($exthost =~ /^(https?:\/\/[^\/]+\/)/)
+        {
+            $exthost = $1;
+        }
+        elsif($exthost =~ /^(ftp:\/\/[^\/]+\/)/)
+        {
+            $exthost = $1;
+        }
+        elsif($exthost =~ /^file:/)
+        {
+            $exthost = "file://localhost";
+        }
+
+        $affected = $dbh->do(sprintf("INSERT INTO Catalogs (CATALOGID, NAME, DESCRIPTION, TARGET, LOCALPATH, EXTHOST, EXTURL, CATALOGTYPE, DOMIRROR,MIRRORABLE,SRC ) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'C')",
                                     $dbh->quote($options{catalogid}),
                                     $dbh->quote($options{name}),
                                     $dbh->quote($options{description}),
@@ -1498,6 +1500,8 @@ sub setupCustomCatalogs
                                     $dbh->quote("zypp"),
                                     $dbh->quote("Y"),
                                     $dbh->quote("Y")));
+    }
+
     foreach my $pid (@{$options{productids}})
     {
         $affected += $dbh->do(sprintf("INSERT INTO ProductCatalogs (PRODUCTID, CATALOGID, OPTIONAL, SRC)
