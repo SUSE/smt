@@ -30,12 +30,17 @@ while read line ; do
         https_proxy="${val}"
         export https_proxy
         ;;
+    NO_PROXY=*)
+        test -n "$val" || continue
+        no_proxy="${val}"
+        export no_proxy
+        ;;
         esac
 done < /etc/sysconfig/proxy
 unset sys line val
 
 if test "$PROXY_ENABLED" != "yes" ; then
-    unset http_proxy https_proxy
+    unset http_proxy https_proxy no_proxy
 fi
 unset PROXY_ENABLED
 
