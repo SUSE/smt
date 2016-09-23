@@ -385,6 +385,9 @@ sub _calcMigrationTargets
             my $product = SMT::Utils::lookupProductById($self->dbh(), $pdid, $self->request());
             $product->{free} = ($product->{free}?JSON::true:JSON::false);
             $product->{available} = ($product->{available}?JSON::true:JSON::false);
+            if($product->{available} == JSON::false && $self->request()->server->loglevel() >= 5) {
+                $self->_debugMissingChannels($pdid);
+            }
             push @productset, $product;
         }
         push @result, \@productset;
@@ -514,5 +517,26 @@ sub _deregister_product
     }
     return 1;
 }
+
+sub _debugMissingChannels
+{
+    my $self = shift;
+    my $pdid = shift || return;
+
+    my $statement = sprintf("select CONCAT_WS(' ', c.NAME, c.TARGET) missing
+                               from Catalogs c
+                               join ProductCatalogs pc on c.id = pc.catalogid
+                              where pc.OPTIONAL = 'N'
+                                and c.DOMIRROR = 'N'
+                                and pc.productid = %s", $self->dbh()->quote($pdid));
+    my $repos = $self->dbh()->selectall_arrayref($statement, {Slice => {}});
+    foreach my $missing (@{$repos})
+    {
+        # function only called when apache is in loglevel notice or higher
+        # but we log this as error
+        $self->request()->log->error("$pdid: Repository '".$missing->{'missing'}."' not enabled for syncing.");
+    }
+}
+
 1;
 
