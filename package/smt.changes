@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Tue Oct  4 11:31:09 UTC 2016 - mc@suse.com
+
+- version 2.0.25
+- translate hardware data from NCC to SCC format (bsc#998128)
+- adapt EULA Url for products not hosted on SCC (bsc#970608)
+- fix and check product ids during setup custom repos (bsc#996517)
+- fix removing custom repository (bsc#996517)
+- support adding products to existing custom repo (bsc#996517, bsc#996519)
+- improve no_proxy handling in SMT (bsc#996240)
+- log repositories missing for migration (bsc#999051)
+
+-------------------------------------------------------------------
 Thu Aug 11 12:39:48 CEST 2016 - mc@suse.de
 
 - version 2.0.24
