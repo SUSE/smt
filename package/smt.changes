@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Tue Oct  4 12:37:08 CEST 2016 - mc@suse.de
+
+- version 3.0.19
+- translate hardware data from NCC to SCC format (bsc#998128)
+- adapt EULA Url for products not hosted on SCC (bsc#970608)
+- fix and check product ids during setup custom repos (bsc#996517)
+- fix removing custom repository (bsc#996517)
+- support adding products to existing custom repo (bsc#996517, bsc#996519)
+- improve no_proxy handling in SMT (bsc#996240)
+- log repositories missing for migration (bsc#999051)
+
+-------------------------------------------------------------------
 Fri Aug 26 12:46:39 CEST 2016 - mc@suse.de
 
 - remote_ip was renamed to client_ip for apache 2.4 (bsc#992246)
