@@ -200,12 +200,13 @@ while ( my $v = $sth->fetchrow_hashref() ) {
                          $dbh->quote($catId));
         my $products = $dbh->selectall_arrayref($st,{Slice=>{}} );
 
-        $output .= "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
+        $output .= "[" . (( $v->{DOMIRROR} eq "Y" ) ? "*] " : " ] ") . "[" . sprintf("%3d", $count) . "] ".$v->{ID}.": " . $catName ." " . ( defined($catTarget) ? $catTarget : "--") ."\n";
         $output .= "          (" . $v->{DESCRIPTION} .")\n";
         $output .= "          " . $v->{EXTURL} ."\n";
         $output .= "          " . $v->{LOCALPATH} ."\n";
-        $output .= "          Repository ID: " . $v->{ID} ."\n";
+        $output .= "          Repository ID: " . $v->{CATALOGID} ."\n";
         $output .= "          Staging  : " . $catStaging ."\n";
+        $output .= "          Source   : " . $v->{SRC} ."\n";
         foreach my $h (@{$products}) {
             my $product = (defined $h->{PRODUCT}?$h->{PRODUCT}:"");
             my $version = (defined $h->{VERSION}?$h->{VERSION}:"");
