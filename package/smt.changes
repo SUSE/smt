@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Oct 11 15:39:22 CEST 2016 - mc@suse.de
+
+- show correct Repository ID in smt-repos verbose output
+  (bsc#1004055)
+
+-------------------------------------------------------------------
 Tue Oct  4 11:31:09 UTC 2016 - mc@suse.com
 
 - version 2.0.25
