@@ -59,7 +59,7 @@ if ( $help || !$optres )
     print "    --delete arg        " . __("Remove custom repository with the given ID. You can use this option multiple times.\n");
     print "                        " . __("Call 'smt repos --verbose' to find out the Repository ID\n");
     print "                        " . __("of the repository you want to delete.\n");
-    print "    --addproductsto arg " . __("Add new products to existing repository defined by 'arg'\n");
+    print "    --addproductsto repoid " . __("Add new products to a custom repository defined by 'repoid'\n");
     print "\n\n";
     print __("Examples:\n\n");
     print "  smt-setup-custom-repos --productid 434 --name 'My_Repository' --exturl 'http://my.domain.top/My_Repository'\n";
