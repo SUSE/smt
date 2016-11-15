@@ -304,7 +304,9 @@ else
 # Filter used to mirror just a given repository
 my $additional_filters = '';
 if (defined $repository) {
-    $additional_filters .= ' AND '.SMT::Repositories::REPOSITORYID.'='.$dbh->quote($repository).' ';
+    # use catalogid again to be compatible with output of smt-repos -v
+    # and expected Repository ID in smt-setup-custom-catalogs
+    $additional_filters .= ' AND CATALOGID = '.$dbh->quote($repository).' ';
 }
 
 my $array = [];
