@@ -14,7 +14,18 @@ sub handler {
     if ($r->prev() && $r->prev()->uri() =~ /\/connect\//)
     {
         $r->content_type('application/json');
-        if ($r->path_info() eq "/404")
+        if ($r->path_info() eq "/401") {
+            # tell the browser the error
+            $r->log->error("Unauthorized");
+            $r->status(Apache2::Const::HTTP_UNAUTHORIZED);
+            $r->custom_response(Apache2::Const::HTTP_UNAUTHORIZED, "");
+            print encode_json(
+              { 'error' => "This server could not verify that you are authorized to access this service.",
+                'localized_error' => "This server could not verify that you are authorized to access this service.",
+                'status' => Apache2::Const::HTTP_UNAUTHORIZED }
+            );
+        }
+        elsif ($r->path_info() eq "/404")
         {
             # tell the browser the error
             $r->log->error("Page Not Found");
