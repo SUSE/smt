@@ -41,9 +41,9 @@ function usage()
 
     cat << EOT >&2
 
-  Usage: $0 <registration URL> [--regcert <url>] [--namespace <namespace>] [--regdata <filename>]
-  Usage: $0 --host <hostname of the SMT server> [--regcert <url>] [--namespace <namespace>] [--regdata <filename>]
-  Usage: $0 --host <hostname of the SMT server> [--fingerprint <fingerprint of server cert>] [--yes] [--regdata <filename>]
+  Usage: $0 <registration URL> [--regcert <url>] [--namespace <namespace>] [--regdata <filename>] [--de-register]
+  Usage: $0 --host <hostname of the SMT server> [--regcert <url>] [--namespace <namespace>] [--regdata <filename>] [--de-register]
+  Usage: $0 --host <hostname of the SMT server> [--fingerprint <fingerprint of server cert>] [--yes] [--regdata <filename>] [--de-register]
          configures a SLE client to register against a different registration server
 
   Example: $0 https://smt.example.com/center/regsvc
@@ -63,6 +63,7 @@ REGDATA=""
 REGURL=""
 VARIABLE=""
 NAMESPACE=""
+DE_REGISTER=""
 while true ; do
     case "$1" in
         --fingerprint) VARIABLE=FINGERPRINT;;
@@ -70,6 +71,7 @@ while true ; do
         --regcert) VARIABLE=REGCERT;;
         --regdata) VARIABLE=REGDATA;;
         --namespace) VARIABLE=NAMESPACE;;
+        --de-register) DE_REGISTER="Y";;
         --yes) AUTOACCEPT="Y";;
         "") break ;;
         -h|--help) usage;;
@@ -181,11 +183,22 @@ if [ ! -x $SUSEREGISTER ] && [ ! -x $SUSECONNECT ]; then
     exit 1
 fi
 
-if [ -x "$SUSECONNECT" ] && [ -e /etc/zypp/credentials.d/SCCcredentials ]; then
-    echo "The system is already registered. Please de-register first by calling:"
-    echo "$> SUSEConnect --de-register"
-    echo "$> SUSEConnect --cleanup"
+if [ -x $SUSEREGISTER ] && [ -n "$DE_REGISTER" ]; then
+    echo "De-register option can only be used with SUSEConnect. Abort."
     exit 1
+fi
+
+if [ -x "$SUSECONNECT" ] && [ -e /etc/zypp/credentials.d/SCCcredentials ]; then
+    if [ -n "$DE_REGISTER" ]; then
+        echo "De-registering system..."
+        $SUSECONNECT --de-register
+        $SUSECONNECT --cleanup
+    else
+        echo "The system is already registered. Please de-register first by calling:"
+        echo "$> SUSEConnect --de-register"
+        echo "$> SUSEConnect --cleanup"
+        exit 1
+    fi
 fi
 
 if [ ! -x $GPG ]; then
