@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Wed Dec  7 09:45:39 CET 2016 - mc@suse.de
+
+- version 2.0.27
+- use again CATALOGID for mirroring a specific repo (bsc#1007543)
+- fix help message (bsc#1004714)
+- Check for valid custom repository id (bsc#1004716)
+- return json error on 401 Unauthorized
+- support namespace option for SUSEConnect (bsc#1012116)
+- add option to de-register a system using SUSEConnect (bsc#1012116)
+
+-------------------------------------------------------------------
 Tue Oct 11 15:39:22 CEST 2016 - mc@suse.de
 
 - version 2.0.26
