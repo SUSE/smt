@@ -1063,10 +1063,12 @@ sub clean()
     $parser->parse("/repodata/repomd.xml", sub { clean_handler($self, @_)});
 
     my $path = SMT::Utils::cleanPath($self->fullLocalRepoPath(), "/repodata/repomd.xml");
+    my $mirrorpath = SMT::Utils::cleanPath($self->fullLocalRepoPath(), ".mirror");
 
     delete $self->{CLEANLIST}->{$path} if (exists $self->{CLEANLIST}->{$path});
-    delete $self->{CLEANLIST}->{$path.".asc"} if (exists $self->{CLEANLIST}->{$path.".asc"});;
-    delete $self->{CLEANLIST}->{$path.".key"} if (exists $self->{CLEANLIST}->{$path.".key"});;
+    delete $self->{CLEANLIST}->{$path.".asc"} if (exists $self->{CLEANLIST}->{$path.".asc"});
+    delete $self->{CLEANLIST}->{$path.".key"} if (exists $self->{CLEANLIST}->{$path.".key"});
+    delete $self->{CLEANLIST}->{$mirrorpath} if (exists $self->{CLEANLIST}->{$mirrorpath});
 
     my $cnt = 0;
     foreach my $file ( keys %{$self->{CLEANLIST}} )
