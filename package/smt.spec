@@ -1,7 +1,7 @@
 #
 # spec file for package smt
 #
-# Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -17,7 +17,7 @@
 
 
 Name:           smt
-Version:        3.0.20
+Version:        3.0.21
 Release:        0
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
@@ -64,12 +64,12 @@ This package provide everything you need to get a local NU and
 registration proxy.
 
 %package ha
-Summary:     SMT HA setup
-Group:       Productivity/Networking/Web/Proxy
-PreReq:      smt = %version
-Requires:    perl-File-Touch
-Requires:    perl-File-Slurp
-Requires:    perl-XML-LibXML
+Summary:        SMT HA setup
+Group:          Productivity/Networking/Web/Proxy
+PreReq:         smt = %version
+Requires:       perl-File-Slurp
+Requires:       perl-File-Touch
+Requires:       perl-XML-LibXML
 
 %description ha
 This package extends the basic SMT functionality with registration sharing
