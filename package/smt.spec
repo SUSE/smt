@@ -286,6 +286,7 @@ fi
 %doc %attr(644, root, root) %{_mandir}/man3/*
 %doc %attr(644, root, root) %{_mandir}/man1/*
 %exclude %{_mandir}/man1/smt-support.1.gz
+%exclude %{_mandir}/man1/smt-sibling-sync.1.gz
 %doc %{_docdir}/smt/*
 
 %files ha
@@ -294,6 +295,7 @@ fi
 /usr/lib/SMT/bin/shareRegistration.pl
 %{perl_vendorlib}/SMT/RegistrationSharing.pm
 %{_sbindir}/smt-sibling-sync
+%doc %attr(644, root, root) %{_mandir}/man1/smt-sibling-sync.1.gz
 
 %files -n res-signingkeys
 %defattr(-,root,root)
