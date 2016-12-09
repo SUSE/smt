@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Dec  8 17:20:22 EST 2016 - rjschwei@suse.com
+
+- Put the man page for smt-sibing-sync in the proper package -ha
+- Fix error when calling smt-sibling-sync with --help (bsc#1001178)
+
+-------------------------------------------------------------------
 Wed Dec  7 09:54:09 CET 2016 - mc@suse.de
 
 - version 3.0.21

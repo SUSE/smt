@@ -6,6 +6,7 @@
 
 use strict;
 use warnings;
+use File::Basename;
 use Getopt::Long;
 use SMT::Utils;
 use SMT::RegistrationSharing;
