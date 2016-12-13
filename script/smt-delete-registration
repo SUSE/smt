@@ -13,6 +13,7 @@ use SMT::Utils;
 use SMT::SCCSync;
 use Getopt::Long;
 use File::Basename;
+use DateTime;
 use Data::Dumper;
 
 use Locale::gettext ();
@@ -30,6 +31,7 @@ my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2;
 my $debug = 0;
 my $help  = 0;
 my $logfile = "/dev/null";
+my $lastcontact;
 
 my @guids = ();
 
@@ -37,7 +39,8 @@ my $optres = GetOptions ("guid|g=s"    => \@guids,
                          "logfile|L=s" => \$logfile,
                          "debug|d"     => \$debug,
                          "verboselevel|v=i" => \$vblevel,
-                         "help|h"      => \$help
+                         "help|h"      => \$help,
+                         "older-than=s"  => \$lastcontact
                         );
 
 if($help || !$optres)
@@ -50,15 +53,57 @@ if($help || !$optres)
     print "                           " . __("This option can be used multiple times.\n");
     print "  --debug (-d)           : " . __("enable debug mode\n");
     print "  --logfile (-L) <file>  : " . __("Path to logfile")."\n";
+    print "  --older-than           : " . __("Limit time or delta from now to delete registrations older than this limit.\n");
     exit 0;
 }
 
 $vblevel = LOG_ERROR|LOG_WARN|LOG_INFO1|LOG_INFO2|LOG_DEBUG|LOG_DEBUG2 if($debug);
 
-if(@guids == 0)
+if((@guids == 0) && (!$lastcontact))
 {
-    print STDERR __("No Unique ID provided.\n");
+    print STDERR __("No Unique ID or date limit provided.\n");
     exit 1;
+}
+
+# open the logfile
+my $LOG = SMT::Utils::openLog($logfile);
+
+my $limitdate;
+if ($lastcontact)
+{
+    my $timezone = 'UTC';
+    eval
+    {
+        my $timezone = DateTime::TimeZone->new( name => 'local' );
+    };
+    if($@)
+    {
+        SMT::Utils::printLog($LOG, $vblevel, LOG_INFO1, __('Unable to determine local timezone, using UTC'));
+    }
+    my $now = DateTime->now( time_zone => $timezone);
+    if ($lastcontact =~ /\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d/)
+    {
+        $limitdate = $lastcontact;
+    }
+    elsif ($lastcontact =~ /\d*m/) {
+        chop $lastcontact;
+        my $removetargetdate = $now->subtract( months => $lastcontact );
+        my $date = $now->ymd('-');
+        my $time = $now->hms(':');
+        $limitdate = "$date $time";
+    }
+    elsif ($lastcontact =~ /\d*d/) {
+        chop $lastcontact;
+        my $removetargetdate = $now->subtract( days => $lastcontact );
+        my $date = $now->ymd('-');
+        my $time = $now->hms(':');
+        $limitdate = "$date $time";
+    }
+    else
+    {
+        print STDERR __("Unsupported argument format: $lastcontact. Must be one of 'YYYY-MM-DD hh:mm:ss', 'd*m', or 'd*d'.\n");
+        exit 1;
+    }
 }
 
 if(!SMT::Utils::openLock("smt-delete-registration"))
@@ -67,9 +112,11 @@ if(!SMT::Utils::openLock("smt-delete-registration"))
     exit 0;
 }
 
-# open the logfile
-
-my $LOG = SMT::Utils::openLog($logfile);
+if(!SMT::Utils::openLock('smt-sibling-sync'))
+{
+    print __("Sibling sync is running cannot delete registrations.\n");
+    SMT::Utils::unLockAndExit( "smt-delete-registration", 0, $LOG, $vblevel );
+}
 
 my $useragent = SMT::Utils::createUserAgent('log' => $LOG, 'vblevel' => $vblevel);
 $useragent->protocols_allowed( [ 'https' ] );
@@ -99,6 +146,13 @@ if(!$dbh)
     die __("Cannot connect to database");
 }
 
+if ($limitdate) {
+    my $statement = 'SELECT GUID from Clients WHERE LASTCONTACT < ';
+    $statement .= $dbh->quote($limitdate);
+    my $clientguids = $dbh->selectcol_arrayref($statement);
+    push @guids, @{$clientguids};
+}
+
 eval
 {
     my $err = 1;
@@ -125,6 +179,7 @@ if($@)
     SMT::Utils::unLockAndExit( "smt-delete-registration", 1, $LOG, $vblevel );
 }
 
+SMT::Utils::unLockAndExit( "smt-sibling-sync", 0, $LOG, $vblevel );
 SMT::Utils::unLockAndExit( "smt-delete-registration", 0, $LOG, $vblevel );
 
 
@@ -157,6 +212,28 @@ I<smt delete-registration> deletes one or more registrations from SMT and SCC. I
 =item --guid|-g id
 
 Deletes the machine with guid B<id> from the system. This parameter can be used multiple times.
+
+=item --older-than
+
+Deletes all machines with a "Last Contact" date that is older than the given date-time value or the given delta in months or days. Accepted formats are:
+
+=over
+
+=item C<YYYY-MM-DD hh:mm:ss>
+
+The date time format as it is recorded in the database, for example "2014-10-09 09:30:00" would delet all machines that have not visisted the SMT server since October 9, 2014 at 9:30 in the morning.
+
+=item C<d*m>
+
+The time delta in months where "d*" may be any number of digits. For example a value of "18m" will caclculate the limit time to be 18 months prior to now and will delete all the machines that have not visisted the SMT server since the calculated limit time.
+
+=item C<d*d>
+
+The time delta in days where "d*" may be any number of digits. For example a value of "25d" will caclculate the limit time to be 25 days prior to now and will delete all the machines that have not visisted the SMT server since the calculated limit time.
+
+=back
+
+All calculations or the absolute date-time setting provided are considered to be in the SMT servers time zone setting.
 
 =back
 

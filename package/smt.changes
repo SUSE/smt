@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Dec 13 14:38:39 EST 2016 - rjschwei@suse.com
+
+- Support registration deletion based on a timestamp/delta time
+  in smt-delete-registration, new command line argument --older-than
+
+-------------------------------------------------------------------
 Thu Dec  8 17:20:22 EST 2016 - rjschwei@suse.com
 
 - Put the man page for smt-sibing-sync in the proper package -ha
