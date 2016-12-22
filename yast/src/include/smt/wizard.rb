@@ -314,6 +314,12 @@ module Yast
       Wizard.DisableBackButton
       Wizard.SetAbortButton(:abort, Label.CancelButton)
 
+      if UI.WidgetExists(Id(:rep_next))
+        UI.ReplaceWidget(Id(:rep_next),
+          PushButton(Id(:next), Opt(:key_F10), Label.OKButton)
+        )
+      end
+
       Wizard.SetTitleIcon("yast-smt")
 
       CWM.Run(w, { :abort => fun_ref(method(:ReallyExit), "boolean ()") })

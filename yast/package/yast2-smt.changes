@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Dec 22 12:10:44 UTC 2016 - jsrain@suse.cz
+
+- prevent exiting the repo selection dialog via hitting Enter in
+  the repository filter (bsc#1006984)
+
+-------------------------------------------------------------------
 Thu Mar 17 09:26:50 UTC 2016 - jsrain@localhost
 
 - use TextEntry-based filter for repos (fate#319777)
