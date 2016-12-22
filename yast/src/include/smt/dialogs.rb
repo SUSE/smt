@@ -2685,14 +2685,14 @@ module Yast
           end
         end
       end
+      exit_code = SCR.Read(path(".process.status"), process_PID)
+      Builtins.y2milestone("Mirror exit status: %1", exit_code)
 
       # any lines left in buffer?
       line = Convert.to_string(SCR.Read(path(".process.read"), process_PID))
       if line != nil && Ops.greater_than(Builtins.size(line), 0)
         UI.ChangeWidget(Id(:log), :LastLine, Ops.add(line, "\n"))
       end
-
-      SCR.Execute(path(".process.release"), process_PID)
 
       if !aborted
         # Flush the internal cache after mirroring
@@ -2714,10 +2714,19 @@ module Yast
           }
         )
 
-        UI.ChangeWidget(Id(:log), :LastLine, _("Finished\n"))
+        if exit_code == 0
+          UI.ChangeWidget(Id(:log), :LastLine, _("Finished\n"))
+        else
+          line = Convert.to_string(SCR.Read(path(".process.read_stderr"), process_PID))
+          if line != nil && Ops.greater_than(Builtins.size(line), 0)
+            UI.ChangeWidget(Id(:log), :LastLine, Ops.add(line, "\n"))
+          end
+          UI.ChangeWidget(Id(:log), :LastLine, _("Mirroring failed\n"))
+        end
         UI.ReplaceWidget(Id(:button), PushButton(Id(:ok), Label.OKButton))
         UI.UserInput
       end
+      SCR.Execute(path(".process.release"), process_PID)
 
       UI.CloseDialog
 
