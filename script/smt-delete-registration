@@ -221,7 +221,7 @@ Deletes all machines with a "Last Contact" date that is older than the given dat
 
 =item C<YYYY-MM-DD hh:mm:ss>
 
-The date time format as it is recorded in the database, for example "2014-10-09 09:30:00" would delet all machines that have not visisted the SMT server since October 9, 2014 at 9:30 in the morning.
+The date time format as it is recorded in the database, for example "2014-10-09 09:30:00" would delete all machines that have not visisted the SMT server since October 9, 2014 at 9:30 in the morning.
 
 =item C<d*m>
 
