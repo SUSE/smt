@@ -35,6 +35,18 @@ if($help) {
 
 my $log = SMT::Utils::openLog($logfile);
 
+if(!SMT::Utils::openLock('smt-sibling-sync'))
+{
+    print __("Sibling sync process is still running.\n");
+    exit 0;
+}
+
+if (!SMT::Utils::openLock('smt-delete-registration')) {
+    print __("Registration deletion in progress cannot sync the registrations.\n");
+    SMT::Utils::unLockAndExit( 'smt-sibling-sync', 0, $log, 1);
+}
+
+
 my $dbh = SMT::Utils::db_connect();
 my $statement = 'SELECT GUID from Registration';
 my $guids = $dbh->selectcol_arrayref($statement);
@@ -47,6 +59,9 @@ if (! $guids) {
 for my $guid (@{$guids}) {
     SMT::RegistrationSharing::shareRegistration($guid, $log);
 }
+
+SMT::Utils::unLockAndExit( 'smt-delete-registration', 0, $log, 1);
+SMT::Utils::unLockAndExit( 'smt-sibling-sync', 0, $log, 1);
 
 #
 # Manpage

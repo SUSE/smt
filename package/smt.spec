@@ -1,7 +1,7 @@
 #
 # spec file for package smt
 #
-# Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -17,7 +17,7 @@
 
 
 Name:           smt
-Version:        3.0.21
+Version:        3.0.22
 Release:        0
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
