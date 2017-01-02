@@ -1,7 +1,7 @@
 #
 # spec file for package smt
 #
-# Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -20,7 +20,7 @@ Name:           smt
 BuildRequires:  apache2
 BuildRequires:  apache2-mod_perl
 BuildRequires:  swig
-Version:        2.0.27
+Version:        2.0.28
 Release:        0
 Requires:       createrepo
 Requires:       gpg2

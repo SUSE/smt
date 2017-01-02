@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jan  2 09:50:14 CET 2017 - mc@suse.de
+
+- version 2.0.28
+- do not remove the .mirror file during repo cleaning (bsc#1013854)
+
+-------------------------------------------------------------------
 Wed Dec  7 09:45:39 CET 2016 - mc@suse.de
 
 - version 2.0.27
