@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Dec 22 12:19:32 UTC 2016 - jsrain@suse.cz
+
+- prevent exiting the repo selection dialog via hitting Enter in
+  the repository filter (bsc#1006984)
+- report when error occurres during repo mirroring (bsc#1006989)
+- 3.0.10
+
+-------------------------------------------------------------------
 Thu Mar 17 09:26:50 UTC 2016 - jsrain@localhost
 
 - use TextEntry-based filter for repos (fate#319777)

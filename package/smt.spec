@@ -147,6 +147,8 @@ rm -rf tests/testdata
 make DESTDIR=%{buildroot} DOCDIR=%{_docdir} install
 make DESTDIR=%{buildroot} install_conf
 
+ln -sf service %{buildroot}/%{_sbindir}/rcsmt
+
 mkdir -p %{buildroot}%{_mandir}/man1
 mkdir -p %{buildroot}%{_mandir}/man3
 cd man
@@ -271,6 +273,7 @@ fi
 /srv/www/perl-lib/SMT/Client/*.pm
 %exclude /srv/www/perl-lib/SMT/Support.pm
 %{_sbindir}/smt-*
+%{_sbindir}/rcsmt
 %exclude %{_sbindir}/smt-support
 %exclude /usr/sbin/smt-sibling-sync
 %{_sbindir}/smt
