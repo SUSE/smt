@@ -301,7 +301,7 @@ create table PatchRefs( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         URL         VARCHAR(256),
                         TITLE       VARCHAR(256),
                         CONSTRAINT PatchRefs_id_pk PRIMARY KEY (ID)
-                      ) ENGINE=InnoDB;
+                      ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Packages
 --
