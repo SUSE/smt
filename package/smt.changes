@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Jan 12 09:24:39 CET 2017 - mc@suse.de
+
+- Convert PatchRefs table to UTF8 (bsc#1018797)
+
+-------------------------------------------------------------------
 Mon Jan  2 13:16:53 UTC 2017 - jsrain@suse.cz
 
 - created /usr/sbin/rcsmt symlink (bsc#969339)
