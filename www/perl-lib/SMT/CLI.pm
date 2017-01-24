@@ -1469,12 +1469,6 @@ sub setupCustomCatalogs
     my ($cfg, $dbh) = init();
     my $affected = 0;
 
-    if (!SMT::Utils::lookupCatalogIdByDataId($dbh, $options{catalogid}, 'C'))
-    {
-        print $options{catalogid}." is not a valid custom repository\n";
-        return 0;
-    }
-
     if(! $options{addproducts})
     {
         # delete existing catalogs with this id
@@ -1506,6 +1500,12 @@ sub setupCustomCatalogs
                                     $dbh->quote("zypp"),
                                     $dbh->quote("Y"),
                                     $dbh->quote("Y")));
+    }
+
+    if (!SMT::Utils::lookupCatalogIdByDataId($dbh, $options{catalogid}, 'C'))
+    {
+        print $options{catalogid}." is not a valid custom repository\n";
+        return 0;
     }
 
     foreach my $pid (@{$options{productids}})
