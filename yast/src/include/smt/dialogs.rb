@@ -476,7 +476,7 @@ module Yast
           Left(TextEntry(Id(:repos_filter), Opt(:notify), _("Repository Filter"), "")),
           VBox(
             VSpacing(1),
-            PushButton(Id(:filter), _("Filter"))
+            PushButton(Id(:filter), Opt(:default), _("Filter"))
           ),
           HStretch()
         ),
@@ -1405,6 +1405,7 @@ module Yast
 
       mirroring = nil
       staging = nil
+      catalog_id = nil
 
       # Constructing the Filter UI
       # $[0:["openSUSE", "SLE", ...], 1:["11.1", "SDK", ...], ...]
@@ -1420,6 +1421,7 @@ module Yast
         end
         mirroring = Ops.get_string(one_catalog, "DOMIRROR", "") == "Y"
         staging = Ops.get_string(one_catalog, "STAGING", "") == "Y"
+        catalog_id = Ops.get_string(one_catalog, "CATALOGID", "0")
         splititem_nr = -1
         # used later in Handle* function
         Ops.set(
@@ -1429,6 +1431,7 @@ module Yast
             "mirroring" => mirroring,
             "staging"   => staging,
             "name"      => Ops.get_string(one_catalog, "NAME", ""),
+            "catalog_id" => catalog_id,
             # empty /--/ == no specific target
             "target"    => Builtins.regexpmatch(
               Ops.get_string(one_catalog, "TARGET", ""),
@@ -2748,7 +2751,7 @@ module Yast
       elsif event_id == :toggle_staging
         ToggleRepository(current_id, "staging")
       elsif event_id == :mirror_now
-        MirrorRepository(current_id)
+        MirrorRepository(@catalogs_info[current_id]["catalog_id"])
         RedrawCatalogsTable(@filters)
       elsif event_id == :catalogs_table
         # Table->double_click

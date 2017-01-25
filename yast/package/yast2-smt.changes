@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Jan 20 09:25:05 UTC 2017 - jsrain@suse.cz
+
+- fixed mirroring custom repositories (bsc#1019551)
+- make the Filter button default (bsc#1006984)
+- 3.0.11
+
+-------------------------------------------------------------------
 Thu Dec 22 12:19:32 UTC 2016 - jsrain@suse.cz
 
 - prevent exiting the repo selection dialog via hitting Enter in
