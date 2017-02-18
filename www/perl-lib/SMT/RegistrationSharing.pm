@@ -305,7 +305,7 @@ sub _createInsertSQLfromXML
     my $sql = "INSERT into $tableName (";
     my $vals = 'VALUES (';
     for my $entry ($element->getElementsByTagName('entry')) {
-        $sql .= $entry->getAttribute('comulmnName')
+        $sql .= $entry->getAttribute('columnName')
             . ', ';
         my $val = $dbh->quote($entry->getAttribute('value'));
         $vals .= "$val"
@@ -328,7 +328,7 @@ sub _getGUIDfromTableEntry
 {
     my $tableXML = shift;
     for my $entry ($tableXML->getElementsByTagName('entry')) {
-        if ($entry->getAttribute('comulmnName') eq 'GUID') {
+        if ($entry->getAttribute('columnName') eq 'GUID') {
             return $entry->getAttribute('value');
         }
     }
@@ -376,7 +376,7 @@ sub _getXMLFromRowData
             next;
         }
         if ($data{$entry}) {
-            $xml .= "<entry comulmnName='$entry' value='"
+            $xml .= "<entry columnName='$entry' value='"
                 . $data{$entry}
                 . "'/>";
         }
