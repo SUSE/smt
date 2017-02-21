@@ -247,8 +247,23 @@ sub shareProductRegistration
         $apache->warn($msg);
         return;
     }
+    # Look up the PRODUCTDATAID, which is provided by SCC and is always
+    # consistent across all SMT servers. A quesry based on the PRODUCTDATAID
+    # is used on the sibling server to get the PRODUCTID (a sequential
+    # auto-increment ID) for the Registration table.
+    # The logic is that on the sending server we use the PRODUCTID used for
+    # registration to get the universal PRODUCTDATAID (aka the SCC product
+    # id). On the sibling we then use that PRODUCTDATAID to look up the
+    # PRODUCTID for the Registration table.
+    $statement = sprintf("SELECT PRODUCTDATAID from Products where id=%s",
+                         $dbh->quote($prodID));
+    my $prodData = $dbh->selectcol_arrayref($statement);
+    my $sccProdID = $prodData->[0];
+    my $foreign_query =
+        "SELECT ID from Products where PRODUCTDATAID=$sccProdID";
+    my $foreignEntries = { 'PRODUCTID' => $foreign_query };
     $regXML .= "<tableData table='Registration'>"
-            . _getXMLFromRowData($regData)
+            . _getXMLFromRowData($regData, undef, $foreignEntries)
             . '</tableData>';
     $regXML .= '</registrationData>';
     $dbh->disconnect();
@@ -283,6 +298,20 @@ sub _createInsertSQLfromXML
             . ', ';
         my $val = $dbh->quote($entry->getAttribute('value'));
         $vals .= "$val"
+            . ', ';
+    }
+    for my $entry ($element->getElementsByTagName('foreign_entry')) {
+        $sql .= $entry->getAttribute('columnName')
+            . ', ';
+        my $statement = $entry->getAttribute('value');
+        my $values = $dbh->selectcol_arrayref($statement);
+        my $target_values = '';
+        for my $value (@{$values}) {
+            $target_values = $value
+                . ',';
+        }
+        chop $target_values; # remove trailing comma
+        $vals .= "$target_values"
             . ', ';
     }
     chop $sql; # remove trailing space
@@ -337,16 +366,30 @@ sub _getXMLFromPostData
 #
 # Turn DB data into XML format
 #
+# rowData is expected to be a hashref returned by a selectrow_hashref db query
+# skipEntries may be an array ref that will contain column names that should
+#             not be considered for XML data generation
+# foreignEntries is a hasref that contains column names as keys and a sql query
+#                as the value for each key. The SQL query will be used to
+#                substitute the value for the column on the sibling server.
+#                The provided query must make sense for a selectcol_arrayref
 sub _getXMLFromRowData
 {
     my $rowData     = shift;
     my $skipEntries = shift;
+    my $foreignEntries = shift;
     my %skip = map { ($_ => 1) } @{$skipEntries};
     my %data = %{$rowData};
     my @entries = keys %data;
     my $xml = '';
     for my $entry (@entries) {
         if ($skip{$entry}) {
+            next;
+        }
+        if ($foreignEntries->{$entry}) {
+            $xml .= "<foreign_entry columnName='$entry' value='"
+                . $foreignEntries->{$entry}
+                . "'/>";
             next;
         }
         if ($data{$entry}) {
