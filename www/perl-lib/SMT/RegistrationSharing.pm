@@ -305,13 +305,7 @@ sub _createInsertSQLfromXML
             . ', ';
         my $statement = $entry->getAttribute('value');
         my $values = $dbh->selectcol_arrayref($statement);
-        my $target_values = '';
-        for my $value (@{$values}) {
-            $target_values = $value
-                . ',';
-        }
-        chop $target_values; # remove trailing comma
-        $vals .= "$target_values"
+        $vals .= $dbh->quote($values->[0])
             . ', ';
     }
     chop $sql; # remove trailing space
