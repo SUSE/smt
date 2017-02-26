@@ -346,6 +346,12 @@ sub products
 
     # TODO: get status - from SMT?
 
+    #
+    # share the registered product
+    #
+    if ($self->{regsharing}) {
+        SMT::RegistrationSharing::shareProductRegistration($guid, $productId);
+    }
     # return result
     return $self->_registrationResult($productId);
 }

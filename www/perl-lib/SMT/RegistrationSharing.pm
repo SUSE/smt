@@ -40,14 +40,13 @@ sub addSharedRegistration
     }
     my $dbh = SMT::Utils::db_connect();
     my @tableEntries = $regXML->getElementsByTagName('tableData');
-    my $guid = _getGUIDfromTableEntry($tableEntries[0]);
-    if (SMT::Utils::lookupClientByGUID($dbh, $guid)) {
-        $dbh->disconnect();
-        $apache->log->info("Already have entry for '$guid' nothing to do");
-        return;
-    }
     for my $entry (@tableEntries) {
-        $guid = _getGUIDfromTableEntry($entry);
+        my $guid = _getGUIDfromTableEntry($entry);
+        my $tableName = $entry->getAttribute('table');
+        if ($tableName eq 'Clients' && SMT::Utils::lookupClientByGUID($dbh, $guid)) {
+            $apache->log->info("Already have entry for '$guid' nothing to do for Clients record");
+            next;
+        }
         my $statement = _createInsertSQLfromXML($r, $dbh, $entry);
         if (! $statement) {
             $dbh->disconnect();
@@ -195,30 +194,6 @@ sub shareRegistration
 {
     my $regGUID = shift;
     my $log     = shift;
-    my $apache;
-    if (! $log) {
-        $apache = Apache2::ServerUtil->server;
-    }
-    # Get the configuration
-    my $cfg;
-    eval
-    {
-        $cfg = SMT::Utils::getSMTConfig();
-    };
-    if($@ || !defined $cfg)
-    {
-        my $msg = 'Cannot read the SMT configuration file: '.$@;
-        if ($log) {
-            print $log $msg;
-        } else {
-            $apache->log_error($msg);
-        }
-        return;
-    }
-    my $shareRegDataTargets = $cfg->val('LOCAL', 'shareRegistrations');
-    if (! $shareRegDataTargets) {
-        return 1;
-    }
     my $dbh = SMT::Utils::db_connect();
     # Setup the registration data as an XML string
     my @tableData = ('Clients', 'Registration');
@@ -243,42 +218,56 @@ sub shareRegistration
             . '</tableData>';
     }
     $regXML .= '</registrationData>';
-
-    # Send the registration data to the configured SMT siblings
-    if ( $regXML =~ /GUID/) {
-        my @smtSiblings = split /,/, $shareRegDataTargets;
-        for my $smtServer (@smtSiblings) {
-            my $url = "https://$smtServer/center/regsvc"
-                . '?command=shareregistration'
-                . '&lang=en-US&version=1.0';
-            my $response = _sendData($url, $regXML, $log);
-            if (! $response ) {
-                return;
-            }
-            if (! $response->is_success ) {
-                my $msg = $response->message;
-                my $details = $response->content;
-                my $guidMsg = "Could not share registration for $regGUID";
-                my $responseMsg = "Response: $msg";
-                my $detailsMsg = "Response: $details";
-                if ($log) {
-                    print $log $guidMsg . "\n";
-                    print $log $responseMsg . "\n";
-                    print $log $detailsMsg . "\n";
-                } else {
-                    $apache->warn($guidMsg);
-                    $apache->warn($responseMsg);
-                    $apache->warn($detailsMsg);
-                    _logShareRecord($smtServer,$url,$regXML);
-                }
-
-            } else {
-                _sharePreviousRegistrations($smtServer, $log);
-            }
-        }
-    }
     $dbh->disconnect();
-    return;
+    _sendRegData($regXML, $log);
+}
+
+#
+# Share a single product registration. In the SCC paradigm products/modules
+# are registered one at a time and we do not know when the client considers
+# registration to be complete. Thus we share every product as a registration
+#
+sub shareProductRegistration
+{
+    my $regGUID = shift;
+    my $prodID = shift;
+    my $apache = Apache2::ServerUtil->server;
+    my $dbh = SMT::Utils::db_connect();
+    my $regXML = '<?xml version="1.0" encoding="UTF-8"?>'
+        . '<registrationData>';
+    # Get the registration data
+    my $statement = sprintf("SELECT * from Registration where GUID=%s and PRODUCTID=%s",
+                            $dbh->quote($regGUID),
+                            $dbh->quote($prodID));
+    my $regData = $dbh->selectrow_hashref($statement);
+    if (! $regData) {
+        my $msg = "No product registration found for product '$prodID' and "
+            . "ID '$regGUID'. This will create a data inconsistency on the "
+            . 'sibling server';
+        $apache->warn($msg);
+        return;
+    }
+    # Look up the PRODUCTDATAID, which is provided by SCC and is always
+    # consistent across all SMT servers. A quesry based on the PRODUCTDATAID
+    # is used on the sibling server to get the PRODUCTID (a sequential
+    # auto-increment ID) for the Registration table.
+    # The logic is that on the sending server we use the PRODUCTID used for
+    # registration to get the universal PRODUCTDATAID (aka the SCC product
+    # id). On the sibling we then use that PRODUCTDATAID to look up the
+    # PRODUCTID for the Registration table.
+    $statement = sprintf("SELECT PRODUCTDATAID from Products where id=%s",
+                         $dbh->quote($prodID));
+    my $prodData = $dbh->selectcol_arrayref($statement);
+    my $sccProdID = $prodData->[0];
+    my $foreign_query =
+        "SELECT ID from Products where PRODUCTDATAID=$sccProdID";
+    my $foreignEntries = { 'PRODUCTID' => $foreign_query };
+    $regXML .= "<tableData table='Registration'>"
+            . _getXMLFromRowData($regData, undef, $foreignEntries)
+            . '</tableData>';
+    $regXML .= '</registrationData>';
+    $dbh->disconnect();
+    _sendRegData($regXML);
 }
 
 #
@@ -305,10 +294,18 @@ sub _createInsertSQLfromXML
     my $sql = "INSERT into $tableName (";
     my $vals = 'VALUES (';
     for my $entry ($element->getElementsByTagName('entry')) {
-        $sql .= $entry->getAttribute('comulmnName')
+        $sql .= $entry->getAttribute('columnName')
             . ', ';
         my $val = $dbh->quote($entry->getAttribute('value'));
         $vals .= "$val"
+            . ', ';
+    }
+    for my $entry ($element->getElementsByTagName('foreign_entry')) {
+        $sql .= $entry->getAttribute('columnName')
+            . ', ';
+        my $statement = $entry->getAttribute('value');
+        my $values = $dbh->selectcol_arrayref($statement);
+        $vals .= $dbh->quote($values->[0])
             . ', ';
     }
     chop $sql; # remove trailing space
@@ -328,7 +325,7 @@ sub _getGUIDfromTableEntry
 {
     my $tableXML = shift;
     for my $entry ($tableXML->getElementsByTagName('entry')) {
-        if ($entry->getAttribute('comulmnName') eq 'GUID') {
+        if ($entry->getAttribute('columnName') eq 'GUID') {
             return $entry->getAttribute('value');
         }
     }
@@ -363,10 +360,18 @@ sub _getXMLFromPostData
 #
 # Turn DB data into XML format
 #
+# rowData is expected to be a hashref returned by a selectrow_hashref db query
+# skipEntries may be an array ref that will contain column names that should
+#             not be considered for XML data generation
+# foreignEntries is a hasref that contains column names as keys and a sql query
+#                as the value for each key. The SQL query will be used to
+#                substitute the value for the column on the sibling server.
+#                The provided query must make sense for a selectcol_arrayref
 sub _getXMLFromRowData
 {
     my $rowData     = shift;
     my $skipEntries = shift;
+    my $foreignEntries = shift;
     my %skip = map { ($_ => 1) } @{$skipEntries};
     my %data = %{$rowData};
     my @entries = keys %data;
@@ -375,8 +380,14 @@ sub _getXMLFromRowData
         if ($skip{$entry}) {
             next;
         }
+        if ($foreignEntries->{$entry}) {
+            $xml .= "<foreign_entry columnName='$entry' value='"
+                . $foreignEntries->{$entry}
+                . "'/>";
+            next;
+        }
         if ($data{$entry}) {
-            $xml .= "<entry comulmnName='$entry' value='"
+            $xml .= "<entry columnName='$entry' value='"
                 . $data{$entry}
                 . "'/>";
         }
@@ -466,6 +477,70 @@ sub _sendData{
         $ua->setopt(CURLOPT_CAPATH, $certPath);
     }
     return $ua->post($url, Content=>$data);
+}
+
+sub _sendRegData
+{
+    my $regXML = shift;
+    my $log     = shift;
+    my $apache;
+    if (! $log) {
+        $apache = Apache2::ServerUtil->server;
+    }
+        # Get the configuration
+    my $cfg;
+    eval
+    {
+        $cfg = SMT::Utils::getSMTConfig();
+    };
+    if($@ || !defined $cfg)
+    {
+        my $msg = 'Cannot read the SMT configuration file: '.$@;
+        if ($log) {
+            print $log $msg;
+        } else {
+            $apache->log_error($msg);
+        }
+        return;
+    }
+    my $shareRegDataTargets = $cfg->val('LOCAL', 'shareRegistrations');
+    if (! $shareRegDataTargets) {
+        return 1;
+    }
+
+    # Send the registration data to the configured SMT siblings
+    my @smtSiblings = split /,/, $shareRegDataTargets;
+    for my $smtServer (@smtSiblings) {
+        my $url = "https://$smtServer/center/regsvc"
+            . '?command=shareregistration'
+            . '&lang=en-US&version=1.0';
+        my $response = _sendData($url, $regXML, $log);
+        if (! $response ) {
+            return;
+        }
+        if (! $response->is_success ) {
+            my $msg = $response->message;
+            my $details = $response->content;
+            my $guidMsg = "Could not share registration for $regXML";
+            my $responseMsg = "Response: $msg";
+            my $detailsMsg = "Response: $details";
+            if ($log) {
+                print $log $guidMsg . "\n";
+                print $log $responseMsg . "\n";
+                print $log $detailsMsg . "\n";
+            } else {
+                $apache->warn($guidMsg);
+                $apache->warn($responseMsg);
+                $apache->warn($detailsMsg);
+                _logShareRecord($smtServer,$url,$regXML);
+            }
+
+        } else {
+            _sharePreviousRegistrations($smtServer, $log);
+        }
+    }
+
+    return;
 }
 
 #
