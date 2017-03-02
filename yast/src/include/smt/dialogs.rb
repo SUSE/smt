@@ -197,44 +197,61 @@ module Yast
               Frame(
                 _("Customer Center Configuration"),
                 VBox(
-                  HSquash(
-                    MinWidth(
-                      40,
-                      # TRANSLATORS: check box
-                      CheckBox(
-                        Id("custom"),
-                        Opt(:notify),
-                        _("&Use Custom Server")
+                  HBox(
+                    HSpacing(1),
+                    Left(HSquash(
+                      MinWidth(
+                        40,
+                        # TRANSLATORS: check box
+                        CheckBox(
+                          Id("custom"),
+                          Opt(:notify),
+                          _("&Use Custom Server")
+                        )
                       )
-                    )
+                    ))
                   ),
-                  HSquash(
-                    MinWidth(
-                      40,
-                      # TRANSLATORS: text entry
-                      InputField(Id("NURegUrl"), _("&Registration Server Url"))
-                    )
+                  HBox(
+                    HSpacing(1),
+                    HWeight(1, HSquash(
+                      MinWidth(
+                        35,
+                        # TRANSLATORS: text entry
+                        InputField(Id("NURegUrl"), _("&Registration Server Url"))
+                      )
+                    )),
+                    HSpacing(2),
+                    HWeight(1, HSquash(
+                      MinWidth(
+                        35,
+                        # TRANSLATORS: text entry
+                        InputField(Id("NUUrl"), _("&Download Server Url"))
+                      )
+                    )),
+                    HSpacing(1)
                   ),
-                  HSquash(
-                    MinWidth(
-                      40,
-                      # TRANSLATORS: text entry
-                      InputField(Id("NUUrl"), _("&Download Server Url"))
-                    )
+                  HBox(
+                    HSpacing(1),
+                    Left(Label(_("Organization (Mirroring) Credentials")))
                   ),
-                  HSquash(
-                    MinWidth(
-                      40,
-                      # TRANSLATORS: text entry (User name)
-                      InputField(Id("NUUser"), _("&User"))
-                    )
-                  ),
-                  HSquash(
-                    MinWidth(
-                      40,
-                      # TRANSLATORS: password entry
-                      Password(Id("NUPass"), _("&Password"))
-                    )
+                  HBox(
+                    HSpacing(1),
+                    HWeight(1, HSquash(
+                      MinWidth(
+                        35,
+                        # TRANSLATORS: text entry (User name)
+                        InputField(Id("NUUser"), _("&User"))
+                      )
+                    )),
+                    HSpacing(2),
+                    HWeight(1, HSquash(
+                      MinWidth(
+                        35,
+                        # TRANSLATORS: password entry
+                        Password(Id("NUPass"), _("&Password"))
+                      )
+                    )),
+                    HSpacing(1)
                   ),
                   VSpacing(1),
                   # TRANSLATORS: push button
