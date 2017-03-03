@@ -66,7 +66,11 @@ BuildRequires:	hicolor-icon-theme
 # any YaST theme
 BuildRequires:	yast2_theme
 # build must not have any choice, using package that provides 'yast2-branding'
+%if 0%{?is_opensuse}
+BuildRequires:	yast2-branding-openSUSE
+%else
 BuildRequires:	yast2-branding-SLES
+%endif
 
 BuildArchitectures:	noarch
 
