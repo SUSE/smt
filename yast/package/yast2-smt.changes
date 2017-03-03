@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Mar  2 14:40:28 UTC 2017 - jsrain@suse.cz
+
+- explicitly mention "Organization Credentials" (fate#321759)
+- rearrange the SMT set-up dialog (bsc#977043)
+- 3.0.12
+
+-------------------------------------------------------------------
 Fri Jan 20 09:25:05 UTC 2017 - jsrain@suse.cz
 
 - fixed mirroring custom repositories (bsc#1019551)
