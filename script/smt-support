@@ -148,7 +148,7 @@ validateSR() {
 	if [ $SRNUM ]; then
 		startLogEntry
 		INVALID=0
-		if [ ${#SRNUM} -eq 11 ]; then
+		if [ ${#SRNUM} -eq 11 -o ${#SRNUM} -eq 12 ]; then
 			if echo $SRNUM | grep '[[:alpha:]]' &> /dev/null; then
 				((INVALID++))
 			fi
@@ -156,7 +156,7 @@ validateSR() {
 			((INVALID++))
 		fi
 		if [ $INVALID -gt 0 ]; then
-			showStatus "ERROR, Invalid SR number ($SRNUM); Must be 11 digits"
+			showStatus "ERROR, Invalid SR number ($SRNUM); Must be 11 or 12 digits"
 			echo
 			exit 5
 		fi
