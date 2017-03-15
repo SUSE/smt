@@ -129,7 +129,8 @@ rm -rf "$RPM_BUILD_ROOT"
 /usr/share/YaST2/control/smt_control.xml
 
 # ... and icons (again)
-%dir /usr/share/YaST2/theme/current/icons
+# removed, as conflicts with the symlink for current theme
+# %dir /usr/share/YaST2/theme/current/icons
 %dir /usr/share/YaST2/theme/current/icons/16x16/
 %dir /usr/share/YaST2/theme/current/icons/16x16/apps/
 %dir /usr/share/YaST2/theme/current/icons/22x22/
