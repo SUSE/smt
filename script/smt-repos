@@ -66,23 +66,24 @@ if ( (defined $help && $help == 1 ) || (defined $optres && $optres == 0) )
     # smt-catalogs would be shown - that would not inform the user about
     # renaming of the script
     print "smt-repos [name] [target]: " . __("Enable or disable mirroring of a repository\n");
-    print "   --enable-mirror   (-e)     : " . __("enable repository mirorring for \$repository\n");
-    print "   --disable-mirror  (-d)     : " . __("disable repository mirroring for \$repository\n");
-    print "   --enable-by-prod  (-p) arg : " . __("enable repository mirroring by giving product data\n");
-    print "                                Product[,Version[,Architecture[,Release]]]\n";
-    print "                                (call smt list-products to get a list of known products)\n";
-    print "   --disable-by-prod (-P) arg : " . __("disable repository mirroring by giving product data\n");
-    print "                                Product[,Version[,Architecture[,Release]]]\n";
-    print "                                (call smt list-products to get a list of known products)\n";
-    print "   --enable-staging  (-s)     : " . __("Enable staging for a repository\n");
-    print "   --disable-staging (-S)     : " . __("Disable staging for a repository\n");
-    print "   --only-mirrorable (-m)     : " . __("only show mirrorable repositories\n");
-    print "   --only-enabled    (-o)     : " . __("only show repositories set to be mirrored\n");
-    print "   --delete                   : " . __("delete the repository from disk\n");
-    print "   --namespace            arg : " . __("specify the namespace of the repository which should be deleted\n");
-    print "   --exclude-optional(-x)     : " . __("exclude optional repositories\n");
-    print "   --verbose         (-v)     : " . __("show detailed repository information\n");
-    print "   --help            (-h)     : " . __("show this help\n");
+    print "   --enable-mirror    (-e)     : " . __("enable repository mirorring for \$repository\n");
+    print "   --disable-mirror   (-d)     : " . __("disable repository mirroring for \$repository\n");
+    print "   --enable-by-prod   (-p) arg : " . __("enable repository mirroring by giving product data\n");
+    print "                                 Product[,Version[,Architecture[,Release]]]\n";
+    print "                                 (call smt list-products to get a list of known products)\n";
+    print "   --disable-by-prod  (-P) arg : " . __("disable repository mirroring by giving product data\n");
+    print "                                 Product[,Version[,Architecture[,Release]]]\n";
+    print "                                 (call smt list-products to get a list of known products)\n";
+    print "   --exclude-optional (-x)     : " . __("exclude optional repositories when running with\n");
+    print "                                 --enable-by-prod or --disable-by-prod flags\n";
+    print "   --enable-staging   (-s)     : " . __("Enable staging for a repository\n");
+    print "   --disable-staging  (-S)     : " . __("Disable staging for a repository\n");
+    print "   --only-mirrorable  (-m)     : " . __("only show mirrorable repositories\n");
+    print "   --only-enabled     (-o)     : " . __("only show repositories set to be mirrored\n");
+    print "   --delete                    : " . __("delete the repository from disk\n");
+    print "   --namespace             arg : " . __("specify the namespace of the repository which should be deleted\n");
+    print "   --verbose          (-v)     : " . __("show detailed repository information\n");
+    print "   --help             (-h)     : " . __("show this help\n");
     exit 0;
 }
 
@@ -93,7 +94,7 @@ if ( $enableByProduct ne "" )
 }
 elsif ( $disableByProduct ne "" )
 {
-    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $disableByProduct, enable => 0);
+    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $disableByProduct, enable => 0, excludeOptional => $excludeOptional );
     exit $ret;
 }
 
@@ -420,6 +421,11 @@ Disables repository mirroring by giving product data.
 
 Product[,Version[,Architecture[,Release]]]
 (call smt list-products to get a list of known products)
+
+=item --exclude-optional -x
+
+Excludes optional repositories when running with --enable-by-prod
+or --disable-by-prod flags.
 
 =item --enable-staging -s
 
