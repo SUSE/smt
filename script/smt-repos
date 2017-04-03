@@ -38,6 +38,7 @@ my $domirror;
 my $verbose;
 my $help;
 my $batchMode;
+my $excludeOptional;
 
 use Getopt::Long;
 &Getopt::Long::Configure( 'no_auto_abbrev', 'no_ignore_case');
@@ -54,6 +55,7 @@ my $optres = &Getopt::Long::GetOptions(
                                        'batch-mode|b'         => \$batchMode,
                                        'delete'               => \$delete,
                                        'namespace=s'          => \$namespace,
+                                       'exclude-optional|x'   => \$excludeOptional,
                                        'help|h'               => \$help
                                       );
 
@@ -78,6 +80,7 @@ if ( (defined $help && $help == 1 ) || (defined $optres && $optres == 0) )
     print "   --only-enabled    (-o)     : " . __("only show repositories set to be mirrored\n");
     print "   --delete                   : " . __("delete the repository from disk\n");
     print "   --namespace            arg : " . __("specify the namespace of the repository which should be deleted\n");
+    print "   --exclude-optional(-x)     : " . __("exclude optional repositories\n");
     print "   --verbose         (-v)     : " . __("show detailed repository information\n");
     print "   --help            (-h)     : " . __("show this help\n");
     exit 0;
@@ -85,7 +88,7 @@ if ( (defined $help && $help == 1 ) || (defined $optres && $optres == 0) )
 
 if ( $enableByProduct ne "" )
 {
-    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $enableByProduct, enable => 1);
+    my $ret = SMT::CLI::setCatalogsByProduct( verbose => $verbose, prodStr => $enableByProduct, enable => 1, excludeOptional => $excludeOptional );
     exit $ret;
 }
 elsif ( $disableByProduct ne "" )

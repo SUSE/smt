@@ -757,6 +757,7 @@ sub setCatalogsByProduct
 
     my ($cfg, $dbh) = init();
     my $enable = 0;
+    my $excludeOptional = 0;
 
     #( verbose => $verbose, prodStr => $enableByProduct, enable => [1,0])
 
@@ -768,6 +769,10 @@ sub setCatalogsByProduct
     if(exists $opts{enable} && defined $opts{enable})
     {
         $enable = $opts{enable};
+    }
+    if(exists $opts{excludeOptional} && defined $opts{excludeOptional})
+    {
+        $excludeOptional = $opts{excludeOptional};
     }
 
     my ($product, $version, $arch, $release) = split(/\s*,\s*/, $opts{prodStr}, 4);
@@ -794,7 +799,7 @@ sub setCatalogsByProduct
         return 1;
     }
 
-    my $statement = "select distinct pc.CATALOGID, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTID IN ($st1) and pc.CATALOGID = c.ID order by NAME,TARGET;";
+    my $statement = "select distinct pc.CATALOGID, pc.OPTIONAL, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTID IN ($st1) and pc.CATALOGID = c.ID order by NAME,TARGET;";
 
     #print "$statement \n";
 
@@ -804,6 +809,8 @@ sub setCatalogsByProduct
     {
         next if($enable && uc($row->{DOMIRROR}) eq "Y");
         next if(!$enable && uc($row->{DOMIRROR}) eq "N");
+
+        next if($excludeOptional && uc($row->{OPTIONAL}) eq "Y");
 
         if($enable && uc($row->{MIRRORABLE}) ne "Y")
         {
