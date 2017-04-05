@@ -1,0 +1,34 @@
+version: '2'
+services:
+  db:
+    image: library/mariadb:10.0.27
+    env_file: .env
+
+  smt_server:
+    build: ./smt_server
+    #ports:
+    #  - 80:80
+    expose:
+      - 80
+      - 443
+    depends_on:
+      - db
+    links:
+      - db
+    env_file: .env
+    #external_links:
+    #  - glue_web_1
+
+    volumes:
+      - ./rspec:/rspec
+
+  smt_client:
+    build: ./smt_client
+    depends_on:
+      - smt_server
+    links:
+      - smt_server:smt-server
+    env_file: .env
+
+    volumes:
+      - ./rspec:/rspec
