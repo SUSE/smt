@@ -1,0 +1,4 @@
+source 'https://rubygems.org'
+
+gem 'rspec', '~> 3.5'
+gem 'aruba', '~> 0.14.2'
