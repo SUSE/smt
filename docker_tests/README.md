@@ -16,9 +16,8 @@ cp package/* ~/obs/Devel:SMT:SLE-12-SMT/smt
 # Testing the RPM package
 
 1. The docker image expects the RPM package to be present in the following
-locations:
+location:
 ```
-smt_client/files/smt_current.rpm
 smt_server/files/smt_current.rpm
 ```
 2. Build docker images with `docker-compose build`
