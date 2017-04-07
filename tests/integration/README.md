@@ -22,7 +22,13 @@ smt_server/files/smt_current.rpm
 ```
 2. Build docker images with `docker-compose build`
 3. Run the containers with `docker-compose up`
-4. After the containers finish loading, run the test suite inside `smt_server`
+4. After the containers finish loading, find out the name of the container
+by running `docker-exec ps`
+5. To get the shell in the running container run:
+```
+docker exec -it [container_name] /bin/bash
+```
+6. Inside the container run the test suite inside `smt_server`
 and `smt_client` containers, i.e.:
 ```
 cd /rspec
