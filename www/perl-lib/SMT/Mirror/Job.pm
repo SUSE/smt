@@ -122,6 +122,8 @@ sub new
 
     $self->{DRYRUN} = 0;
 
+    $self->{ERROR_MESSAGE} = undef;
+
     if(exists $opt{vblevel} && defined $opt{vblevel})
     {
         $self->{VBLEVEL} = $opt{vblevel};
@@ -426,6 +428,11 @@ sub wasNotFound()
     return $self->{RESPONSE_CODE} == 404;
 }
 
+sub getErrorMessage() {
+    my $self = shift;
+    return $self->{ERROR_MESSAGE};
+}
+
 
 =item vblevel([level])
 
@@ -714,6 +721,7 @@ sub mirror
     if($errorcode != 0)
     {
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $errormsg, 1, 0);
+        $self->{ERROR_MESSAGE} = $errormsg;
         $self->{DOWNLOAD_TYPE} = 1;
         return $errorcode;
     }
