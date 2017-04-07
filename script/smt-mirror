@@ -79,6 +79,7 @@ my $recpatches = 0;
 my %secpatchtitles = ();
 my %recpatchtitles = ();
 my $fromlocalsmt = 0;
+my @broken_repos = ();
 
 my $nohardlink = 0;
 
@@ -316,7 +317,7 @@ if(!defined $dbreplfile)
     #
     # search for all zypp repositories we need to mirror and start the mirror process
     #
-    $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING, AUTHTOKEN ".
+    $array = $dbh->selectall_arrayref( "select ID, CATALOGID, LOCALPATH, EXTURL, EXTHOST, CATALOGTYPE, STAGING, AUTHTOKEN, DESCRIPTION ".
                                        "from Catalogs ".
                                        "where MIRRORABLE='Y' and DOMIRROR='Y' ".$additional_filters.
                                        "order by CATALOGTYPE, NAME",
@@ -410,6 +411,23 @@ foreach my $entry (@{$array})
             $size       += $s->{DOWNLOAD_SIZE};
             $secpatches += $s->{NEWSECPATCHES};
             $recpatches += $s->{NEWRECPATCHES};
+
+            if ( $s->{ERROR} ) {
+                my $error_details = "";
+                if ( @{$s->{ERROR_MESSAGES}} ) {
+                    $error_details = ":\n" . join( "\n", map { "    - $_" } @{$s->{ERROR_MESSAGES}} );
+                }
+
+                my $msg = sprintf(
+                    "%s (%s)%s",
+                    $entry->{DESCRIPTION},
+                    $entry->{EXTURL},
+                    $error_details
+                );
+
+                push( @broken_repos, $msg );
+            }
+
             foreach my $title (@{$s->{NEWSECTITLES}})
             {
               if( exists $secpatchtitles{$title} )
@@ -543,6 +561,12 @@ if(!$clean && !$hardlink)
     }
     push @summary, sprintf(__("Errors:                   : %d"), $errors);
     push @summary, sprintf(__("Total Mirror Time         : %s"), SMT::Utils::timeFormat(tv_interval($mirrorStartTime)));
+
+    if ( @broken_repos ) {
+        push @summary, sprintf(__("Repositories with errors  :") );
+        push @summary, map { sprintf("  * %s", $_) } @broken_repos;
+        push @summary, "";
+    }
 
     if(!$mail)
     {
