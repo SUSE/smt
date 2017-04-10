@@ -24,15 +24,17 @@ smt_server/files/smt_current.rpm
 3. Run the containers with `docker-compose up`
 4. After the containers finish loading, find out the name of the container
 by running `docker-exec ps`
-5. To get the shell in the running container run:
+5. To run SMT server tests in the `smt_server` container run:
 ```
-docker exec -it [container_name] /bin/bash
-```
-6. Inside the container run the test suite inside `smt_server`
-and `smt_client` containers, i.e.:
-```
+docker-compose exec smt_server bash
 cd /rspec
 bundle
-rspec spec/smt_client # for the client container
-rspec spec/smt_server # for the server container
+rspec spec/smt_server
+```
+6. To run SMT client tests in the `smt_client` container run:
+```
+docker-compose exec smt_client bash
+cd /rspec
+bundle
+rspec spec/smt_client
 ```
