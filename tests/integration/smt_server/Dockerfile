@@ -1,14 +1,5 @@
 FROM registry.scc.suse.de/connect_sp2
 
-RUN [[ \
--z "$SCC_REGSERVER_URL" || \
--z "SCC_USERNAME" || \
--z "$SCC_PASSWORD" || \
--z "$SMT_DB_USER"  || \
--z "$SMT_DB_PASSWORD"  || \
--z "$MYSQL_ROOT_PASSWORD" \
-]] && echo "ERROR: Please set variables in .env file" && exit 1
-
 RUN zypper ref && zypper --non-interactive install --no-recommend \
     timezone patch mariadb-client libopenssl-devel
 
