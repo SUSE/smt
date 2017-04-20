@@ -1,0 +1,42 @@
+node('scc-jenkins-node-chucker') {
+    stage('checkout') {
+        git url: 'https://github.com/SUSE/smt/', branch: 'docker_tests'
+    }
+
+    stage('build rpm') {
+        sh 'make package'
+        dir('obs') {
+            deleteDir()
+        }
+        dir('obs') {
+            sh 'osc -A https://api.suse.de co Devel:SMT:SLE-12-SMT smt'
+            dir('Devel:SMT:SLE-12-SMT/') {
+                sh 'bash -c "cp ../../package/* smt/"'
+                dir('smt') {
+                    sh 'osc -A https://api.suse.de build --trust-all-projects --no-verify --clean SLE_12 x86_64'
+                }
+            }
+        }
+    }
+
+    stage('docker-compose build') {
+        dir('tests/integration'){
+            sh 'cp ~/smt.env .env'
+            sh 'bash -c "cp /var/tmp/build-root/SLE_12-x86_64/home/abuild/rpmbuild/RPMS/x86_64/smt-[0-9]*.x86_64.rpm smt_server/files/smt_current.rpm"'
+            sh 'docker-compose build'
+        }
+    }
+
+    stage('smt server tests') {
+        dir('tests/integration'){
+            sh 'docker-compose run --rm smt_server bash -c "cd /rspec && bundle && rspec spec/smt_server/"'
+        }
+    }
+
+    stage('smt client tests') {
+        dir('tests/integration'){
+            sh 'cp ~/smt.env .env'
+            sh 'docker-compose run --rm smt_client bash -c "cd /rspec && bundle && rspec spec/smt_client/"'
+        }
+    }
+}
