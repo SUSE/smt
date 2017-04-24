@@ -45,6 +45,9 @@ sub systems_handler()
         }
         elsif ( $self->request()->method() =~ /^DELETE$/i )
         {
+            if ( $path =~ /^systems\/products\/?$/ ) {
+                return $self->delete_single_product();
+            }
         }
      }
      return ($code, $data);
@@ -347,6 +350,86 @@ sub delete_system
         return (Apache2::Const::SERVER_ERROR, "Error while deleting the system ");
     }
     return (Apache2::Const::OK, {});
+}
+
+sub delete_single_product
+{
+    my $self = shift || return (undef, undef);
+
+    # We are sure, that user is a system GUID
+    my $guid = $self->user();
+    my $c    = JSON::decode_json($self->read_post());
+
+    foreach my $param ( qw{identifier version arch} ) {
+        unless ( exists $c->{$param} && $c->{$param} ) {
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: $param");
+        }
+    }
+
+    unless (exists $c->{release_type}) {
+        $c->{release_type} = undef;
+    }
+
+    my ($v, $r) = split(/-/, $c->{version}, 2);
+    $c->{version} = $v;
+
+    my $productId = SMT::Utils::lookupProductIdByName($self->dbh(), $c->{identifier}, $c->{version},
+        $c->{release_type}, $c->{arch});
+    if(not $productId)
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
+    }
+
+    my @statements;
+
+    push @statements, sprintf("DELETE FROM Registration WHERE GUID=%s AND PRODUCTID=%s",
+        $self->dbh()->quote($guid),
+        $self->dbh()->quote($productId));
+
+    foreach my $key_name (
+        (
+            "product-name-$productId", "product-version-$productId", "product-arch-$productId",
+            "product-rel-$productId", "product-token-$productId",
+        )
+    ) {
+        push @statements, sprintf("DELETE FROM MachineData WHERE GUID = %s AND KEYNAME = %s",
+            $self->dbh()->quote($guid),
+            $self->dbh()->quote( $key_name ),
+        );
+    }
+
+    foreach my $statement ( @statements ) {
+        $self->request()->log->info("STATEMENT: $statement");
+        eval {
+            $self->dbh()->do($statement);
+        };
+        if($@)
+        {
+            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
+        }
+    }
+
+    #
+    # lookup the Clients target
+    #
+    my $target = SMT::Utils::lookupTargetForClient($self->dbh(), $guid, $self->request());
+
+    #
+    # find Catalogs
+    #
+    my $existingregs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
+    my @pidarr = keys %{$existingregs};
+    my $catalogs = SMT::Registration::findCatalogs($self->request(), $self->dbh(), $target, \@pidarr);
+
+    if ( (keys %{$catalogs}) == 0)
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
+    }
+
+    # TODO deregistration sharing?
+
+    # return result
+    return $self->_registrationResult($productId);
 }
 
 #################################################################################
