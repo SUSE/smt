@@ -355,6 +355,14 @@ sub delete_single_product
 {
     my $self = shift || return (undef, undef);
 
+    my $regsharing = SMT::Utils::hasRegSharing();
+    if ( $regsharing ) {
+        return (
+            Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+            "Single product deactivation is not available when registration sharing is enabled"
+        );
+    }
+
     # We are sure, that user is a system GUID
     my $guid = $self->user();
     my $c    = JSON::decode_json($self->read_post());
