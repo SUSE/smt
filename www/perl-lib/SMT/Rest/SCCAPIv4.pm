@@ -360,6 +360,23 @@ sub delete_single_product
     my $guid = $self->user();
     my $c    = JSON::decode_json($self->read_post());
 
+    #
+    # lookup the Clients target
+    #
+    my $target = SMT::Utils::lookupTargetForClient($self->dbh(), $guid, $self->request());
+
+    #
+    # find Catalogs
+    #
+    my $existingregs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
+    my @pidarr = keys %{$existingregs};
+    my $catalogs = SMT::Registration::findCatalogs($self->request(), $self->dbh(), $target, \@pidarr);
+
+    if ( (keys %{$catalogs}) == 0)
+    {
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
+    }
+
     foreach my $param ( qw{identifier version arch} ) {
         unless ( exists $c->{$param} && $c->{$param} ) {
             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: $param");
@@ -408,25 +425,6 @@ sub delete_single_product
             return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
         }
     }
-
-    #
-    # lookup the Clients target
-    #
-    my $target = SMT::Utils::lookupTargetForClient($self->dbh(), $guid, $self->request());
-
-    #
-    # find Catalogs
-    #
-    my $existingregs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
-    my @pidarr = keys %{$existingregs};
-    my $catalogs = SMT::Registration::findCatalogs($self->request(), $self->dbh(), $target, \@pidarr);
-
-    if ( (keys %{$catalogs}) == 0)
-    {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
-    }
-
-    # TODO deregistration sharing?
 
     # return result
     return $self->_registrationResult($productId);
