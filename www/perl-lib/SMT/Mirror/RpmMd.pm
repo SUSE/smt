@@ -96,6 +96,9 @@ repository.
 
 =cut
 
+# For integration tests, intentionally not exposed to configs or command line
+our $download_only_metadata = 0;
+
 sub new
 {
     my $pkgname = shift;
@@ -921,6 +924,10 @@ sub mirror()
             $self->{STATISTIC}->{DOWNLOAD} += 1;
 
             next;
+        }
+
+        if ( $download_only_metadata ) {
+            next if ( $r !~ /\-release/ and $r !~ /lifecycle-data/ );
         }
 
         my $mres = $self->{JOBS}->{$r}->mirror();
