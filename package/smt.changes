@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu May  4 10:38:53 CEST 2017 - ikapelyukhin@suse.com
+
+- version 2.0.30
+- Add info about repositories with errors to summary (bsc#944291)
+
+-------------------------------------------------------------------
 Thu Feb 16 09:52:34 CET 2017 - mc@suse.de
 
 - version 2.0.29
