@@ -1,7 +1,14 @@
 -------------------------------------------------------------------
-Sun Feb 19 05:38:26 EST 2017 - rjschwei@suse
+Thu May  4 10:02:23 CEST 2017 - ikapelyukhin@suse.com
 
 - version 3.0.24
+- Add single product deactivation endpoint
+- Add info about repositories with errors to summary (bsc#944291)
+- Add an option to exclude optional packages (--exclude-optional or -x)
+
+-------------------------------------------------------------------
+Sun Feb 19 05:38:26 EST 2017 - rjschwei@suse
+
 - share the product data with the sibling server (bsc#1025898)
 
 -------------------------------------------------------------------
