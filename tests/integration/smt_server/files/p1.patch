@@ -1,0 +1,24 @@
+diff -Naur usr/lib/perl5/vendor_perl/5.18.2/SMT/SCCSync.pm /usr/lib/perl5/vendor_perl/5.18.2/SMT/SCCSync.pm
+--- usr/lib/perl5/vendor_perl/5.18.2/SMT/SCCSync.pm	2016-09-22 12:47:34.000000000 +0000
++++ /usr/lib/perl5/vendor_perl/5.18.2/SMT/SCCSync.pm	2016-10-18 15:11:31.851162560 +0000
+@@ -143,7 +143,7 @@
+     else
+     {
+         $self->{USERAGENT} = SMT::Utils::createUserAgent(log => $self->{LOG}, vblevel => $self->{VBLEVEL});
+-        $self->{USERAGENT}->protocols_allowed( [ 'https'] );
++        $self->{USERAGENT}->protocols_allowed( [ 'https', 'http' ] );
+     }
+ 
+     my ($ruri, $user, $pass) = SMT::Utils::getLocalRegInfos();
+diff -Naur usr/lib/perl5/vendor_perl/5.18.2/SMT/Utils.pm /usr/lib/perl5/vendor_perl/5.18.2/SMT/Utils.pm
+--- usr/lib/perl5/vendor_perl/5.18.2/SMT/Utils.pm	2016-09-22 12:47:34.000000000 +0000
++++ /usr/lib/perl5/vendor_perl/5.18.2/SMT/Utils.pm	2016-10-18 15:11:31.851162560 +0000
+@@ -398,7 +398,7 @@
+     }
+ 
+     $uri = $cfg->val('NU', 'NURegUrl');
+-    if(!defined $uri || $uri !~ /^https/)
++    if(!defined $uri || $uri !~ /^http/)
+     {
+         open(FH, "< /etc/suseRegister.conf") or die sprintf(__("Cannot open /etc/suseRegister.conf: %s"), $!);
+         while(<FH>)

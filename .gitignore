@@ -31,3 +31,5 @@ yast/pluglib-bindings.ami
 yast/src/Makefile.in
 yast/src/smt
 yast/testsuite/Makefile.in
+obs
+

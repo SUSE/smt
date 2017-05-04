@@ -1,14 +1,20 @@
 -------------------------------------------------------------------
 Thu May  4 10:02:23 CEST 2017 - ikapelyukhin@suse.com
 
-- version 3.0.24
+- version 3.0.25
 - Add single product deactivation endpoint
 - Add info about repositories with errors to summary (bsc#944291)
 - Add an option to exclude optional packages (--exclude-optional or -x)
 
 -------------------------------------------------------------------
+Fri Mar 10 12:46:29 UTC 2017 - jsrain@suse.cz
+
+- allow 12-digit service request (bsc#1026417)
+
+-------------------------------------------------------------------
 Sun Feb 19 05:38:26 EST 2017 - rjschwei@suse
 
+- version 3.0.24
 - share the product data with the sibling server (bsc#1025898)
 
 -------------------------------------------------------------------
