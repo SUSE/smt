@@ -61,14 +61,6 @@ Using target project 'SUSE:Maintenance'
 132177
 ```
 
-### Alternatively, issuing a service request
-```
-# ~/obs/Devel:SMT:SLE-12-SMT/smt> iosc sr SUSE:SLE-12-SP1:Update
-WARNING:
-WARNING: Project does not accept submit request, request to open a NEW maintenance incident instead
-WARNING:
-created request id 132175
-```
-
-After either a SR or a MR is issued it should show up in the
-"Outgoing requests tab" in the OBS web-interface.
+After an MR is issued it should show up in the output of
+`iosc request list` command and also in the "Outgoing requests tab"
+in OBS web-interface.
