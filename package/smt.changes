@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed May 10 09:46:49 EDT 2017 - rjschwei@suse.com
+
+- Fix typo in XML in registration sharing test
+- Avoid weird Perl memory error on return from sending the shared
+  data
+
+-------------------------------------------------------------------
 Thu May  4 10:02:23 CEST 2017 - ikapelyukhin@suse.com
 
 - version 3.0.25
