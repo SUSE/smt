@@ -476,8 +476,8 @@ sub _sendData{
     if ($certPath) {
         $ua->setopt(CURLOPT_CAPATH, $certPath);
     }
-    $ua->post($url, Content=>$data);
-    return;
+
+    return $ua->post($url, Content=>$data);
 }
 
 sub _sendRegData
@@ -577,12 +577,15 @@ sub _sharePreviousRegistrations{
     my @records = File::Slurp::read_file($replayLog);
     for my $record (@records) {
         (my $url, my $regXML) = split /\+\+\+/, $record;
-        my $response = _sendData($url, $regXML, $log);
-        if (! $response) {
-            return;
-        }
-        if (! $response->is_success ) {
-            push @undeliverdRecords, $record;
+        if ($url && $regXML) {
+            my $response = _sendData($url, $regXML, $log);
+            if (! $response) {
+                unlink $lockFile;
+                return;
+            }
+            if (! $response->is_success ) {
+                push @undeliverdRecords, $record;
+            }
         }
     }
     unlink $lockFile;
@@ -590,7 +593,9 @@ sub _sharePreviousRegistrations{
     if (@undeliverdRecords) {
         for my $record (@undeliverdRecords) {
             (my $url, my $regXML) = split /\+\+\+/, $record;
-            _logShareRecord($logFileName,$url,$regXML);
+            if ($url && $regXML) {
+                _logShareRecord($logFileName,$url,$regXML);
+            }
         }
     }
 }
