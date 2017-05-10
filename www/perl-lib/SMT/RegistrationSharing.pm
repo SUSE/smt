@@ -476,7 +476,8 @@ sub _sendData{
     if ($certPath) {
         $ua->setopt(CURLOPT_CAPATH, $certPath);
     }
-    return $ua->post($url, Content=>$data);
+    $ua->post($url, Content=>$data);
+    return;
 }
 
 sub _sendRegData
