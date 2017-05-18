@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Tue May 16 12:47:11 CEST 2017 - ikapelyukhin@suse.com
+
+- version 3.0.26
+- Add caching of SCCcredentials on startup (bsc#1030677)
+
+-------------------------------------------------------------------
+Wed May 10 09:46:49 EDT 2017 - rjschwei@suse.com
+
+- Fix typo in XML in registration sharing test
+- Fix backlog write issue (bsc#1038363)
+
+-------------------------------------------------------------------
 Thu May  4 10:02:23 CEST 2017 - ikapelyukhin@suse.com
 
 - version 3.0.25
