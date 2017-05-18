@@ -2104,6 +2104,38 @@ sub array_compare
     return ($str1 eq $str2);
 }
 
+=item getRequiredProductReposById($dbh, $id)
+
+Get the list of repositories required to fully mirror a product.
+Returns a hashref of hashrefs with required repos info.
+
+=cut
+
+sub getRequiredProductReposById
+{
+    my $dbh = shift || return undef;
+    my $id = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $query_repos = sprintf("
+        SELECT c.id, c.NAME AS catalog_name, p.product, p.version, p.arch
+             FROM ProductCatalogs pc
+             JOIN Catalogs c ON pc.CATALOGID = c.ID
+             JOIN Products p ON ( pc.PRODUCTID = p.ID )
+            WHERE pc.PRODUCTID = %s
+              AND c.DOMIRROR = 'N'
+              AND pc.OPTIONAL = 'N'
+        ",
+        $dbh->quote($id)
+    );
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_repos");
+    my $ref = $dbh->selectall_hashref($query_repos, 'id') || {};
+    return $ref;
+
+}
+
 =back
 
 =head1 AUTHOR

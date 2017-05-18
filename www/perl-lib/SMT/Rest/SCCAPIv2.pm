@@ -217,7 +217,24 @@ sub products
     my $product = SMT::Utils::lookupProductById($self->dbh(), $productId, $self->request());
     if (!$product->{available})
     {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Product not (fully) mirrored on this server");
+
+        my $errmsg = "Product not (fully) mirrored on this server.";
+
+        local $@;
+        eval {
+            my $repo_info = SMT::Utils::getRequiredProductReposById($self->dbh(), $productId, $self->request());
+            $errmsg .= "\nMirroring of the following repos has to be enabled on the SMT server:\n";
+
+            $errmsg .= join (
+                "\n",
+                map {
+                    "  * $_->{catalog_name} ($_->{product},$_->{version},$_->{arch})"
+                } values ( $repo_info )
+            ) . "\n";
+
+        };
+
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, $errmsg);
     }
 
     #
