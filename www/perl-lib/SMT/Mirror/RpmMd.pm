@@ -96,6 +96,9 @@ repository.
 
 =cut
 
+# For integration tests, intentionally not exposed to configs or command line
+our $download_only_metadata = 0;
+
 sub new
 {
     my $pkgname = shift;
@@ -261,6 +264,14 @@ sub localLicenseDir
     return $path;
 }
 
+sub logAndSaveError
+{
+    my ( $self, $logMessage ) = @_;
+    printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, $logMessage);
+    push(@{$self->{STATISTIC}->{ERROR_MESSAGES}}, $logMessage);
+    return $self->{STATISTIC}->{ERROR}++;
+}
+
 sub updateLicenseDir
 {
     my $self = shift;
@@ -277,9 +288,7 @@ sub updateLicenseDir
     if (@$err)
     {
         my ($file, $emsg) = each %{$err->[0]};
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                 "Could not create the destination directory '$licdir': $emsg");
-        $self->{STATISTIC}->{ERROR} += 1;
+        $self->logAndSaveError("Could not create the destination directory '$licdir': $emsg");
         return $self->{STATISTIC}->{ERROR};
     }
     my @cargs = ("-x", "-f", $licenseFile, "-C", $licdir);
@@ -287,9 +296,7 @@ sub updateLicenseDir
         {log => $self->{LOG}, vblevel => $self->vblevel()}, "/bin/tar", @cargs);
     if ($exitcode || $exitcode == -1)
     {
-        $self->{STATISTIC}->{ERROR} += 1;
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                 "Failed to unpack license: $out\n$error");
+        $self->logAndSaveError("Failed to unpack license: $out\n$error");
         return 0;
     }
     return 1;
@@ -408,6 +415,9 @@ sub job2statistic
     if( $job->wasError() )
     {
         $self->{STATISTIC}->{ERROR} += 1;
+        if ( my $error = $job->getErrorMessage() ) {
+            push( @{$self->{STATISTIC}->{ERROR_MESSAGES}}, $error );
+        }
     }
     elsif( $job->wasUpToDate() )
     {
@@ -457,8 +467,9 @@ sub resetStatistics($)
     $stats->{DOWNLOAD_SIZE} = 0;
     $stats->{NEWSECPATCHES} = 0;
     $stats->{NEWRECPATCHES} = 0;
-    $stats->{NEWSECTITLES} = [];
-    $stats->{NEWRECTITLES} = [];
+    $stats->{NEWSECTITLES}   = [];
+    $stats->{NEWRECTITLES}   = [];
+    $stats->{ERROR_MESSAGES} = [];
 
     return 1;
 }
@@ -540,17 +551,14 @@ sub mirror()
         if (@$err)
         {
             my ($file, $emsg) = each %{$err->[0]};
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                "Could not create the destination directory '$dest': $emsg");
-            $self->{STATISTIC}->{ERROR} += 1;
+            $self->logAndSaveError("Could not create the destination directory '$dest': $emsg");
             return $self->{STATISTIC}->{ERROR};
         }
     }
     if ( !defined $self->uri() ||
          $self->uri() !~ /^http/ && $self->uri() !~ /^file/ && $self->uri() !~ /^ftp/)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Invalid URL: ".((defined $self->uri())?$self->uri():"") );
-        $self->{STATISTIC}->{ERROR} += 1;
+        $self->logAndSaveError("Invalid URL: ".((defined $self->uri())?$self->uri():""));
         return $self->{STATISTIC}->{ERROR};
     }
 
@@ -642,8 +650,7 @@ sub mirror()
                 {
                     File::Copy::copy( $fullpath, $metatempdir."/$entry" ) or do
                     {
-                        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "copy metadata failed: $!");
-                        $self->{STATISTIC}->{ERROR} += 1;
+                        $self->logAndSaveError("copy metadata failed: $!");
                         closedir(DIR);
                         return $self->{STATISTIC}->{ERROR};
                     };
@@ -744,9 +751,7 @@ sub mirror()
         # open file to write the new updateinfo.xml
         my $out = new IO::File();
         $out->open("> $uifname") or do {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                "Cannot open $uifname for reading.");
-            return $self->{STATISTIC}->{ERROR}++;
+            return $self->logAndSaveError("Cannot open $uifname for reading.");
         };
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG,
             "Going to look for and parse new patch metadata.");
@@ -873,9 +878,7 @@ sub mirror()
     {
         if (!$self->removePackages($pkgstoremove, $self->{MDFILES}))
         {
-            printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-                'Failed to remove filtered packages from the repository.');
-            $self->{STATISTIC}->{ERROR}++;
+            $self->logAndSaveError('Failed to remove filtered packages from the repository.');
         }
     }
 
@@ -923,6 +926,10 @@ sub mirror()
             next;
         }
 
+        if ( $download_only_metadata ) {
+            next if ( $r !~ /\-release/ and $r !~ /lifecycle-data/ );
+        }
+
         my $mres = $self->{JOBS}->{$r}->mirror();
         $self->job2statistic($self->{JOBS}->{$r});
     }
@@ -943,8 +950,7 @@ sub mirror()
             $success = rename( $job->fullLocalRepoPath()."/repodata", $job->fullLocalRepoPath()."/.old.repodata");
             if(!$success)
             {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/repodata"));
-                $self->{STATISTIC}->{ERROR} += 1;
+                $self->logAndSaveError( sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/repodata") );
             }
         }
         if($success)
@@ -957,8 +963,7 @@ sub mirror()
             $success = rename( $job->fullLocalRepoPath()."/.repodata", $job->fullLocalRepoPath()."/repodata");
             if(!$success)
             {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/.repodata"));
-                $self->{STATISTIC}->{ERROR} += 1;
+                $self->logAndSaveError( sprintf(__("Cannot rename directory '%s'"), $job->fullLocalRepoPath()."/.repodata") );
             }
             else
             {
@@ -1116,8 +1121,7 @@ sub verify()
     # mirror destination dir
     if ( ! -d $self->fullLocalRepoPath() )
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath() ));
-        $self->{STATISTIC}->{ERROR} += 1;
+        $self->logAndSaveError( sprintf(__("Destination '%s' does not exist"), $self->fullLocalRepoPath()) );
         return ($self->{STATISTIC}->{ERROR} == 0);
     }
 
@@ -1153,12 +1157,14 @@ sub verify()
         {
             if(!-e $job->fullLocalPath())
             {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Verify: ". $job->fullLocalPath() . ": FAILED ( file not found )");
+                $self->logAndSaveError("Verify: ". $job->fullLocalPath() . ": FAILED ( file not found )");
             }
             else
             {
-                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Verify: ". $job->fullLocalPath() .
-                         ": ".sprintf("FAILED ( %s vs %s )", $job->checksum(), $job->realchecksum($job->checksum_type())));
+                $self->logAndSaveError(
+                    "Verify: ". $job->fullLocalPath() .
+                    ": ".sprintf("FAILED ( %s vs %s )", $job->checksum(), $job->realchecksum($job->checksum_type()))
+                );
                 if ($removeinvalid)
                 {
                     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, sprintf(__("Deleting %s"), $job->fullLocalPath()));
@@ -1170,8 +1176,6 @@ sub verify()
             {
                 $self->{DBH}->do(sprintf("DELETE from RepositoryContentData where localpath = %s", $self->{DBH}->quote($job->fullLocalPath() ) ) );
             }
-
-            $self->{STATISTIC}->{ERROR} += 1;
         }
     }
 
@@ -1393,9 +1397,7 @@ sub signrepo
 
     if (not defined $repodatadir || not -d $repodatadir)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Invalid repodata directory specified: $repodatadir.");
-        $self->{STATISTIC}->{ERROR}++;
+        $self->logAndSaveError("Invalid repodata directory specified: $repodatadir.");
         return 0;
     }
 
@@ -1425,16 +1427,12 @@ sub signrepo
         '-o', "$repomdfile.asc", $repomdfile);
     if ($? == -1)
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Failed to sign the repository: $!.");
-        $self->{STATISTIC}->{ERROR}++;
+        $self->logAndSaveError("Failed to sign the repository: $!.");
         return 0;
     }
     elsif ($? >> 8 != 0 || not -e "$repomdfile.asc")
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Failed to sign the repository, gpg returned ".($? >> 8).".");
-        $self->{STATISTIC}->{ERROR}++;
+        $self->logAndSaveError("Failed to sign the repository, gpg returned ".($? >> 8).".");
         return 0;
     }
 
@@ -1446,9 +1444,7 @@ sub signrepo
     system('gpg', '--batch', '--export', '-a', '-o', "$repomdfile.key", $keyid);
     if ($? == -1 || ($? >> 8) != 0 || not -e "$repomdfile.key")
     {
-        printLog($self->{LOG}, $self->vblevel(), LOG_ERROR,
-            "Failed to export the repo signing key.");
-        $self->{STATISTIC}->{ERROR}++;
+        $self->logAndSaveError("Failed to export the repo signing key.");
         return 0;
     }
 

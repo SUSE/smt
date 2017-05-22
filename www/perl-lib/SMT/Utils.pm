@@ -429,31 +429,48 @@ die and request a registration call.
 sub getSMTGuid
 {
     my $guid   = "";
-    my $secret = "";
-    my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
-    my $CREDENTIAL_FILE = "SCCcredentials";
-    my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
-    if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
-    {
-        die "Credential file does not exist. You need to register the SMT server first.";
-    }
+    local $@;
+    eval {
 
-    #
-    # read credentials from SCCcredentials file
-    #
-    open(CRED, "< $fullpath") or do {
-        die("Cannot open file $fullpath for read: $!\n");
-    };
-    while(<CRED>)
-    {
-        if($_ =~ /username\s*=\s*(.*)$/ && defined $1 && $1 ne "")
+        my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
+        my $CREDENTIAL_FILE = "SCCcredentials";
+        my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
+
+        if (!-d "$CREDENTIAL_DIR" || !-e "$fullpath")
         {
-            $guid = $1;
-	    last;
+            die "Credential file does not exist. You need to register the SMT server first.";
         }
+
+        #
+        # read credentials from SCCcredentials file
+        #
+        open(CRED, "< $fullpath") or do {
+            die("Cannot open file $fullpath for read: $!\n");
+        };
+        while(<CRED>)
+        {
+            if ($_ =~ /username\s*=\s*(.*)$/ && defined $1 && $1 ne "")
+            {
+                $guid = $1;
+                last;
+            }
+        }
+        close CRED;
+    };
+
+    if ($@) {
+        my $cache_file = '/var/cache/smt/scc_guid';
+        if ( -f $cache_file ) {
+            if ( open( my $fh, '<', $cache_file ) ) {
+                $guid = <$fh>;
+                chomp($guid);
+                close($fh);
+            }
+        }
+        die $@ unless ($guid);
     }
-    close CRED;
+
     return $guid;
 }
 
@@ -2102,6 +2119,38 @@ sub array_compare
     my $str2 = join(',', sort(@$array2));
 
     return ($str1 eq $str2);
+}
+
+=item getRequiredProductReposById($dbh, $id)
+
+Get the list of repositories required to fully mirror a product.
+Returns a hashref of hashrefs with required repos info.
+
+=cut
+
+sub getRequiredProductReposById
+{
+    my $dbh = shift || return undef;
+    my $id = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $query_repos = sprintf("
+        SELECT c.id, c.NAME AS catalog_name, p.product, p.version, p.arch
+             FROM ProductCatalogs pc
+             JOIN Catalogs c ON pc.CATALOGID = c.ID
+             JOIN Products p ON ( pc.PRODUCTID = p.ID )
+            WHERE pc.PRODUCTID = %s
+              AND c.DOMIRROR = 'N'
+              AND pc.OPTIONAL = 'N'
+        ",
+        $dbh->quote($id)
+    );
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_repos");
+    my $ref = $dbh->selectall_hashref($query_repos, 'id') || {};
+    return $ref;
+
 }
 
 =back

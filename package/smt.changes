@@ -1,7 +1,26 @@
 -------------------------------------------------------------------
-Fri Mar 10 12:46:29 UTC 2017 - jsrain@suse.cz
+Tue May 16 12:47:11 CEST 2017 - ikapelyukhin@suse.com
+
+- version 3.0.26
+- Add caching of SCCcredentials on startup (bsc#1030677)
+
+-------------------------------------------------------------------
+Wed May 10 09:46:49 EDT 2017 - rjschwei@suse.com
+
+- Fix typo in XML in registration sharing test
+- Fix backlog write issue (bsc#1038363)
+
+-------------------------------------------------------------------
+Thu May  4 10:02:23 CEST 2017 - ikapelyukhin@suse.com
 
 - version 3.0.25
+- Add single product deactivation endpoint
+- Add info about repositories with errors to summary (bsc#944291)
+- Add an option to exclude optional packages (--exclude-optional or -x)
+
+-------------------------------------------------------------------
+Fri Mar 10 12:46:29 UTC 2017 - jsrain@suse.cz
+
 - allow 12-digit service request (bsc#1026417)
 
 -------------------------------------------------------------------
