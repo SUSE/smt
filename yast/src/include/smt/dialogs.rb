@@ -1126,7 +1126,7 @@ module Yast
         Id("DB-password-1"),
         :Label,
         Builtins.sformat(
-          "Database Password for %1 User",
+          _("Database Password for %1 User"),
           SMTData.GetCredentials("DB", "user")
         )
       )
@@ -1134,7 +1134,7 @@ module Yast
         Id("DB-password-2"),
         :Label,
         Builtins.sformat(
-          "Database Password for %1 User Once Again",
+          _("Database Password for %1 User Once Again"),
           SMTData.GetCredentials("DB", "user")
         )
       )
