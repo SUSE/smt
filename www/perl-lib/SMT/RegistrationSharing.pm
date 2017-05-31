@@ -416,8 +416,16 @@ sub _logShareRecord{
     }
     my $log = "/var/lib/wwwrun/smt/$logFileName";
     my $lockFile = $log . '.lock';
+    my $shareAttempts = 20;
     while (-e $lockFile) {
         sleep 1;
+        $shareAttempts -= 1;
+        if ($shareAttempts == 0) {
+            my $msg = 'Unable to share registration after 20 attempts: '
+               . "$regXML";
+            $apache->log_error($msg);
+            return;
+        }
     }
     touch($lockFile);
     my $status = open my $LOGFILE, '>>', $log;
@@ -428,7 +436,7 @@ sub _logShareRecord{
             . 'The following must be added manually to the '
             . 'configured sibling servers:'
             . "\n$regXML";
-        $apache->error($errMsg);
+        $apache->log_error($errMsg);
         unlink $lockFile;
         return;
     }
