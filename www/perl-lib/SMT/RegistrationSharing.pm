@@ -13,6 +13,10 @@ use File::Touch;
 use SMT::Utils;
 use WWW::Curl::Easy;
 use XML::LibXML;
+
+# A somewhat random number per thread avoid log and lock contention
+my $anyNumber = int(rand(1000));
+
 #
 # called from handler in Registration module if registration is shared
 # from another SMT server
@@ -414,37 +418,22 @@ sub _logShareRecord{
             return;
         }
     }
-    my $log = "/var/lib/wwwrun/smt/$logFileName";
-    my $lockFile = $log . '.lock';
-    my $shareAttempts = 20;
-    while (-e $lockFile) {
-        sleep 1;
-        $shareAttempts -= 1;
-        if ($shareAttempts == 0) {
-            my $msg = 'Unable to share registration after 20 attempts: '
-               . "$regXML";
-            $apache->log_error($msg);
-            return;
-        }
-    }
-    touch($lockFile);
+    my $log = "/var/lib/wwwrun/smt/$logFileName.$anyNumber.share.log";
     my $status = open my $LOGFILE, '>>', $log;
-    if (! $status) {
+        if (! $status) {
         my $msg = "Could not open log '$logFileName' for writing";
         $apache->warn($msg);
-        my $errMsg = 'Could not create record in replay file. '
-            . 'The following must be added manually to the '
+        my $errMsg = 'Could not create record in any replay log '
+            . 'file. The following must be added manually to the '
             . 'configured sibling servers:'
             . "\n$regXML";
         $apache->log_error($errMsg);
-        unlink $lockFile;
         return;
     }
     print $LOGFILE "$url";
     print $LOGFILE '+++'; # Arbitrary separator used on playback
     print $LOGFILE "$regXML\n";
     close $LOGFILE;
-    unlink $lockFile;
     return 1;
 }
 
