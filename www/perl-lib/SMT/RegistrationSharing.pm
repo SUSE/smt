@@ -407,7 +407,12 @@ sub _logShareRecord{
     my $logFileName = shift;
     my $url         = shift;
     my $regXML      = shift;
-    my $apache = Apache2::ServerUtil->server;
+    my $log         = shift;
+
+    my $apache;
+    if (! $log) {
+        $apache = Apache2::ServerUtil->server;
+    }
 
     if (! -d '/var/lib/wwwrun/smt') {
         my $status = mkdir '/var/lib/wwwrun/smt';
@@ -418,16 +423,28 @@ sub _logShareRecord{
             return;
         }
     }
-    my $log = "/var/lib/wwwrun/smt/$logFileName.$anyNumber.share.log";
-    my $status = open my $LOGFILE, '>>', $log;
-        if (! $status) {
+    my $shareLog = "/var/lib/wwwrun/smt/$logFileName.$anyNumber.share.log";
+    my $status = open my $LOGFILE, '>>', $shareLog;
+    if (! $status) {
         my $msg = "Could not open log '$logFileName' for writing";
-        $apache->warn($msg);
+        if ($log) {
+            print $log $msg;
+        }
+        else
+        {
+            $apache->warn($msg);
+        }
         my $errMsg = 'Could not create record in any replay log '
             . 'file. The following must be added manually to the '
             . 'configured sibling servers:'
             . "\n$regXML";
-        $apache->log_error($errMsg);
+        if ($log) {
+            print $log $errMsg;
+        }
+        else
+        {
+            $apache->log_error($errMsg);
+        }
         return;
     }
     print $LOGFILE "$url";
@@ -530,7 +547,7 @@ sub _sendRegData
                 $apache->warn($guidMsg);
                 $apache->warn($responseMsg);
                 $apache->warn($detailsMsg);
-                _logShareRecord($smtServer,$url,$regXML);
+                _logShareRecord($smtServer,$url,$regXML,$log);
             }
 
         } else {
@@ -554,47 +571,66 @@ sub _sharePreviousRegistrations{
         return;
     }
 
-    my $replayLog = "/var/lib/wwwrun/smt/$logFileName";
-    if (! -e $replayLog) {
+    my @replayLogs = glob "/var/lib/wwwrun/smt/$logFileName.*.share.log";
+    if (! scalar @replayLogs) {
         return;
     }
 
-    if ($log) {
-        unlink $replayLog;
+    my $lockFile = "/var/lib/wwwrun/smt/$logFileName.lock";
+    if (-e $lockFile) {
+        # Another thread is already processing the back log
         return;
-    }
-
-    my $lockFile = $replayLog . '.lock';
-    while (-e $lockFile) {
-        sleep 1;
     }
     touch($lockFile);
-
     my @undeliverdRecords;
-    my @records = File::Slurp::read_file($replayLog);
-    for my $record (@records) {
-        (my $url, my $regXML) = split /\+\+\+/, $record;
-        if ($url && $regXML) {
-            my $response = _sendData($url, $regXML, $log);
-            if (! $response) {
-                unlink $lockFile;
-                return;
+    my $deliveryCount = 1;
+    for my $replayLog (@replayLogs) {
+        # Deliver 10 records to avoid lengthy wait times for the client
+        # that happens to hit the server at the moment the sibling comes back
+        # online
+        if ($deliveryCount > 10) {
+            last;
+        }
+        my @records = File::Slurp::read_file($replayLog);
+        my $requestCnt = 0;
+        for my $record (@records) {
+            if ($deliveryCount <= 10) {
+                (my $url, my $regXML) = split /\+\+\+/, $record;
+                if ($url && $regXML) {
+                    my $response = _sendData($url, $regXML, $log);
+                    $requestCnt += 1;
+                    # Deliver only 2 requests in short succession, then
+                    # pause to not overwhelm the sibling server
+                    if ($requestCnt == 2) {
+                        sleep 1;
+                        $requestCnt = 0;
+                    }
+                    if (! $response) {
+                        unlink $lockFile;
+                        return;
+                    }
+                    if (! $response->is_success ) {
+                        push @undeliverdRecords, $record;
+                    }
+                }
+                $deliveryCount += 1;
             }
-            if (! $response->is_success ) {
+            else
+            {
                 push @undeliverdRecords, $record;
+            }
+        }
+        unlink $replayLog;
+        if (@undeliverdRecords) {
+            for my $record (@undeliverdRecords) {
+                (my $url, my $regXML) = split /\+\+\+/, $record;
+                if ($url && $regXML) {
+                    _logShareRecord($logFileName,$url,$regXML);
+                }
             }
         }
     }
     unlink $lockFile;
-    unlink $replayLog;
-    if (@undeliverdRecords) {
-        for my $record (@undeliverdRecords) {
-            (my $url, my $regXML) = split /\+\+\+/, $record;
-            if ($url && $regXML) {
-                _logShareRecord($logFileName,$url,$regXML);
-            }
-        }
-    }
 }
 
 #

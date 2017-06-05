@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Mon Jun  5 11:31:33 EDT 2017 - rjschwei@suse.com
+
+- version 3.0.27
+- Follow up fix to backlog write (bsc#1038363)
+  + Do not sleep on a lock forever, which eventually leads to the
+    server locking up
+
+-------------------------------------------------------------------
 Tue May 16 12:47:11 CEST 2017 - ikapelyukhin@suse.com
 
 - version 3.0.26
