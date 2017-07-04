@@ -433,8 +433,18 @@ sub delete_single_product
         }
     }
 
-    # return result
-    return $self->_registrationResult($productId);
+    # Unlike SCC, SMT returns 1 service per system
+    # The whole service and all its repos will be removed if we return proper service JSON
+    return (
+        Apache2::Const::OK,
+        {
+            'id' => 1,
+            'name' => "SMT_DUMMY_NOREMOVE_SERVICE",
+            'url' => "http://SMT_DUMMY_NOREMOVE_SERVICE",
+            'obsoleted_service_name' => "SMT_DUMMY_NOREMOVE_SERVICE",
+            'product' => {}
+        }
+    );
 }
 
 #################################################################################
