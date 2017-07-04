@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jul  4 11:01:01 UTC 2017 - ikapelyukhin@suse.com
+
+- version 3.0.28
+- Fix repo removal for single product deactivation (bsc#1047153)
+
+-------------------------------------------------------------------
 Mon Jun  5 11:31:33 EDT 2017 - rjschwei@suse.com
 
 - version 3.0.27
