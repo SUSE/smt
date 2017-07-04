@@ -1,6 +1,6 @@
 node('scc-jenkins-node-chucker') {
     stage('checkout') {
-        git url: 'https://github.com/SUSE/smt/', branch: 'docker_tests'
+        git url: 'https://github.com/SUSE/smt/', branch: 'SMT12'
     }
 
     stage('build rpm') {
