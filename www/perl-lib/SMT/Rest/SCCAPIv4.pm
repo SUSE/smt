@@ -230,6 +230,10 @@ sub product_migration_targets
                                                           $installedProduct->{version},
                                                           $installedProduct->{release_type},
                                                           $installedProduct->{arch});
+        if (! $productId ) {
+            return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+                sprintf("Could not determine productID for '%s' with version '%s', release '%s', and arch '%s'", $installedProduct->{identifier}, $installedProduct->{version}, $installedProduct->{release_type}, $installedProduct->{arch}));
+        }
         if(! SMT::Utils::hasClientProductRegistered($self->dbh(), $guid, $productId))
         {
             my $p = SMT::Utils::lookupProductById($self->dbh(), $productId);
