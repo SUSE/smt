@@ -374,12 +374,18 @@ sub save
             . ' (name, version, category, summary, description, reldate, catalogid)'
             . ' values (?,?,?,?,?,?,?)';
     }
+
+    my $description = $self->description();
+    if (length($description) > SMT::Utils::MYSQL_TEXT_TYPE_SIZE) {
+        $description = substr($description, 0, SMT::Utils::MYSQL_TEXT_TYPE_SIZE);
+    }
+
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $self->name(), SQL_VARCHAR);
     $sth->bind_param(2, $self->version(), SQL_VARCHAR);
     $sth->bind_param(3, $self->categoryAsInt(), SQL_INTEGER);
     $sth->bind_param(4, $self->summary(), SQL_VARCHAR);
-    $sth->bind_param(5, $self->description(), SQL_VARCHAR);
+    $sth->bind_param(5, $description, SQL_VARCHAR);
     $sth->bind_param(6, POSIX::strftime("%Y-%m-%d %H:%M", localtime($self->releaseDate())), SQL_TIMESTAMP);
     $sth->bind_param(7, $self->repoId(), SQL_INTEGER);
     $sth->bind_param(8, $self->dbId(), SQL_INTEGER) if ($self->dbId());
