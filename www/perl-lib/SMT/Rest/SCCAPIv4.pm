@@ -405,6 +405,15 @@ sub delete_single_product
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
     }
 
+    my $activated_extensions = SMT::Utils::getExtensionActivationsForProduct($self->dbh(), $guid, $productId);
+
+    if ( @$activated_extensions ) {
+        return (
+            Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+            sprintf('Cannot deactivate the product "%s". Other activated products depend upon it.', $c->{identifier})
+        );
+    }
+
     my @statements;
 
     push @statements, sprintf("DELETE FROM Registration WHERE GUID=%s AND PRODUCTID=%s",
