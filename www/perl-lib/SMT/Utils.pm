@@ -2153,6 +2153,24 @@ sub getRequiredProductReposById
 
 }
 
+sub getExtensionActivationsForProduct {
+    my $dbh = shift || return undef;
+    my $client_guid = shift;
+    my $product_id = shift;
+
+    my $sql = sprintf(
+        "select r2.PRODUCTID
+        from Registration as r join ProductExtensions as pe using (PRODUCTID)
+        join Registration as r2 on (pe.EXTENSIONID = r2.PRODUCTID AND r.GUID = r2.GUID)
+        where r.GUID = %s and r.PRODUCTID = %s",
+        $dbh->quote($client_guid),
+        $dbh->quote($product_id)
+    );
+
+    my $ref = $dbh->selectall_arrayref($sql, { Slice => {} }) || [];
+    return $ref;
+}
+
 =back
 
 =head1 AUTHOR
