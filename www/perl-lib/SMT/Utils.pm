@@ -59,7 +59,7 @@ use constant TOK2STRING => {
                             64 => "debug"
                            };
 
-use constant MYSQL_TEXT_TYPE_SIZE => 65535;
+
 
 =head1 NAME
 
