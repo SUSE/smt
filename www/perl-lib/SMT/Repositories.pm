@@ -216,9 +216,10 @@ Examples:
 
 =cut
 
-sub getAllRepositories ($$) {
+sub getAllRepositories ($$;$) {
     my $self = shift;
     my $filter = shift || {};
+    my $key_name = shift || 'ID';
 
     $self->{REPOS} = undef;
     $self->{GOTALLREPOS} = 0;
@@ -250,7 +251,7 @@ sub getAllRepositories ($$) {
 	$row->{'TARGET'} = '' if (not defined $row->{'TARGET'});
 	$row->{'LAST_MIRROR'} = '' if (not defined $row->{'LAST_MIRROR'});
 	$row->{rownr} = $rownr;
-	$ret->{$row->{'ID'}} = $row;
+	$ret->{$row->{$key_name}} = $row;
 	$rownr++;
     }
 
@@ -266,7 +267,7 @@ Returns a hash of repository data for given repository ID. The hash keys
 correspond to Catalogs database table.
 
 =cut
-sub getRepository($$)
+sub getRepository($$;$)
 {
     my $self = shift;
 
@@ -274,6 +275,8 @@ sub getRepository($$)
         $self->newErrorMessage ("RepositoryID must be defined");
         return undef;
     };
+
+    my $key_name = shift || SMT::Repositories::REPOSITORYID; # ID or CATALOGID
 
     my $repo;
     if ($self->{GOTALLREPOS})
@@ -283,7 +286,7 @@ sub getRepository($$)
     else
     {
         # Matches just one repository
-        my $repos = $self->getAllRepositories({SMT::Repositories::REPOSITORYID => $repository});
+        my $repos = $self->getAllRepositories({ $key_name => $repository }, $key_name);
         $repo = $repos->{$repository} || undef;
     }
 
