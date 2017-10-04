@@ -273,7 +273,7 @@ if(! $testingdir)
 # get the repository from DB (all commands need it)
 
 my $rh = SMT::Repositories::new($dbh, $log);
-my $repo = $rh->getRepository($reponameid) if (not defined $target);
+my $repo = $rh->getRepository($reponameid, 'CATALOGID') if (not defined $target);
 my $repoid = undef;
 $rh->getAndClearErrorMessage();
 
@@ -347,7 +347,7 @@ else
 {
     SMT::Utils::printLog($log, $vblevel, LOG_DEBUG,
         sprintf "Found repository by CATALOGID '%s'.", $reponameid);
-    $repoid = $reponameid;
+    $repoid = $repo->{ID};
 }
 
 # $repo and $repoid should always be defined at this point
