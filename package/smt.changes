@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Oct  4 07:43:16 UTC 2017 - ikapelyukhin@suse.com
+
+- version 3.0.30
+- Specify TLSv1 explicitly for older wget versions (bsc#1059943)
+- Use repo CATALOGID instead of ID in smt-staging (bsc#1058992)
+
+-------------------------------------------------------------------
 Thu Aug  3 08:11:30 UTC 2017 - ikapelyukhin@suse.com
 
 - version 3.0.29
