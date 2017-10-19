@@ -429,33 +429,50 @@ die and request a registration call.
 sub getSMTGuid
 {
     my $guid   = "";
-    my $secret = "";
-    my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
-    my $CREDENTIAL_FILE = "NCCcredentials";
-    my $GUID_FILE = "/etc/zmd/deviceid";
-    my $SECRET_FILE = "/etc/zmd/secret";
-    my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
-    if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
-    {
-        die "Credential file does not exist. You need to register the SMT server first.";
-    }
+    local $@;
+    eval {
+        my $secret = "";
+        my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
+        my $CREDENTIAL_FILE = "NCCcredentials";
+        my $GUID_FILE = "/etc/zmd/deviceid";
+        my $SECRET_FILE = "/etc/zmd/secret";
+        my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
-    #
-    # read credentials from NCCcredentials file
-    #
-    open(CRED, "< $fullpath") or do {
-        die("Cannot open file $fullpath for read: $!\n");
-    };
-    while(<CRED>)
-    {
-        if($_ =~ /username\s*=\s*(.*)$/ && defined $1 && $1 ne "")
+        if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
         {
-            $guid = $1;
-	    last;
+            die "Credential file does not exist. You need to register the SMT server first.";
         }
+
+        #
+        # read credentials from NCCcredentials file
+        #
+        open(CRED, "< $fullpath") or do {
+            die("Cannot open file $fullpath for read: $!\n");
+        };
+        while(<CRED>)
+        {
+            if($_ =~ /username\s*=\s*(.*)$/ && defined $1 && $1 ne "")
+            {
+                $guid = $1;
+            last;
+            }
+        }
+        close CRED;
+    };
+
+    if ($@) {
+        my $cache_file = '/var/cache/smt/scc_guid';
+        if ( -f $cache_file ) {
+            if ( open( my $fh, '<', $cache_file ) ) {
+                $guid = <$fh>;
+                chomp($guid);
+                close($fh);
+            }
+        }
+        die $@ unless ($guid);
     }
-    close CRED;
+
     return $guid;
 }
 
