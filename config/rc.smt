@@ -333,6 +333,16 @@ function test_ncccred_permissions {
     fi
 }
 
+function cache_scc_guid {
+    scc_guid=$(cat /etc/zypp/credentials.d/NCCcredentials | sed -n 's/username=\(.*\)/\1/p')
+    mkdir -p /var/cache/smt
+    echo $scc_guid > /var/cache/smt/scc_guid
+    chown smt:www /var/cache/smt/scc_guid
+    chmod 640 /var/cache/smt/scc_guid
+}
+
+cache_scc_guid
+
 #
 # main part
 #

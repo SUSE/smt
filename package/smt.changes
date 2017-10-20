@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Oct 19 13:26:23 UTC 2017 - ikapelyukhin@suse.com
+
+- version 2.0.32
+- Backport single product deactivation endpoint (bsc#1059798)
+- Add caching of SCCcredentials on startup (bsc#1030677)
+
+-------------------------------------------------------------------
 Wed Oct  4 07:43:16 UTC 2017 - ikapelyukhin@suse.com
 
 - version 2.0.31

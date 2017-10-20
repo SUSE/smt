@@ -429,33 +429,50 @@ die and request a registration call.
 sub getSMTGuid
 {
     my $guid   = "";
-    my $secret = "";
-    my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
-    my $CREDENTIAL_FILE = "NCCcredentials";
-    my $GUID_FILE = "/etc/zmd/deviceid";
-    my $SECRET_FILE = "/etc/zmd/secret";
-    my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
-    if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
-    {
-        die "Credential file does not exist. You need to register the SMT server first.";
-    }
+    local $@;
+    eval {
+        my $secret = "";
+        my $CREDENTIAL_DIR = "/etc/zypp/credentials.d";
+        my $CREDENTIAL_FILE = "NCCcredentials";
+        my $GUID_FILE = "/etc/zmd/deviceid";
+        my $SECRET_FILE = "/etc/zmd/secret";
+        my $fullpath = $CREDENTIAL_DIR."/".$CREDENTIAL_FILE;
 
-    #
-    # read credentials from NCCcredentials file
-    #
-    open(CRED, "< $fullpath") or do {
-        die("Cannot open file $fullpath for read: $!\n");
-    };
-    while(<CRED>)
-    {
-        if($_ =~ /username\s*=\s*(.*)$/ && defined $1 && $1 ne "")
+        if(!-d "$CREDENTIAL_DIR" || ! -e "$fullpath")
         {
-            $guid = $1;
-	    last;
+            die "Credential file does not exist. You need to register the SMT server first.";
         }
+
+        #
+        # read credentials from NCCcredentials file
+        #
+        open(CRED, "< $fullpath") or do {
+            die("Cannot open file $fullpath for read: $!\n");
+        };
+        while(<CRED>)
+        {
+            if($_ =~ /username\s*=\s*(.*)$/ && defined $1 && $1 ne "")
+            {
+                $guid = $1;
+            last;
+            }
+        }
+        close CRED;
+    };
+
+    if ($@) {
+        my $cache_file = '/var/cache/smt/scc_guid';
+        if ( -f $cache_file ) {
+            if ( open( my $fh, '<', $cache_file ) ) {
+                $guid = <$fh>;
+                chomp($guid);
+                close($fh);
+            }
+        }
+        die $@ unless ($guid);
     }
-    close CRED;
+
     return $guid;
 }
 
@@ -2105,6 +2122,56 @@ sub array_compare
     my $str2 = join(',', sort(@$array2));
 
     return ($str1 eq $str2);
+}
+
+=item getRequiredProductReposById($dbh, $id)
+
+Get the list of repositories required to fully mirror a product.
+Returns a hashref of hashrefs with required repos info.
+
+=cut
+
+sub getRequiredProductReposById
+{
+    my $dbh = shift || return undef;
+    my $id = shift || return undef;
+    my $log = shift;
+    my $vblevel = shift;
+
+    my $query_repos = sprintf("
+        SELECT c.id, c.NAME AS catalog_name, p.product, p.version, p.arch
+             FROM ProductCatalogs pc
+             JOIN Catalogs c ON pc.CATALOGID = c.ID
+             JOIN Products p ON ( pc.PRODUCTID = p.ID )
+            WHERE pc.PRODUCTID = %s
+              AND c.DOMIRROR = 'N'
+              AND pc.OPTIONAL = 'N'
+        ",
+        $dbh->quote($id)
+    );
+
+    printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query_repos");
+    my $ref = $dbh->selectall_hashref($query_repos, 'id') || {};
+    return $ref;
+
+}
+
+sub getExtensionActivationsForProduct {
+    my $dbh = shift || return undef;
+    my $client_guid = shift;
+    my $product_id = shift;
+
+    my $sql = sprintf(
+        "select r2.PRODUCTID
+        from Registration as r join ProductExtensions as pe using (PRODUCTID)
+        join Registration as r2 on (pe.EXTENSIONID = r2.PRODUCTID AND r.GUID = r2.GUID)
+        where r.GUID = %s and r.PRODUCTID = %s",
+        $dbh->quote($client_guid),
+        $dbh->quote($product_id)
+    );
+
+    my $ref = $dbh->selectall_arrayref($sql, { Slice => {} }) || [];
+    return $ref;
 }
 
 =back
