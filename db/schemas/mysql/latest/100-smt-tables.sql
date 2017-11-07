@@ -171,12 +171,14 @@ create table Products (
             ) ENGINE=InnoDB AUTO_INCREMENT = 100000;
 
 
-create table ProductExtensions (
-    PRODUCTID   integer NOT NULL,
-    EXTENSIONID integer NOT NULL,
-    SRC         CHAR(1) DEFAULT 'S',
-    UNIQUE INDEX ProductExtensions_pdid_extid_uq (PRODUCTID, EXTENSIONID),
-    INDEX ProductExtensions_pdid_extid_src_idx (PRODUCTID, EXTENSIONID, SRC)
+CREATE TABLE `ProductExtensions` (
+  `PRODUCTID` int(11) NOT NULL,
+  `EXTENSIONID` int(11) NOT NULL,
+  `SRC` char(1) DEFAULT 'S',
+  `ROOTPRODUCTID` int(11) NOT NULL,
+  `RECOMMENDED` tinyint(1) DEFAULT '0',
+  UNIQUE KEY `ProductExtensions_pdid_extid_rtpdid_uq` (`PRODUCTID`,`EXTENSIONID`,`ROOTPRODUCTID`),
+  KEY `ProductExtensions_pdid_extid_rtpdid_src_idx` (`PRODUCTID`,`EXTENSIONID`,`ROOTPRODUCTID`,`SRC`)
 ) ENGINE=InnoDB;
 
 create table ProductMigrations (
