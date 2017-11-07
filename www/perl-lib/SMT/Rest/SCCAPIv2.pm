@@ -356,11 +356,6 @@ sub products
     my @pidarr = keys %{$existingregs};
     my $catalogs = SMT::Registration::findCatalogs($self->request(), $self->dbh(), $target, \@pidarr);
 
-    if ( (keys %{$catalogs}) == 0)
-    {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
-    }
-
     # TODO: get status - from SMT?
 
     #
