@@ -736,6 +736,14 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 EOS
 ;
 
+    $root_product_id = $product->{id} if ($product->{product_type} eq 'base');
+
+    foreach my $ext (@{$product->{extensions}})
+    {
+        $ret += $self->_updateProducts($ext, $root_product_id);
+        $self->_collectExtensions($product->{id}, $ext->{id}, $root_product_id, $ext->{recommended});
+    }
+
     # we inserted/update this product already in this run
     # so let's skip it
     return 0 if(exists $self->{PROD_DONE}->{$product->{id}});
@@ -913,14 +921,6 @@ EOS
         $self->_collectProductCatalogs($product, $repo);
     }
     $ret += $retprd;
-
-    $root_product_id = $product->{id} if ($product->{product_type} eq 'base');
-
-    foreach my $ext (@{$product->{extensions}})
-    {
-        $ret += $self->_updateProducts($ext, $root_product_id);
-        $self->_collectExtensions($product->{id}, $ext->{id}, $root_product_id, $ext->{recommended});
-    }
 
     if (exists $product->{predecessor_ids})
     {
