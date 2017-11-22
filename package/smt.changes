@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Nov 21 13:44:36 UTC 2017 - ikapelyukhin@suse.com
+
+- version 3.0.31
+- Add SLE15 product tree support
+- Add DB migration to accomodate SLE15 product data from SCC
+
+-------------------------------------------------------------------
 Wed Oct  4 07:43:16 UTC 2017 - ikapelyukhin@suse.com
 
 - version 3.0.30

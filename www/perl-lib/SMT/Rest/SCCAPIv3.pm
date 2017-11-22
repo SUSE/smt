@@ -63,6 +63,7 @@ sub get_extensions
                p.RELEASE_STAGE release_stage,
                1 free,
                p.PRODUCT_TYPE product_type,
+               FALSE recommended,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
@@ -101,8 +102,9 @@ sub get_extensions
             $result->{$pdid}->{id} = int($result->{$pdid}->{id});
             $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{recommended} = ($result->{$pdid}->{recommended} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id});
-            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}])})
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}], $pdid)})
             {
                 push @{$result->{$pdid}->{extensions}}, $ext;
             }
@@ -181,6 +183,7 @@ sub get_subscriptions_products
                p.RELEASE_STAGE release_stage,
                1 free,
                p.PRODUCT_TYPE product_type,
+               FALSE recommended,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
@@ -221,8 +224,9 @@ sub get_subscriptions_products
             $result->{$pdid}->{id} = int($result->{$pdid}->{id});
             $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{recommended} = ($result->{$pdid}->{recommended} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id}, 1);
-            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}], 1)})
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}], $pdid, 1)})
             {
                 push @{$result->{$pdid}->{extensions}}, $ext;
             }
@@ -246,6 +250,7 @@ sub _extensions_for_products
 {
     my $self       = shift || return {};
     my $productids = shift || return {};
+    my $root_product_id = shift || return {};
     my $includeRepoAuth = shift || 0;
     my $result = {};
 
@@ -275,6 +280,7 @@ sub _extensions_for_products
                e.RELEASE_STAGE release_stage,
                1 free,
                e.PRODUCT_TYPE product_type,
+               pe.RECOMMENDED recommended,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
@@ -285,10 +291,10 @@ sub _extensions_for_products
                 THEN 0 ELSE 1 END ) available
           FROM Products p
           JOIN ProductExtensions pe ON p.ID = pe.PRODUCTID
-          JOIN Products e ON pe.EXTENSIONID = e.ID
+          JOIN Products e ON pe.EXTENSIONID = e.ID AND pe.ROOTPRODUCTID = %s
           WHERE p.ID in (%s)
           AND e.PRODUCT_LIST = 'Y'
-    ", join(',', @{$productids}));
+    ", $root_product_id, join(',', @{$productids}));
     $self->request()->log->info("STATEMENT: $sql");
     eval
     {
@@ -302,9 +308,10 @@ sub _extensions_for_products
             $result->{$pdid}->{extensions} = [];
             $result->{$pdid}->{free} = ($result->{$pdid}->{free} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{available} = ($result->{$pdid}->{available} eq "0"?JSON::false:JSON::true);
+            $result->{$pdid}->{recommended} = ($result->{$pdid}->{recommended} eq "0"?JSON::false:JSON::true);
             $result->{$pdid}->{id} = int($result->{$pdid}->{id});
             $result->{$pdid}->{repositories} = $self->_repositories_for_product($baseURL, $result->{$pdid}->{id}, $includeRepoAuth);
-            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}], $includeRepoAuth)})
+            foreach my $ext ( values %{$self->_extensions_for_products([$result->{$pdid}->{id}], $root_product_id, $includeRepoAuth)})
             {
                 push @{$result->{$pdid}->{extensions}}, $ext;
             }
@@ -339,6 +346,7 @@ sub _getProduct
                p.RELEASE_STAGE release_stage,
                1 free,
                p.PRODUCT_TYPE product_type,
+               FALSE recommended,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
@@ -366,6 +374,7 @@ sub _getProduct
         {
             $product->{free} = ($product->{free} eq "0"?JSON::false:JSON::true);
             $product->{available} = ($product->{available} eq "0"?JSON::false:JSON::true);
+            $product->{recommended} = ($product->{recommended} eq "0"?JSON::false:JSON::true);
             $product->{id} = int($product->{id});
             $product->{repositories} = $self->_repositories_for_product($baseURL, $product->{id});
             $result = $product;

@@ -675,6 +675,7 @@ sub _updateProducts
 {
     my $self = shift;
     my $product = shift;
+    my $root_product_id = shift;
 
     my $statement = "";
     my $ret = 0;
@@ -734,6 +735,14 @@ id="\${mirror:id}" description="\${mirror:name}" type="\${mirror:type}">
 </service>
 EOS
 ;
+
+    $root_product_id = $product->{id} if ($product->{product_type} eq 'base');
+
+    foreach my $ext (@{$product->{extensions}})
+    {
+        $ret += $self->_updateProducts($ext, $root_product_id);
+        $self->_collectExtensions($product->{id}, $ext->{id}, $root_product_id, $ext->{recommended});
+    }
 
     # we inserted/update this product already in this run
     # so let's skip it
@@ -913,11 +922,6 @@ EOS
     }
     $ret += $retprd;
 
-    foreach my $ext (@{$product->{extensions}})
-    {
-        $ret += $self->_updateProducts($ext);
-        $self->_collectExtensions($product->{id}, $ext->{id});
-    }
     if (exists $product->{predecessor_ids})
     {
         $self->_collectMigrations($product->{id}, $product->{predecessor_ids});
@@ -990,8 +994,15 @@ sub _collectExtensions
     my $self  = shift || return;
     my $prdid = shift || return;
     my $extid = shift || return;
+    my $root_product_id = shift || return;
+    my $recommended = shift;
 
-    $self->{EXTS}->{"$prdid-$extid"} = {productid => $prdid, extensionid => $extid};
+    $self->{EXTS}->{"$prdid-$extid-$root_product_id"} = {
+        productid => $prdid,
+        extensionid => $extid,
+        root_product_id => $root_product_id,
+        recommended => $recommended
+    };
 }
 
 sub _updateExtensions
@@ -1000,14 +1011,14 @@ sub _updateExtensions
     my $err = 0;
     my $href = {};
 
-    my $sql = "select PRODUCTID, EXTENSIONID from ProductExtensions where SRC = 'S'";
+    my $sql = "select PRODUCTID, EXTENSIONID, ROOTPRODUCTID, RECOMMENDED from ProductExtensions where SRC = 'S'";
     printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
     eval {
         my $ref = $self->{DBH}->selectall_arrayref($sql, {Slice => {}});
 
         foreach my $v (@{$ref})
         {
-            $href->{$v->{PRODUCTID}."-".$v->{EXTENSIONID}} = $v;
+            $href->{$v->{PRODUCTID}."-".$v->{EXTENSIONID}."-".$v->{ROOTPRODUCTID}} = $v;
         }
     };
     if($@)
@@ -1022,10 +1033,15 @@ sub _updateExtensions
                                                         $self->{LOG}, $self->vblevel());
         my $extid = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{EXTS}->{$key}->{extensionid}, 'S',
                                                               $self->{LOG}, $self->vblevel());
+        my $root_product_id = SMT::Utils::lookupProductIdByDataId($self->{DBH}, $self->{EXTS}->{$key}->{root_product_id}, 'S',
+            $self->{LOG}, $self->vblevel());
 
-        if (exists $href->{$prdid."-".$extid})
+        my $recommended = $self->{EXTS}->{$key}->{recommended};
+
+        my $hash_key = $prdid."-".$extid."-".$root_product_id;
+        if (exists $href->{$hash_key} && $href->{$hash_key}->{RECOMMENDED} == $recommended)
         {
-            delete $href->{$prdid."-".$extid};
+            delete $href->{$hash_key};
             next;
         }
         else
@@ -1042,9 +1058,22 @@ sub _updateExtensions
                 $err += 1;
                 next;
             }
-            my $sql = sprintf("INSERT INTO ProductExtensions VALUES ( %s, %s, 'S')",
-                              $self->{DBH}->quote($prdid),
-                              $self->{DBH}->quote($extid));
+            if(!$root_product_id)
+            {
+                printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Root product not found for: ".$self->{EXTS}->{$key}->{root_product_id});
+                $err += 1;
+                next;
+            }
+            my $sql = sprintf(
+                "INSERT INTO ProductExtensions (PRODUCTID, EXTENSIONID, ROOTPRODUCTID, RECOMMENDED, SRC)
+                VALUES ( %s, %s, %s, %s, 'S')
+                ON DUPLICATE KEY UPDATE recommended = %s",
+                $self->{DBH}->quote($prdid),
+                $self->{DBH}->quote($extid),
+                $self->{DBH}->quote($root_product_id),
+                $self->{DBH}->quote($recommended),
+                $self->{DBH}->quote($recommended) # on duplicate key
+            );
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
             eval {
                 $self->{DBH}->do($sql);
@@ -1054,14 +1083,17 @@ sub _updateExtensions
                 printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "$@");
                 return 1;
             }
+            delete $href->{$hash_key};
         }
     }
     # remove obsolete entries
     foreach my $key (keys %{$href})
     {
-        $sql = sprintf("DELETE FROM ProductExtensions WHERE PRODUCTID = %s AND EXTENSIONID = %s",
-                       $self->{DBH}->quote($href->{$key}->{PRODUCTID}),
-                       $self->{DBH}->quote($href->{$key}->{EXTENSIONID}));
+        $sql = sprintf("DELETE FROM ProductExtensions WHERE PRODUCTID = %s AND EXTENSIONID = %s AND ROOTPRODUCTID = %s",
+            $self->{DBH}->quote($href->{$key}->{PRODUCTID}),
+            $self->{DBH}->quote($href->{$key}->{EXTENSIONID}),
+            $self->{DBH}->quote($href->{$key}->{ROOTPRODUCTID})
+        );
         printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
         eval {
             $self->{DBH}->do($sql);

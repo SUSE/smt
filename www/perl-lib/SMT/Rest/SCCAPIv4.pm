@@ -383,11 +383,6 @@ sub delete_single_product
     my @pidarr = keys %{$existingregs};
     my $catalogs = SMT::Registration::findCatalogs($self->request(), $self->dbh(), $target, \@pidarr);
 
-    if ( (keys %{$catalogs}) == 0)
-    {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No repositories found");
-    }
-
     foreach my $param ( qw{identifier version arch} ) {
         unless ( exists $c->{$param} && $c->{$param} ) {
             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: $param");
