@@ -33,6 +33,7 @@ sub handler {
     if($requiredAuth eq "none" && substr($requestedPath, -13) ne 'repoindex.xml')
     {
         $r->log->info("No auth required");
+        $r->user("");
         return Apache2::Const::OK;
     }
 
