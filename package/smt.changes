@@ -3,6 +3,7 @@ Mon Nov 27 15:24:04 UTC 2017 - ikapelyukhin@suse.com
 
 - version 3.0.32
 - Fix authentication handler for Apache 2.4 (bsc#1067577)
+- All is good, no change required :-) (bsc#1056614)
 
 -------------------------------------------------------------------
 Tue Nov 21 13:44:36 UTC 2017 - ikapelyukhin@suse.com
