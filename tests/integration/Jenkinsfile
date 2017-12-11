@@ -1,4 +1,4 @@
-node('scc-jenkins-node-chucker') {
+node('scc-smt-integration') {
     stage('checkout') {
         git url: 'https://github.com/SUSE/smt/', branch: 'SMT12'
     }
