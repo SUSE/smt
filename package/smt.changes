@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jan  3 10:50:40 UTC 2018 - ikapelyukhin@suse.com
+
+- version 3.0.33
+- More verbose incomplete registration logging (bsc#1072921, bsc#1074608)
+
+-------------------------------------------------------------------
 Mon Nov 27 15:24:04 UTC 2017 - ikapelyukhin@suse.com
 
 - version 3.0.32

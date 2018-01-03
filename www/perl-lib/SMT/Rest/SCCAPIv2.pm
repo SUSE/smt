@@ -638,7 +638,8 @@ sub _registrationResult
     my $p = $self->_getProduct($product_id);
     if ( scalar(keys %{$p}) == 0)
     {
-        $self->request()->log_error("Incomplete Registration found. Unable to find the product");
+        my $guid = $self->user();
+        $self->request()->log_error("Incomplete Registration found. Unable to find the product $product_id, client ID: $guid");
         return (Apache2::Const::SERVER_ERROR, "Incomplete Registration found. Unable to find the product");
     }
     my $response = {
