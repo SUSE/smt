@@ -400,6 +400,10 @@ sub delete_single_product
         $c->{release_type}, $c->{arch});
     if(not $productId)
     {
+        $self->request()->log_error( sprintf(
+            "[v4] No valid product found (%s/%s/%s/%s) for %s",
+            $c->{identifier}, $c->{version}, $c->{release_type}, $c->{arch}, $self->user()
+        ) );
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
     }
 
