@@ -113,6 +113,10 @@ sub get_extensions
         $result = $self->dbh()->selectall_hashref($sql, 'id');
         if (scalar(keys %{$result}) == 0)
         {
+            $self->request()->log_error( sprintf(
+                "[v2] The requested product is not activated on this system (%s/%s/%s/%s), product_id: %s, client: %s",
+                $args->{identifier}, $args->{version}, $args->{release_type}, $args->{arch}, $req_pdid, $self->user()
+            ) );
             return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "The requested product is not activated on this system.");
         }
 
@@ -212,6 +216,10 @@ sub products
                                                       $c->{release_type}, $c->{arch});
     if(not $productId)
     {
+        $self->request()->log_error( sprintf(
+            "[v2] No valid product found (%s/%s/%s/%s), client: %s",
+            $c->{identifier}, $c->{version}, $c->{release_type}, $c->{arch}, $self->user()
+        ) );
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No valid product found");
     }
 

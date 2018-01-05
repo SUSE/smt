@@ -91,6 +91,10 @@ sub get_extensions
 
         if (scalar(keys %{$result}) == 0)
         {
+            $self->request()->log_error( sprintf(
+                "[v3] The requested product is not activated on this system (%s/%s/%s/%s), product_id: %s, client: %s",
+                $args->{identifier}, $args->{version}, $args->{release_type}, $args->{arch}, $req_pdid, $self->user()
+            ) );
             $code = Apache2::Const::HTTP_UNPROCESSABLE_ENTITY;
             $errmsg = "The requested product is not activated on this system.";
             return; # goes out of the eval
