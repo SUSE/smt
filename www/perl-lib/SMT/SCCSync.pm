@@ -922,9 +922,14 @@ EOS
     }
     $ret += $retprd;
 
-    if (exists $product->{predecessor_ids})
+    if (exists $product->{online_predecessor_ids})
     {
-        $self->_collectMigrations($product->{id}, $product->{predecessor_ids});
+        $self->_collectMigrations($product->{id}, $product->{online_predecessor_ids}, 'online');
+    }
+
+    if (exists $product->{offline_predecessor_ids})
+    {
+        $self->_collectMigrations($product->{id}, $product->{offline_predecessor_ids}, 'offline');
     }
 
     return $ret;
@@ -1112,10 +1117,11 @@ sub _collectMigrations
     my $self    = shift || return 1;
     my $prdid   = shift || return 1;
     my $predIds = shift || return 1;
+    my $kind    = shift || return 1;
 
     foreach my $predecessor (@$predIds)
     {
-        $self->{MIGS}->{"$prdid-$predecessor"} = {pdid => $prdid, predecessorid => $predecessor};
+        $self->{MIGS}->{"$prdid-$predecessor"} = {pdid => $prdid, predecessorid => $predecessor, kind => $kind};
     }
 }
 
@@ -1155,9 +1161,11 @@ sub _updateMigrations
         }
         else
         {
-            $sql = sprintf("INSERT INTO ProductMigrations VALUES (%s, %s, 'S')",
-                           $self->{DBH}->quote($predecessor),
-                           $self->{DBH}->quote($prdid));
+            $sql = sprintf("INSERT INTO ProductMigrations (SRCPDID, TGTPDID, KIND, SRC) VALUES (%s, %s, %s, 'S')",
+                $self->{DBH}->quote($predecessor),
+                $self->{DBH}->quote($prdid),
+                $self->{DBH}->quote($self->{MIGS}->{$key}->{kind}),
+            );
             printLog($self->{LOG}, $self->vblevel(), LOG_DEBUG, "STATEMENT: $sql");
             eval {
                 $self->{DBH}->do($sql);
