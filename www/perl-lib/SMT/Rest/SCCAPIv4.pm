@@ -37,6 +37,7 @@ sub systems_handler()
         elsif ( $self->request()->method() =~ /^POST$/i )
         {
             if     ( $path =~ /^systems\/products\/migrations\/?$/ ) { return $self->product_migration_targets(); }
+            elsif  ( $path =~ /^systems\/products\/offline_migrations\/?$/ ) { return $self->product_migration_targets(1); }
             elsif  ( $path =~ /^systems\/products\/synchronize\/?$/ ) { return $self->product_synchronize(); }
         }
         elsif ( $self->request()->method() =~ /^PUT$/i || $self->request()->method() =~ /^PATCH$/i)
@@ -192,11 +193,13 @@ sub product_synchronize
 sub product_migration_targets
 {
     my $self = shift || return (undef, undef);
+    my $is_offline = shift;
     my $c    = JSON::decode_json($self->read_post());
-    my $currentProducts = [];
+
     my $guid = $self->user();
     my @not_registered_products = ();
     my $installedProducts = [];
+    my $migration_kind = $is_offline ? 'offline' : 'online';
 
     foreach my $installedProduct (@{$c->{installed_products}})
     {
@@ -267,7 +270,7 @@ sub product_migration_targets
             sprintf("Invalid combination of products registered. Unable to find base product for id(s) '%s'.", join(', ', @$notFound)));
     }
     # now we can start to calculate the migration targets
-    return $self->_calcMigrationTargets($sorted);
+    return $self->_calcMigrationTargets($sorted, $migration_kind);
 }
 
 sub update_product
@@ -461,10 +464,25 @@ sub delete_single_product
 
 #################################################################################
 
+sub _getRecommendedExtensions {
+    my $self = shift;
+    my $dbh = shift;
+    my $product_id = shift;
+
+    my $query_product = sprintf(
+        "SELECT EXTENSIONID FROM ProductExtensions WHERE ROOTPRODUCTID = %s AND RECOMMENDED = 1",
+        $dbh->quote($product_id)
+    );
+
+    my $ref = $dbh->selectall_arrayref($query_product) || [];
+    return $ref;
+}
+
 sub _calcMigrationTargets
 {
     my $self = shift || return (undef, undef);
     my $installedProducts = shift || return (undef, undef);
+    my $migration_kind = shift;
 
     my $expanded;
     my @result = ();
@@ -473,7 +491,7 @@ sub _calcMigrationTargets
 
     foreach my $pdid (@$installedProducts)
     {
-        my $targets = SMT::Utils::lookupMigrationTargetsById($self->dbh(), $pdid, $self->request());
+        my $targets = SMT::Utils::lookupMigrationTargetsById($self->dbh(), $pdid, $migration_kind, $self->request());
         push @$targets, $pdid;
         $expanded = $self->_expandToPossibleTargets($targets, $expanded);
     }
@@ -521,6 +539,20 @@ sub _expandToPossibleTargets
         {
             my @dummy = ();
             push @dummy, @$set, $v1;
+
+            foreach my $pdid (@dummy) {
+                # Adding free & recommended modules for SLES15
+                my $product = SMT::Utils::lookupProductById($self->dbh(), $pdid, $self->request());
+                if ($product->{product_type} eq 'base' && $product->{version} =~ /^15\b/) {
+                    my $recommended = $self->_getRecommendedExtensions($self->dbh(), $pdid);
+
+                    push @dummy, map { @$_ } @$recommended;
+                    @dummy = do { my %seen; grep { !$seen{$_}++ } @dummy };
+                }
+
+                # FIXME: needs sorting + free extensions
+            }
+
             printLog($self->request(), undef, LOG_DEBUG, "Check combi: ".join(', ', @dummy));
             if ($self->_possibleTarget(@dummy))
             {
