@@ -260,6 +260,8 @@ sub product_migration_targets
             sprintf("The requested products '%s' are not activated on the system.", join(', ', @not_registered_products)));
     }
 
+    # FIXME find target base product here
+
     my $sorted = [];
     my $notFound = SMT::Utils::sortProductsByExtensions($self->dbh(), $installedProducts, $sorted, $self->request());
     printLog($self->request(), undef, LOG_DEBUG, "SORTED: ".join(', ', @$sorted));
@@ -464,18 +466,72 @@ sub delete_single_product
 
 #################################################################################
 
-sub _getRecommendedExtensions {
+sub _getFreeAndRecommendedExtensions {
     my $self = shift;
     my $dbh = shift;
     my $product_id = shift;
+    my $log = shift;
 
     my $query_product = sprintf(
-        "SELECT EXTENSIONID FROM ProductExtensions WHERE ROOTPRODUCTID = %s AND RECOMMENDED = 1",
+        "SELECT EXTENSIONID
+        FROM ProductExtensions AS pe
+        JOIN Products AS p ON (pe.EXTENSIONID = p.ID)
+        WHERE ROOTPRODUCTID = %s AND ( pe.RECOMMENDED = 1 OR ( p.FREE = 1 AND p.PRODUCT_TYPE = 'module' ) )",
         $dbh->quote($product_id)
     );
 
+    printLog($log, undef, LOG_DEBUG, "STATEMENT: $query_product");
+
     my $ref = $dbh->selectall_arrayref($query_product) || [];
+    $ref = [ map { $_->[0] } @$ref ];
     return $ref;
+}
+
+# Sorts migration in order in which the products in the migration can be activated.
+# Also filters out extensions belonging to a different root product.
+sub _sortAndFilterMigration {
+    my $self = shift;
+    my $migration = shift;
+    my $dbh = shift;
+    my $log = shift;
+
+    my $base_product = $migration->[0];
+
+    my $query_product = sprintf(
+        "SELECT PRODUCTID, EXTENSIONID FROM ProductExtensions WHERE ROOTPRODUCTID = %s",
+        $dbh->quote($base_product)
+    );
+
+    printLog($log, undef, LOG_DEBUG, "STATEMENT: $query_product");
+
+    my $ref = $dbh->selectall_arrayref($query_product) || [];
+
+    my %extensions;
+    foreach my $item (@$ref) {
+        my $base = $item->[0];
+        my $ext  = $item->[1];
+
+        $extensions{$base} ||= [];
+        push($extensions{$base}, $ext);
+    }
+
+    my %product_depths;
+    my $proc;
+    $proc = sub {
+        my $product_depths = shift;
+        my $extensions = shift;
+        my $current_id = shift;
+        my $current_depth = shift || 1;
+
+        $product_depths->{$current_id} = $current_depth;
+        foreach my $ext_id ( @{ $extensions->{$current_id} } ) {
+            &$proc($product_depths, $extensions, $ext_id, $current_depth + 1);
+        }
+    };
+
+    &$proc(\%product_depths, \%extensions, $base_product);
+
+    return [ sort { $product_depths{$a} <=> $product_depths{$b} } grep { $product_depths{$_} } @$migration ];
 }
 
 sub _calcMigrationTargets
@@ -544,20 +600,20 @@ sub _expandToPossibleTargets
                 # Adding free & recommended modules for SLES15
                 my $product = SMT::Utils::lookupProductById($self->dbh(), $pdid, $self->request());
                 if ($product->{product_type} eq 'base' && $product->{version} =~ /^15\b/) {
-                    my $recommended = $self->_getRecommendedExtensions($self->dbh(), $pdid);
+                    my $recommended = $self->_getFreeAndRecommendedExtensions($self->dbh(), $pdid, $self->request());
 
-                    push @dummy, map { @$_ } @$recommended;
+                    push @dummy, @$recommended;
                     @dummy = do { my %seen; grep { !$seen{$_}++ } @dummy };
                 }
-
-                # FIXME: needs sorting + free extensions
             }
 
             printLog($self->request(), undef, LOG_DEBUG, "Check combi: ".join(', ', @dummy));
             if ($self->_possibleTarget(@dummy))
             {
                 printLog($self->request(), undef, LOG_DEBUG, "found possible combi");
-                push @result, \@dummy;
+
+                my $sorted_migration = $self->_sortAndFilterMigration(\@dummy, $self->dbh(), $self->request());
+                push @result, $sorted_migration;
             }
         }
     }
