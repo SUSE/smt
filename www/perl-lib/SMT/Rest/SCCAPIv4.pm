@@ -260,7 +260,31 @@ sub product_migration_targets
             sprintf("The requested products '%s' are not activated on the system.", join(', ', @not_registered_products)));
     }
 
-    # FIXME find target base product here
+    my $target_product_id;
+
+    if ( $migration_kind eq 'offline' ) {
+        my $target_base_product = $c->{target_base_product};
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: target_base_product") unless ( $target_base_product );
+
+        foreach my $param (qw/identifier version arch/) {
+            return (
+                Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+                sprintf("Target base product is missing required parameter: %s", $param)
+            ) unless ($target_base_product->{$param});
+        }
+
+        $target_base_product->{version} =~ s/\-.*//; # removing edition
+
+        $target_product_id = SMT::Utils::lookupProductIdByName(
+            $self->dbh(),
+            $target_base_product->{identifier},
+            $target_base_product->{version},
+            $target_base_product->{release_type},
+            $target_base_product->{arch}
+        );
+
+        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Target base product not found") unless ($target_product_id);
+    }
 
     my $sorted = [];
     my $notFound = SMT::Utils::sortProductsByExtensions($self->dbh(), $installedProducts, $sorted, $self->request());
@@ -272,7 +296,7 @@ sub product_migration_targets
             sprintf("Invalid combination of products registered. Unable to find base product for id(s) '%s'.", join(', ', @$notFound)));
     }
     # now we can start to calculate the migration targets
-    return $self->_calcMigrationTargets($sorted, $migration_kind);
+    return $self->_calcMigrationTargets($sorted, $migration_kind, $target_product_id);
 }
 
 sub update_product
@@ -539,6 +563,7 @@ sub _calcMigrationTargets
     my $self = shift || return (undef, undef);
     my $installedProducts = shift || return (undef, undef);
     my $migration_kind = shift;
+    my $target_product_id = shift;
 
     my $expanded;
     my @result = ();
@@ -549,7 +574,7 @@ sub _calcMigrationTargets
     {
         my $targets = SMT::Utils::lookupMigrationTargetsById($self->dbh(), $pdid, $migration_kind, $self->request());
         push @$targets, $pdid;
-        $expanded = $self->_expandToPossibleTargets($targets, $expanded);
+        $expanded = $self->_expandToPossibleTargets($targets, $expanded, $migration_kind, $target_product_id);
     }
 
     my $debugtext = "";
@@ -586,6 +611,8 @@ sub _expandToPossibleTargets
     my $self = shift   || return [];
     my $array1 = shift || return [];
     my $array2 = shift || [[]];
+    my $migration_kind = shift;
+    my $target_product_id = shift;
 
     my @result = ();
 
@@ -596,15 +623,17 @@ sub _expandToPossibleTargets
             my @dummy = ();
             push @dummy, @$set, $v1;
 
-            foreach my $pdid (@dummy) {
-                # Adding free & recommended modules for SLES15
-                my $product = SMT::Utils::lookupProductById($self->dbh(), $pdid, $self->request());
-                if ($product->{product_type} eq 'base' && $product->{version} =~ /^15\b/) {
-                    my $recommended = $self->_getFreeAndRecommendedExtensions($self->dbh(), $pdid, $self->request());
+            my $migration_base_product_id = $dummy[0];
 
-                    push @dummy, @$recommended;
-                    @dummy = do { my %seen; grep { !$seen{$_}++ } @dummy };
-                }
+            next if ( $migration_kind eq 'offline' && $target_product_id != $migration_base_product_id );
+
+            # Adding free & recommended modules for SLES15
+            my $product = SMT::Utils::lookupProductById($self->dbh(), $migration_base_product_id, $self->request());
+            if ($product->{product_type} eq 'base' && $product->{version} =~ /^15\b/) {
+                my $recommended = $self->_getFreeAndRecommendedExtensions($self->dbh(), $migration_base_product_id, $self->request());
+
+                push @dummy, @$recommended;
+                @dummy = do { my %seen; grep { !$seen{$_}++ } @dummy };
             }
 
             printLog($self->request(), undef, LOG_DEBUG, "Check combi: ".join(', ', @dummy));
