@@ -164,6 +164,7 @@ create table Products (
                 SHORTNAME       VARCHAR(255) NOT NULL DEFAULT '',
                 RELEASE_STAGE   VARCHAR(255) NOT NULL DEFAULT '',
                 SRC         CHAR(1) DEFAULT 'N',    -- N NCC   C Custom
+                FREE            tinyint(1) DEFAULT '0',
                 CONSTRAINT Products_id_pk PRIMARY KEY (ID),
                 UNIQUE INDEX Products_pdl_verl_rell_archl_uq (PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER),
                 UNIQUE INDEX Products_productdataid_src_uq(PRODUCTDATAID, SRC),
@@ -185,6 +186,7 @@ create table ProductMigrations (
     SRCPDID   integer NOT NULL,
     TGTPDID   integer NOT NULL,
     SRC       CHAR(1) DEFAULT 'S',
+    KIND enum('online','offline') NOT NULL,
     UNIQUE INDEX ProductMigrations_srcpdid_tgtpdid_uq (SRCPDID, TGTPDID),
     INDEX ProductMigrations_srcpdid_tgtpdid_src_idx (SRCPDID, TGTPDID, SRC)
 ) ENGINE=InnoDB;
