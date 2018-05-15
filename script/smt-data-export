@@ -39,7 +39,11 @@ function usage() {
 
 function smt_mysql() {
   local query="$1"
-  mysql -u $SMT_MYSQL_USER -p$SMT_MYSQL_PASSWORD -sN -e "$query" $SMT_MYSQL_DATABASE
+  if [ "$SMT_MYSQL_PASSWORD" == "" ]; then
+    mysql -u $SMT_MYSQL_USER -sN -e "$query" $SMT_MYSQL_DATABASE
+  else
+    mysql -u $SMT_MYSQL_USER -p$SMT_MYSQL_PASSWORD -sN -e "$query" $SMT_MYSQL_DATABASE
+  fi
 }
 
 function smt_read_all_enabled_repos() {
@@ -123,7 +127,10 @@ function step_export_smt() {
     cp $SSL_PATH/cacert.pem $temp_ssl_path
   fi
 
-  cp /etc/hostname $TEMP_PATH/
+  # On SLE11 systems there can be not /etc/hostname
+  if [ -f /etc/hostname ]; then
+    cp /etc/hostname $TEMP_PATH/
+  fi
 }
 
 function step_create_tarball() {
