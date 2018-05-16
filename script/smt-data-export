@@ -68,7 +68,9 @@ function smt_read_all_enabled_custom_repos() {
 }
 
 function smt_read_all_systems() {
-  local query="select c.GUID, c.SECRET, c.HOSTNAME from Clients c"
+  local query="select c.GUID, c.SECRET, c.HOSTNAME, MIN(UNIX_TIMESTAMP(r.REGDATE)) from Clients c
+                 JOIN Registration r ON r.GUID = c.GUID
+                 GROUP BY c.GUID"
 
   smt_mysql "$query"
 }
