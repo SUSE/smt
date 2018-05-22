@@ -29,6 +29,7 @@ use User::pwent;
 use Sys::GRP;
 
 use SMT::Utils::RequestAgent;
+use JSON;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -1526,6 +1527,7 @@ sub lookupProductById
     my $ref = $dbh->selectrow_hashref($query_product) || {};
     $ref->{free} = (exists $ref->{free}?1:0);
     $ref->{available} = ((exists $ref->{available} && $ref->{available} eq "1")?1:0);
+    $ref->{base} = ($ref->{product_type} eq 'base' ? JSON::true : JSON::false);
     return $ref;
 
 }
