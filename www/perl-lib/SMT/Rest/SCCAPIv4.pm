@@ -12,6 +12,9 @@ use SMT::Client;
 use SMT::Registration;
 use SMT::SCCSync;
 
+use constant MIGRATION_KIND_ONLINE  => 0;
+use constant MIGRATION_KIND_OFFLINE => 1;
+
 
 sub new
 {
@@ -36,8 +39,8 @@ sub systems_handler()
         }
         elsif ( $self->request()->method() =~ /^POST$/i )
         {
-            if     ( $path =~ /^systems\/products\/migrations\/?$/ ) { return $self->product_migration_targets(); }
-            elsif  ( $path =~ /^systems\/products\/offline_migrations\/?$/ ) { return $self->product_migration_targets(1); }
+            if     ( $path =~ /^systems\/products\/migrations\/?$/ ) { return $self->product_migration_targets(MIGRATION_KIND_ONLINE); }
+            elsif  ( $path =~ /^systems\/products\/offline_migrations\/?$/ ) { return $self->product_migration_targets(MIGRATION_KIND_OFFLINE); }
             elsif  ( $path =~ /^systems\/products\/synchronize\/?$/ ) { return $self->product_synchronize(); }
         }
         elsif ( $self->request()->method() =~ /^PUT$/i || $self->request()->method() =~ /^PATCH$/i)
@@ -193,13 +196,14 @@ sub product_synchronize
 sub product_migration_targets
 {
     my $self = shift || return (undef, undef);
-    my $is_offline = shift;
+    my $migration_kind = shift;
     my $c    = JSON::decode_json($self->read_post());
+
+    $migration_kind = defined $migration_kind ? $migration_kind : MIGRATION_KIND_ONLINE;
 
     my $guid = $self->user();
     my @not_registered_products = ();
     my $installedProducts = [];
-    my $migration_kind = $is_offline ? 'offline' : 'online';
 
     foreach my $installedProduct (@{$c->{installed_products}})
     {
@@ -262,7 +266,7 @@ sub product_migration_targets
 
     my $target_product_id;
 
-    if ( $migration_kind eq 'offline' ) {
+    if ( $migration_kind == MIGRATION_KIND_OFFLINE ) {
         my $target_base_product = $c->{target_base_product};
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "Missing required parameter: target_base_product") unless ( $target_base_product );
 
@@ -303,19 +307,17 @@ sub update_product
 {
     my $self = shift || return (undef, undef);
     my $args = JSON::decode_json($self->read_post());
-    my $product_classes = {};
     my $old_pdid = undef;
 
     if (!exists $args->{identifier} || !exists $args->{version} || !exists $args->{arch})
     {
         return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY, "No product specified");
     }
-    my $former_identifier = $args->{identifier};
 
     # We are sure, that user is a system GUID
     my $guid = $self->user();
 
-    # sometimes people provide edition instead of version, so let's stip the release
+    # sometimes people provide edition instead of version, so let's strip the release
     my ($v, $r) = split(/-/, $args->{version}, 2);
     $args->{version} = $v;
 
@@ -323,46 +325,51 @@ sub update_product
     my $req_pdid = SMT::Utils::lookupProductIdByName($self->dbh(), $args->{identifier},
                                                      $args->{version}, $release,
                                                      $args->{arch}, $self->request());
+
+    unless ($req_pdid) {
+        return (
+            Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+            "Requested migration target product not found"
+        );
+    }
+
     my $regs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
 
-    foreach my $cur_pid (keys %$regs)
-    {
+    # Clean up predecessor product activations if they exist
+    foreach my $cur_pid (keys %$regs) {
         if (SMT::Utils::isMigrationTargetOf($self->dbh(), $cur_pid, $req_pdid)    # upgrade
             || SMT::Utils::isMigrationTargetOf($self->dbh(), $req_pdid, $cur_pid) # Rollback
             || "$req_pdid" eq "$cur_pid" # same ; not an upgrade
-        )
-        {
-            $old_pdid = $cur_pid;
-            last ;
-        }
-    }
+        ) {
+            my $sql = sprintf(
+                "DELETE FROM Registration WHERE GUID = %s AND PRODUCTID = %s",
+                $self->dbh()->quote($guid),
+                $self->dbh()->quote($cur_pid)
+            );
 
-    if($old_pdid && $req_pdid)
-    {
-        if("$req_pdid" ne "$old_pdid")
-        {
-            my $sql = sprintf("UPDATE Registration
-                                  SET PRODUCTID = %s
-                                WHERE GUID = %s
-                                  AND PRODUCTID = %s",
-                              $self->dbh()->quote($req_pdid),
-                              $self->dbh()->quote($guid),
-                              $self->dbh()->quote($old_pdid));
             $self->request()->log->info("STATEMENT: $sql");
             eval {
                 $self->dbh()->do($sql);
             };
-            if($@)
-            {
-                return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr);
-            }
+
+            return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr) if ($@);
         }
     }
-    else
-    {
-        return (Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
-                "No installed product with requested migration target product found");
-    }
+
+    # Insert the upgraded product activation
+    my $sql = sprintf(
+        "INSERT INTO Registration (GUID, PRODUCTID, REGDATE) VALUES (%s, %s, %s)",
+        $self->dbh()->quote($guid),
+        $self->dbh()->quote($req_pdid),
+        $self->dbh()->quote(SMT::Utils::getDBTimestamp())
+    );
+
+    $self->request()->log->info("STATEMENT: $sql");
+    eval {
+        $self->dbh()->do($sql);
+    };
+
+    return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr) if ($@);
     return $self->_registrationResult($req_pdid);
 }
 
@@ -572,7 +579,8 @@ sub _calcMigrationTargets
 
     foreach my $pdid (@$installedProducts)
     {
-        my $targets = SMT::Utils::lookupMigrationTargetsById($self->dbh(), $pdid, $migration_kind, $self->request());
+        my $migration_kind_sql = $migration_kind == MIGRATION_KIND_OFFLINE ? 'offline' : 'online';
+        my $targets = SMT::Utils::lookupMigrationTargetsById($self->dbh(), $pdid, $migration_kind_sql, $self->request());
         push @$targets, $pdid;
         $expanded = $self->_expandToPossibleTargets($targets, $expanded, $migration_kind, $target_product_id);
     }
@@ -625,7 +633,7 @@ sub _expandToPossibleTargets
 
             my $migration_base_product_id = $dummy[0];
 
-            next if ( $migration_kind eq 'offline' && $target_product_id != $migration_base_product_id );
+            next if ( $migration_kind == MIGRATION_KIND_OFFLINE && $target_product_id != $migration_base_product_id );
 
             # Adding free & recommended modules for SLES15
             my $product = SMT::Utils::lookupProductById($self->dbh(), $migration_base_product_id, $self->request());

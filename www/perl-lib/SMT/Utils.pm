@@ -1876,14 +1876,14 @@ sub lookupMigrationTargetsById
 {
     my $dbh = shift || return undef;
     my $pdid = shift || return undef;
-    my $migration_kind = shift || return undef;
+    my $migration_kind_sql = shift || return undef;
     my $log = shift;
     my $vblevel = shift;
 
     my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s AND kind = %s
         ORDER BY tgtpdid DESC",
         $dbh->quote($pdid),
-        $dbh->quote($migration_kind)
+        $dbh->quote($migration_kind_sql)
     );
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query");
