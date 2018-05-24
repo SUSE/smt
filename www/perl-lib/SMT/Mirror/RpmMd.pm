@@ -1317,7 +1317,7 @@ sub download_handler
             }
             $self->job2statistic($job);
             $self->{REPODATAJOBS}->{$data->{LOCATION}} = $job;
-            if ($data->{MAINELEMENT} eq 'data' && lc($data->{DATATYPE}) eq "license")
+            if ($data->{MAINELEMENT} eq 'data' && lc($data->{DATATYPE}) =~ /^license/)
             {
                 $self->updateLicenseDir($job->fullLocalPath());
             }
