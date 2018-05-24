@@ -29,6 +29,7 @@ use User::pwent;
 use Sys::GRP;
 
 use SMT::Utils::RequestAgent;
+use JSON;
 
 POSIX::setlocale(&POSIX::LC_MESSAGES, "");
 
@@ -1526,6 +1527,7 @@ sub lookupProductById
     my $ref = $dbh->selectrow_hashref($query_product) || {};
     $ref->{free} = (exists $ref->{free}?1:0);
     $ref->{available} = ((exists $ref->{available} && $ref->{available} eq "1")?1:0);
+    $ref->{base} = ($ref->{product_type} eq 'base' ? JSON::true : JSON::false);
     return $ref;
 
 }
@@ -1874,12 +1876,15 @@ sub lookupMigrationTargetsById
 {
     my $dbh = shift || return undef;
     my $pdid = shift || return undef;
+    my $migration_kind_sql = shift || return undef;
     my $log = shift;
     my $vblevel = shift;
 
-    my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s
-                         ORDER BY tgtpdid DESC",
-                        $dbh->quote($pdid));
+    my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s AND kind = %s
+        ORDER BY tgtpdid DESC",
+        $dbh->quote($pdid),
+        $dbh->quote($migration_kind_sql)
+    );
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query");
     my $ref = $dbh->selectcol_arrayref($query) || [];
@@ -1936,7 +1941,7 @@ sub isExtensionOf
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $sql");
     my $ref = $dbh->selectcol_arrayref($sql) || [];
-    return (@$ref == 1);
+    return (@$ref >= 1);
 }
 
 =item isBaseProduct($dbh, $productid)

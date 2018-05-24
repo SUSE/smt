@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed May  9 13:35:08 UTC 2018 - ikapelyukhin@suse.com
+
+- version 3.0.34
+- Add SLES15 offline migrations (bsc#1087241)
+
+-------------------------------------------------------------------
 Wed Jan  3 10:50:40 UTC 2018 - ikapelyukhin@suse.com
 
 - version 3.0.33
