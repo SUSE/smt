@@ -775,9 +775,9 @@ sub setCatalogsByProduct
         $excludeOptional = $opts{excludeOptional};
     }
 
-    my ($product, $version, $arch, $release) = split(/\s*,\s*/, $opts{prodStr}, 4);
+    my ($product, $version, $arch, $release) = split(/\s*[,\/]\s*/, $opts{prodStr}, 4);
 
-    my $st1 = sprintf("select ID from Products where PRODUCT=%s ", $dbh->quote($product));
+    my $st1 = sprintf("select ID, PRODUCT_TYPE from Products where PRODUCT=%s ", $dbh->quote($product));
 
     if(defined $version && $version ne "")
     {
@@ -792,18 +792,21 @@ sub setCatalogsByProduct
         $st1 .= sprintf(" and REL=%s ", $dbh->quote($release));
     }
 
-    my $arr = $dbh->selectall_arrayref($st1, {Slice => {}});
-    if(@{$arr} == 0)
+    my $product_arr = $dbh->selectall_arrayref($st1, {Slice => {}});
+
+    if(@{$product_arr} == 0)
     {
         print sprintf(__("Error: Product (%s) not found.\n"),$opts{prodStr});
         return 1;
     }
 
-    my $statement = "select distinct pc.CATALOGID, pc.OPTIONAL, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTID IN ($st1) and pc.CATALOGID = c.ID order by NAME,TARGET;";
+    my $ids = join(",", map { $_->{ID} } @$product_arr);
+
+    my $statement = "select distinct pc.CATALOGID, pc.OPTIONAL, c.NAME, c.TARGET, c.MIRRORABLE, c.DOMIRROR from ProductCatalogs pc, Catalogs c where pc.PRODUCTID IN ($ids) and pc.CATALOGID = c.ID order by NAME,TARGET;";
 
     #print "$statement \n";
 
-    $arr = $dbh->selectall_arrayref($statement, {Slice => {}});
+    my $arr = $dbh->selectall_arrayref($statement, {Slice => {}});
 
     foreach my $row (@{$arr})
     {
@@ -827,6 +830,43 @@ sub setCatalogsByProduct
                           ($enable?__("enabled"):__("disabled")));
         }
     }
+
+    return 0 unless ($enable);
+
+    # Enabling recommended products for SLE15
+
+    my @repos;
+
+    foreach my $product (@$product_arr) {
+        next unless $product->{PRODUCT_TYPE} eq 'base';
+
+        my $statement = sprintf(
+            "select distinct
+            pc.CATALOGID, c.NAME, c.TARGET
+            from Products as p join ProductExtensions as pe on (p.ID = pe.ROOTPRODUCTID and pe.RECOMMENDED = 1)
+            join ProductCatalogs as pc on (pc.PRODUCTID = pe.EXTENSIONID) join Catalogs as c ON (pc.CATALOGID = c.ID)
+            where p.ID = %s and c.DOMIRROR = 'N' and pc.OPTIONAL = 'N' and c.MIRRORABLE = 'Y'
+            order by NAME, TARGET",
+            $dbh->quote($product->{ID})
+        );
+
+        my $arr = $dbh->selectall_arrayref($statement, {Slice => {}});
+
+        @repos = (@repos, @$arr);
+    }
+
+    print __("\nThe following repositories for the required extensions have been automatically enabled:\n\n") if (@repos);
+
+    foreach my $row (@repos) {
+        setCatalogDoMirror(enabled => $enable, name => $row->{NAME}, target => $row->{TARGET});
+        print sprintf(
+            __("Repository [%s %s] %s.\n"),
+            $row->{NAME},
+            ($row->{TARGET}) ? $row->{TARGET} : "",
+            __("enabled")
+        );
+    }
+
     return 0;
 }
 
