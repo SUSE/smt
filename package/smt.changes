@@ -1,11 +1,12 @@
 -------------------------------------------------------------------
-Wed May  9 13:35:08 UTC 2018 - ikapelyukhin@suse.com
+Fri May 25 11:13:51 UTC 2018 - ikapelyukhin@suse.com
 
 - version 3.0.34
 - Add SLES15 offline migrations (bsc#1087241, bsc#1090144)
 - Fix product.license download (bsc#1088828)
 - Automatically enable recommended modules when enabling
   base SLE 15 products
+- Add smt-data-export script for migrating to RMT
 
 -------------------------------------------------------------------
 Wed Jan  3 10:50:40 UTC 2018 - ikapelyukhin@suse.com
