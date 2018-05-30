@@ -365,6 +365,23 @@ sub update_product
     );
 
     $self->request()->log->info("STATEMENT: $sql");
+
+    eval {
+        $self->dbh()->do($sql);
+    };
+
+    # Update the system's target for the offline migration to work
+    my $sql = sprintf(
+        "update Clients as c join Registration as r on (r.GUID = c.GUID)
+        join ProductCatalogs pc on (pc.PRODUCTID = r.PRODUCTID and pc.OPTIONAL = 'N')
+        join Catalogs c1 on (c1.ID = pc.CATALOGID)
+        set c.TARGET = c1.TARGET
+        where c.GUID = %s",
+        $self->dbh()->quote($guid)
+    );
+
+    $self->request()->log->info("STATEMENT: $sql");
+
     eval {
         $self->dbh()->do($sql);
     };
@@ -605,6 +622,10 @@ sub _calcMigrationTargets
             if($product->{available} == JSON::false && $self->request()->server->loglevel() >= 5) {
                 $self->_debugMissingChannels($pdid);
             }
+
+            # This is a hack to work around Yast case sensitive comparison (bsc#1094865)
+            $product->{identifier} = $product->{product_orig} if ($migration_kind == MIGRATION_KIND_OFFLINE);
+
             push @productset, $product;
         }
         push @result, \@productset;

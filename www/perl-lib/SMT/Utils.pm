@@ -1512,6 +1512,7 @@ sub lookupProductById
                p.shortname,
                p.release_stage,
                1 free,
+               p.PRODUCT product_orig,
                (CASE WHEN (SELECT c.DOMIRROR
                              FROM ProductCatalogs pc
                              JOIN Catalogs c ON pc.CATALOGID = c.ID
