@@ -630,6 +630,10 @@ sub _calcMigrationTargets
         }
         push @result, \@productset;
     }
+
+    # Remove duplicate migration paths (bsc#1097824)
+    @result = do { my %seen;  grep { not $seen{join " ", map { $_->{id} } @$_}++ } @result };
+
     printLog($self->request(), undef, LOG_DEBUG, "Migration Targets: $debugtext");
 
     return (Apache2::Const::OK, \@result);
