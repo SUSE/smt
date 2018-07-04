@@ -23,10 +23,7 @@ fi
 # reschedule - calc new time
 
 # HOUR between 20 - 2 (59)
-NEW_HOUR=`echo "$RANDOM % 7 - 4" | bc`
-if [ $NEW_HOUR -lt 0 ]; then
-    NEW_HOUR=`echo "24 + $NEW_HOUR" | bc`
-fi
+NEW_HOUR=`echo "($RANDOM % 7 + 20) % 24" | bc`
 
 # MINUTE between 0 - 59
 NEW_MINUTE=`echo "$RANDOM % 60" | bc`
