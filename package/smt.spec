@@ -219,10 +219,6 @@ fi
 # no postun service handling for target or schema-upgrade, we don't want them to be restarted on upgrade
 %postun
 
-if [ -e /etc/cron.d/novell.com-smt-randomized ]; then
-    rm /etc/cron.d/novell.com-smt-randomized
-fi
-
 %service_del_postun smt.service
 
 %files
@@ -298,6 +294,7 @@ fi
 %exclude %{_mandir}/man1/smt-support.1.gz
 %exclude %{_mandir}/man1/smt-sibling-sync.1.gz
 %doc %{_docdir}/smt/*
+%ghost /etc/cron.d/novell.com-smt-randomized
 
 %files ha
 %defattr(-,root,root)
