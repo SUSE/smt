@@ -2177,6 +2177,23 @@ sub getExtensionActivationsForProduct {
     return $ref;
 }
 
+# Checks if an activation exists for ancestor/predecessor product during rollback/upgrade respectively
+sub checkMigrationPath {
+    my $dbh = shift;
+    my $req_pdid = shift;
+    my $regs = shift;
+
+    foreach my $cur_pid (keys %$regs) {
+        return 1 if (
+            isMigrationTargetOf($dbh, $cur_pid, $req_pdid)    # upgrade
+            || isMigrationTargetOf($dbh, $req_pdid, $cur_pid) # Rollback
+            || "$req_pdid" eq "$cur_pid" # same ; not an upgrade
+        );
+    }
+
+    return undef;
+}
+
 =back
 
 =head1 AUTHOR

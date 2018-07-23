@@ -335,6 +335,13 @@ sub update_product
 
     my $regs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
 
+    if (SMT::Utils::hasRegSharing() && !SMT::Utils::checkMigrationPath($self->dbh(), $req_pdid, $regs)) {
+        return (
+            Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+            "No installed product with requested migration target product found"
+        );
+    }
+
     # Clean up predecessor product activations if they exist
     foreach my $cur_pid (keys %$regs) {
         if (SMT::Utils::isMigrationTargetOf($self->dbh(), $cur_pid, $req_pdid)    # upgrade
