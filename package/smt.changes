@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jul  5 15:12:33 UTC 2018 - ikapelyukhin@suse.com
+
+- version 3.0.36
+- Fix cron jobs randomization (bsc#1097560)
+
+-------------------------------------------------------------------
 Wed Jun 27 13:52:16 UTC 2018 - ikapelyukhin@suse.com
 
 - version 3.0.35

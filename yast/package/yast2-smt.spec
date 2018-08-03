@@ -1,7 +1,7 @@
 #
 # spec file for package yast2-smt
 #
-# Copyright (c) 2011 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2018 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -15,66 +15,67 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
-# norootforbuild
-
-
 
 Name:           yast2-smt
-Version:        3.0.13
+Version:        3.0.14
 Release:        0
-License:        GPL-2.0
-Group:          System/YaST
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-smt-%{version}.tar.bz2
 
 Prefix:         /usr
 
-Requires:	yast2
+Requires:       yast2
 # FATE 305541: Creating NCCcredentials file using yast2-registration
-Requires:	yast2-registration
-Requires:	/usr/bin/curl
-Requires:	/usr/bin/grep
-Requires:	/bin/hostname
+Requires:       /bin/hostname
+Requires:       /usr/bin/curl
+Requires:       /usr/bin/grep
+Requires:       yast2-registration
 # For adjusting the NCCcredentials file permissions
-Requires:	/usr/bin/setfacl
-Requires:	/bin/chown
-Requires:	/bin/chmod
+Requires:       /bin/chmod
+Requires:       /bin/chown
+Requires:       /usr/bin/setfacl
 # For checking whether the DB->user is available on the system
-Requires:	/usr/bin/getent
+Requires:       /usr/bin/getent
 Requires:       sudo
 # Modified smt-catalogs (added --batch-mode)
 # SMT::Client::getPatchStatusLabel returning two values
 # don't require SMT (instead ask to install it), but prevent older versions
-Conflicts:	smt < 3.0.2
+Conflicts:      smt < 3.0.2
 # Icons
-Requires:	hicolor-icon-theme
+Requires:       hicolor-icon-theme
 # any YaST theme
-Requires:	yast2_theme
+Requires:       yast2_theme
 # 'current'
-PreReq:		yast2-branding
+PreReq:         yast2-branding
 
 # This YaST tool configures SMT (cron, apache2)
-Recommends:	mysql
-Recommends:	cron
-Recommends:	apache2
+Recommends:     mysql
+Recommends:     cron
+Recommends:     apache2
 
 # If CA is missing, SMT offers to create one
-Recommends:	yast2-ca-management
+Recommends:     yast2-ca-management
 
-BuildRequires:	perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite
-BuildRequires:	hicolor-icon-theme
+BuildRequires:  hicolor-icon-theme
+BuildRequires:  perl-XML-Writer
+BuildRequires:  update-desktop-files
+BuildRequires:  yast2
+BuildRequires:  yast2-devtools
+BuildRequires:  yast2-testsuite
 # any YaST theme
-BuildRequires:	yast2_theme
+BuildRequires:  yast2_theme
 # build must not have any choice, using package that provides 'yast2-branding'
 %if 0%{?is_opensuse}
-BuildRequires:	yast2-branding-openSUSE
+BuildRequires:  yast2-branding-openSUSE
 %else
-BuildRequires:	yast2-branding-SLES
+BuildRequires:  yast2-branding-SLES
 %endif
 
-BuildArchitectures:	noarch
+BuildArch:      noarch
 
-Summary:	Configuration of Subscription Management Tool for SUSE Linux Enterprise
+Summary:        Configuration of Subscription Management Tool for SUSE Linux Enterprise
+License:        GPL-2.0
+Group:          System/YaST
 
 %description
 Provides the YaST module for SMT configuration.
@@ -160,3 +161,5 @@ rm -rf "$RPM_BUILD_ROOT"
 /usr/share/icons/hicolor/16x16/status/client-*.xpm
 /usr/share/icons/hicolor/16x16/status/repo-*.xpm
 /usr/share/icons/hicolor/16x16/status/patch-*.xpm
+
+%changelog

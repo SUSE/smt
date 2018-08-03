@@ -1,6 +1,6 @@
 # Makefile.am for smt/doc
 
-SUBDIRS = autodocs
+SUBDIRS = 
 
 htmldir = $(docdir)
 

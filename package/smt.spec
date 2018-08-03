@@ -17,7 +17,7 @@
 
 
 Name:           smt
-Version:        3.0.35
+Version:        3.0.36
 Release:        0
 Summary:        Subscription Management Tool
 License:        GPL-2.0+
@@ -209,6 +209,8 @@ EOT
     fi
 fi
 
+/usr/lib/SMT/bin/reschedule-sync.sh
+
 %preun
 %service_del_preun smt-schema-upgrade.service
 %service_del_preun smt.service
@@ -216,6 +218,7 @@ fi
 
 # no postun service handling for target or schema-upgrade, we don't want them to be restarted on upgrade
 %postun
+
 %service_del_postun smt.service
 
 %files
@@ -291,6 +294,7 @@ fi
 %exclude %{_mandir}/man1/smt-support.1.gz
 %exclude %{_mandir}/man1/smt-sibling-sync.1.gz
 %doc %{_docdir}/smt/*
+%ghost /etc/cron.d/novell.com-smt-randomized
 
 %files ha
 %defattr(-,root,root)

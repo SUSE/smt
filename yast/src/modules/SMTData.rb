@@ -745,71 +745,12 @@ module Yast
       # to get different 'random' numbers :->>>
       Builtins.srandom
 
-      hour_smt_daily = 20
-      minute_smt_daily = 0
-
-      # randomize smt-daily
-      counter = -1
-      Builtins.foreach(GetCronSettings()) do |one_cron_job|
-        counter = Ops.add(counter, 1)
-        if Builtins.regexpmatch(
-            Ops.get_string(one_cron_job, "command", ""),
-            "smt-daily"
-          )
-          # 20:00 - 02:59
-          hour_calc = Ops.subtract(Builtins.random(7), 4)
-          if Ops.greater_or_equal(hour_calc, 0)
-            hour_smt_daily = hour_calc
-          else
-            hour_smt_daily = Ops.add(24, hour_calc)
-          end
-
-          minute_smt_daily = Builtins.random(59)
-
-          Ops.set(one_cron_job, "hour", Builtins.tostring(hour_smt_daily))
-          Ops.set(one_cron_job, "minute", Builtins.tostring(minute_smt_daily))
-          Builtins.y2milestone(
-            "smt-daily randomized, hour: %1, minute: %2",
-            Ops.get_string(one_cron_job, "hour", ""),
-            Ops.get_string(one_cron_job, "minute", "")
-          )
-          ReplaceCronJob(counter, one_cron_job)
-        end
-      end
-
-      # randomize smt-gen-report
-      counter = -1
-      Builtins.foreach(GetCronSettings()) do |one_cron_job|
-        counter = Ops.add(counter, 1)
-        if Builtins.regexpmatch(
-            Ops.get_string(one_cron_job, "command", ""),
-            "smt-gen-report"
-          )
-          # 4:00 - 6:59
-          hour_report = Ops.add(Builtins.random(3), 4)
-          Ops.set(one_cron_job, "hour", Builtins.tostring(hour_report))
-          Ops.set(one_cron_job, "minute", Builtins.tostring(minute_smt_daily))
-          Builtins.y2milestone(
-            "smt-gen-report randomized, hour: %1, minute: %2",
-            Ops.get_string(one_cron_job, "hour", ""),
-            Ops.get_string(one_cron_job, "minute", "")
-          )
-          ReplaceCronJob(counter, one_cron_job)
-        end
-      end
-
       # randomize smt-repeated-register
       # 450 (seconds) == 7.5 minutes
       SetCredentials(
         "LOCAL",
         "rndRegister",
         Builtins.tostring(Builtins.random(450))
-      )
-
-      # take care the the post script do not reschedule again
-      SCR.Execute(
-        path(".target.bash"),
-        "touch /var/lib/smt/RESCHEDULE_SYNC_DONE"
       )
 
       nil

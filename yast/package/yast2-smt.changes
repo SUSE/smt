@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jul 16 12:50:58 UTC 2018 - ikapelyukhin@suse.com
+
+- Remove cron job rescheduling (bsc#1097560)
+- 3.0.14
+
+-------------------------------------------------------------------
 Mon May 22 10:17:25 UTC 2017 - jsrain@suse.cz
 
 - added missing translation marks (bsc#1037811)
