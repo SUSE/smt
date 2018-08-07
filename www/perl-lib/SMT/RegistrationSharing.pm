@@ -286,12 +286,11 @@ sub _createInsertSQLfromXML
     my $r       = shift;
     my $dbh     = shift;
     my $element = shift;
+    my $apache = Apache2::ServerUtil->server;
     my $tableName = $element->getAttribute('table');
     if (! $tableName) {
         $dbh->disconnect();
-        my $xml = $element->textContent;
-        my $msg = "Could not determine table name for insertion from XML\n"
-            . $xml;
+        my $msg = "Could not determine table name for insertion from XML\n";
         $r->log_error($msg);
         return SMT::Utils::http_fail($r, 400, $msg);
     }
@@ -344,6 +343,8 @@ sub _getXMLFromPostData
     my $postData = shift;
     my $xml;
     my $parser = XML::LibXML->new();
+    $parser->expand_entities(0);
+    $parser->load_ext_dtd(0);
     eval {
         # load_xml not available on SLES 11 SP3 due to version of
         # LibXML and underlying libxml2
