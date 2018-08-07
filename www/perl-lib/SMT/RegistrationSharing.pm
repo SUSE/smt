@@ -301,6 +301,12 @@ sub _createInsertSQLfromXML
         $r->log_error($msg);
         return SMT::Utils::http_fail($r, 400, $msg);
     }
+    if ($tableName ne 'Clients' && $tableName ne 'Registration') {
+        $dbh->disconnect();
+        my $msg = "Attempting insert into table '$tableName' not permitted\n";
+        $r->log_error($msg);
+        return SMT::Utils::http_fail($r, 400, $msg);
+    }
     my $sql = "INSERT into $tableName (";
     my $vals = 'VALUES (';
     for my $entry ($element->getElementsByTagName('entry')) {
