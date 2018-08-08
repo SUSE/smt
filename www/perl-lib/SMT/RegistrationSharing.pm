@@ -293,7 +293,7 @@ sub _createInsertSQLfromXML
     my $r       = shift;
     my $dbh     = shift;
     my $element = shift;
-    my $apache = Apache2::ServerUtil->server;
+
     my $tableName = $element->getAttribute('table');
     if (! $tableName) {
         $dbh->disconnect();
