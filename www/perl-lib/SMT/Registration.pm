@@ -189,10 +189,12 @@ sub register
     }
 
     my $regroot = { ACCEPTOPT => 1, CURRENTELEMENT => "", PRODUCTATTR => {}, register => {}};
-    my $regparser = XML::Parser->new( Handlers =>
+    my $regparser = XML::Parser->new( NoExpand => 1, Handlers =>
                                       { Start => sub { reg_handle_start_tag($regroot, @_) },
                                         Char  => sub { reg_handle_char_tag($regroot, @_) },
-                                        End   => sub { reg_handle_end_tag($regroot, @_) }
+                                        End   => sub { reg_handle_end_tag($regroot, @_) },
+                                        ExternEnt    => sub { '' },
+                                        ExternEntFin => sub { '' },
                                       });
 
     eval {
@@ -223,9 +225,11 @@ sub register
                 WRITER => $writer
                };
 
-    my $parser = XML::Parser->new( Handlers =>
+    my $parser = XML::Parser->new( NoExpand => 1, Handlers =>
                                    { Start=> sub { nif_handle_start_tag($dat, @_) },
-                                     End=>   sub { nif_handle_end_tag($dat, @_) }
+                                     End=>   sub { nif_handle_end_tag($dat, @_) },
+                                     ExternEnt    => sub { '' },
+                                     ExternEntFin => sub { '' },
                                    });
     eval {
         $parser->parse( $needinfo );
@@ -373,10 +377,12 @@ sub listparams
     my $dbh = SMT::Utils::db_connect();
 
     my $data  = {STATE => 0, PRODUCTS => []};
-    my $parser = XML::Parser->new( Handlers =>
+    my $parser = XML::Parser->new( NoExpand => 1, Handlers =>
                                    { Start=> sub { prod_handle_start_tag($data, @_) },
                                      Char => sub { prod_handle_char($data, @_) },
-                                     End=>   sub { prod_handle_end_tag($data, @_) }
+                                     End=>   sub { prod_handle_end_tag($data, @_) },
+                                     ExternEnt    => sub { '' },
+                                     ExternEntFin => sub { '' },
                                    });
     eval {
         $parser->parse( $lpreq );
@@ -500,7 +506,7 @@ sub mergeDocuments
         if($basedoc eq "")
         {
             $basedoc = $other;
-            my $p1 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
+            my $p1 = XML::Parser->new(NoExpand => 1, NoLWP => 1, Style => 'Objects', Pkg => 'smt');
             eval {
                 $root1 = $p1->parse( $basedoc );
                 $node1 = $root1->[0];
@@ -515,7 +521,7 @@ sub mergeDocuments
         }
         next if($basedoc eq $other);
 
-        my $p2 = XML::Parser->new(Style => 'Objects', Pkg => 'smt');
+        my $p2 = XML::Parser->new(NoExpand => 1, NoLWP => 1, Style => 'Objects', Pkg => 'smt');
         eval {
             my $root2 = $p2->parse( $other );
             my $node2;
