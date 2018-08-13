@@ -648,7 +648,7 @@ sub _verifySenderAllowed
     my $r = shift;
 
     my $apache = Apache2::ServerUtil->server;
-    my $senderName = $r->hostname();
+    my $senderName = $r->connection()->get_remote_host();
     my $senderIP = $r->connection()->client_ip();
     my $msg = 'Received shared registration request from '
         . $senderName
