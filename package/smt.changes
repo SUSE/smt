@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Aug 14 08:17:29 UTC 2018 - ikapelyukhin@suse.com
+
+- Version 3.0.37
+- Disable XML entities and expansion (bsc#1103809)
+- Strict table name check in shared registrations API (bsc#1103810)
+- Fixed hostname check in shared registrations API (bsc#1104076)
+
+-------------------------------------------------------------------
 Thu Jul  5 15:12:33 UTC 2018 - ikapelyukhin@suse.com
 
 - version 3.0.36
