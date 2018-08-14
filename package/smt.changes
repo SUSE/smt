@@ -1,8 +1,17 @@
 -------------------------------------------------------------------
+Tue Aug 14 08:36:09 UTC 2018 - ikapelyukhin@suse.com
+
+- version 2.0.34
+- Disable XML entities and expansion (bsc#1103809)
+- Strict table name check in shared registrations API (bsc#1103810)
+- Fixed hostname check in shared registrations API (bsc#1104076)
+
+-------------------------------------------------------------------
 Fri Jan  5 14:05:06 UTC 2018 - ikapelyukhin@suse.com
 
 - version 2.0.33
 - More verbose incomplete registration logging (bsc#1072921, bsc#1074608)
+- Add smt-data-export script for migrating to RMT
 
 -------------------------------------------------------------------
 Thu Oct 19 13:26:23 UTC 2017 - ikapelyukhin@suse.com
