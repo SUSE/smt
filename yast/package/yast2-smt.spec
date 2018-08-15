@@ -40,7 +40,7 @@ Requires:       sudo
 # Modified smt-catalogs (added --batch-mode)
 # SMT::Client::getPatchStatusLabel returning two values
 # don't require SMT (instead ask to install it), but prevent older versions
-Conflicts:      smt < 3.0.2
+Conflicts:      smt < 3.0.36
 # Icons
 Requires:       hicolor-icon-theme
 # any YaST theme
