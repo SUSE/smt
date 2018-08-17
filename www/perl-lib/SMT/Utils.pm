@@ -2194,6 +2194,25 @@ sub checkMigrationPath {
     return undef;
 }
 
+sub isProductDependencyActivated {
+    my $dbh = shift;
+    my $client_guid = shift;
+    my $extension_id = shift;
+
+    my $sql = sprintf(
+        "select pe.PRODUCTID
+        from ProductExtensions as pe
+        join Registration as r on (pe.PRODUCTID = r.PRODUCTID)
+        where pe.EXTENSIONID = %s and r.GUID = %s",
+        $dbh->quote($extension_id),
+        $dbh->quote($client_guid),
+    );
+
+    my $ref = $dbh->selectrow_arrayref($sql);
+
+    return $ref && $ref->[0] ? 1 : undef;
+}
+
 =back
 
 =head1 AUTHOR
