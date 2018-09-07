@@ -17,7 +17,7 @@
 
 
 Name:           yast2-smt
-Version:        3.0.14
+Version:        3.0.15
 Release:        0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-smt-%{version}.tar.bz2
@@ -98,9 +98,10 @@ mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/16x16/apps
 mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/22x22/apps
 mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/32x32/apps
 mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/48x48/apps
+mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/128x128/apps
 
 cd $RPM_BUILD_ROOT//usr/share/YaST2/theme/current/icons
-for dir in 16x16 22x22 32x32 48x48; do
+for dir in 16x16 22x22 32x32 48x48 128x128; do
     cd $RPM_BUILD_ROOT/usr/share/icons/hicolor/$dir/apps
     rm -rf yast-smt.png
     ln -s /usr/share/YaST2/theme/current/icons/$dir/apps/yast-smt.png .
@@ -140,21 +141,26 @@ rm -rf "$RPM_BUILD_ROOT"
 %dir /usr/share/YaST2/theme/current/icons/32x32/apps/
 %dir /usr/share/YaST2/theme/current/icons/48x48/
 %dir /usr/share/YaST2/theme/current/icons/48x48/apps/
+%dir /usr/share/YaST2/theme/current/icons/128x128/
+%dir /usr/share/YaST2/theme/current/icons/128x128/apps/
 
 /usr/share/YaST2/theme/current/icons/16x16/apps/yast-smt.png
 /usr/share/YaST2/theme/current/icons/22x22/apps/yast-smt.png
 /usr/share/YaST2/theme/current/icons/32x32/apps/yast-smt.png
 /usr/share/YaST2/theme/current/icons/48x48/apps/yast-smt.png
+/usr/share/YaST2/theme/current/icons/128x128/apps/yast-smt.png
 
 %dir /usr/share/icons/hicolor/16x16/apps/
 %dir /usr/share/icons/hicolor/22x22/apps/
 %dir /usr/share/icons/hicolor/32x32/apps/
 %dir /usr/share/icons/hicolor/48x48/apps/
+%dir /usr/share/icons/hicolor/128x128/apps/
 
 /usr/share/icons/hicolor/16x16/apps/yast-smt.png
 /usr/share/icons/hicolor/22x22/apps/yast-smt.png
 /usr/share/icons/hicolor/32x32/apps/yast-smt.png
 /usr/share/icons/hicolor/48x48/apps/yast-smt.png
+/usr/share/icons/hicolor/128x128/apps/yast-smt.png
 
 # client status icons
 %dir /usr/share/icons/hicolor/16x16/status
