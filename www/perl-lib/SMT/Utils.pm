@@ -2177,6 +2177,42 @@ sub getExtensionActivationsForProduct {
     return $ref;
 }
 
+# Checks if an activation exists for ancestor/predecessor product during rollback/upgrade respectively
+sub checkMigrationPath {
+    my $dbh = shift;
+    my $req_pdid = shift;
+    my $regs = shift;
+
+    foreach my $cur_pid (keys %$regs) {
+        return 1 if (
+            isMigrationTargetOf($dbh, $cur_pid, $req_pdid)    # upgrade
+            || isMigrationTargetOf($dbh, $req_pdid, $cur_pid) # Rollback
+            || "$req_pdid" eq "$cur_pid" # same ; not an upgrade
+        );
+    }
+
+    return undef;
+}
+
+sub isProductDependencyActivated {
+    my $dbh = shift;
+    my $client_guid = shift;
+    my $extension_id = shift;
+
+    my $sql = sprintf(
+        "select pe.PRODUCTID
+        from ProductExtensions as pe
+        join Registration as r on (pe.PRODUCTID = r.PRODUCTID)
+        where pe.EXTENSIONID = %s and r.GUID = %s",
+        $dbh->quote($extension_id),
+        $dbh->quote($client_guid),
+    );
+
+    my $ref = $dbh->selectrow_arrayref($sql);
+
+    return $ref && $ref->[0] ? 1 : undef;
+}
+
 =back
 
 =head1 AUTHOR

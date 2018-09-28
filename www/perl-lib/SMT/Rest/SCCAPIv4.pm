@@ -335,6 +335,24 @@ sub update_product
 
     my $regs = SMT::Utils::lookupRegistrationByGUID($self->dbh(), $guid, $self->request());
 
+    if (SMT::Utils::hasRegSharing()) {
+        my $product = SMT::Utils::lookupProductById($self->dbh(), $req_pdid);
+
+        if ($product->{product_type} eq "base") {
+            # disallow base product change
+            return (
+                Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+                "No installed product with requested migration target product found"
+            ) unless (SMT::Utils::checkMigrationPath($self->dbh(), $req_pdid, $regs));
+        } else {
+            # require extension dependency to be activated
+            return (
+                Apache2::Const::HTTP_UNPROCESSABLE_ENTITY,
+                "No activation for dependency of product $product->{friendly_name}"
+            ) unless (SMT::Utils::isProductDependencyActivated($self->dbh(), $guid, $req_pdid));
+        }
+    }
+
     # Clean up predecessor product activations if they exist
     foreach my $cur_pid (keys %$regs) {
         if (SMT::Utils::isMigrationTargetOf($self->dbh(), $cur_pid, $req_pdid)    # upgrade
