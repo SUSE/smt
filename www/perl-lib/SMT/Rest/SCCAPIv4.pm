@@ -190,6 +190,13 @@ sub product_synchronize
              push @{$result}, $self->_getProduct($regProd->{id});
         }
     }
+
+    # If registration sharing is enabled, re-sync client registration data to the sibling instance
+    if (SMT::Utils::hasRegSharing()) {
+        SMT::RegistrationSharing::deleteSiblingRegistration($guid);
+        SMT::RegistrationSharing::shareRegistration($guid);
+    }
+
     return (Apache2::Const::OK, $result);
 }
 
@@ -405,6 +412,13 @@ sub update_product
     };
 
     return (Apache2::Const::SERVER_ERROR, "DBERROR: ".$self->dbh()->errstr) if ($@);
+
+    # If registration sharing is enabled, re-sync client registration data to the sibling instance
+    if (SMT::Utils::hasRegSharing()) {
+        SMT::RegistrationSharing::deleteSiblingRegistration($guid);
+        SMT::RegistrationSharing::shareRegistration($guid);
+    }
+
     return $self->_registrationResult($req_pdid);
 }
 
