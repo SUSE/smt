@@ -573,6 +573,9 @@ sub openLog
 {
     my $logfile = shift || "/dev/null";
 
+    # sometimes Apache2::RequestRec can be passed, which logs to Apache's error_log
+    return $logfile if (ref($logfile) eq 'Apache2::RequestRec');
+
     my $LOG;
     sysopen($LOG, "$logfile", O_CREAT|O_APPEND|O_WRONLY, 0600) or die "Cannot open logfile '$logfile': $!";
     if($logfile ne "/dev/null")
