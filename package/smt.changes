@@ -3,8 +3,11 @@ Fri Oct  5 10:11:10 UTC 2018 - ikapelyukhin@suse.com
 
 - Version 3.0.38
 - Add migration path check when registration sharing is enabled
-- Force resync on the sibling instance in `upgrade` and
-  `synchronize` API calls
+- Fix sibling sync errors (bsc#1111056):
+  - Synchronize all registered products
+  - Handle duplicate registrations when syncing
+  - Force resync to the sibling instance in `upgrade` and
+    `synchronize` API calls
 
 -------------------------------------------------------------------
 Tue Aug 14 08:17:29 UTC 2018 - ikapelyukhin@suse.com
