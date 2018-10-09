@@ -1,5 +1,5 @@
 -------------------------------------------------------------------
-Fri Oct  5 10:11:10 UTC 2018 - ikapelyukhin@suse.com
+Tue Oct  9 14:40:52 UTC 2018 - ikapelyukhin@suse.com
 
 - Version 3.0.38
 - Add migration path check when registration sharing is enabled
@@ -8,6 +8,8 @@ Fri Oct  5 10:11:10 UTC 2018 - ikapelyukhin@suse.com
   - Handle duplicate registrations when syncing
   - Force resync to the sibling instance in `upgrade` and
     `synchronize` API calls
+- Harden hostname check during sibling check by forcing double
+  reverse lookup (CVE-2018-12472) (bsc#1104076)
 
 -------------------------------------------------------------------
 Tue Aug 14 08:17:29 UTC 2018 - ikapelyukhin@suse.com
