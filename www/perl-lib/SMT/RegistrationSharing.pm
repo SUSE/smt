@@ -208,8 +208,8 @@ sub shareRegistration
         my $statement = sprintf("SELECT * from %s where GUID=%s",
                                 $table,
                                 $dbh->quote($regGUID));
-        my $regData = $dbh->selectrow_hashref($statement);
-        if (! $regData) {
+        my $regDataArrayRef = $dbh->selectall_arrayref($statement, { Slice => {} });
+        if (!@$regDataArrayRef) {
             next;
         }
         my $skip;
@@ -217,9 +217,12 @@ sub shareRegistration
             my @skipColumn = ('ID');
             $skip = \@skipColumn;
         }
-        $regXML .= "<tableData table='$table'>"
-            . _getXMLFromRowData($regData, $skip)
-            . '</tableData>';
+
+        foreach my $regData (@$regDataArrayRef) {
+            $regXML .= "<tableData table='$table'>"
+                . _getXMLFromRowData($regData, $skip)
+                . '</tableData>';
+        }
     }
     $regXML .= '</registrationData>';
     $dbh->disconnect();
@@ -300,29 +303,31 @@ sub _createInsertSQLfromXML
         $r->log_error($msg);
         return SMT::Utils::http_fail($r, 400, $msg);
     }
-    my $sql = "INSERT into $tableName (";
-    my $vals = 'VALUES (';
+
+    my %hash;
+    my @columns;
+
     for my $entry ($element->getElementsByTagName('entry')) {
-        $sql .= $entry->getAttribute('columnName')
-            . ', ';
-        my $val = $dbh->quote($entry->getAttribute('value'));
-        $vals .= "$val"
-            . ', ';
+        my $col = $entry->getAttribute('columnName');
+        push(@columns, $col);
+        $hash{$col} = $dbh->quote($entry->getAttribute('value'));
     }
+
     for my $entry ($element->getElementsByTagName('foreign_entry')) {
-        $sql .= $entry->getAttribute('columnName')
-            . ', ';
+        my $col = $entry->getAttribute('columnName');
+        push(@columns, $col);
         my $statement = $entry->getAttribute('value');
         my $values = $dbh->selectcol_arrayref($statement);
-        $vals .= $dbh->quote($values->[0])
-            . ', ';
+        $hash{$col} = $dbh->quote($values->[0]);
     }
-    chop $sql; # remove trailing space
-    chop $sql; # remove trailing comma
-    chop $vals; # remove trailing space
-    chop $vals; # remove trailing comma
 
-    $sql .= ') ' . $vals . ')';
+    my $sql = sprintf(
+        "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+        $tableName,
+        join(", ", @columns),
+        join(", ", map { $hash{$_} } @columns),
+        join(", ", map { "$_ = $hash{$_}" } @columns)
+    );
 
     return $sql;
 }
