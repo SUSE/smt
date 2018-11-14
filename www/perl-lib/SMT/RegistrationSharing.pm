@@ -11,6 +11,7 @@ use DBI qw(:sql_types);
 use File::Slurp;
 use File::Temp;
 use File::Touch;
+use File::stat;
 use SMT::Utils;
 use WWW::Curl::Easy;
 use XML::LibXML;
@@ -141,7 +142,15 @@ sub deleteSiblingRegistration
 {
     my $regGUID = shift;
     my $logfile = shift;
-    my $log = SMT::Utils::openLog($logfile);
+    my $log;
+    my $apache;
+
+    if (ref($logfile) eq 'Apache2::RequestRec') {
+        $apache = Apache2::ServerUtil->server;
+    } else {
+        $log = SMT::Utils::openLog($logfile) ;
+    }
+
     my $cfg;
     eval
     {
@@ -150,7 +159,11 @@ sub deleteSiblingRegistration
     if($@ || !defined $cfg)
     {
         my $msg = 'Cannot read the SMT configuration file: '.$@;
-        print $log $msg;
+        if ($log) {
+            print $log $msg;
+        } else {
+            $apache->log_error($msg);
+        }
         return;
     }
     my $shareRegDataTargets = $cfg->val('LOCAL', 'shareRegistrations');
@@ -177,14 +190,22 @@ sub deleteSiblingRegistration
             . '&lang=en-US&version=1.0';
         my $response = $ua->post($url, Content=>$guidXML);
         if (! $response->is_success ) {
+            _logShareRecord($smtServer,$url,$guidXML,$log);
+
             my $msg = $response->message;
             my $details = $response->content;
             my $guidMsg = "Could not delete shared registration for $regGUID";
             my $responseMsg = "Response: $msg";
             my $detailsMsg = "Response: $details";
-            print $log $guidMsg . "\n";
-            print $log $responseMsg . "\n";
-            print $log $detailsMsg . "\n";
+            if ($log) {
+                print $log $guidMsg . "\n";
+                print $log $responseMsg . "\n";
+                print $log $detailsMsg . "\n";
+            } else {
+                $apache->warn($guidMsg);
+                $apache->warn($responseMsg);
+                $apache->warn($detailsMsg);
+            }
         }
     }
     return;
@@ -588,6 +609,14 @@ sub _sharePreviousRegistrations{
     if (! scalar @replayLogs) {
         return;
     }
+
+    my %mtimes;
+    foreach my $file (@replayLogs) {
+        $mtimes{$file} = stat($file)->mtime;
+    }
+
+    # replay logs in modification time order
+    @replayLogs = sort { $mtimes{$a} <=> $mtimes{$b} } @replayLogs;
 
     my $lockFile = "/var/lib/wwwrun/smt/$logFileName.lock";
     if (-e $lockFile) {
