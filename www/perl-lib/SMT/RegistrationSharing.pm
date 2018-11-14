@@ -443,6 +443,9 @@ sub _logShareRecord{
     my $regXML      = shift;
     my $log         = shift;
 
+    # replace slashes in the filename
+    $logFileName =~ s!/!_!g;
+
     my $apache;
     if (! $log) {
         $apache = Apache2::ServerUtil->server;
@@ -604,6 +607,9 @@ sub _sharePreviousRegistrations{
     if (! -d '/var/lib/wwwrun/smt') {
         return;
     }
+
+    # replace slashes in the filename
+    $logFileName =~ s!/!_!g;
 
     my @replayLogs = glob "/var/lib/wwwrun/smt/$logFileName.*.share.log";
     if (! scalar @replayLogs) {
