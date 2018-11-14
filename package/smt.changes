@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Nov 14 08:12:13 UTC 2018 - ikapelyukhin@suse.com
+
+- version 2.0.35
+- Harden hostname check during sibling check by forcing double
+  reverse lookup (CVE-2018-12472) (bsc#1104076)
+
+-------------------------------------------------------------------
 Tue Aug 14 08:36:09 UTC 2018 - ikapelyukhin@suse.com
 
 - version 2.0.34

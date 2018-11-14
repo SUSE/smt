@@ -6,6 +6,7 @@ use warnings;
 use Apache2::Log;
 use Apache2::RequestRec ();
 use Apache2::ServerUtil ();
+use Apache2::Const -compile => qw(REMOTE_DOUBLE_REV);
 use DBI qw(:sql_types);
 use File::Slurp;
 use File::Temp;
@@ -534,7 +535,7 @@ sub _verifySenderAllowed
     my $r = shift;
 
     my $apache = Apache2::ServerUtil->server;
-    my $senderName = $r->connection()->get_remote_host();
+    my $senderName = $r->connection()->get_remote_host(Apache2::Const::REMOTE_DOUBLE_REV);
     my $senderIP = $r->connection()->remote_ip();
     my $msg = 'Received shared registration request from '
         . $senderName
