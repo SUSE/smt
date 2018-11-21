@@ -188,7 +188,7 @@ module Yast
             Left(
               CheckBox(
                 Id("enable_smt_service"),
-                _("&Enable Subscription Management Tool Service (SMT)")
+                _("&Run Subscription Management Tool Service (SMT)")
               )
             ),
             Left("firewall"),
