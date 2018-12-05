@@ -17,7 +17,7 @@
 
 
 Name:           yast2-smt
-Version:        3.0.16
+Version:        3.0.17
 Release:        0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-smt-%{version}.tar.bz2
