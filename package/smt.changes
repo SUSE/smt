@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Dec  3 13:30:33 UTC 2018 - wstephenson@suse.com
+
+- Version 3.0.39
+- Truncate patch summary to 512 chars (bsc#1117190)
+
+-------------------------------------------------------------------
 Tue Oct  9 14:40:52 UTC 2018 - ikapelyukhin@suse.com
 
 - Version 3.0.38
