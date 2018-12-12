@@ -62,6 +62,8 @@ use constant TOK2STRING => {
 
 use constant MYSQL_TEXT_TYPE_SIZE => 65535;
 
+use constant PATCH_SUMMARY_SIZE_CHARS => 512;
+
 =head1 NAME
 
 SMT::Utils - Utility library

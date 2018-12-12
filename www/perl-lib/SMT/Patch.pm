@@ -380,11 +380,16 @@ sub save
         $description = substr($description, 0, SMT::Utils::MYSQL_TEXT_TYPE_SIZE);
     }
 
+    my $summary = $self->summary();
+    if (length($summary) > SMT::Utils::PATCH_SUMMARY_SIZE_CHARS) {
+        $summary = substr($summary, 0, SMT::Utils::PATCH_SUMMARY_SIZE_CHARS);
+    }
+
     my $sth = $dbh->prepare($sql);
     $sth->bind_param(1, $self->name(), SQL_VARCHAR);
     $sth->bind_param(2, $self->version(), SQL_VARCHAR);
     $sth->bind_param(3, $self->categoryAsInt(), SQL_INTEGER);
-    $sth->bind_param(4, $self->summary(), SQL_VARCHAR);
+    $sth->bind_param(4, $summary, SQL_VARCHAR);
     $sth->bind_param(5, $description, SQL_VARCHAR);
     $sth->bind_param(6, POSIX::strftime("%Y-%m-%d %H:%M", localtime($self->releaseDate())), SQL_TIMESTAMP);
     $sth->bind_param(7, $self->repoId(), SQL_INTEGER);
