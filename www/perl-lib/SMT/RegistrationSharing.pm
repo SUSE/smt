@@ -11,7 +11,6 @@ use DBI qw(:sql_types);
 use File::Slurp;
 use File::Temp;
 use File::Touch;
-use File::stat;
 use SMT::Utils;
 use WWW::Curl::Easy;
 use XML::LibXML;
@@ -615,14 +614,6 @@ sub _sharePreviousRegistrations{
     if (! scalar @replayLogs) {
         return;
     }
-
-    my %mtimes;
-    foreach my $file (@replayLogs) {
-        $mtimes{$file} = stat($file)->mtime;
-    }
-
-    # replay logs in modification time order
-    @replayLogs = sort { $mtimes{$a} <=> $mtimes{$b} } @replayLogs;
 
     my $lockFile = "/var/lib/wwwrun/smt/$logFileName.lock";
     if (-e $lockFile) {
