@@ -56,7 +56,7 @@ module Yast
 
       @smt_enabled = nil
 
-      @smt_services = ["smt.target"]
+      @smt_services = ["mysql", "smt", "apache2", "smt-schema-upgrade"]
 
       @smt_database = "mysql"
 

@@ -1,4 +1,19 @@
 -------------------------------------------------------------------
+Wed Dec  5 09:37:19 UTC 2018 - sschricker@suse.com
+
+- the yast smt module correctly starts and stops SMT again, via the
+  corresponding services (bsc#1106550)
+- the associated checkbox was renamed to "Run ..." to better
+  reflect the behaviour
+- 3.0.17
+
+-------------------------------------------------------------------
+Mon Nov 12 12:19:01 UTC 2018 - jsrain@suse.cz
+
+- re-create icon cache after (un-)installation (bsc#1099938)
+- 3.0.16
+
+-------------------------------------------------------------------
 Fri Sep  7 08:42:49 UTC 2018 - jsrain@suse.cz
 
 - added icon 128x128 (bsc#1099938)

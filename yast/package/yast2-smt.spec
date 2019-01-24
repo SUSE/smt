@@ -17,7 +17,7 @@
 
 
 Name:           yast2-smt
-Version:        3.0.15
+Version:        3.0.17
 Release:        0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-smt-%{version}.tar.bz2
@@ -109,9 +109,11 @@ done
 
 %post
 %desktop_database_post
+%icon_theme_cache_post
 
 %postun
 %desktop_database_postun
+%icon_theme_cache_postun
 
 %clean
 rm -rf "$RPM_BUILD_ROOT"
