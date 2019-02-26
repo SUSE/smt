@@ -67,6 +67,10 @@ sub new
     $self->setopt(CURLOPT_SSL_VERIFYPEER, 1 );
     $self->setopt(CURLOPT_SSLVERSION, 1 ); # 1 should be CURL_SSLVERSION_TLSv1
 
+    # Abort download if speed is below 512 bytes/sec for 120 sec, to prevent downloads from getting stuck
+    $self->setopt(CURLOPT_LOW_SPEED_LIMIT, 512 );
+    $self->setopt(CURLOPT_LOW_SPEED_TIME, 120 );
+
     if(exists $opt{useragent})
     {
       $self->agent($opt{useragent})
