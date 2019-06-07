@@ -5,6 +5,6 @@ use warnings;
 
 use vars qw($SCHEMA_VERSION);
 
-$SCHEMA_VERSION = 3.07;
+$SCHEMA_VERSION = 3.08;
 
 1;
