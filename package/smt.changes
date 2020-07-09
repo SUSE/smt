@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jul  9 13:12:08 UTC 2020 - Felix Schnizlein <fschnizlein@suse.com>
+
+- Version 3.0.43
+- Fix missing offline migration targets (bsc#1165012)
+
+-------------------------------------------------------------------
 Fri Jun  7 12:48:08 UTC 2019 - Will Stephenson <wstephenson@suse.com>
 
 - Version 3.0.42
