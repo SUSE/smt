@@ -1886,10 +1886,14 @@ sub lookupMigrationTargetsById
     my $log = shift;
     my $vblevel = shift;
 
-    my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s AND kind = %s
+    # To match behavior from SCC add all possible online migration targets to
+    # offline migrations
+    my $kind_sql = $migration_kind_sql eq "online" ? "AND kind = 'online'" : "";
+
+    my $query = sprintf("SELECT tgtpdid FROM ProductMigrations WHERE srcpdid = %s %s 
         ORDER BY tgtpdid DESC",
         $dbh->quote($pdid),
-        $dbh->quote($migration_kind_sql)
+        $kind_sql
     );
 
     printLog($log, $vblevel, LOG_DEBUG, "STATEMENT: $query");
