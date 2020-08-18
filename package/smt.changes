@@ -4,6 +4,7 @@ Fri Jul 30 15:27:01 UTC 2020 - Ali Abdallah <ali.abdallah@suse.com>
 - Version 3.0.44
 - Add two options LowSpeedLimit and LowSpeedTime to configure 
   CURLOPT_LOW_SPEED_LIMIT and CURLOPT_LOW_SPEED_TIME (bsc#1174348)
+- Fix handling dash based version formats in 'systems/products' endpoint (bsc#1165012)
 
 -------------------------------------------------------------------
 Fri Jul  9 13:12:08 UTC 2020 - Felix Schnizlein <fschnizlein@suse.com>
