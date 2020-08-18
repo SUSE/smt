@@ -1559,6 +1559,11 @@ sub lookupProductIdByName
 
     my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
 
+    # Remove .0 or -0 from GA versions (e.g. 15-0)
+    $version =~ s/[\-\.]0$//;
+    # Normalize versions to use . instead of -
+    $version =~ s/-(\d)/\.$1/g;
+
     $statement .= "PRODUCTLOWER = ".$dbh->quote(lc($name));
 
     $statement .= " AND (";
