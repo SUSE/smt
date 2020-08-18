@@ -1038,6 +1038,8 @@ sub createUserAgent
     if (! exists $opts{connecttimeout})
     {
         $opts{connecttimeout} = int($cfg->val('LOCAL', 'ConnectTimeout', 5));
+        $opts{lowspeedlimit} = int($cfg->val('LOCAL', 'LowSpeedLimit', 512));
+        $opts{lowspeedtime} = int($cfg->val('LOCAL', 'LowSpeedTime', 120));
     }
 
     require SMT::Curl;
