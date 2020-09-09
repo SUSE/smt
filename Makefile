@@ -1,5 +1,5 @@
 NAME          = smt
-VERSION       = 3.0.44
+VERSION       = 3.0.45
 DESTDIR       = /
 PERL         ?= perl
 PERLMODDIR    = $(shell $(PERL) -MConfig -e 'print $$Config{installvendorlib};')
@@ -214,4 +214,3 @@ pot:
 
 package: dist
 	mv $(NAME)-$(VERSION).tar.bz2 package/
-
