@@ -290,7 +290,7 @@ create table Patches( ID          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                       VERSION     VARCHAR(32) NOT NULL,
                       CATEGORY    INTEGER UNSIGNED NOT NULL DEFAULT 1,
                       SUMMARY     VARCHAR(512) NOT NULL,
-                      DESCRIPTION TEXT NOT NULL,
+                      DESCRIPTION MEDIUMTEXT NOT NULL,
                       RELDATE     TIMESTAMP NOT NULL,
                       CONSTRAINT Patches_id_pk PRIMARY KEY (ID)
                     ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci;
@@ -343,4 +343,3 @@ END;
 //
 
 DELIMITER ;
-
