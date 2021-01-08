@@ -35,6 +35,7 @@ my $vblevel  = LOG_ERROR|LOG_WARN|LOG_INFO1;
 my $help    = 0;
 my $random  = 0;
 my $reseterror = 0;
+my $reregall = 0;
 my $logfile = "/dev/null";
 my $mail     = 0;
 my $mailtempfile = undef;
@@ -45,6 +46,7 @@ my $optres = GetOptions ("debug|d"     => \$debug,
                          "logfile|L=s" => \$logfile,
                          "randomStart|r" => \$random,
                          "reseterror"  => \$reseterror,
+                         "reregall" => \$reregall,
                          "mail|m"       => \$mail,
                          "help|h"      => \$help
                         );
@@ -131,6 +133,11 @@ if(!$dbh)
 my $exitcode = 0;
 eval
 {
+    if($reregall)
+    {
+        my $res = $dbh->do("Update Registration SET NCCREGDATE=NULL");
+        SMT::Utils::printLog($LOG, $vblevel, LOG_DEBUG, "Reset all Registrations. Result: $res");
+    }
     if($reseterror)
     {
         my $res = $dbh->do("Update Registration SET NCCREGERROR=0");
