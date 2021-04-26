@@ -1557,9 +1557,40 @@ sub lookupProductIdByName
     my $log = shift;
     my $vblevel = shift;
 
+    # Since SLE 15 there is product naming mismatch requiring SMT
+    # to remove trailing .0 from 15 GA products. We need to make sure
+    # certain products are not affected by the renaming measures.
+    # This list includes products not affected by the .0 naming mismatch.
+    # e.g. SUSE-Manager-Server 4.0 is okay
+    #
+    # See bsc#1184130
+    my @ignoredProducts = ( "CAASP",
+                            "CAP",
+                            "SUSE-Cloud",
+                            "SUSE-Linux-Enterprise-HA-Server",
+                            "SUSE-Linux-Enterprise-RT",
+                            "SUSE-Manager-Proxy",
+                            "SUSE-Manager-Retail-Branch-Server",
+                            "SUSE-Manager-Server",
+                            "SUSE-MicroOS",
+                            "caasp",
+                            "caasp-toolchain",
+                            "longhorn",
+                            "rancher",
+                            "sle-11-WebYaST",
+                            "sle-module-suse-manager-proxy",
+                            "sle-module-suse-manager-retail-branch-server",
+                            "sle-module-suse-manager-server",
+                            "sle-slms",
+                            "sle-slms-1.1-migration",
+                            "sle-studioonsite",
+                            "suse-enterprise-storage"
+    );
+
+
     my $statement = "SELECT ID, PRODUCTLOWER, VERSIONLOWER, RELLOWER, ARCHLOWER FROM Products where ";
 
-    if ($name =~ /sle.*/) {
+    unless (grep $name eq $_ , @ignoredProducts) {
         # Remove .0 or -0 from GA versions (e.g. 15-0)
         $version =~ s/[\-\.]0$//;
         # Normalize versions to use . instead of -
