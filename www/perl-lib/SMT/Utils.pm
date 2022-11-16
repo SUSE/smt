@@ -27,7 +27,7 @@ use Locale::gettext ();
 use POSIX ();     # Needed for setlocale()
 use User::pwent;
 use Sys::GRP;
-
+use WWW::Curl::Easy;
 use SMT::Utils::RequestAgent;
 use JSON;
 
@@ -63,6 +63,8 @@ use constant TOK2STRING => {
 use constant MYSQL_TEXT_TYPE_SIZE => 65535;
 
 use constant PATCH_SUMMARY_SIZE_CHARS => 512;
+
+use constant SMT_USER_AGENT => sprintf("smt/%s %s", $SMT::SMT_VERSION, WWW::Curl::Easy->version());
 
 =head1 NAME
 
@@ -1046,7 +1048,7 @@ sub createUserAgent
 
     my $ua = SMT::Curl->new(%opts);
 
-    my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', WWW::Curl::Easy->version());
+    my $userAgentString  = $cfg->val('LOCAL', 'UserAgent', SMT_USER_AGENT);
     $ua->agent($userAgentString) if( $userAgentString ne "");
 
     return $ua;
