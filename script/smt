@@ -31,7 +31,7 @@ sub help
     my @files = grep { /^smt-.+/ && -x "$FindBin::Bin/$_" } readdir(DIR);
     closedir DIR;
 
-    print __("Subscription Management Tool (SMT). (c)2007-2015 SUSE LINUX GmbH, Nuernberg, Germany.\n\n");
+    printf __("Subscription Management Tool (SMT) v%s. (c)2007-2015 SUSE LINUX GmbH, Nuernberg, Germany.\n\n"), $SMT::SMT_VERSION;
 
     foreach my $cmd (@files)
     {
