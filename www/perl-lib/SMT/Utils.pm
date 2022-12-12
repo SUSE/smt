@@ -1,5 +1,5 @@
 package SMT::Utils;
-
+use SMT;
 use strict;
 use warnings;
 

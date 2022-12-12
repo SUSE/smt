@@ -1,15 +1,20 @@
 -------------------------------------------------------------------
 Mon Nov 21 08:01:00 UTC 2022 - José Gómez <jose.gomez@suse.com>
-- Version 3.0.47
+
+- Version 3.0.48
 - Fixes SMT does not send version in API headers (bsc#1205451)
+- Added `smt version` subcommand to show version information and
+  the reported user agent.
 
 -------------------------------------------------------------------
 Mon Mar 26 11:01:12 UTC 2021 - Felix Schnizlein <fschnizlein@suse.com>
+
 - Version 3.0.46
 - Fix wrong migration handling for SUSE Manager 4.0 (bsc#1184130)
 
 -------------------------------------------------------------------
 Wed Sep  9 16:31:34 UTC 2020 - Serhii Kotov <skotov@suse.com>
+
 - Version 3.0.45
 - Fix patches.description field (bsc#1175871)
 

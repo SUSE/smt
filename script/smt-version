@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+
+use SMT::Utils;
+use Getopt::Long;
+use File::Basename;
+
+sub printUsage
+{
+  print basename($0) . " : " . __("show version information")."\n";
+}
+
+my $optres = Getopt::Long::GetOptions('help|h' => \$help);
+
+if ( (defined $help && $help == 1 ) || !$optres )
+{
+  printUsage();
+  exit 0;
+}
+
+printf __("Version: %s \n"), $SMT::SMT_VERSION;
+printf __("User-Agent: %s \n"), SMT::Utils::SMT_USER_AGENT;
