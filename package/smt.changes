@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jul 21 10:10:39 UTC 2023 - José Gómez <jose.gomez@suse.com>
+
+- Version 3.0.48
+- Fixes mishandling of http2 request (bsc#1212699) (bsc#1212812)
+
+-------------------------------------------------------------------
 Mon Nov 21 08:01:00 UTC 2022 - José Gómez <jose.gomez@suse.com>
 
 - Version 3.0.48

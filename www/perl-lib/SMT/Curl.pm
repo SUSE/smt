@@ -337,7 +337,7 @@ sub request
       foreach my $line (@h)
       {
           # $header may contain multiple headers, but we need only the last
-          @new_header = () if($line =~ /^HTTP\/1.\d\s\d\d\d\s/);
+          @new_header = () if($line =~ /^HTTP\/\d.*\s\d\d\d/);
           push @new_header, $line;
       }
       $header = join("\n", @new_header);
