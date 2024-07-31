@@ -302,6 +302,8 @@ sub setup
 	return 7;
     }
 
+    $r = $dbh->do("create user if not exists '$smtuser'\@$host");
+
     $r = $dbh->do("grant all on smt.* to '$smtuser'\@$host identified by '$smtpass'");
     $dbh->disconnect;
 
