@@ -7,6 +7,8 @@
 5. Copy everything from `package` directory into `smt` subdirectory in the
 OBS project working copy
 6. Remove the tarball with the previous version, example `iosc status` output:
+
+Note: `iosc` is an alias for `osc -A https://api.suse.de`
 ```
 # ~/obs/Devel:SMT:SLE-12-SMT/smt> iosc status
 !    smt-3.0.24.tar.bz2
