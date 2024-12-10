@@ -4,6 +4,7 @@ Fri Oct 21 13:49:39 UTC 2024 - Adnilson Delgado <adnilson.delgado@suse.com>
 - Version 3.0.50
 - Create db user if it doesn't exist before granting database permission (bsc#1228604)
   - Newer version of mariadb no longer implicitly create db user using grant statement
+- Identify dl.suse.com as SUSE owned host when updating repository information (bsc#1234336)
 
 -------------------------------------------------------------------
 Fri Jul 21 10:10:39 UTC 2023 - José Gómez <jose.gomez@suse.com>
