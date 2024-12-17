@@ -83,7 +83,7 @@ sub new
     $self->{EXTS} = {};
     $self->{MIGS} = {};
     $self->{TARGET_DONE} = {};
-    $self->{NUHOSTS} = ['nu.novell.com', 'updates.suse.com', 'dl.suse.com', 'dl-ipv4.suse.com'];
+    $self->{NUHOSTS} = ['nu\.novell\.com', '.*\.suse\.com'];
     $self->{LOCALHOST} = "";
     $self->{LOCALSCHEME} = "https";
 
@@ -751,7 +751,8 @@ EOS
     if ($product->{eula_url})
     {
         my $eulaUrl = URI->new($product->{eula_url});
-        if( grep {$_ eq $eulaUrl->host} @{$self->{NUHOSTS}} )
+
+        if( grep {$eulaUrl->host =~ /^$_$/} @{$self->{NUHOSTS}} )
         {
             $eulaUrl->path(SMT::Utils::cleanPath("repo", $eulaUrl->path()));
         }
@@ -1216,7 +1217,7 @@ sub _updateRepositories
     $exthost->fragment(undef);
     $exthost->query(undef);
 
-    if( grep {$_ eq $exthost->host} @{$self->{NUHOSTS}} )
+    if( grep {$exthost->host =~ /^$_$/} @{$self->{NUHOSTS}} )
     {
         $localpath =~ s/^\///;
         if($localpath =~ /^repo\//)
@@ -1607,7 +1608,7 @@ sub _updateProductData
         printLog($self->{LOG}, $self->vblevel(), LOG_ERROR, "Cannot connect to database.");
         return 1;
     }
-    my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://updates.suse.com/"));
+    my $nuurl = URI->new($self->{CFG}->val("NU", "NUUrl", "https://dl.suse.com/"));
     push @{$self->{NUHOST}}, $nuurl->host;
     my $localhost = URI->new($self->{CFG}->val("LOCAL", "url"));
     $self->{LOCALHOST} = $localhost->host;
