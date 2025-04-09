@@ -1,0 +1,3 @@
+ALTER TABLE Catalogs
+    MODIFY COLUMN EXTURL varchar(2048);
+

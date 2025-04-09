@@ -90,7 +90,7 @@ create table Catalogs(ID          INT AUTO_INCREMENT,
                       TARGET      VARCHAR(100),           -- null in case of single RPMMD source
                       LOCALPATH   VARCHAR(300) NOT NULL,
                       EXTHOST     VARCHAR(300) NOT NULL,
-                      EXTURL      VARCHAR(300) NOT NULL,  -- where to mirror from
+                      EXTURL      VARCHAR(2048) NOT NULL,  -- where to mirror from
                       CATALOGTYPE CHAR(10) NOT NULL,
                       DOMIRROR    CHAR(1) DEFAULT 'N',
                       MIRRORABLE  CHAR(1) DEFAULT 'N',
