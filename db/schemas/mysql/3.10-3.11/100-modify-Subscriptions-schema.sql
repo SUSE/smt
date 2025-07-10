@@ -1,0 +1,3 @@
+ALTER TABLE Subscriptions
+    MODIFY COLUMN PRODUCT_CLASS varchar(512);
+
