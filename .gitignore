@@ -32,4 +32,6 @@ yast/src/Makefile.in
 yast/src/smt
 yast/testsuite/Makefile.in
 obs
-
+.env
+docker/suse-ca.crt
+swig/**
