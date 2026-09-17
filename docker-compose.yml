@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mariadb:10.6
+    env_file: .env
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_DATABASE: smt
+      MARIADB_USER: smt
+      MARIADB_PASSWORD: ${SMT_DB_PASS}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u smt -p$$MARIADB_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  smt:
+    build:
+      context: .
+      args:
+        INTERNAL_REPO: ${INTERNAL_REPO}
+      secrets:
+        - regcode
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:80"
+    volumes:
+      - .:/usr/src/smt
+      - mirror-data:/srv/www/htdocs
+
+secrets:
+  regcode:
+    environment: REGCODE
+
+volumes:
+  db-data:
+  mirror-data:

@@ -83,7 +83,7 @@ sub new
     $self->{EXTS} = {};
     $self->{MIGS} = {};
     $self->{TARGET_DONE} = {};
-    $self->{NUHOSTS} = ['nu\.novell\.com', '.*\.suse\.com'];
+    $self->{NUHOSTS} = ['nu\.novell\.com', '.*\.suse\.com', '.*\.ranchergovernment\.com'];
     $self->{LOCALHOST} = "";
     $self->{LOCALSCHEME} = "https";
 
